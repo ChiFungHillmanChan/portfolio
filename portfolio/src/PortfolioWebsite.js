@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaGithub, FaInstagram, FaLightbulb, FaMoon } from 'react-icons/fa';
+import { FaGithub, FaInstagram, FaLinkedin, FaLightbulb, FaMoon } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import projectData from './projectData.json';
@@ -52,6 +52,12 @@ const PortfolioWebsite = () => {
                   <FaInstagram size={24} className="dark:text-white transition-colors duration-300" />
                 </a>
               </li>
+              <li>
+                <a href="https://www.linkedin.com/in/chi-fung-hillman-chan-2845a5201" target="_blank" rel="noopener noreferrer">
+                  <FaLinkedin size={24} className="dark:text-white transition-colors duration-300" />
+                </a>
+              </li>
+              
               <li>
                 <button onClick={toggleDarkMode}>
                   {isDarkMode ? (
@@ -113,7 +119,7 @@ const PortfolioWebsite = () => {
                   transition={{ duration: 0.6 }}
                   className="bg-white dark:bg-gray-700 rounded-md shadow-md overflow-hidden"
                 >
-                  <img src={project.image} alt={project.title} className="w-full h-48 object-cover" />
+                  <img src={require(`./assets/${project.image}`)} alt={project.title} className="w-full h-48 object-cover" />
                   <div className="p-4">
                     <h3 className="text-xl font-bold mb-2">{project.title}</h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-4">{project.description}</p>
