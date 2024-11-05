@@ -35,10 +35,10 @@
       "last 1 chrome version",
       "last 1 firefox version",
       "last 1 safari version"
-    ],
-    "homepage": "https://chifunghillmanchan.github.io"
+    ]
   },
   "devDependencies": {
     "gh-pages": "^6.2.0"
-  }
+  },
+  "homepage": "https://chifunghillmanchan.github.io/portfolio"
 }
