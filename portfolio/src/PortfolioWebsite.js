@@ -43,12 +43,12 @@ const PortfolioWebsite = () => {
               <li><a href="/projects">Projects</a></li>
               <li><a href="/contact">Contact</a></li>
               <li>
-                <a href="https://github.com/yourusername" target="_blank" rel="noopener noreferrer">
+                <a href="https://github.com/chifunghillmanchan" target="_blank" rel="noopener noreferrer">
                   <FaGithub size={24} className="dark:text-white transition-colors duration-300" />
                 </a>
               </li>
               <li>
-                <a href="https://instagram.com/yourusername" target="_blank" rel="noopener noreferrer">
+                <a href="https://www.instagram.com/hillmanchan709_/" target="_blank" rel="noopener noreferrer">
                   <FaInstagram size={24} className="dark:text-white transition-colors duration-300" />
                 </a>
               </li>
