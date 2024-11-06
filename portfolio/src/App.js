@@ -4,9 +4,9 @@ import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } 
 import AboutMe from './components/AboutMe';
 import Layout from './Layout';
 import MainContent from './MainContent';
+import Contact from './components/Contact';
 // import Blogs from './components/Blogs';
 // import Projects from './components/Projects';
-// import Contact from './components/Contact';
 
 function App() {
   const router = createBrowserRouter(
@@ -14,7 +14,8 @@ function App() {
       <Route element={<Layout />}>
         <Route path="/portfolio"element={<MainContent />} /> {/* Home page */}
         <Route path="/about" element={<AboutMe />} /> {/* About page */}
-        {/* Add other routes as needed */}
+        <Route path="/contact" element={<Contact />} /> {/* About page */}
+        {/* <Route path="/blogs" element={<Blogs />} /> About page */}
       </Route>
     )
   )
