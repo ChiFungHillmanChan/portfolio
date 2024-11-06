@@ -1,31 +1,26 @@
-import React , { useState }from 'react';
+import React , { useState, useRef }from 'react';
 import { FaEnvelope, FaLinkedin, FaGithub } from 'react-icons/fa';
+import emailjs from '@emailjs/browser'
 
 const Contact = () => {
-    const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-    
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData((prevData) => ({ ...prevData, [name]: value }));
-    };
-    
-    const handleSubmit = async (e) => {
+    const form = useRef();
+
+    const sendEmail = (e) => {
         e.preventDefault();
-        try {
-        const response = await fetch('/api/send-email', { // Calling the serverless function
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(formData),
-        });
-        if (response.ok) {
-            alert('Message sent successfully!');
-            setFormData({ name: '', email: '', message: '' }); // Clear form
-        } else {
-            alert('Failed to send message.');
-        }
-        } catch (error) {
-        alert('An error occurred.');
-        }
+
+        emailjs
+        .sendForm('service_gc2e006', 'template_hbmi8n6', form.current, {
+            publicKey: 'tAF6uPWQu6pBX3SG9',
+        })
+        .then(
+            (result) => {
+                console.log(result.text)
+                console.log('SUCCESS!');
+            },
+            (error) => {
+                console.log('FAILED...', error.text);
+            },
+        );
     };
 
   return (
@@ -58,16 +53,14 @@ const Contact = () => {
         {/* Right Side */}
         <div className="bg-white dark:bg-gray-700 rounded-md shadow-md p-6">
           <h3 className="text-2xl font-bold mb-4 dark:text-white">Contact Me</h3>
-          <form onSubmit={handleSubmit}>
+          <form ref={form} onSubmit={sendEmail}>
             <div className="mb-4">
               <label htmlFor="name" className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
-                First Name
+                Name
               </label>
               <input
                 id="name"
-                name="name"
-                value = {formData.name}
-                onChange={handleChange}
+                name="user_name"
                 type="text"
                 placeholder="Enter your name"
                 className="w-full px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -79,9 +72,7 @@ const Contact = () => {
               </label>
               <input
                 id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+                name="user_email"
                 type="email"
                 placeholder="Enter your email"
                 className="w-full px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
@@ -94,8 +85,6 @@ const Contact = () => {
               <textarea
                 id="message"
                 name="message"
-                value={formData.message}
-                onChange={handleChange}
                 placeholder="Type your message"
                 className="w-full px-3 py-2 rounded-md bg-gray-200 dark:bg-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-500"
               ></textarea>

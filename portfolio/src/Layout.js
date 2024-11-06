@@ -134,9 +134,30 @@ const Layout = () => {
                     <div>
                         <h4 className="text-xl font-bold mb-4">Quick Links</h4>
                         <ul className="space-y-2">
-                            <li><a href="/about" className="hover:text-blue-400 transition-colors">About</a></li>
-                            <li><a href="/projects" className="hover:text-blue-400 transition-colors">Projects</a></li>
-                            <li><a href="/blog" className="hover:text-blue-400 transition-colors">Blog</a></li>
+                            <li>
+                                <Link 
+                                    to="/about"
+                                    className={`hover:text-blue-400 transition-colors`}
+                                >
+                                    About
+                                </Link>
+                            </li>
+                            <li>
+                                <Link 
+                                    to="/project"
+                                    className={`hover:text-blue-400 transition-colors`}
+                                >
+                                    Project
+                                </Link>
+                            </li>
+                            <li>
+                                <Link 
+                                    to="/contact"
+                                    className={`hover:text-blue-400 transition-colors`}
+                                >
+                                    Contact
+                                </Link>
+                            </li>
                         </ul>
                     </div>
                     <div>
