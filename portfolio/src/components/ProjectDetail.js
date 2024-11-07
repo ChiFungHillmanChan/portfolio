@@ -41,7 +41,7 @@ const ProjectDetail = () => {
             onClick={() => navigate('/portfolio')}
             className="bg-gray-800 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors duration-300"
           >
-            Back to Projects
+            Back
           </button>
         </div>
       </motion.div>
