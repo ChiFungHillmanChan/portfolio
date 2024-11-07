@@ -21,11 +21,11 @@ const Contact = () => {
 
     try {
       await emailjs.sendForm(
-        'service_gc2e006',
-        'template_hbmi8n6',
+        process.env.REACT_APP_SERVICE_ID,
+        process.env.REACT_APP_TEMPLATE_ID,
         form.current,
         {
-          publicKey: 'tAF6uPWQu6pBX3SG9',
+          publicKey: process.env.REACT_APP_PUBLIC_KEY,
         }
       );
       
