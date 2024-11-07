@@ -56,12 +56,14 @@ const ProjectDetail = () => {
       variants={containerVariants}
       className="container mx-auto px-4 py-12 max-w-7xl"
     >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-        {/* Left Section - Project Details */}
-        <div className="space-y-6">
-          <motion.h1 variants={itemVariants}className="text-4xl font-bold mb-6 dark:text-white">
+      <motion.h1 variants={itemVariants}className="text-4xl font-bold mb-6 dark:text-white">
             {project.title}
           </motion.h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+          
+        {/* Left Section - Project Details */}
+        <div className="space-y-6">
+          
           
           <motion.div variants={itemVariants}className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8">
             <motion.h2 variants={itemVariants}className="text-2xl font-semibold mb-4 dark:text-white">
@@ -104,7 +106,7 @@ const ProjectDetail = () => {
         {/* Right Section - Video and Buttons */}
         <motion.div 
           variants={itemVariants}
-          className="space-y-6 mt-103"
+          className="space-y-6"
         >
           <motion.div 
             variants={itemVariants}
