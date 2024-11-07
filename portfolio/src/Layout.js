@@ -128,7 +128,7 @@ const Layout = () => {
                     <div>
                         <h4 className="text-xl font-bold mb-4">About Me</h4>
                         <p className="text-gray-300">
-                            Passionate developer creating innovative solutions for web and mobile applications.
+                            Passionate developer creating innovative solutions for web applications and program.
                         </p>
                     </div>
                     <div>
@@ -176,7 +176,7 @@ const Layout = () => {
                     </div>
                 </div>
                 <div className="mt-8 pt-8 border-t border-gray-700 text-center">
-                    <p>&copy; {new Date().getFullYear()} Hillman Chan. All rights reserved.</p>
+                    <p>&copy; {new Date().getFullYear()} Hillman Chan</p>
                 </div>
             </div>
         </footer>

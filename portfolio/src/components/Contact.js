@@ -1,9 +1,11 @@
 import React , { useState, useRef }from 'react';
 import { FaEnvelope, FaLinkedin, FaGithub } from 'react-icons/fa';
 import emailjs from '@emailjs/browser'
+import { motion } from 'framer-motion'
 
 const Contact = () => {
     const form = useRef();
+    const [status, setStatus] = useState('')
 
     const sendEmail = (e) => {
         e.preventDefault();
@@ -14,24 +16,49 @@ const Contact = () => {
         })
         .then(
             (result) => {
-                console.log(result.text)
-                console.log('SUCCESS!');
+                setStatus('success')
             },
             (error) => {
-                console.log('FAILED...', error.text);
+                setStatus('error');
             },
         );
     };
+    const closeMessage = () => setStatus('');
+
+    // Animation variants
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 20 },
+        visible: { opacity: 1, y: 0 }
+    };
+
+    const modalVariants = {
+        hidden: { opacity: 0, scale: 0.8 },
+        visible: { 
+            opacity: 1, 
+            scale: 1,
+            transition: { type: "spring", stiffness: 300, damping: 25 }
+        }
+    };
 
   return (
-    <section className="container mx-auto py-12">
-      <h2 className="text-3xl font-bold mb-8 dark:text-white">Get in Touch</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <motion.section className="container mx-auto py-12" initial="hidden"animate="visible"variants={containerVariants}>
+        <motion.h2  className="text-3xl font-bold mb-8 dark:text-white" variants={itemVariants}>Get in Touch</motion.h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Left Side */}
-        <div className="bg-white dark:bg-gray-700 rounded-md shadow-md p-6">
+        <motion.div  className="bg-white dark:bg-gray-700 rounded-md shadow-md p-6" variants={itemVariants} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
           <h3 className="text-2xl font-bold mb-4 dark:text-white">Let's Talk</h3>
           <p className="text-gray-600 dark:text-gray-400 mb-6">
-            I'm always excited to discuss new ideas, collaborate on projects, or just chat about the latest
+            I'm always excited to collaborate on projects, freelance, job opportunities, or just chat about the latest
             advancements in technology. Feel free to reach out using the contact form or my social media links.
           </p>
           <div className="flex items-center space-x-4 mb-6">
@@ -48,12 +75,12 @@ const Contact = () => {
               <FaGithub size={24} />
             </a>
           </div>
-        </div>
+        </motion.div>
 
         {/* Right Side */}
-        <div className="bg-white dark:bg-gray-700 rounded-md shadow-md p-6">
+        <motion.div  className="bg-white dark:bg-gray-700 rounded-md shadow-md p-6" variants={itemVariants}>
           <h3 className="text-2xl font-bold mb-4 dark:text-white">Contact Me</h3>
-          <form ref={form} onSubmit={sendEmail}>
+          <motion.form ref={form} onSubmit={sendEmail}initial={{ opacity: 0 }}animate={{ opacity: 1 }}transition={{ delay: 0.3 }}>
             <div className="mb-4">
               <label htmlFor="name" className="block text-gray-700 dark:text-gray-300 font-medium mb-2">
                 Name
@@ -95,10 +122,48 @@ const Contact = () => {
             >
               Submit
             </button>
-          </form>
-        </div>
+          </motion.form>
+        </motion.div>
       </div>
-    </section>
+
+      {status === 'success' && (
+        <motion.div 
+        className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50"
+        initial="hidden"
+        animate="visible"
+        variants={modalVariants}
+    >
+          <div className="bg-gray-600 text-white rounded-lg p-6 max-w-md w-full text-center">
+            <p>Your message has been successfully sent. I look forward to connecting with you!</p>
+            <button
+              onClick={closeMessage}
+              className="mt-4 px-4 py-2 bg-white text-gray-800 rounded hover:bg-gray-200"
+            >
+              Close
+            </button>
+          </div>
+        </motion.div>
+      )}
+      {status === 'error' && (
+        <motion.div 
+        className="fixed inset-0 flex items-center justify-center bg-gray-800 bg-opacity-50"
+        initial="hidden"
+        animate="visible"
+        variants={modalVariants}
+    >
+          <div className="bg-red-500 text-white rounded-lg p-6 max-w-md w-full text-center">
+            <p>Sorry, there was an issue sending your message. Please reach out on social media!</p>
+            <button
+              onClick={closeMessage}
+              className="mt-4 px-4 py-2 bg-white text-gray-800rounded hover:bg-gray-200"
+            >
+              Close
+            </button>
+          </div>
+        </motion.div>
+      )}
+
+    </motion.section>
   );
 };
 

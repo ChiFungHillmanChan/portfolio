@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import projectData from './projectData.json';
 import profilePic from "./assets/profile_pic.jpg";
+import ProjectDetail from './components/ProjectDetail';
+import { useNavigate  } from 'react-router-dom';
 
 const MainContent = () => {
     const [activeCategory, setActiveCategory] = useState('all');
     const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
+
+    const navigate = useNavigate();
 
     const [timeOfDay, setTimeOfDay] = useState('');
     useEffect(() => {
@@ -57,19 +61,18 @@ const MainContent = () => {
                         Computer Science & AI Graduate | Software Engineer
                     </p>
                     <p className="text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                        I'm a recent graduate with a degree in Computer Science and Artificial Intelligence, 
-                        driven by a passion for creating innovative software solutions. My academic background 
-                        combines traditional computer science principles with cutting-edge AI concepts, 
-                        enabling me to approach problems with a unique perspective. I'm particularly 
-                        enthusiastic about developing scalable applications and implementing AI-driven 
-                        solutions in real-world scenarios.
+                        I'm a recent graduate with a degree in Computer Science with Artificial Intelligence, 
+                        driven by a passion for creating innovative software solutions. 
+                        I enjoy solving complex challenge and real-world projects. 
+                        Looking for an opportunities to work on a team-project and company. 
+                        Enjoy my portfolio design.
                     </p>
                     </motion.div>
                 </section>
 
                 {/* Project Display */}
                 <section className="container mx-auto py-12">
-                    <h2 className="text-3xl font-bold mb-8">My Projects</h2>
+                    <h2 className="text-3xl font-bold mb-8">My Delighted Projects</h2>
                     <div className="mb-8">
                     <button
                         className={`px-4 py-2 rounded-md mr-2 ${activeCategory === 'all' ? 'bg-gray-800 text-white' : 'bg-gray-200 dark:bg-gray-600 dark:text-white'}`}
@@ -109,9 +112,25 @@ const MainContent = () => {
                         <div className="p-4">
                             <h3 className="text-xl font-bold mb-2">{project.title}</h3>
                             <p className="text-gray-600 dark:text-gray-400 mb-4">{project.description}</p>
-                            <a href={project.url} target="_blank" rel="noopener noreferrer" className="bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-700 transition-colors duration-300">
-                            View Project
-                            </a>
+                            <button
+                                onClick={() => navigate(`/project/${project.id}`)}
+                                className="flex-1 bg-gray-800 text-white px-4 py-2 rounded-md hover:bg-gray-500 transition-colors duration-300 flex items-center justify-center gap-2"
+                            >
+                                <span>View Details</span>
+                                <svg 
+                                    className="w-4 h-4" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path 
+                                        strokeLinecap="round" 
+                                        strokeLinejoin="round" 
+                                        strokeWidth={2} 
+                                        d="M9 5l7 7-7 7" 
+                                    />
+                                </svg>
+                            </button>
                         </div>
                         </motion.div>
                     ))}

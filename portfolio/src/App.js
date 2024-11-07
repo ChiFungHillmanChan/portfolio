@@ -5,17 +5,19 @@ import AboutMe from './components/AboutMe';
 import Layout from './Layout';
 import MainContent from './MainContent';
 import Contact from './components/Contact';
+import ProjectDetail from './components/ProjectDetail';
 // import Blogs from './components/Blogs';
-// import Projects from './components/Projects';
+import Projects from './components/Projects';
 
 function App() {
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route element={<Layout />}>
-        <Route path="/portfolio"element={<MainContent />} /> {/* Home page */}
-        <Route path="/about" element={<AboutMe />} /> {/* About page */}
-        <Route path="/contact" element={<Contact />} /> {/* About page */}
-        {/* <Route path="/blogs" element={<Blogs />} /> About page */}
+        <Route path="/portfolio"element={<MainContent />} /> 
+        <Route path="/about" element={<AboutMe />} /> 
+        <Route path="/contact" element={<Contact />} /> 
+        <Route path="/projects" element={<Projects />} /> 
+        <Route path="/project/:id" element={<ProjectDetail />} />
       </Route>
     )
   )
