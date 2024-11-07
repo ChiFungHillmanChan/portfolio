@@ -2,7 +2,8 @@
     {
       "id": 1,
       "title": "Resume Builder & Interview Prep Tool",
-      "description": "A comprehensive tool designed to streamline job applications, allowing users to build professional resumes with customizable templates and prepare for interviews with AI-driven practice sessions tailored to specific job roles.",
+      "shortDescription":"A powerful tool to simplify job applications, allowing users to create professional resumes with customizable templates and prepare for interviews with AI-driven, role-specific practice sessions.",
+      "fullDescription": "The Resume Builder & Interview Prep Tool is a comprehensive platform designed to enhance job application processes. Users can create visually appealing, professional resumes using customizable templates that suit various job profiles. The tool also offers an AI-driven interview preparation feature, tailored to specific job roles, helping users practice commonly asked questions and develop effective responses. Built with HTML, CSS, JavaScript, Python, Django, and MySQL, this project combines both frontend and backend development skills to deliver a seamless, user-friendly experience that prepares candidates to stand out in competitive job markets.",
       "image": "project1.png",
       "url": "https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
       "category": "fullstack",
@@ -16,7 +17,7 @@
       "description": "This project demonstration will come soon",
       "image": "coming_soon.png",
       "url": "https://github.com/ChiFungHillmanChan/",
-      "category": "fullstack",
+      "category": "all",
       "sourceCode":"https://github.com/ChiFungHillmanChan/",
       "liveDemo":"",
       "technologies":[]

@@ -1,24 +1,27 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
+import poker_pic from '../assets/poker.png';
+import traveling_pic from '../assets/traveling.jpg';
+import piano_pic from '../assets/piano.jpg'
 
 const AboutMe = () => {
   const stories = [
     {
       title: "Passion for Piano",
-      description: "I find solace and creativity in playing the piano. It’s a way to disconnect from everything else and dive into the world of music, enhancing focus and patience.",
-      image: "/api/placeholder/600/400",
+      description: "Playing the piano is my escape, a way to find peace and disconnect from the world. When I’m at the keys, everything else fades, and I get lost in the music. It’s a moment to recharge, focus, and embrace a calm that enhances both patience and creativity.",
+      image: piano_pic,
       alt: "Piano illustration"
     },
     {
-      title: "Coding Journey",
-      description: "Coding isn’t just a profession; it’s my passion. I enjoy building creative solutions and constantly learning new technologies to push the boundaries of what's possible.",
-      image: "/api/placeholder/600/400",
-      alt: "Coding illustration"
+      title: "Travel",
+      description: "Traveling is my way of stepping outside the familiar, a journey to explore and embrace the world’s diversity. Japan is just the beginning—a gateway to discovering new cultures, flavors, and perspectives. From Europe’s vast landscapes to Asia’s vibrant cities, each destination holds its own story, and I’m eager to learn and grow with every adventure.",
+      image: traveling_pic,
+      alt: "Japan"
     },
     {
       title: "Poker Strategy",
-      description: "Poker is a game of strategy and psychology. I enjoy the thrill of reading opponents and making calculated decisions, which also helps improve my analytical skills.",
-      image: "/api/placeholder/600/400",
+      description: "Poker is the ultimate strategic game, full of calculations and long-term thinking, which makes it a perfect fit for me. I love the challenge of planning strategies and calculating Expected Value (EV) to make the best moves. The game keeps me on my toes, sharpening my analytical skills and teaching me to think several steps ahead. For me, poker isn’t just a game—it’s a way to develop a mindset for smart, calculated decisions.",
+      image: poker_pic,
       alt: "Poker illustration"
     }
   ];
@@ -79,7 +82,7 @@ const storyVariants = {
         </motion.h1>
         <motion.div className="bg-white dark:bg-gray-700 rounded-lg shadow-lg p-8"whileHover={{ scale: 1.02 }}transition={{ type: "spring", stiffness: 300 }}>
           <p className="text-xl md:text-2xl text-gray-700 dark:text-gray-200 leading-relaxed">
-            Hi. I am Hillman - a passionate developer who loves to create innovative web design and solutions.
+            I often ask myself: What do I truly want? What kind of person do I aspire to be?
           </p>
         </motion.div>
       </motion.section>

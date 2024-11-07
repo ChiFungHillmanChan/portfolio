@@ -1,15 +1,41 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
 
-const ProjectDetail = ({ id }) => {
+const ProjectDetail = () => {
   const navigate = useNavigate();
-  // Find the project based on id
-  const project = projectData.find(({id}) => id === id);
-  // Handle case where project is not found
+  const { id } = useParams();
+  const project = projectData.find((project) => project.id === parseInt(id, 10));
+
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.5,
+        staggerChildren: 0.2
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.5 }
+    }
+  };
+
   if (!project) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="min-h-screen flex items-center justify-center"
+      >
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Project not found</h2>
           <button
@@ -19,25 +45,49 @@ const ProjectDetail = ({ id }) => {
             Back to Projects
           </button>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-12 max-w-7xl">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={containerVariants}
+      className="container mx-auto px-4 py-12 max-w-7xl"
+    >
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Left Section - Project Details */}
         <div className="space-y-6">
-          <h1 className="text-4xl font-bold mb-6 dark:text-white">{project.title}</h1>
+          <motion.h1 
+            variants={itemVariants}
+            className="text-4xl font-bold mb-6 dark:text-white"
+          >
+            {project.title}
+          </motion.h1>
           
-          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8">
-            <h2 className="text-2xl font-semibold mb-4 dark:text-white">Project Overview</h2>
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
-              {project.description}
-            </p>
+          <motion.div 
+            variants={itemVariants}
+            className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8"
+          >
+            <motion.h2 
+              variants={itemVariants}
+              className="text-2xl font-semibold mb-4 dark:text-white"
+            >
+              Project Overview
+            </motion.h2>
+            <motion.p 
+              variants={itemVariants}
+              className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6"
+            >
+              {project.fullDescription}
+            </motion.p>
             
             {/* Technical Details Section */}
-            <div className="space-y-4">
+            <motion.div 
+              variants={itemVariants}
+              className="space-y-4"
+            >
               <h3 className="text-xl font-semibold dark:text-white">Technical Details</h3>
               <div className="space-y-2">
                 <p className="text-gray-700 dark:text-gray-300">
@@ -48,24 +98,33 @@ const ProjectDetail = ({ id }) => {
                     <span className="font-medium text-gray-700 dark:text-gray-300">Technologies:</span>
                     <div className="flex flex-wrap gap-2 mt-2">
                       {project.technologies.map((tech, index) => (
-                        <span
+                        <motion.span
                           key={index}
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          transition={{ duration: 0.3, delay: index * 0.1 }}
                           className="bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-full text-sm"
                         >
                           {tech}
-                        </span>
+                        </motion.span>
                       ))}
                     </div>
                   </div>
                 )}
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
 
         {/* Right Section - Video and Buttons */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden">
+        <motion.div 
+          variants={itemVariants}
+          className="space-y-6"
+        >
+          <motion.div 
+            variants={itemVariants}
+            className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden"
+          >
             <div className="aspect-w-16 aspect-h-9">
               <video
                 className="w-full h-full object-cover"
@@ -76,36 +135,48 @@ const ProjectDetail = ({ id }) => {
                 Your browser does not support the video tag.
               </video>
             </div>
-          </div>
+          </motion.div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4">
-            <a
+          <motion.div 
+            variants={itemVariants}
+            className="flex flex-col sm:flex-row gap-4"
+          >
+            <motion.a
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               href={project.sourceCode}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center"
             >
               View Source Code
-            </a>
+            </motion.a>
             {project.liveDemo && (
-              <a
+              <motion.a
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 href={project.liveDemo}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors duration-300 text-center"
               >
                 Live Demo
-              </a>
+              </motion.a>
             )}
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
 
       {/* Back Button */}
-      <div className="mt-12 text-center">
-        <button
-          onClick={() => navigate('/projects')}
+      <motion.div 
+        variants={itemVariants}
+        className="mt-12 text-center"
+      >
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate('/portfolio')}
           className="bg-gray-700 text-white px-8 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 inline-flex items-center gap-2"
         >
           <svg
@@ -121,9 +192,9 @@ const ProjectDetail = ({ id }) => {
             />
           </svg>
           Back to Projects
-        </button>
-      </div>
-    </div>
+        </motion.button>
+      </motion.div>
+    </motion.div>
   );
 };
 
