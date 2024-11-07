@@ -9,5 +9,16 @@
       "sourceCode":"https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
       "liveDemo":"",
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "MySQL"]
+    },
+    {
+      "id": 2,
+      "title": "Coming Soon",
+      "description": "This project demonstration will come soon",
+      "image": "coming_soon.png",
+      "url": "https://github.com/ChiFungHillmanChan/",
+      "category": "fullstack",
+      "sourceCode":"https://github.com/ChiFungHillmanChan/",
+      "liveDemo":"",
+      "technologies":[]
     }
   ]
