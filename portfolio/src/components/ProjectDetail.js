@@ -118,7 +118,7 @@ const ProjectDetail = () => {
                 controls
                 poster={require(`../assets/${project.image}`)}
               >
-                <source src={project.liveDemo} type="video/mp4" />
+                <source src={require(`../assets/${project.liveDemo}`)} type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
             </div>
