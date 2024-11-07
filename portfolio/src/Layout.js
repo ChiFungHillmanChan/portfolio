@@ -250,11 +250,6 @@ const Layout = () => {
                                         </Link>
                                     </li>
                                     <li>
-                                        <Link to="/project" className="hover:text-blue-400 transition-colors">
-                                            Project
-                                        </Link>
-                                    </li>
-                                    <li>
                                         <Link to="/contact" className="hover:text-blue-400 transition-colors">
                                             Contact
                                         </Link>
