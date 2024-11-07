@@ -89,7 +89,7 @@ const storyVariants = {
 
       {/* Habit and Interests Section */}
       <motion.section className="mb-16"variants={sectionVariants}>
-        <h2 className="text-3xl font-bold mb-8 dark:text-white">Habits and Interests</h2>
+        <h2 className="text-3xl font-bold mb-8 dark:text-white">Hobbies and Interests</h2>
         <div className="space-y-16">
           {stories.slice(0, visibleStories).map((story, index) => (
             <motion.div  key={index} className={`flex flex-col ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} gap-8 items-center`} variants={storyVariants} whileHover={{ scale: 1.02 }} transition={{ type: "spring", stiffness: 300 }}>
