@@ -13,8 +13,21 @@
     },
     {
       "id": 2,
+      "title": "Programming Practice",
+      "shortDescription":"Explore my programming practice repository to find diverse project files in various languages, showcasing my skills and versatility. Dive in and see my work across multiple programming disciplines.",
+      "fullDescription": "Welcome to my programming practice repository, where I showcase a variety of project files crafted across different programming languages. This collection represents my ongoing journey in software development, with each project highlighting unique skills and techniques. From web development and data science to algorithms and system design. Such as leetcode project, to full stack practice. This repository offers a glimpse into my technical growth and adaptability. Feel free to browse through each folder to see the practical applications of different languages, tools, and frameworks – your insights and feedback are always welcome!",
+      "image": "program_practice.jpeg",
+      "url": "https://github.com/ChiFungHillmanChan/programming-project",
+      "category": "program",
+      "sourceCode":"https://github.com/ChiFungHillmanChan/programming-project",
+      "liveDemo":"no-demo",
+      "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "Flask", "MySQL", "React.js", "Java", "Pygame" ]
+    },
+    {
+      "id": 3,
       "title": "Coming Soon",
-      "description": "This project demonstration will come soon",
+      "shortDescription": "This project demonstration will come soon",
+      "fullDescription":"This project demonstration will come soon",
       "image": "coming_soon.png",
       "url": "https://github.com/ChiFungHillmanChan/",
       "category": "none",

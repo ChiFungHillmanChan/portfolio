@@ -8,7 +8,6 @@ const ProjectDetail = () => {
   const { id } = useParams();
   const project = projectData.find((project) => project.id === parseInt(id, 10));
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -50,31 +49,58 @@ const ProjectDetail = () => {
   }
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={containerVariants}
+    <motion.div 
+      initial="hidden" 
+      animate="visible" 
+      variants={containerVariants} 
       className="container mx-auto px-4 py-12 max-w-7xl"
     >
-      <motion.h1 variants={itemVariants}className="text-4xl font-bold mb-6 dark:text-white">
-            {project.title}
-          </motion.h1>
+      <motion.div  
+        variants={itemVariants} 
+        className="flex justify-between items-center mb-6"
+      >
+        <motion.h1 
+          variants={itemVariants}
+          className="text-4xl font-bold dark:text-white"
+        >
+          {project.title}
+        </motion.h1>
+
+        <motion.button
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+          onClick={() => navigate('/portfolio')}
+          className="bg-gray-700 text-white px-8 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 inline-flex items-center gap-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-5 w-5"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+          >
+            <path
+              fillRule="evenodd"
+              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
+              clipRule="evenodd"
+            />
+          </svg>
+          Back to Projects
+        </motion.button>
+      </motion.div>
+
+      {/* Main content grid with flex layout for equal heights */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          
         {/* Left Section - Project Details */}
-        <div className="space-y-6">
-          
-          
-          <motion.div variants={itemVariants}className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8">
-            <motion.h2 variants={itemVariants}className="text-2xl font-semibold mb-4 dark:text-white">
+        <motion.div variants={itemVariants} className="flex flex-col h-full">
+          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8 flex-grow">
+            <motion.h2 variants={itemVariants} className="text-2xl font-semibold mb-4 dark:text-white">
               Project Overview
             </motion.h2>
-            <motion.p variants={itemVariants}className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
+            <motion.p variants={itemVariants} className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
               {project.fullDescription}
             </motion.p>
             
-            {/* Technical Details Section */}
-            <motion.div variants={itemVariants}className="space-y-4">
+            <motion.div variants={itemVariants} className="space-y-4">
               <h3 className="text-xl font-semibold dark:text-white">Technical Details</h3>
               <div className="space-y-2">
                 <p className="text-gray-700 dark:text-gray-300">
@@ -100,75 +126,49 @@ const ProjectDetail = () => {
                 )}
               </div>
             </motion.div>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
 
         {/* Right Section - Video and Buttons */}
-        <motion.div 
-          variants={itemVariants}
-          className="space-y-6"
-        >
-          <motion.div 
-            variants={itemVariants}
-            className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden"
-          >
-            <div className="aspect-w-16 aspect-h-9">
-              <video
-                className="w-full h-full object-cover"
-                controls
-                poster={require(`../assets/${project.image}`)}
-              >
-                <source src={require(`../assets/${project.liveDemo}`)} type="video/mp4" />
-                Your browser does not support the video tag.
-              </video>
+        <motion.div variants={itemVariants} className="flex flex-col h-full">
+          <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden flex-grow">
+            <div className="h-full flex flex-col">
+              <div className="aspect-w-16 aspect-h-9 flex-shrink-0">
+                {project.liveDemo === 'no-demo' ? (
+                  <img
+                    src={require(`../assets/${project.image}`)}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <video
+                    className="w-full h-full object-cover"
+                    controls
+                    poster={require(`../assets/${project.image}`)}
+                  >
+                    <source src={require(`../assets/${project.liveDemo}`)} type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                )}
+              </div>
+              
+              {/* Action Buttons - Moved inside the white container */}
+              <div className="p-8 flex-grow flex flex-col justify-end">
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  href={project.sourceCode}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-gray-800 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer w-full"
+                >
+                  View Source Code
+                </motion.a>
+              </div>
             </div>
-          </motion.div>
-
-          {/* Action Buttons */}
-          <motion.div 
-            variants={itemVariants}
-            className="flex flex-col sm:flex-row gap-4"
-          >
-            <motion.a
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              href={project.sourceCode}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer"
-            >
-              View Source Code
-            </motion.a>
-          </motion.div>
+          </div>
         </motion.div>
       </div>
-
-      {/* Back Button */}
-      <motion.div 
-        variants={itemVariants}
-        className="mt-12 text-center"
-      >
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/portfolio')}
-          className="bg-gray-700 text-white px-8 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 inline-flex items-center gap-2"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 16.707a1 1 0 01-1.414 0l-6-6a1 1 0 010-1.414l6-6a1 1 0 011.414 1.414L5.414 9H17a1 1 0 110 2H5.414l4.293 4.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back to Projects
-        </motion.button>
-      </motion.div>
     </motion.div>
   );
 };
