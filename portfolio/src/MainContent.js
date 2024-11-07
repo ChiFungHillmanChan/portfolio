@@ -61,11 +61,10 @@ const MainContent = () => {
                         Computer Science & AI Graduate | Software Engineer
                     </p>
                     <p className="text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                        I'm a recent graduate with a degree in Computer Science with Artificial Intelligence, 
-                        driven by a passion for creating innovative software solutions. 
-                        I enjoy solving complex challenge and real-world projects. 
-                        Looking for an opportunities to work on a team-project and company. 
-                        Enjoy my portfolio design.
+                    I recently graduated with a degree in Computer Science and Artificial Intelligence. 
+                    I’m passionate about building creative software and enjoy working on real-world projects that challenge me. 
+                    I’m excited to find a role where I can work with a team, contribute my skills, and keep learning. 
+                    Take a look at my portfolio to see what I’ve been up to!
                     </p>
                     </motion.div>
                 </section>
