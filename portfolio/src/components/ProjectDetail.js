@@ -60,35 +60,20 @@ const ProjectDetail = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         {/* Left Section - Project Details */}
         <div className="space-y-6">
-          <motion.h1 
-            variants={itemVariants}
-            className="text-4xl font-bold mb-6 dark:text-white"
-          >
+          <motion.h1 variants={itemVariants}className="text-4xl font-bold mb-6 dark:text-white">
             {project.title}
           </motion.h1>
           
-          <motion.div 
-            variants={itemVariants}
-            className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8"
-          >
-            <motion.h2 
-              variants={itemVariants}
-              className="text-2xl font-semibold mb-4 dark:text-white"
-            >
+          <motion.div variants={itemVariants}className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-8">
+            <motion.h2 variants={itemVariants}className="text-2xl font-semibold mb-4 dark:text-white">
               Project Overview
             </motion.h2>
-            <motion.p 
-              variants={itemVariants}
-              className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6"
-            >
+            <motion.p variants={itemVariants}className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">
               {project.fullDescription}
             </motion.p>
             
             {/* Technical Details Section */}
-            <motion.div 
-              variants={itemVariants}
-              className="space-y-4"
-            >
+            <motion.div variants={itemVariants}className="space-y-4">
               <h3 className="text-xl font-semibold dark:text-white">Technical Details</h3>
               <div className="space-y-2">
                 <p className="text-gray-700 dark:text-gray-300">
@@ -120,7 +105,7 @@ const ProjectDetail = () => {
         {/* Right Section - Video and Buttons */}
         <motion.div 
           variants={itemVariants}
-          className="space-y-6"
+          className="space-y-6 mt-103"
         >
           <motion.div 
             variants={itemVariants}
