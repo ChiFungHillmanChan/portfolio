@@ -8,7 +8,7 @@
       "url": "https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
       "category": "fullstack",
       "sourceCode":"https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
-      "liveDemo":"",
+      "liveDemo":"cv_demo.mov",
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "MySQL"]
     },
     {
@@ -17,7 +17,7 @@
       "description": "This project demonstration will come soon",
       "image": "coming_soon.png",
       "url": "https://github.com/ChiFungHillmanChan/",
-      "category": "all",
+      "category": "none",
       "sourceCode":"https://github.com/ChiFungHillmanChan/",
       "liveDemo":"",
       "technologies":[]

@@ -1,4 +1,4 @@
-import React from 'react';
+import React , { useState }from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
@@ -7,6 +7,7 @@ const ProjectDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const project = projectData.find((project) => project.id === parseInt(id, 10));
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // Animation variants
   const containerVariants = {
@@ -148,21 +149,43 @@ const ProjectDetail = () => {
               href={project.sourceCode}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center"
+              className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer"
             >
               View Source Code
             </motion.a>
             {project.liveDemo && (
-              <motion.a
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                href={project.liveDemo}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition-colors duration-300 text-center"
-              >
-                Live Demo
-              </motion.a>
+              <>
+                <motion.a
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setIsModalOpen(true)}
+                  className="bg-gray-700 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer"
+                >
+                  Watch Video
+                </motion.a>
+
+                {isModalOpen && (
+                  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                    <div className="bg-white p-5 rounded-lg relative">
+                      <button
+                        onClick={() => setIsModalOpen(false)}
+                        className="absolute top-2 right-2 text-black text-2xl"
+                      >
+                        &times;
+                      </button>
+                      <video
+                        controls
+                        width="560"
+                        height="315"
+                        className="rounded-md"
+                      >
+                        <source src={project.liveDemo} type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         </motion.div>

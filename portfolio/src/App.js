@@ -7,7 +7,7 @@ import MainContent from './MainContent';
 import Contact from './components/Contact';
 import ProjectDetail from './components/ProjectDetail';
 // import Blogs from './components/Blogs';
-import Projects from './components/Projects';
+// import Projects from './components/Projects';
 
 function App() {
   const router = createBrowserRouter(
