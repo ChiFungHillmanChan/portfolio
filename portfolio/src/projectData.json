@@ -4,9 +4,9 @@
       "title": "Resume Builder & Interview Prep Tool",
       "description": "A comprehensive tool designed to streamline job applications, allowing users to build professional resumes with customizable templates and prepare for interviews with AI-driven practice sessions tailored to specific job roles.",
       "image": "project1.png",
-      "url": "https://example.com/project1",
+      "url": "https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
       "category": "fullstack",
-      "sourceCode":"",
+      "sourceCode":"https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
       "liveDemo":"",
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "MySQL"]
     }
