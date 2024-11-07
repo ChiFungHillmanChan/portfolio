@@ -53,14 +53,14 @@ const Layout = () => {
                             Blogs
                         </Link>
                     </li> */}
-                    <li>
+                    {/* <li>
                         <Link 
                             to="/projects"
                             className={`hover:text-blue-500 transition-colors duration-300 ${isActiveLink('/projects')}`}
                         >
                             Projects
                         </Link>
-                    </li>
+                    </li> */}
                     <li>
                         <Link 
                             to="/contact"

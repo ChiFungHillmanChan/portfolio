@@ -9,21 +9,5 @@
       "sourceCode":"",
       "liveDemo":"",
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "MySQL"]
-    },
-    {
-      "id": 2,
-      "title": "Project 2",
-      "description": "This is the description for Project 2.",
-      "image": "project1.png",
-      "url": "https://example.com/project2",
-      "category": "mobile"
-    },
-    {
-      "id": 3,
-      "title": "Project 3",
-      "description": "This is the description for Project 3.",
-      "image": "project1.png",
-      "url": "https://example.com/project3",
-      "category": "fullstack"
     }
   ]
