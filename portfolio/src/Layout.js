@@ -77,6 +77,14 @@ const Layout = () => {
                             </li>
                             <li>
                                 <Link 
+                                    to="/projects"
+                                    className={`hover:text-blue-500 transition-colors duration-300 ${isActiveLink('/projects')}`}
+                                >
+                                    Projects
+                                </Link>
+                            </li>
+                            <li>
+                                <Link 
                                     to="/contact"
                                     className={`hover:text-blue-500 transition-colors duration-300 ${isActiveLink('/contact')}`}
                                 >
@@ -147,6 +155,15 @@ const Layout = () => {
                                                     onClick={() => setIsMenuOpen(false)}
                                                 >
                                                     About
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link 
+                                                    to="/projects"
+                                                    className={`block py-2 hover:text-blue-500 transition-colors duration-300 ${isActiveLink('/projects')}`}
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                >
+                                                    projects
                                                 </Link>
                                             </li>
                                             <li>
@@ -247,6 +264,11 @@ const Layout = () => {
                                     <li>
                                         <Link to="/about" className="hover:text-blue-400 transition-colors">
                                             About
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/projects" className="hover:text-blue-400 transition-colors">
+                                            Projects
                                         </Link>
                                     </li>
                                     <li>

@@ -38,7 +38,7 @@ const ProjectDetail = () => {
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-4">Project not found</h2>
           <button
-            onClick={() => navigate('/portfolio')}
+            onClick={() => navigate('/projects')}
             className="bg-gray-800 text-white px-6 py-2 rounded-md hover:bg-gray-700 transition-colors duration-300"
           >
             Back
@@ -69,7 +69,7 @@ const ProjectDetail = () => {
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          onClick={() => navigate('/portfolio')}
+          onClick={() => navigate('/projects')}
           className="bg-gray-700 text-white px-8 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 inline-flex items-center gap-2"
         >
           <svg

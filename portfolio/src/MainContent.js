@@ -71,20 +71,22 @@ const MainContent = () => {
             {/* Project Display Section */}
             <section className="py-12">
                 <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">My Delighted Projects</h2>
-                <div className="flex flex-wrap justify-center gap-2 mb-8">
+                <div className="mb-8 flex justify-center">
+                    <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-2 flex gap-2">
                     {['all', 'web', 'program', 'fullstack'].map((category) => (
                         <button
-                            key={category}
-                            className={`px-4 py-2 rounded-md ${
-                                activeCategory === category 
-                                    ? 'bg-gray-800 text-white' 
-                                    : 'bg-gray-200 dark:bg-gray-600 dark:text-white'
-                            } transition-colors duration-300`}
-                            onClick={() => setActiveCategory(category)}
+                        key={category}
+                        className={`px-4 py-1 rounded-full transition-colors duration-300 ${
+                            activeCategory === category 
+                            ? 'bg-gray-800 text-white' 
+                            : 'hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
+                        }`}
+                        onClick={() => setActiveCategory(category)}
                         >
-                            {category.charAt(0).toUpperCase() + category.slice(1)}
+                        {category.charAt(0).toUpperCase() + category.slice(1)}
                         </button>
                     ))}
+                    </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                     {filteredProjects.slice(0,3).map(project => (
