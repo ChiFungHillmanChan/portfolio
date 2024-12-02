@@ -4,6 +4,8 @@ import projectData from './projectData.json';
 import profilePic from "./assets/profile_pic.jpg";
 import { useNavigate } from 'react-router-dom';
 
+//update
+
 import { 
     SiPython, 
     SiJavascript, 
@@ -123,7 +125,7 @@ const MainContent = () => {
                     </motion.div>
                 </div>
             </section>
-            
+
             {/* Project Display Section */}
             <section className="py-12">
                 <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">My Delighted Projects</h2>
