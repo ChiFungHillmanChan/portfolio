@@ -4,6 +4,19 @@ import projectData from './projectData.json';
 import profilePic from "./assets/profile_pic.jpg";
 import { useNavigate } from 'react-router-dom';
 
+import { 
+    SiPython, 
+    SiJavascript, 
+    SiHtml5, 
+    SiCss3, 
+    SiReact, 
+    SiNodedotjs, 
+    SiTailwindcss, 
+    SiGit, 
+    SiMysql, 
+    SiC
+} from 'react-icons/si';
+
 const MainContent = () => {
     const [activeCategory, setActiveCategory] = useState('all');
     const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
@@ -18,12 +31,16 @@ const MainContent = () => {
     }, []);
 
     const skills = [
-        { name: 'HTML/CSS', proficiency: 90 },
-        { name: 'Python', proficiency: 90 },
-        { name: 'SQL', proficiency: 85 },
-        { name: 'C', proficiency: 80 },
-        { name: 'JavaScript', proficiency: 80 },
-        { name: 'Machine Learning', proficiency: 75 },
+        { name: 'Python', icon: SiPython, color: '#3776AB' },
+        { name: 'JavaScript', icon: SiJavascript, color: '#F7DF1E' },
+        { name: 'HTML', icon: SiHtml5, color: '#E34F26' },
+        { name: 'CSS', icon: SiCss3, color: '#1572B6' },
+        { name: 'React', icon: SiReact, color: '#61DAFB' },
+        { name: 'Node.js', icon: SiNodedotjs, color: '#339933' },
+        { name: 'Tailwind CSS', icon: SiTailwindcss, color: '#06B6D4' },
+        { name: 'Git', icon: SiGit, color: '#F05032' },
+        { name: 'SQL', icon: SiMysql, color: '#4479A1' },
+        { name: 'C', icon: SiC, color: '#A8B9CC' }
     ];
 
     return (
@@ -59,15 +76,54 @@ const MainContent = () => {
                             Computer Science & AI Graduate | Software Engineer
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                            I recently graduated with a degree in Computer Science and Artificial Intelligence. 
-                            I'm passionate about building creative software and enjoy working on real-world projects that challenge me. 
-                            I'm excited to find a role where I can work with a team, contribute my skills, and keep learning. 
-                            Take a look at my portfolio to see what I've been up to!
+                        I recently completed a degree in Computer Science with Artificial Intelligence and enjoy creating practical software solutions. I’m eager to join a team where I can apply my skills, take on meaningful projects, and grow through new challenges. My portfolio highlights the work I’ve done so far—feel free to explore it!
                         </p>
                     </motion.div>
                 </div>
             </section>
 
+            {/* Skills Visualization Section */}
+            <section className="py-12 md:py-16 bg-transparent -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 overflow-hidden">
+                <motion.h2 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="text-2xl md:text-3xl font-bold mb-8 md:mb-12 text-center dark:text-white"
+                >
+                    My Tech Skills
+                </motion.h2>
+
+                <div className="relative w-full overflow-hidden">
+                    <motion.div 
+                        className="flex space-x-8 pb-6"
+                        animate={{
+                            x: [0, `-${skills.length * 160}px`],
+                            transition: {
+                                x: {
+                                    repeat: Infinity,
+                                    duration: 30,
+                                    ease: "linear"
+                                }
+                            }
+                        }}
+                    >
+                        {[...skills, ...skills, ...skills].map((skill, index) => (
+                            <div 
+                                key={index}
+                                className="flex-shrink-0 w-32 h-32 flex flex-col items-center justify-center"
+                            >
+                                <skill.icon 
+                                    style={{ color: skill.color }} 
+                                    className="w-16 h-16"
+                                />
+                                <span className="text-gray-800 dark:text-white text-sm mt-2">
+                                    {skill.name}
+                                </span>
+                            </div>
+                        ))}
+                    </motion.div>
+                </div>
+            </section>
+            
             {/* Project Display Section */}
             <section className="py-12">
                 <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">My Delighted Projects</h2>
@@ -118,7 +174,7 @@ const MainContent = () => {
                                         className={`w-full px-4 py-2 rounded-md flex items-center justify-center gap-2 
                                             ${project.category === 'none' 
                                             ? 'bg-gray-700 cursor-not-allowed text-gray-200'
-                                            : 'bg-gray-800 text-white hover:bg-gray-700 transition-colors duration-300'}`}
+                                            : 'bg-gray-800 text-white hover:bg-gray-600 transition-colors duration-300'}`}
                                     >
                                         <span>View Details</span>
                                         <svg 
@@ -142,49 +198,7 @@ const MainContent = () => {
                 </div>
             </section>
 
-            {/* Skills Visualization Section */}
-            <section className="py-12 md:py-16 bg-gray-50 dark:bg-gray-800 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-5xl mx-auto">
-                    <motion.h2 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-2xl md:text-3xl font-bold mb-8 md:mb-12 text-center dark:text-white"
-                    >
-                        Technical Skills
-                    </motion.h2>
-                    
-                    <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg p-6 md:p-8">
-                        <div className="grid md:grid-cols-2 gap-6 md:gap-8">
-                            {skills.map((skill, index) => (
-                                <motion.div 
-                                    key={skill.name}
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    transition={{ delay: index * 0.1 }}
-                                    className="space-y-3"
-                                >
-                                    <div className="flex justify-between items-center mb-2">
-                                        <span className="font-medium text-gray-700 dark:text-gray-200 text-base md:text-lg">
-                                            {skill.name}
-                                        </span>
-                                        <span className="text-sm font-medium text-gray-600 dark:text-gray-300">
-                                            {skill.proficiency}%
-                                        </span>
-                                    </div>
-                                    <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded-full overflow-hidden">
-                                        <motion.div 
-                                            className="h-full bg-blue-500 rounded-full"
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${skill.proficiency}%` }}
-                                            transition={{ duration: 1, delay: index * 0.1 }}
-                                        />
-                                    </div>
-                                </motion.div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </section>
+            
         </div>
     );
 }
