@@ -47,7 +47,7 @@ const Layout = () => {
                 <header className="bg-white dark:bg-gray-700 shadow-md relative">
                     <nav className="container mx-auto flex items-center justify-between py-4 px-4">
                         <div className="font-bold text-2xl">
-                            <Link to="/portfolio" className="hover:text-blue-500 transition-colors duration-300">
+                            <Link to="/" className="hover:text-blue-500 transition-colors duration-300">
                                 Hillman Chan
                             </Link>
                         </div>
