@@ -8,6 +8,7 @@
       "url": "https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
       "category": "fullstack",
       "sourceCode":"https://github.com/ChiFungHillmanChan/Resume-builder-and-interview-prep",
+      "demoUrl":"no-demo-url",
       "liveDemo":"dashboard-demo.mp4",
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "MySQL"]
     },
@@ -20,18 +21,46 @@
       "url": "https://github.com/ChiFungHillmanChan/programming-project",
       "category": "program",
       "sourceCode":"https://github.com/ChiFungHillmanChan/programming-project",
+      "demoUrl":"no-demo-url",
       "liveDemo":"no-demo",
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "Flask", "MySQL", "React.js", "Java", "Pygame" ]
     },
     {
       "id": 3,
+      "title": "Job Tracker & Finder",
+      "shortDescription": "A comprehensive job search feature integrated into an existing Next.js job application tracker, featuring Reed.co.uk API integration, interactive mapping, and intelligent job saving with subscription-based limits.",
+      "fullDescription": "This project represents a major feature expansion of an existing job application tracker, adding sophisticated external job search capabilities through seamless Reed.co.uk API integration. The implementation showcases advanced full-stack development skills including real-time job search with intelligent caching, interactive Leaflet mapping with marker clustering, and comprehensive location services using Nominatim geocoding. Key technical achievements include building a scalable microservice architecture for external job integration, implementing subscription-based feature gating with usage limits, and creating a responsive React component library with advanced filtering capabilities. The solution features sophisticated state management through custom React hooks, optimized database schemas for external job data, and seamless import functionality to convert external listings into trackable applications. This development demonstrates expertise in API integration patterns, geospatial data handling, premium feature implementation, and creating intuitive user experiences that bridge external job discovery with internal application tracking workflows.",
+      "image": "job_tracker.png",
+      "url": "https://github.com/ChiFungHillmanChan/Job_Application_Tracking_System",
+      "category": "fullstack",
+      "sourceCode":"https://github.com/ChiFungHillmanChan/Job_Application_Tracking_System",
+      "demoUrl":"no-demo-url",
+      "liveDemo":"job_tracker_demo.mp4",
+      "technologies": ["Next.js", "React.js", "Node.js", "MongoDB", "Mongoose", "Reed.co.uk API", "Leaflet", "TailwindCSS", "JavaScript", "Axios", "React Hooks", "Context API", "Vercel"]
+    },
+    {
+      "id": 4,
+      "title": "Personal ChatBot",
+      "shortDescription": "A customizable training chatbot that responds based on keyword-matching patterns and predefined mood-based responses, designed to simulate a personal conversational assistant.",
+      "fullDescription":"This project is a keyword-driven training chatbot that uses a JSON-based structure to simulate dynamic and context-aware responses. It operates by matching user inputs to categorized patterns such as greetings, education, technologies, projects, hobbies, and more. Each category includes multiple natural-language patterns and a curated list of potential responses, complete with tone ('mood'), tags, and optional follow-up prompts to enhance interactivity. The bot also supports 'easter eggs' — special hidden responses triggered by specific phrases, adding personality and engagement. This modular structure makes it easy to extend with new patterns, responses, or themes, making it suitable for personal portfolio sites or onboarding chatbots. The project showcases skills in natural language pattern recognition, structured data design, and user-centric conversational flow.",
+      "image": "chatbot.png",
+      "url": "https://hillman-chatbot.vercel.app/",
+      "category": "web",
+      "sourceCode":"no-source-code",
+      "demoUrl":"https://hillman-chatbot.vercel.app/",
+      "liveDemo":"no-demo",
+      "technologies":["HTML", "CSS", "JavaScript"]
+    },
+    {
+      "id": 5,
       "title": "Coming Soon",
       "shortDescription": "This project demonstration will come soon",
       "fullDescription":"This project demonstration will come soon",
       "image": "coming_soon.png",
       "url": "https://github.com/ChiFungHillmanChan/",
-      "category": "none",
-      "sourceCode":"https://github.com/ChiFungHillmanChan/",
+      "category": "all",
+      "sourceCode":"no-source-code",
+      "demoUrl":"no-demo-url",
       "liveDemo":"",
       "technologies":[]
     }

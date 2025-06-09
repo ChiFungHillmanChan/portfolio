@@ -48,6 +48,15 @@ const ProjectDetail = () => {
     );
   }
 
+  // Check if project has a valid demo video
+  const hasValidDemo = project.liveDemo && project.liveDemo !== 'no-demo' && project.liveDemo.trim() !== '';
+  
+  // Check if project has valid source code
+  const hasValidSourceCode = project.sourceCode && project.sourceCode !== 'no-source-code' && project.sourceCode.trim() !== '';
+  
+  // Check if project has valid demo URL
+  const hasValidDemoUrl = project.demoUrl && project.demoUrl !== 'no-demo-url' && project.demoUrl.trim() !== '';
+
   return (
     <motion.div 
       initial="hidden" 
@@ -129,18 +138,12 @@ const ProjectDetail = () => {
           </div>
         </motion.div>
 
-        {/* Right Section - Video and Buttons */}
+        {/* Right Section - Video/Image and Buttons */}
         <motion.div variants={itemVariants} className="flex flex-col h-full">
           <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden flex-grow">
             <div className="h-full flex flex-col">
               <div className="aspect-w-16 aspect-h-9 flex-shrink-0">
-                {project.liveDemo === 'no-demo' ? (
-                  <img
-                    src={require(`../assets/${project.image}`)}
-                    alt={project.title}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
+                {hasValidDemo ? (
                   <video
                     className="w-full h-full object-cover"
                     controls
@@ -149,21 +152,79 @@ const ProjectDetail = () => {
                     <source src={require(`../assets/${project.liveDemo}`)} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
+                ) : (
+                  <img
+                    src={require(`../assets/${project.image}`)}
+                    alt={project.title}
+                    className="w-full h-full object-cover"
+                  />
                 )}
               </div>
               
-              {/* Action Buttons - Moved inside the white container */}
+              {/* Action Buttons */}
               <div className="p-8 flex-grow flex flex-col justify-end">
-                <motion.a
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  href={project.sourceCode}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-gray-800 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer w-full"
-                >
-                  View Source Code
-                </motion.a>
+                <div className="space-y-3">
+                  {/* Case 1: Only source code available */}
+                  {hasValidSourceCode && !hasValidDemoUrl && (
+                    <motion.a
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      href={project.sourceCode}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gray-800 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                    >
+                      View Source Code
+                    </motion.a>
+                  )}
+
+                  {/* Case 2: Both source code and demo available */}
+                  {hasValidSourceCode && hasValidDemoUrl && (
+                    <>
+                      <motion.a
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        href={project.sourceCode}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-gray-800 text-white px-6 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                      >
+                        View Source Code
+                      </motion.a>
+                      <motion.a
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        href={project.demoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                      >
+                        Try Demo
+                      </motion.a>
+                    </>
+                  )}
+
+                  {/* Case 3: Only demo available */}
+                  {!hasValidSourceCode && hasValidDemoUrl && (
+                    <motion.a
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      href={project.demoUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                    >
+                      Try Demo
+                    </motion.a>
+                  )}
+
+                  {/* Case 4: Neither available - show disabled button */}
+                  {!hasValidSourceCode && !hasValidDemoUrl && (
+                    <div className="bg-gray-400 text-gray-600 px-6 py-3 rounded-md text-center w-full cursor-not-allowed">
+                      No Links Available
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           </div>

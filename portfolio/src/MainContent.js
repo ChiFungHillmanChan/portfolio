@@ -76,8 +76,7 @@ const MainContent = () => {
                             Computer Science & AI Graduate | Software Engineer
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                        I recently completed a degree in Computer Science with Artificial Intelligence and enjoy creating practical software solutions. I’m eager to join a team where I can apply my skills, take on meaningful projects, and grow through new challenges. My portfolio highlights the work I’ve done so far—feel free to explore it!
-                        </p>
+                        I recently earned a degree in Computer Science with a focus on Artificial Intelligence and have a strong interest in developing practical software solutions. I’m excited about the opportunity to contribute to a team, work on impactful projects, and continue learning through new challenges. You can view my portfolio to see examples of my work so far!                        </p>
                     </motion.div>
                 </div>
             </section>
@@ -126,7 +125,7 @@ const MainContent = () => {
 
             {/* Project Display Section */}
             <section className="py-12">
-                <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">My Delighted Projects</h2>
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Top 3 Delighted Projects</h2>
                 <div className="mb-8 flex justify-center">
                     <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-2 flex gap-2">
                     {['all', 'web', 'program', 'fullstack'].map((category) => (

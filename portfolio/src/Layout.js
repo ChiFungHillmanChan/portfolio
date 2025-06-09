@@ -255,7 +255,7 @@ const Layout = () => {
                             <div className="text-center md:text-left">
                                 <h4 className="text-xl font-bold mb-4">About Me</h4>
                                 <p className="text-gray-300">
-                                    Passionate developer creating innovative solutions for web applications and program.
+                                A dedicated developer focused on building reliable and effective web applications and software programs.
                                 </p>
                             </div>
                             <div className="text-center md:text-left">

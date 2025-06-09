@@ -58,7 +58,7 @@ const Projects = () => {
                   className={`w-full px-4 py-2 rounded-md flex items-center justify-center gap-2 
                     ${project.category === 'none' 
                     ? 'bg-gray-700 cursor-not-allowed text-gray-200'
-                    : 'bg-gray-800 text-white hover:bg-gray-700 transition-colors duration-300'}`}
+                    : 'bg-gray-800 text-white hover:bg-gray-600 transition-colors duration-300'}`}
                 >
                   <span>View Details</span>
                   <svg 
