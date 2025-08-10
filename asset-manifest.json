@@ -1,8 +1,8 @@
 {
   "files": {
-    "main.css": "/static/css/main.f5a53f5e.css",
-    "main.js": "/static/js/main.482cbedd.js",
-    "static/js/453.1407b060.chunk.js": "/static/js/453.1407b060.chunk.js",
+    "main.css": "/static/css/main.df19c3c9.css",
+    "main.js": "/static/js/main.84b723aa.js",
+    "static/js/453.ace21015.chunk.js": "/static/js/453.ace21015.chunk.js",
     "static/media/dashboard-demo.mp4": "/static/media/dashboard-demo.7f62efd8d9871e4cf1f5.mp4",
     "static/media/job_tracker_demo.mp4": "/static/media/job_tracker_demo.56722156616e3195aefb.mp4",
     "static/media/traveling.jpg": "/static/media/traveling.1e43c6447df25db5362f.jpg",
@@ -16,12 +16,12 @@
     "static/media/never-have-i-ever.png": "/static/media/never-have-i-ever.d6d25d0944c94be7febb.png",
     "static/media/piano.jpg": "/static/media/piano.882ee5d74d3057a4a9a0.jpg",
     "index.html": "/index.html",
-    "main.f5a53f5e.css.map": "/static/css/main.f5a53f5e.css.map",
-    "main.482cbedd.js.map": "/static/js/main.482cbedd.js.map",
-    "453.1407b060.chunk.js.map": "/static/js/453.1407b060.chunk.js.map"
+    "main.df19c3c9.css.map": "/static/css/main.df19c3c9.css.map",
+    "main.84b723aa.js.map": "/static/js/main.84b723aa.js.map",
+    "453.ace21015.chunk.js.map": "/static/js/453.ace21015.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.f5a53f5e.css",
-    "static/js/main.482cbedd.js"
+    "static/css/main.df19c3c9.css",
+    "static/js/main.84b723aa.js"
   ]
 }
