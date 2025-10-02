@@ -4,6 +4,13 @@ import projectData from '../projectData.json';
 import { useNavigate } from 'react-router-dom';
 
 const Projects = () => {
+  const categories = [
+    { value: 'all', label: 'All' },
+    { value: 'game', label: 'Game' },
+    { value: 'program', label: 'Program' },
+    { value: 'fullstack', label: 'Full stack' },
+  ];
+
   const [activeCategory, setActiveCategory] = useState('all');
   const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
   const navigate = useNavigate();
@@ -12,18 +19,18 @@ const Projects = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
       <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center dark:text-white">My Projects</h2>
       <div className="mb-8 flex justify-center">
-        <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-2 flex gap-2">
-          {['all', 'web', 'program', 'fullstack'].map((category) => (
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-3 sm:px-4 py-2 flex flex-wrap sm:flex-nowrap gap-2 justify-center w-full sm:w-auto">
+          {categories.map(({ value, label }) => (
             <button
-              key={category}
-              className={`px-4 py-1 rounded-full transition-colors duration-300 ${
-                activeCategory === category 
+              key={value}
+              className={`px-3 sm:px-4 py-1 text-sm sm:text-base whitespace-nowrap rounded-full transition-colors duration-300 ${
+                activeCategory === value 
                   ? 'bg-gray-800 text-white' 
                   : 'hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
               }`}
-              onClick={() => setActiveCategory(category)}
+              onClick={() => setActiveCategory(value)}
             >
-              {category.charAt(0).toUpperCase() + category.slice(1)}
+              {label}
             </button>
           ))}
         </div>

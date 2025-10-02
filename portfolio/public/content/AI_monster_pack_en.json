@@ -1,0 +1,488 @@
+{
+  "meta": {
+    "name": "ai_monster_pack_v4_revised_questions",
+    "created_utc": "2025-08-24T00:00:00.000Z",
+    "phases_per_run": 5,
+    "validator_api_note": "Validators include ai_score which must call an LLM and return ONLY a number as a string."
+  },
+  "roles": [
+    {
+      "id": "engineer",
+      "name": "Engineer",
+      "difficulty": "easy",
+      "phases_per_run": 5,
+      "description": "Fixes broken contraptions and builds quick tools under pressure.",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "bugfix",
+          "question": "Fix the broken loop so it prints numbers 1 through 5 (inclusive) in order.",
+          "prompt": "The user is trying to fix a for loop that should print numbers 1 through 5. The current code only prints 1 to 4. You should provide hints about loop conditions but never reveal the exact fix. Guide them toward checking the loop condition.",
+          "bugged_code": "for(let i=1;i<5;i++){console.log(i)}",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Check if the user provides actual working code that fixes the loop to print 1,2,3,4,5. Must be concrete code like 'i<=5' or 'for(let i=1;i<=5;i++)'. Reject hints, explanations, or suggestions. Return 100 only if user provides actual code solution, 0 for everything else." },
+          "assistant": "This loop looks like it should print 1 through 5, but it's stopping early. Think about the loop condition - what determines when the loop should stop?"
+        },
+        {
+          "phase": 2,
+          "task_type": "bugfix",
+          "question": "Fix the sum function so console.log(sum(2,3)) outputs 5. Provide the code to make it work.",
+          "prompt": "The user needs to fix a function that returns a direct value. You should guide them but not give the exact solution. Help them understand how to finish a function.",
+          "bugged_code": "function sum(a,b){ return (?); } console.log(sum(2,3));",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Check if the user's fix makes the function return a+b directly. The function should return an actual number. Return 100 if correct, 0 if wrong or blank." },
+          "assistant": "The function is not returning anything but a question mark. Think about how to return the sum of a and b."
+        },
+        {
+          "phase": 3,
+          "task_type": "bugfix",
+          "question": "Fix the isArmed function so it returns true only when status equals 'armed'.",
+          "prompt": "The user needs to fix a function that has an assignment (=) instead of equality comparison (==, ===). You should guide them about the difference between assignment and comparison operators without giving the exact fix.",
+          "bugged_code": "function isArmed(status){ if(status='armed'){return true;} return false; }",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Check if the user fixes the assignment operator (=) to equality comparison (== or ===). The condition should be status === 'armed' or status == 'armed'. Return 100 if correct, 0 if wrong or blank." },
+          "assistant": "Look at the condition in the if statement. What happens when you use = in a condition?"
+        },
+        {
+          "phase": 4,
+          "task_type": "bugfix",
+          "question": "Fix the button so that when it is clicked, it shows 'launched' in the console.",
+          "prompt": "The user needs to connect the button to an action using addEventListener. Guide them that buttons can react to clicks, and they need to attach some JavaScript code to the button’s click event. Don’t give the exact code, just explain the idea of handling a click.",
+          "bugged_code": "<button id=\"launch\">Launch</button>\n<script>\n  // Missing: how to run console.log('launched') when button is clicked\n</script>",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Check if the user attaches a click handler to #launch that logs 'launched'. Valid solutions: using onclick or addEventListener. Return 100 if correct, 0 if wrong or blank."
+          },
+          "assistant": "Right now the button doesn’t do anything. In JavaScirpt, you can use addEventListerner.\n \n document.getElementById('{button-id-name}}').addEventListener('click', () => { (return value) });"
+        },
+        {
+          "phase": 5,
+          "task_type": "bugfix",
+          "question": "Fix the function so countVowels('Hello') returns 2 and countVowels('Sky') returns 0.",
+          "prompt": "The user needs to count vowels (a, e, i, o, u) in a word. The bug is that the condition is using assignment (=) instead of comparison (== or ===). Help them understand the difference between assignment and comparison operators, but do not give the exact fix.",
+          "bugged_code": "function countVowels(str){\n  let count = 0;\n  for(let i=0;i<str.length;i++){\n    const ch = str[i].toLowerCase();\n    if (ch = 'a' || ch = 'e' || ch = 'i' || ch = 'o' || ch = 'u') {\n      count++;\n    }\n  }\n  return count;\n}\nconsole.log(countVowels('Hello')); // should be 2\nconsole.log(countVowels('Sky'));   // should be 0",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Return 100 only if the user's fix correctly counts vowels case-insensitively. Specifically, countVowels('Hello') must output 2 and countVowels('Sky') must output 0. Accept fixes where the condition uses proper equality comparisons (== or ===). Return 0 if incorrect or blank."
+          },
+          "assistant": "Look at the if condition carefully. In JavaScript, using a single = means you’re assigning a value, not checking it. What should you use when you want to compare a character against 'a', 'e', 'i', 'o', or 'u'? You learned it in the previous phase."
+        }
+        
+      ]
+    },
+    {
+      "id": "bard",
+      "name": "Bard",
+      "difficulty": "easy",
+      "phases_per_run": 5,
+      "description": "Beats monsters with melody, memory, and music trivia using clever hints instead of direct answers.",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "creative-hint",
+          "question": "Create a playful hint for a classic rock anthem that begins with a piano ballad and questions reality vs. fantasy. Don't name the song or artist!",
+          "prompt": "The user needs to create a hint for 'Bohemian Rhapsody' by Queen without naming it directly. Guide them to reference the song's structure (piano start, opera section, rock ending) or famous lyrics about reality vs fantasy, but never give the answer.",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Return 100 if the hint clearly refers to 'Bohemian Rhapsody' by Queen indirectly through references to its structure (piano ballad start, opera section, rock ending), famous lyrics ('Is this the real life? Is this just fantasy?'), or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly." },
+          "assistant": "Think about this epic song's unique structure - it starts soft and builds dramatically. What famous philosophical question does it pose in the opening? How could you hint at that without spoiling it?"
+        },
+        {
+          "phase": 2,
+          "task_type": "creative-hint",
+          "question": "Create a hint for a 2010s EDM/Pop mega-hit known for a viral catchphrase. Don't use the title or artist directly!",
+          "prompt": "The user needs to hint at 'Gangnam Style' by PSY without naming it. Guide them to reference the viral dance, the district in Seoul, the horse-riding dance moves, or the catchy phrase that became a meme, but never reveal the answer.",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Return 100 if the hint clearly refers to 'Gangnam Style' by PSY through references to the horse-riding dance, the fancy Seoul district, viral catchphrase, or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly." },
+          "assistant": "This song made everyone copy a specific dance move that looks like riding something. Think about what made it go viral worldwide and the fancy area of Seoul it references."
+        },
+        {
+          "phase": 3,
+          "task_type": "creative-hint",
+          "question": "Create a clue for a Spanish-language global hit that once held YouTube's most-views record. Don't say the title or singer!",
+          "prompt": "The user needs to hint at 'Despacito' by Luis Fonsi ft. Daddy Yankee without naming it. Guide them to reference the slow/gentle meaning of the word, Puerto Rican artists, record-breaking views, or the song's romantic theme, but never reveal the answer.",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Return 100 if the hint clearly refers to 'Despacito' by Luis Fonsi through references to its meaning (slowly/gently), record-breaking YouTube views, Puerto Rican origin, romantic theme, or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly." },
+          "assistant": "This Spanish song broke all YouTube records and its title means 'slowly' or 'gently.' Think about what made it a global phenomenon and its romantic, laid-back vibe."
+        },
+        {
+          "phase": 4,
+          "task_type": "creative-hint",
+          "question": "Give a fun clue for a K-pop song famous for a horse-riding dance. Don't say the title or artist!",
+          "prompt": "The user needs to hint at 'Gangnam Style' by PSY (different from phase 2 - this focuses on the dance). Guide them to reference the iconic horse-riding dance moves, the viral nature, or the catchy beat, but never reveal the answer.",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Return 100 if the hint clearly refers to 'Gangnam Style' by PSY through references to the horse-riding dance, viral dance moves, K-pop breakthrough, or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly." },
+          "assistant": "This K-pop hit made everyone mimic a specific animal's movement. Think about the dance that went viral worldwide and how people moved their hands and body in a bouncing motion."
+        },
+        {
+          "phase": 5,
+          "task_type": "creative-hint",
+          "question": "Create a riddle-like clue for an alt-pop anthem about staying in the spotlight. Don't name the track directly!",
+          "prompt": "The user needs to hint at 'Anti-Hero' by Taylor Swift without naming it. Guide them to reference the song's themes about being the villain in your own story, self-reflection, or the concept of being your own worst enemy, but never reveal the answer.",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "Return 100 if the hint clearly refers to 'Anti-Hero' by Taylor Swift through references to being the villain in your own story, self-sabotage, spotlight themes, or other distinctive lyrical elements. Return 0 if blank, too vague, or reveals the title/artist directly." },
+          "assistant": "This song is about being the villain in your own story and the problems that come with fame. Think about what it means to sabotage yourself while everyone's watching."
+        }
+      ]
+    },
+    {
+      "id": "necromancer",
+      "name": "Necromancer",
+      "difficulty": "medium",
+      "phases_per_run": 5,
+      "description": "Raises math puzzles from the depths — Necromancer always attacks twice.",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "math-two-answers",
+          "question": "(A) What is the sum of the first 100 natural numbers?\n(B) What is 1−2−3−4−...−100 equal to?\n**The user must provide both answers at once, separated by a single comma with no spaces, e.g. 10,-10",
+          "prompt": "The user needs to calculate the sum of the first 100 natural numbers and the result of 1−2−3−4−...−100. (A) Use the formula (n)(n+1)/2 and substitute n=100. (B) Use 1 minus the sum of (2+3+4+...+100). Important: do not provide the direct answer, the user must complete the calculation.",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [5050, -5048] }
+        },
+        {
+          "phase": 2,
+          "task_type": "math-two-answers",
+          "question": "(A) What is the greatest common divisor (GCD) of 119 and 14161?\n(B) What is the least common multiple (LCM) of 100 and 202?\n**The user must provide both answers at once, separated by a single comma with no spaces, e.g. 10,10",
+          "prompt": "The user needs to calculate the GCD of 119 and 14161, and the LCM of 100 and 202. (A) For GCD, check divisibility: if 14161 can be divided exactly by 119, then 119 is the GCD. (B) Use the formula: LCM(a,b) = (a × b) ÷ GCD(a,b). Important: do not provide the direct answer, the user must complete the calculation.",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [119, 10100] }
+        },
+        {
+          "phase": 3,
+          "task_type": "math-two-answers",
+          "question": "(A) For a regular hexagon with side length 8, what is its perimeter?\n(B) For the same hexagon, what is its area (rounded to the nearest integer)?\n**The user must provide both answers at once, separated by a single comma with no spaces, e.g. 10,10",
+          "prompt": "The user needs to calculate the perimeter and area of a regular hexagon with side length 8. (A) Formula: Perimeter = 6 × side length. (B) Formula: Area = (3√3 / 2) × a², substitute a=8, then round the result to the nearest integer. Important: do not provide the direct answer, the user must complete the calculation.",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [48, 166] }
+        },
+        {
+          "phase": 4,
+          "task_type": "math-two-answers",
+          "question": "(A) How many zeros are in the decimal representation of 2^16?\n(B) What is the square root of √81 (that is, √(√81))?\n**The user must provide both answers at once, separated by a single comma with no spaces, e.g. 10,10",
+          "prompt": "The user needs to calculate how many zeros are in the decimal expansion of 2^16, and the value of √81’s square root. (A) First compute 2^16, then count how many digits are '0'. (B) First compute √81, then take the square root of that result again. Important: do not provide the direct answer, the user must complete the calculation.",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [0, 3] }
+        },
+        {
+          "phase": 5,
+          "task_type": "math-two-answers",
+          "question": "(A) What is the total sum of all previous (A) answers?\n(B) What is the total sum of all previous (B) answers?\n**The user must provide both answers at once, separated by a single comma with no spaces, e.g. 10,10",
+          "prompt": "The user needs to calculate the sum of all previous (A) answers and all previous (B) answers. Here are the first four questions for reference:\n1. (A) What is the sum of the first 100 natural numbers? (B) What is 1−2−3−4−...−100 equal to?\n2. (A) What is the GCD of 119 and 14161? (B) What is the LCM of 100 and 202?\n3. (A) For a regular hexagon with side length 8, what is its perimeter? (B) For the same hexagon, what is its area (rounded)?\n4. (A) How many zeros are in the decimal representation of 2^16? (B) What is the square root of √81?\n\n(A) Add together the answers from questions 1–4 (A parts). (B) Add together the answers from questions 1–4 (B parts). Important: do not provide the direct answer, the user must complete the calculation.",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [169, 5221] }
+        }
+      ]
+    },     
+    {
+      "id": "alchemist",
+      "name": "Alchemist",
+      "difficulty": "medium",
+      "phases_per_run": 5,
+      "description": "Turns perfect code into poison. Intentionally introduce bugs/vulns — more bugs = more damage.",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "poison-code",
+          "question": "Take the safe DOM-rendering function and poison it by introducing real XSS-prone or unsafe patterns. Show distinct changes.",
+          "prompt": "Your goal:\n- Start with safe DOM rendering, then poison it by making it vulnerable.\nConstraints:\n- Introduce distinct, real issues; avoid duplicates.\nFormat:\n- Provide code showing changes or list them clearly.",
+          "perfect_code": "function showSafe(text){ const el=document.getElementById('out'); el.textContent=text; }",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count distinct unsafe changes. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "innerHTML_injection", "pattern": "innerHTML" },
+              { "name": "unsafe_eval", "pattern": "eval(" },
+              { "name": "removed_textContent", "pattern": ".textContent", "negate": true }
+            ]
+          },
+          "assistant": "Think: how do safe render paths become unsafe? Replace text-only sinks with HTML sinks, introduce dynamic code execution, or remove the escaping step entirely. Make each poisonous change unique."
+        },
+        {
+          "phase": 2,
+          "task_type": "poison-code",
+          "question": "Start from a secure password comparison and inject flaws that cause timing leaks or logic weaknesses (e.g., loose equality).",
+          "prompt": "Your goal:\n- Start with a secure password compare, then poison it with timing leaks or weak equality.\nConstraints:\n- Each distinct flaw counts once.\nFormat:\n- Provide code or list changes.",
+          "perfect_code": "function eq(a,b){ /* constant-time compare; do not leak */ }",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count timing or compare flaws introduced. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "early_return", "pattern": "return false" },
+              { "name": "loose_compare", "pattern": "==" }
+            ]
+          },
+          "assistant": "To leak timing, branch early on mismatch or length differences. To weaken correctness, switch to loose equality or partial compares. Each flaw should be a distinct vulnerability."
+        },
+        {
+          "phase": 3,
+          "task_type": "poison-code",
+          "question": "Degrade a parameterized SQL query into an injection-prone query using concatenation or templates.",
+          "prompt": "Your goal:\n- Start with a parameterized SQL query and poison it by making it unsafe.\nConstraints:\n- Show string concatenation or template injection.\nFormat:\n- Provide code or list changes.",
+          "perfect_code": "function queryUser(db,name){ return db.query('SELECT * FROM users WHERE name=?',[name]); }",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count query concatenations. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "plus_concat", "pattern": "+ name" },
+              { "name": "template_concat", "pattern": "\\${name}" }
+            ]
+          },
+          "assistant": "Swap placeholders for raw string building. Use '+' concatenation or template literals to directly embed user input into the SQL string. Each distinct concatenation style counts once."
+        },
+        {
+          "phase": 4,
+          "task_type": "poison-code",
+          "question": "Take a strict email validator and relax it in distinct ways so bad inputs pass.",
+          "prompt": "Your goal:\n- Start with strict email validation and poison it by making it too permissive.\nConstraints:\n- Distinct permissive changes count.\nFormat:\n- Provide code or list changes.",
+          "perfect_code": "const isEmail=s=>/^[\\w.-]+@[\\w.-]+\\.[A-Za-z]{2,}$/.test(s);",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count changes that allow bad inputs. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "over_permissive", "pattern": "/.*/" },
+              { "name": "always_true", "pattern": "return true" }
+            ]
+          },
+          "assistant": "Make the regex permissive (e.g., match-all), or bypass validation entirely by returning true. Ensure each change is a different permissive flaw."
+        },
+        {
+          "phase": 5,
+          "task_type": "poison-code",
+          "question": "Corrupt the classic 'Hello, World!' in multiple unique ways so it breaks or behaves incorrectly.",
+          "prompt": "Your goal:\n- Corrupt the 'Hello, World!' program in unique ways to break or alter it.\nConstraints:\n- Distinct corruptions count; avoid duplicates.\nFormat:\n- Provide code or bullet list.",
+          "perfect_code": "console.log('Hello, World!');",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count distinct corruptions of the program. Score=count*20 capped at 100. Return only the number."
+          },
+          "assistant": "Consider syntax errors, API misuse, environmental assumptions, or output tampering. Each corruption should be a clearly different way to break or poison the simple program."
+        }
+      ]
+    }, 
+    {
+      "id": "healer",
+      "name": "Healer",
+      "feature": "new",
+      "difficulty": "medium",
+      "phases_per_run": 3,
+      "description": "Don't fight the monster - protect yourself instead. The monster gets tired after several attacks.",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "speed-type",
+          "question": "Please copy the following sentence exactly. Every character must be identical.",
+          "sentences": [
+            "The cat is sleeping.",
+            "I like to read books.",
+            "The sun is shining.",
+            "Coffee tastes good.",
+            "Birds are singing.",
+            "The garden is beautiful.",
+            "Music makes me happy.",
+            "Learning is fun.",
+            "The sky is blue.",
+            "Time flies quickly."
+          ],
+          "validator": {
+            "type": "heal_exact_copy",
+            "guidance": "Only return 100 if the player's answer matches the target sentence character by character (case, spaces, punctuation). Otherwise return 0, providing error_count using Levenshtein distance."
+          },
+          "assistant": "How to win as Healer: Copy my sentences perfectly to heal yourself (max 30 HP) and frighten the monster (monster -5 HP). If you make mistakes, each error reduces healing by 1 point, and the monster won't take -5. Requesting new sentences will instantly cost you 3 HP."
+        },
+        {
+          "phase": 2,
+          "task_type": "speed-type",
+          "question": "Please copy the following longer sentence exactly. Every letter and punctuation must be identical.",
+          "sentences": [
+            "The quick brown fox jumps over the lazy dog near the fence.",
+            "Programming requires patience, practice, and logical thinking skills.",
+            "Yesterday, we visited the museum and saw many interesting exhibits.",
+            "This delicious chocolate cake was made by my grandmother's recipe.",
+            "The weather forecast predicts sunny skies and warm temperatures today.",
+            "Reading books opens your mind to new ideas and perspectives.",
+            "The children are playing happily in the colorful playground area.",
+            "Technology has changed the way we communicate and work together.",
+            "Exercise is important for maintaining good physical and mental health.",
+            "Traveling to new places helps us learn about different cultures."
+          ],
+          "validator": {
+            "type": "heal_exact_copy",
+            "guidance": "Only return 100 if the player's answer is completely identical to the target sentence (including spaces and punctuation). Otherwise return 0, providing error_count."
+          },
+          "assistant": "Reminder: Perfect copy = full healing (max 20 per attempt, capped at 30 HP) and monster takes -5 HP. With errors, each mistake reduces healing by 1 point, and monster takes no damage. Requesting new sentences costs -3 HP instantly."
+        },
+        {
+          "phase": 3,
+          "task_type": "speed-type",
+          "question": "Please copy the following gibberish string exactly. Every symbol must be identical.",
+          "sentences": [
+            "X9#mK2@pL7$vN4!qR8%tY3&wZ6*jF1~hG5",
+            "aB3$dE7#fG1@hJ9%kL2&mN6*pQ4!rS8~tU5",
+            "qW2#eR5$tY8@uI1%oP3&aS6*dF9!gH4~jK7",
+            "zX4$cV7#bN1@mQ5%wE8&rT2*yU6!iO9~pA3",
+            "lK8#jH3$gF6@dS1%aN4&zX7*cV2!bM9~qW5",
+            "mN7$bV4#zX1@cQ8%wE5&rT9*yU3!iO6~pA2",
+            "fG3#dS6$aQ9@zW2%xC5&vB8*nM1!hJ4~kL7",
+            "pL5$oK8#iH1@uY4%tR7&eW2*qN9!mB6~vC3",
+            "rT9#eW2$qA5@dG8%fJ1&hK4*lZ7!pX6~yU3",
+            "sA6$fD9#gH2@jK5%lM8&nP1*qT4!wE7~rY3"
+          ],
+          "validator": {
+            "type": "heal_exact_copy",
+            "guidance": "Only return 100 if the player's answer is completely identical (case, symbols, spaces all match). Otherwise return 0, providing error_count."
+          },
+          "assistant": "Final trial: The string may be meaningless. You must copy it exactly as shown. Requesting new sentences will still cost 3 HP instantly."
+        }
+      ]
+    },       
+    {
+      "id": "hacker",
+      "name": "Hacker",
+      "difficulty": "hard",
+      "phases_per_run": 5,
+      "description": "Inspect, decode, reveal the easy question, answer it—without getting the answer directly",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "inspect",
+          "question": "Check hidden HTML comments for a simple question, then answer only that question. Only provide the answer, no other text.",
+          "prompt": "Technical brief:\n- Goal: Inspect source, locate HTML comments (<!-- ... -->) containing a simple math question, compute, and output the result.\n- Constraints: Do NOT paste the hidden text; return the final number only. No explanation.\n- Format: Output must be a single number.",
+          "hidden_html": "<!-- Q: 2+2? -->",
+          "validator": { "type": "equals_number", "value": 4 },
+          "assistant": "Check the source code for the <!-- ... --> comment, read the question inside, calculate the result, and output only a single number. Do not reveal the question text."
+        },
+        {
+          "phase": 2,
+          "task_type": "inspect",
+          "question": "Find the visually hidden question inside a span and answer it. Only provide the answer, no other text.",
+          "prompt": "Technical brief:\n- Goal: Parse DOM, locate a visually hidden element (e.g., style='display:none'), extract the math question, compute, and return the result.\n- Constraints: Do NOT paste the hidden prompt; return the final number only. No explanation.\n- Format: Output must be a single number.",
+          "hidden_html": "<span class='secret' style='display:none'>What is 5*2?</span>",
+          "validator": { "type": "equals_number", "value": 10 },
+          "assistant": "Find the text hidden by display:none, read the question, calculate the answer, and only output the number. Do not show the hidden text."
+        },
+        {
+          "phase": 3,
+          "task_type": "decode",
+          "question": "Decode the Base64 string and answer the revealed question. Only provide the answer, no other text.",
+          "prompt": "Technical brief:\n- Goal: Base64-decode the provided payload, extract the math question, compute, and output the result.\n- Constraints: Do NOT paste the decoded text; return the final number only. No explanation.\n- Format: Output must be a single number.",
+          "hidden_data": "V2hhdCBpcyA0ICsgNA==",
+          "validator": { "type": "equals_number", "value": 8 },
+          "assistant": "Decode the Base64 string, read the question, calculate the answer, and output only the number. Do not display the decoded content."
+        },
+        {
+          "phase": 4,
+          "task_type": "deobfuscate",
+          "question": "Deobfuscate the string-building code and answer the question. Only provide the answer, no other text.",
+          "prompt": "Technical brief:\n- Goal: Evaluate or reason through the char-code construction to reconstruct the math expression, compute, and output the result.\n- Constraints: Do NOT paste the constructed text; return the final number only. No explanation.\n- Format: Output must be a single number.",
+          "hidden_js": "String.fromCharCode(54,43,50)",
+          "validator": { "type": "equals_number", "value": 8 },
+          "assistant": "Convert the character codes back to a string (for example, 54→'6', 43→'+', 50→'2'), calculate the expression, and output only the number."
+        },
+        {
+          "phase": 5,
+          "task_type": "data-attr",
+          "question": "Inspect the data-q attribute to find the encoded math question and answer it. Only provide the answer, no other text. ",
+          "prompt": "Technical brief:\n- Goal: Read the element's data attribute containing a Base64-encoded math question, decode, compute, and output the result.\n- Constraints: Do NOT paste the encoded or decoded text; return the final number only. No explanation.\n- Format: Output must be a single number.",
+          "hidden_html": "<div id='c' data-q='Nisy'></div>",
+          "validator": { "type": "equals_number", "value": 8 },
+          "assistant": "Read the data attribute, Base64-decode it, calculate the question, and output only the answer number. Do not paste the encoded or decoded content."
+        }
+      ]
+    },
+    {
+      "id": "detective",
+      "name": "Detective",
+      "feature": "new",
+      "difficulty": "hard",
+      "phases_per_run": 1,
+      "description": "Investigates strange cases with hidden truths. Players must ask yes/no questions, gather evidence, and reconstruct the real story step by step.",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "logic-riddle",
+          "question": "My mom bought a big watermelon. I ate it, and the next day, I died. What happened?",
+          "prompt": "This is a lateral thinking puzzle (Turtle Soup). The AI knows the hidden story and answers only with Yes / No / Not related. The player must uncover the true backstory step by step.",
+          "answer": "My mom told me that I must not eat watermelon seeds, or else a watermelon would grow inside my stomach. While eating, I accidentally swallowed a seed. I was so afraid that I cut open my stomach to remove it, and I died from blood loss.",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["watermelon seed","stomach","remove","die"],
+            "optional": ["fear","bleed","grow watermelon"]
+          },
+          "assistant": "Don’t focus only on the watermelon itself. Think about what happens if something inside it was believed to be dangerous."
+        },
+        {
+          "phase": 2,
+          "task_type": "logic-riddle",
+          "question": "Xiaoming deeply admired his father. One day, Xiaoming killed his mother, and after he said something to his father, the father committed suicide. What happened?",
+          "prompt": "This is a lateral thinking puzzle (Turtle Soup). The AI knows the hidden story and answers only with Yes / No / Not related. The player must uncover the true backstory step by step.",
+          "answer": "Xiaoming's father was a magician who often performed the trick of cutting a body in half and then restoring it. Xiaoming thought it was real, so when his father wasn’t home, he tried it on his mother, cutting her into pieces. Believing she could be restored, he asked his father to bring her back. The father, devastated by the scene, killed himself in despair.",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["magician","trick","cut","mother","restore","father suicide"],
+            "optional": ["knife","illusion","child believed","pieces"]
+          },
+          "assistant": "Ask about the father’s profession. Could it involve illusions or performances? Why would Xiaoming believe death could be undone? Think about what happens when someone copies a dangerous act without real knowledge."
+        },
+        {
+          "phase": 3,
+          "task_type": "logic-riddle",
+          "question": "The music stopped, and I died. What happened?",
+          "prompt": "This is a lateral thinking puzzle (Turtle Soup). The AI knows the hidden story and answers only with Yes / No / Not related. The player must uncover the true backstory step by step.",
+          "answer": "He was a blindfolded tightrope walker. He and his assistant agreed that when he reached the end, the assistant would stop the music. On this day, a power outage caused the music to stop halfway, so he thought he had finished, stepped off, and fell to his death.",
+          "validator": {
+            "type": "keywords", 
+            "scheme": "attack_100_once",
+            "required": ["tightrope","blindfold","music","signal","fell","died"],
+            "optional": ["assistant","power outage","walk","balance"]
+          },
+          "assistant": "Why would stopping music be a life-or-death signal? Consider if the person could not see and relied on the sound to know when to stop. What kind of performance might depend on this?"
+        },
+        {
+          "phase": 4,
+          "task_type": "logic-riddle",
+          "question": "Xiaoming was about to leave his house. He looked up at the family photo, and in that instant, he realized he was doomed. What happened?",
+          "prompt": "This is a lateral thinking puzzle (Turtle Soup). The AI knows the hidden story and answers only with Yes / No / Not related. The player must uncover the true backstory step by step.",
+          "answer": "A murderer had broken into Xiaoming’s home and killed his entire family. Xiaoming survived only because he was hiding under the bed. After things went quiet, he crawled out and was about to leave. But when he looked up at the family photo, he realized the killer must have also seen it and noticed one family member was missing. The killer was still inside, waiting. Xiaoming turned around and saw eyes staring at him.",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["killer","family photo","missing","hiding under bed","waiting"],
+            "optional": ["whole family dead","intruder","turned around","eyes","quiet before leaving"]
+          },
+          "assistant": "Why would a family photo reveal danger? It contains information about people. Ask: Was the family already in danger? Did someone notice that one person was missing? Could the intruder still be inside?"
+        },
+        {
+          "phase": 5,
+          "task_type": "logic-riddle",
+          "question": "A man fell from a cliff, and the witness who saw it smiled slightly. What happened?",
+          "prompt": "This is a lateral thinking puzzle (Turtle Soup). The AI knows the hidden story and answers only with Yes / No / Not related. The player must uncover the true backstory step by step.",
+          "answer": "The man was a skydiver, and the witness was his cameraman. They were filming a documentary about skydiving. So the fall was not an accident, but part of the planned stunt.",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["skydiver","cameraman","film","planned"],
+            "optional": ["documentary","jump","not accident"]
+          },
+          "assistant": "Why would someone smile at such a scene? Maybe it wasn’t dangerous at all. Ask: Was this man doing a sport or performance? Could the fall have been part of a plan, not an accident?"
+        }
+      ]
+    },    
+    {
+      "id": "mysterious",
+      "name": "Mysterious",
+      "difficulty": "impossible",
+      "phases_per_run": 1,
+      "description": "????????????????????",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "paradox",
+          "bait_question": "????????????",
+          "hint": "Are you sure you can beat this? If not, what should you do?",
+          "validator": { "type": "mysterious", "keywords": ["escape","run","quit","i forfeit","skip","gg"], "prompt_mask": "????????????" }
+        }
+      ]
+    }
+  ]
+}

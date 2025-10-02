@@ -1,0 +1,20 @@
+[
+  {
+    "id": 1,
+    "title": "Collaboration Invite",
+    "description": "I'm always open to exciting collaboration opportunities! Whether it's a startup project, open-source contribution, or innovative development work, let's connect and create something amazing together.",
+    "features": [
+      "Full-stack web development projects",
+      "AI/ML integration projects", 
+      "Open-source contributions",
+      "Startup collaborations",
+      "Technical consulting",
+      "Code review and mentoring"
+    ],
+    "image": "coming_soon.png",
+    "EmailUrl": "mailto:hillmanchan709@gmail.com",
+    "type": "collaboration",
+    "responseTime": "Within 24 hours",
+    "availability": "Currently accepting new collaborations"
+  }
+]

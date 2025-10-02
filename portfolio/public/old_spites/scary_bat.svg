@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Horror Bat - Realistic 2D SVG</title>
+  <desc>A realistic, scary bat with torn leathery wings, glowing eyes, and dripping fangs. Vector-only, no rasters.</desc>
+  <defs>
+    <radialGradient id="bgGrad" cx="50%" cy="45%" r="60%">
+      <stop offset="0%" stop-color="#0b0b10"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="wingSkin" cx="50%" cy="50%" r="80%">
+      <stop offset="0%" stop-color="#2a2b2d"/>
+      <stop offset="60%" stop-color="#161719"/>
+      <stop offset="100%" stop-color="#0a0a0b"/>
+    </radialGradient>
+    <linearGradient id="veinGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7a1b1b"/>
+      <stop offset="100%" stop-color="#3b0c0c"/>
+    </linearGradient>
+    <radialGradient id="eyeGlowGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ff3535"/>
+      <stop offset="60%" stop-color="#b10303"/>
+      <stop offset="100%" stop-color="rgba(0,0,0,0)"/>
+    </radialGradient>
+    <filter id="softGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="6" result="blur"/>
+      <feBlend in="SourceGraphic" in2="blur" mode="screen"/>
+    </filter>
+    <filter id="wetShine">
+      <feSpecularLighting surfaceScale="4" specularConstant="0.8" specularExponent="25" lighting-color="#bbbbbb">
+        <fePointLight x="-200" y="-200" z="300" />
+      </feSpecularLighting>
+      <feComposite in2="SourceGraphic" operator="in"/>
+      <feComposite in="SourceGraphic" operator="arithmetic" k1="0.8" k2="0.8" k3="0.0" k4="0"/>
+    </filter>
+    <clipPath id="bodyClip">
+      <path d="M512,360c-38,0-74,22-92,54-19,33-26,74-28,116-2,50,7,92,45,120 27,20 48,26 75,26s48-6 75-26c38-28 47-70 45-120-2-42-9-83-28-116-18-32-54-54-92-54z"/>
+    </clipPath>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#bgGrad)"/>
+  
+  <!-- Wings -->
+  <g id="wings" transform="translate(0,20)">
+    <!-- Left wing membrane -->
+    <path fill="url(#wingSkin)" d="M512,460 C390,380 280,340 160,360 123,366 92,386 76,414 61,441 66,474 84,498 107,528 151,546 190,558 245,575 311,590 372,592 327,621 300,648 272,684 254,708 240,738 244,766 248,796 270,816 298,820 333,825 369,808 396,786 431,758 458,723 480,690 494,669 506,642 512,616 Z"/>
+    <!-- Right wing membrane -->
+    <path fill="url(#wingSkin)" d="M512,460 C634,380 744,340 864,360 901,366 932,386 948,414 963,441 958,474 940,498 917,528 873,546 834,558 779,575 713,590 652,592 697,621 724,648 752,684 770,708 784,738 780,766 776,796 754,816 726,820 691,825 655,808 628,786 593,758 566,723 544,690 530,669 518,642 512,616 Z"/>
+    <!-- Wing veins -->
+    <g stroke="url(#veinGrad)" stroke-width="6" stroke-linecap="round" opacity="0.6">
+      <path d="M512,470 372,592"/>
+      <path d="M512,470 652,592"/>
+      <path d="M372,592 272,684"/>
+      <path d="M652,592 752,684"/>
+      <path d="M480,690 396,786"/>
+      <path d="M544,690 628,786"/>
+      <path d="M512,500 430,540 360,570"/>
+      <path d="M512,500 594,540 664,570"/>
+    </g>
+    <!-- Torn edges -->
+    <g fill="#0a0a0b">
+      <path d="M160,360 c20,10 40,12 60,26 -10,10 -24,18 -40,18 4,18 16,32 32,46 -26,2 -52,-14 -64,-34 -14,-24 -5,-48 12,-56z"/>
+      <path d="M864,360 c-20,10 -40,12 -60,26 10,10 24,18 40,18 -4,18 -16,32 -32,46 26,2 52,-14 64,-34 14,-24 5,-48 -12,-56z"/>
+    </g>
+  </g>
+
+  <!-- Body -->
+  <g id="body">
+    <path fill="#0f1012" d="M512,360c-38,0-74,22-92,54-19,33-26,74-28,116-2,50,7,92,45,120 27,20 48,26 75,26s48-6 75-26c38-28 47-70 45-120-2-42-9-83-28-116-18-32-54-54-92-54z" filter="url(#wetShine)"/>
+    <!-- Chest sheen -->
+    <ellipse cx="500" cy="520" rx="38" ry="64" fill="#1b1c20" opacity="0.5"/>
+    <ellipse cx="530" cy="540" rx="24" ry="46" fill="#2a2b31" opacity="0.35"/>
+  </g>
+
+  <!-- Ears -->
+  <g id="ears" fill="#111217">
+    <path d="M446,360c-28,-46 -78,-64 -128,-62 24,20 42,42 48,74 28,-12 54,-10 80,-12z"/>
+    <path d="M578,360c28,-46 78,-64 128,-62 -24,20 -42,42 -48,74 -28,-12 -54,-10 -80,-12z"/>
+  </g>
+
+  <!-- Face -->
+  <g id="face">
+    <!-- Eyes -->
+    <g filter="url(#softGlow)">
+      <circle cx="470" cy="470" r="20" fill="#ff1a1a"/>
+      <circle cx="554" cy="470" r="20" fill="#ff1a1a"/>
+      <circle cx="470" cy="470" r="40" fill="url(#eyeGlowGrad)" opacity="0.4"/>
+      <circle cx="554" cy="470" r="40" fill="url(#eyeGlowGrad)" opacity="0.4"/>
+    </g>
+    <!-- Brows -->
+    <path d="M430,456c20,-18 48,-26 78,-22" stroke="#2a2b31" stroke-width="10" stroke-linecap="round"/>
+    <path d="M594,456c-20,-18 -48,-26 -78,-22" stroke="#2a2b31" stroke-width="10" stroke-linecap="round"/>
+    <!-- Nose -->
+    <path d="M512,508c-10,-10 -8,-20 0,-28 8,8 10,18 0,28z" fill="#1b1c20"/>
+    <!-- Mouth / fangs -->
+    <g>
+      <path d="M456,548 C512,586 572,586 628,548" fill="none" stroke="#640909" stroke-width="8" stroke-linecap="round"/>
+      <path d="M500,548 l-12,48 c12,8 20,4 24,-8z" fill="#e2e2e2"/>
+      <path d="M524,548 l12,48 c-12,8 -20,4 -24,-8z" fill="#e2e2e2"/>
+      <!-- Drool -->
+      <path d="M488,596 q8,22 -6,42 q20,-8 16,-30" fill="none" stroke="#7fd0ff" stroke-width="4" opacity="0.6"/>
+      <path d="M536,596 q-8,22 6,42 q-20,-8 -16,-30" fill="none" stroke="#7fd0ff" stroke-width="4" opacity="0.6"/>
+    </g>
+  </g>
+</svg>

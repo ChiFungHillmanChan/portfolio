@@ -1,0 +1,65 @@
+[
+  {
+    "id": 1,
+    "title": "Free 30-min Discussion",
+    "description": "Get to know me and discuss your goals. Perfect for understanding if my coaching style fits your needs.",
+    "originalPrice": 0,
+    "currentPrice": 0,
+    "discountPercentage": 0,
+    "discountEndDate": null,
+    "duration": "30 minutes",
+    "features": [
+      "Goal assessment",
+      "Learning path discussion", 
+      "Q&A session",
+      "Coaching fit evaluation",
+      "Next steps planning"
+    ],
+    "image": "coming_soon.png",
+    "googleFormUrl": "https://docs.google.com/forms/d/e/1FAIpQLSfrCgnlhvUEHqsgcgnB1YPl2Bdpe81_hINxtwkyTsDynQHiXg/viewform?usp=header",
+    "category": "free",
+    "popular": false
+  },
+  {
+    "id": 3,
+    "title": "1 Hour Experience Coaching",
+    "description": "Comprehensive coaching session covering programming fundamentals, career advice, and project guidance.",
+    "originalPrice": 60,
+    "currentPrice": 45,
+    "discountPercentage": 25,
+    "discountEndDate": "2025-09-11T23:59:59",
+    "duration": "60 minutes",
+    "features": [
+      "Programming fundamentals review",
+      "Code review and feedback",
+      "Career development advice",
+      "Project planning assistance",
+      "Resource recommendations"
+    ],
+    "image": "coming_soon.png", 
+    "googleFormUrl": "https://docs.google.com/forms/d/e/1FAIpQLSfrCgnlhvUEHqsgcgnB1YPl2Bdpe81_hINxtwkyTsDynQHiXg/viewform?usp=header",
+    "category": "standard",
+    "popular": true
+  },
+  {
+    "id": 2,
+    "title": "1-on-1 AI Coaching",
+    "description": "Personalized AI coaching sessions tailored to your specific needs. Learn about machine learning, AI implementation, and career guidance in the AI field.",
+    "originalPrice": 100,
+    "currentPrice": 60,
+    "discountPercentage": 40,
+    "discountEndDate": "2025-09-11T23:59:59",
+    "duration": "90 minutes",
+    "features": [
+      "Personalized AI learning path",
+      "Career guidance in AI field",
+      "Hands-on project review",
+      "Industry insights and trends",
+      "Follow-up resources"
+    ],
+    "image": "coming_soon.png",
+    "googleFormUrl": "https://docs.google.com/forms/d/e/1FAIpQLSfrCgnlhvUEHqsgcgnB1YPl2Bdpe81_hINxtwkyTsDynQHiXg/viewform?usp=header",
+    "category": "premium",
+    "popular": true
+  }
+]

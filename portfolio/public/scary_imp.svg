@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Demonic Imp - Realistic 2D SVG</title>
+  <desc>A gaunt demonic imp with cracked lava skin, horns, claws, and a sinister grin. Vector gradients, no rasters.</desc>
+  <defs>
+    <radialGradient id="impBg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#100b0b"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <linearGradient id="lavaSkin" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2b1111"/>
+      <stop offset="60%" stop-color="#1a0a0a"/>
+      <stop offset="100%" stop-color="#0a0404"/>
+    </linearGradient>
+    <linearGradient id="hornGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#d5d1c9"/>
+      <stop offset="100%" stop-color="#5a574f"/>
+    </linearGradient>
+    <linearGradient id="teethGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fafafa"/>
+      <stop offset="100%" stop-color="#c9c9c9"/>
+    </linearGradient>
+    <filter id="eyeGlowImp" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <pattern id="cracks" patternUnits="userSpaceOnUse" width="200" height="200">
+      <rect width="200" height="200" fill="url(#lavaSkin)"/>
+      <g stroke="#6e1d12" stroke-width="4" stroke-linecap="round" opacity="0.85">
+        <path d="M20,40 60,80 40,120 100,150 140,120 160,170 180,140"/>
+        <path d="M10,160 40,120 100,110 120,60 180,40"/>
+        <path d="M60,0 80,40 120,80 160,60 200,100"/>
+        <path d="M0,100 40,100 60,140 100,120 140,160 200,180"/>
+      </g>
+      <g stroke="#ef3d00" stroke-width="2" opacity="0.6">
+        <path d="M20,40 60,80 40,120 100,150 140,120 160,170 180,140"/>
+        <path d="M10,160 40,120 100,110 120,60 180,40"/>
+        <path d="M60,0 80,40 120,80 160,60 200,100"/>
+        <path d="M0,100 40,100 60,140 100,120 140,160 200,180"/>
+      </g>
+    </pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#impBg)"/>
+  
+  <!-- Silhouette -->
+  <g id="imp" transform="translate(0,10)">
+    <!-- Wings (tattered) -->
+    <g fill="#121015" opacity="0.9">
+      <path d="M280,420 C180,400 120,460 100,520 86,560 116,600 160,610 198,618 268,600 332,568 308,606 300,640 310,690 314,732 356,756 394,744 436,732 456,686 470,646 494,576 504,520 512,470 452,500 378,440 280,420 Z"/>
+      <path d="M744,420 C844,400 904,460 924,520 938,560 908,600 864,610 826,618 756,600 692,568 716,606 724,640 714,690 710,732 668,756 630,744 588,732 568,686 554,646 530,576 520,520 512,470 572,500 646,440 744,420 Z"/>
+    </g>
+    
+    <!-- Body -->
+    <path d="M512,340c-58,0-112,42-132,98-14,40-18,88-12,128 8,56 38,110 78,140 24,18 46,26 66,26s42-8 66-26c40-30 70-84 78-140 6-40 2-88-12-128-20-56-74-98-132-98z" fill="url(#cracks)"/>
+    
+    <!-- Head -->
+    <g id="head">
+      <path d="M512,300c-52,0-96,42-96,94 0,42 28,88 72,106 16,6 32,6 48,0 44-18 72-64 72-106 0-52-44-94-96-94z" fill="url(#cracks)"/>
+      <!-- Horns -->
+      <path d="M434,312c-34,-44-76,-62-130,-62 28,16 44,46 48,80 36,-6 60,-8 82,-18z" fill="url(#hornGrad)"/>
+      <path d="M590,312c34,-44 76,-62 130,-62 -28,16 -44,46 -48,80 -36,-6 -60,-8 -82,-18z" fill="url(#hornGrad)"/>
+      <!-- Eyes -->
+      <g filter="url(#eyeGlowImp)">
+        <ellipse cx="476" cy="354" rx="20" ry="16" fill="#ffd400"/>
+        <ellipse cx="548" cy="354" rx="20" ry="16" fill="#ffd400"/>
+      </g>
+      <!-- Brows -->
+      <path d="M444,346c22,-22 56,-28 96,-20" stroke="#3a1212" stroke-width="10" stroke-linecap="round"/>
+      <path d="M580,346c-22,-22 -56,-28 -96,-20" stroke="#3a1212" stroke-width="10" stroke-linecap="round"/>
+      <!-- Mouth -->
+      <path d="M456,408 C512,450 572,450 628,408" fill="none" stroke="#7a0f12" stroke-width="8" stroke-linecap="round"/>
+      <!-- Teeth -->
+      <g fill="url(#teethGrad)">
+        <path d="M502,408 l-10,40 18,-10z"/>
+        <path d="M526,408 l10,40 -18,-10z"/>
+        <path d="M488,412 l-12,32 18,-8z"/>
+        <path d="M540,412 l12,32 -18,-8z"/>
+      </g>
+    </g>
+    
+    <!-- Arms and claws -->
+    <g fill="#121015">
+      <path d="M396,520 c-48,0-92,20-112,56 -10,18 -2,40 16,48 20,10 42,4 54,-14 22,-32 34,-42 64,-52 12,-4 12,-38 -22,-38z"/>
+      <path d="M628,520 c48,0 92,20 112,56 10,18 2,40 -16,48 -20,10 -42,4 -54,-14 -22,-32 -34,-42 -64,-52 -12,-4 -12,-38 22,-38z"/>
+      <!-- Claws -->
+      <g>
+        <path d="M304,610 l-20,40 30,-8z" fill="#c9c9c9"/>
+        <path d="M332,598 l-16,44 28,-12z" fill="#c9c9c9"/>
+        <path d="M708,610 l20,40 -30,-8z" fill="#c9c9c9"/>
+        <path d="M680,598 l16,44 -28,-12z" fill="#c9c9c9"/>
+      </g>
+    </g>
+    
+    <!-- Legs -->
+    <g fill="#121015">
+      <path d="M460,720 c-34,34 -58,82 -46,112 8,20 30,28 50,22 22,-8 34,-30 44,-54 12,-30 16,-70 16,-104 -24,8 -44,14 -64,24z"/>
+      <path d="M564,720 c34,34 58,82 46,112 -8,20 -30,28 -50,22 -22,-8 -34,-30 -44,-54 -12,-30 -16,-70 -16,-104 24,8 44,14 64,24z"/>
+    </g>
+  </g>
+</svg>

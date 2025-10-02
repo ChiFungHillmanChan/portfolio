@@ -1,0 +1,1 @@
+This file exists so the data directory is tracked for the Prompt Hunter build.

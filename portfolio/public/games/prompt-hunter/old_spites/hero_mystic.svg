@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Hero Mystic - Bright Brave Vector</title>
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#efe6ff"/>
+    </radialGradient>
+    <radialGradient id="cloak" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#a995ff"/>
+      <stop offset="100%" stop-color="#6a54e8"/>
+    </radialGradient>
+    <radialGradient id="light" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#d1c4ff"/>
+    </radialGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#sky)"/>
+  
+  <!-- Cloak -->
+  <path d="M320,300c-36,58-60,136-64,206-6,96 30,186 100,242 44,34 96,50 156,50s112-16 156-50c70-56 106-146 100-242-4-70-28-148-64-206-48,16-110,22-192,22s-144-6-192-22z" fill="url(#cloak)"/>
+  
+  <!-- Kind eyes -->
+  <g>
+    <ellipse cx="512" cy="374" rx="72" ry="58" fill="#ffe7cf"/>
+    <circle cx="486" cy="366" r="10" fill="#2a2a2a"/>
+    <circle cx="538" cy="366" r="10" fill="#2a2a2a"/>
+    <path d="M480,396 q32,24 64,0" stroke="#e67a5a" stroke-width="8" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Floating light orb -->
+  <g>
+    <circle cx="332" cy="560" r="24" fill="url(#light)" />
+    <circle cx="692" cy="586" r="16" fill="url(#light)" />
+    <circle cx="612" cy="640" r="10" fill="url(#light)" />
+  </g>
+</svg>

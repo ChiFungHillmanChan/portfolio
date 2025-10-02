@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Card Game</title>
+    <script>
+      (function () {
+        var prefix = '/games/card-game';
+        if (window.location.pathname.startsWith(prefix)) {
+          var newPath = window.location.pathname.slice(prefix.length) || '/';
+          var newUrl = newPath + window.location.search + window.location.hash;
+          window.history.replaceState(null, '', newUrl);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-DNDvMiOj.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-_EUB7mlz.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

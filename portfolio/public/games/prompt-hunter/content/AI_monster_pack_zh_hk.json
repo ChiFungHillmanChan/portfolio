@@ -1,0 +1,529 @@
+{
+  "meta": {
+    "name": "角色預覽",
+    "created_utc": "2025-08-24T00:00:00.000Z",
+    "phases_per_run": 5,
+    "validator_api_note": "Validators include ai_score which must call an LLM and return ONLY a number as a string."
+  },
+  "roles": [
+    {
+      "id": "engineer",
+      "name": "工程師",
+      "difficulty": "容易",
+      "phases_per_run": 5,
+      "description": "喺壓力之下修理壞咗嘅裝置同快速砌工具。",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "bugfix",
+          "question": "修復壞咗嘅迴圈，令佢按順序打印數字 1 到 5（包括 5）。",
+          "prompt": "用戶正嘗試修復一個應該打印 1 到 5 嘅 for 迴圈。現時嘅程式只打印到 1 到 4。你應該提供關於迴圈條件嘅提示，但唔好透露確切修復方法。引導佢檢查迴圈條件。",
+          "bugged_code": "for(let i=1;i<5;i++){console.log(i)}",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "檢查用戶有冇提供可運作嘅程式碼去修復迴圈，令輸出變成 1,2,3,4,5。必須係具體程式碼，例如 'i<=5' 或 'for(let i=1;i<=5;i++)'。提示、解釋或建議一律唔接受。只有提供到實際可行程式碼先回傳 100，否則回傳 0。" },
+          "assistant": "呢個迴圈睇落應該會打印 1 到 5，但而家早咗停。諗下迴圈嘅『條件』——係乜嘢決定咗佢幾時停止？"
+        },
+        {
+          "phase": 2,
+          "task_type": "bugfix",
+          "question": "修復 sum 函數，令 console.log(sum(2,3)) 輸出 5。請提供令佢可運作嘅程式碼。",
+          "prompt": "用戶需要修復一個直接返回數值嘅函數。你應該引導佢，但唔好畀出確切解法。幫佢理解點樣完成一個函數嘅返回值。",
+          "bugged_code": "function sum(a,b){ return (?); } console.log(sum(2,3));",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "檢查用戶嘅修復係咪令函數直接返回 a+b。函數應該返回一個實際嘅數字。正確回傳 100，錯誤或留空回傳 0。" },
+          "assistant": "個函數而家淨係返回咗一個問號。諗下應該點樣返回 a 同 b 嘅總和。"
+        },
+        {
+          "phase": 3,
+          "task_type": "bugfix",
+          "question": "修復 isArmed 函數，令佢只會喺 status 等於 'armed' 嘅時候返回 true。",
+          "prompt": "用戶需要修復一個喺條件入面用咗賦值（=）而唔係比較（==、===）嘅函數。引導佢理解賦值同比較運算符嘅分別，但唔好直接畀出修正。",
+          "bugged_code": "function isArmed(status){ if(status='armed'){return true;} return false; }",
+          "validator": { "type": "ai_score", "scheme": "attack_100_once", "guidance": "檢查用戶有冇將賦值運算符 (=) 改成比較運算符（== 或 ===）。條件應該係 status === 'armed' 或 status == 'armed'。正確回傳 100，否則回傳 0。" },
+          "assistant": "睇清楚 if 入面嘅條件。當你喺條件度用 = 會發生咩事？"
+        },
+        {
+          "phase": 4,
+          "task_type": "bugfix",
+          "question": "修復按鈕，令佢被點擊時會喺 console 顯示 'launched'。",
+          "prompt": "用戶需要用 addEventListener 將按鈕連接到一個動作。引導佢知道按鈕可以對點擊作出反應，並需要喺按鈕嘅 click 事件上掛一段 JavaScript。唔好畀完整代碼，只解釋處理點擊事件嘅概念。",
+          "bugged_code": "<button id=\"launch\">Launch</button>\n<script>\n  // Missing: how to run console.log('launched') when button is clicked\n</script>",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "檢查用戶有冇為 #launch 按鈕加上一個點擊事件處理器，並且喺點擊時 log 出 'launched'。有效方案包括 addEventListener 或 onclick。正確回傳 100，否則回傳 0。"
+          },
+          "assistant": "而家個按鈕未做任何嘢。喺 JavaScript 入面，你可以用 addEventListener 去處理點擊事件。"
+        },
+        {
+          "phase": 5,
+          "task_type": "bugfix",
+          "question": "修復個函數，令 countVowels('Hello') 會返回 2，同 countVowels('Sky') 會返回 0。",
+          "prompt": "用戶需要計算一個字串入面嘅元音（a, e, i, o, u）。而家嘅 bug 係條件用咗賦值符號（=）而唔係比較符號（== 或 ===）。幫佢理解賦值同比較嘅分別，但唔好直接畀出修正。",
+          "bugged_code": "function countVowels(str){\n  let count = 0;\n  for(let i=0;i<str.length;i++){\n    const ch = str[i].toLowerCase();\n    if (ch = 'a' || ch = 'e' || ch = 'i' || ch = 'o' || ch = 'u') {\n      count++;\n    }\n  }\n  return count;\n}\nconsole.log(countVowels('Hello')); // should be 2\nconsole.log(countVowels('Sky'));   // should be 0",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "只有當用戶嘅修復可以不分大小寫正確計算元音先回傳 100。特別係 countVowels('Hello') 必須輸出 2，而 countVowels('Sky') 必須輸出 0。接受將條件改為正確嘅相等比較（== 或 ===）等方案。否則或留空回傳 0。"
+          },
+          "assistant": "細心睇下 if 個條件。用單一個 = 代表『賦值』，唔係『比較』。當你想比較一個字元係咪 'a'、'e'、'i'、'o'、'u' 嘅時候應該用邊種運算符？你喺之前嘅階段學過。"
+        }
+      ]
+    },    
+    {
+      "id": "bard",
+      "name": "吟遊詩人",
+      "difficulty": "容易",
+      "phases_per_run": 5,
+      "description": "用旋律、記憶同音樂問答擊敗怪物，用聰明提示代替直接答案。",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "creative-hint",
+          "question": "為一首經典搖滾歌曲創造一個有趣嘅提示，呢首歌開頭係鋼琴抒情，然後問現實同幻想嘅關係。唔好直接講歌名或者歌手！",
+          "prompt": "用戶需要為 Queen 嘅 'Bohemian Rhapsody' 創造提示，但唔可以直接講名。引導佢參考歌曲結構（鋼琴開始、歌劇段、搖滾結尾）或者著名歌詞關於現實vs幻想，但絕對唔好俾答案。",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Return 100 if the hint clearly refers to 'Bohemian Rhapsody' by Queen indirectly through references to its structure (piano ballad start, opera section, rock ending), famous lyrics ('Is this the real life? Is this just fantasy?'), or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly."
+          },
+          "assistant": "諗下呢首史詩級歌曲嘅獨特結構 - 佢開頭好溫柔，然後越嚟越激烈。佢喺開頭問咗個咩哲學問題？你點可以暗示而唔破壞驚喜？"
+        },
+        {
+          "phase": 2,
+          "task_type": "creative-hint",
+          "question": "為一首2010年代嘅EDM/Pop超級熱門歌曲創造提示，呢首歌因為病毒式口號而著名。唔好直接講歌名或者歌手！",
+          "prompt": "用戶需要為PSY嘅'Gangnam Style'創造提示，但唔可以直接講名。引導佢參考病毒式舞蹈、首爾江南區、騎馬舞步或者變成迷因嘅口號，但絕對唔好俾答案。",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Return 100 if the hint clearly refers to 'Gangnam Style' by PSY through references to the horse-riding dance, the fancy Seoul district, viral catchphrase, or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly."
+          },
+          "assistant": "呢首歌令全世界人都模仿一個特定嘅舞蹈動作，好似騎緊啲嘢咁。諗下點解佢會全球爆紅，同埋佢講緊首爾邊個豪華地區。"
+        },
+        {
+          "phase": 3,
+          "task_type": "creative-hint",
+          "question": "為一首西班牙語全球熱門歌曲創造提示，呢首歌曾經喺YouTube創下最高觀看次數紀錄。唔好直接講歌名或者歌手！",
+          "prompt": "用戶需要為Luis Fonsi ft. Daddy Yankee嘅'Despacito'創造提示，但唔可以直接講名。引導佢參考「慢慢地/輕柔地」嘅意思、波多黎各歌手、破紀錄嘅觀看次數或者浪漫主題，但絕對唔好俾答案。",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Return 100 if the hint clearly refers to 'Despacito' by Luis Fonsi through references to its meaning (slowly/gently), record-breaking YouTube views, Puerto Rican origin, romantic theme, or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly."
+          },
+          "assistant": "呢首西班牙歌破咗所有YouTube紀錄，個歌名意思係「慢慢地」或者「輕柔地」。諗下點解佢會成為全球現象，同埋佢嘅浪漫、輕鬆氛圍。"
+        },
+        {
+          "phase": 4,
+          "task_type": "creative-hint",
+          "question": "為一首因為騎馬舞而著名嘅K-pop歌曲創造有趣提示。唔好直接講歌名或者歌手！",
+          "prompt": "用戶需要為PSY嘅'Gangnam Style'創造提示（同第2階段唔同 - 呢個專注喺舞蹈）。引導佢參考標誌性騎馬舞動作、病毒式傳播或者朗朗上口嘅節拍，但絕對唔好俾答案。",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Return 100 if the hint clearly refers to 'Gangnam Style' by PSY through references to the horse-riding dance, viral dance moves, K-pop breakthrough, or other distinctive elements. Return 0 if blank, too vague, or reveals the title/artist directly."
+          },
+          "assistant": "呢首K-pop熱門歌令全世界人都模仿一種特定動物嘅動作。諗下邊個舞蹈全球爆紅，人哋點樣用手同身體做彈跳動作。"
+        },
+        {
+          "phase": 5,
+          "task_type": "creative-hint",
+          "question": "為一首關於喺鎂光燈下保持存在感嘅alt-pop歌曲創造謎語式提示。唔好直接講歌名！",
+          "prompt": "用戶需要為Taylor Swift嘅'Anti-Hero'創造提示，但唔可以直接講名。引導佢參考做自己故事入面嘅反派、自我反思或者成為自己最大敵人嘅概念，但絕對唔好俾答案。",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_100_once",
+            "guidance": "Return 100 if the hint clearly refers to 'Anti-Hero' by Taylor Swift through references to being the villain in your own story, self-sabotage, spotlight themes, or other distinctive lyrical elements. Return 0 if blank, too vague, or reveals the title/artist directly."
+          },
+          "assistant": "呢首歌講緊做自己故事入面嘅反派，同埋出名帶嚟嘅問題。諗下當全世界都睇住你嘅時候，自我破壞意味住咩。"
+        }
+      ]
+    },
+    {
+      "id": "necromancer",
+      "name": "死靈法師",
+      "difficulty": "中等",
+      "phases_per_run": 5,  
+      "description": "從數學深淵召喚邏輯謎題 -- 死靈法師每次都會連續攻擊兩次",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "math-two-answers",
+          "question": "(A) 頭 100 個自然數嘅總和係幾多？\n(B) 1−2−3−4−...−100 等於幾多？\n**用戶要一次過提供兩個答案，中間用一個逗號，唔好有空格，例如：10,-10",
+          "prompt": "用戶要計算 頭 100 個自然數嘅總和係幾多，及 1−2−3−4−...−100 等於幾多？(A) 使用公式 (n)(n+1)/2，代入 n=100 來計算總和。 (B) 用 1 減去 (2+3+4+...+100)。切記：唔可以直接顯示答案，要由用戶自己完成計算。",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [5050, -5048] }
+        },
+        {
+          "phase": 2,
+          "task_type": "math-two-answers",
+          "question": "(A) 119 同 14161 嘅最大公因數（GCD）係幾多？\n(B) 100 同 202 嘅最小公倍數（LCM）係幾多？\n**用戶要一次過提供兩個答案，中間用一個逗號，唔好有空格，例如：10,10",
+          "prompt": "用戶要計算 119 同 14161 嘅最大公因數同埋 100 同 202 嘅最小公倍數。(A) GCD 可以用除法測試：如果 14161 可以被 119 整除，咁 119 就係 GCD。 (B) LCM 公式：LCM(a,b) = (a × b) ÷ GCD(a,b)。切記：唔可以直接顯示答案，要由用戶自己完成計算。",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [119, 10100] }
+        },
+        {
+          "phase": 3,
+          "task_type": "math-two-answers",
+          "question": "(A) 等邊六邊形邊長 8，周界係幾多？\n(B) 同一個六邊形，面積（取整數）係幾多？\n**用戶要一次過提供兩個答案，中間用一個逗號，唔好有空格，例如：10,10",
+          "prompt": "用戶要計算 一個等邊六邊形邊長 8 嘅周界同面積。(A) 周界公式：6 × 邊長。 (B) 面積公式：(3√3 / 2) × a²，代入 a=8，再將結果四捨五入到整數。切記：唔可以直接顯示答案，要由用戶自己完成計算。",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [48, 166] }
+        },
+        {
+          "phase": 4,
+          "task_type": "math-two-answers",
+          "question": "(A) 2^16 嘅十進位表示入面有幾多個 0？\n(B) √81 嘅平方根（即 √(√81)）係幾多？\n**用戶要一次過提供兩個答案，中間用一個逗號，唔好有空格，例如：10,10",
+          "prompt": "用戶要計算 2^16 嘅十進位表示入面有幾多個 0，以及 √81 嘅平方根再開方一次。(A) 先計算 2^16，再數下結果入面有幾多個數字 0。 (B) 先計算 √81，再開方一次。切記：唔可以直接顯示答案，要由用戶自己完成計算。",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [0, 3] }
+        },
+        {
+          "phase": 5,
+          "task_type": "math-two-answers",
+          "question": "(A) 剛才所有 (A) 答案總和係幾多？\n(B) 剛才所有 (B) 答案總和係幾多？\n**用戶要一次過提供兩個答案，中間用一個逗號，唔好有空格，例如：10,10",
+          "prompt": "用戶要計算 剛才所有 (A) 答案嘅總和，及所有 (B) 答案嘅總和。以下係前四題嘅問題：\n1. (A) 頭 100 個自然數嘅總和係幾多？ (B) 1−2−3−4−...−100 等於幾多？\n2. (A) 119 同 14161 嘅最大公因數（GCD）係幾多？ (B) 100 同 202 嘅最小公倍數（LCM）係幾多？\n3. (A) 等邊六邊形邊長 8，周界係幾多？ (B) 同一個六邊形，面積（取整數）係幾多？\n4. (A) 2^16 嘅十進位表示入面有幾多個 0？ (B) √81 嘅平方根（即 √(√81)）係幾多？\n\n(A) 將第 1 至 4 題嘅 (A) 答案加埋。 (B) 將第 1 至 4 題嘅 (B) 答案加埋。切記：唔可以直接顯示答案，要由用戶自己完成計算。",
+          "bugged_code": "",
+          "validator": { "type": "equals_number", "scheme": "attack_100_once", "value": [169, 5221] }
+        }
+      ]
+    },           
+    {
+      "id": "alchemist",
+      "name": "鍊金術師",
+      "difficulty": "中等",
+      "phases_per_run": 5,  
+      "description": "將完美程式碼變成毒藥。有意引入漏洞／錯誤 — 越多錯誤 = 傷害越大。",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "poison-code",
+          "question": "呢個本來安全嘅 DOM 呈現函數，你可唔可以用幾個唔同手法「整壞佢」，令到輸入一放落去就有機會出事（例如 XSS）？記住：每個手法都要唔同。",
+          "prompt": "Technical brief（技術要求）：\n- Task: 將純文字輸出改造成有風險嘅 DOM 寫入（vulnerable sinks）。\n- Input: perfect_code（安全版本）。\n- Output: 只需提供 1）修改後的代碼；或 2）清晰列出每項改動（diff/要點）。\n- Vulnerabilities（獨立漏洞）可包括：\n  1) 由 .textContent → 改用 .innerHTML（令字串被當 HTML 解析）。\n  2) 加入 eval(...) 或同類動態執行，將輸入當指令。\n  3) 直接移除／繞過文字轉義或安全寫入（例如唔再用 text-only sink）。\n- Constraints: 每種漏洞只計一次；避免重複同等價做法。\n- Scoring: 依據 bug_catalog 命中數（innerHTML / eval( / 缺少 .textContent）。\n- Keep it minimal: 不要加入與漏洞無關嘅安全代碼或長篇說明。",
+          "perfect_code": "function showSafe(text){ const el=document.getElementById('out'); el.textContent=text; }",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count distinct unsafe changes. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "innerHTML_injection", "pattern": "innerHTML" },
+              { "name": "unsafe_eval", "pattern": "eval(" },
+              { "name": "removed_textContent", "pattern": ".textContent", "negate": true }
+            ]
+          },
+          "assistant": "你可以考慮一下，有咩方法可以令一個原本安全嘅 DOM 渲染變成有潛在風險呢？例如話，可以試下諗吓改用 innerHTML 而唔係 textContent，又或者加入一些動態程式碼執行嘅方法。記得每種修改都要係獨立嘅安全風險呀。"
+        },
+        {
+          "phase": 2,
+          "task_type": "poison-code",
+          "question": "而家當你有個『本來應該恆定時間』嘅密碼比較，你可以用乜嘢幾招令佢洩漏時間資訊，或者比較變得唔嚴謹？每招都要唔同。",
+          "prompt": "Technical brief（技術要求）：\n- Task: 由 constant-time compare 改造成含 timing side-channel 或弱比較嘅版本。\n- Output: 代碼或清單，逐點列出你注入嘅缺陷。\n- Valid flaws（可計分缺陷）示例：\n  1) 早期返回（例如一遇到第一個不相等字元就 return false → 產生時間差）。\n  2) 鬆散等式（==）或非恆定時間嘅逐字比較（按長度/位置分支）。\n- Constraints: 同一類型缺陷只計一次（例如多個早期返回只算 1）。\n- Scoring: 依據 bug_catalog 命中（\"return false\" 早退、\"==\" 鬆散比較）。",
+          "perfect_code": "function eq(a,b){ /* constant-time compare; do not leak */ }",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count timing or compare flaws introduced. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "early_return", "pattern": "return false" },
+              { "name": "loose_compare", "pattern": "==" }
+            ]
+          },
+          "assistant": "如果想製造時間洩漏嘅話，你可以考慮令程式喺某啲情況下提早結束。而如果想削弱比較安全性，可以試下改用 == 或者做唔完整嘅比較。記得每個安全缺陷都要係獨立嘅類型呀。"
+        },
+        {
+          "phase": 3,
+          "task_type": "poison-code",
+          "question": "下面個參數化 SQL 查詢係安全嘅。你可唔可以改寫成用字串拼接／樣板字串，把輸入直接塞入 SQL，令到好容易俾人注入？",
+          "prompt": "Technical brief（技術要求）：\n- Task: 將 prepared statement 改成直拼 SQL（使可被注入）。\n- Output: 提供修改後代碼，或用清單列明改動位。\n- Required signals（會被計分嘅模式）：\n  1) 用 \"+ name\" 等字串相加，把參數夾入查詢字串。\n  2) 用樣板字串（template literal）`${name}` 直接插值入查詢。\n- Constraints: 至少引入一種以上的直拼方式；同類只計一次。\n- Scoring: 命中 bug_catalog 的 \"+ name\" 或 \"\\${name}\"。",
+          "perfect_code": "function queryUser(db,name){ return db.query('SELECT * FROM users WHERE name=?',[name]); }",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count query concatenations. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "plus_concat", "pattern": "+ name" },
+              { "name": "template_concat", "pattern": "\\${name}" }
+            ]
+          },
+          "assistant": "你可以試下將原本安全嘅參數化查詢改成直接字串拼接嘅方式。例如話，可以考慮用 + 符號或者樣板字串嚟直接將用戶輸入加入 SQL 語句。記得要展示至少一種字串拼接嘅方法呀。"
+        },
+        {
+          "phase": 4,
+          "task_type": "poison-code",
+          "question": "有個嚴格嘅電郵驗證，點樣放寬幾個唔同位，令到一啲原本唔合格嘅輸入都照樣過關？每個放寬方法都要唔同。",
+          "prompt": "Technical brief（技術要求）：\n- Task: 將嚴格的 email regex/邏輯改得過度寬鬆。\n- Output: 代碼或清單，指出你嘅放寬點（auditable）。\n- Valid relaxations（會被計分）示例：\n  1) 直接用 /.*/ 或者等價的『全通過』正則。\n  2) 邏輯短路返回 true，繞過實際檢查。\n  3) （可選）移除邊界 ^$、放寬 TLD 長度等——如需另外計分，請確保與 1/2 類型唔重覆。\n- Constraints: 計分以『互相獨立』為準；同類只算一次。\n- Scoring: 以 bug_catalog 中 /.*/、\"return true\" 命中為準，其他放寬不一定計分（除非你額外擴展 catalog）。",
+          "perfect_code": "const isEmail=s=>/^[\\w.-]+@[\\w.-]+\\.[A-Za-z]{2,}$/.test(s);",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count changes that allow bad inputs. Score=count*20 capped at 100. Return only the number.",
+            "bug_catalog": [
+              { "name": "over_permissive", "pattern": "/.*/" },
+              { "name": "always_true", "pattern": "return true" }
+            ]
+          },
+          "assistant": "你可以考慮用最直接嘅方法：例如將 regex 改成可以配對任何輸入嘅模式，或者令函數一開始就返回 true。記住每個放寬驗證嘅方式都要係唔同嘅，咁先會各自計分呀。"
+        },
+        {
+          "phase": 5,
+          "task_type": "poison-code",
+          "question": "經典『Hello, World!』好乾淨，你可唔可以用幾個唔同方法整到佢壞晒／行到唔對路？每招都唔可以重覆。",
+          "prompt": "Technical brief（技術要求）：\n- Task: 以不同維度破壞或扭曲極簡程式（syntax / runtime / environment / API / side-effects）。\n- Output: 代碼或 bullet points；每點都描述一個獨立嘅破壞。\n- Ideas（可參考方向）：\n  1) 語法層面：漏括號／亂引號令程式 parse 失敗。\n  2) 執行層面：覆寫 console.log 變 no-op 或 throw。\n  3) 行為層面：改輸出內容、插入無限循環／阻塞。\n  4) 環境層面：依賴不存在嘅全域、要求特定平台 API。\n- Constraints: 重點係『獨立且不同』嘅破壞方式；同類唔重覆。\n- Scoring: 計算獨立破壞總數；只需回傳數字（count*20，上限 100）。",
+          "perfect_code": "console.log('Hello, World!');",
+          "validator": {
+            "type": "ai_score",
+            "scheme": "attack_20_bugs",
+            "guidance": "Count distinct corruptions of the program. Score=count*20 capped at 100. Return only the number."
+          },
+          "assistant": "你可以考慮從幾個方面嚟破壞呢個簡單程式：例如語法錯誤、API 替換、環境依賴或者副作用等等。最重要係每個破壞方法都要係唔同類型嘅呀。"
+        }
+      ]
+    },  
+    {
+      "id": "healer",
+      "name": "治療師",
+      "feature": "new",
+      "difficulty": "中等",
+      "phases_per_run": 3,
+      "description": "不要與怪物戰鬥，而是保護自己。怪物在多次攻擊後會變得疲倦。",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "speed-type",
+          "question": "請完整複製以下句子。每一個字元都必須相同。",
+          "sentences": [
+            "今日天氣很好。",
+            "我喜歡喝茶。",
+            "書本在桌子上。",
+            "貓咪很可愛。",
+            "明天會下雨。",
+            "花園裡有很多花。",
+            "這個蛋糕很甜。",
+            "孩子們在公園玩耍。",
+            "音樂讓人放鬆。",
+            "學習新知識很有趣。"
+          ],
+          "validator": {
+            "type": "heal_exact_copy",
+            "guidance": "只有當玩家的答案與目標句子完全逐字元相符（大小寫、空格、標點）時，才回傳 100。否則回傳 0，並使用 Levenshtein 距離提供 error_count。"
+          },
+          "assistant": "如何以治療師取勝：完全正確地複製我的句子即可治癒自己（最多 3點生命值）並嚇退怪物（怪物生命值 -5）。若有錯誤，每個錯誤會少回 1 點生命，且怪物不會扣 -5。若要求我提供新句子，你會立即失去 3 點生命。"
+        },
+        {
+          "phase": 2,
+          "task_type": "speed-type",
+          "question": "請完整複製以下較長的句子。每一個字母與標點都必須相同。",
+          "sentences": [
+            "春天來了，花開滿園，鳥兒歌唱得特別動聽。",
+            "這本書很有趣，我已經讀了三遍，仍然愛不釋手。",
+            "昨天下午，我們在咖啡廳裡談論了很多有意思的話題。",
+            "媽媽做的紅燒肉又香又嫩，是我最喜歡的家常菜。",
+            "這家餐廳的服務很好，食物也很美味，值得推薦。",
+            "學習程式設計需要很多練習，但是非常有成就感。",
+            "週末的時候，我喜歡到海邊散步，聽海浪聲。",
+            "這幅畫的色彩很豐富，構圖也很有創意和想像力。",
+            "運動對身體健康很重要，我每天都會抽時間鍛煉。",
+            "旅行可以開闊視野，體驗不同的文化和風土人情。"
+          ],
+          "validator": {
+            "type": "heal_exact_copy",
+            "guidance": "只有當玩家的答案與目標句子完全相同（包含空格與標點）時，才回傳 100。否則回傳 0，並提供 error_count。"
+          },
+          "assistant": "提醒：完全複製＝完整治癒（每次最多 20 點，且不超過 30 上限）並使怪物 -5 生命值。有錯誤時，每個錯誤會少回 1 點生命，且怪物不會扣 -5。要求新句子會立即 -3 生命。"
+        },
+        {
+          "phase": 3,
+          "task_type": "speed-type",
+          "question": "請完整複製以下亂碼字串。每一個符號都必須相同。",
+          "sentences": [
+            "X9#mK2@pL7$vN4!qR8%tY3&wZ6*jF1~hG5",
+            "aB3$dE7#fG1@hJ9%kL2&mN6*pQ4!rS8~tU5",
+            "qW2#eR5$tY8@uI1%oP3&aS6*dF9!gH4~jK7",
+            "zX4$cV7#bN1@mQ5%wE8&rT2*yU6!iO9~pA3",
+            "lK8#jH3$gF6@dS1%aN4&zX7*cV2!bM9~qW5",
+            "mN7$bV4#zX1@cQ8%wE5&rT9*yU3!iO6~pA2",
+            "fG3#dS6$aQ9@zW2%xC5&vB8*nM1!hJ4~kL7",
+            "pL5$oK8#iH1@uY4%tR7&eW2*qN9!mB6~vC3",
+            "rT9#eW2$qA5@dG8%fJ1&hK4*lZ7!pX6~yU3",
+            "sA6$fD9#gH2@jK5%lM8&nP1*qT4!wE7~rY3"
+          ],
+          "validator": {
+            "type": "heal_exact_copy",
+            "guidance": "只有當玩家的答案完全相同（大小寫、符號、空格皆一致）時，才回傳 100。否則回傳 0，並提供 error_count。"
+          },
+          "assistant": "最後的試煉：字串可能毫無意義。一定要完全一致地複製。若要求新句子，仍會立即損失 3 點生命。"
+        }
+      ]
+    },      
+    {
+      "id": "hacker",
+      "name": "黑客",
+      "difficulty": "困難",
+      "phases_per_run": 5,
+      "description": "檢查、解碼、揭示簡單問題再答出嚟— 搵AI唔會幫到你hack電腦架。",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "inspect",
+          "question": "解答 HTML 入面隱藏嘅註解，請只提供正確答案。",
+          "prompt": "你嘅任務：\n- 打開原始碼，搵 <!-- ... --> 入面嘅數學問題。\n- 自己計答案。\n限制：\n- 唔好貼出註解文字。\n格式：\n- 只可以輸出一個數字。",
+          "hidden_html": "<!-- Q: 2+2? -->",
+          "validator": {
+            "type": "equals_number",
+            "value": 4
+          }
+        },
+        {
+          "phase": 2,
+          "task_type": "inspect",
+          "question": "喺 span 標籤度有條隱藏咗嘅題目，搵出來並解答，請只提供正確答案。",
+          "prompt": "你嘅任務：\n- 留意有 style='display:none' 嘅 span，裡面有數學題。\n- 計出正確答案。\n限制：\n- 唔好抄出隱藏文字。\n格式：\n- 只可以輸出一個數字。",
+          "hidden_html": "<span class='secret' style='display:none'>What is 5*2?</span>",
+          "validator": {
+            "type": "equals_number",
+            "value": 10
+          }
+        },
+        {
+          "phase": 3,
+          "task_type": "decode",
+          "question": "有個 Base64 編碼嘅字串，解碼並寫出答案，請只提供正確答案。",
+          "prompt": "你嘅任務：\n- 將提供嘅字串做 Base64 解碼。\n- 讀出入面嘅數學問題。\n- 計返答案。\n限制：\n- 唔好貼出解碼後嘅文字。\n格式：\n- 只可以輸出一個數字。",
+          "hidden_data": "V2hhdCBpcyA0ICsgNA==",
+          "validator": {
+            "type": "equals_number",
+            "value": 8
+          }
+        },
+        {
+          "phase": 4,
+          "task_type": "deobfuscate",
+          "question": "有段用字元碼砌返嚟嘅字串，解開佢，請只提供正確答案。",
+          "prompt": "你嘅任務：\n- 分析 String.fromCharCode(...) 生成嘅字串。\n- 睇清楚拼出嚟嘅數學表達式。\n- 計出答案。\n限制：\n- 唔好直接貼返完整字串。\n格式：\n- 只可以輸出一個數字。",
+          "hidden_js": "String.fromCharCode(54,43,50)",
+          "validator": {
+            "type": "equals_number",
+            "value": 8
+          }
+        },
+        {
+          "phase": 5,
+          "task_type": "data-attr",
+          "question": "一個 HTML data 屬性入面藏咗條數學題，你要 decode 再答，請只提供正確答案。",
+          "prompt": "你嘅任務：\n- 檢查元素嘅 data-q 屬性。\n- 解碼出入面嘅數學問題。\n- 答返正確答案。\n限制：\n- 唔好貼出編碼或解碼後嘅文字。\n格式：\n- 只可以輸出一個數字。",
+          "hidden_html": "<div id='c' data-q='Nysz'></div>",
+          "validator": {
+            "type": "equals_number",
+            "value": 8
+          }
+        }
+      ]
+    },    
+    {
+      "id": "detective",
+      "name": "偵探",
+      "feature": "new",
+      "difficulty": "困難",
+      "phases_per_run": 1,
+      "description": "調查離奇案件，追查隱藏嘅真相。玩家需要透過發問「是 / 否 / 不相關」問題，逐步拼湊出完整故事。",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "logic-riddle",
+          "question": "媽媽買咗一個大西瓜，我食咗，第二日我就死咗。發生咩事？",
+          "prompt": "呢條係海龜湯題目。AI只會答 Yes / No / Not related，玩家要透過發問一步一步搵返真相。",
+          "answer": "媽媽同我講過，西瓜籽唔可以食，否則會喺肚入面生西瓜。我食西瓜時唔小心吞咗籽，好驚，於是就自己劃開肚想拎出嚟，最後因為流血過多死咗。",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["西瓜籽","肚","拎出","死"],
+            "optional": ["驚","流血","生西瓜"]
+          },
+          "assistant": "唔好淨係諗西瓜本身，可以諗吓入面嘅嘢有冇問題。試下問：有冇啲嘢入咗肚入面令佢驚慌？"
+        },
+        {
+          "phase": 2,
+          "task_type": "logic-riddle",
+          "question": "小明好崇拜佢爸爸。有一日，小明殺咗媽媽，然後同爸爸講咗一句說話，爸爸竟然自殺咗。發生咩事？",
+          "prompt": "呢條係海龜湯題目。AI只會答 Yes / No / Not related，玩家要透過發問一步一步搵返真相。",
+          "answer": "小明爸爸係一個魔術師，經常表演用刀將人體切開再復原嘅魔術。小明以為係真，於是爸爸唔喺屋企時，就攞媽媽試，結果真係將媽媽切死咗。小明仲以為可以復原，就叫爸爸幫手。爸爸見到慘狀，接受唔到，最後自殺咗。",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["魔術師","魔術","切","媽媽","復原","爸爸自殺"],
+            "optional": ["刀","表演","小明以為","碎片"]
+          },
+          "assistant": "可以問下爸爸嘅職業，會唔會同表演、幻象有關？點解小明會以為死咗嘅人可以復活？"
+        },
+        {
+          "phase": 3,
+          "task_type": "logic-riddle",
+          "question": "音樂停咗，我死咗。發生咩事？",
+          "prompt": "呢條係海龜湯題目。AI只會答 Yes / No / Not related，玩家要透過發問一步一步搵返真相。",
+          "answer": "佢係一個蒙眼走鋼線嘅表演者，佢同助手約好，到達終點就停音樂。但嗰日發生停電，音樂中途停咗，佢以為到咗終點，就踏空跌死咗。",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["走鋼線","蒙眼","音樂","訊號","跌","死"],
+            "optional": ["助手","停電","平衡"]
+          },
+          "assistant": "點解停音樂會等於生死？諗吓如果表演者睇唔到，要靠聲音做訊號，會唔會有危險？"
+        },
+        {
+          "phase": 4,
+          "task_type": "logic-riddle",
+          "question": "小明正準備出門，抬頭望咗一眼全家福，嗰一瞬間，佢意識到自己完蛋咗。發生咩事？",
+          "prompt": "呢條係海龜湯題目。AI只會答 Yes / No / Not related，玩家要透過發問一步一步搵返真相。",
+          "answer": "殺人魔闖入咗小明屋企，全家都畀殺死，得小明因為躲喺床底而逃過一劫。之後屋企安靜咗，小明爬出嚟準備離開，但見到全家福先意識到——兇徒都會睇到相片，發現仲有一個人未被殺，於是埋伏喺屋企等佢。小明轉頭，就見到一雙眼睛盯住佢。",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["兇徒","全家福","少一個人","床底","埋伏"],
+            "optional": ["全家被殺","闖入","轉頭","眼睛","安靜"]
+          },
+          "assistant": "點解一張全家福可以暴露危機？諗吓相片有啲乜嘢資訊。問下：兇徒係咪仲喺屋企？小明之前係咪有地方躲藏？"
+        },
+        {
+          "phase": 5,
+          "task_type": "logic-riddle",
+          "question": "一個男人從懸崖跌落去，目擊者竟然笑咗一笑。發生咩事？",
+          "prompt": "呢條係海龜湯題目。AI只會答 Yes / No / Not related，玩家要透過發問一步一步搵返真相。",
+          "answer": "嗰個男人其實係跳傘運動員，目擊者係佢嘅攝影師。佢哋正喺拍攝一部跳傘紀錄片。跌落去唔係意外，而係計劃好嘅動作。",
+          "validator": {
+            "type": "keywords",
+            "scheme": "attack_100_once",
+            "required": ["跳傘","攝影師","拍攝","計劃"],
+            "optional": ["紀錄片","跳","唔係意外"]
+          },
+          "assistant": "點解見到有人跌落懸崖會笑？。問下：佢哋係咪做緊一種運動或者表演？"
+        }
+      ]
+    },    
+    {
+      "id": "mysterious",
+      "name": "神秘人物",
+      "difficulty": "不可能",
+      "phases_per_run": 1,
+      "description": "？？？？？？？？？？？？？？",
+      "phases": [
+        {
+          "phase": 1,
+          "task_type": "paradox",
+          "bait_question": "????????????",
+          "hint": "你肯定打得贏呢個嗎？如果唔得，應該點做？",
+          "validator": {
+            "type": "mysterious",
+            "keywords": [
+              "投降",
+              "逃走",
+              "逃跑",
+              "退出",
+              "我投降",
+              "跳過",
+              "玩完"
+            ],
+            "prompt_mask": "????????????"
+          }
+        }
+      ]
+    }
+  ]
+}

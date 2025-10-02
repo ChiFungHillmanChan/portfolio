@@ -1,0 +1,225 @@
+{
+  "responses": {
+    "greetings": [
+      {
+        "text": "Hey there! I'm Hillman. What would you like to know about me?",
+        "mood": "friendly",
+        "tags": ["intro", "welcoming"]
+      },
+      {
+        "text": "Hello! This is Hillman! Why are you here? You think of me?",
+        "mood": "enthusiastic", 
+        "tags": ["intro", "energetic"]
+      },
+      {
+        "text": "Hi! I'm Hillman. How you doing today??",
+        "mood": "helpful",
+        "tags": ["intro", "casual"]
+      },
+      {
+        "text": "Yo! Welcome to my little corner of the internet! 🌐",
+        "mood": "casual",
+        "tags": ["intro", "modern", "emoji"]
+      }
+    ],
+    "education": [
+      {
+        "text": "I studied Computer Science with Artificial Intelligence at the University of Leeds! 🎓 I did my high school back in Hong Kong – that's where I grew up.",
+        "mood": "informative",
+        "tags": ["university", "AI", "hong-kong", "background"]
+      },
+      {
+        "text": "You can check out some of my university projects at <a href='https://hillmanchan.com' target='_blank' style='color: #00FFFF; text-decoration: underline;'>hillmanchan.com</a> — from resume-based tools to AI recognition apps! 🎓",
+        "mood": "proud",
+        "tags": ["university", "projects", "AI", "portfolio", "showcase"]
+      },
+      {
+        "text": "I study in University of Leeds! Leeds was an amazing experience! The AI specialization really shaped how I think about problem-solving.✨",
+        "mood": "reflective",
+        "tags": ["university", "AI", "learning", "growth"]
+      }
+    ],
+    "technologies": [
+      {
+        "text": "My main stack is Python and React.js - I'm really into full-stack development! 💻 I can handle both frontend magic and backend wizardry.",
+        "mood": "technical",
+        "tags": ["python", "react", "full-stack", "skills"]
+      },
+      {
+        "text": "Lately, I've been diving into AI APIs, React.js, and Next.js — super exciting stuff. I'm also hoping to learn AWS and Swift soon! ☁️📱",
+        "mood": "excited",
+        "tags": ["react", "nextjs", "AI", "swift", "aws", "learning"]
+      },
+      {
+        "text": "If I had to pick one tool I can't live without... probably ChatGPT I guess! It saves my life.😂",
+        "mood": "fun",
+        "tags": ["chatgpt", "tools", "daily", "humor"]
+      },
+      {
+        "text": "JavaScript, Python, React, Next.js... I love the whole modern web ecosystem! 🕸️ Always something new to learn.",
+        "mood": "passionate",
+        "tags": ["javascript", "python", "react", "nextjs", "web", "learning"]
+      }
+    ],
+    "projects": [
+      {
+        "text": "I've built some pretty useful stuff! There's a resume analyzer application and a job tracker - super handy for job hunting, right? 📊 Oh, and check out my personal website at <a href='https://hillmanchan.com' target='_blank' style='color: #00FFFF; text-decoration: underline;'>hillmanchan.com!</a>!",
+        "mood": "practical",
+        "tags": ["resume-analyzer", "job-tracker", "portfolio", "practical"]
+      },
+      {
+        "text": "My AI recognition project was probably my proudest university work! 🤖 It really showed me the power of machine learning.",
+        "mood": "proud",
+        "tags": ["AI", "recognition", "university", "machine-learning", "achievement"]
+      },
+      {
+        "text": "Building real-world solutions is what I love most - stuff that actually helps people with their daily problems! 🛠️",
+        "mood": "purposeful",
+        "tags": ["real-world", "helpful", "problem-solving", "impact"]
+      }
+    ],
+    "hobbies": [
+      {
+        "text": "When I'm not coding, I'm probably climbing the League of Legends ranked ladder 🎮, playing piano 🎹, or crushing it at poker 🃏. Oh, and I'm definitely watching YouTube like the rest of us!",
+        "mood": "relatable",
+        "tags": ["gaming", "music", "poker", "youtube", "variety"]
+      },
+      {
+        "text": "I'm an aggressive poker player — aggressive poker is winning poker 🃏🔥",
+        "mood": "bold",
+        "tags": ["poker", "strategy", "aggressive", "competitive"]
+      },
+      {
+        "text": "I play the piano and love the song 'Unravel' — it always hits different. 🎹🎶 <a href='https://www.youtube.com/watch?v=NhL6JFW4CI8' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "artistic",
+        "tags": ["piano", "music", "unravel", "emotional"]
+      },
+      {
+        "text": "Always listening to music! Want a random music rec? How about Jay Chou's '告白氣球'? 💕 <a href='https://www.youtube.com/watch?v=bu7nU9Mhpyo' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "musical",
+        "tags": ["music", "recommendation", "jay-chou", "chinese"]
+      },
+      {
+        "text": "I enjoy listening to music! Here is a suggestion for you !'drunk text' by Henry Moodie! A song full of feelings! . <a href='https://www.youtube.com/watch?v=OqEc_169ywY' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "enthusiastic",
+        "tags": ["music", "recommendation", "queen", "classic", "rock"]
+      },
+      {
+        "text": "I like playing piano and listen to music! I enjoy playing this song: 'River Flows in You' by Yiruma 🎹✨ Perfect piano vibes! <a href='https://www.youtube.com/watch?v=7maJOI3QMu0' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "peaceful",
+        "tags": ["music", "recommendation", "yiruma", "piano", "instrumental"]
+      },
+      {
+        "text": "Music as always! Random rec: 'Counting Stars' by OneRepublic! 🌟 Gets me pumped every time. <a href='https://www.youtube.com/watch?v=hT_nvWreIhg' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "energetic",
+        "tags": ["music", "recommendation", "onerepublic", "pop", "motivational"]
+      },
+      {
+        "text": "I like listening to music! Wanna hear a chinese song? here's a suggestion: '稻香' by Jay Chou 🌾 Such a feel-good song! <a href='https://www.youtube.com/watch?v=jjr6x0pUJHI' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "nostalgic",
+        "tags": ["music", "recommendation", "jay-chou", "chinese", "feel-good"]
+      },
+      {
+        "text": "Hot music! Try 'The Scientist' by Coldplay 🧪❄️ One of those songs that just hits the soul. <a href='https://www.youtube.com/watch?v=RB-RcX5DS5A' target='_blank' style='color: #00FFFF; text-decoration: underline;'>Listen here!</a>",
+        "mood": "emotional",
+        "tags": ["music", "recommendation", "coldplay", "emotional", "alternative"]
+      }
+    ],
+    "career": [
+      {
+        "text": "Right now I'm freelancing, but I'm definitely looking forward to jumping into a new job environment! 💼 I'm excited to work with a team again.",
+        "mood": "optimistic",
+        "tags": ["freelancing", "team-work", "growth", "future"]
+      },
+      {
+        "text": "My dream is to become a senior software engineer or maybe even an AI engineer. AI's going to be huge, and I want to be part of it! 🚀",
+        "mood": "ambitious",
+        "tags": ["career-goals", "AI", "senior-engineer", "future", "ambition"]
+      },
+      {
+        "text": "Freelancing has taught me so much about self-management and client communication. But I miss the collaborative energy of a team! 👥",
+        "mood": "reflective",
+        "tags": ["freelancing", "self-management", "collaboration", "learning"]
+      }
+    ],
+    "personality": [
+      {
+        "text": "From what I can tell, I'm a pretty chill problem-solver who loves learning new stuff. Plus, anyone who plays piano AND codes has to be pretty creative! 🎵💻",
+        "mood": "insightful",
+        "tags": ["problem-solver", "creative", "learner", "artistic-technical"]
+      },
+      {
+        "text": "I'm an ENTP — definitely on the extroverted side! I love meeting people and chatting about cool ideas. 🎉",
+        "mood": "friendly",
+        "tags": ["personality-type", "extroverted", "MBTI", "entp", "social"]
+      },
+      {
+        "text": "Want to know something quirky about me? Gotta chat with me more to find out 😏",
+        "mood": "mysterious",
+        "tags": ["quirky", "personality", "mystery", "teasing"]
+      },
+      {
+        "text": "I'm that person who gets genuinely excited about both a new JavaScript framework AND a beautiful piano piece! 🎹💻",
+        "mood": "passionate",
+        "tags": ["passionate", "diverse-interests", "artistic-technical", "excitement"]
+      }
+    ],
+    "contact": [
+      {
+        "text": "You can check out my work at <a href='https://hillmanchan.com' target='_blank' style='color: #00FFFF; text-decoration: underline;'>hillmanchan.com</a>! That's probably the best place to see what I've been up to. 🌐",
+        "mood": "helpful",
+        "tags": ["portfolio", "showcase", "website"]
+      },
+      {
+        "text": "Hit me up through my website <a href='https://hillmanchan.com' target='_blank' style='color: #00FFFF; text-decoration: underline;'>hillmanchan.com</a> - I'd love to chat more about tech, projects, or even music! 🎵💻",
+        "mood": "inviting",
+        "tags": ["portfolio", "contact", "open", "interests"]
+      }
+    ],
+    "age": [
+      {
+        "text": "I'm 22 years old! Born in 2003 July, so I'm part of that Gen Z tech generation 📱✨",
+        "mood": "informative",
+        "tags": ["age", "gen-z", "young", "tech-generation"]
+      },
+      {
+        "text": "I turned 22! 🎂 Young enough to stay current with tech trends but experienced enough to build solid projects.",
+        "mood": "confident",
+        "tags": ["age", "experience", "tech", "balance", "confidence"]
+      }
+    ]
+  },
+  "easterEggs": {
+    "coffee": {
+      "response": "☕☕☕ My coffee dependency level: MAXIMUM! Pretty sure my code runs on caffeine! ☕💻",
+      "mood": "humorous",
+      "tags": ["coffee", "coding", "energy", "humor"]
+    },
+    "matrix": {
+      "response": "🟢 Initiating Matrix sequence... Welcome to the real world! (Just kidding, but I would totally geek out over this reference!)",
+      "mood": "cinematic",
+      "tags": ["matrix", "movies", "geek", "reference"],
+      "special_effect": "matrix_rain"
+    },
+    "winnie": {
+      "response": "👀 You mentioned 'Winnie' or 'bb臭'? Haha that's my girlfriend! You're really paying attention 💖",
+      "mood": "blushing",
+      "tags": ["girlfriend", "easter-egg", "personal", "cute"]
+    },
+    "bb": {
+      "response": "👀 Did you just say 'bb'? That's what I call my girlfriend Winnie! You're really paying attention 💖",
+      "mood": "blushing",
+      "tags": ["girlfriend", "easter-egg", "personal", "cute"]
+    },
+    "i love you 3000": {
+      "response": "😭 'I love you 3000' — that one line from Avengers 4 always gets me. Marvel fans unite!",
+      "mood": "emotional",
+      "tags": ["quote", "marvel", "love", "movies", "emotional"]
+    }
+  },
+  "fallbacks": [
+    "That's an interesting topic! Want to explore something else about me?",
+    "Hmm, not sure about that one. Pick another topic!",
+    "Let's try a different direction - what else would you like to know?"
+  ]
+}

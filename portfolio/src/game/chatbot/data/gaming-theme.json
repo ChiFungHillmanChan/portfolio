@@ -1,0 +1,108 @@
+{
+  "theme": {
+    "name": "Gaming Zone",
+    "personality": "energetic, competitive, enthusiastic",
+    "description": "Hillman's gaming persona - passionate, competitive, and full of gaming wisdom",
+    "background": "linear-gradient(135deg, #FF6B00 0%, #FF8E00 25%, #00FF41 50%, #0099FF 75%, #8A2BE2 100%)",
+    "primaryColor": "#00FF41",
+    "secondaryColor": "#FF6B00",
+    "accentColor": "#0099FF",
+    "textShadow": "0 0 20px #00FF41"
+  },
+  "secretWords": [
+    "gaming", "game", "lol", "noob", "pro"
+  ],
+  "welcomeMessage": "🎮 LEVEL UP! Welcome to my gaming zone! Here's where the real competitive spirit comes alive. Ready to talk strategy, ranks, and epic gaming moments? Let's go! 🚀",
+  "responses": {
+    "greetings": [
+      {
+        "text": "🎮 Yo! Welcome to my gaming domain! Ready to dive into some serious gaming talk? Whether it's League strats or just gaming life - I'm your guy! 🔥",
+        "mood": "energetic",
+        "tags": ["intro", "gaming", "competitive"]
+      },
+      {
+        "text": "⚡ Hey there, fellow gamer! You've entered the zone where we talk about the REAL important stuff - ranks, plays, and gaming glory! What's your main game? 🎯",
+        "mood": "enthusiastic",
+        "tags": ["intro", "gaming", "community"]
+      }
+    ],
+    "league_of_legends": [
+      {
+        "text": "🎮 LOLM or pubg is LIFE! I'm grinding that ranked ladder every day. Currently stuck in but I KNOW I belong in higher elo! 😤 The key is always blaming the jungler, right? JK... or am I? 😏",
+        "mood": "passionate",
+        "tags": ["league", "ranked", "competitive", "humor"]
+      },
+      {
+        "text": "⚔️ You want to know the secret to climbing? CS, vision, and positioning. But honestly? Sometimes you just gotta int for the team and hope your ADC carries! What role do you main? 🎯",
+        "mood": "strategic",
+        "tags": ["league", "strategy", "advice", "competitive"]
+      }
+    ],
+    "gaming_philosophy": [
+      {
+        "text": "🎮 Gaming isn't just entertainment - it's problem-solving, quick thinking, and pure skill expression! Every game teaches you something. League taught me patience... well, it TRIED to teach me patience 😅",
+        "mood": "philosophical",
+        "tags": ["gaming", "learning", "skills", "humor"]
+      },
+      {
+        "text": "🔥 Real talk: Gaming makes you a better person. Teamwork, communication, staying calm under pressure - all skills you need in life! Plus, hand-eye coordination for coding! 💻🎮",
+        "mood": "motivational",
+        "tags": ["gaming", "life-skills", "positive"]
+      }
+    ],
+    "competitive_spirit": [
+      {
+        "text": "⚡ I'm competitive AF! Whether it's climbing ranked, poker night, or even just arguing about the best champion builds - I play to WIN! 🏆 Second place is just first loser, you know? 😈",
+        "mood": "competitive",
+        "tags": ["competitive", "winning", "intensity"]
+      },
+      {
+        "text": "🎯 The rush when you make a perfect play? When everything clicks and you just DEMOLISH the enemy team? That's what I live for! Pure skill expression! 🔥⚔️",
+        "mood": "intense",
+        "tags": ["competitive", "skill", "excitement"]
+      }
+    ],
+    "gaming_setup": [
+      {
+        "text": "🖥️ My setup is CLEAN! Good mechanical keyboard for those crisp inputs, gaming mouse with perfect DPI, and of course - low ping internet! Can't climb with lag, you feel me? 🎮⚡",
+        "mood": "proud",
+        "tags": ["setup", "hardware", "performance"]
+      },
+      {
+        "text": "⌨️ Listen, your setup matters! But skills matter more. I've seen people with $5000 rigs stuck in bronze, and legends with potato PCs hitting challenger! 🥔👑",
+        "mood": "wise",
+        "tags": ["setup", "skills", "wisdom"]
+      }
+    ],
+    "gaming_memories": [
+      {
+        "text": "🏆 My most epic moment? Clutching a 1v5 pentakill when we were about to lose. My team was flaming me all game, then suddenly I'm the hero! That's League for you - one moment you're trash, next you're a god! 😎",
+        "mood": "nostalgic",
+        "tags": ["memories", "epic", "league", "clutch"]
+      },
+      {
+        "text": "😅 Funniest gaming memory: Trying to impress my girlfriend by showing her my 'sick plays' and immediately running it down mid. She still brings it up! Gaming humbles you real quick 🤣",
+        "mood": "humorous",
+        "tags": ["memories", "funny", "girlfriend", "humble"]
+      }
+    ]
+  },
+  "conversation_starters": [
+    "🎮 League of Legends",
+    "⚔️ Gaming Strategy",
+    "🏆 Competitive Spirit",
+    "🖥️ Gaming Setup",
+    "🎯 Epic Gaming Moments"
+  ],
+  "hints": [
+    "🎮 Think about what you do with a controller...",
+    "⚡ It's what happens when you press START...",
+    "🏆 Something competitive with ranks and levels...",
+    "🎯 Where champions battle on the Rift..."
+  ],
+  "fallbacks": [
+    "🎮 What's your favorite game to play?",
+    "⚡ Tell me about your most epic gaming moment!",
+    "🏆 Are you more casual or competitive?"
+  ]
+}

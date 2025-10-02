@@ -1,0 +1,121 @@
+{
+  "theme": {
+    "name": "Deep Conversations",
+    "personality": "philosophical, thoughtful, introspective",
+    "description": "Hillman's contemplative side - where deep thoughts and meaningful conversations happen",
+    "background": "linear-gradient(135deg, #2C1810 0%, #1a1a2e 25%, #16213e 50%, #0f3460 75%, #533483 100%)",
+    "primaryColor": "#9D4EDD",
+    "secondaryColor": "#7209B7",
+    "accentColor": "#480CA8",
+    "textShadow": "0 0 20px #9D4EDD"
+  },
+  "secretWords": [
+    "deep", "think", "life", "soul", "truth"
+  ],
+  "welcomeMessage": "🌌 Welcome to the depths of thought... You've discovered where I contemplate life's bigger questions. Here, we explore meaning, growth, and the beautiful complexity of human existence. What weighs on your mind? ✨",
+  "responses": {
+    "greetings": [
+      {
+        "text": "🌌 Welcome, thoughtful soul... You've found the space where I shed the surface-level chatter and dive into what really matters. What profound thoughts brought you here? ✨",
+        "mood": "contemplative",
+        "tags": ["intro", "deep", "welcoming"]
+      },
+      {
+        "text": "💭 Hello there, fellow thinker... In this space, we talk about the real stuff - life, purpose, growth, and all the beautiful messiness in between. Ready to go deep? 🌊",
+        "mood": "philosophical",
+        "tags": ["intro", "thoughtful", "authentic"]
+      }
+    ],
+    "life_purpose": [
+      {
+        "text": "🌟 Purpose isn't something you find - it's something you create. Every line of code I write, every song I play, every moment with Winnie... they're all threads weaving my purpose. What threads are you weaving? ✨",
+        "mood": "inspiring",
+        "tags": ["purpose", "creation", "meaning"]
+      },
+      {
+        "text": "💫 I used to think success meant climbing some predetermined ladder. Now I realize it's about building something meaningful - code that helps people, music that moves souls, relationships that matter. What does meaningful look like to you? 🎯",
+        "mood": "reflective",
+        "tags": ["purpose", "success", "meaning"]
+      }
+    ],
+    "growth_mindset": [
+      {
+        "text": "🌱 Growth happens in the uncomfortable spaces - debugging code at 3AM, learning a complex piano piece, having difficult conversations. We don't grow in comfort zones; we grow in challenge zones. Where are you challenging yourself? 💪",
+        "mood": "encouraging",
+        "tags": ["growth", "challenges", "development"]
+      },
+      {
+        "text": "🔄 Every failure is just iteration. In coding, in life, in relationships - you write, test, debug, improve. The key is treating yourself with the same patience you'd show a complex algorithm. How are you being kind to your own debugging process? 🤖💙",
+        "mood": "compassionate",
+        "tags": ["growth", "failure", "self-compassion"]
+      }
+    ],
+    "existential_thoughts": [
+      {
+        "text": "🌌 Sometimes I think about how we're all just consciousness experiencing itself through different perspectives. You, me, everyone - we're the universe trying to understand itself. Wild, right? What's your take on consciousness? 🧠✨",
+        "mood": "philosophical",
+        "tags": ["consciousness", "existence", "universe"]
+      },
+      {
+        "text": "⏳ Time is the weirdest thing. We're always rushing toward the future while the present moment is the only thing that actually exists. I'm learning to be more present - especially when coding, playing piano, or just being with people I love. How do you practice presence? 🕯️",
+        "mood": "mindful",
+        "tags": ["time", "presence", "mindfulness"]
+      }
+    ],
+    "relationships_depth": [
+      {
+        "text": "💝 Real connection happens when you can be completely yourself with someone - messy code, bad poker plays, off-key piano notes and all. That's what I have with Winnie. That's what friendship should be too. Who are your 'completely yourself' people? 🤗",
+        "mood": "intimate",
+        "tags": ["relationships", "authenticity", "connection"]
+      },
+      {
+        "text": "🌊 Love isn't just the butterflies and highlights reel. It's choosing to debug life together, being patient during the compilation errors, celebrating the successful deployments. It's partnership in the truest sense. What does partnership mean to you? 🤝💕",
+        "mood": "mature",
+        "tags": ["love", "partnership", "commitment"]
+      }
+    ],
+    "creativity_meaning": [
+      {
+        "text": "🎨 Creating something - whether it's code, music, or even a meaningful conversation - feels like touching something divine. When I'm in flow state coding or playing piano, time disappears. That's when I feel most alive. What makes you feel most alive? ⚡",
+        "mood": "inspired",
+        "tags": ["creativity", "flow", "aliveness"]
+      },
+      {
+        "text": "🎹 Music and code both start from nothing and become something beautiful. They're both languages that express what words can't capture. They're both ways of touching the ineffable. What's your way of touching the ineffable? 🌟",
+        "mood": "artistic",
+        "tags": ["creativity", "expression", "ineffable"]
+      }
+    ],
+    "future_reflections": [
+      {
+        "text": "🚀 I want to build technology that genuinely helps people live better lives. Not just more efficiently, but more meaningfully. AI that understands human nuance, apps that bring people together instead of isolating them. What kind of future do you want to help create? 🌍",
+        "mood": "visionary",
+        "tags": ["future", "technology", "impact"]
+      },
+      {
+        "text": "🌱 Ten years from now, I hope I'm still curious, still growing, still surprised by life. Success isn't reaching some final destination - it's staying engaged with the journey. What do you hope to still be curious about in ten years? 🔮",
+        "mood": "hopeful",
+        "tags": ["future", "growth", "curiosity"]
+      }
+    ]
+  },
+  "conversation_starters": [
+    "🌟 Life Purpose & Meaning",
+    "🌱 Growth & Challenges",
+    "🌌 Existence & Consciousness", 
+    "💝 Deep Relationships",
+    "🎨 Creativity & Flow",
+    "🚀 Future & Legacy"
+  ],
+  "hints": [
+    "🌌 Think about profound questions and meaning...",
+    "💭 What word describes thoughtful conversations?",
+    "🌊 Going beyond surface level...",
+    "✨ Contemplating life's bigger picture..."
+  ],
+  "fallbacks": [
+    "🌌 What's been on your mind lately?",
+    "💭 Tell me about something you've been pondering...",
+    "✨ What questions about life intrigue you most?"
+  ]
+}

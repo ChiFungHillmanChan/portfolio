@@ -84,6 +84,16 @@ const Layout = () => {
                                 </Link>
                             </li>
                             <li>
+                                <a 
+                                    href="https://buymeacoffee.com/hillmanchan709"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="hover:text-blue-500 transition-colors duration-300"
+                                >
+                                    Coffee
+                                </a>
+                            </li>
+                            <li>
                                 <Link 
                                     to="/contact"
                                     className={`hover:text-blue-500 transition-colors duration-300 ${isActiveLink('/contact')}`}
@@ -165,6 +175,17 @@ const Layout = () => {
                                                 >
                                                     projects
                                                 </Link>
+                                            </li>
+                                            <li>
+                                                <a 
+                                                    href="https://buymeacoffee.com/hillmanchan709"
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="block py-2 hover:text-blue-500 transition-colors duration-300"
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                >
+                                                    Coffee
+                                                </a>
                                             </li>
                                             <li>
                                                 <Link 
@@ -270,6 +291,16 @@ const Layout = () => {
                                         <Link to="/projects" className="hover:text-blue-400 transition-colors">
                                             Projects
                                         </Link>
+                                    </li>
+                                    <li>
+                                        <a 
+                                            href="https://buymeacoffee.com/hillmanchan709"
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="hover:text-blue-400 transition-colors"
+                                        >
+                                            Coffee
+                                        </a>
                                     </li>
                                     <li>
                                         <Link to="/contact" className="hover:text-blue-400 transition-colors">

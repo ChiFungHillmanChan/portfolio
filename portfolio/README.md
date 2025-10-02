@@ -68,3 +68,16 @@ This section has moved here: [https://facebook.github.io/create-react-app/docs/d
 ### `npm run build` fails to minify
 
 This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+
+## Buy me a coffee (Stripe Payment Links)
+
+Set the following environment variables (in a `.env` file at the project root) to enable the coffee support page at `/my-offer/coffee`:
+
+```
+REACT_APP_STRIPE_LINK_1=<Payment Link for £1 coffee>
+REACT_APP_STRIPE_LINK_5=<Payment Link for £5 coffee>
+REACT_APP_STRIPE_LINK_10=<Payment Link for £10 coffee>
+REACT_APP_STRIPE_LINK_CUSTOM=<Payment Link that allows custom amount>
+```
+
+These are Stripe Payment Links you generate in your Stripe Dashboard. The custom link should be configured to allow customers to specify the amount.

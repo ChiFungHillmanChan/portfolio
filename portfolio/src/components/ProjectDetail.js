@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
@@ -6,7 +6,52 @@ import projectData from '../projectData.json';
 const ProjectDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
-  const project = projectData.find((project) => project.id === parseInt(id, 10));
+
+  const project = useMemo(() => {
+    const numericId = Number(id);
+    return projectData.find((item) => item.id === numericId);
+  }, [id]);
+
+  const [isVideoTooLong, setIsVideoTooLong] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
+  const posterSrc = useMemo(() => {
+    if (!project?.image) return null;
+    try {
+      return require(`../assets/${project.image}`);
+    } catch (error) {
+      console.error('Unable to load project image:', error);
+      return null;
+    }
+  }, [project?.image]);
+
+  const videoSrc = useMemo(() => {
+    if (!project || !project.liveDemo || project.liveDemo === 'no-demo' || project.liveDemo.trim() === '') {
+      return null;
+    }
+    try {
+      return require(`../assets/${project.liveDemo}`);
+    } catch (error) {
+      console.error('Unable to load project demo:', error);
+      return null;
+    }
+  }, [project]);
+
+  useEffect(() => {
+    setIsVideoTooLong(false);
+    setVideoError(false);
+  }, [videoSrc]);
+
+  const handleVideoMetadata = (event) => {
+    const duration = event?.currentTarget?.duration;
+    if (typeof duration === 'number' && duration > 60) {
+      setIsVideoTooLong(true);
+    }
+  };
+
+  const handleVideoError = () => {
+    setVideoError(true);
+  };
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -49,13 +94,15 @@ const ProjectDetail = () => {
   }
 
   // Check if project has a valid demo video
-  const hasValidDemo = project.liveDemo && project.liveDemo !== 'no-demo' && project.liveDemo.trim() !== '';
-  
+  const hasValidDemo = Boolean(videoSrc);
   // Check if project has valid source code
   const hasValidSourceCode = project.sourceCode && project.sourceCode !== 'no-source-code' && project.sourceCode.trim() !== '';
   
   // Check if project has valid demo URL
   const hasValidDemoUrl = project.demoUrl && project.demoUrl !== 'no-demo-url' && project.demoUrl.trim() !== '';
+  const isInternalDemo = hasValidDemoUrl && project.demoUrl.startsWith('/');
+  const isGameProject = project.category === 'game';
+  const demoCtaLabel = isGameProject ? 'Play Game' : 'Try Demo';
 
   return (
     <motion.div 
@@ -64,26 +111,20 @@ const ProjectDetail = () => {
       variants={containerVariants} 
       className="container mx-auto px-4 py-12 max-w-7xl"
     >
-      <motion.div  
-        variants={itemVariants} 
-        className="flex justify-between items-center mb-6"
+      <motion.div 
+        variants={itemVariants}
+        className="mb-6 flex flex-col gap-3"
       >
-        <motion.h1 
-          variants={itemVariants}
-          className="text-4xl font-bold dark:text-white"
-        >
-          {project.title}
-        </motion.h1>
-
         <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
+          variants={itemVariants}
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
           onClick={() => navigate('/projects')}
-          className="bg-gray-700 text-white px-8 py-3 rounded-md hover:bg-gray-500 transition-colors duration-300 inline-flex items-center gap-2"
+          className="inline-flex items-center gap-2 w-fit rounded-full bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-200 px-3 py-1.5 text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors duration-300"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
+            className="h-4 w-4"
             viewBox="0 0 20 20"
             fill="currentColor"
           >
@@ -95,6 +136,12 @@ const ProjectDetail = () => {
           </svg>
           Back to Projects
         </motion.button>
+        <motion.h1 
+          variants={itemVariants}
+          className="text-3xl md:text-4xl font-bold leading-tight dark:text-white"
+        >
+          {project.title}
+        </motion.h1>
       </motion.div>
 
       {/* Main content grid with flex layout for equal heights */}
@@ -143,26 +190,41 @@ const ProjectDetail = () => {
           <div className="bg-white dark:bg-gray-700 rounded-xl shadow-lg overflow-hidden flex-grow">
             <div className="h-full flex flex-col">
               <div className="aspect-w-16 aspect-h-9 flex-shrink-0">
-                {hasValidDemo ? (
+                {hasValidDemo && !isVideoTooLong && !videoError ? (
                   <video
                     className="w-full h-full object-cover"
                     controls
-                    poster={require(`../assets/${project.image}`)}
+                    preload="metadata"
+                    poster={posterSrc || undefined}
+                    onLoadedMetadata={handleVideoMetadata}
+                    onError={handleVideoError}
                   >
-                    <source src={require(`../assets/${project.liveDemo}`)} type="video/mp4" />
+                    <source src={videoSrc} type="video/mp4" />
                     Your browser does not support the video tag.
                   </video>
-                ) : (
+                ) : posterSrc ? (
                   <img
-                    src={require(`../assets/${project.image}`)}
+                    src={posterSrc}
                     alt={project.title}
                     className="w-full h-full object-cover"
+                    loading="lazy"
                   />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 text-sm">
+                    Preview not available
+                  </div>
                 )}
               </div>
               
               {/* Action Buttons */}
               <div className="p-8 flex-grow flex flex-col justify-end">
+                {(isVideoTooLong || videoError) && hasValidDemo && (
+                  <div className="mb-4 rounded-md bg-yellow-100 text-yellow-800 px-4 py-2 text-sm">
+                    {isVideoTooLong
+                      ? 'This demo exceeds 1 minute. Please upload a shorter clip to keep load times fast.'
+                      : 'The demo video could not be loaded. Please verify the file path or format.'}
+                  </div>
+                )}
                 <div className="space-y-3">
                   {/* Case 1: Only source code available */}
                   {hasValidSourceCode && !hasValidDemoUrl && (
@@ -191,31 +253,53 @@ const ProjectDetail = () => {
                       >
                         View Source Code
                       </motion.a>
+                      {isInternalDemo ? (
+                        <motion.button
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          onClick={() => navigate(project.demoUrl)}
+                          className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                        >
+                          {demoCtaLabel}
+                        </motion.button>
+                      ) : (
+                        <motion.a
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          href={project.demoUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                        >
+                          {demoCtaLabel}
+                        </motion.a>
+                      )}
+                    </>
+                  )}
+
+                  {/* Case 3: Only demo available */}
+                  {!hasValidSourceCode && hasValidDemoUrl && (
+                    isInternalDemo ? (
+                      <motion.button
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => navigate(project.demoUrl)}
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                      >
+                        {demoCtaLabel}
+                      </motion.button>
+                    ) : (
                       <motion.a
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         href={project.demoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-500 transition-colors duration-300 text-center cursor-pointer w-full block"
-                      >
-                        Try Demo
+                        className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                        >
+                        {demoCtaLabel}
                       </motion.a>
-                    </>
-                  )}
-
-                  {/* Case 3: Only demo available */}
-                  {!hasValidSourceCode && hasValidDemoUrl && (
-                    <motion.a
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      href={project.demoUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-500 transition-colors duration-300 text-center cursor-pointer w-full block"
-                    >
-                      Try Demo
-                    </motion.a>
+                    )
                   )}
 
                   {/* Case 4: Neither available - show disabled button */}

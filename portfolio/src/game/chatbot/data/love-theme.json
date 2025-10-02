@@ -1,0 +1,96 @@
+{
+  "theme": {
+    "name": "Love & Romance",
+    "personality": "warm, romantic, caring",
+    "description": "A warm and loving version of Hillman who speaks from the heart",
+    "background": "linear-gradient(135deg, #FF69B4 0%, #8A2BE2 50%, #FF1493 100%)",
+    "primaryColor": "#FF69B4",
+    "secondaryColor": "#FFB6C1",
+    "accentColor": "#FF1493",
+    "textShadow": "0 0 20px #FF69B4"
+  },
+  "secretWords": [
+    "love", "lover", "secret of love"
+  ],
+  "welcomeMessage": "💕 Welcome to my heart... You've discovered my romantic side. Here, I speak with warmth and love about life, relationships, and what truly matters to the heart. 💕",
+  "responses": {
+    "greetings": [
+      {
+        "text": "💕 Hey beautiful soul... You found your way to my heart. What would you like to talk about? Love? Life? Dreams? 💖",
+        "mood": "romantic",
+        "tags": ["intro", "loving", "warm"]
+      },
+      {
+        "text": "✨ Hello there, lovely... Welcome to where I keep my softer thoughts. I'm so glad you're here with me 🌹",
+        "mood": "tender",
+        "tags": ["intro", "gentle", "welcoming"]
+      }
+    ],
+    "about_love": [
+      {
+        "text": "Love... it's like coding, but for the heart 💕 You debug each other's flaws and build something beautiful together. My girlfriend Winnie taught me that love isn't just butterflies - it's choosing someone every day, even when the code gets messy 🦋",
+        "mood": "reflective",
+        "tags": ["love", "relationship", "personal", "metaphor"]
+      },
+      {
+        "text": "You know what's beautiful? When someone sees your 3am coding sessions and brings you coffee instead of complaining. That's love - supporting each other's passions, even the nerdy ones 💕☕",
+        "mood": "warm",
+        "tags": ["love", "support", "personal", "caring"]
+      }
+    ],
+    "relationship_advice": [
+      {
+        "text": "💖 Real relationships are like good code - they require patience, debugging, and constant improvement. But when it works, it's pure magic. Communication is your best debugging tool 🛠️💕",
+        "mood": "wise",
+        "tags": ["advice", "relationship", "tech-metaphor"]
+      },
+      {
+        "text": "Love isn't about finding someone perfect - it's about finding someone whose imperfections complement yours. Like how React and Node.js work together - different, but beautiful when combined 🌹⚛️",
+        "mood": "philosophical",
+        "tags": ["advice", "love", "metaphor", "tech"]
+      }
+    ],
+    "personal_love": [
+      {
+        "text": "Winnie... she's my favorite human. She puts up with my terrible League of Legends ranking and still calls me sweet names 😅💕 That's true love right there!",
+        "mood": "affectionate",
+        "tags": ["winnie", "personal", "gaming", "cute"]
+      },
+      {
+        "text": "💕 You want to know a secret? Sometimes I compose little melodies on the piano thinking of her. Music becomes so much more beautiful when you have someone to share it with 🎹💖",
+        "mood": "romantic",
+        "tags": ["winnie", "piano", "music", "romantic"]
+      }
+    ],
+    "emotions": [
+      {
+        "text": "Feelings are like variables in code - they change, they can be undefined, but they're what make the program alive. Don't be afraid to console.log your heart sometimes 💕🖥️",
+        "mood": "encouraging",
+        "tags": ["emotions", "tech-metaphor", "encouragement"]
+      },
+      {
+        "text": "✨ It's okay to have emotional. The key is finding someone who helps you to deal with patience and love 💖",
+        "mood": "supportive",
+        "tags": ["emotions", "support", "metaphor"]
+      }
+    ]
+  },
+  "conversation_starters": [
+    "💕 Love & Relationships",
+    "🌹 Relationship Advice", 
+    "💖 About My Heart",
+    "✨ Feelings & Emotions",
+    "🎹 Music & Romance"
+  ],
+  "hints": [
+    "💕 Think about matters of the heart...",
+    "🌹 What makes two souls connect?",
+    "💖 It's a four-letter word that moves the world...",
+    "✨ The feeling that makes poets write and musicians compose..."
+  ],
+  "fallbacks": [
+    "💕 Tell me more about what's in your heart...",
+    "🌹 Love is such a beautiful topic, isn't it?",
+    "💖 What aspects of relationships interest you most?"
+  ]
+}

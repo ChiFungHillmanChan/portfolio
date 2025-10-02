@@ -19,6 +19,13 @@ import {
 } from 'react-icons/si';
 
 const MainContent = () => {
+    const categories = [
+        { value: 'all', label: 'All' },
+        { value: 'game', label: 'Game' },
+        { value: 'program', label: 'Program' },
+        { value: 'fullstack', label: 'Full stack' },
+    ];
+
     const [activeCategory, setActiveCategory] = useState('all');
     const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
     const navigate = useNavigate();
@@ -76,7 +83,7 @@ const MainContent = () => {
                             Computer Science & AI Graduate | Software Engineer
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                        I recently earned a degree in Computer Science with a focus on Artificial Intelligence and have a strong interest in developing practical software solutions. I’m excited about the opportunity to contribute to a team, work on impactful projects, and continue learning through new challenges. You can view my portfolio to see examples of my work so far!                        </p>
+                        I recently earned a degree in Computer Science with a focus on Artificial Intelligence. I’m excited about the opportunity to contribute to a team, work on impactful projects, and continue learning through new challenges. You can view my portfolio to see examples of my work so far!</p>
                     </motion.div>
                 </div>
             </section>
@@ -127,18 +134,18 @@ const MainContent = () => {
             <section className="py-12">
                 <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Top 3 Delighted Projects</h2>
                 <div className="mb-8 flex justify-center">
-                    <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-4 py-2 flex gap-2">
-                    {['all', 'web', 'program', 'fullstack'].map((category) => (
+                    <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-3 sm:px-4 py-2 flex flex-wrap sm:flex-nowrap gap-2 justify-center w-full sm:w-auto">
+                    {categories.map(({ value, label }) => (
                         <button
-                        key={category}
-                        className={`px-4 py-1 rounded-full transition-colors duration-300 ${
-                            activeCategory === category 
+                        key={value}
+                        className={`px-3 sm:px-4 py-1 text-sm sm:text-base whitespace-nowrap rounded-full transition-colors duration-300 ${
+                            activeCategory === value 
                             ? 'bg-gray-800 text-white' 
                             : 'hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
                         }`}
-                        onClick={() => setActiveCategory(category)}
+                        onClick={() => setActiveCategory(value)}
                         >
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                        {label}
                         </button>
                     ))}
                     </div>

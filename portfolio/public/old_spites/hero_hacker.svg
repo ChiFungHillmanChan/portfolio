@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Hero Hacker - Bright Brave Vector</title>
+  <defs>
+    <radialGradient id="sky" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e6fff6"/>
+    </radialGradient>
+    <radialGradient id="hood" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#66e3c4"/>
+      <stop offset="100%" stop-color="#18a981"/>
+    </radialGradient>
+    <linearGradient id="code" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#a7f3d0"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#sky)"/>
+  
+  <!-- Confident hooded silhouette -->
+  <path d="M320,300c-36,58-60,136-64,206-6,96 30,186 100,242 44,34 96,50 156,50s112-16 156-50c70-56 106-146 100-242-4-70-28-148-64-206-48,16-110,22-192,22s-144-6-192-22z" fill="url(#hood)"/>
+  
+  <!-- Friendly face -->
+  <g>
+    <ellipse cx="512" cy="376" rx="76" ry="60" fill="#ffe7cf"/>
+    <circle cx="482" cy="368" r="10" fill="#263238"/>
+    <circle cx="542" cy="368" r="10" fill="#263238"/>
+    <path d="M480,398 q32,24 64,0" stroke="#ef8f6b" stroke-width="8" fill="none" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Bright code glyphs -->
+  <g opacity="0.85">
+    <rect x="372" y="560" width="24" height="10" rx="4" fill="url(#code)"/>
+    <rect x="408" y="574" width="56" height="10" rx="4" fill="url(#code)"/>
+    <rect x="476" y="556" width="28" height="10" rx="4" fill="url(#code)"/>
+    <rect x="620" y="560" width="24" height="10" rx="4" fill="url(#code)"/>
+    <rect x="580" y="574" width="56" height="10" rx="4" fill="url(#code)"/>
+    <rect x="540" y="556" width="28" height="10" rx="4" fill="url(#code)"/>
+  </g>
+</svg>

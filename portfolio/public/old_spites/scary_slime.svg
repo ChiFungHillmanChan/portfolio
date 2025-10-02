@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>Acidic Slime - Realistic 2D SVG</title>
+  <desc>A translucent, terrifying slime with bones trapped inside and acidic drips. Vector gradients and filters only.</desc>
+  <defs>
+    <radialGradient id="slimeBg" cx="50%" cy="50%" r="75%">
+      <stop offset="0%" stop-color="#07110c"/>
+      <stop offset="100%" stop-color="#000000"/>
+    </radialGradient>
+    <radialGradient id="slimeBody" cx="50%" cy="40%" r="60%">
+      <stop offset="0%" stop-color="#2ee58e" stop-opacity="0.9"/>
+      <stop offset="60%" stop-color="#0fa25c" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#0a613a" stop-opacity="0.9"/>
+    </radialGradient>
+    <radialGradient id="slimeHighlight" cx="40%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#b8ffd9" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <linearGradient id="acidEdge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#e5ff4f"/>
+      <stop offset="100%" stop-color="#8bc34a"/>
+    </linearGradient>
+    <filter id="gooBlur" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="4"/>
+    </filter>
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feComposite in="SourceGraphic" in2="b" operator="over"/>
+    </filter>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#slimeBg)"/>
+  
+  <!-- Slime body -->
+  <g id="slime">
+    <path id="blob" d="M220,760 C180,700 220,640 280,610 300,600 320,592 358,584 394,576 430,542 452,518 478,490 512,462 560,452 608,442 666,452 706,472 744,492 782,520 810,550 846,588 872,636 866,682 858,744 814,790 754,812 688,836 610,846 540,842 474,838 412,820 356,804 310,792 260,792 236,784 226,780 222,770 220,760 Z" fill="url(#slimeBody)" filter="url(#innerShadow)"/>
+    
+    <!-- Internal bones -->
+    <g opacity="0.55" filter="url(#gooBlur)">
+      <!-- Skull -->
+      <path d="M520,540c-26,0-50,18-58,42-10,32 6,66 36,80 18,8 38,8 56,0 30,-14 46,-48 36,-80-8,-24-32,-42-58,-42z" fill="#d8eadf"/>
+      <rect x="524" y="612" width="12" height="22" rx="2" fill="#cfdad3"/>
+      <rect x="546" y="612" width="12" height="22" rx="2" fill="#cfdad3"/>
+      <!-- Ribs -->
+      <path d="M470,640c20,-10 40,-14 60,-14 20,0 40,4 60,14" fill="none" stroke="#e2efe9" stroke-width="8" stroke-linecap="round"/>
+      <path d="M468,664c22,-8 42,-12 62,-12 20,0 40,4 62,12" fill="none" stroke="#e2efe9" stroke-width="6" stroke-linecap="round"/>
+      <path d="M466,686c24,-6 44,-10 64,-10 20,0 40,4 64,10" fill="none" stroke="#e2efe9" stroke-width="4" stroke-linecap="round"/>
+      <!-- Random bones -->
+      <rect x="430" y="600" width="44" height="10" rx="4" fill="#e2efe9" transform="rotate(-16 452 605)"/>
+      <rect x="632" y="604" width="44" height="10" rx="4" fill="#e2efe9" transform="rotate(12 654 609)"/>
+    </g>
+    
+    <!-- Face-like shapes -->
+    <g opacity="0.7">
+      <ellipse cx="470" cy="570" rx="28" ry="20" fill="#082e1b"/>
+      <ellipse cx="610" cy="570" rx="28" ry="20" fill="#082e1b"/>
+      <path d="M496,624 C544,660 580,660 628,624" fill="none" stroke="#0a3e23" stroke-width="10" stroke-linecap="round"/>
+    </g>
+    
+    <!-- Highlights -->
+    <ellipse cx="460" cy="560" rx="60" ry="34" fill="url(#slimeHighlight)" opacity="0.7"/>
+    <ellipse cx="620" cy="620" rx="44" ry="24" fill="url(#slimeHighlight)" opacity="0.5"/>
+    
+    <!-- Acidic drips -->
+    <g fill="url(#acidEdge)">
+      <path d="M356,804 q6,44 -24,76 q42,-18 36,-62z"/>
+      <path d="M540,842 q6,34 -18,60 q34,-14 28,-50z"/>
+      <path d="M706,812 q6,40 -22,70 q40,-16 34,-54z"/>
+    </g>
+    
+    <!-- Edge sheen -->
+    <path d="M230,742 C270,760 330,760 360,742 420,708 470,660 540,652 616,644 692,684 744,702 804,722 852,716 866,682" fill="none" stroke="#c8ffd8" stroke-width="6" opacity="0.25"/>
+  </g>
+</svg>

@@ -4,10 +4,12 @@
   "private": true,
   "dependencies": {
     "@emailjs/browser": "^4.4.1",
+    "@supabase/supabase-js": "^2.50.3",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "@vercel/analytics": "^1.3.2",
+    "firebase": "^11.10.0",
     "framer-motion": "^11.11.11",
     "nodemailer": "^6.9.16",
     "react": "^18.3.1",
@@ -19,12 +21,32 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "predeploy": "npm run build",
-    "deploy": "gh-pages -d build",
     "start": "react-scripts start",
+    "dev": "npm run start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+
+    "//": "=== Set these env vars once per shell or in your CI ===",
+    "//1": "export S3_BUCKET=<the EXACT bucket your CloudFront origin uses>",
+    "//2": "export CF_DIST=E2SYHEFLV89R32",
+
+    "upload:static:css": "aws s3 cp build/static/css/ s3://$S3_BUCKET/static/css/ --recursive --content-type \"text/css\" --cache-control \"public,max-age=31536000,immutable\" --metadata-directive replace",
+    "upload:static:js": "aws s3 cp build/static/js/ s3://$S3_BUCKET/static/js/ --recursive --content-type \"application/javascript\" --cache-control \"public,max-age=31536000,immutable\" --metadata-directive replace",
+    "upload:static:media": "aws s3 cp build/static/media/ s3://$S3_BUCKET/static/media/ --recursive --cache-control \"public,max-age=31536000,immutable\" --metadata-directive replace",
+    "upload:root:other": "aws s3 sync build/ s3://$S3_BUCKET/ --delete --exclude \"static/*\" --exclude \"index.html\"",
+    "upload:index": "aws s3 cp build/index.html s3://$S3_BUCKET/index.html --content-type \"text/html\" --cache-control \"no-cache, no-store, must-revalidate\" --metadata-directive replace",
+
+    "//opt": "Optional: common MIME fixes (run once if needed)",
+    "mime:svg": "aws s3 cp build/ s3://$S3_BUCKET/ --recursive --exclude \"*\" --include \"*.svg\" --content-type \"image/svg+xml\" --metadata-directive replace",
+    "mime:json": "aws s3 cp build/ s3://$S3_BUCKET/ --recursive --exclude \"*\" --include \"*.json\" --content-type \"application/json\" --metadata-directive replace",
+    "mime:wasm": "aws s3 cp build/ s3://$S3_BUCKET/ --recursive --exclude \"*\" --include \"*.wasm\" --content-type \"application/wasm\" --metadata-directive replace",
+    "mime:map": "aws s3 cp build/ s3://$S3_BUCKET/ --recursive --exclude \"*\" --include \"*.map\" --content-type \"application/json\" --metadata-directive replace",
+
+    "invalidate": "aws cloudfront create-invalidation --distribution-id $CF_DIST --paths \"/*\"",
+
+    "deploy": "rm -rf build && npm run build && npm run upload:root:other && npm run upload:static:css && npm run upload:static:js && npm run upload:static:media && npm run upload:index && npm run invalidate",
+
+    "check": "aws s3 ls s3://$S3_BUCKET/",
+    "check-s3": "aws s3 ls s3://$S3_BUCKET/ --recursive --human-readable"
   },
   "eslintConfig": {
     "extends": [
@@ -51,5 +73,5 @@
     "postcss": "^8.4.47",
     "tailwindcss": "^3.4.14"
   },
-  "homepage": "https://chifunghillmanchan.github.io/portfolio"
+  "homepage": "https://chifunghillmanchan.github.io/"
 }

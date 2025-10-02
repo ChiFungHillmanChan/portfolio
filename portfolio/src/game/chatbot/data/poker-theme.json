@@ -1,0 +1,119 @@
+{
+  "theme": {
+    "name": "Poker Table",
+    "personality": "strategic, bold, calculated",
+    "description": "Hillman's poker persona - aggressive, strategic, and ready to discuss the mental game",
+    "background": "linear-gradient(135deg, #8B0000 0%, #228B22 25%, #FFD700 50%, #000000 75%, #8B0000 100%)",
+    "primaryColor": "#FFD700",
+    "secondaryColor": "#228B22",
+    "accentColor": "#8B0000",
+    "textShadow": "0 0 20px #FFD700"
+  },
+  "secretWords": [
+    "poker","river", "flop", "turn", "all-in"
+  ],
+  "welcomeMessage": "♠️ Welcome to the felt, player. You've found where I keep my poker face and strategic mind. Here, we talk about reads, ranges, and the beautiful aggression that wins games. Ready to play? ♣️",
+  "responses": {
+    "greetings": [
+      {
+        "text": "♠️ Welcome to my table! Hope you brought your A-game because here we talk REAL poker - strategy, psychology, and why aggressive poker is WINNING poker! 🔥♣️",
+        "mood": "confident",
+        "tags": ["intro", "poker", "aggressive"]
+      },
+      {
+        "text": "🎯 Sit down, let's talk cards! Whether you're a fish or a shark, there's always something to learn at the poker table. What's your game? Cash or tournaments? ♦️",
+        "mood": "welcoming",
+        "tags": ["intro", "poker", "strategic"]
+      }
+    ],
+    "poker_philosophy": [
+      {
+        "text": "♠️ Listen up: Aggressive poker is WINNING poker! You can't just sit there waiting for pocket aces. You gotta TAKE what's yours - steal blinds, pressure opponents, make them fold! 🔥 Tight is right, but aggression gets paid! 💰",
+        "mood": "intense",
+        "tags": ["philosophy", "aggressive", "strategy"]
+      },
+      {
+        "text": "🎯 Poker isn't about the cards - it's about the PEOPLE. Reading tells, understanding ranges, exploiting weaknesses. It's pure psychology wrapped in math! The best hand doesn't always win 🧠♣️",
+        "mood": "analytical",
+        "tags": ["philosophy", "psychology", "strategy"]
+      }
+    ],
+    "strategy_talk": [
+      {
+        "text": "⚡ Position is EVERYTHING! Late position = more information = more power. I'm 3-betting light from the button all day long! You gotta put pressure on these nits! 💪♠️",
+        "mood": "strategic",
+        "tags": ["strategy", "position", "aggressive"]
+      },
+      
+      {
+        "text": "🎯 Bankroll management separates pros from fish. Never play scared money! But also never go broke chasing. 20-30 buy-ins minimum for your stakes - that's how you survive variance! 💰",
+        "mood": "professional",
+        "tags": ["strategy", "bankroll", "discipline"]
+      },
+       {
+        "text": "🎯<a href='https://app.gtowizard.com/' target='_blank' style='color: #aafcb2; text-decoration: underline;'>GTOW</a> this is my favourite tools to study! Stop being a fish and let's study. 💰",
+        "mood": "professional",
+        "tags": ["strategy", "bankroll", "discipline"]
+      }
+    ],
+    "poker_stories": [
+      {
+        "text": "♠️ Best play? Once I had a nut flush on turn and guess what? My opponent goes all in and he got 8 high flush. He got only one out to straight flush. Hahah the result is always expected and I lost. Bad Beat unlucky me. 🐟➡️🦈",
+        "mood": "proud",
+        "tags": ["story", "strategy", "satisfaction"]
+      },
+      {
+        "text": "💥 Worst beat? Aces vs Kings, all-in pre-flop, and he hits a set on the turn. But you know what? I'd make the same play 100 times! That's poker, baby - play correct, accept results! 🎲♦️",
+        "mood": "philosophical",
+        "tags": ["story", "bad-beat", "mindset"]
+      },
+      {
+        "text": "🎯 Bankroll management separates pros from fish. Never play scared money! But also never go broke chasing. 20-30 buy-ins minimum for your stakes - that's how you survive variance! 💰",
+        "mood": "professional",
+        "tags": ["strategy", "bankroll", "discipline"]
+      }
+    ],
+    "mental_game": [
+      {
+        "text": "🧠 Tilt is the #1 killer of bankrolls! When you're steaming, every decision becomes emotional. Take a break, reset, come back sharp. The fish will still be there tomorrow! 🎣",
+        "mood": "wise",
+        "tags": ["mental-game", "tilt", "discipline"]
+      },
+      {
+        "text": "⚡ Confidence is key! If you don't believe in your reads, your bets, your strategy - how can you expect others to fold? Play with conviction! Scared money don't make money! 💰🔥",
+        "mood": "motivational",
+        "tags": ["mental-game", "confidence", "mindset"]
+      }
+    ],
+    "coding_poker_parallels": [
+      {
+        "text": "🎯 Poker and coding are IDENTICAL! Both require logic, pattern recognition, and handling uncertainty. Debugging code = reading opponents. Refactoring = adjusting strategy! 💻♠️",
+        "mood": "insightful",
+        "tags": ["parallels", "coding", "strategy"]
+      },
+      {
+        "text": "⚡ Range vs range thinking is like object-oriented programming - you're not dealing with one specific case, you're handling ALL possible scenarios! That's next-level thinking! 🧠💭",
+        "mood": "analytical",
+        "tags": ["parallels", "coding", "advanced"]
+      }
+    ]
+  },
+  "conversation_starters": [
+    "♠️ Aggressive Poker",
+    "🎯 Strategy & Psychology", 
+    "💰 Bankroll & Stakes",
+    "🧠 Mental Game",
+    "🎲 Poker Stories"
+  ],
+  "hints": [
+    "♠️ Think about a game with cards and chips...",
+    "🎯 Where bluffing and betting happen...",
+    "💰 A game of skill disguised as gambling...",
+    "🔥 What's aggressive and winning according to Hillman?"
+  ],
+  "fallbacks": [
+    "♠️ What's your poker experience level?",
+    "🎯 Do you prefer tournaments or cash games?",
+    "💰 Tell me about your biggest poker win!"
+  ]
+}
