@@ -14,14 +14,38 @@ import ChatBotGame from './game/chatbot/ChatBotGame';
 import PromptHunterGame from './game/prompt-hunter/PromptHunterGame';
 import CardGame from './game/card-game/CardGame';
 
+const GAME_SUBDOMAIN_COMPONENTS = {
+  'prompt-hunter': PromptHunterGame,
+  'chat-box': ChatBotGame,
+  'card-game': CardGame,
+};
+
+const getGameComponentFromHostname = () => {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+
+  const hostname = window.location.hostname?.toLowerCase() || '';
+  const firstLabel = hostname.split('.')[0];
+
+  const GameComponent = GAME_SUBDOMAIN_COMPONENTS[firstLabel];
+  return GameComponent || null;
+};
+
 function App() {
+  const SubdomainGame = getGameComponentFromHostname();
+
+  if (SubdomainGame) {
+    return <SubdomainGame />;
+  }
+
   const router = createBrowserRouter(
     createRoutesFromElements(
       <>
         {/* Standalone experience routes */}
-        <Route path="/chat-box.com" element={<ChatBotGame />} />
-        <Route path="/prompt-hunter.com" element={<PromptHunterGame />} />
-        <Route path="/card-game.com" element={<CardGame />} />
+        <Route path="/chat-box" element={<ChatBotGame />} />
+        <Route path="/prompt-hunter" element={<PromptHunterGame />} />
+        <Route path="/card-game" element={<CardGame />} />
 
         {/* Your existing routes with Layout */}
         <Route element={<Layout />}>
@@ -39,7 +63,7 @@ function App() {
         </Route>
       </>
     )
-  )
+  );
 
   return (
     <RouterProvider router={router} />

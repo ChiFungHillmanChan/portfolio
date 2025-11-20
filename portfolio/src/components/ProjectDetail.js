@@ -3,6 +3,34 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
 
+const GAME_SUBDOMAIN_SLUGS = new Set(['chat-box', 'prompt-hunter', 'card-game']);
+
+const resolveDemoLink = (demoUrl) => {
+  if (!demoUrl || demoUrl === 'no-demo-url') {
+    return { url: null, isInternal: false, isGameSubdomain: false };
+  }
+
+  const trimmed = demoUrl.trim();
+  if (!trimmed) {
+    return { url: null, isInternal: false, isGameSubdomain: false };
+  }
+
+  if (trimmed.startsWith('/')) {
+    const normalized = trimmed.slice(1);
+    if (GAME_SUBDOMAIN_SLUGS.has(normalized)) {
+      return { url: trimmed, isInternal: true, isGameSubdomain: true };
+    }
+    return { url: trimmed, isInternal: true, isGameSubdomain: false };
+  }
+
+  const normalized = trimmed;
+  if (GAME_SUBDOMAIN_SLUGS.has(normalized)) {
+    return { url: `/${normalized}`, isInternal: true, isGameSubdomain: true };
+  }
+
+  return { url: trimmed, isInternal: false, isGameSubdomain: false };
+};
+
 const ProjectDetail = () => {
   const navigate = useNavigate();
   const { id } = useParams();
@@ -11,6 +39,12 @@ const ProjectDetail = () => {
     const numericId = Number(id);
     return projectData.find((item) => item.id === numericId);
   }, [id]);
+
+  const {
+    url: resolvedDemoUrl,
+    isInternal: isInternalDemoLink,
+    isGameSubdomain,
+  } = useMemo(() => resolveDemoLink(project?.demoUrl || null), [project?.demoUrl]);
 
   const [isVideoTooLong, setIsVideoTooLong] = useState(false);
   const [videoError, setVideoError] = useState(false);
@@ -99,10 +133,25 @@ const ProjectDetail = () => {
   const hasValidSourceCode = project.sourceCode && project.sourceCode !== 'no-source-code' && project.sourceCode.trim() !== '';
   
   // Check if project has valid demo URL
-  const hasValidDemoUrl = project.demoUrl && project.demoUrl !== 'no-demo-url' && project.demoUrl.trim() !== '';
-  const isInternalDemo = hasValidDemoUrl && project.demoUrl.startsWith('/');
+  const hasValidDemoUrl = Boolean(resolvedDemoUrl);
+  const isInternalDemo = hasValidDemoUrl && isInternalDemoLink;
   const isGameProject = project.category === 'game';
   const demoCtaLabel = isGameProject ? 'Play Game' : 'Try Demo';
+
+  const handleDemoNavigation = () => {
+    if (!resolvedDemoUrl) {
+      return;
+    }
+
+    if (isInternalDemo) {
+      navigate(resolvedDemoUrl);
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      window.location.href = resolvedDemoUrl;
+    }
+  };
 
   return (
     <motion.div 
@@ -253,11 +302,11 @@ const ProjectDetail = () => {
                       >
                         View Source Code
                       </motion.a>
-                      {isInternalDemo ? (
+                      {(isInternalDemo || isGameSubdomain) ? (
                         <motion.button
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          onClick={() => navigate(project.demoUrl)}
+                          onClick={handleDemoNavigation}
                           className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
                         >
                           {demoCtaLabel}
@@ -266,7 +315,7 @@ const ProjectDetail = () => {
                         <motion.a
                           whileHover={{ scale: 1.05 }}
                           whileTap={{ scale: 0.95 }}
-                          href={project.demoUrl}
+                          href={resolvedDemoUrl}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
@@ -279,11 +328,11 @@ const ProjectDetail = () => {
 
                   {/* Case 3: Only demo available */}
                   {!hasValidSourceCode && hasValidDemoUrl && (
-                    isInternalDemo ? (
+                    (isInternalDemo || isGameSubdomain) ? (
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate(project.demoUrl)}
+                        onClick={handleDemoNavigation}
                         className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
                       >
                         {demoCtaLabel}
@@ -292,11 +341,11 @@ const ProjectDetail = () => {
                       <motion.a
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        href={project.demoUrl}
+                        href={resolvedDemoUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
-                        >
+                      >
                         {demoCtaLabel}
                       </motion.a>
                     )

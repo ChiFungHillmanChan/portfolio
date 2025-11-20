@@ -47,7 +47,7 @@
       "url": "https://hillman-chatbot.vercel.app/",
       "category": "game",
       "sourceCode":"no-source-code",
-      "demoUrl":"/chat-box.com",
+      "demoUrl":"/chat-box",
       "liveDemo":"no-demo",
       "technologies":["HTML", "CSS", "JavaScript"]
     },
@@ -60,7 +60,7 @@
       "url": "https://card-game-pied-kappa.vercel.app/",
       "category": "game",
       "sourceCode": "no-source-code",
-      "demoUrl": "/card-game.com",
+      "demoUrl": "/card-game",
       "liveDemo": "no-demo",
       "technologies": ["React", "react-i18next", "JavaScript", "CSS"]
     },
@@ -73,13 +73,25 @@
       "url": "https://prompt-hunter.vercel.app/",
       "category": "game",
       "sourceCode": "https://github.com/ChiFungHillmanChan/prompt-hunter",
-      "demoUrl": "/prompt-hunter.com",
+      "demoUrl": "/prompt-hunter",
       "liveDemo": "no-demo",
       "technologies": ["React", "CSS", "i18next", "Gemini API", "TypeScript"]
     },  
-
     {
       "id": 7,
+      "title": "AI detection tool",
+      "shortDescription": "An AI detection tool that uses machine learning to detect if a text is written by AI.",
+      "fullDescription":"An AI detection tool that uses machine learning to detect if a text is written by AI.",
+      "image": "ai_detection.png",
+      "url": "https://ai-detector-theta.vercel.app/",
+      "category": "program",
+      "sourceCode":"https://ai-detector-theta.vercel.app/",
+      "demoUrl":"no-demo-url",
+      "liveDemo":"no-demo",
+      "technologies":["Next.js", "OpenAI", "React", "TailwindCSS"]
+    },
+    {
+      "id": 8,
       "title": "Coming Soon",
       "shortDescription": "This project demonstration will come soon",
       "fullDescription":"This project demonstration will come soon",

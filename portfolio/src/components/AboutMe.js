@@ -37,60 +37,57 @@ const AboutMe = () => {
 
   const experience = [
     {
-      "title": "Programming Tutor",
-      "company": "Self-Employed",
-      "location": "Remote",
-      "start_date": "July 2024",
-      "end_date": "Present",
-      "description": [
+      title: "Junior AI Engineer",
+      company: "Evoke AI Lab",
+      location: "Hong Kong / Remote",
+      start_date: "October 2025",
+      end_date: "Present",
+      description: [
+        "Develop end-to-end AI solutions spanning image generation, text summarisation, and question-answering for education-focused products.",
+        "Fine-tune large language models to improve accuracy and latency, aligning deliverables with educator requirements.",
+        "Partner with cross-functional teams to translate stakeholder needs into deployable machine learning features."
+      ],
+      skills: ["AI Engineering", "LLM Fine-tuning", "Stakeholder Collaboration", "MLOps"]
+    },
+    {
+      title: "Programming Tutor",
+      company: "Self-Employed",
+      location: "Hybrid",
+      start_date: "July 2023",
+      end_date: "Present",
+      description: [
         "Taught Python, Java, and software engineering fundamentals with a focus on data structures, algorithms, and debugging strategies.",
         "Created custom exercises and unit testing frameworks to help students solve real-world coding problems.",
         "Mentored students through end-to-end projects, emphasizing clean code, performance tuning, and best practices.",
-        "Coached a diverse range of learners, including students, former Hong Kong teachers, and company CEO, in understanding AI concepts and software development foundations"
+        "Coached a diverse range of learners, including students, former Hong Kong teachers, and company managers, in understanding AI concepts and software development foundations."
       ],
-      "skills": ["Python", "Java", "LLM Training", "Mentoring", "Communication"]
+      skills: ["Python", "Java", "Software Engineering", "Mentoring", "AI Literacy"]
     },
     {
-      "title": "Mobile Developer (Freelance Project)",
-      "company": "PBM App Team Collaboration",
-      "location": "Remote / Hong Kong",
-      "start_date": "December 2024",
-      "end_date": "April 2025",
-      "description": [
-        "Co-developed a mobile application, Poker Bankroll Manager (PBM), to help players track earnings and analyze performance.",
-        "Built front-end using React Native, TypeScript, and Tailwind CSS.",
-        "Contributed to UI/UX design and financial analytics features.",
-        "Project paused due to external factors; currently on hold pending relaunch."
+      title: "Online Service Colleague",
+      company: "Asda",
+      location: "United Kingdom",
+      start_date: "July 2022",
+      end_date: "June 2025",
+      description: [
+        "Collaborated with cross-departmental teams to improve logistics workflows, ensuring smooth coordination between picking, packing, and delivery operations.",
+        "Designed Excel-based inventory check systems with formulas and validation, reducing product discrepancies by 30%.",
+        "Acted as a bridge between operations and management teams to identify issues and implement process optimizations."
       ],
-      "skills": ["React Native", "TypeScript", "Tailwind CSS", "Mobile App Development", "Team Collaboration"]
+      skills: ["Logistics Coordination", "Excel", "Cross-Team Collaboration", "Process Optimization"]
     },
     {
-      "title": "Freelance Web Developer",
-      "company": "Independent / Remote Clients",
-      "location": "Remote (Hong Kong-based clients)",
-      "start_date": "December 2023",
-      "end_date": "Present",
-      "description": [
-        "Delivered custom websites and online tools for clients based in Hong Kong.",
-        "Handled both front-end design and basic backend integration.",
-        "Maintained client relationships, collected requirements, and managed delivery timelines.",
-        "Available for new freelance opportunities."
+      title: "Freelance Software Developer",
+      company: "PBM App Team",
+      location: "Hong Kong",
+      start_date: "December 2024",
+      end_date: "April 2025",
+      description: [
+        "Developed cross-platform modules in React Native and TypeScript, improving app load performance by 25% on low-end devices.",
+        "Debugged UI rendering and memory optimization issues, reducing crashes and ensuring stable performance across Android and iOS.",
+        "Participated in Agile sprints and code reviews, ensuring clean, maintainable code."
       ],
-      "skills": ["HTML", "CSS", "JavaScript", "Client Communication", "Web Development"]
-    },
-    {
-      "title": "Online Service Colleague",
-      "company": "Asda",
-      "location": "Leeds, UK",
-      "start_date": "July 2022",
-      "end_date": "June 2025",
-      "description": [
-        "Optimised multi-department operations, enhancing in-store logistics and delivery accuracy.",
-        "Implemented inventory tracking improvements, reducing stock errors by 25%.",
-        "Resolved real-time operational challenges, contributing to a smoother customer fulfilment process.",
-        "Collaborated cross-functionally with team leads to streamline daily workflow execution."
-      ],
-      "skills": ["Operational Efficiency", "Inventory Management", "Team Collaboration", "Problem Solving", "Logistics"]
+      skills: ["React Native", "TypeScript", "Agile Delivery", "Performance Optimization"]
     }
   ];
 
