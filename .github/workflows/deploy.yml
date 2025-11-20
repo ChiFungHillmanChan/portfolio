@@ -52,12 +52,12 @@ jobs:
           S3_BUCKET: hillmanportfolio1
         run: |
           # Upload static assets with long cache
-          aws s3 cp portfolio/build/static/css/ s3://$S3_BUCKET/static/css/ --recursive --content-type "text/css" --cache-control "public,max-age=31536000,immutable" --metadata-directive replace
-          aws s3 cp portfolio/build/static/js/ s3://$S3_BUCKET/static/js/ --recursive --content-type "application/javascript" --cache-control "public,max-age=31536000,immutable" --metadata-directive replace
+          aws s3 cp portfolio/build/static/css/ s3://$S3_BUCKET/static/css/ --recursive --content-type "text/css" --cache-control "public,max-age=31536000,immutable" --metadata-directive REPLACE
+          aws s3 cp portfolio/build/static/js/ s3://$S3_BUCKET/static/js/ --recursive --content-type "application/javascript" --cache-control "public,max-age=31536000,immutable" --metadata-directive REPLACE
           
           # Check if media directory exists before uploading
           if [ -d "portfolio/build/static/media" ]; then
-            aws s3 cp portfolio/build/static/media/ s3://$S3_BUCKET/static/media/ --recursive --cache-control "public,max-age=31536000,immutable" --metadata-directive replace
+            aws s3 cp portfolio/build/static/media/ s3://$S3_BUCKET/static/media/ --recursive --cache-control "public,max-age=31536000,immutable" --metadata-directive REPLACE
           fi
           
           # Upload everything else (games, content, etc) except static and index
@@ -65,5 +65,5 @@ jobs:
           aws s3 sync portfolio/build/ s3://$S3_BUCKET/ --delete --exclude "static/*" --exclude "index.html"
           
           # Upload index.html with no-cache to ensure updates are seen immediately
-          aws s3 cp portfolio/build/index.html s3://$S3_BUCKET/index.html --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate" --metadata-directive replace
+          aws s3 cp portfolio/build/index.html s3://$S3_BUCKET/index.html --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate" --metadata-directive REPLACE
 
