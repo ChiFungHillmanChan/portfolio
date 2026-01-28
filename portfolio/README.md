@@ -11,6 +11,7 @@ A personal portfolio website showcasing my projects, skills, and interactive gam
 | **Prompt Hunter** | An AI-powered RPG game where players use creative prompts and unique character abilities to defeat monsters. Supports English and Cantonese. | [prompt-hunter.hillmanchan.com](https://prompt-hunter.hillmanchan.com) |
 | **Never Have I Ever** | A multilingual interactive card game with dynamic prompts, custom question input, and language selection (EN/FR/ZH-CN/ZH-HK). | [card-game.hillmanchan.com](https://card-game.hillmanchan.com) |
 | **Personal ChatBot** | A customizable keyword-driven chatbot that simulates a personal conversational assistant with mood-based responses. | [chat-box.hillmanchan.com](https://chat-box.hillmanchan.com) |
+| **Dream Record 夢境紀錄器** | AI-powered dream journal with voice recording, dream analysis, weekly reports, and streak tracking. | [dream-record.hillmanchan.com](https://dream-record.hillmanchan.com) |
 
 ## Projects Showcased
 
