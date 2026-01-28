@@ -5,30 +5,70 @@ import projectData from '../projectData.json';
 
 const GAME_SUBDOMAIN_SLUGS = new Set(['chat-box', 'prompt-hunter', 'card-game']);
 
+/**
+ * Builds the subdomain URL for a game based on current hostname.
+ * In development (localhost), returns path-based URL as fallback.
+ * In production, returns full subdomain URL (e.g., prompt-hunter.hillmanchan.com)
+ */
+const buildGameSubdomainUrl = (gameSlug) => {
+  if (typeof window === 'undefined') {
+    return `/${gameSlug}`;
+  }
+
+  const hostname = window.location.hostname.toLowerCase();
+  const protocol = window.location.protocol;
+
+  // Development mode: use path-based routing
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
+    return `/${gameSlug}`;
+  }
+
+  // Check if we're already on a game subdomain
+  const hostParts = hostname.split('.');
+  if (hostParts.length > 2 && GAME_SUBDOMAIN_SLUGS.has(hostParts[0])) {
+    // Already on a subdomain, extract base domain (e.g., hillmanchan.com)
+    const baseDomain = hostParts.slice(1).join('.');
+    return `${protocol}//${gameSlug}.${baseDomain}`;
+  }
+
+  // On main domain (e.g., hillmanchan.com), build subdomain URL
+  return `${protocol}//${gameSlug}.${hostname}`;
+};
+
 const resolveDemoLink = (demoUrl) => {
   if (!demoUrl || demoUrl === 'no-demo-url') {
-    return { url: null, isInternal: false, isGameSubdomain: false };
+    return { url: null, isInternal: false, isGameSubdomain: false, subdomainUrl: null };
   }
 
   const trimmed = demoUrl.trim();
   if (!trimmed) {
-    return { url: null, isInternal: false, isGameSubdomain: false };
+    return { url: null, isInternal: false, isGameSubdomain: false, subdomainUrl: null };
   }
 
   if (trimmed.startsWith('/')) {
     const normalized = trimmed.slice(1);
     if (GAME_SUBDOMAIN_SLUGS.has(normalized)) {
-      return { url: trimmed, isInternal: true, isGameSubdomain: true };
+      return { 
+        url: trimmed, 
+        isInternal: true, 
+        isGameSubdomain: true,
+        subdomainUrl: buildGameSubdomainUrl(normalized)
+      };
     }
-    return { url: trimmed, isInternal: true, isGameSubdomain: false };
+    return { url: trimmed, isInternal: true, isGameSubdomain: false, subdomainUrl: null };
   }
 
   const normalized = trimmed;
   if (GAME_SUBDOMAIN_SLUGS.has(normalized)) {
-    return { url: `/${normalized}`, isInternal: true, isGameSubdomain: true };
+    return { 
+      url: `/${normalized}`, 
+      isInternal: true, 
+      isGameSubdomain: true,
+      subdomainUrl: buildGameSubdomainUrl(normalized)
+    };
   }
 
-  return { url: trimmed, isInternal: false, isGameSubdomain: false };
+  return { url: trimmed, isInternal: false, isGameSubdomain: false, subdomainUrl: null };
 };
 
 const ProjectDetail = () => {
@@ -44,6 +84,7 @@ const ProjectDetail = () => {
     url: resolvedDemoUrl,
     isInternal: isInternalDemoLink,
     isGameSubdomain,
+    subdomainUrl,
   } = useMemo(() => resolveDemoLink(project?.demoUrl || null), [project?.demoUrl]);
 
   const [isVideoTooLong, setIsVideoTooLong] = useState(false);
@@ -140,6 +181,14 @@ const ProjectDetail = () => {
 
   const handleDemoNavigation = () => {
     if (!resolvedDemoUrl) {
+      return;
+    }
+
+    // For game subdomains, redirect to the subdomain URL
+    if (isGameSubdomain && subdomainUrl) {
+      if (typeof window !== 'undefined') {
+        window.location.href = subdomainUrl;
+      }
       return;
     }
 
