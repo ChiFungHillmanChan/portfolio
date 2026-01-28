@@ -79,7 +79,7 @@
     },  
     {
       "id": 7,
-      "title": "Dream Record 夢境紀錄器",
+      "title": "Dream Record",
       "shortDescription": "A beautiful AI-powered dream journal app with voice recording, dream analysis, weekly reports, and streak tracking.",
       "fullDescription": "Dream Record is a full-stack dream journaling application that helps users capture and understand their dreams. Built with Next.js 16, it features voice-to-text recording using both Web Speech API and OpenAI Whisper for PWA mode, AI-powered dream analysis using GPT-4, weekly insight reports with generated imagery, and streak tracking to encourage consistent journaling. The app includes user authentication with JWT, subscription management via Stripe, and a beautiful dark theme with Traditional Chinese (Cantonese) localization. Users can tag their dreams, search history via an interactive calendar, and receive personalized psychological insights based on dream patterns.",
       "image": "dream_record.png",
