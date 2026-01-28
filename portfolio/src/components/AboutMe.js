@@ -37,7 +37,7 @@ const AboutMe = () => {
 
   const experience = [
     {
-      title: "Junior AI Engineer",
+      title: "AI Software Engineer",
       company: "Evoke AI Lab",
       location: "Hong Kong / Remote",
       start_date: "October 2025",
