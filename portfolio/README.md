@@ -1,3 +1,33 @@
+# Hillman Chan's Portfolio
+
+A personal portfolio website showcasing my projects, skills, and interactive games.
+
+**Live Site:** [hillmanchan.com](https://hillmanchan.com)
+
+## Featured Games
+
+| Game | Description | URL |
+|------|-------------|-----|
+| **Prompt Hunter** | An AI-powered RPG game where players use creative prompts and unique character abilities to defeat monsters. Supports English and Cantonese. | [prompt-hunter.hillmanchan.com](https://prompt-hunter.hillmanchan.com) |
+| **Never Have I Ever** | A multilingual interactive card game with dynamic prompts, custom question input, and language selection (EN/FR/ZH-CN/ZH-HK). | [card-game.hillmanchan.com](https://card-game.hillmanchan.com) |
+| **Personal ChatBot** | A customizable keyword-driven chatbot that simulates a personal conversational assistant with mood-based responses. | [chat-box.hillmanchan.com](https://chat-box.hillmanchan.com) |
+
+## Projects Showcased
+
+- **Resume Builder & Interview Prep Tool** - Create professional resumes and practice AI-driven interviews
+- **Hong Kong Teacher System** - Multi-tenant SEN school management platform
+- **Job Tracker & Finder** - Job search with Reed.co.uk API integration and interactive mapping
+- **AI Detection Tool** - Machine learning tool to detect AI-written text
+
+## Tech Stack
+
+- **Frontend:** React, TailwindCSS, Framer Motion
+- **Games:** React, i18next, Gemini API
+- **Hosting:** AWS S3, CloudFront
+- **DNS:** Cloudflare
+
+---
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
