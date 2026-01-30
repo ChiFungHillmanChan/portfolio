@@ -13,14 +13,12 @@ import ServicesPage from './components/MyOffer/ServicesPage';
 import ChatBotGame from './game/chatbot/ChatBotGame';
 import PromptHunterGame from './game/prompt-hunter/PromptHunterGame';
 import CardGame from './game/card-game/CardGame';
-import DreamRecordGame from './game/dream-record/DreamRecordGame';
 import CasinoGame from './game/casino-game/CasinoGame';
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
   'chat-box': ChatBotGame,
   'card-game': CardGame,
-  'dream-record': DreamRecordGame,
   'casino-game': CasinoGame,
 };
 
@@ -50,7 +48,6 @@ function App() {
         <Route path="/chat-box" element={<ChatBotGame />} />
         <Route path="/prompt-hunter" element={<PromptHunterGame />} />
         <Route path="/card-game" element={<CardGame />} />
-        <Route path="/dream-record" element={<DreamRecordGame />} />
         <Route path="/casino-game" element={<CasinoGame />} />
 
         {/* Your existing routes with Layout */}
