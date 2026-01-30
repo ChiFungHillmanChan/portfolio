@@ -1,0 +1,388 @@
+.alert-box {
+    padding: 10px;
+    border-radius: 6px;
+    margin-bottom: 10px;
+    text-align: center;
+}
+
+.alert-box.positive {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.2) 0%, rgba(46, 204, 113, 0.05) 100%);
+    border: 2px solid var(--accent-green);
+}
+
+.alert-box.neutral {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 2px solid var(--accent-gold);
+}
+
+.alert-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    letter-spacing: 2px;
+    margin-bottom: 4px;
+}
+
+.alert-bet {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+}
+
+.alert-ev {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+}
+
+.alert-ev.positive {
+    color: var(--accent-green);
+}
+
+.alert-ev.negative {
+    color: var(--accent-red);
+}
+
+.history-list {
+    max-height: 150px;
+    overflow-y: auto;
+    font-size: 0.7rem;
+    -webkit-overflow-scrolling: touch; /* Smooth scrolling on iOS */
+}
+
+.history-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 6px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    margin-bottom: 3px;
+}
+
+.history-round {
+    color: var(--text-dim);
+    width: 22px;
+    flex-shrink: 0;
+}
+
+.history-result {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: white;
+    flex-shrink: 0;
+}
+
+.history-result.player {
+    background: var(--player-color);
+}
+
+.history-result.banker {
+    background: var(--banker-color);
+}
+
+.history-result.tie {
+    background: var(--tie-color);
+}
+
+.history-cards {
+    flex: 1;
+    color: var(--text-dim);
+    font-size: 0.65rem;
+    min-width: 0; /* Allow text truncation */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.history-score {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.info-section {
+    margin-top: 10px;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border-radius: 5px;
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+}
+
+.info-section strong {
+    color: var(--text-secondary);
+}
+
+::-webkit-scrollbar {
+    width: 5px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent-gold-dim);
+    border-radius: 3px;
+}
+
+.positive-ev-list {
+    margin-top: 8px;
+    padding: 8px;
+    background: rgba(46,204,113,0.1);
+    border: 1px solid var(--accent-green);
+    border-radius: 6px;
+}
+
+.positive-ev-list-title {
+    font-size: 0.65rem;
+    color: var(--accent-green);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.positive-ev-item {
+    display: flex;
+    justify-content: space-between;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(46,204,113,0.2);
+    font-size: 0.75rem;
+}
+
+.positive-ev-item:last-child {
+    border-bottom: none;
+}
+
+.positive-ev-item-name {
+    color: var(--text-primary);
+}
+
+.positive-ev-item-ev {
+    color: var(--accent-green);
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 600;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .alert-box {
+        padding: 12px;
+    }
+    
+    .alert-title {
+        font-size: 0.7rem;
+    }
+    
+    .alert-bet {
+        font-size: 1.2rem;
+    }
+    
+    .alert-ev {
+        font-size: 1.4rem;
+    }
+    
+    .history-list {
+        max-height: 180px;
+        font-size: 0.75rem;
+    }
+    
+    .history-item {
+        padding: 6px 8px;
+    }
+    
+    .history-cards {
+        font-size: 0.7rem;
+    }
+    
+    .info-section {
+        padding: 10px;
+        font-size: 0.7rem;
+    }
+    
+    .positive-ev-list {
+        padding: 10px;
+    }
+    
+    .positive-ev-item {
+        font-size: 0.8rem;
+        padding: 5px 0;
+    }
+}
+
+/* Large Phone */
+@media (max-width: 768px) {
+    .alert-box {
+        padding: 12px 10px;
+        margin-bottom: 8px;
+    }
+    
+    .alert-title {
+        font-size: 0.65rem;
+        letter-spacing: 1.5px;
+    }
+    
+    .alert-bet {
+        font-size: 1.1rem;
+    }
+    
+    .alert-ev {
+        font-size: 1.3rem;
+    }
+    
+    .history-list {
+        max-height: 200px;
+        font-size: 0.7rem;
+    }
+    
+    .history-item {
+        padding: 6px;
+        gap: 5px;
+    }
+    
+    .history-round {
+        width: 20px;
+        font-size: 0.65rem;
+    }
+    
+    .history-result {
+        width: 18px;
+        height: 18px;
+        font-size: 0.6rem;
+    }
+    
+    .history-cards {
+        font-size: 0.6rem;
+    }
+    
+    .history-score {
+        font-size: 0.7rem;
+    }
+    
+    .info-section {
+        padding: 8px;
+        font-size: 0.6rem;
+        margin-top: 8px;
+    }
+    
+    .positive-ev-list {
+        padding: 8px;
+        margin-top: 6px;
+    }
+    
+    .positive-ev-list-title {
+        font-size: 0.6rem;
+        margin-bottom: 4px;
+    }
+    
+    .positive-ev-item {
+        font-size: 0.7rem;
+        padding: 4px 0;
+    }
+}
+
+/* Small Phone */
+@media (max-width: 480px) {
+    .alert-box {
+        padding: 12px 10px;
+        border-radius: 6px;
+        margin-bottom: 8px;
+    }
+
+    .alert-title {
+        font-size: 0.75rem;
+        letter-spacing: 1px;
+    }
+
+    .alert-bet {
+        font-size: 1.15rem;
+    }
+
+    .alert-ev {
+        font-size: 1.4rem;
+    }
+
+    .history-list {
+        max-height: 150px;
+        font-size: 0.8rem;
+    }
+
+    .history-item {
+        padding: 8px;
+        gap: 8px;
+        margin-bottom: 4px;
+    }
+
+    .history-round {
+        width: 24px;
+        font-size: 0.75rem;
+    }
+
+    .history-result {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+    }
+
+    .history-cards {
+        font-size: 0.7rem;
+    }
+
+    .history-score {
+        font-size: 0.8rem;
+    }
+
+    .info-section {
+        padding: 10px;
+        font-size: 0.7rem;
+        margin-top: 10px;
+        border-radius: 6px;
+        line-height: 1.4;
+    }
+
+    .positive-ev-list {
+        padding: 10px;
+        margin-top: 8px;
+        border-radius: 6px;
+    }
+
+    .positive-ev-list-title {
+        font-size: 0.7rem;
+        letter-spacing: 0.5px;
+    }
+
+    .positive-ev-item {
+        font-size: 0.8rem;
+        padding: 5px 0;
+    }
+
+    ::-webkit-scrollbar {
+        width: 4px;
+    }
+}
+
+/* Extra Small Phone */
+@media (max-width: 360px) {
+    .alert-bet {
+        font-size: 1rem;
+    }
+
+    .alert-ev {
+        font-size: 1.2rem;
+    }
+
+    .history-cards {
+        display: none; /* Hide card details on tiny screens */
+    }
+
+    .info-section br {
+        display: none; /* Compact info section */
+    }
+}

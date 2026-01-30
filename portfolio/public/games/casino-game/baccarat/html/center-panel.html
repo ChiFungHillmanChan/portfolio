@@ -1,0 +1,43 @@
+<!-- Center Panel -->
+<div class="panel">
+    <div class="scoreboard-container">
+        <div class="scoreboard-header">
+            <h2 class="panel-title" style="margin-bottom: 0;">Bead Road</h2>
+            <div class="scoreboard-stats">
+                <span class="stat-player">P: <strong id="playerWins">0</strong></span>
+                <span class="stat-banker">B: <strong id="bankerWins">0</strong></span>
+                <span class="stat-tie">T: <strong id="tieWins">0</strong></span>
+            </div>
+        </div>
+        <div class="bead-road" id="beadRoad"></div>
+    </div>
+
+    <h2 class="panel-title">Big Road (Ties = Slash)</h2>
+    <div class="big-road" id="bigRoad"></div>
+
+    <!-- Egalité Section -->
+    <div class="egalite-section">
+        <div class="egalite-header" onclick="toggleEgalite()">
+            <h2 class="panel-title" style="margin-bottom: 0;">Egalité Bets (Specific Ties 0-9)</h2>
+            <span class="egalite-toggle" id="egaliteToggle">▼ Open Settings</span>
+        </div>
+        <div class="egalite-content" id="egaliteContent">
+            <div style="font-size: 0.65rem; color: var(--text-dim); margin-bottom: 8px;">
+                Adjust payouts to match your casino. Green = +EV opportunity!
+            </div>
+            <div class="egalite-grid" id="egaliteGrid"></div>
+        </div>
+    </div>
+
+    <h2 class="panel-title" style="margin-top: 12px;">Main & Side Bets (Original → Current)</h2>
+    <div class="bets-container">
+        <div>
+            <div class="bets-column-title">Main Bets</div>
+            <div class="bet-cards" id="mainBetsContainer"></div>
+        </div>
+        <div>
+            <div class="bets-column-title">EZ Baccarat Side Bets</div>
+            <div class="bet-cards" id="sideBetsContainer"></div>
+        </div>
+    </div>
+</div>

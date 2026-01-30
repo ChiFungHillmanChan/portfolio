@@ -1,0 +1,1239 @@
+/**
+ * Blackjack Game Mode Styles
+ * Visual chip betting on realistic table felt
+ */
+
+/* =====================================================
+   VARIABLES
+   ===================================================== */
+
+:root {
+    --table-green: #0d6b3a;
+    --table-green-dark: #094d2a;
+    --table-green-light: #0f7d44;
+    --table-border: #2c1810;
+    --gold: #ffd700;
+    --gold-dim: #b8960f;
+    --win-green: #2ecc71;
+    --lose-red: #e74c3c;
+    --card-white: #ffffff;
+    --card-red: #e74c3c;
+    --card-black: #2c3e50;
+    
+    /* Chip colors */
+    --chip-1: #ffffff;
+    --chip-1-edge: #cccccc;
+    --chip-5: #e74c3c;
+    --chip-5-edge: #c0392b;
+    --chip-25: #27ae60;
+    --chip-25-edge: #1e8449;
+    --chip-100: #2c3e50;
+    --chip-100-edge: #1a252f;
+    --chip-500: #8e44ad;
+    --chip-500-edge: #6c3483;
+}
+
+/* =====================================================
+   SETUP SCREEN
+   ===================================================== */
+
+.setup-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    background: var(--bg-primary, #0a0a0f);
+}
+
+.setup-container {
+    background: var(--bg-card, #1a1a2e);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 100%;
+}
+
+.setup-container h1 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.8rem;
+    color: var(--gold);
+    text-align: center;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+}
+
+.setup-subtitle {
+    font-family: 'Rajdhani', sans-serif;
+    color: var(--text-secondary, #aaa);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.setup-section {
+    margin-bottom: 30px;
+}
+
+.setup-section h2 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text-primary, #fff);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.seat-selector {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+}
+
+.seat-select-btn {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: 3px solid rgba(255, 255, 255, 0.2);
+    color: var(--text-secondary, #aaa);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.seat-select-btn:hover {
+    border-color: rgba(255, 255, 255, 0.4);
+    color: var(--text-primary, #fff);
+}
+
+.seat-select-btn.selected {
+    background: var(--gold);
+    border-color: var(--gold);
+    color: #000;
+}
+
+.seat-hint {
+    font-size: 0.85rem;
+    color: var(--text-dim, #666);
+    text-align: center;
+    margin-top: 12px;
+}
+
+.selected-count {
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--gold);
+    margin-top: 8px;
+}
+
+.buyin-input {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.buyin-input input {
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 15px 20px;
+    color: var(--text-primary, #fff);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+.buyin-input input:focus {
+    outline: none;
+    border-color: var(--gold);
+}
+
+.buyin-display {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 2rem;
+    color: var(--gold);
+    text-align: center;
+}
+
+.btn-start {
+    width: 100%;
+    padding: 18px;
+    background: linear-gradient(135deg, var(--gold), #f39c12);
+    border: none;
+    border-radius: 12px;
+    color: #000;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-start:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.4);
+}
+
+/* =====================================================
+   GAME SCREEN LAYOUT
+   ===================================================== */
+
+.game-screen {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--bg-primary, #0a0a0f);
+}
+
+/* Top Bar */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px;
+    background: rgba(0, 0, 0, 0.5);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.top-bar-left {
+    width: 50px; /* Space for hamburger menu */
+}
+
+.top-bar-center {
+    display: flex;
+    gap: 30px;
+    flex: 1;
+    justify-content: center;
+}
+
+.bankroll-section,
+.total-bet-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.bankroll-label,
+.total-bet-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    color: var(--text-dim, #666);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.bankroll-value,
+.total-bet-value {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.3rem;
+    color: var(--text-primary, #fff);
+}
+
+.bankroll-value.profit { color: var(--win-green); }
+.bankroll-value.loss { color: var(--lose-red); }
+.total-bet-value { color: var(--gold); }
+
+.top-bar-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.icon-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s ease;
+}
+
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+/* =====================================================
+   GAME MAIN AREA
+   ===================================================== */
+
+.game-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 15px;
+    overflow: hidden;
+}
+
+/* =====================================================
+   BLACKJACK TABLE
+   ===================================================== */
+
+.blackjack-table {
+    flex: 1;
+    background: 
+        radial-gradient(ellipse at 50% 0%, var(--table-green-light) 0%, var(--table-green) 50%, var(--table-green-dark) 100%);
+    border-radius: 200px 200px 20px 20px;
+    padding: 20px 30px 30px;
+    border: 8px solid var(--table-border);
+    box-shadow: 
+        inset 0 0 60px rgba(0, 0, 0, 0.4),
+        0 10px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    min-height: 400px;
+}
+
+/* Table Header */
+.table-header {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--gold);
+    letter-spacing: 4px;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    margin-bottom: 15px;
+}
+
+/* Dealer Section */
+.dealer-section {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.dealer-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.5);
+    letter-spacing: 4px;
+    margin-bottom: 10px;
+}
+
+.dealer-cards {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    min-height: 90px;
+    align-items: center;
+}
+
+.dealer-total {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.2rem;
+    color: var(--text-primary, #fff);
+    margin-top: 8px;
+}
+
+.dealer-total.bust { color: var(--lose-red); }
+
+/* Insurance Line */
+.insurance-line {
+    text-align: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.65rem;
+    color: var(--gold);
+    letter-spacing: 3px;
+    padding: 8px 0;
+    border-top: 2px solid rgba(255, 215, 0, 0.3);
+    border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+    margin: 10px 40px;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* =====================================================
+   BETTING AREA
+   ===================================================== */
+
+.betting-area {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 50px;
+    padding: 15px 0 10px;
+    margin-top: auto;
+}
+
+/* Seat Betting Group */
+.seat-betting-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.seat-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-top: 5px;
+}
+
+/* Betting Spots */
+.betting-spot {
+    border-radius: 50%;
+    border: 3px dashed rgba(255, 255, 255, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    background: rgba(0, 0, 0, 0.15);
+    overflow: visible;
+}
+
+.betting-spot:hover {
+    border-color: var(--gold);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
+    transform: scale(1.05);
+}
+
+.betting-spot.has-bet {
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0.6);
+    overflow: visible;
+}
+
+.betting-spot.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.betting-spot.disabled:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.betting-spot.locked {
+    cursor: default;
+}
+
+.betting-spot.locked:hover {
+    transform: none;
+    box-shadow: none;
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
+/* Main Bet Spot */
+.betting-spot.main-bet {
+    width: 80px;
+    height: 80px;
+    border-width: 4px;
+}
+
+/* Side Bet Spots */
+.betting-spot.side-bet {
+    width: 50px;
+    height: 50px;
+}
+
+/* Spot Labels */
+.spot-label {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.6rem;
+    color: rgba(255, 255, 255, 0.7);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: absolute;
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+.betting-spot.main-bet .spot-label {
+    font-size: 0.7rem;
+}
+
+/* Side bet row layout */
+.side-bets-top {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 5px;
+}
+
+.side-bet-bottom {
+    margin-top: 5px;
+}
+
+/* =====================================================
+   PLAYER CARDS AREA (between dealer and betting spots)
+   ===================================================== */
+
+.player-cards-area {
+    display: flex;
+    justify-content: center;
+    gap: 50px;
+    padding: 10px 0;
+    min-height: 120px;
+}
+
+.player-seat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+    padding: 8px;
+    border-radius: 12px;
+    transition: all 0.2s ease;
+}
+
+.player-seat.active {
+    background: rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+.hand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.hand.active-hand {
+    transform: scale(1.02);
+}
+
+.hand-cards {
+    display: flex;
+    justify-content: center;
+    gap: 4px;
+    min-height: 80px;
+}
+
+.hand-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.hand-total {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--text-primary, #fff);
+    background: rgba(0, 0, 0, 0.5);
+    padding: 2px 10px;
+    border-radius: 10px;
+}
+
+.hand-total.bust { color: var(--lose-red); }
+.hand-total.blackjack { color: var(--gold); text-shadow: 0 0 10px rgba(255, 215, 0, 0.5); }
+
+.hand-result {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.75rem;
+    padding: 2px 10px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.hand-result.win { background: rgba(46, 204, 113, 0.3); color: var(--win-green); }
+.hand-result.lose { background: rgba(231, 76, 60, 0.3); color: var(--lose-red); }
+.hand-result.push { background: rgba(255, 255, 255, 0.2); color: #aaa; }
+.hand-result.blackjack { background: rgba(255, 215, 0, 0.3); color: var(--gold); }
+
+/* =====================================================
+   CARDS
+   ===================================================== */
+
+.card {
+    width: 48px;
+    height: 68px;
+    background: var(--card-white);
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    animation: dealCard 0.25s ease-out;
+}
+
+.card.red { color: var(--card-red); }
+.card.black { color: var(--card-black); }
+
+.card .rank {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.card .suit {
+    font-size: 1.1rem;
+    line-height: 1;
+}
+
+.card.face-down {
+    background: linear-gradient(135deg, #3498db 25%, #2980b9 25%, #2980b9 50%, #3498db 50%, #3498db 75%, #2980b9 75%);
+    background-size: 8px 8px;
+}
+
+@keyframes dealCard {
+    from {
+        transform: translateY(-30px) rotate(-5deg);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) rotate(0);
+        opacity: 1;
+    }
+}
+
+/* =====================================================
+   CHIPS
+   ===================================================== */
+
+.chip {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.75rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    box-shadow: 
+        0 3px 0 rgba(0, 0, 0, 0.3),
+        0 4px 8px rgba(0, 0, 0, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2);
+    border: 3px dashed rgba(255, 255, 255, 0.5);
+}
+
+.chip::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+}
+
+.chip:hover {
+    transform: translateY(-3px);
+    box-shadow: 
+        0 6px 0 rgba(0, 0, 0, 0.2),
+        0 8px 15px rgba(0, 0, 0, 0.3),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2);
+}
+
+.chip.selected {
+    transform: translateY(-5px);
+    box-shadow: 
+        0 8px 0 rgba(0, 0, 0, 0.2),
+        0 10px 20px rgba(255, 215, 0, 0.4),
+        0 0 20px rgba(255, 215, 0, 0.6),
+        inset 0 2px 0 rgba(255, 255, 255, 0.2);
+}
+
+/* Chip Colors */
+.chip-1 {
+    background: linear-gradient(145deg, #ffffff, #e0e0e0);
+    color: #333;
+    border-color: rgba(0, 0, 0, 0.2);
+}
+
+.chip-5 {
+    background: linear-gradient(145deg, #e74c3c, #c0392b);
+    color: #fff;
+}
+
+.chip-25 {
+    background: linear-gradient(145deg, #27ae60, #1e8449);
+    color: #fff;
+}
+
+.chip-100 {
+    background: linear-gradient(145deg, #34495e, #2c3e50);
+    color: #fff;
+}
+
+.chip-500 {
+    background: linear-gradient(145deg, #9b59b6, #8e44ad);
+    color: #fff;
+}
+
+/* Chip Stack Container */
+.chip-stack {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    pointer-events: none;
+}
+
+/* Placed Chips (on betting spots) */
+.chip-placed {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.6rem;
+    font-weight: bold;
+    cursor: default;
+    position: relative;
+    border: 2.5px dashed rgba(255, 255, 255, 0.6);
+    box-sizing: border-box;
+}
+
+/* Stack effect - each chip overlaps the one below */
+.chip-stack .chip-placed {
+    margin-bottom: -28px;
+    box-shadow: 
+        0 2px 0 rgba(0, 0, 0, 0.5),
+        0 3px 0 rgba(0, 0, 0, 0.4),
+        0 4px 0 rgba(0, 0, 0, 0.3),
+        0 5px 10px rgba(0, 0, 0, 0.4);
+}
+
+.chip-stack .chip-placed:first-child {
+    margin-bottom: 0;
+}
+
+/* Inner ring decoration */
+.chip-placed::before {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    pointer-events: none;
+}
+
+/* Chip colors for placed chips */
+.chip-placed.chip-1 {
+    background: linear-gradient(160deg, #ffffff 0%, #f0f0f0 50%, #d8d8d8 100%);
+    color: #333;
+    border-color: rgba(100, 100, 100, 0.4);
+}
+
+.chip-placed.chip-5 {
+    background: linear-gradient(160deg, #ef5350 0%, #e53935 50%, #c62828 100%);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.chip-placed.chip-25 {
+    background: linear-gradient(160deg, #66bb6a 0%, #43a047 50%, #2e7d32 100%);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.chip-placed.chip-100 {
+    background: linear-gradient(160deg, #546e7a 0%, #37474f 50%, #263238 100%);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.chip-placed.chip-500 {
+    background: linear-gradient(160deg, #ab47bc 0%, #8e24aa 50%, #6a1b9a 100%);
+    color: #fff;
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* =====================================================
+   CONTROL BAR (Bottom)
+   ===================================================== */
+
+.control-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    background: rgba(0, 0, 0, 0.6);
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    gap: 20px;
+}
+
+.chip-rack {
+    display: flex;
+    gap: 10px;
+    padding: 10px 15px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 30px;
+}
+
+.control-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.ctrl-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-clear {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #fff);
+}
+
+.btn-clear:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.btn-deal {
+    background: linear-gradient(135deg, var(--gold), #f39c12);
+    color: #000;
+    min-width: 120px;
+}
+
+.btn-deal:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 215, 0, 0.4);
+}
+
+.btn-deal:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* =====================================================
+   ACTION BUTTONS
+   ===================================================== */
+
+.action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px;
+    flex-wrap: wrap;
+    min-height: 50px;
+}
+
+.action-btn {
+    min-width: 85px;
+    padding: 12px 20px;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.action-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.action-btn.hit {
+    background: linear-gradient(135deg, var(--win-green), #27ae60);
+    color: #fff;
+}
+
+.action-btn.stand {
+    background: linear-gradient(135deg, var(--lose-red), #c0392b);
+    color: #fff;
+}
+
+.action-btn.double {
+    background: linear-gradient(135deg, #f39c12, #d68910);
+    color: #fff;
+}
+
+.action-btn.split {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: #fff;
+}
+
+/* =====================================================
+   SIDE BET RESULTS
+   ===================================================== */
+
+.side-bet-results {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+    padding: 8px;
+    flex-wrap: wrap;
+}
+
+.side-bet-result {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    padding: 6px 14px;
+    border-radius: 15px;
+    display: none;
+}
+
+.side-bet-result.win {
+    display: block;
+    background: rgba(46, 204, 113, 0.2);
+    color: var(--win-green);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+.side-bet-result.lose {
+    display: block;
+    background: rgba(231, 76, 60, 0.2);
+    color: var(--lose-red);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+/* =====================================================
+   RESULT OVERLAY
+   ===================================================== */
+
+.result-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.result-content {
+    text-align: center;
+    animation: scaleIn 0.3s ease;
+}
+
+@keyframes scaleIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+.result-amount {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 3.5rem;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+.result-amount.win { color: var(--win-green); }
+.result-amount.lose { color: var(--lose-red); }
+.result-amount.push { color: #aaa; }
+
+.result-details {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1.1rem;
+    color: var(--text-secondary, #aaa);
+    margin-bottom: 15px;
+}
+
+.result-countdown {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text-dim, #666);
+}
+
+.result-countdown span {
+    color: var(--gold);
+}
+
+/* =====================================================
+   MODAL
+   ===================================================== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+    padding: 20px;
+}
+
+.modal-content {
+    background: var(--bg-card, #1a1a2e);
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h2 {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.modal-close {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--text-primary, #fff);
+    font-size: 1.4rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.payout-section {
+    margin-bottom: 22px;
+}
+
+.payout-section:last-child {
+    margin-bottom: 0;
+}
+
+.payout-section h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.payout-desc {
+    font-size: 0.75rem;
+    color: var(--text-dim, #666);
+    margin-bottom: 8px;
+}
+
+.payout-table {
+    width: 100%;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+}
+
+.payout-table tr {
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.payout-table td {
+    padding: 6px 0;
+}
+
+.payout-table td:first-child {
+    color: var(--text-secondary, #aaa);
+}
+
+.payout-table td:last-child {
+    text-align: right;
+    color: var(--gold);
+    font-family: 'JetBrains Mono', monospace;
+}
+
+/* =====================================================
+   TOAST
+   ===================================================== */
+
+.game-toast {
+    position: fixed;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%) translateY(50px);
+    background: rgba(0, 0, 0, 0.9);
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--gold);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.95rem;
+    color: var(--text-primary, #fff);
+    z-index: 300;
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: none;
+}
+
+.game-toast.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* =====================================================
+   RESPONSIVE
+   ===================================================== */
+
+@media (max-width: 600px) {
+    .game-main {
+        padding: 8px;
+    }
+    
+    .blackjack-table {
+        padding: 12px 12px 20px;
+        border-width: 5px;
+        border-radius: 100px 100px 15px 15px;
+    }
+    
+    .table-header {
+        font-size: 0.7rem;
+        letter-spacing: 2px;
+        margin-bottom: 10px;
+    }
+    
+    .insurance-line {
+        font-size: 0.5rem;
+        margin: 6px 15px;
+        padding: 5px 0;
+    }
+    
+    .betting-area {
+        gap: 25px;
+        padding: 10px 0 5px;
+    }
+    
+    .betting-spot.main-bet {
+        width: 60px;
+        height: 60px;
+    }
+    
+    .betting-spot.side-bet {
+        width: 38px;
+        height: 38px;
+    }
+    
+    .spot-label {
+        font-size: 0.5rem;
+    }
+    
+    .player-cards-area {
+        gap: 25px;
+        min-height: 100px;
+    }
+    
+    .card {
+        width: 40px;
+        height: 58px;
+    }
+    
+    .card .rank {
+        font-size: 0.85rem;
+    }
+    
+    .card .suit {
+        font-size: 0.95rem;
+    }
+    
+    .hand-total {
+        font-size: 0.85rem;
+        padding: 2px 8px;
+    }
+    
+    .chip {
+        width: 36px;
+        height: 36px;
+        font-size: 0.6rem;
+    }
+    
+    .chip-placed {
+        width: 28px;
+        height: 28px;
+        font-size: 0.5rem;
+    }
+    
+    .chip-stack .chip-placed {
+        margin-bottom: -23px;
+    }
+    
+    .chip-stack .chip-placed:first-child {
+        margin-bottom: 0;
+    }
+    
+    .chip-placed::before {
+        inset: 3px;
+        border-width: 1.5px;
+    }
+    
+    .chip-rack {
+        gap: 5px;
+        padding: 6px 10px;
+    }
+    
+    .control-bar {
+        padding: 8px 12px;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+    
+    .ctrl-btn {
+        padding: 8px 16px;
+        font-size: 0.75rem;
+    }
+    
+    .action-btn {
+        min-width: 65px;
+        padding: 8px 12px;
+        font-size: 0.7rem;
+    }
+    
+    .action-buttons {
+        gap: 8px;
+        padding: 8px;
+        min-height: 45px;
+    }
+    
+    .seat-label {
+        font-size: 0.65rem;
+    }
+    
+    .dealer-label {
+        font-size: 0.65rem;
+    }
+    
+    .dealer-total {
+        font-size: 1rem;
+    }
+}

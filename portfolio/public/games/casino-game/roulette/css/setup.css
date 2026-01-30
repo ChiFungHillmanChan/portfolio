@@ -1,0 +1,336 @@
+/* =====================================================
+   ROULETTE SETUP - Setup screen form styling
+   ===================================================== */
+
+/* Setup form */
+.setup-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+}
+
+/* Form group */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.form-label {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.form-hint {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    margin-top: var(--spacing-xs);
+}
+
+/* Input styles */
+.form-input {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.2);
+}
+
+.form-input::placeholder {
+    color: var(--text-dim);
+}
+
+/* Select dropdown */
+.form-select {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23a0a0a0' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right var(--spacing-md) center;
+    padding-right: calc(var(--spacing-md) * 2 + 12px);
+    transition: border-color var(--transition-fast);
+}
+
+.form-select:focus {
+    outline: none;
+    border-color: var(--accent-gold);
+}
+
+.form-select option {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+/* Radio button group */
+.radio-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.radio-option {
+    flex: 1;
+}
+
+.radio-input {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.radio-label {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 2px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    text-align: center;
+    min-height: 80px;
+}
+
+.radio-label:hover {
+    border-color: var(--border-active);
+    background: var(--bg-card-hover);
+}
+
+.radio-input:checked + .radio-label {
+    border-color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.1);
+}
+
+.radio-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.radio-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Preset buttons */
+.preset-group {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: var(--spacing-sm);
+}
+
+.preset-btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.preset-btn:hover {
+    border-color: var(--border-active);
+    background: var(--bg-card-hover);
+}
+
+.preset-btn.active {
+    border-color: var(--accent-gold);
+    background: rgba(212, 175, 55, 0.1);
+    color: var(--accent-gold);
+}
+
+/* Custom input row */
+.input-row {
+    display: flex;
+    gap: var(--spacing-sm);
+    align-items: center;
+}
+
+.input-row .form-input {
+    flex: 1;
+}
+
+/* Range input */
+.form-range {
+    width: 100%;
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    outline: none;
+    -webkit-appearance: none;
+    margin: var(--spacing-sm) 0;
+}
+
+.form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px;
+    height: 20px;
+    background: var(--accent-gold);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+}
+
+.form-range::-moz-range-thumb {
+    width: 20px;
+    height: 20px;
+    background: var(--accent-gold);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    border: none;
+}
+
+/* Range labels */
+.range-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+/* Setup info */
+.setup-info {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    border-left: 3px solid var(--accent-gold);
+}
+
+.setup-info-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-xs);
+}
+
+.setup-info-text {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+}
+
+/* Table limits row */
+.limits-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+/* Validation message */
+.validation-message {
+    font-size: 0.8rem;
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.validation-message.error {
+    background: rgba(230, 57, 70, 0.1);
+    color: var(--accent-red);
+    border: 1px solid rgba(230, 57, 70, 0.3);
+}
+
+.validation-message.success {
+    background: rgba(46, 204, 113, 0.1);
+    color: var(--accent-green);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+}
+
+/* Saved Game Card */
+.saved-game-card {
+    background: var(--bg-card);
+    border: 2px solid var(--accent-gold);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+    box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+}
+
+.saved-game-title {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.saved-game-details {
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.saved-game-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.saved-game-row:last-child {
+    border-bottom: none;
+}
+
+.saved-game-row span:first-child {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.saved-game-row span:last-child {
+    font-weight: 600;
+}
+
+.saved-game-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+.saved-game-actions .btn {
+    width: 100%;
+}
+
+@media (min-width: 400px) {
+    .saved-game-actions {
+        flex-direction: row;
+    }
+
+    .saved-game-actions .btn {
+        flex: 1;
+    }
+}

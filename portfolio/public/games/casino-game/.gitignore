@@ -1,0 +1,18 @@
+# IDE and AI Assistant folders
+.claude/
+.cursor/
+
+# Disabled/archived files
+_disabled/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Logs
+*.log

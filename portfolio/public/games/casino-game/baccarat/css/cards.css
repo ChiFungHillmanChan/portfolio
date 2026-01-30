@@ -1,0 +1,285 @@
+.card-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+}
+
+.card-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 8px 4px;
+    border: 2px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 44px; /* Touch-friendly minimum */
+}
+
+.card-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+}
+
+.card-btn:active {
+    transform: scale(0.95);
+    background: var(--bg-card-hover);
+}
+
+.card-btn .count-badge {
+    position: absolute;
+    top: -3px; right: -3px;
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    font-size: 0.55rem;
+    padding: 1px 3px;
+    border-radius: 5px;
+    font-weight: 700;
+}
+
+.card-btn.depleted {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+.hand-display {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 10px;
+    margin-top: 10px;
+}
+
+.hand-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.hand-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    width: 50px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+}
+
+.hand-label.player {
+    color: var(--player-color);
+}
+
+.hand-label.banker {
+    color: var(--banker-color);
+}
+
+.hand-cards {
+    display: flex;
+    gap: 4px;
+    flex: 1;
+    justify-content: flex-start;
+}
+
+.hand-card {
+    width: 30px;
+    height: 40px;
+    background: white;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #333;
+    border: 2px solid #ddd;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    flex-shrink: 0;
+}
+
+.hand-card.empty {
+    background: var(--bg-card);
+    border: 2px dashed var(--border-subtle);
+    color: var(--text-dim);
+    font-size: 0.55rem;
+}
+
+.hand-card.third {
+    border-color: var(--accent-gold);
+}
+
+.hand-total {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.hand-total.player {
+    color: var(--player-color);
+}
+
+.hand-total.banker {
+    color: var(--banker-color);
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .card-grid {
+        gap: 5px;
+    }
+    
+    .card-btn {
+        padding: 10px 6px;
+        font-size: 1rem;
+        min-height: 48px;
+    }
+    
+    .card-btn .count-badge {
+        font-size: 0.6rem;
+        padding: 2px 4px;
+    }
+    
+    .hand-display {
+        padding: 12px;
+    }
+    
+    .hand-card {
+        width: 35px;
+        height: 45px;
+        font-size: 0.9rem;
+    }
+}
+
+/* Large Phone */
+@media (max-width: 768px) {
+    .card-grid {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+    
+    .card-btn {
+        padding: 8px 4px;
+        font-size: 0.85rem;
+        min-height: 44px;
+        border-radius: 4px;
+    }
+    
+    .card-btn .count-badge {
+        font-size: 0.5rem;
+        top: -2px;
+        right: -2px;
+    }
+    
+    .hand-display {
+        padding: 8px;
+        margin-top: 8px;
+    }
+    
+    .hand-row {
+        gap: 6px;
+        margin-bottom: 8px;
+    }
+    
+    .hand-label {
+        font-size: 0.65rem;
+        width: 45px;
+    }
+    
+    .hand-card {
+        width: 32px;
+        height: 42px;
+        font-size: 0.8rem;
+    }
+    
+    .hand-card.empty {
+        font-size: 0.5rem;
+    }
+    
+    .hand-total {
+        font-size: 1rem;
+        width: 22px;
+    }
+}
+
+/* Small Phone */
+@media (max-width: 480px) {
+    .card-grid {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 4px;
+    }
+
+    .card-btn {
+        padding: 8px 4px;
+        font-size: 0.9rem;
+        min-height: 44px;
+        border-width: 2px;
+    }
+
+    .card-btn .count-badge {
+        font-size: 0.55rem;
+        padding: 2px 4px;
+        top: -3px;
+        right: -3px;
+    }
+
+    .hand-display {
+        padding: 10px;
+        margin-top: 10px;
+        border-radius: 6px;
+    }
+
+    .hand-row {
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .hand-label {
+        font-size: 0.7rem;
+        width: 45px;
+        letter-spacing: 0.5px;
+    }
+
+    .hand-cards {
+        gap: 4px;
+    }
+
+    .hand-card {
+        width: 32px;
+        height: 42px;
+        font-size: 0.85rem;
+        border-width: 2px;
+    }
+
+    .hand-card.empty {
+        font-size: 0.55rem;
+    }
+
+    .hand-total {
+        font-size: 1.1rem;
+        width: 24px;
+    }
+}
+
+/* Extra Small Phone */
+@media (max-width: 360px) {
+    .card-grid {
+        grid-template-columns: repeat(5, 1fr);
+    }
+
+    .hand-label {
+        width: 38px;
+        font-size: 0.6rem;
+    }
+
+    .hand-card {
+        width: 28px;
+        height: 36px;
+        font-size: 0.75rem;
+    }
+}

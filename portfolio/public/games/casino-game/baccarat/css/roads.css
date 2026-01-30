@@ -1,0 +1,271 @@
+.scoreboard-container {
+    margin-bottom: 12px;
+}
+
+.scoreboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scoreboard-stats {
+    display: flex;
+    gap: 12px;
+    font-size: 0.75rem;
+}
+
+.stat-player {
+    color: var(--player-color);
+}
+
+.stat-banker {
+    color: var(--banker-color);
+}
+
+.stat-tie {
+    color: var(--tie-color);
+}
+
+.bead-road {
+    display: grid;
+    grid-template-columns: repeat(20, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 2px;
+    background: var(--bg-secondary);
+    padding: 6px;
+    border-radius: 6px;
+    min-height: 150px;
+    overflow-x: auto;
+}
+
+.bead-cell {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: white;
+    min-width: 16px;
+}
+
+.bead-cell.player {
+    background: var(--player-color);
+}
+
+.bead-cell.banker {
+    background: var(--banker-color);
+}
+
+.bead-cell.tie {
+    background: var(--tie-color);
+}
+
+.bead-cell.empty {
+    background: var(--bg-card);
+}
+
+.big-road {
+    display: grid;
+    grid-template-columns: repeat(35, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: 1px;
+    background: var(--bg-secondary);
+    padding: 6px;
+    border-radius: 6px;
+    margin-top: 8px;
+    min-height: 100px;
+    overflow-x: auto;
+}
+
+.big-road-cell {
+    aspect-ratio: 1;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 10px;
+    position: relative;
+}
+
+.big-road-cell.player {
+    border: 2px solid var(--player-color);
+    background: rgba(52, 152, 219, 0.2);
+}
+
+.big-road-cell.banker {
+    border: 2px solid var(--banker-color);
+    background: rgba(231, 76, 60, 0.2);
+}
+
+.big-road-cell .tie-slash {
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background: var(--tie-color);
+    transform: rotate(-45deg);
+}
+
+.big-road-cell .tie-count {
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    background: var(--tie-color);
+    color: white;
+    font-size: 0.4rem;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .scoreboard-container {
+        margin-bottom: 10px;
+    }
+    
+    .scoreboard-stats {
+        gap: 15px;
+        font-size: 0.8rem;
+    }
+    
+    .bead-road {
+        min-height: 100px;
+        gap: 2px;
+        padding: 6px;
+    }
+    
+    .bead-cell {
+        font-size: 0.45rem;
+        min-width: 0;
+    }
+    
+    .big-road {
+        min-height: 80px;
+        gap: 1px;
+        padding: 6px;
+    }
+    
+    .big-road-cell {
+        min-width: 0;
+    }
+}
+
+/* Large Phone */
+@media (max-width: 768px) {
+    .scoreboard-header {
+        margin-bottom: 6px;
+    }
+    
+    .scoreboard-stats {
+        gap: 10px;
+        font-size: 0.75rem;
+    }
+    
+    .bead-road {
+        min-height: 90px;
+        gap: 1px;
+        padding: 4px;
+    }
+    
+    .bead-cell {
+        font-size: 0.4rem;
+    }
+    
+    .big-road {
+        min-height: 70px;
+        gap: 1px;
+        padding: 4px;
+        margin-top: 6px;
+    }
+    
+    .big-road-cell.player,
+    .big-road-cell.banker {
+        border-width: 1.5px;
+    }
+    
+    .big-road-cell .tie-count {
+        width: 6px;
+        height: 6px;
+        font-size: 0.3rem;
+        top: -1px;
+        right: -1px;
+    }
+    
+    .big-road-cell .tie-slash {
+        height: 1.5px;
+    }
+}
+
+/* Small Phone */
+@media (max-width: 480px) {
+    .scoreboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .scoreboard-stats {
+        gap: 12px;
+        font-size: 0.85rem;
+        width: 100%;
+        justify-content: space-around;
+        font-weight: 600;
+    }
+
+    .bead-road {
+        min-height: 80px;
+        gap: 1px;
+        padding: 4px;
+        border-radius: 6px;
+    }
+
+    .bead-cell {
+        font-size: 0.35rem;
+    }
+
+    .big-road {
+        min-height: 60px;
+        gap: 1px;
+        padding: 4px;
+        margin-top: 6px;
+        border-radius: 6px;
+    }
+
+    .big-road-cell.player,
+    .big-road-cell.banker {
+        border-width: 1px;
+    }
+
+    .big-road-cell .tie-slash {
+        height: 1px;
+    }
+
+    .big-road-cell .tie-count {
+        width: 5px;
+        height: 5px;
+        font-size: 0.25rem;
+        top: -1px;
+        right: -1px;
+    }
+}
+
+/* Extra Small Phone */
+@media (max-width: 360px) {
+    .bead-cell {
+        font-size: 0.3rem;
+    }
+    
+    .big-road-cell .tie-count {
+        display: none;
+    }
+}

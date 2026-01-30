@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
 
-const GAME_SUBDOMAIN_SLUGS = new Set(['chat-box', 'prompt-hunter', 'card-game', 'dream-record']);
+const GAME_SUBDOMAIN_SLUGS = new Set(['chat-box', 'prompt-hunter', 'card-game', 'dream-record', 'casino-game']);
 
 /**
  * Builds the subdomain URL for a game based on current hostname.

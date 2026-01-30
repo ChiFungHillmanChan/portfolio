@@ -1,0 +1,160 @@
+<div class="game-screen" id="gameScreen">
+    <!-- HUD - Bankroll and Stats -->
+    <div class="game-hud">
+        <div class="hud-item">
+            <span class="hud-label">Bankroll</span>
+            <span class="hud-value" id="bankrollDisplay">$1,000</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Total Bet</span>
+            <span class="hud-value" id="totalBetDisplay">$0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Profit</span>
+            <span class="hud-value" id="profitDisplay">$0</span>
+        </div>
+        <div class="hud-item">
+            <span class="hud-label">Round</span>
+            <span class="hud-value" id="roundDisplay">#1</span>
+        </div>
+    </div>
+
+    <!-- Card Display Area -->
+    <div class="card-display-area">
+        <div class="hand-display player-hand">
+            <div class="hand-label">PLAYER</div>
+            <div class="cards-container" id="playerCards">
+                <!-- Cards will be rendered here -->
+            </div>
+            <div class="hand-total" id="playerTotal">0</div>
+        </div>
+        <div class="vs-indicator">VS</div>
+        <div class="hand-display banker-hand">
+            <div class="hand-label">BANKER</div>
+            <div class="cards-container" id="bankerCards">
+                <!-- Cards will be rendered here -->
+            </div>
+            <div class="hand-total" id="bankerTotal">0</div>
+        </div>
+    </div>
+
+    <!-- Betting Table -->
+    <div class="betting-table">
+        <!-- Egalité (Tie 0-9) Row -->
+        <div class="bet-row egalite-row">
+            <div class="bet-spot egalite-bet" data-bet="egalite0">
+                <div class="bet-label">TIE 0</div>
+                <div class="bet-payout">150:1</div>
+                <div class="chip-stack" id="chipEgalite0"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite1">
+                <div class="bet-label">TIE 1</div>
+                <div class="bet-payout">215:1</div>
+                <div class="chip-stack" id="chipEgalite1"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite2">
+                <div class="bet-label">TIE 2</div>
+                <div class="bet-payout">225:1</div>
+                <div class="chip-stack" id="chipEgalite2"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite3">
+                <div class="bet-label">TIE 3</div>
+                <div class="bet-payout">200:1</div>
+                <div class="chip-stack" id="chipEgalite3"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite4">
+                <div class="bet-label">TIE 4</div>
+                <div class="bet-payout">120:1</div>
+                <div class="chip-stack" id="chipEgalite4"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite5">
+                <div class="bet-label">TIE 5</div>
+                <div class="bet-payout">110:1</div>
+                <div class="chip-stack" id="chipEgalite5"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite6">
+                <div class="bet-label">TIE 6</div>
+                <div class="bet-payout">45:1</div>
+                <div class="chip-stack" id="chipEgalite6"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite7">
+                <div class="bet-label">TIE 7</div>
+                <div class="bet-payout">45:1</div>
+                <div class="chip-stack" id="chipEgalite7"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite8">
+                <div class="bet-label">TIE 8</div>
+                <div class="bet-payout">80:1</div>
+                <div class="chip-stack" id="chipEgalite8"></div>
+            </div>
+            <div class="bet-spot egalite-bet" data-bet="egalite9">
+                <div class="bet-label">TIE 9</div>
+                <div class="bet-payout">80:1</div>
+                <div class="chip-stack" id="chipEgalite9"></div>
+            </div>
+        </div>
+
+        <!-- Dragon Bonus Row -->
+        <div class="bet-row dragon-row">
+            <div class="bet-spot dragon-bet player-side" data-bet="dragonPlayer">
+                <div class="bet-label">DRAGON<br>PLAYER</div>
+                <div class="bet-payout">1:1 - 30:1</div>
+                <div class="chip-stack" id="chipDragonPlayer"></div>
+            </div>
+            <div class="bet-spot dragon-bet banker-side" data-bet="dragonBanker">
+                <div class="bet-label">DRAGON<br>BANKER</div>
+                <div class="bet-payout">1:1 - 30:1</div>
+                <div class="chip-stack" id="chipDragonBanker"></div>
+            </div>
+        </div>
+
+        <!-- Pair Bets Row -->
+        <div class="bet-row pair-row">
+            <div class="bet-spot pair-bet player-side" data-bet="playerPair">
+                <div class="bet-label">P PAIR</div>
+                <div class="bet-payout">11:1</div>
+                <div class="chip-stack" id="chipPlayerPair"></div>
+            </div>
+            <div class="bet-spot pair-bet banker-side" data-bet="bankerPair">
+                <div class="bet-label">B PAIR</div>
+                <div class="bet-payout">11:1</div>
+                <div class="chip-stack" id="chipBankerPair"></div>
+            </div>
+        </div>
+
+        <!-- Main Tie Bet -->
+        <div class="bet-row tie-row">
+            <div class="bet-spot tie-bet" data-bet="tie">
+                <div class="bet-label">TIE</div>
+                <div class="bet-payout">8:1</div>
+                <div class="chip-stack" id="chipTie"></div>
+            </div>
+        </div>
+
+        <!-- Main Bets Row -->
+        <div class="bet-row main-row">
+            <div class="bet-spot main-bet player-bet" data-bet="player">
+                <div class="bet-label">PLAYER</div>
+                <div class="bet-payout">1:1</div>
+                <div class="chip-stack" id="chipPlayer"></div>
+            </div>
+            <div class="bet-spot main-bet banker-bet" data-bet="banker">
+                <div class="bet-label">BANKER</div>
+                <div class="bet-payout">0.95:1</div>
+                <div class="chip-stack" id="chipBanker"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chip Rack -->
+    <div class="chip-rack" id="chipRack">
+        <!-- Chips will be rendered here -->
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <button class="btn btn-secondary" id="clearBetsBtn" disabled>Clear</button>
+        <button class="btn btn-secondary" id="repeatBetsBtn" disabled>Repeat</button>
+        <button class="btn btn-primary btn-lg" id="dealBtn" disabled>Deal</button>
+    </div>
+</div>

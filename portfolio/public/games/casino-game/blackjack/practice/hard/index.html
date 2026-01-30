@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Hard Mode - Card Counting Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/variables.css">
+    <link rel="stylesheet" href="../../../css/main.css">
+    <link rel="stylesheet" href="../../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="../css/shared.css">
+    <link rel="stylesheet" href="css/hard.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Practice">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+                <span class="current-badge">Current</span>
+            </a>
+            <a href="../../../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container practice-container">
+        <a href="../index.html" class="back-link">← Back to Practice</a>
+
+        <header class="practice-header compact">
+            <h1 class="practice-title">HARD MODE</h1>
+            <p class="practice-subtitle">Full Table • Auto-Deal • 5 Second Timer</p>
+        </header>
+
+        <!-- Stats Bar -->
+        <div class="stats-bar">
+            <div class="stat-item">
+                <span class="stat-label">Rounds</span>
+                <span id="hands-played" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Accuracy</span>
+                <span id="count-accuracy" class="stat-value">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Timeouts</span>
+                <span id="timeout-count" class="stat-value">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Cards</span>
+                <span id="cards-dealt" class="stat-value">0</span>
+            </div>
+        </div>
+
+        <!-- Shoe Status -->
+        <div class="shoe-status">
+            <span class="shoe-label">Shoe:</span>
+            <span id="shoe-status" class="shoe-value">-</span>
+        </div>
+
+        <!-- Game Table -->
+        <div class="game-table">
+            <!-- Dealer Area -->
+            <div class="dealer-area">
+                <div class="dealer-label">DEALER</div>
+                <div id="dealer-cards" class="card-row"></div>
+                <div id="dealer-total" class="hand-total"></div>
+            </div>
+
+            <!-- 5 Player Seats -->
+            <div class="seats-container">
+                <div class="seat" data-seat="0">
+                    <div class="seat-label">Seat 1 <span class="ai-badge">AI</span></div>
+                    <div class="seat-cards" id="seat-0-cards"></div>
+                    <div class="seat-total" id="seat-0-total"></div>
+                    <div class="seat-action" id="seat-0-action"></div>
+                </div>
+                <div class="seat" data-seat="1">
+                    <div class="seat-label">Seat 2 <span class="ai-badge">AI</span></div>
+                    <div class="seat-cards" id="seat-1-cards"></div>
+                    <div class="seat-total" id="seat-1-total"></div>
+                    <div class="seat-action" id="seat-1-action"></div>
+                </div>
+                <div class="seat" data-seat="2">
+                    <div class="seat-label">Seat 3 <span class="ai-badge">AI</span></div>
+                    <div class="seat-cards" id="seat-2-cards"></div>
+                    <div class="seat-total" id="seat-2-total"></div>
+                    <div class="seat-action" id="seat-2-action"></div>
+                </div>
+                <div class="seat" data-seat="3">
+                    <div class="seat-label">Seat 4 <span class="ai-badge">AI</span></div>
+                    <div class="seat-cards" id="seat-3-cards"></div>
+                    <div class="seat-total" id="seat-3-total"></div>
+                    <div class="seat-action" id="seat-3-action"></div>
+                </div>
+                <div class="seat player-seat" data-seat="4">
+                    <div class="seat-label">Seat 5 <span class="you-badge">YOU</span></div>
+                    <div class="seat-cards" id="seat-4-cards"></div>
+                    <div class="seat-total" id="seat-4-total"></div>
+                    <div class="seat-action" id="seat-4-action"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Action Buttons (for player seat) -->
+        <div id="action-buttons" class="action-buttons">
+            <button id="btn-hit" class="action-btn" disabled>Hit</button>
+            <button id="btn-stand" class="action-btn" disabled>Stand</button>
+            <button id="btn-double" class="action-btn" disabled>Double</button>
+            <button id="btn-split" class="action-btn" disabled>Split</button>
+        </div>
+
+        <!-- Game Controls -->
+        <div class="game-controls">
+            <button id="btn-new-round" class="practice-btn practice-btn-primary">Deal Round</button>
+            <button id="btn-new-shoe" class="practice-btn practice-btn-secondary">New Shoe</button>
+        </div>
+
+        <!-- 5-Second Count Check Modal -->
+        <div id="count-modal" class="modal-overlay">
+            <div class="modal-content urgent">
+                <div class="timer-display">
+                    <div id="timer-circle" class="timer-circle">
+                        <span id="timer-seconds">5</span>
+                    </div>
+                </div>
+                <h2 class="modal-title">Running Count?</h2>
+                <div class="count-input-area">
+                    <button class="count-adjust" data-adjust="-1">−</button>
+                    <input type="number" id="count-input" class="count-input" value="0">
+                    <button class="count-adjust" data-adjust="1">+</button>
+                </div>
+                <button id="submit-count" class="practice-btn practice-btn-primary">Submit</button>
+            </div>
+        </div>
+
+        <!-- Result Modal -->
+        <div id="result-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div id="result-icon" class="result-icon"></div>
+                <h2 id="result-title" class="modal-title"></h2>
+                <p id="result-message" class="result-message"></p>
+
+                <!-- Card Replay -->
+                <div id="card-replay" class="card-replay">
+                    <h3>All Cards This Round</h3>
+                    <div id="replay-cards" class="replay-cards"></div>
+                </div>
+
+                <button id="continue-btn" class="practice-btn practice-btn-primary">Continue</button>
+            </div>
+        </div>
+
+        <!-- Session End Modal -->
+        <div id="session-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 class="modal-title">Session Complete</h2>
+                <div class="session-stats">
+                    <div class="session-stat">
+                        <span class="stat-label">Rounds</span>
+                        <span id="session-hands" class="stat-value">0</span>
+                    </div>
+                    <div class="session-stat">
+                        <span class="stat-label">Accuracy</span>
+                        <span id="session-accuracy" class="stat-value">0%</span>
+                    </div>
+                    <div class="session-stat">
+                        <span class="stat-label">Timeouts</span>
+                        <span id="session-timeouts" class="stat-value">0</span>
+                    </div>
+                </div>
+                <div class="session-actions">
+                    <button id="play-again-btn" class="practice-btn practice-btn-primary">Play Again</button>
+                    <a href="../index.html" class="practice-btn practice-btn-secondary">Back to Menu</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="../../js/shared/constants.js"></script>
+    <script src="../../js/shared/shoe.js"></script>
+    <script src="../../js/core/hand-evaluation.js"></script>
+    <script src="../../js/core/basic-strategy.js"></script>
+    <script src="../js/practice-constants.js"></script>
+    <script src="../js/practice-stats.js"></script>
+    <script src="../js/countdown-timer.js"></script>
+    <script src="js/hard-mode.js"></script>
+    <script src="../../../js/hamburger-menu.js"></script>
+</body>
+</html>

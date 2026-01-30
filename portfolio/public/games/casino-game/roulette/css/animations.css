@@ -1,0 +1,279 @@
+/* =====================================================
+   ROULETTE ANIMATIONS - @keyframes only
+   ===================================================== */
+
+/* Spin animation for wheel */
+@keyframes wheelSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(var(--wheel-rotation, 1440deg));
+    }
+}
+
+/* Ball orbit animation */
+@keyframes ballOrbit {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg) translateX(120px) rotate(0deg);
+    }
+    100% {
+        transform: translate(-50%, -50%) rotate(var(--ball-rotation, -2520deg)) translateX(100px) rotate(calc(var(--ball-rotation, -2520deg) * -1));
+    }
+}
+
+/* Ball drop animation (after orbit) */
+@keyframes ballDrop {
+    0% {
+        transform: translate(-50%, -50%) translateX(120px);
+    }
+    25% {
+        transform: translate(-50%, -50%) translateX(110px) translateY(-5px);
+    }
+    50% {
+        transform: translate(-50%, -50%) translateX(105px) translateY(0);
+    }
+    75% {
+        transform: translate(-50%, -50%) translateX(102px) translateY(-2px);
+    }
+    100% {
+        transform: translate(-50%, -50%) translateX(100px) translateY(0);
+    }
+}
+
+/* Pulse animation for buttons */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: var(--shadow-lg), 0 0 30px rgba(212, 175, 55, 0.4);
+    }
+    50% {
+        box-shadow: var(--shadow-lg), 0 0 50px rgba(212, 175, 55, 0.6);
+    }
+}
+
+/* Win pulse for numbers */
+@keyframes winPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px var(--accent-gold);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 40px var(--accent-gold);
+    }
+}
+
+/* Winning glow */
+@keyframes winningGlow {
+    from {
+        box-shadow: 0 0 10px var(--accent-gold);
+    }
+    to {
+        box-shadow: 0 0 30px var(--accent-gold), 0 0 50px var(--accent-gold);
+    }
+}
+
+/* Chip flash when placed */
+@keyframes chipFlash {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.5);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+.chip-flash {
+    animation: chipFlash 0.3s ease-out;
+}
+
+/* Fade in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* Fade out animation */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* Slide up animation */
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Slide down animation */
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Scale in animation */
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Bounce animation */
+@keyframes bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-10px);
+    }
+}
+
+/* Shake animation (for errors) */
+@keyframes shake {
+    0%, 100% {
+        transform: translateX(0);
+    }
+    10%, 30%, 50%, 70%, 90% {
+        transform: translateX(-5px);
+    }
+    20%, 40%, 60%, 80% {
+        transform: translateX(5px);
+    }
+}
+
+.shake {
+    animation: shake 0.5s ease-in-out;
+}
+
+/* Glow animation for positive values */
+@keyframes glowGreen {
+    0%, 100% {
+        text-shadow: 0 0 5px rgba(46, 204, 113, 0.3);
+    }
+    50% {
+        text-shadow: 0 0 20px rgba(46, 204, 113, 0.6);
+    }
+}
+
+.glow-positive {
+    animation: glowGreen 2s ease-in-out infinite;
+}
+
+/* Flash animation for wheel */
+@keyframes wheelFlash {
+    0%, 100% {
+        box-shadow: var(--shadow-lg), inset 0 0 50px rgba(0, 0, 0, 0.5);
+    }
+    50% {
+        box-shadow: var(--shadow-lg), inset 0 0 50px rgba(0, 0, 0, 0.5), 0 0 40px var(--accent-gold);
+    }
+}
+
+.wheel.flash {
+    animation: wheelFlash 0.3s ease-out;
+}
+
+/* Number hover effect */
+@keyframes numberHover {
+    from {
+        transform: scale(1);
+    }
+    to {
+        transform: scale(1.05);
+    }
+}
+
+/* Shimmer effect for loading states */
+@keyframes shimmer {
+    0% {
+        background-position: -200% 0;
+    }
+    100% {
+        background-position: 200% 0;
+    }
+}
+
+.shimmer {
+    background: linear-gradient(90deg, 
+        var(--bg-secondary) 25%, 
+        var(--bg-card-hover) 50%, 
+        var(--bg-secondary) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* Counter animation */
+@keyframes countUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.count-animate {
+    animation: countUp 0.3s ease-out;
+}
+
+/* Overlay fade */
+@keyframes overlayFadeIn {
+    from {
+        background-color: rgba(0, 0, 0, 0);
+    }
+    to {
+        background-color: rgba(0, 0, 0, 0.8);
+    }
+}
+
+/* Content slide up in overlay */
+@keyframes contentSlideIn {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.overlay.active {
+    animation: overlayFadeIn 0.3s ease-out forwards;
+}
+
+.overlay.active .overlay-content {
+    animation: contentSlideIn 0.4s ease-out 0.1s forwards;
+}

@@ -1,0 +1,40 @@
+<!-- Top Panel - Most Important: Recommendation + Card Dealing -->
+<div class="panel panel-primary">
+    <!-- Recommendation Section - THE MOST IMPORTANT -->
+    <div class="recommendation-section">
+        <h2 class="panel-title">🎯 Recommendation</h2>
+        <div id="alertContainer"></div>
+        <div id="positiveEvList"></div>
+    </div>
+
+    <!-- Divider -->
+    <div class="section-divider"></div>
+
+    <!-- Card Dealing Section -->
+    <div class="dealing-section">
+        <h2 class="panel-title">Deal Cards</h2>
+        <div class="card-grid" id="cardGrid"></div>
+        
+        <div class="hand-display">
+            <div class="hand-row">
+                <span class="hand-label player">Player</span>
+                <div class="hand-cards" id="playerCards"></div>
+                <span class="hand-total player" id="playerTotal">-</span>
+            </div>
+            <div class="hand-row">
+                <span class="hand-label banker">Banker</span>
+                <div class="hand-cards" id="bankerCards"></div>
+                <span class="hand-total banker" id="bankerTotal">-</span>
+            </div>
+        </div>
+
+        <div class="dealing-indicator" id="dealingIndicator">
+            Deal: Player Card 1
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn btn-undo" onclick="undoLastCard()">↩ Undo</button>
+            <button class="btn btn-reset" onclick="newShoe()">New Shoe</button>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,97 @@
+/* =====================================================
+   CASINO GAME CALCULATOR - SHARED CSS VARIABLES
+   ===================================================== */
+
+:root {
+    /* Background Colors */
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a25;
+    --bg-card-hover: #22222f;
+
+    /* Accent Colors */
+    --accent-gold: #d4af37;
+    --accent-gold-dim: #b8960c;
+    --accent-red: #e63946;
+    --accent-blue: #3498db;
+    --accent-green: #2ecc71;
+    --accent-purple: #9b59b6;
+
+    /* Text Colors */
+    --text-primary: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --text-dim: #606070;
+
+    /* Border Colors */
+    --border-subtle: rgba(212, 175, 55, 0.15);
+    --border-active: rgba(212, 175, 55, 0.4);
+
+    /* Game-specific Colors */
+    --player-color: #3498db;
+    --banker-color: #e74c3c;
+    --tie-color: #2ecc71;
+
+    /* Effects */
+    --glow-gold: 0 0 30px rgba(212, 175, 55, 0.4);
+    --glow-green: 0 0 15px rgba(46, 204, 113, 0.4);
+    --glow-red: 0 0 15px rgba(230, 57, 70, 0.4);
+    --glow-blue: 0 0 15px rgba(52, 152, 219, 0.4);
+
+    /* Typography */
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Spacing */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 15px;
+    --spacing-lg: 25px;
+    --spacing-xl: 40px;
+
+    /* Border Radius */
+    --radius-sm: 5px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+
+    /* Transitions */
+    --transition-fast: 0.2s ease;
+    --transition-normal: 0.3s ease;
+}
+
+/* Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Base Body Styles */
+body {
+    font-family: var(--font-body);
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    background-image: 
+        radial-gradient(ellipse at 20% 20%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(155, 89, 182, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(52, 152, 219, 0.02) 0%, transparent 60%);
+}
+
+/* Scrollbar Styling */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--accent-gold-dim);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-gold);
+}

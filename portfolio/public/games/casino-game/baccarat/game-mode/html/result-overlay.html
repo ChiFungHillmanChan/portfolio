@@ -1,0 +1,52 @@
+<!-- Result Overlay -->
+<div class="result-overlay hidden" id="resultOverlay">
+    <div class="result-content">
+        <div class="result-winner" id="resultWinner">PLAYER WINS</div>
+        <div class="result-scores">
+            <div class="result-score player-score">
+                <span class="score-label">Player</span>
+                <span class="score-value" id="resultPlayerScore">8</span>
+            </div>
+            <div class="result-vs">vs</div>
+            <div class="result-score banker-score">
+                <span class="score-label">Banker</span>
+                <span class="score-value" id="resultBankerScore">5</span>
+            </div>
+        </div>
+        <div class="result-natural hidden" id="resultNatural">NATURAL</div>
+        
+        <div class="result-winnings">
+            <div class="winnings-label">You Won</div>
+            <div class="winnings-amount" id="winningsAmount">$0</div>
+        </div>
+
+        <div class="result-details" id="resultDetails">
+            <!-- Winning bet details will be rendered here -->
+        </div>
+
+        <div class="result-actions">
+            <button class="btn btn-secondary" id="newBetsBtn">New Bets</button>
+            <button class="btn btn-primary" id="sameBetsBtn">Same Bets</button>
+        </div>
+    </div>
+</div>
+
+<!-- Game Over Overlay -->
+<div class="game-over-overlay hidden" id="gameOverOverlay">
+    <div class="game-over-content">
+        <div class="game-over-icon">💸</div>
+        <div class="game-over-title">GAME OVER</div>
+        <div class="game-over-message">You've run out of chips!</div>
+        <div class="game-over-stats">
+            <div class="stat-item">
+                <span class="stat-label">Rounds Played</span>
+                <span class="stat-value" id="gameOverRounds">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Starting Bankroll</span>
+                <span class="stat-value" id="gameOverStarting">$0</span>
+            </div>
+        </div>
+        <button class="btn btn-primary btn-lg" id="playAgainBtn">Play Again</button>
+    </div>
+</div>

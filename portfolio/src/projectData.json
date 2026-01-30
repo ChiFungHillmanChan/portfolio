@@ -92,6 +92,19 @@
     },
     {
       "id": 8,
+      "title": "Casino Edge Calculator",
+      "shortDescription": "A comprehensive casino game calculator featuring Roulette, Blackjack, and Baccarat with card counting, EV tracking, and betting strategy tools.",
+      "fullDescription": "Casino Edge Calculator is a suite of tools for understanding the mathematical edge in casino games. It includes three fully-featured games: Roulette with European/American variants, physics-based wheel simulation, and hot/cold number tracking; Blackjack with Hi-Lo card counting, true count calculation, Kelly Criterion bet sizing, basic strategy with Illustrious 18 deviations, and practice modes; Baccarat with card counting tools, Egalité side bet analysis, Dragon Bonus tracking, and real-time EV calculations. The project demonstrates advanced JavaScript skills including state management, complex probability calculations, responsive UI design, and educational game mechanics. Built as a pure HTML/CSS/JS application with no dependencies.",
+      "image": "casino_game.png",
+      "url": "https://casino-game.hillmanchan.com",
+      "category": "game",
+      "sourceCode": "no-source-code",
+      "demoUrl": "/casino-game",
+      "liveDemo": "no-demo",
+      "technologies": ["HTML", "CSS", "JavaScript", "Probability Math", "Physics Simulation"]
+    },
+    {
+      "id": 9,
       "title": "AI detection tool",
       "shortDescription": "An AI detection tool that uses machine learning to detect if a text is written by AI.",
       "fullDescription":"An AI detection tool that uses machine learning to detect if a text is written by AI.",
@@ -104,7 +117,7 @@
       "technologies":["Next.js", "OpenAI", "React", "TailwindCSS"]
     },
     {
-      "id": 9,
+      "id": 10,
       "title": "Coming Soon",
       "shortDescription": "This project demonstration will come soon",
       "fullDescription":"This project demonstration will come soon",

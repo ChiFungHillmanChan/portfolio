@@ -1,0 +1,1671 @@
+/* =====================================================
+   ROULETTE MOBILE - Premium Mobile Responsive Design
+   Luxury casino experience optimized for touch devices
+   ===================================================== */
+
+/* ========== Safe Area Support ========== */
+/* Ensure content respects iOS safe areas (notch, home indicator, etc.) */
+@supports (padding: max(0px)) {
+    .container {
+        padding-left: max(var(--spacing-sm), env(safe-area-inset-left));
+        padding-right: max(var(--spacing-sm), env(safe-area-inset-right));
+        /* Bottom padding handled by mobile media query for action bar clearance */
+    }
+    
+    /* Ensure the body also respects safe areas */
+    body {
+        /* Prevent content from going under the home indicator when scrolled to bottom */
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+}
+
+/* ========== Mobile Base (max-width: 767px) ========== */
+@media (max-width: 767px) {
+    /* Root adjustments for mobile */
+    :root {
+        --spacing-xs: 4px;
+        --spacing-sm: 6px;
+        --spacing-md: 10px;
+        --spacing-lg: 14px;
+        --spacing-xl: 20px;
+    }
+
+    /* Smoother scrolling on iOS */
+    html {
+        -webkit-overflow-scrolling: touch;
+        scroll-behavior: smooth;
+    }
+
+    body {
+        overflow-x: hidden;
+        position: relative;
+    }
+
+    /* Container - full width mobile */
+    .container {
+        padding: var(--spacing-sm);
+        /* Space for fixed action bar (~100px height) + buffer
+           IMPORTANT: Use FIXED padding that doesn't rely on env() to avoid
+           Safari's dynamic toolbar causing the value to change on scroll.
+           Action bar height (~100px) + home indicator space (~34px) + buffer (~26px) = 160px */
+        padding-bottom: 160px;
+    }
+
+    /* Header - compact on mobile */
+    header {
+        padding: var(--spacing-xs) 0;
+        margin-bottom: var(--spacing-xs);
+        position: sticky;
+        top: 0;
+        z-index: 40;
+        background: var(--bg-primary);
+    }
+
+    header h1 {
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+    }
+
+    header .subtitle {
+        font-size: 0.65rem;
+        margin-top: 2px;
+        display: none; /* Hide subtitle on mobile to save space */
+    }
+
+    /* Back link - smaller on mobile */
+    .back-link {
+        font-size: 0.7rem;
+        padding: 2px 0;
+    }
+
+    /* App layout - vertical stack */
+    .app-layout {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-md);
+    }
+
+    /* Game area - full width */
+    .game-area {
+        order: 1;
+    }
+
+    /* ========== Stats Panel - Collapsible on Mobile ========== */
+    .stats-panel {
+        order: 2;
+        margin-top: var(--spacing-md);
+    }
+
+    .stats-panel .panel-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .stats-panel .panel-title {
+        font-size: 0.85rem;
+    }
+
+    /* Make stats sections more compact */
+    .stats-section {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .stats-section-title {
+        font-size: 0.7rem;
+        margin-bottom: var(--spacing-xs);
+    }
+
+    /* History numbers - smaller on mobile */
+    .history-number {
+        width: 24px;
+        height: 24px;
+        font-size: 0.65rem;
+    }
+
+    .number-badge {
+        width: 28px;
+        height: 28px;
+        font-size: 0.75rem;
+    }
+
+    /* ========== Mobile Top Stack (Bankroll + Tabs) ========== */
+    .mobile-top-stack {
+        display: flex;
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        width: 100%;
+        padding-top: var(--spacing-sm);
+        padding-bottom: var(--spacing-xs);
+    }
+
+    /* ========== Bankroll Display - Compact ========== */
+    .bankroll-display {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        border-radius: var(--radius-sm);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: nowrap;
+        gap: var(--spacing-xs);
+        background: var(--bg-card);
+        border: 1px solid var(--border-subtle);
+        margin: 0;
+    }
+
+    .bankroll-label {
+        font-size: 0.6rem;
+        margin-bottom: 0;
+    }
+
+    .bankroll-amount {
+        font-size: 1.2rem;
+    }
+
+    .bankroll-profit {
+        font-size: 0.7rem;
+        width: auto;
+        text-align: right;
+    }
+
+    /* ========== Mobile Tab Bar ========== */
+    .mobile-tab-bar {
+        display: flex;
+        background: var(--bg-card);
+        border-radius: var(--radius-sm);
+        padding: 2px;
+        margin: 0;
+        border: 1px solid var(--border-subtle);
+    }
+
+    .tab-btn {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 6px 8px;
+        background: transparent;
+        border: none;
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        font-family: 'Rajdhani', sans-serif;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all var(--transition-fast);
+    }
+
+    .tab-btn:active {
+        transform: scale(0.98);
+    }
+
+    .tab-btn.active {
+        background: var(--accent-gold);
+        color: var(--bg-primary);
+    }
+
+    .tab-icon {
+        font-size: 0.9rem;
+    }
+
+    .tab-label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Stats container - same spacing as game screen */
+    #stats-container {
+        padding: 0;
+        display: none; /* Hide by default on mobile to prevent layout gaps */
+        width: 100%;
+    }
+
+    /* Stats container active state */
+    #stats-container.active {
+        display: block;
+    }
+
+    /* Stats panel when shown via tab */
+    .stats-panel.tab-active {
+        display: block !important;
+        order: 1;
+        margin-top: 0;
+    }
+
+    /* Game area when hidden via tab */
+    .game-area.tab-hidden {
+        display: none !important;
+    }
+
+    /* Hide stats panel by default on mobile (controlled by tab) */
+    .stats-panel {
+        display: none;
+    }
+
+    /* Game area - compact spacing */
+    .game-area {
+        margin-top: 0;
+    }
+
+    /* ========== Wheel Container - Compact ========== */
+    .wheel-container {
+        padding: var(--spacing-xs);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: auto;
+    }
+
+    .wheel-wrapper {
+        width: min(220px, 60vw);
+        height: min(220px, 60vw);
+    }
+
+    /* Wheel pocket adjustments */
+    .wheel-pocket-inner {
+        font-size: 8px;
+        width: 18px;
+        height: 40px;
+        padding-top: 4px;
+    }
+
+    .wheel-pocket::after {
+        height: 42px;
+        width: 2.5px;
+        -webkit-backface-visibility: hidden;
+        backface-visibility: hidden;
+    }
+
+    /* Wheel center - smaller */
+    .wheel-center {
+        width: 65px;
+        height: 65px;
+    }
+
+    .wheel-center::before {
+        width: 42px;
+        height: 42px;
+    }
+
+    .wheel-center::after {
+        width: 14px;
+        height: 14px;
+    }
+
+    .result-indicator {
+        font-size: 1.2rem;
+    }
+
+    /* Ball - slightly smaller */
+    .ball {
+        width: 10px;
+        height: 10px;
+    }
+
+    /* ========== Betting Table - Mobile Optimized ========== */
+    .betting-table-container {
+        width: 100%;
+        padding: var(--spacing-xs);
+        overflow-x: hidden;
+        overflow-y: visible;
+    }
+
+    .betting-table {
+        width: 100%;
+        min-width: auto;
+        padding: 2px;
+        border-width: 1px;
+        margin: 0 auto;
+        /* Eliminate 300ms touch delay for entire table */
+        touch-action: manipulation;
+    }
+
+    /* Zero section - narrower */
+    .zero-section {
+        width: 26px;
+    }
+
+    .zero-cell {
+        font-size: 0.85rem;
+        min-height: 72px;
+    }
+
+    .zero-cell.american {
+        min-height: 36px;
+    }
+
+    /* Number cells - compact for mobile with touch optimization */
+    .number-cell {
+        font-size: 0.65rem;
+        min-height: 24px;
+        position: relative;
+        /* Eliminate 300ms touch delay */
+        touch-action: manipulation;
+    }
+
+    /* Column bets - narrower */
+    .column-section {
+        width: 22px;
+    }
+
+    .column-bet {
+        font-size: 0.5rem;
+        padding: 1px;
+    }
+
+    /* Outside bets */
+    .outside-bets,
+    .dozen-bets {
+        margin-left: 26px;
+        margin-top: 1px;
+    }
+
+    .dozen-bet,
+    .even-money-bet {
+        font-size: 0.6rem;
+        min-height: 24px;
+        padding: 1px;
+    }
+
+    /* Inside bet areas - hidden by default on mobile, GPU accelerated */
+    .split-bet,
+    .corner-bet,
+    .street-bet,
+    .line-bet,
+    .first-four-bet,
+    .top-line-bet {
+        background: transparent !important;
+        border-color: transparent !important;
+        box-shadow: none !important;
+        /* GPU acceleration */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        /* Fast transitions */
+        transition: transform 0.08s ease-out, background-color 0.08s ease-out, box-shadow 0.08s ease-out;
+    }
+
+    /* Show bet areas on touch/active with glow effect - GPU accelerated */
+    .split-bet:active {
+        background: rgba(212, 175, 55, 0.6) !important;
+        border-color: var(--accent-gold) !important;
+        box-shadow: 0 0 10px var(--accent-gold) !important;
+        transform: translateZ(0);
+    }
+
+    .corner-bet:active {
+        background: rgba(212, 175, 55, 0.6) !important;
+        border-color: var(--accent-gold) !important;
+        box-shadow: 0 0 12px var(--accent-gold) !important;
+        transform: translateZ(0);
+    }
+
+    .street-bet:active {
+        background: rgba(155, 89, 182, 0.6) !important;
+        border-color: #9b59b6 !important;
+        box-shadow: 0 0 12px #9b59b6 !important;
+        transform: translateZ(0);
+    }
+
+    .line-bet:active {
+        background: rgba(52, 152, 219, 0.6) !important;
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 12px var(--accent-blue) !important;
+        transform: translateZ(0);
+    }
+
+    .first-four-bet:active,
+    .top-line-bet:active {
+        background: rgba(46, 204, 113, 0.5) !important;
+        box-shadow: 0 0 12px var(--roulette-green) !important;
+        transform: translateZ(0);
+    }
+
+    .split-bet.vertical,
+    .split-bet.horizontal {
+        min-width: 16px;
+        min-height: 16px;
+        width: 16px;
+        height: 16px;
+    }
+
+    .corner-bet,
+    .street-bet,
+    .line-bet {
+        width: 18px;
+        height: 18px;
+    }
+
+    /* ========== Chip Selector - Compact Mobile ========== */
+    .chip-selector {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        margin-top: var(--spacing-sm);
+        /* Add bottom margin to ensure it's visible above fixed action bar */
+        margin-bottom: var(--spacing-sm);
+        background: rgba(20, 20, 30, 0.9);
+        border-radius: var(--radius-md);
+        /* Ensure chip selector doesn't get cut off when scrolling */
+        scroll-margin-bottom: 120px;
+    }
+
+    .chip-selector-label {
+        font-size: 0.6rem;
+        margin-bottom: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .chip-rack {
+        gap: 6px;
+        justify-content: center;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 4px 0;
+        -webkit-overflow-scrolling: touch;
+        /* Eliminate 300ms touch delay */
+        touch-action: manipulation;
+    }
+
+    /* Smaller chips for mobile - touch optimized */
+    .chip {
+        width: 36px;
+        height: 36px;
+        font-size: 0.6rem;
+        flex-shrink: 0;
+        border-width: 2px;
+        /* Eliminate 300ms touch delay */
+        touch-action: manipulation;
+        /* GPU acceleration */
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    .chip::before {
+        top: 2px;
+        left: 2px;
+        right: 2px;
+        bottom: 2px;
+        border-width: 1px;
+    }
+
+    .chip.selected {
+        transform: translateY(-2px) scale(1.1);
+        box-shadow: 0 0 12px var(--accent-gold);
+    }
+
+    /* Placed chips - even smaller on mobile */
+    .chip-sm {
+        width: 20px;
+        height: 20px;
+        font-size: 0.45rem;
+        border-width: 1px;
+    }
+
+    .chip-sm::before {
+        display: none;
+    }
+
+    .chip-stack-container {
+        width: 20px;
+        height: 20px;
+    }
+
+    .chip-amount-label {
+        font-size: 0.5rem;
+        padding: 1px 2px;
+        border-width: 1px;
+    }
+
+    /* ========== Action Bar - Fixed Bottom ========== */
+    .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        margin: 0;
+        padding: var(--spacing-sm) var(--spacing-md);
+        /* iOS Safe Area: Use env() with fallback for iPhone home indicator
+           - iPhone X/11/12/13/14/15 home indicator is ~34px
+           - Add extra padding (16px) to ensure buttons aren't too close to the bar
+           - FIXED padding that doesn't change with Safari's dynamic toolbar */
+        padding-bottom: 50px;
+        padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+        padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+        background: var(--bg-card);
+        border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        border: 1px solid var(--border-subtle);
+        border-bottom: none;
+        box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.7);
+        z-index: 100;
+        display: grid;
+        grid-template-columns: 1fr auto;
+        grid-template-rows: auto auto;
+        gap: var(--spacing-sm);
+        align-items: center;
+        /* Safari dynamic viewport: ensure action bar respects home indicator */
+        padding-bottom: calc(34px + 16px);
+    }
+
+    /* Safari-specific: ensure action bar clears the home indicator area */
+    @supports (padding-bottom: env(safe-area-inset-bottom)) {
+        .action-bar {
+            /* Use safe-area for home indicator, but with minimum fallback */
+            padding-bottom: max(50px, calc(env(safe-area-inset-bottom, 34px) + 16px));
+        }
+    }
+
+    /* Bet and Bankroll display container */
+    .bet-bankroll-display {
+        grid-column: 1;
+        grid-row: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        min-width: 0;
+    }
+
+    .total-bet-display {
+        text-align: left;
+        font-size: 0.8rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .total-bet-display #totalBetAmount {
+        font-size: 0.85rem;
+    }
+
+    .action-bar-bankroll {
+        text-align: left;
+        font-size: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .action-bar-bankroll #actionBarBankroll {
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        grid-column: 1 / -1;
+        grid-row: 2;
+        display: flex;
+        gap: var(--spacing-xs);
+        margin-top: 0;
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .action-buttons .btn {
+        flex: 0 1 auto;
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.6rem;
+        min-height: 32px;
+        white-space: nowrap;
+        min-width: 50px;
+    }
+
+    .spin-controls {
+        grid-column: 2;
+        grid-row: 1;
+        display: flex;
+        align-items: center;
+        gap: var(--spacing-xs);
+        flex-shrink: 0;
+    }
+
+    .btn-spin {
+        width: auto;
+        min-width: 70px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.85rem;
+    }
+
+    .btn-auto-spin {
+        min-width: 50px;
+        padding: var(--spacing-xs) var(--spacing-sm);
+    }
+
+    .auto-spin-icon {
+        font-size: 0.85rem;
+    }
+
+    .auto-spin-label {
+        font-size: 0.6rem;
+    }
+
+    .auto-spin-dropdown {
+        min-width: 160px;
+    }
+
+    .auto-spin-options {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .auto-spin-option {
+        font-size: 0.7rem;
+        padding: var(--spacing-sm);
+    }
+
+    /* ========== Result Overlay - Mobile Optimized ========== */
+    .overlay-content {
+        width: 95%;
+        max-width: 340px;
+        padding: var(--spacing-lg);
+        margin: var(--spacing-md);
+    }
+
+    .result-display {
+        padding: var(--spacing-lg);
+    }
+
+    .result-number {
+        width: 70px;
+        height: 70px;
+        font-size: 2rem;
+    }
+
+    .result-text {
+        font-size: 1rem;
+    }
+
+    .result-amount {
+        font-size: 1.3rem;
+    }
+
+    .btn-group {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .btn-group .btn {
+        width: 100%;
+    }
+
+    /* ========== Hamburger Menu Mobile Adjustments ========== */
+    .hamburger-btn {
+        width: 40px;
+        height: 40px;
+    }
+
+    .dropdown-menu {
+        left: var(--spacing-sm);
+        right: var(--spacing-sm);
+        border-radius: var(--radius-md);
+    }
+
+    .dropdown-item {
+        padding: var(--spacing-md) var(--spacing-md);
+        min-height: var(--touch-target-min);
+    }
+
+    /* ========== Game Screen Adjustments ========== */
+    .game-screen {
+        /* Extra space for fixed action bar + home indicator + buffer
+           IMPORTANT: Use FIXED padding (not env()) to prevent Safari's
+           dynamic toolbar from changing the value and covering content.
+           Action bar height (~100px) + home indicator (~34px) + extra buffer (~46px) = 180px */
+        padding-bottom: 180px;
+    }
+
+    /* Ensure game-area content has enough clearance from action bar */
+    .game-area {
+        padding-bottom: var(--spacing-md);
+    }
+
+    /* ========== Collapsible Sections - Compact ========== */
+    .collapsible-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .collapsible-content.open {
+        max-height: 300px;
+    }
+
+    /* ========== Info Box ========== */
+    .info-box {
+        padding: var(--spacing-sm);
+    }
+
+    .info-row {
+        padding: var(--spacing-xs) 0;
+    }
+
+    .info-label {
+        font-size: 0.75rem;
+    }
+
+    .info-value {
+        font-size: 0.85rem;
+    }
+
+    /* ========== Setup Screen - Optimized Mobile Layout ========== */
+    .setup-screen {
+        min-height: auto;
+        flex-direction: column;
+        align-items: center;
+        padding-top: var(--spacing-sm);
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Saved game card - full width on mobile */
+    .setup-screen #savedGameInfo {
+        width: 100%;
+        order: -1;
+    }
+
+    .saved-game-card {
+        max-width: 100%;
+        padding: var(--spacing-md);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .saved-game-title {
+        font-size: 1rem;
+    }
+
+    .saved-game-details {
+        padding: var(--spacing-sm);
+        margin-bottom: var(--spacing-md);
+    }
+
+    .saved-game-row {
+        padding: var(--spacing-xs) 0;
+        font-size: 0.85rem;
+    }
+
+    .saved-game-actions {
+        flex-direction: row;
+        gap: var(--spacing-xs);
+    }
+
+    .saved-game-actions .btn {
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.8rem;
+    }
+
+    .setup-panel {
+        max-width: 100%;
+        margin-bottom: var(--spacing-lg);
+    }
+
+    .setup-panel .panel-header {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    .setup-panel .panel-title {
+        font-size: 0.9rem;
+    }
+
+    .setup-panel .panel-content {
+        padding: var(--spacing-md);
+    }
+
+    .setup-form {
+        gap: var(--spacing-md);
+    }
+
+    .form-group {
+        gap: var(--spacing-xs);
+    }
+
+    .form-label {
+        font-size: 0.75rem;
+        margin-bottom: 0;
+    }
+
+    .radio-group {
+        flex-direction: row;
+        gap: var(--spacing-xs);
+    }
+
+    .radio-option {
+        flex: 1;
+    }
+
+    .radio-label {
+        min-height: 52px;
+        padding: var(--spacing-sm);
+    }
+
+    .radio-title {
+        font-size: 0.8rem;
+        margin-bottom: 2px;
+    }
+
+    .radio-subtitle {
+        font-size: 0.65rem;
+        line-height: 1.2;
+    }
+
+    .preset-group {
+        grid-template-columns: repeat(4, 1fr);
+        gap: var(--spacing-xs);
+    }
+
+    .preset-btn {
+        padding: var(--spacing-xs) var(--spacing-sm);
+        font-size: 0.75rem;
+        min-height: 36px;
+    }
+
+    .input-row {
+        margin-top: var(--spacing-xs);
+    }
+
+    .input-row .form-input {
+        padding: var(--spacing-sm);
+        font-size: 0.85rem;
+    }
+
+    .limits-row {
+        gap: var(--spacing-sm);
+    }
+
+    .limits-row .form-hint {
+        font-size: 0.65rem;
+        margin-top: 0;
+        margin-bottom: 2px;
+    }
+
+    .limits-row .form-select {
+        padding: var(--spacing-sm);
+        font-size: 0.85rem;
+    }
+
+    .setup-info {
+        padding: var(--spacing-sm);
+        margin-top: 0;
+    }
+
+    .setup-info-title {
+        font-size: 0.75rem;
+        margin-bottom: 2px;
+    }
+
+    .setup-info-text {
+        font-size: 0.7rem;
+        line-height: 1.4;
+    }
+
+    /* Start game button - prominent but compact */
+    .setup-form .btn-primary {
+        padding: var(--spacing-sm) var(--spacing-lg);
+        font-size: 0.95rem;
+        margin-top: var(--spacing-xs);
+    }
+}
+
+/* ========== Small Mobile (max-width: 374px) ========== */
+@media (max-width: 374px) {
+    header h1 {
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+    }
+
+    header .subtitle {
+        font-size: 0.65rem;
+    }
+
+    .wheel-wrapper {
+        width: min(240px, 90vw);
+        height: min(240px, 90vw);
+    }
+
+    .wheel-pocket-inner {
+        font-size: 7px;
+        width: 16px;
+        height: 35px;
+    }
+
+    .wheel-center {
+        width: 55px;
+        height: 55px;
+    }
+
+    .betting-table {
+        min-width: 340px;
+        padding: 2px;
+    }
+
+    .zero-section {
+        width: 26px;
+    }
+
+    .zero-cell {
+        font-size: 0.85rem;
+        min-height: 72px;
+    }
+
+    .number-cell {
+        font-size: 0.65rem;
+        min-height: 24px;
+    }
+
+    .column-section {
+        width: 22px;
+    }
+
+    .column-bet {
+        font-size: 0.5rem;
+    }
+
+    .outside-bets,
+    .dozen-bets {
+        margin-left: 26px;
+    }
+
+    .dozen-bet,
+    .even-money-bet {
+        font-size: 0.55rem;
+        min-height: 24px;
+    }
+
+    /* Even smaller chips */
+    .chip {
+        width: 32px;
+        height: 32px;
+        font-size: 0.55rem;
+    }
+
+    .chip-sm {
+        width: 18px;
+        height: 18px;
+        font-size: 0.4rem;
+    }
+
+    .chip-stack-container {
+        width: 18px;
+        height: 18px;
+    }
+
+    .preset-group {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .action-buttons .btn {
+        font-size: 0.55rem;
+        padding: var(--spacing-xs);
+        min-width: 42px;
+    }
+
+    /* Smaller bankroll display for tiny screens */
+    .bet-bankroll-display {
+        gap: 1px;
+    }
+
+    .total-bet-display {
+        font-size: 0.7rem;
+    }
+
+    .total-bet-display #totalBetAmount {
+        font-size: 0.75rem;
+    }
+
+    .action-bar-bankroll {
+        font-size: 0.65rem;
+    }
+
+    .action-bar-bankroll #actionBarBankroll {
+        font-size: 0.7rem;
+    }
+
+    .btn-spin {
+        min-width: 60px;
+        font-size: 0.75rem;
+    }
+}
+
+/* ========== Landscape Mobile ========== */
+@media (max-width: 767px) and (orientation: landscape) {
+    .container {
+        /* Landscape: Use fixed padding to avoid Safari dynamic toolbar issues */
+        padding-bottom: 100px;
+    }
+
+    header {
+        padding: var(--spacing-xs) 0;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    header h1 {
+        font-size: 1.2rem;
+    }
+
+    header .subtitle {
+        display: none;
+    }
+
+    .wheel-container {
+        min-height: 200px;
+        padding: var(--spacing-sm);
+    }
+
+    .wheel-wrapper {
+        width: min(200px, 40vh);
+        height: min(200px, 40vh);
+    }
+
+    .bankroll-display {
+        padding: var(--spacing-sm);
+    }
+
+    .bankroll-amount {
+        font-size: 1.2rem;
+    }
+
+    /* Side-by-side layout in landscape */
+    .game-area {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .wheel-container {
+        grid-column: 1;
+    }
+
+    .betting-table-container {
+        grid-column: 2;
+        width: 100%;
+        margin-left: 0;
+    }
+
+    .chip-selector {
+        grid-column: 1 / -1;
+    }
+
+    /* Action bar - slimmer in landscape */
+    .action-bar {
+        padding: var(--spacing-xs) var(--spacing-md);
+        display: flex;
+        flex-wrap: wrap;
+        gap: var(--spacing-xs);
+    }
+
+    .bet-bankroll-display {
+        display: flex;
+        gap: var(--spacing-sm);
+        align-items: center;
+    }
+
+    .total-bet-display {
+        white-space: nowrap;
+        font-size: 0.75rem;
+    }
+
+    .action-bar-bankroll {
+        white-space: nowrap;
+        font-size: 0.75rem;
+    }
+
+    .action-buttons {
+        flex: 1;
+        justify-content: center;
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .action-buttons .btn {
+        font-size: 0.55rem;
+        padding: var(--spacing-xs) var(--spacing-xs);
+        min-width: 45px;
+    }
+
+    .spin-controls {
+        flex-shrink: 0;
+    }
+    
+    .spin-controls .btn-spin {
+        min-width: 70px;
+        font-size: 0.8rem;
+    }
+}
+
+/* ========== Tablet Portrait (768px - 1023px) ========== */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .container {
+        padding: var(--spacing-md);
+        padding-bottom: var(--spacing-lg);
+    }
+
+    /* Header - centered with proper spacing */
+    header {
+        padding: var(--spacing-md) 0;
+        margin-bottom: var(--spacing-md);
+    }
+
+    header h1 {
+        font-size: 1.8rem;
+    }
+
+    header .subtitle {
+        font-size: 0.8rem;
+    }
+
+    /* Setup screen - stacked layout on tablet */
+    .setup-screen {
+        flex-direction: column;
+        align-items: center;
+        padding: var(--spacing-md);
+    }
+
+    .setup-screen #savedGameInfo {
+        width: 100%;
+        max-width: 500px;
+        order: -1;
+    }
+
+    .saved-game-card {
+        max-width: 100%;
+        margin-bottom: var(--spacing-md);
+    }
+
+    .saved-game-actions {
+        flex-direction: row;
+    }
+
+    /* Game area - centered layout */
+    .game-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    /* Bankroll display - full width, centered */
+    .bankroll-display {
+        width: 100%;
+        max-width: 600px;
+        padding: var(--spacing-md) var(--spacing-lg);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: var(--spacing-lg);
+    }
+
+    .bankroll-amount {
+        font-size: 2rem;
+    }
+
+    /* Wheel - good size for tablet */
+    .wheel-container {
+        display: flex;
+        justify-content: center;
+        width: 100%;
+    }
+
+    .wheel-wrapper {
+        width: 280px;
+        height: 280px;
+    }
+
+    /* Betting table - properly sized */
+    .betting-table-container {
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        overflow-x: auto;
+        padding: var(--spacing-sm);
+    }
+
+    .betting-table {
+        min-width: 500px;
+        max-width: 600px;
+    }
+
+    /* Chip selector - centered */
+    .chip-selector {
+        width: 100%;
+        max-width: 600px;
+        margin: 0 auto;
+    }
+
+    .chip-rack {
+        justify-content: center;
+        gap: var(--spacing-sm);
+    }
+
+    .chip {
+        width: 44px;
+        height: 44px;
+        font-size: 0.7rem;
+    }
+
+    /* Stats container - full width below game */
+    #stats-container {
+        width: 100%;
+    }
+
+    /* Stats panel - full width with 2-column content grid */
+    .stats-panel {
+        width: 100%;
+    }
+
+    /* Collapsible sections - arrange in 2 columns */
+    .stats-panel > .collapsible-section,
+    .stats-panel > .stats-section {
+        display: block;
+    }
+
+    .stats-section {
+        padding: var(--spacing-sm) var(--spacing-md);
+    }
+
+    /* Distribution bars - better spacing */
+    .distribution-bar {
+        height: 8px;
+    }
+
+    /* Action bar - fixed bottom with proper layout */
+    .action-bar {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: var(--spacing-sm);
+        padding: var(--spacing-md) var(--spacing-lg);
+        /* Tablet: Use fixed padding to avoid Safari dynamic toolbar issues */
+        padding-bottom: 36px;
+        padding-left: max(var(--spacing-lg), env(safe-area-inset-left));
+        padding-right: max(var(--spacing-lg), env(safe-area-inset-right));
+        background: var(--bg-card);
+        border-top: 1px solid var(--border-subtle);
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
+        z-index: 100;
+    }
+
+    /* Tablet bet/bankroll display */
+    .bet-bankroll-display {
+        display: flex;
+        gap: var(--spacing-lg);
+        align-items: center;
+        flex-shrink: 0;
+    }
+
+    .total-bet-display {
+        font-size: 1rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    .action-bar-bankroll {
+        font-size: 1rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+    }
+
+    #actionBarBankroll {
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: var(--spacing-xs);
+        margin-top: 0;
+        flex-wrap: wrap;
+        flex: 1;
+        justify-content: center;
+    }
+
+    .action-buttons .btn {
+        padding: var(--spacing-sm) var(--spacing-sm);
+        font-size: 0.7rem;
+        min-height: 38px;
+        white-space: nowrap;
+    }
+
+    .btn-spin {
+        min-width: 100px;
+        padding: var(--spacing-sm) var(--spacing-md);
+        font-size: 0.95rem;
+        flex-shrink: 0;
+    }
+
+    /* Add padding to container for fixed action bar - fixed value to avoid Safari issues */
+    .game-screen {
+        padding-bottom: 130px;
+    }
+
+    /* Ensure game-area content has clearance */
+    .game-area {
+        padding-bottom: var(--spacing-md);
+    }
+
+    /* Chip selector needs bottom margin for visibility */
+    .chip-selector {
+        margin-bottom: var(--spacing-md);
+    }
+
+    /* Hide mobile tab bar on tablet - show stats directly */
+    .mobile-tab-bar {
+        display: none;
+    }
+
+    /* Ensure stats container is visible */
+    #stats-container {
+        display: block !important;
+    }
+
+    /* Stats panel - visible when not hidden (JS controls hidden class) */
+    .stats-panel:not(.hidden) {
+        display: block !important;
+    }
+
+    /* Game screen - visible when not hidden */
+    .game-screen:not(.hidden) {
+        display: block !important;
+    }
+
+    /* Inner game area (inside game-screen) - centered column */
+    #gameArea,
+    .game-screen .game-area {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: var(--spacing-lg);
+        width: 100%;
+    }
+}
+
+/* ========== Touch Device Enhancements ========== */
+@media (hover: none) and (pointer: coarse) {
+    /* === CRITICAL: Eliminate 300ms touch delay === */
+    .betting-table,
+    .betting-table *,
+    .chip-rack,
+    .chip-rack *,
+    .number-cell,
+    .zero-cell,
+    .dozen-bet,
+    .even-money-bet,
+    .column-bet,
+    .split-bet,
+    .corner-bet,
+    .street-bet,
+    .line-bet,
+    .first-four-bet,
+    .top-line-bet,
+    .chip {
+        touch-action: manipulation;
+    }
+
+    /* === GPU Acceleration for smooth animations === */
+    .number-cell,
+    .zero-cell,
+    .dozen-bet,
+    .even-money-bet,
+    .column-bet,
+    .chip {
+        will-change: transform, opacity;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+    }
+
+    /* === Optimized transitions - only transform/opacity === */
+    .number-cell,
+    .zero-cell,
+    .dozen-bet,
+    .even-money-bet,
+    .column-bet {
+        transition: transform 0.1s ease-out, opacity 0.1s ease-out, background-color 0.1s ease-out;
+    }
+
+    .chip {
+        transition: transform 0.1s ease-out, box-shadow 0.1s ease-out;
+    }
+
+    /* Larger touch targets */
+    .number-cell,
+    .zero-cell,
+    .dozen-bet,
+    .even-money-bet,
+    .column-bet {
+        min-height: 44px;
+    }
+
+    /* Active state feedback - simplified for performance */
+    .number-cell:active,
+    .zero-cell:active,
+    .dozen-bet:active,
+    .even-money-bet:active,
+    .column-bet:active {
+        transform: scale(0.96) translateZ(0);
+        opacity: 0.85;
+    }
+
+    .chip:active:not(:disabled) {
+        transform: scale(0.92) translateZ(0);
+    }
+
+    /* Remove hover effects that don't work well on touch */
+    .number-cell:hover {
+        transform: none;
+        box-shadow: none;
+    }
+
+    .chip:hover:not(:disabled) {
+        transform: none;
+        box-shadow: var(--shadow-chip);
+    }
+
+    /* Better tap highlight */
+    * {
+        -webkit-tap-highlight-color: rgba(212, 175, 55, 0.2);
+    }
+
+    /* Prevent text selection on game elements */
+    .wheel-wrapper,
+    .betting-table,
+    .chip-rack,
+    .action-bar {
+        user-select: none;
+        -webkit-user-select: none;
+    }
+
+    /* ===== INSIDE BET AREAS - Hidden by default, visible on touch ===== */
+    /* Hide payout labels on mobile - they clutter the UI */
+    .number-cell::after,
+    .split-bet::after,
+    .corner-bet::after,
+    .street-bet::after,
+    .line-bet::after {
+        display: none;
+    }
+
+    /* All inside bet areas - hidden by default, GPU accelerated */
+    .split-bet,
+    .corner-bet,
+    .street-bet,
+    .line-bet {
+        background: transparent;
+        border-color: transparent;
+        box-shadow: none;
+        /* GPU acceleration for smooth transforms */
+        will-change: transform, background-color, box-shadow;
+        -webkit-transform: translateZ(0);
+        transform: translateZ(0);
+        /* Fast transitions for responsive feel */
+        transition: transform 0.08s ease-out, background-color 0.08s ease-out, box-shadow 0.08s ease-out;
+    }
+
+    /* Larger touch targets for inside bets */
+    .street-bet,
+    .line-bet {
+        width: 24px;
+        height: 24px;
+    }
+
+    .corner-bet {
+        width: 24px;
+        height: 24px;
+    }
+
+    .split-bet.vertical {
+        width: 22px;
+        height: 20px;
+    }
+
+    .split-bet.horizontal {
+        width: 20px;
+        height: 28px;
+    }
+
+    /* Show inside bet areas on touch/active - GPU accelerated */
+    .split-bet:active {
+        background: rgba(212, 175, 55, 0.6) !important;
+        border-color: var(--accent-gold) !important;
+        box-shadow: 0 0 12px var(--accent-gold) !important;
+        transform: scale(1.1) translateZ(0);
+    }
+
+    .corner-bet:active {
+        background: rgba(212, 175, 55, 0.6) !important;
+        border-color: var(--accent-gold) !important;
+        box-shadow: 0 0 15px var(--accent-gold) !important;
+        transform: scale(1.3) translateZ(0);
+    }
+
+    .street-bet:active {
+        background: rgba(155, 89, 182, 0.6) !important;
+        border-color: #9b59b6 !important;
+        box-shadow: 0 0 15px #9b59b6 !important;
+        transform: scale(1.3) translateZ(0);
+    }
+
+    .line-bet:active {
+        background: rgba(52, 152, 219, 0.6) !important;
+        border-color: var(--accent-blue) !important;
+        box-shadow: 0 0 15px var(--accent-blue) !important;
+        transform: scale(1.3) translateZ(0);
+    }
+
+    .first-four-bet:active,
+    .top-line-bet:active {
+        background: rgba(46, 204, 113, 0.5) !important;
+        box-shadow: 0 0 12px var(--roulette-green) !important;
+        transform: scale(1.2) translateZ(0);
+    }
+
+    /* ===== Chip Preview on Touch ===== */
+    /* Show chip preview when touching bet areas */
+    .betting-table-container {
+        position: relative;
+    }
+
+    .chip-preview {
+        position: absolute;
+        pointer-events: none;
+        z-index: 200;
+    }
+
+    .chip-preview.visible {
+        opacity: 1;
+    }
+
+    .chip-preview .chip-preview-chip {
+        width: 28px;
+        height: 28px;
+        font-size: 0.55rem;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5), 0 0 15px var(--accent-gold);
+    }
+
+    /* ===== Auto Spin Controls - Touch Optimized ===== */
+    .auto-spin-dropdown {
+        bottom: auto;
+        top: 100%;
+        margin-top: var(--spacing-xs);
+        margin-bottom: 0;
+    }
+
+    .auto-spin-option {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    /* ===== No More Bets Overlay - Touch Friendly ===== */
+    .no-more-bets-text {
+        font-size: 1.4rem;
+        letter-spacing: 2px;
+    }
+
+    /* ===== Auto Spin Countdown - Mobile Position ===== */
+    .auto-spin-countdown {
+        top: auto;
+        bottom: 140px;
+        padding: var(--spacing-xs) var(--spacing-md);
+    }
+
+    .countdown-timer {
+        font-size: 1.2rem;
+    }
+
+    .countdown-label {
+        font-size: 0.75rem;
+    }
+}
+
+/* ========== High DPI / Retina Displays ========== */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .wheel-pocket-inner {
+        text-rendering: optimizeLegibility;
+        -webkit-font-smoothing: antialiased;
+    }
+
+    .chip {
+        border-width: 2.5px;
+    }
+}
+
+/* ========== Dark Mode Enhancements ========== */
+@media (prefers-color-scheme: dark) {
+    /* Already dark theme, but ensure proper contrast */
+    .betting-table-container {
+        background: linear-gradient(
+            180deg,
+            rgba(0, 0, 0, 0.2) 0%,
+            transparent 10%,
+            transparent 90%,
+            rgba(0, 0, 0, 0.2) 100%
+        );
+    }
+}
+
+/* ========== Animations - Respect User Preferences ========== */
+@media (prefers-reduced-motion: no-preference) {
+    /* Smooth transitions for mobile interactions */
+    .number-cell,
+    .chip,
+    .btn {
+        transition: transform 0.15s ease, opacity 0.15s ease;
+    }
+
+    /* Wheel rotation */
+    .wheel-outer.spinning {
+        transition: none;
+    }
+}
+
+/* ========== Print Styles (hide interactive elements) ========== */
+@media print {
+    .action-bar,
+    .chip-selector,
+    .hamburger-btn,
+    .dropdown-menu,
+    .overlay {
+        display: none !important;
+    }
+
+    .container {
+        padding-bottom: 0;
+    }
+}

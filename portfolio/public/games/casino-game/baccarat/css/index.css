@@ -1,0 +1,160 @@
+/* Baccarat Index Page Styles */
+
+.game-modes {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+}
+
+.mode-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    padding: 30px;
+    text-decoration: none;
+    transition: all var(--transition-normal);
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, var(--mode-color, var(--accent-gold)), transparent);
+}
+
+.mode-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--border-active);
+    box-shadow: 0 0 30px rgba(212, 175, 55, 0.2);
+}
+
+.mode-card.card-counting { --mode-color: #e74c3c; }
+.mode-card.game-mode { --mode-color: #2ecc71; }
+
+/* Coming Soon State */
+.mode-card.coming-soon {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.mode-card.coming-soon:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Mode Status */
+.mode-status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: var(--spacing-md);
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.mode-card.available .status-dot {
+    background: var(--accent-green);
+    box-shadow: 0 0 10px var(--accent-green);
+}
+
+.mode-card.available .mode-status {
+    color: var(--accent-green);
+}
+
+.mode-card.coming-soon .status-dot {
+    background: var(--text-dim);
+    animation: none;
+}
+
+.mode-card.coming-soon .mode-status {
+    color: var(--text-dim);
+}
+
+.mode-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.mode-title {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--spacing-sm);
+    letter-spacing: 2px;
+}
+
+.mode-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin-bottom: var(--spacing-md);
+}
+
+.mode-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.feature-tag {
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid var(--border-subtle);
+}
+
+.back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--text-secondary);
+    text-decoration: none;
+    font-size: 0.85rem;
+    margin-bottom: var(--spacing-md);
+    transition: color var(--transition-fast);
+}
+
+.back-link:hover {
+    color: var(--accent-gold);
+}
+
+.intro-text {
+    max-width: 700px;
+    margin: 0 auto var(--spacing-xl);
+    text-align: center;
+    color: var(--text-secondary);
+    line-height: 1.7;
+}
+
+.intro-text strong {
+    color: var(--accent-gold);
+}
+
+.info-section {
+    margin-top: var(--spacing-xl);
+}

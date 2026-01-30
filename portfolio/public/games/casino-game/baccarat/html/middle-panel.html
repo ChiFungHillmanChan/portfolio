@@ -1,0 +1,111 @@
+<!-- Middle Panel - Stats, Roads, Egalité, History & Bets Analysis -->
+<div class="panel">
+    <!-- Quick Stats -->
+    <div class="stats-section">
+        <div class="stats-row">
+            <div class="stats-mini">
+                <div class="stat-mini">
+                    <div class="stat-mini-label">Dealt</div>
+                    <div class="stat-mini-value" id="cardsDealt">0</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-label">Remain</div>
+                    <div class="stat-mini-value" id="cardsRemaining">416</div>
+                </div>
+                <div class="stat-mini">
+                    <div class="stat-mini-label">Decks</div>
+                    <div class="stat-mini-value" id="decksRemaining">8.0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="counts-grid">
+            <div class="count-box">
+                <div class="count-box-label">Main TC</div>
+                <div class="count-box-value" id="mainTC">0</div>
+            </div>
+            <div class="count-box">
+                <div class="count-box-label">Dragon TC</div>
+                <div class="count-box-value" id="dragon7TC">0</div>
+            </div>
+            <div class="count-box">
+                <div class="count-box-label">Panda TC</div>
+                <div class="count-box-value" id="panda8TC">0</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scoreboard & Roads - Collapsible -->
+    <div class="collapsible-section">
+        <div class="collapsible-header" onclick="toggleSection('roadsSection')">
+            <div class="collapsible-title">
+                <h2 class="panel-title" style="margin-bottom: 0;">📊 Scoreboard & Roads</h2>
+                <div class="scoreboard-stats-inline">
+                    <span class="stat-player">P:<strong id="playerWins">0</strong></span>
+                    <span class="stat-banker">B:<strong id="bankerWins">0</strong></span>
+                    <span class="stat-tie">T:<strong id="tieWins">0</strong></span>
+                </div>
+            </div>
+            <span class="collapsible-toggle" id="roadsSectionToggle">▼</span>
+        </div>
+        <div class="collapsible-content" id="roadsSection">
+            <div class="scoreboard-container">
+                <div class="scoreboard-header">
+                    <span class="road-label">Bead Road</span>
+                </div>
+                <div class="bead-road" id="beadRoad"></div>
+            </div>
+
+            <h3 class="road-label" style="margin-top: 8px;">Big Road (Ties = Slash)</h3>
+            <div class="big-road" id="bigRoad"></div>
+        </div>
+    </div>
+
+    <!-- Egalité Section - Collapsible -->
+    <div class="collapsible-section">
+        <div class="collapsible-header" onclick="toggleSection('egaliteSection')">
+            <h2 class="panel-title" style="margin-bottom: 0;">⚙️ Egalité Bets (Specific Ties 0-9)</h2>
+            <span class="collapsible-toggle" id="egaliteSectionToggle">▼</span>
+        </div>
+        <div class="collapsible-content" id="egaliteSection">
+            <div style="font-size: 0.65rem; color: var(--text-dim); margin-bottom: 8px;">
+                Adjust payouts to match your casino. Green = +EV opportunity!
+            </div>
+            <div class="egalite-grid" id="egaliteGrid"></div>
+        </div>
+    </div>
+
+    <!-- Hand History - Collapsible -->
+    <div class="collapsible-section">
+        <div class="collapsible-header" onclick="toggleSection('historySection')">
+            <h2 class="panel-title" style="margin-bottom: 0;">📜 Hand History</h2>
+            <span class="collapsible-toggle" id="historySectionToggle">▼</span>
+        </div>
+        <div class="collapsible-content" id="historySection">
+            <div class="history-list" id="historyList">
+                <div style="color: var(--text-dim); font-style: italic; text-align: center; padding: 15px;">
+                    No hands recorded yet
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bets Analysis -->
+    <h2 class="panel-title" style="margin-top: 12px;">Main & Side Bets (Original → Current)</h2>
+    <div class="bets-container">
+        <div>
+            <div class="bets-column-title">Main Bets</div>
+            <div class="bet-cards" id="mainBetsContainer"></div>
+        </div>
+        <div>
+            <div class="bets-column-title">EZ Baccarat Side Bets</div>
+            <div class="bet-cards" id="sideBetsContainer"></div>
+        </div>
+    </div>
+
+    <!-- Info Section -->
+    <div class="info-section">
+        <strong>💡 Egalité Tip:</strong> Fair odds = 1/probability - 1. If casino pays MORE than fair odds, you have +EV!<br>
+        <strong>Best Egalité:</strong> 7-7 tie (~2.08%) | <strong>Rarest:</strong> 2-2 tie (~0.35%)
+    </div>
+</div>

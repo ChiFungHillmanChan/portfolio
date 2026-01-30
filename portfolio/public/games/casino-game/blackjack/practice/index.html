@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Card Counting Practice | Blackjack</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="css/shared.css">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Blackjack">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+                <span class="current-badge">Current</span>
+            </a>
+            <a href="../../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <a href="../index.html" class="back-link">← Back to Blackjack</a>
+
+        <header class="practice-header">
+            <div class="practice-icon">🎯</div>
+            <h1 class="practice-title">CARD COUNTING PRACTICE</h1>
+            <p class="practice-subtitle">Master the Hi-Lo System</p>
+        </header>
+
+        <div class="hi-lo-info">
+            <h3>Hi-Lo Card Values</h3>
+            <div class="hi-lo-grid">
+                <div class="hi-lo-item plus">
+                    <span class="hi-lo-cards">2 3 4 5 6</span>
+                    <span class="hi-lo-value">+1</span>
+                </div>
+                <div class="hi-lo-item zero">
+                    <span class="hi-lo-cards">7 8 9</span>
+                    <span class="hi-lo-value">0</span>
+                </div>
+                <div class="hi-lo-item minus">
+                    <span class="hi-lo-cards">10 J Q K A</span>
+                    <span class="hi-lo-value">-1</span>
+                </div>
+            </div>
+        </div>
+
+        <section class="mode-selection">
+            <a href="easy/index.html" class="practice-mode-card easy">
+                <div class="mode-icon">🎴</div>
+                <h2 class="mode-title">EASY</h2>
+                <p class="mode-label">Flash Cards</p>
+                <p class="mode-description">
+                    Cards appear one by one. Identify if each card is +1, 0, or -1.
+                    Speed adapts to your accuracy.
+                </p>
+                <div class="mode-details">
+                    <span>60 seconds</span>
+                    <span>Adaptive speed</span>
+                </div>
+            </a>
+
+            <a href="medium/index.html" class="practice-mode-card medium">
+                <div class="mode-icon">🎰</div>
+                <h2 class="mode-title">MEDIUM</h2>
+                <p class="mode-label">1v1 Dealer</p>
+                <p class="mode-description">
+                    Play heads-up blackjack against the dealer.
+                    After each hand, enter the running count.
+                </p>
+                <div class="mode-details">
+                    <span>Real gameplay</span>
+                    <span>Count after each hand</span>
+                </div>
+            </a>
+
+            <a href="hard/index.html" class="practice-mode-card hard">
+                <div class="mode-icon">🏆</div>
+                <h2 class="mode-title">HARD</h2>
+                <p class="mode-label">Full Table</p>
+                <p class="mode-description">
+                    5 players at the table. You sit last.
+                    Answer the count within 5 seconds after each round.
+                </p>
+                <div class="mode-details">
+                    <span>5 players</span>
+                    <span>5 second timer</span>
+                </div>
+            </a>
+        </section>
+
+        <div class="progress-link-container">
+            <a href="progress/index.html" class="progress-link">
+                <span class="progress-icon">📊</span>
+                <span>View Progress & Statistics</span>
+            </a>
+        </div>
+    </div>
+
+    <script src="../../js/hamburger-menu.js"></script>
+</body>
+</html>

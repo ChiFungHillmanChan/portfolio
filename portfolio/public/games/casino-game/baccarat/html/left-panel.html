@@ -1,0 +1,57 @@
+<!-- Left Panel -->
+<div class="panel">
+    <h2 class="panel-title">Deal Cards</h2>
+    <div class="card-grid" id="cardGrid"></div>
+    
+    <div class="hand-display">
+        <div class="hand-row">
+            <span class="hand-label player">Player</span>
+            <div class="hand-cards" id="playerCards"></div>
+            <span class="hand-total player" id="playerTotal">-</span>
+        </div>
+        <div class="hand-row">
+            <span class="hand-label banker">Banker</span>
+            <div class="hand-cards" id="bankerCards"></div>
+            <span class="hand-total banker" id="bankerTotal">-</span>
+        </div>
+    </div>
+
+    <div class="dealing-indicator" id="dealingIndicator">
+        Deal: Player Card 1
+    </div>
+
+    <div class="action-buttons">
+        <button class="btn btn-undo" onclick="undoLastCard()">↩ Undo</button>
+        <button class="btn btn-reset" onclick="newShoe()">New Shoe</button>
+    </div>
+
+    <div class="stats-mini">
+        <div class="stat-mini">
+            <div class="stat-mini-label">Dealt</div>
+            <div class="stat-mini-value" id="cardsDealt">0</div>
+        </div>
+        <div class="stat-mini">
+            <div class="stat-mini-label">Remain</div>
+            <div class="stat-mini-value" id="cardsRemaining">416</div>
+        </div>
+        <div class="stat-mini">
+            <div class="stat-mini-label">Decks</div>
+            <div class="stat-mini-value" id="decksRemaining">8.0</div>
+        </div>
+    </div>
+
+    <div class="counts-grid">
+        <div class="count-box">
+            <div class="count-box-label">Main TC</div>
+            <div class="count-box-value" id="mainTC">0</div>
+        </div>
+        <div class="count-box">
+            <div class="count-box-label">Dragon TC</div>
+            <div class="count-box-value" id="dragon7TC">0</div>
+        </div>
+        <div class="count-box">
+            <div class="count-box-label">Panda TC</div>
+            <div class="count-box-value" id="panda8TC">0</div>
+        </div>
+    </div>
+</div>

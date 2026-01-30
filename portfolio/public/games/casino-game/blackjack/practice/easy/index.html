@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Easy Mode - Card Counting Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/variables.css">
+    <link rel="stylesheet" href="../../../css/main.css">
+    <link rel="stylesheet" href="../../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="../css/shared.css">
+    <link rel="stylesheet" href="css/easy.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Practice">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+                <span class="current-badge">Current</span>
+            </a>
+            <a href="../../../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container practice-container">
+        <a href="../index.html" class="back-link">← Back to Practice</a>
+
+        <!-- Setup Screen -->
+        <div id="setup-screen" class="screen active">
+            <header class="practice-header">
+                <h1 class="practice-title">EASY MODE</h1>
+                <p class="practice-subtitle">Flash Card Training</p>
+            </header>
+
+            <div class="setup-options">
+                <h3>Choose Pacing</h3>
+                <div class="pacing-options">
+                    <button class="pacing-btn active" data-pacing="auto">
+                        <span class="pacing-icon">⚡</span>
+                        <span class="pacing-name">Auto-Deal</span>
+                        <span class="pacing-desc">Adaptive speed - gets faster as you improve</span>
+                    </button>
+                    <button class="pacing-btn" data-pacing="manual">
+                        <span class="pacing-icon">👆</span>
+                        <span class="pacing-name">Manual</span>
+                        <span class="pacing-desc">You control the pace, 60s total time</span>
+                    </button>
+                </div>
+            </div>
+
+            <button id="start-btn" class="practice-btn practice-btn-primary start-btn">
+                Start Practice
+            </button>
+        </div>
+
+        <!-- Game Screen -->
+        <div id="game-screen" class="screen">
+            <div class="game-header">
+                <div class="stat-box timer-box">
+                    <span class="stat-label">Time</span>
+                    <span id="timer-display" class="stat-value">60</span>
+                </div>
+                <div class="stat-box score-box">
+                    <span class="stat-label">Score</span>
+                    <span id="score-display" class="stat-value">0/0</span>
+                </div>
+                <div class="stat-box streak-box">
+                    <span class="stat-label">Streak</span>
+                    <span id="streak-display" class="stat-value">0</span>
+                </div>
+            </div>
+
+            <div class="card-display-area">
+                <div id="card-display" class="card-display">
+                    <span class="card-rank">?</span>
+                    <span class="card-suit"></span>
+                </div>
+                <div id="feedback-display" class="feedback-display"></div>
+            </div>
+
+            <div class="answer-buttons">
+                <button class="answer-btn plus" data-value="1">+1</button>
+                <button class="answer-btn zero" data-value="0">0</button>
+                <button class="answer-btn minus" data-value="-1">-1</button>
+            </div>
+
+            <div id="speed-indicator" class="speed-indicator">
+                Speed: <span id="speed-value">3.0s</span>
+            </div>
+        </div>
+
+        <!-- Results Screen -->
+        <div id="results-screen" class="screen">
+            <header class="practice-header">
+                <h1 class="practice-title">SESSION COMPLETE</h1>
+            </header>
+
+            <div class="results-grid">
+                <div class="result-card">
+                    <span class="result-label">Cards Seen</span>
+                    <span id="result-cards" class="result-value">0</span>
+                </div>
+                <div class="result-card">
+                    <span class="result-label">Correct</span>
+                    <span id="result-correct" class="result-value">0</span>
+                </div>
+                <div class="result-card">
+                    <span class="result-label">Accuracy</span>
+                    <span id="result-accuracy" class="result-value">0%</span>
+                </div>
+                <div class="result-card">
+                    <span class="result-label">Best Streak</span>
+                    <span id="result-streak" class="result-value">0</span>
+                </div>
+            </div>
+
+            <div class="results-actions">
+                <button id="retry-btn" class="practice-btn practice-btn-primary">Try Again</button>
+                <a href="../index.html" class="practice-btn practice-btn-secondary">Back to Menu</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/shared/constants.js"></script>
+    <script src="../js/practice-constants.js"></script>
+    <script src="../js/practice-stats.js"></script>
+    <script src="../js/countdown-timer.js"></script>
+    <script src="js/easy-mode.js"></script>
+    <script src="../../../js/hamburger-menu.js"></script>
+</body>
+</html>

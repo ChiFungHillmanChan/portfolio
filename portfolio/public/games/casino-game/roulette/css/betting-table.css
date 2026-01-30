@@ -1,0 +1,891 @@
+/* =====================================================
+   ROULETTE BETTING TABLE - Table grid and number cells
+   ===================================================== */
+
+/* Touch optimization - eliminate 300ms delay on all bet areas */
+[data-bet-type] {
+    touch-action: manipulation;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Betting interface container */
+.betting-interface {
+    width: 100%;
+    position: relative;
+}
+
+/* ====== View Toggle Button ====== */
+.view-toggle-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    z-index: 50;
+    width: 48px;
+    height: 32px;
+    padding: 4px 8px;
+    background: rgba(11, 42, 26, 0.95);
+    border: 2px solid var(--accent-gold);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.view-toggle-btn:hover {
+    background: rgba(212, 176, 122, 0.2);
+    box-shadow: 0 0 12px rgba(212, 176, 122, 0.4);
+    transform: scale(1.05);
+}
+
+.view-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.view-toggle-btn .toggle-icon {
+    width: 28px;
+    height: 18px;
+    color: var(--accent-gold);
+    transition: opacity 0.2s ease;
+}
+
+/* Show racetrack icon by default (table-only mode) */
+.view-toggle-btn .racetrack-icon {
+    display: block;
+}
+
+.view-toggle-btn .table-icon {
+    display: none;
+}
+
+/* When in racetrack mode, show table icon to switch back */
+.betting-interface.racetrack-mode .view-toggle-btn .racetrack-icon {
+    display: none;
+}
+
+.betting-interface.racetrack-mode .view-toggle-btn .table-icon {
+    display: block;
+}
+
+.betting-interface.racetrack-mode .view-toggle-btn {
+    background: var(--accent-gold);
+}
+
+.betting-interface.racetrack-mode .view-toggle-btn .toggle-icon {
+    color: #0b2a1a;
+}
+
+/* ====== Racetrack Mode - Combined View ====== */
+/* When racetrack mode is active, show smaller table + racetrack below */
+.betting-interface.racetrack-mode .betting-table-container {
+    padding: var(--spacing-sm);
+}
+
+.betting-interface.racetrack-mode .betting-table {
+    transform: scale(0.85);
+    transform-origin: top center;
+    margin-bottom: -40px; /* Compensate for scaled height */
+}
+
+.betting-interface.racetrack-mode #racetrackContainer {
+    display: block !important;
+    margin-top: var(--spacing-sm);
+    border-top: 1px solid rgba(212, 176, 122, 0.3);
+    padding-top: var(--spacing-md);
+}
+
+/* Mobile adjustments for toggle */
+@media (max-width: 767px) {
+    .view-toggle-btn {
+        width: 42px;
+        height: 28px;
+        top: 4px;
+        right: 4px;
+    }
+    
+    .view-toggle-btn .toggle-icon {
+        width: 24px;
+        height: 16px;
+    }
+    
+    .betting-interface.racetrack-mode .betting-table {
+        transform: scale(0.75);
+        margin-bottom: -60px;
+    }
+}
+
+/* Table container */
+.betting-table-container {
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding: var(--spacing-md);
+    position: relative;
+    /* Prevent text selection and context menu issues */
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+/* Betting table */
+.betting-table {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background: var(--roulette-felt);
+    border: 4px solid var(--accent-gold);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-md);
+    box-shadow: var(--shadow-lg), inset 0 0 50px rgba(0, 0, 0, 0.3);
+    min-width: 600px;
+    position: relative;
+    overflow: visible;
+    /* Eliminate 300ms touch delay on mobile */
+    touch-action: manipulation;
+}
+
+/* Table sections */
+.table-main {
+    display: flex;
+    gap: 0;
+}
+
+/* Zero section */
+.zero-section {
+    display: flex;
+    flex-direction: column;
+    width: 60px;
+}
+
+.zero-cell {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--roulette-green);
+    border: 2px solid var(--roulette-green-dark);
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 120px;
+    position: relative;
+    overflow: visible;
+}
+
+.zero-cell:hover {
+    background: var(--roulette-green-dark);
+    box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.1);
+}
+
+.zero-cell.american {
+    min-height: 60px;
+}
+
+/* Numbers area - contains grid and inside bet overlay */
+.numbers-area {
+    position: relative;
+    flex: 1;
+}
+
+/* Numbers grid */
+.numbers-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(3, 1fr);
+    width: 100%;
+    height: 100%;
+}
+
+/* Inside bets overlay - positioned over the numbers grid */
+.inside-bets-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 10;
+}
+
+.inside-bets-overlay > * {
+    pointer-events: auto;
+}
+
+/* Number cell */
+.number-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 40px;
+    position: relative;
+    overflow: visible;
+    /* Ensure text stays behind chips */
+    text-align: center;
+    /* Eliminate 300ms touch delay */
+    touch-action: manipulation;
+}
+
+.number-cell:hover {
+    z-index: 2;
+    transform: scale(1.05);
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+}
+
+/* Payout label on hover for straight bet */
+.number-cell::after {
+    content: '35:1';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 1px 3px;
+    border-radius: 2px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 5;
+}
+
+.number-cell:hover::after {
+    opacity: 1;
+}
+
+.number-cell.red {
+    background: var(--roulette-red);
+}
+
+.number-cell.red:hover {
+    background: var(--roulette-red-dark);
+}
+
+.number-cell.black {
+    background: var(--roulette-black);
+}
+
+.number-cell.black:hover {
+    background: var(--roulette-black-light);
+}
+
+/* Column bets */
+.column-section {
+    display: flex;
+    flex-direction: column;
+    width: 50px;
+}
+
+.column-bet {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--roulette-felt-dark);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    overflow: visible;
+}
+
+.column-bet:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+/* Outside bets section */
+.outside-bets {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 0;
+    margin-top: var(--spacing-sm);
+    margin-left: 60px; /* Align with numbers grid */
+}
+
+/* Dozen bets */
+.dozen-bets {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    margin-top: var(--spacing-sm);
+    margin-left: 60px;
+}
+
+.dozen-bet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--roulette-felt-dark);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: var(--spacing-sm);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 40px;
+    position: relative;
+    overflow: visible;
+}
+
+.dozen-bet:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.dozen-bet:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.dozen-bet:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+/* Even money bets */
+.even-money-bet {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--roulette-felt-dark);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    padding: var(--spacing-sm);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 40px;
+    position: relative;
+    overflow: visible;
+}
+
+.even-money-bet:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+.even-money-bet:first-child {
+    border-radius: var(--radius-sm) 0 0 var(--radius-sm);
+}
+
+.even-money-bet:last-child {
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+}
+
+.even-money-bet.red-bet {
+    color: var(--roulette-red);
+}
+
+.even-money-bet.black-bet {
+    color: white;
+}
+
+/* ====== Inside bet areas (splits, corners, streets, lines) ====== */
+
+/* Split bet areas - on the border between two numbers */
+.split-bet {
+    position: absolute;
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 15;
+    transition: all var(--transition-fast);
+}
+
+.split-bet:hover {
+    background: rgba(212, 175, 55, 0.5);
+    box-shadow: 0 0 10px var(--accent-gold);
+    border-color: var(--accent-gold);
+}
+
+/* Payout label on hover for split */
+.split-bet::after {
+    content: '17:1';
+    position: absolute;
+    top: -16px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.5rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 1px 3px;
+    border-radius: 2px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 30;
+}
+
+.split-bet:hover::after {
+    opacity: 1;
+}
+
+.split-bet.vertical {
+    width: 20px;
+    height: 16px;
+    transform: translate(-50%, -50%);
+    border-radius: 8px;
+}
+
+.split-bet.horizontal {
+    width: 16px;
+    height: 24px;
+    transform: translate(-50%, -50%);
+    border-radius: 8px;
+}
+
+.split-bet.zero-split {
+    width: 20px;
+    height: 20px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+}
+
+/* Corner bet areas - at intersection of 4 numbers */
+.corner-bet {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 25;
+    transition: all var(--transition-fast);
+}
+
+.corner-bet:hover {
+    background: rgba(212, 175, 55, 0.6);
+    box-shadow: 0 0 15px var(--accent-gold);
+    transform: scale(1.3);
+    border-color: var(--accent-gold);
+}
+
+/* Payout label on hover for corner */
+.corner-bet::after {
+    content: '8:1';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 3px;
+    border-radius: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+}
+
+.corner-bet:hover::after {
+    opacity: 1;
+}
+
+/* Street bet area - at the bottom edge of each column (covers 3 numbers vertically) */
+.street-bet {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 20;
+    transition: all var(--transition-fast);
+}
+
+.street-bet:hover {
+    background: rgba(155, 89, 182, 0.6);
+    box-shadow: 0 0 15px #9b59b6;
+    transform: scale(1.3);
+    border-color: #9b59b6;
+}
+
+/* Payout label on hover for street */
+.street-bet::after {
+    content: '11:1';
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: #9b59b6;
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+}
+
+.street-bet:hover::after {
+    opacity: 1;
+}
+
+/* Trio bet area - 3 numbers including zero (0-1-2, 0-2-3), pays 11:1 */
+.trio-bet {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 20;
+    transition: all var(--transition-fast);
+}
+
+.trio-bet:hover {
+    background: rgba(155, 89, 182, 0.6);
+    box-shadow: 0 0 15px #9b59b6;
+    transform: scale(1.3);
+    border-color: #9b59b6;
+}
+
+/* Payout label on hover for trio */
+.trio-bet::after {
+    content: '11:1';
+    position: absolute;
+    top: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: #9b59b6;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 1px 3px;
+    border-radius: 2px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 30;
+}
+
+.trio-bet:hover::after {
+    opacity: 1;
+}
+
+/* Line bet area - between two streets (6 numbers) */
+.line-bet {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 22;
+    transition: all var(--transition-fast);
+}
+
+.line-bet:hover {
+    background: rgba(52, 152, 219, 0.6);
+    box-shadow: 0 0 15px var(--accent-blue);
+    transform: scale(1.3);
+    border-color: var(--accent-blue);
+}
+
+/* Payout label on hover for line */
+.line-bet::after {
+    content: '5:1';
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--accent-blue);
+    background: rgba(0, 0, 0, 0.8);
+    padding: 1px 4px;
+    border-radius: 3px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+}
+
+.line-bet:hover::after {
+    opacity: 1;
+}
+
+/* First Four bet (European) - 0,1,2,3 pays 8:1 */
+.first-four-bet {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 20;
+    transition: all var(--transition-fast);
+}
+
+.first-four-bet:hover {
+    background: rgba(46, 204, 113, 0.6);
+    box-shadow: 0 0 15px var(--roulette-green);
+    transform: scale(1.3);
+    border-color: var(--roulette-green);
+}
+
+/* Payout label on hover for First Four */
+.first-four-bet::after {
+    content: '8:1';
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--roulette-green);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 1px 3px;
+    border-radius: 2px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 30;
+}
+
+.first-four-bet:hover::after {
+    opacity: 1;
+}
+
+/* Top Line bet (American) - 0,00,1,2,3 pays 6:1 */
+.top-line-bet {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: var(--radius-full);
+    background: transparent;
+    border: 1px solid transparent;
+    cursor: pointer;
+    z-index: 20;
+    transition: all var(--transition-fast);
+}
+
+.top-line-bet:hover {
+    background: rgba(46, 204, 113, 0.6);
+    box-shadow: 0 0 15px var(--roulette-green);
+    transform: scale(1.3);
+    border-color: var(--roulette-green);
+}
+
+/* Payout label on hover for Top Line */
+.top-line-bet::after {
+    content: '6:1';
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--roulette-green);
+    background: rgba(0, 0, 0, 0.85);
+    padding: 1px 3px;
+    border-radius: 2px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+    pointer-events: none;
+    z-index: 30;
+}
+
+.top-line-bet:hover::after {
+    opacity: 1;
+}
+
+/* Placed chip on bet */
+.placed-chip {
+    position: absolute;
+    z-index: var(--z-chips);
+    pointer-events: none;
+}
+
+/* Chip stack on bet area */
+.chip-stack {
+    display: flex;
+    flex-direction: column-reverse;
+    align-items: center;
+    position: absolute;
+    z-index: var(--z-chips);
+}
+
+.chip-stack .chip {
+    margin-bottom: -20px;
+}
+
+.chip-stack .chip:first-child {
+    margin-bottom: 0;
+}
+
+/* Bet amount label */
+.bet-amount-label {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: var(--accent-gold);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 4px;
+    border-radius: var(--radius-sm);
+    white-space: nowrap;
+    z-index: calc(var(--z-chips) + 1);
+}
+
+/* Winning number highlight */
+.number-cell.winning,
+.zero-cell.winning {
+    animation: winPulse 1s ease-in-out infinite;
+    box-shadow: 0 0 30px var(--accent-gold), inset 0 0 20px rgba(255, 255, 255, 0.3);
+}
+
+@keyframes winPulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 20px var(--accent-gold);
+    }
+    50% {
+        transform: scale(1.1);
+        box-shadow: 0 0 40px var(--accent-gold);
+    }
+}
+
+/* ====== WINNING MARKER / DOLLY ====== */
+/* Simple chess-piece style dolly placed on the winning number */
+
+.winning-marker {
+    position: absolute;
+    z-index: 100;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-40px);
+    transition: none;
+}
+
+.winning-marker.visible {
+    opacity: 1;
+    transform: translateY(0);
+    animation: dollyDrop 0.4s ease-out forwards;
+}
+
+/* Hide unused elements */
+.dolly-top,
+.dolly-stick {
+    display: none;
+}
+
+/* Simple circular dolly - like a chess piece base */
+.dolly-base {
+    width: 28px;
+    height: 28px;
+    background: rgba(20, 20, 20, 0.65);
+    border-radius: 50%;
+    border: 3px solid rgba(212, 175, 55, 0.85);
+    box-shadow:
+        0 3px 6px rgba(0, 0, 0, 0.4),
+        inset 0 1px 2px rgba(255, 255, 255, 0.1);
+}
+
+/* Animation for dolly dropping onto number */
+@keyframes dollyDrop {
+    0% {
+        opacity: 0;
+        transform: translateY(-40px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Fade out animation when removing dolly */
+.winning-marker.removing {
+    animation: dollyRemove 0.25s ease-out forwards;
+}
+
+@keyframes dollyRemove {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 767px) {
+    .betting-table {
+        min-width: 500px;
+        padding: var(--spacing-sm);
+    }
+    
+    .zero-section {
+        width: 45px;
+    }
+    
+    .number-cell {
+        font-size: 0.9rem;
+        min-height: 35px;
+    }
+    
+    .column-section {
+        width: 40px;
+    }
+    
+    .outside-bets,
+    .dozen-bets {
+        margin-left: 45px;
+    }
+    
+    /* Smaller dolly on mobile */
+    .dolly-base {
+        width: 22px;
+        height: 22px;
+        border-width: 2px;
+    }
+}
