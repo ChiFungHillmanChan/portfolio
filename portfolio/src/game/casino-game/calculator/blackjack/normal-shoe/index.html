@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="description" content="Blackjack Card Counting - Normal Shoe Mode with Hi-Lo System">
+    <title>Blackjack - Normal Shoe</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/table.css">
+    <link rel="stylesheet" href="../css/cards.css">
+    <link rel="stylesheet" href="../css/hud.css">
+    <link rel="stylesheet" href="../css/buttons.css">
+    <link rel="stylesheet" href="../css/decision.css">
+    <link rel="stylesheet" href="css/normal-shoe.css">
+    <link rel="stylesheet" href="../../css/hamburger-menu.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Blackjack">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+                <span class="current-badge">Current</span>
+            </a>
+            <a href="../../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <!-- Setup Screen (shown first) -->
+    <div id="setupScreen" class="setup-screen">
+        <div class="setup-container">
+            <h1>NORMAL SHOE SETUP</h1>
+            <p class="setup-subtitle">Configure your game settings before playing</p>
+
+            <form id="setupForm" class="setup-form">
+                <!-- Game Rules Section -->
+                <div class="setup-section">
+                    <h2 class="section-title">Game Rules</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="decks">Number of Decks</label>
+                            <select id="decks" name="decks">
+                                <option value="1">1 Deck</option>
+                                <option value="2">2 Decks</option>
+                                <option value="4">4 Decks</option>
+                                <option value="6" selected>6 Decks</option>
+                                <option value="8">8 Decks</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dealerStyle">Dealer Style</label>
+                            <select id="dealerStyle" name="dealerStyle">
+                                <option value="american" selected>American (Hole Card)</option>
+                                <option value="european">European (No Hole Card)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="dealerRule">Dealer Hits On</label>
+                            <select id="dealerRule" name="dealerRule">
+                                <option value="S17" selected>Stand on Soft 17</option>
+                                <option value="H17">Hit on Soft 17</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="surrender">Surrender</label>
+                            <select id="surrender" name="surrender">
+                                <option value="yes" selected>Allowed</option>
+                                <option value="no">Not Allowed</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Betting Limits Section -->
+                <div class="setup-section">
+                    <h2 class="section-title">Betting Limits</h2>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="minBet">Minimum Bet ($)</label>
+                            <input type="number" id="minBet" name="minBet" value="25" min="1" max="10000">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="maxBet">Maximum Bet ($)</label>
+                            <input type="number" id="maxBet" name="maxBet" value="300" min="1" max="100000">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Table Setup Section -->
+                <div class="setup-section">
+                    <h2 class="section-title">Table Setup</h2>
+                    <div class="form-group">
+                        <label>Active Doors (Occupied Seats)</label>
+                        <div class="seats-selector" id="seatsSelector">
+                            <button type="button" class="seat-toggle" data-seat="1">1</button>
+                            <button type="button" class="seat-toggle" data-seat="2">2</button>
+                            <button type="button" class="seat-toggle active" data-seat="3">3</button>
+                            <button type="button" class="seat-toggle active" data-seat="4">4</button>
+                            <button type="button" class="seat-toggle active" data-seat="5">5</button>
+                            <button type="button" class="seat-toggle" data-seat="6">6</button>
+                            <button type="button" class="seat-toggle" data-seat="7">7</button>
+                        </div>
+                        <p class="form-hint">Click to toggle seat occupancy. Gold = your seat (up to 3).</p>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="setup-section">
+                    <h2 class="section-title">Advanced</h2>
+                    <div class="checkbox-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="showDeviations" name="showDeviations" checked>
+                            <span>Show Illustrious 18 Deviations</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Buyin Recommendations -->
+                <div class="setup-section">
+                    <h2 class="section-title">Buyin Recommendation</h2>
+                    <div class="buyin-recommendations" id="buyinRecommendations">
+                        <label class="buyin-option">
+                            <input type="radio" name="buyinTier" value="conservative">
+                            <div class="buyin-card">
+                                <span class="tier-name">Conservative</span>
+                                <span class="tier-amount" id="conservativeBuyin">$7,500</span>
+                                <span class="tier-risk">~2% risk of ruin</span>
+                            </div>
+                        </label>
+                        <label class="buyin-option">
+                            <input type="radio" name="buyinTier" value="standard" checked>
+                            <div class="buyin-card recommended">
+                                <span class="tier-badge">Recommended</span>
+                                <span class="tier-name">Standard</span>
+                                <span class="tier-amount" id="standardBuyin">$3,750</span>
+                                <span class="tier-risk">~8% risk of ruin</span>
+                            </div>
+                        </label>
+                        <label class="buyin-option">
+                            <input type="radio" name="buyinTier" value="aggressive">
+                            <div class="buyin-card">
+                                <span class="tier-name">Aggressive</span>
+                                <span class="tier-amount" id="aggressiveBuyin">$1,875</span>
+                                <span class="tier-risk">~13% risk of ruin</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="actualBuyin">Your Buyin ($)</label>
+                        <input type="number" id="actualBuyin" name="actualBuyin" value="1600" min="1">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn-start">START GAME</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Game Screen (hidden initially) -->
+    <div id="gameScreen" class="container" style="display: none;">
+        <!-- Settings Bar -->
+        <div class="settings-bar" id="settingsBar">
+            <div class="setting-item">
+                <span>Decks:</span>
+                <span class="setting-value" id="displayDecks">6</span>
+            </div>
+            <div class="setting-item">
+                <span>Bet:</span>
+                <span class="setting-value" id="displayBetRange">$25-$300</span>
+            </div>
+            <div class="setting-item">
+                <span>Bankroll:</span>
+                <span class="setting-value bankroll" id="displayBankroll">$1,600</span>
+            </div>
+            <button class="settings-btn" id="settingsBtn" title="Settings">⚙️</button>
+        </div>
+
+        <!-- Main Game Area -->
+        <div class="game-area">
+            <!-- Table Container -->
+            <div class="table-container">
+                <!-- Blackjack Table -->
+                <div class="blackjack-table" id="blackjackTable">
+                    <!-- Dealer Area -->
+                    <div class="dealer-area">
+                        <div class="dealer-label">DEALER</div>
+                        <div class="dealer-cards" id="dealerCards">
+                            <!-- Cards rendered here -->
+                        </div>
+                        <div class="dealer-total" id="dealerTotal">-</div>
+                    </div>
+
+                    <!-- Player Seats -->
+                    <div class="seats-container" id="seatsContainer">
+                        <!-- 7 seats rendered here -->
+                    </div>
+                </div>
+
+                <!-- Dealt Cards Display -->
+                <div class="dealt-cards-section">
+                    <div class="dealt-cards-header">
+                        <span class="dealt-cards-label">Cards Dealt</span>
+                        <span class="dealt-cards-count" id="dealtCardsCount">0 cards dealt</span>
+                    </div>
+                    <div class="dealt-cards-display" id="dealtCardsDisplay">
+                        <!-- Dealt cards shown here -->
+                    </div>
+                </div>
+
+                <!-- Card Input Area -->
+                <div class="card-input-area">
+                    <div class="dealing-indicator" id="dealingIndicator">
+                        Deal 1st card to: Seat 3
+                    </div>
+
+                    <!-- Optimal Move Banner - Prominent recommendation display -->
+                    <div class="optimal-move-banner" id="optimalMoveBanner">
+                        <div class="optimal-move-label">Optimal Play</div>
+                        <div class="optimal-move-action" id="optimalMoveAction">
+                            <span class="checkmark">✓</span>
+                            <span id="optimalMoveText">HIT</span>
+                        </div>
+                        <div class="optimal-move-context" id="optimalMoveContext">
+                            <span class="hand-vs">16 vs Dealer 10</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons (for player decisions) -->
+                    <div class="action-buttons-container" id="actionButtons">
+                        <!-- Stand, Double, Split buttons rendered here during player_turn -->
+                    </div>
+
+                    <div class="card-input-grid" id="cardInputGrid">
+                        <!-- Card buttons rendered here -->
+                    </div>
+                    <div class="control-buttons">
+                        <button class="btn btn-undo" id="undoBtn">↩ Undo</button>
+                        <button class="btn btn-new-round" id="newRoundBtn">New Round</button>
+                        <button class="btn btn-new-shoe" id="newShoeBtn">New Shoe</button>
+                        <button class="btn btn-finish" id="finishBtn">Finish</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Side Panel -->
+            <div class="side-panel">
+                <!-- Count HUD -->
+                <div class="count-hud" id="countHud">
+                    <div class="hud-title">Card Count</div>
+                    <div class="count-grid">
+                        <div class="count-item">
+                            <span class="count-label">RC</span>
+                            <span class="count-value" id="runningCount">0</span>
+                        </div>
+                        <div class="count-item">
+                            <span class="count-label">TC</span>
+                            <span class="count-value" id="trueCount">0</span>
+                        </div>
+                        <div class="count-item">
+                            <span class="count-label">Decks</span>
+                            <span class="count-value neutral" id="decksRemaining">6.0</span>
+                        </div>
+                        <div class="count-item">
+                            <span class="count-label">Cards</span>
+                            <span class="count-value neutral" id="cardsDealt">0</span>
+                        </div>
+                    </div>
+                    <div class="penetration-bar">
+                        <div class="penetration-label">Penetration</div>
+                        <div class="penetration-track">
+                            <div class="penetration-fill" id="penetrationFill" style="width: 0%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recommendation Panel -->
+                <div class="recommendation-panel" id="recommendationPanel">
+                    <div class="panel-header">
+                        <span class="panel-title">Next Hand</span>
+                        <span class="edge-badge" id="edgeBadge">House Edge</span>
+                    </div>
+                    <div class="bet-recommendation">
+                        <div class="bet-label">Recommended Bet</div>
+                        <div class="bet-amount" id="recommendedBet">$25</div>
+                        <div class="bet-units" id="betUnits">1 unit (minimum)</div>
+                    </div>
+                    <div class="session-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Session</span>
+                            <span class="stat-value" id="sessionProfit">$0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Hands</span>
+                            <span class="stat-value" id="handsPlayed">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Decision Panel (shown during player turn) -->
+                <div class="decision-panel" id="decisionPanel" style="display: none;">
+                    <div class="decision-header">
+                        <div class="hand-info">
+                            <span class="hand-total" id="playerHandTotal">-</span>
+                            <span class="vs-dealer">vs Dealer: <span id="dealerUpcard">-</span></span>
+                        </div>
+                    </div>
+                    <div class="action-buttons" id="actionButtons">
+                        <!-- Action buttons rendered here -->
+                    </div>
+                    <div class="deviation-alert" id="deviationAlert" style="display: none;">
+                        <span class="alert-icon">⚡</span>
+                        <span class="alert-text" id="deviationText"></span>
+                    </div>
+                </div>
+
+                <!-- Collapsible History -->
+                <div class="panel">
+                    <div class="collapsible-header" onclick="toggleHistory()">
+                        <h3>History (<span id="historyCount">0</span> hands)</h3>
+                        <span class="collapsible-toggle" id="historyToggle">▼</span>
+                    </div>
+                    <div class="collapsible-content" id="historyContent">
+                        <div id="historyList">
+                            <!-- Hand history rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Session Summary Modal -->
+    <div id="sessionSummaryModal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <h2>Session Complete</h2>
+            <div id="sessionSummaryContent">
+                <!-- Summary rendered here -->
+            </div>
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="exportJsonBtn">Export JSON</button>
+                <button class="btn btn-secondary" id="exportPdfBtn">Export PDF</button>
+                <button class="btn btn-primary" id="newGameBtn">New Game</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files -->
+    <script src="../js/shared/constants.js"></script>
+    <script src="../js/shared/utils.js"></script>
+    <script src="../js/shared/storage.js"></script>
+    <script src="../js/shared/state.js"></script>
+    <script src="../js/core/card-counting.js"></script>
+    <script src="../js/core/hand-evaluation.js"></script>
+    <script src="../js/core/basic-strategy.js"></script>
+    <script src="../js/core/illustrious-18.js"></script>
+    <script src="../js/core/ev-calculator.js"></script>
+    <script src="js/normal-shoe-game.js"></script>
+    <script src="../../js/hamburger-menu.js"></script>
+</body>
+</html>

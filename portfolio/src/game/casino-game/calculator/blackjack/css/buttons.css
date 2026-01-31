@@ -1,0 +1,319 @@
+/* =====================================================
+   BLACKJACK - BUTTON STYLES
+   Card input, actions, and controls
+   ===================================================== */
+
+/* Base Button */
+.btn {
+    font-family: var(--font-body);
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Primary Button */
+.btn-primary {
+    background: linear-gradient(145deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%);
+    color: #000;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.85rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-gold);
+}
+
+/* Secondary Button */
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-subtle);
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.85rem;
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+}
+
+/* Card Input Grid */
+.card-input-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    justify-content: center;
+}
+
+/* Card Input Button */
+.card-btn {
+    width: 45px;
+    height: 50px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.card-btn:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+    transform: translateY(-2px);
+}
+
+.card-btn:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+.card-btn .card-rank {
+    font-family: var(--font-mono);
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.card-btn .card-count {
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    position: absolute;
+    bottom: 3px;
+}
+
+/* Card Count Colors */
+.card-btn .card-count.low {
+    color: var(--ev-negative);
+}
+
+.card-btn .card-count.medium {
+    color: var(--accent-gold);
+}
+
+.card-btn .card-count.depleted {
+    color: var(--text-dim);
+}
+
+/* Depleted Card Button */
+.card-btn.depleted {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.card-btn.depleted:hover {
+    transform: none;
+    border-color: var(--border-subtle);
+}
+
+/* Hi-Lo Value Indicator */
+.card-btn .hilo-value {
+    position: absolute;
+    top: 2px;
+    right: 3px;
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    font-weight: 700;
+}
+
+.card-btn .hilo-value.plus {
+    color: var(--ev-positive);
+}
+
+.card-btn .hilo-value.minus {
+    color: var(--ev-negative);
+}
+
+.card-btn .hilo-value.zero {
+    color: var(--text-dim);
+}
+
+/* Suit Selector (for Smart Shuffler) */
+.suit-selector {
+    display: flex;
+    gap: 5px;
+    margin-top: var(--spacing-sm);
+    justify-content: center;
+}
+
+.suit-btn {
+    width: 40px;
+    height: 40px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.suit-btn:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+}
+
+.suit-btn .suit-icon {
+    font-size: 1.2rem;
+}
+
+.suit-btn .suit-count {
+    font-family: var(--font-mono);
+    font-size: 0.55rem;
+    color: var(--text-dim);
+}
+
+.suit-btn.hearts .suit-icon,
+.suit-btn.diamonds .suit-icon {
+    color: var(--card-red);
+}
+
+.suit-btn.spades .suit-icon,
+.suit-btn.clubs .suit-icon {
+    color: var(--card-black);
+}
+
+/* Control Buttons */
+.control-buttons {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    justify-content: center;
+}
+
+.btn-undo {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.8rem;
+}
+
+.btn-undo:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    color: var(--accent-gold);
+    border-color: var(--accent-gold);
+}
+
+.btn-new-shoe {
+    background: var(--ev-negative);
+    color: #fff;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.8rem;
+}
+
+.btn-new-shoe:hover:not(:disabled) {
+    background: #c0392b;
+}
+
+.btn-finish {
+    background: var(--accent-gold);
+    color: #000;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.8rem;
+}
+
+.btn-finish:hover:not(:disabled) {
+    background: var(--accent-gold-dim);
+}
+
+/* Shuffle Back Buttons (Smart Shuffler) */
+.shuffle-controls {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-md);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.btn-shuffle {
+    background: var(--accent-purple);
+    color: #fff;
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.75rem;
+    white-space: nowrap;
+}
+
+.btn-shuffle:hover:not(:disabled) {
+    filter: brightness(1.1);
+    box-shadow: 0 0 15px rgba(155, 89, 182, 0.4);
+}
+
+.btn-shuffle.include {
+    background: var(--accent-blue);
+}
+
+.btn-shuffle.include:hover:not(:disabled) {
+    box-shadow: var(--glow-blue);
+}
+
+/* Buffer Indicator */
+.buffer-indicator {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid var(--accent-gold);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    color: var(--accent-gold);
+}
+
+.buffer-indicator .buffer-count {
+    font-weight: 700;
+}
+
+/* Responsive Buttons */
+@media (max-width: 768px) {
+    .card-btn {
+        width: 40px;
+        height: 45px;
+    }
+
+    .card-btn .card-rank {
+        font-size: 1rem;
+    }
+
+    .control-buttons {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-input-grid {
+        gap: 3px;
+    }
+
+    .card-btn {
+        width: 35px;
+        height: 40px;
+    }
+
+    .card-btn .card-rank {
+        font-size: 0.9rem;
+    }
+
+    .card-btn .card-count {
+        font-size: 0.5rem;
+    }
+}

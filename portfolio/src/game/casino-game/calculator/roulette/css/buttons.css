@@ -1,0 +1,287 @@
+/* =====================================================
+   ROULETTE BUTTONS - Button styling
+   ===================================================== */
+
+/* Base button */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-md) var(--spacing-xl);
+    border: none;
+    border-radius: var(--radius-md);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: var(--touch-target-min);
+    text-transform: uppercase;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Primary button (gold) */
+.btn-primary {
+    background: linear-gradient(180deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%);
+    color: var(--bg-primary);
+    box-shadow: var(--shadow-md), 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg), 0 0 30px rgba(212, 175, 55, 0.4);
+}
+
+.btn-primary:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+/* Secondary button (outline) */
+.btn-secondary {
+    background: transparent;
+    color: var(--accent-gold);
+    border: 2px solid var(--accent-gold);
+}
+
+.btn-secondary:hover:not(:disabled) {
+    background: rgba(212, 175, 55, 0.1);
+}
+
+/* Danger button (red) */
+.btn-danger {
+    background: linear-gradient(180deg, var(--accent-red) 0%, #c42d38 100%);
+    color: white;
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md), var(--glow-red);
+}
+
+/* Success button (green) */
+.btn-success {
+    background: linear-gradient(180deg, var(--accent-green) 0%, #27ae60 100%);
+    color: white;
+}
+
+.btn-success:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md), var(--glow-green);
+}
+
+/* Ghost button */
+.btn-ghost {
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.btn-ghost:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: var(--border-active);
+}
+
+/* Spin button (large) */
+.btn-spin {
+    width: 100%;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-size: 1.2rem;
+    background: linear-gradient(180deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%);
+    color: var(--bg-primary);
+    box-shadow: var(--shadow-lg), 0 0 30px rgba(212, 175, 55, 0.4);
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-spin::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s;
+}
+
+.btn-spin:hover:not(:disabled)::before {
+    left: 100%;
+}
+
+.btn-spin:hover:not(:disabled) {
+    transform: scale(1.02);
+    box-shadow: var(--shadow-lg), 0 0 40px rgba(212, 175, 55, 0.5);
+}
+
+.btn-spin:disabled {
+    background: var(--bg-secondary);
+    color: var(--text-dim);
+    box-shadow: none;
+}
+
+.btn-spin.spinning {
+    animation: pulse 1s ease-in-out infinite;
+}
+
+/* Button group */
+.btn-group {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.btn-group .btn {
+    flex: 1;
+}
+
+/* Icon button */
+.btn-icon {
+    width: var(--touch-target-min);
+    height: var(--touch-target-min);
+    padding: 0;
+    border-radius: var(--radius-full);
+}
+
+/* Small button */
+.btn-sm {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.8rem;
+    min-height: 36px;
+}
+
+/* Large button */
+.btn-lg {
+    padding: var(--spacing-lg) var(--spacing-2xl);
+    font-size: 1.1rem;
+}
+
+/* Full width button */
+.btn-block {
+    width: 100%;
+}
+
+/* Action buttons (clear, repeat, undo, x2) */
+.action-buttons {
+    display: flex;
+    gap: var(--spacing-xs);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.action-buttons .btn {
+    min-width: 60px;
+}
+
+.btn-clear {
+    background: var(--bg-secondary);
+    color: var(--accent-red);
+    border: 1px solid var(--accent-red);
+}
+
+.btn-clear:hover:not(:disabled) {
+    background: rgba(230, 57, 70, 0.1);
+}
+
+.btn-repeat {
+    background: var(--bg-secondary);
+    color: var(--accent-blue);
+    border: 1px solid var(--accent-blue);
+}
+
+.btn-repeat:hover:not(:disabled) {
+    background: rgba(52, 152, 219, 0.1);
+}
+
+.btn-undo {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.btn-undo:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.btn-double {
+    background: var(--bg-secondary);
+    color: var(--accent-gold);
+    border: 1px solid var(--accent-gold);
+    font-weight: 700;
+}
+
+.btn-double:hover:not(:disabled) {
+    background: rgba(212, 175, 55, 0.15);
+}
+
+.btn-double:disabled {
+    color: var(--text-dim);
+    border-color: var(--border-subtle);
+}
+
+.btn-skip {
+    background: var(--bg-secondary);
+    color: var(--accent-purple);
+    border: 1px solid var(--accent-purple);
+}
+
+.btn-skip:hover:not(:disabled) {
+    background: rgba(155, 89, 182, 0.1);
+}
+
+.btn-skip:disabled {
+    color: var(--text-dim);
+    border-color: var(--border-subtle);
+}
+
+/* Touch device active states */
+@media (hover: none) and (pointer: coarse) {
+    .btn:active:not(:disabled) {
+        transform: scale(0.95);
+        opacity: 0.9;
+    }
+    
+    .btn-spin:active:not(:disabled) {
+        transform: scale(0.98);
+    }
+}
+
+/* Auto-spin button */
+.btn-auto-spin {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+    font-family: 'Rajdhani', sans-serif;
+}
+
+.btn-auto-spin:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+    border-color: var(--accent-gold);
+}
+
+.btn-auto-spin.active {
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    border-color: var(--accent-gold);
+}
+
+.btn-auto-spin.active:hover:not(:disabled) {
+    background: var(--accent-gold-dim);
+}
+
+/* Pulse animation for spinning */
+@keyframes pulse {
+    0%, 100% {
+        box-shadow: var(--shadow-lg), 0 0 30px rgba(212, 175, 55, 0.4);
+    }
+    50% {
+        box-shadow: var(--shadow-lg), 0 0 50px rgba(212, 175, 55, 0.6);
+    }
+}

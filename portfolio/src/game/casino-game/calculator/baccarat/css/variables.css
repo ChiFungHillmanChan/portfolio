@@ -1,0 +1,91 @@
+:root {
+    /* Background colors */
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a25;
+    --bg-card-hover: #22222f;
+    
+    /* Accent colors */
+    --accent-gold: #d4af37;
+    --accent-gold-dim: #b8960c;
+    --accent-red: #e63946;
+    --accent-blue: #3498db;
+    --accent-green: #2ecc71;
+    --accent-purple: #9b59b6;
+    
+    /* Text colors */
+    --text-primary: #f5f5f5;
+    --text-secondary: #b8b8b8;
+    --text-dim: #808090;
+    
+    /* Border colors */
+    --border-subtle: rgba(212, 175, 55, 0.15);
+    --border-active: rgba(212, 175, 55, 0.4);
+    
+    /* Game-specific colors */
+    --player-color: #3498db;
+    --banker-color: #e74c3c;
+    --tie-color: #2ecc71;
+    
+    /* Effects */
+    --glow-gold: 0 0 20px rgba(212, 175, 55, 0.3);
+    --glow-green: 0 0 15px rgba(46, 204, 113, 0.4);
+    
+    /* Touch-friendly sizing */
+    --touch-target-min: 44px;
+    --spacing-xs: 4px;
+    --spacing-sm: 8px;
+    --spacing-md: 12px;
+    --spacing-lg: 16px;
+}
+
+/* Touch device optimizations */
+@media (hover: none) and (pointer: coarse) {
+    /* Increase tap targets on touch devices */
+    .card-btn,
+    .btn,
+    .egalite-header,
+    .egalite-payout input {
+        min-height: var(--touch-target-min);
+    }
+    
+    /* Remove hover effects on touch devices */
+    .card-btn:hover,
+    .btn-undo:hover,
+    .egalite-header:hover {
+        background: inherit;
+        border-color: inherit;
+    }
+    
+    /* Add active states instead */
+    .card-btn:active,
+    .btn:active,
+    .egalite-header:active {
+        transform: scale(0.95);
+        opacity: 0.9;
+    }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    :root {
+        --border-subtle: rgba(212, 175, 55, 0.4);
+        --text-dim: #808090;
+    }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Dark mode is default, but support system preference */
+@media (prefers-color-scheme: light) {
+    /* Keep dark theme as it's designed for casino environment */
+}

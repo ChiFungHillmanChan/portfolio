@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Casino Game Calculator</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/variables.css">
+    <link rel="stylesheet" href="css/main.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo-icon">🎰</div>
+            <h1>CASINO EDGE CALCULATOR</h1>
+            <p class="subtitle">Bet Strategy Simulator & EV Tracker</p>
+        </header>
+
+        <section class="games-section">
+            <h2 class="section-title">Select Game</h2>
+            
+            <div class="games-grid">
+                <!-- Roulette -->
+                <a href="roulette/index.html" class="game-card roulette available">
+                    <span class="game-icon">🎡</span>
+                    <h3 class="game-name">Roulette</h3>
+                    <p class="game-description">European & American roulette game mode with live statistics and physics-based wheel.</p>
+                    <div class="game-features">
+                        <span class="feature-tag">Game Mode</span>
+                        <span class="feature-tag">Live Stats</span>
+                        <span class="feature-tag">Hot/Cold Numbers</span>
+                    </div>
+                    <div class="game-status">
+                        <span class="status-dot"></span>
+                        Available Now
+                    </div>
+                </a>
+
+                <!-- Blackjack -->
+                <a href="blackjack/index.html" class="game-card blackjack available">
+                    <span class="game-icon">🃏</span>
+                    <h3 class="game-name">Blackjack</h3>
+                    <p class="game-description">Hi-Lo card counting with true count EV calculator, basic strategy, and bet sizing.</p>
+                    <div class="game-features">
+                        <span class="feature-tag">Hi-Lo Counting</span>
+                        <span class="feature-tag">True Count</span>
+                        <span class="feature-tag">Kelly Criterion</span>
+                    </div>
+                    <div class="game-status">
+                        <span class="status-dot"></span>
+                        Available Now
+                    </div>
+                </a>
+
+                <!-- Baccarat -->
+                <a href="baccarat/index.html" class="game-card baccarat available">
+                    <span class="game-icon">🎴</span>
+                    <h3 class="game-name">Baccarat</h3>
+                    <p class="game-description">Live EV tracking with egalité bets, Dragon 7 / Panda 8, and custom payouts.</p>
+                    <div class="game-features">
+                        <span class="feature-tag">Edge Calculator</span>
+                        <span class="feature-tag">Egalité Bets</span>
+                        <span class="feature-tag">Side Bets</span>
+                    </div>
+                    <div class="game-status">
+                        <span class="status-dot"></span>
+                        Available Now
+                    </div>
+                </a>
+
+                <!-- Poker -->
+                <a href="#" class="game-card poker coming-soon">
+                    <span class="game-icon">♠️</span>
+                    <h3 class="game-name">Poker</h3>
+                    <p class="game-description">Texas Hold'em odds calculator, pot odds trainer, and hand range analyzer.</p>
+                    <div class="game-features">
+                        <span class="feature-tag">Equity Calc</span>
+                        <span class="feature-tag">Pot Odds</span>
+                    </div>
+                    <div class="game-status">
+                        <span class="status-dot"></span>
+                        Coming Soon
+                    </div>
+                </a>
+            </div>
+        </section>
+
+        <div class="info-section">
+            <h3>About This Tool</h3>
+            <p>
+                <strong>Casino Edge Calculator</strong> helps you understand the mathematical edge in casino games. 
+                Track real-time expected value (EV), simulate betting strategies, and identify when the odds shift in your favor. 
+                Use these tools responsibly for educational purposes.
+            </p>
+        </div>
+
+        <footer>
+            <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
+        </footer>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,262 @@
+/* =====================================================
+   BLACKJACK - CARD STYLES
+   ===================================================== */
+
+/* Base Card */
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    background: var(--card-bg);
+    border-radius: var(--radius-card);
+    border: 2px solid var(--card-border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-weight: 700;
+    position: relative;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+    transition: transform var(--transition-fast);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+/* Card Face */
+.card-rank {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
+.card-suit {
+    font-size: 0.9rem;
+    margin-top: 2px;
+}
+
+/* Card Colors */
+.card.red {
+    color: var(--card-red);
+}
+
+.card.black {
+    color: var(--card-black);
+}
+
+/* Card Back */
+.card.face-down {
+    background: linear-gradient(135deg, #1a237e 0%, #311b92 100%);
+    border-color: #1a237e;
+}
+
+.card.face-down::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 70%;
+    height: 70%;
+    background: repeating-linear-gradient(
+        45deg,
+        transparent,
+        transparent 5px,
+        rgba(255, 255, 255, 0.1) 5px,
+        rgba(255, 255, 255, 0.1) 10px
+    );
+    border-radius: 4px;
+}
+
+/* Empty Card Slot */
+.card.empty {
+    background: transparent;
+    border: 2px dashed var(--border-subtle);
+    color: var(--text-dim);
+    font-size: 0.6rem;
+    box-shadow: none;
+}
+
+.card.empty::after {
+    content: '?';
+    font-size: 1.5rem;
+    color: var(--text-dim);
+}
+
+/* Third Card Indicator */
+.card.third-card {
+    border-color: var(--accent-gold);
+    box-shadow: var(--glow-gold);
+}
+
+/* Dealt Animation */
+.card.dealing {
+    animation: dealCard 0.3s ease-out;
+}
+
+@keyframes dealCard {
+    from {
+        transform: translateY(-50px) scale(0.5);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* Card Input Grid */
+.card-input-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.card-btn {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 10px 4px;
+    border: 2px solid var(--border-subtle);
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+    min-height: 44px;
+}
+
+.card-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+}
+
+.card-btn:active {
+    transform: scale(0.95);
+}
+
+.card-btn .count-badge {
+    position: absolute;
+    top: -5px;
+    right: -5px;
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    font-size: 0.55rem;
+    padding: 2px 4px;
+    border-radius: 8px;
+    font-weight: 700;
+    min-width: 16px;
+}
+
+.card-btn.depleted {
+    opacity: 0.3;
+    pointer-events: none;
+}
+
+/* Count Indicator Colors */
+.card-btn.positive-count {
+    border-color: rgba(46, 204, 113, 0.3);
+}
+
+.card-btn.positive-count:hover {
+    border-color: var(--ev-positive);
+}
+
+.card-btn.negative-count {
+    border-color: rgba(230, 57, 70, 0.3);
+}
+
+.card-btn.negative-count:hover {
+    border-color: var(--ev-negative);
+}
+
+/* Mini Card (for HUD display) */
+.mini-card {
+    width: 28px;
+    height: 38px;
+    background: var(--card-bg);
+    border-radius: 4px;
+    border: 1px solid var(--border-subtle);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.mini-card.red {
+    color: var(--card-red);
+}
+
+.mini-card.black {
+    color: var(--card-black);
+}
+
+/* Card Display Row (for hand display) */
+.card-display-row {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.card-display-row .card {
+    margin-left: -20px;
+}
+
+.card-display-row .card:first-child {
+    margin-left: 0;
+}
+
+/* Stacked Cards */
+.stacked-cards {
+    position: relative;
+    display: inline-block;
+}
+
+.stacked-cards .card {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+.stacked-cards .card:nth-child(2) {
+    left: 15px;
+}
+
+.stacked-cards .card:nth-child(3) {
+    left: 30px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .card-input-grid {
+        grid-template-columns: repeat(7, 1fr);
+        gap: 3px;
+    }
+
+    .card-btn {
+        padding: 8px 2px;
+        font-size: 0.8rem;
+        min-height: 40px;
+    }
+
+    .card-btn .count-badge {
+        font-size: 0.5rem;
+        padding: 1px 3px;
+    }
+}
+
+@media (max-width: 480px) {
+    .card-input-grid {
+        gap: 2px;
+    }
+
+    .card-btn {
+        padding: 6px 1px;
+        font-size: 0.7rem;
+        min-height: 36px;
+        border-width: 1px;
+    }
+}

@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Baccarat Edge Calculator with Egalité Bets, Custom Payouts, and Live EV Tracking">
+    <title>Baccarat - Card Counting</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <!-- CSS Files -->
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/layout.css">
+    <link rel="stylesheet" href="../css/app-layout.css">
+    <link rel="stylesheet" href="../css/panels.css">
+    <link rel="stylesheet" href="../css/cards.css">
+    <link rel="stylesheet" href="../css/buttons.css">
+    <link rel="stylesheet" href="../css/stats.css">
+    <link rel="stylesheet" href="../css/roads.css">
+    <link rel="stylesheet" href="../css/egalite.css">
+    <link rel="stylesheet" href="../css/bets.css">
+    <link rel="stylesheet" href="../css/recommendations.css">
+    <link rel="stylesheet" href="../../css/hamburger-menu.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Baccarat">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../../blackjack/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+            </a>
+            <a href="../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+                <span class="current-badge">Current</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>BACCARAT</h1>
+            <p class="subtitle">Card Counting Mode</p>
+            <div class="nav-buttons">
+                <a href="../index.html" class="nav-btn nav-btn-back">← Back</a>
+                <button class="nav-btn nav-btn-restart" onclick="handleRestart()">Restart</button>
+            </div>
+        </header>
+
+        <!-- Mobile-First Layout: Most Important at Top -->
+        <div class="app-layout">
+            <div id="top-panel"></div>
+            <div id="middle-panel"></div>
+            <div id="bottom-panel"></div>
+        </div>
+    </div>
+
+    <!-- JavaScript Files - Load in order -->
+    <script src="../js/constants.js"></script>
+    <script src="../js/state.js"></script>
+    <script src="../js/cards.js"></script>
+    <script src="../js/rules.js"></script>
+    <script src="../js/roads.js"></script>
+    <script src="../js/egalite.js"></script>
+    <script src="../js/calculations.js"></script>
+    <script src="../js/dealer.js"></script>
+    <script src="../js/render-cards.js"></script>
+    <script src="../js/render-roads.js"></script>
+    <script src="../js/render-egalite.js"></script>
+    <script src="../js/render-stats.js"></script>
+    <script src="../js/init.js"></script>
+    <!-- Override loadComponents with correct paths for subdirectory -->
+    <script>
+        // Collapsible section state
+        const sectionStates = {
+            roadsSection: false,
+            egaliteSection: false,
+            historySection: false
+        };
+
+        function toggleSection(sectionId) {
+            sectionStates[sectionId] = !sectionStates[sectionId];
+            const content = document.getElementById(sectionId);
+            const toggle = document.getElementById(sectionId + 'Toggle');
+
+            if (sectionStates[sectionId]) {
+                content.classList.add('open');
+                toggle.textContent = '▲';
+            } else {
+                content.classList.remove('open');
+                toggle.textContent = '▼';
+            }
+        }
+
+        // Load HTML components with corrected paths
+        async function loadComponents() {
+            const topPanel = await fetch('../html/top-panel.html').then(response => response.text());
+            const middlePanel = await fetch('../html/middle-panel.html').then(response => response.text());
+            const bottomPanel = await fetch('../html/bottom-panel.html').then(response => response.text());
+
+            document.getElementById('top-panel').innerHTML = topPanel;
+            document.getElementById('middle-panel').innerHTML = middlePanel;
+            document.getElementById('bottom-panel').innerHTML = bottomPanel;
+        }
+
+        // Load components before initialization
+        loadComponents().then(() => init());
+
+        // Handle restart - clear all stats and reinitialize
+        function handleRestart() {
+            if (confirm('Are you sure you want to restart? All current stats will be lost.')) {
+                resetGameState();
+                init();
+            }
+        }
+    </script>
+    <script src="../../js/hamburger-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,280 @@
+/* =====================================================
+   ROULETTE STATS - Stats panel, bars, badges
+   ===================================================== */
+
+/* History display */
+.history-display {
+    padding: var(--spacing-sm) 0;
+}
+
+.history-numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-xs);
+}
+
+/* History number badge */
+.history-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius-sm);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: white;
+}
+
+.history-number.red {
+    background: var(--roulette-red);
+}
+
+.history-number.black {
+    background: var(--roulette-black);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.history-number.green {
+    background: var(--roulette-green);
+}
+
+/* Number badge (generic) */
+.number-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--radius-sm);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: white;
+}
+
+.number-badge.red {
+    background: var(--roulette-red);
+}
+
+.number-badge.black {
+    background: var(--roulette-black);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.number-badge.green {
+    background: var(--roulette-green);
+}
+
+/* Hot/Cold number items */
+.hot-number-item,
+.cold-number-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.hot-number-item:last-child,
+.cold-number-item:last-child {
+    border-bottom: none;
+}
+
+.hot-rank,
+.cold-rank {
+    width: 20px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.hit-count {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-green);
+}
+
+.spins-since {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--accent-blue);
+}
+
+/* Distribution bars */
+.distribution-bar-group {
+    margin-bottom: var(--spacing-md);
+}
+
+.distribution-bar-group:last-child {
+    margin-bottom: 0;
+}
+
+.distribution-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-xs);
+}
+
+.distribution-bar {
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    display: flex;
+}
+
+.distribution-bar.thirds {
+    gap: 1px;
+}
+
+.distribution-fill {
+    height: 100%;
+    transition: width var(--transition-normal);
+}
+
+.distribution-fill.red {
+    background: var(--roulette-red);
+}
+
+.distribution-fill.black {
+    background: var(--roulette-black);
+}
+
+.distribution-fill.even,
+.distribution-fill.low,
+.distribution-fill.dozen1 {
+    background: var(--accent-blue);
+}
+
+.distribution-fill.odd,
+.distribution-fill.high,
+.distribution-fill.dozen2 {
+    background: var(--accent-purple);
+}
+
+.distribution-fill.dozen3 {
+    background: var(--accent-green);
+}
+
+.distribution-values {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    margin-top: var(--spacing-xs);
+}
+
+/* Streak items */
+.streak-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) 0;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.streak-item:last-child {
+    border-bottom: none;
+}
+
+.streak-label {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.streak-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+}
+
+/* Hot indicator */
+.hot-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--accent-red);
+}
+
+.hot-indicator::before {
+    content: '🔥';
+    font-size: 0.8rem;
+}
+
+/* Cold indicator */
+.cold-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    color: var(--accent-blue);
+}
+
+.cold-indicator::before {
+    content: '❄️';
+    font-size: 0.8rem;
+}
+
+/* Zero counter */
+.zero-counter {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm);
+    background: var(--bg-secondary);
+    border-radius: var(--radius-sm);
+    margin-top: var(--spacing-sm);
+}
+
+.zero-counter-label {
+    font-size: 0.75rem;
+    color: var(--roulette-green);
+}
+
+.zero-counter-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--roulette-green);
+}
+
+/* Session summary */
+.session-summary {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+}
+
+.session-stat {
+    background: var(--bg-secondary);
+    padding: var(--spacing-sm);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+.session-stat-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.session-stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 600;
+    margin-top: var(--spacing-xs);
+}
+
+.session-stat-value.positive {
+    color: var(--accent-green);
+}
+
+.session-stat-value.negative {
+    color: var(--accent-red);
+}

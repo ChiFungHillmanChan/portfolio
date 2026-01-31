@@ -1,0 +1,104 @@
+/* =====================================================
+   BLACKJACK - CSS VARIABLES
+   Inherits from main casino theme
+   ===================================================== */
+
+:root {
+    /* Background Colors */
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a25;
+    --bg-card-hover: #22222f;
+    --bg-table: #0d4f30;
+    --bg-felt: #1a6b45;
+
+    /* Accent Colors */
+    --accent-gold: #d4af37;
+    --accent-gold-dim: #b8960c;
+    --accent-red: #e63946;
+    --accent-blue: #3498db;
+    --accent-green: #2ecc71;
+    --accent-purple: #9b59b6;
+
+    /* Text Colors */
+    --text-primary: #f0f0f0;
+    --text-secondary: #a0a0a0;
+    --text-dim: #606070;
+
+    /* Border Colors */
+    --border-subtle: rgba(212, 175, 55, 0.15);
+    --border-active: rgba(212, 175, 55, 0.4);
+
+    /* Seat Colors */
+    --seat-empty: #404050;
+    --seat-occupied: #3498db;
+    --seat-mine: #d4af37;
+
+    /* EV Colors */
+    --ev-positive: #2ecc71;
+    --ev-negative: #e63946;
+    --ev-neutral: #a0a0a0;
+
+    /* Card Colors */
+    --card-bg: #f5f5f0;
+    --card-border: #d4af37;
+    --card-red: #c41e3a;
+    --card-black: #1a1a1a;
+
+    /* Effects */
+    --glow-gold: 0 0 20px rgba(212, 175, 55, 0.4);
+    --glow-green: 0 0 15px rgba(46, 204, 113, 0.4);
+    --glow-red: 0 0 15px rgba(230, 57, 70, 0.4);
+    --glow-blue: 0 0 15px rgba(52, 152, 219, 0.4);
+
+    /* Typography */
+    --font-display: 'Orbitron', sans-serif;
+    --font-body: 'Rajdhani', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+
+    /* Spacing */
+    --spacing-xs: 5px;
+    --spacing-sm: 10px;
+    --spacing-md: 15px;
+    --spacing-lg: 25px;
+    --spacing-xl: 40px;
+
+    /* Border Radius */
+    --radius-sm: 5px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-card: 8px;
+
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.3s ease;
+    --transition-slow: 0.5s ease;
+
+    /* Table Dimensions */
+    --table-width: 100%;
+    --table-max-width: 900px;
+    --seat-size: 80px;
+    --card-width: 60px;
+    --card-height: 84px;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    :root {
+        --seat-size: 60px;
+        --card-width: 45px;
+        --card-height: 63px;
+        --spacing-lg: 15px;
+        --spacing-xl: 25px;
+    }
+}
+
+@media (max-width: 480px) {
+    :root {
+        --seat-size: 50px;
+        --card-width: 38px;
+        --card-height: 53px;
+        --spacing-md: 10px;
+        --spacing-lg: 12px;
+    }
+}

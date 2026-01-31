@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Progress & Statistics | Card Counting Practice</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../../css/variables.css">
+    <link rel="stylesheet" href="../../../css/main.css">
+    <link rel="stylesheet" href="../../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="../css/shared.css">
+    <link rel="stylesheet" href="css/progress.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Practice">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+                <span class="current-badge">Current</span>
+            </a>
+            <a href="../../../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container practice-container">
+        <a href="../index.html" class="back-link">← Back to Practice</a>
+
+        <header class="practice-header">
+            <h1 class="practice-title">PROGRESS & STATISTICS</h1>
+            <p class="practice-subtitle">Track your card counting improvement</p>
+        </header>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card">
+                <span class="summary-icon">🎯</span>
+                <span class="summary-value" id="total-sessions">0</span>
+                <span class="summary-label">Total Sessions</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-icon">📊</span>
+                <span class="summary-value" id="overall-accuracy">0%</span>
+                <span class="summary-label">Overall Accuracy</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-icon">🔥</span>
+                <span class="summary-value" id="best-streak">0</span>
+                <span class="summary-label">Best Streak</span>
+            </div>
+            <div class="summary-card">
+                <span class="summary-icon">🃏</span>
+                <span class="summary-value" id="total-cards">0</span>
+                <span class="summary-label">Cards Counted</span>
+            </div>
+        </div>
+
+        <!-- Mode Tabs -->
+        <div class="mode-tabs">
+            <button class="mode-tab active" data-mode="easy">Easy</button>
+            <button class="mode-tab" data-mode="medium">Medium</button>
+            <button class="mode-tab" data-mode="hard">Hard</button>
+        </div>
+
+        <!-- Mode Stats -->
+        <div class="mode-stats-container">
+            <!-- Easy Mode Stats -->
+            <div class="mode-stats active" id="easy-stats">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="easy-sessions">0</span>
+                        <span class="stat-label">Sessions</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="easy-accuracy">-</span>
+                        <span class="stat-label">Accuracy</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="easy-best-score">0</span>
+                        <span class="stat-label">Best Score</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="easy-fastest">-</span>
+                        <span class="stat-label">Fastest Speed</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Medium Mode Stats -->
+            <div class="mode-stats" id="medium-stats">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="medium-sessions">0</span>
+                        <span class="stat-label">Sessions</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="medium-accuracy">-</span>
+                        <span class="stat-label">Count Accuracy</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="medium-hands">0</span>
+                        <span class="stat-label">Hands Played</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="medium-winrate">-</span>
+                        <span class="stat-label">Win Rate</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hard Mode Stats -->
+            <div class="mode-stats" id="hard-stats">
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <span class="stat-value" id="hard-sessions">0</span>
+                        <span class="stat-label">Sessions</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="hard-accuracy">-</span>
+                        <span class="stat-label">Count Accuracy</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="hard-hands">0</span>
+                        <span class="stat-label">Rounds Played</span>
+                    </div>
+                    <div class="stat-card">
+                        <span class="stat-value" id="hard-timeouts">0</span>
+                        <span class="stat-label">Timeouts</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Sessions -->
+        <div class="recent-sessions">
+            <h2 class="section-title">Recent Sessions</h2>
+            <div id="sessions-list" class="sessions-list">
+                <p class="no-sessions">No sessions recorded yet. Start practicing!</p>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="progress-actions">
+            <button id="export-btn" class="practice-btn practice-btn-secondary">
+                Export Data
+            </button>
+            <button id="clear-btn" class="practice-btn practice-btn-danger">
+                Clear All Data
+            </button>
+        </div>
+
+        <!-- Confirm Modal -->
+        <div id="confirm-modal" class="modal-overlay">
+            <div class="modal-content">
+                <h2 class="modal-title">Clear All Data?</h2>
+                <p class="modal-message">This will permanently delete all your practice statistics and session history. This cannot be undone.</p>
+                <div class="modal-actions">
+                    <button id="confirm-clear" class="practice-btn practice-btn-danger">Yes, Clear All</button>
+                    <button id="cancel-clear" class="practice-btn practice-btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../js/shared/constants.js"></script>
+    <script src="../js/practice-constants.js"></script>
+    <script src="../js/practice-stats.js"></script>
+    <script src="js/progress.js"></script>
+    <script src="../../../js/hamburger-menu.js"></script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+/* =====================================================
+   CASINO GAME CALCULATOR - MAIN PAGE STYLES
+   ===================================================== */
+
+/* Container */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: var(--spacing-xl) 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header */
+header {
+    text-align: center;
+    padding: var(--spacing-xl) 0 60px;
+}
+
+.logo-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.05); 
+        opacity: 0.9; 
+    }
+}
+
+h1 {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    font-weight: 900;
+    letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--accent-gold) 0%, #f4d03f 50%, var(--accent-gold-dim) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: var(--spacing-sm);
+}
+
+.subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+}
+
+/* Games Section */
+.games-section {
+    flex: 1;
+}
+
+.section-title {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-lg);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+.section-title::before,
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border-subtle), transparent);
+}
+
+/* Games Grid */
+.games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+/* Game Card */
+.game-card {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    padding: 30px 25px;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-normal);
+    text-decoration: none;
+    display: block;
+}
+
+.game-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, transparent, var(--card-accent, var(--accent-gold)), transparent);
+    opacity: 0.6;
+    transition: opacity var(--transition-normal);
+}
+
+.game-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 50% 0%, var(--card-accent, var(--accent-gold)) 0%, transparent 70%);
+    opacity: 0;
+    transition: opacity var(--transition-normal);
+    pointer-events: none;
+}
+
+.game-card:hover {
+    transform: translateY(-5px);
+    border-color: var(--border-active);
+    box-shadow: var(--glow-gold);
+}
+
+.game-card:hover::before {
+    opacity: 1;
+}
+
+.game-card:hover::after {
+    opacity: 0.05;
+}
+
+.game-card.available:hover {
+    background: var(--bg-card-hover);
+}
+
+/* Coming Soon State */
+.game-card.coming-soon {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.game-card.coming-soon:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+/* Game Card Content */
+.game-icon {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+    display: block;
+}
+
+.game-name {
+    font-family: var(--font-display);
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    letter-spacing: 2px;
+}
+
+.game-description {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    margin-bottom: var(--spacing-md);
+}
+
+/* Feature Tags */
+.game-features {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: var(--spacing-md);
+}
+
+.feature-tag {
+    font-size: 0.65rem;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    background: rgba(212, 175, 55, 0.15);
+    color: var(--accent-gold);
+    border: 1px solid var(--border-subtle);
+}
+
+/* Game Status */
+.game-status {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    animation: blink 1.5s ease-in-out infinite;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+.game-card.available .status-dot {
+    background: var(--accent-green);
+    box-shadow: 0 0 10px var(--accent-green);
+}
+
+.game-card.available .game-status {
+    color: var(--accent-green);
+}
+
+.game-card.coming-soon .status-dot {
+    background: var(--text-dim);
+    animation: none;
+}
+
+.game-card.coming-soon .game-status {
+    color: var(--text-dim);
+}
+
+/* Individual Game Card Accent Colors */
+.game-card.roulette { --card-accent: #e63946; }
+.game-card.blackjack { --card-accent: #2ecc71; }
+.game-card.baccarat { --card-accent: #d4af37; }
+.game-card.poker { --card-accent: #3498db; }
+
+/* Info Section */
+.info-section {
+    margin-top: auto;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-subtle);
+}
+
+.info-section h3 {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-sm);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.info-section p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.info-section strong {
+    color: var(--text-primary);
+}
+
+/* Footer */
+footer {
+    text-align: center;
+    padding: 30px 0 20px;
+    border-top: 1px solid var(--border-subtle);
+    margin-top: var(--spacing-xl);
+}
+
+.footer-text {
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+}
+
+/* Shake Animation */
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px); }
+    75% { transform: translateX(5px); }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    header {
+        padding: 30px 0 var(--spacing-xl);
+    }
+
+    h1 {
+        font-size: 1.8rem;
+        letter-spacing: 2px;
+    }
+
+    .subtitle {
+        font-size: 0.85rem;
+    }
+
+    .games-grid {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    .game-card {
+        padding: 25px 20px;
+    }
+}

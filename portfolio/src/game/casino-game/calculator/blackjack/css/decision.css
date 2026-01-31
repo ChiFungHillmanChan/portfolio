@@ -1,0 +1,335 @@
+/* =====================================================
+   BLACKJACK - DECISION OVERLAY STYLES
+   ===================================================== */
+
+/* Overlay Container */
+.decision-overlay-container {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 2px solid var(--accent-gold);
+    padding: var(--spacing-md);
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), var(--glow-gold);
+    min-width: 280px;
+    max-width: 400px;
+}
+
+/* Decision Header */
+.decision-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-subtle);
+    margin-bottom: var(--spacing-md);
+}
+
+.decision-seat-label {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.decision-bet-label {
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+/* Hand Info */
+.decision-hand-info {
+    text-align: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.decision-hand-total {
+    font-family: var(--font-mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.decision-vs-dealer {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Action Buttons Container */
+.decision-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+
+/* Action Button */
+.decision-action-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    font-family: var(--font-body);
+}
+
+.decision-action-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--accent-gold);
+}
+
+.decision-action-btn.optimal {
+    background: rgba(212, 175, 55, 0.15);
+    border-color: var(--accent-gold);
+    box-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+}
+
+.decision-action-btn.optimal:hover {
+    box-shadow: var(--glow-gold);
+}
+
+/* Action Name */
+.action-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+/* Action EV */
+.action-ev {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.action-ev.positive {
+    color: var(--ev-positive);
+}
+
+.action-ev.negative {
+    color: var(--ev-negative);
+}
+
+/* Optimal Indicator */
+.optimal-indicator {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    margin-left: var(--spacing-sm);
+    padding: 2px 6px;
+    background: rgba(212, 175, 55, 0.2);
+    border-radius: 4px;
+}
+
+/* Deviation Alert */
+.decision-deviation-alert {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: rgba(212, 175, 55, 0.1);
+    border: 1px solid rgba(212, 175, 55, 0.4);
+    border-radius: var(--radius-md);
+    margin-top: var(--spacing-md);
+}
+
+.deviation-icon {
+    font-size: 1.2rem;
+    color: var(--accent-gold);
+}
+
+.deviation-text {
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+/* Recommendation Panel */
+.recommendation-panel {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-subtle);
+    padding: var(--spacing-lg);
+    text-align: center;
+}
+
+.recommendation-title {
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: var(--spacing-md);
+}
+
+.recommendation-counts {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+}
+
+.recommendation-count-item {
+    text-align: center;
+}
+
+.recommendation-count-label {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.recommendation-count-value {
+    font-family: var(--font-mono);
+    font-size: 1.8rem;
+    font-weight: 700;
+}
+
+.recommendation-count-value.positive {
+    color: var(--ev-positive);
+}
+
+.recommendation-count-value.negative {
+    color: var(--ev-negative);
+}
+
+.recommendation-count-value.neutral {
+    color: var(--text-primary);
+}
+
+/* Bet Recommendation Box */
+.bet-recommendation-box {
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.15) 0%, rgba(212, 175, 55, 0.05) 100%);
+    border: 2px solid var(--accent-gold);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-md);
+}
+
+.bet-recommendation-label {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: var(--spacing-sm);
+}
+
+.bet-recommendation-amount {
+    font-family: var(--font-mono);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: var(--accent-gold);
+    text-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.bet-recommendation-details {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-top: var(--spacing-xs);
+}
+
+/* Session Stats */
+.session-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--spacing-sm);
+    padding-top: var(--spacing-md);
+    border-top: 1px solid var(--border-subtle);
+}
+
+.session-stat {
+    text-align: center;
+}
+
+.session-stat-label {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+.session-stat-value {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.session-stat-value.profit {
+    color: var(--ev-positive);
+}
+
+.session-stat-value.loss {
+    color: var(--ev-negative);
+}
+
+/* Deal Button */
+.btn-deal {
+    width: 100%;
+    padding: var(--spacing-md);
+    background: linear-gradient(135deg, var(--accent-gold) 0%, var(--accent-gold-dim) 100%);
+    color: #000;
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-top: var(--spacing-md);
+}
+
+.btn-deal:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--glow-gold);
+}
+
+.btn-deal:active {
+    transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .decision-overlay-container {
+        min-width: 250px;
+        padding: var(--spacing-sm);
+    }
+
+    .decision-hand-total {
+        font-size: 1.5rem;
+    }
+
+    .decision-action-btn {
+        padding: var(--spacing-sm);
+    }
+
+    .action-name {
+        font-size: 0.85rem;
+    }
+
+    .action-ev {
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .decision-overlay-container {
+        min-width: 220px;
+    }
+
+    .decision-hand-total {
+        font-size: 1.3rem;
+    }
+
+    .optimal-indicator {
+        display: none;
+    }
+}

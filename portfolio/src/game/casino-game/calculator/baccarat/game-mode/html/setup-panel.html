@@ -1,0 +1,52 @@
+<div class="setup-screen" id="setupScreen">
+    <!-- Saved Game Info (shown when there's a saved game) -->
+    <div id="savedGameInfo" class="saved-game-info hidden">
+        <div class="saved-game-content">
+            <h3>Continue Previous Game?</h3>
+            <p class="saved-game-details" id="savedGameDetails"></p>
+            <div class="saved-game-actions">
+                <button type="button" class="btn btn-secondary" id="newGameBtn">New Game</button>
+                <button type="button" class="btn btn-primary" id="continueGameBtn">Continue</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="setup-panel panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Game Setup</h2>
+        </div>
+        <div class="panel-content">
+            <form class="setup-form" id="setupForm">
+                <!-- Initial Stack -->
+                <div class="form-group">
+                    <label class="form-label">Starting Bankroll</label>
+                    <div class="preset-group" id="stackPresets">
+                        <button type="button" class="preset-btn" data-value="100">$100</button>
+                        <button type="button" class="preset-btn" data-value="500">$500</button>
+                        <button type="button" class="preset-btn active" data-value="1000">$1K</button>
+                        <button type="button" class="preset-btn" data-value="5000">$5K</button>
+                        <button type="button" class="preset-btn" data-value="10000">$10K</button>
+                    </div>
+                    <div class="input-row mt-sm">
+                        <input type="number" id="customStack" class="form-input" placeholder="Custom amount" min="10" max="10000000">
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="setup-info">
+                    <div class="setup-info-title">About Baccarat</div>
+                    <div class="setup-info-text">
+                        Banker bet has the lowest house edge at 1.06% (with 5% commission).
+                        Player bet has 1.24% edge. Tie bet has 14.36% edge.
+                        Side bets offer higher payouts but greater risk.
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="startGameBtn">
+                    Start Game
+                </button>
+            </form>
+        </div>
+    </div>
+</div>

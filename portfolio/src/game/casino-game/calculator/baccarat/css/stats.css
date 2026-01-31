@@ -1,0 +1,169 @@
+.stats-mini {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.stat-mini {
+    background: var(--bg-secondary);
+    padding: 6px;
+    border-radius: 5px;
+    text-align: center;
+}
+
+.stat-mini-label {
+    font-size: 0.55rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+}
+
+.stat-mini-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+}
+
+.counts-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 5px;
+    margin-top: 8px;
+}
+
+.count-box {
+    background: var(--bg-secondary);
+    border-radius: 5px;
+    padding: 6px;
+    text-align: center;
+}
+
+.count-box-label {
+    font-size: 0.5rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.count-box-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1rem;
+    font-weight: 700;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .stats-mini {
+        gap: 6px;
+    }
+    
+    .stat-mini {
+        padding: 8px;
+    }
+    
+    .stat-mini-label {
+        font-size: 0.6rem;
+    }
+    
+    .stat-mini-value {
+        font-size: 1rem;
+    }
+    
+    .counts-grid {
+        gap: 6px;
+    }
+    
+    .count-box {
+        padding: 8px;
+    }
+    
+    .count-box-label {
+        font-size: 0.55rem;
+    }
+    
+    .count-box-value {
+        font-size: 1.1rem;
+    }
+}
+
+/* Large Phone */
+@media (max-width: 768px) {
+    .stats-mini {
+        gap: 4px;
+        margin-top: 10px;
+    }
+    
+    .stat-mini {
+        padding: 8px 4px;
+    }
+    
+    .stat-mini-label {
+        font-size: 0.55rem;
+    }
+    
+    .stat-mini-value {
+        font-size: 0.95rem;
+    }
+    
+    .counts-grid {
+        gap: 4px;
+        margin-top: 10px;
+    }
+    
+    .count-box {
+        padding: 8px 4px;
+    }
+    
+    .count-box-label {
+        font-size: 0.5rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .count-box-value {
+        font-size: 1rem;
+    }
+}
+
+/* Small Phone */
+@media (max-width: 480px) {
+    .stats-mini {
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .stat-mini {
+        padding: 8px 6px;
+        border-radius: 6px;
+    }
+
+    .stat-mini-label {
+        font-size: 0.65rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .stat-mini-value {
+        font-size: 1.1rem;
+    }
+
+    .counts-grid {
+        gap: 6px;
+        margin-top: 10px;
+    }
+
+    .count-box {
+        padding: 8px 6px;
+        border-radius: 6px;
+    }
+
+    .count-box-label {
+        font-size: 0.6rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+    }
+
+    .count-box-value {
+        font-size: 1.1rem;
+    }
+}

@@ -1,0 +1,181 @@
+.dealing-indicator {
+    text-align: center;
+    padding: 6px;
+    background: var(--bg-card);
+    border-radius: 5px;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--accent-gold);
+}
+
+.dealing-indicator.player-turn {
+    color: var(--player-color);
+    border: 1px solid var(--player-color);
+}
+
+.dealing-indicator.banker-turn {
+    color: var(--banker-color);
+    border: 1px solid var(--banker-color);
+}
+
+.dealing-indicator.finished {
+    color: var(--accent-green);
+    border: 1px solid var(--accent-green);
+    background: rgba(46,204,113,0.1);
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    margin-top: 10px;
+}
+
+.btn {
+    flex: 1;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    padding: 8px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    min-height: 44px; /* Touch-friendly */
+}
+
+.btn:active {
+    transform: scale(0.95);
+}
+
+.btn-undo {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.btn-undo:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.btn-reset {
+    background: linear-gradient(135deg, var(--accent-red) 0%, #c0392b 100%);
+    color: white;
+}
+
+/* Navigation Buttons */
+.nav-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 15px;
+}
+
+.nav-btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+}
+
+.nav-btn:active {
+    transform: scale(0.95);
+}
+
+.nav-btn-back {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-subtle);
+}
+
+.nav-btn-back:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+}
+
+.nav-btn-restart {
+    background: linear-gradient(135deg, var(--accent-red) 0%, #c0392b 100%);
+    color: white;
+}
+
+.nav-btn-restart:hover {
+    filter: brightness(1.1);
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .dealing-indicator {
+        padding: 8px;
+        font-size: 0.8rem;
+    }
+    
+    .action-buttons {
+        gap: 8px;
+        margin-top: 12px;
+    }
+    
+    .btn {
+        padding: 10px 12px;
+        font-size: 0.85rem;
+        min-height: 48px;
+    }
+}
+
+/* Large Phone */
+@media (max-width: 768px) {
+    .dealing-indicator {
+        padding: 10px;
+        font-size: 0.85rem;
+        margin-top: 10px;
+        border-radius: 6px;
+    }
+    
+    .action-buttons {
+        gap: 10px;
+        margin-top: 10px;
+    }
+    
+    .btn {
+        padding: 12px 14px;
+        font-size: 0.9rem;
+        min-height: 50px;
+        border-radius: 6px;
+    }
+}
+
+/* Small Phone */
+@media (max-width: 480px) {
+    .dealing-indicator {
+        padding: 10px;
+        font-size: 0.85rem;
+        margin-top: 10px;
+        border-radius: 6px;
+        font-weight: 600;
+    }
+
+    .action-buttons {
+        gap: 10px;
+        margin-top: 12px;
+    }
+
+    .btn {
+        padding: 12px 10px;
+        font-size: 0.85rem;
+        min-height: 48px;
+        letter-spacing: 1px;
+        border-radius: 6px;
+    }
+}

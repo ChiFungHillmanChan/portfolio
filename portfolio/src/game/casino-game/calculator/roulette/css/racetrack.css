@@ -1,0 +1,396 @@
+/* =====================================================
+   RACETRACK BETTING INTERFACE - Classic French Casino Style
+   Luxury gold accents with elegant serif typography
+   ===================================================== */
+
+/* Racetrack container */
+#racetrackContainer {
+    display: none;
+    width: 100%;
+    padding: var(--spacing-lg) var(--spacing-md);
+    background: #000000;
+}
+
+/* Active state is now controlled by parent .racetrack-mode class */
+#racetrackContainer.active {
+    display: block;
+}
+
+/* Racetrack wrapper */
+.racetrack-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-lg);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* ====== Neighbour Selector - French Casino Style ====== */
+.neighbour-selector {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-md);
+}
+
+.neighbour-label {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #d4b07a;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.neighbour-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.neighbour-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #0b2a1a;
+    border: 2px solid #d4b07a;
+    border-radius: 4px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #d4b07a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+}
+
+.neighbour-btn:hover {
+    background: rgba(212, 176, 122, 0.15);
+    box-shadow: 0 0 8px rgba(212, 176, 122, 0.3);
+}
+
+.neighbour-btn.active {
+    background: #d4b07a;
+    color: #0b2a1a;
+    box-shadow: 0 0 12px rgba(212, 176, 122, 0.5);
+}
+
+/* ====== SVG Racetrack ====== */
+.racetrack-svg {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: visible; /* Allow glow effects to show */
+}
+
+/* ====== Track Cells (number cells) - Stable Hover (No Scale) ====== */
+.track-cell {
+    cursor: pointer;
+    transition: filter 0.15s ease, opacity 0.15s ease;
+    /* No transform to prevent flickering */
+}
+
+/* Single cell hover - subtle brightness */
+.track-cell:hover {
+    filter: brightness(1.3) drop-shadow(0 0 6px rgba(255, 255, 255, 0.5));
+}
+
+.track-cell:hover path,
+.track-cell:hover rect {
+    stroke: #ffffff;
+    stroke-width: 2;
+}
+
+/* ====== Neighbour Highlight - Very Visible (No Scale) ====== */
+/* Neighbour cells get bright white glow */
+.track-cell.highlight {
+    filter: brightness(1.5) drop-shadow(0 0 8px rgba(255, 255, 255, 0.9));
+}
+
+.track-cell.highlight path,
+.track-cell.highlight rect {
+    stroke: #ffffff;
+    stroke-width: 2.5;
+}
+
+/* Center number gets gold highlight - most prominent */
+.track-cell.highlight.center {
+    filter: brightness(1.7) drop-shadow(0 0 12px rgba(255, 215, 0, 1));
+}
+
+.track-cell.highlight.center path,
+.track-cell.highlight.center rect {
+    stroke: #ffd700;
+    stroke-width: 3;
+}
+
+/* Dim non-highlighted when any highlight exists */
+.racetrack-svg:has(.track-cell.highlight) .track-cell:not(.highlight) {
+    opacity: 0.35;
+    filter: brightness(0.6);
+}
+
+/* Has bet indicator - Gold outline */
+.track-cell.has-bet path,
+.track-cell.has-bet rect {
+    stroke: #d4b07a;
+    stroke-width: 2.5;
+    filter: drop-shadow(0 0 4px rgba(212, 176, 122, 0.5));
+}
+
+/* Bet feedback animations */
+.track-cell.bet-placed {
+    animation: cellBetSuccess 0.4s ease-out;
+}
+
+.track-cell.bet-failed {
+    animation: cellBetFail 0.4s ease-out;
+}
+
+@keyframes cellBetSuccess {
+    0% { 
+        filter: brightness(1);
+    }
+    50% { 
+        filter: brightness(1.4) drop-shadow(0 0 12px #e0c38c);
+    }
+    100% { 
+        filter: brightness(1);
+    }
+}
+
+@keyframes cellBetFail {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-3px); }
+    40% { transform: translateX(3px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+
+/* ====== Track Sections (TIER, ORPHELINS, VOISINS) ====== */
+.track-section {
+    cursor: pointer;
+    transition: opacity 0.2s ease;
+}
+
+.track-section:hover .section-hitbox {
+    fill: rgba(212, 176, 122, 0.1);
+}
+
+.track-section:hover .section-label {
+    fill: #e0c38c;
+    filter: drop-shadow(0 0 4px rgba(212, 176, 122, 0.5));
+}
+
+.section-hitbox {
+    transition: fill 0.2s ease;
+}
+
+.section-label {
+    pointer-events: none;
+    transition: fill 0.2s ease, filter 0.2s ease;
+}
+
+/* Section feedback animations */
+.track-section.bet-placed {
+    animation: sectionBetSuccess 0.4s ease-out;
+}
+
+.track-section.bet-failed {
+    animation: sectionBetFail 0.4s ease-out;
+}
+
+@keyframes sectionBetSuccess {
+    0% { 
+        opacity: 1;
+    }
+    50% { 
+        opacity: 0.6;
+    }
+    100% { 
+        opacity: 1;
+    }
+}
+
+@keyframes sectionBetFail {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
+}
+
+/* ====== Betting Tabs ====== */
+.betting-tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: var(--spacing-md);
+    background: #0b2a1a;
+    border-radius: 6px;
+    padding: 4px;
+    border: 1px solid #d4b07a;
+}
+
+.betting-tab {
+    flex: 1;
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #d4b07a;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    touch-action: manipulation;
+}
+
+.betting-tab:hover {
+    background: rgba(212, 176, 122, 0.1);
+}
+
+.betting-tab.active {
+    background: #d4b07a;
+    color: #0b2a1a;
+}
+
+/* ====== Selection Indicator for Multi-Select ====== */
+.track-cell.selected path,
+.track-cell.selected rect {
+    stroke: #ffd700;
+    stroke-width: 3;
+    filter: drop-shadow(0 0 8px #ffd700);
+}
+
+/* ====== Responsive Design ====== */
+
+/* Tablet */
+@media (max-width: 768px) {
+    #racetrackContainer {
+        padding: var(--spacing-md) var(--spacing-sm);
+    }
+    
+    .racetrack-wrapper {
+        gap: var(--spacing-md);
+    }
+    
+    .neighbour-selector {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+    
+    .neighbour-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 0.9rem;
+    }
+    
+    .neighbour-label {
+        font-size: 0.85rem;
+        width: 100%;
+        text-align: center;
+        margin-bottom: 4px;
+    }
+    
+    .neighbour-buttons {
+        justify-content: center;
+    }
+    
+    /* Larger touch targets for mobile */
+    .track-cell {
+        cursor: pointer;
+    }
+    
+    .track-cell path,
+    .track-cell rect {
+        stroke-width: 1;
+    }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+    #racetrackContainer {
+        padding: var(--spacing-sm) 4px;
+    }
+    
+    .racetrack-wrapper {
+        gap: var(--spacing-sm);
+    }
+    
+    .neighbour-selector {
+        gap: 6px;
+    }
+    
+    .neighbour-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 0.8rem;
+        border-width: 1.5px;
+    }
+    
+    .neighbour-label {
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+    }
+    
+    .neighbour-buttons {
+        gap: 4px;
+    }
+    
+    /* Touch-friendly: highlight on touch */
+    .track-cell.highlight path,
+    .track-cell.highlight rect {
+        stroke-width: 2;
+    }
+    
+    .track-cell.highlight.center path,
+    .track-cell.highlight.center rect {
+        stroke-width: 2.5;
+    }
+}
+
+/* Very small screens */
+@media (max-width: 360px) {
+    .neighbour-btn {
+        width: 28px;
+        height: 28px;
+        font-size: 0.7rem;
+        border-radius: 3px;
+    }
+    
+    .neighbour-label {
+        font-size: 0.65rem;
+    }
+}
+
+/* ====== High Contrast Mode Support ====== */
+@media (prefers-contrast: high) {
+    .track-cell.highlight path,
+    .track-cell.highlight rect {
+        stroke-width: 3;
+    }
+    
+    .neighbour-btn {
+        border-width: 3px;
+    }
+}
+
+/* ====== Reduced Motion Support ====== */
+@media (prefers-reduced-motion: reduce) {
+    .track-cell,
+    .track-section,
+    .neighbour-btn,
+    .betting-tab {
+        transition: none;
+    }
+    
+    .track-cell.bet-placed,
+    .track-cell.bet-failed,
+    .track-section.bet-placed,
+    .track-section.bet-failed {
+        animation: none;
+    }
+}

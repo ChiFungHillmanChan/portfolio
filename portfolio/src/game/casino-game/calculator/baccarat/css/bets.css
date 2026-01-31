@@ -1,0 +1,253 @@
+.bet-cards {
+    display: grid;
+    gap: 6px;
+}
+
+.bet-card {
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    padding: 8px;
+    border: 1px solid var(--border-subtle);
+}
+
+.bet-card.positive-ev {
+    border-color: var(--accent-green);
+    box-shadow: var(--glow-green);
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, var(--bg-secondary) 100%);
+}
+
+.bet-card.best-main {
+    border-color: var(--accent-gold);
+    background: linear-gradient(135deg, rgba(212, 175, 55, 0.1) 0%, var(--bg-secondary) 100%);
+}
+
+.bet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.bet-name {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.bet-tag {
+    font-size: 0.55rem;
+    padding: 2px 5px;
+    border-radius: 8px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.bet-tag.positive {
+    background: rgba(46, 204, 113, 0.2);
+    color: var(--accent-green);
+}
+
+.bet-tag.best {
+    background: rgba(212, 175, 55, 0.2);
+    color: var(--accent-gold);
+}
+
+.ev-comparison {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 5px;
+    background: var(--bg-card);
+    border-radius: 4px;
+    font-size: 0.7rem;
+    flex-wrap: wrap;
+}
+
+.ev-original {
+    color: var(--text-dim);
+}
+
+.ev-arrow {
+    color: var(--accent-gold);
+}
+
+.ev-current {
+    font-weight: 600;
+}
+
+.ev-current.better {
+    color: var(--accent-green);
+}
+
+.ev-current.worse {
+    color: var(--accent-red);
+}
+
+.ev-current.same {
+    color: var(--text-secondary);
+}
+
+.ev-change {
+    font-size: 0.6rem;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-weight: 600;
+}
+
+.ev-change.positive {
+    background: rgba(46,204,113,0.2);
+    color: var(--accent-green);
+}
+
+.ev-change.negative {
+    background: rgba(231,76,60,0.2);
+    color: var(--accent-red);
+}
+
+/* Bets grid container for side-by-side layout */
+.bets-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.bets-column-title {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    margin-bottom: 5px;
+    text-transform: uppercase;
+}
+
+/* Tablet */
+@media (max-width: 1024px) {
+    .bet-cards {
+        gap: 8px;
+    }
+    
+    .bet-card {
+        padding: 10px;
+    }
+    
+    .bet-name {
+        font-size: 0.85rem;
+    }
+    
+    .bet-tag {
+        font-size: 0.6rem;
+        padding: 3px 6px;
+    }
+    
+    .ev-comparison {
+        font-size: 0.75rem;
+        padding: 6px;
+    }
+}
+
+/* Large Phone */
+@media (max-width: 768px) {
+    .bet-cards {
+        gap: 6px;
+    }
+    
+    .bet-card {
+        padding: 8px;
+    }
+    
+    .bet-header {
+        margin-bottom: 5px;
+    }
+    
+    .bet-name {
+        font-size: 0.75rem;
+    }
+    
+    .bet-tag {
+        font-size: 0.5rem;
+        padding: 2px 4px;
+        letter-spacing: 0.5px;
+    }
+    
+    .ev-comparison {
+        font-size: 0.65rem;
+        padding: 4px;
+        gap: 4px;
+    }
+    
+    .ev-change {
+        font-size: 0.55rem;
+        padding: 1px 3px;
+    }
+    
+    /* Stack bets on mobile */
+    .bets-container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}
+
+/* Small Phone */
+@media (max-width: 480px) {
+    .bet-cards {
+        gap: 8px;
+    }
+
+    .bet-card {
+        padding: 10px;
+        border-radius: 6px;
+    }
+
+    .bet-header {
+        margin-bottom: 6px;
+    }
+
+    .bet-name {
+        font-size: 0.85rem;
+    }
+
+    .bet-tag {
+        font-size: 0.6rem;
+        padding: 3px 6px;
+        letter-spacing: 0.5px;
+    }
+
+    .ev-comparison {
+        font-size: 0.8rem;
+        padding: 8px;
+        gap: 6px;
+    }
+
+    .ev-change {
+        font-size: 0.65rem;
+        padding: 2px 5px;
+    }
+
+    .bets-column-title {
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+        color: var(--text-secondary);
+    }
+}
+
+/* Extra Small Phone */
+@media (max-width: 360px) {
+    .bet-name {
+        font-size: 0.8rem;
+    }
+
+    .ev-comparison {
+        font-size: 0.75rem;
+    }
+
+    .ev-arrow {
+        display: none;
+    }
+
+    .ev-original::after {
+        content: '→';
+        margin-left: 3px;
+        color: var(--accent-gold);
+    }
+}

@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="description" content="Baccarat Game Mode - Play with Main Bets and Side Bets">
+    <title>Baccarat - Game Mode</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="css/game-mode.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Baccarat">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../../blackjack/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+            </a>
+            <a href="../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+                <span class="current-badge">Current</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <div class="logo-icon">🎴</div>
+            <h1>BACCARAT</h1>
+            <p class="subtitle">Game Mode • Main Bets • Side Bets</p>
+            <div class="nav-buttons">
+                <a href="../index.html" class="nav-btn nav-btn-back" id="backBtn">← Back</a>
+                <button class="nav-btn nav-btn-restart" id="restartBtn">Restart</button>
+            </div>
+        </header>
+
+        <!-- Setup Panel Container -->
+        <div id="setupContainer"></div>
+
+        <!-- Game Container -->
+        <div id="gameContainer"></div>
+
+        <!-- Overlay Container -->
+        <div id="overlayContainer"></div>
+
+        <footer>
+            <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript Files - Load in order -->
+    <script src="js/constants.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/side-bets.js"></script>
+    <script src="js/game-logic.js"></script>
+    <script src="js/render.js"></script>
+    <script src="js/init.js"></script>
+    <script src="../../js/hamburger-menu.js"></script>
+</body>
+</html>

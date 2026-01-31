@@ -1,0 +1,92 @@
+<div class="setup-screen" id="setupScreen">
+    <!-- Saved Game Info (shown when there's a saved game) -->
+    <div id="savedGameInfo" class="hidden"></div>
+
+    <div class="setup-panel panel">
+        <div class="panel-header">
+            <h2 class="panel-title">Game Setup</h2>
+        </div>
+        <div class="panel-content">
+            <form class="setup-form" id="setupForm">
+                <!-- Roulette Type Selection -->
+                <div class="form-group">
+                    <label class="form-label">Roulette Type</label>
+                    <div class="radio-group">
+                        <div class="radio-option">
+                            <input type="radio" id="typeEuropean" name="rouletteType" value="european" class="radio-input" checked>
+                            <label for="typeEuropean" class="radio-label">
+                                <span class="radio-title">European</span>
+                                <span class="radio-subtitle">37 numbers • 2.70% edge</span>
+                            </label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="typeAmerican" name="rouletteType" value="american" class="radio-input">
+                            <label for="typeAmerican" class="radio-label">
+                                <span class="radio-title">American</span>
+                                <span class="radio-subtitle">38 numbers • 5.26% edge</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Initial Stack -->
+                <div class="form-group">
+                    <label class="form-label">Starting Bankroll</label>
+                    <div class="preset-group" id="stackPresets">
+                        <button type="button" class="preset-btn" data-value="1000">$1K</button>
+                        <button type="button" class="preset-btn" data-value="10000">$10K</button>
+                        <button type="button" class="preset-btn active" data-value="100000">$100K</button>
+                        <button type="button" class="preset-btn" data-value="1000000">$1M</button>
+                    </div>
+                    <div class="input-row mt-sm">
+                        <input type="number" id="customStack" class="form-input" placeholder="Custom amount" min="10" max="100000000">
+                    </div>
+                </div>
+
+                <!-- Table Limits -->
+                <div class="form-group">
+                    <label class="form-label">Table Limits</label>
+                    <div class="limits-row">
+                        <div>
+                            <label class="form-hint">Minimum Bet</label>
+                            <select id="minBet" class="form-select">
+                                <option value="1">$1</option>
+                                <option value="5">$5</option>
+                                <option value="10">$10</option>
+                                <option value="25">$25</option>
+                                <option value="100">$100</option>
+                                <option value="500">$500</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="form-hint">Maximum Bet</label>
+                            <select id="maxBet" class="form-select">
+                                <option value="500">$500</option>
+                                <option value="1000">$1,000</option>
+                                <option value="5000">$5,000</option>
+                                <option value="25000">$25,000</option>
+                                <option value="100000" selected>$100,000</option>
+                                <option value="500000">$500,000</option>
+                                <option value="1000000">$1,000,000</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Box -->
+                <div class="setup-info">
+                    <div class="setup-info-title">About House Edge</div>
+                    <div class="setup-info-text" id="houseEdgeInfo">
+                        European roulette has a 2.70% house edge due to the single zero. 
+                        All standard bets have the same expected return of -2.70%.
+                    </div>
+                </div>
+
+                <!-- Start Button -->
+                <button type="submit" class="btn btn-primary btn-block btn-lg" id="startGameBtn">
+                    Start Game
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
