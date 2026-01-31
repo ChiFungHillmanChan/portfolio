@@ -99,13 +99,21 @@
                 <!-- Spacer for hamburger menu -->
             </div>
             <div class="top-bar-center">
-                <div class="bankroll-section">
-                    <span class="bankroll-label">Bankroll</span>
-                    <span class="bankroll-value" id="bankrollDisplay">$1,000</span>
-                </div>
-                <div class="total-bet-section">
-                    <span class="total-bet-label">Total Bet</span>
-                    <span class="total-bet-value" id="totalBetDisplay">$0</span>
+                <div class="bankroll-display-container">
+                    <div class="bankroll-main">
+                        <span class="bankroll-currency">$</span>
+                        <span class="bankroll-amount" id="bankrollDisplay">1,000</span>
+                    </div>
+                    <div class="bankroll-details">
+                        <div class="session-profit" id="sessionProfit">
+                            <span class="profit-label">Session:</span>
+                            <span class="profit-value" id="profitValue">$0</span>
+                        </div>
+                        <div class="bet-display">
+                            <span class="bet-label">Bet:</span>
+                            <span class="bet-value" id="totalBetDisplay">$0</span>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="top-bar-actions">
@@ -145,6 +153,39 @@
                 <div class="betting-area" id="bettingArea">
                     <!-- Betting spots rendered dynamically per seat -->
                 </div>
+
+                <!-- Chip Rack (inside table) -->
+                <div class="table-chip-area">
+                    <div class="chip-rack-inline" id="chipRackInline">
+                        <div class="chip chip-1" data-value="1">1</div>
+                        <div class="chip chip-5" data-value="5">5</div>
+                        <div class="chip chip-10" data-value="10">10</div>
+                        <div class="chip chip-25 selected" data-value="25">25</div>
+                        <div class="chip chip-100" data-value="100">100</div>
+                        <div class="chip chip-500" data-value="500">500</div>
+                        <div class="chip chip-1000" data-value="1000">1K</div>
+                        <div class="chip chip-5000" data-value="5000">5K</div>
+                        <div class="chip chip-25000" data-value="25000">25K</div>
+                        <div class="chip chip-100000" data-value="100000">100K</div>
+                    </div>
+                    <div class="table-control-buttons">
+                        <button class="ctrl-btn btn-clear" id="clearBetsBtnInline">CLEAR</button>
+                        <div class="auto-deal-container">
+                            <button class="ctrl-btn btn-auto" id="autoDealBtn">
+                                <span class="auto-btn-text">AUTO</span>
+                                <span class="auto-btn-icon">▼</span>
+                            </button>
+                            <div class="auto-deal-dropdown" id="autoDealDropdown">
+                                <div class="auto-deal-option" data-value="0">OFF</div>
+                                <div class="auto-deal-option" data-value="10">10s</div>
+                                <div class="auto-deal-option" data-value="30">30s</div>
+                                <div class="auto-deal-option" data-value="45">45s</div>
+                                <div class="auto-deal-option" data-value="60">60s</div>
+                            </div>
+                        </div>
+                        <button class="ctrl-btn btn-deal" id="dealBtnInline">DEAL</button>
+                    </div>
+                </div>
             </div>
 
             <!-- Side Bet Results (shown after dealing) -->
@@ -155,23 +196,10 @@
             </div>
         </main>
 
-        <!-- Bottom Control Bar -->
-        <footer class="control-bar">
-            <!-- Chip Rack -->
-            <div class="chip-rack" id="chipRack">
-                <div class="chip chip-1" data-value="1">1</div>
-                <div class="chip chip-5" data-value="5">5</div>
-                <div class="chip chip-10" data-value="10">10</div>
-                <div class="chip chip-25 selected" data-value="25">25</div>
-                <div class="chip chip-100" data-value="100">100</div>
-                <div class="chip chip-500" data-value="500">500</div>
-                <div class="chip chip-1000" data-value="1000">1K</div>
-                <div class="chip chip-5000" data-value="5000">5K</div>
-                <div class="chip chip-25000" data-value="25000">25K</div>
-                <div class="chip chip-100000" data-value="100000">100K</div>
-            </div>
-
-            <!-- Control Buttons -->
+        <!-- Bottom Control Bar (hidden, controls moved to table) -->
+        <footer class="control-bar" id="controlBar" style="display: none;">
+            <!-- Kept for backwards compatibility -->
+            <div class="chip-rack" id="chipRack"></div>
             <div class="control-buttons">
                 <button class="ctrl-btn btn-clear" id="clearBetsBtn">CLEAR</button>
                 <button class="ctrl-btn btn-deal" id="dealBtn">DEAL</button>
@@ -183,7 +211,7 @@
             <div class="result-content">
                 <div class="result-amount" id="resultAmount">+$0</div>
                 <div class="result-details" id="resultDetails"></div>
-                <div class="result-countdown">Next round in <span id="countdown">3</span>s</div>
+                <div class="result-countdown"><span id="countdownText">Next round in </span><span id="countdown">3</span>s</div>
             </div>
         </div>
     </div>

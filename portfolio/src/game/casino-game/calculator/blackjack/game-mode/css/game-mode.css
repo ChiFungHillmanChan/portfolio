@@ -204,9 +204,9 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px;
-    background: rgba(0, 0, 0, 0.5);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 10px 20px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.7) 0%, rgba(0, 0, 0, 0.5) 100%);
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
 }
 
 .top-bar-left {
@@ -215,38 +215,95 @@
 
 .top-bar-center {
     display: flex;
-    gap: 30px;
     flex: 1;
     justify-content: center;
 }
 
-.bankroll-section,
-.total-bet-section {
+/* Enhanced Bankroll Display */
+.bankroll-display-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 2px;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 8px 20px;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    min-width: 180px;
 }
 
-.bankroll-label,
-.total-bet-label {
+.bankroll-main {
+    display: flex;
+    align-items: baseline;
+    gap: 2px;
+    transition: color 0.3s ease;
+}
+
+.bankroll-currency {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.1rem;
+    color: var(--gold);
+    font-weight: 500;
+}
+
+.bankroll-amount {
+    font-family: 'Orbitron', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary, #fff);
+    letter-spacing: 1px;
+}
+
+.bankroll-main.profit .bankroll-amount,
+.bankroll-main.profit .bankroll-currency {
+    color: var(--win-green);
+    text-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+
+.bankroll-main.loss .bankroll-amount,
+.bankroll-main.loss .bankroll-currency {
+    color: var(--lose-red);
+    text-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
+}
+
+.bankroll-details {
+    display: flex;
+    gap: 16px;
     font-family: 'Rajdhani', sans-serif;
-    font-size: 0.7rem;
+    font-size: 0.75rem;
+}
+
+.session-profit,
+.bet-display {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.profit-label,
+.bet-label {
     color: var(--text-dim, #666);
     text-transform: uppercase;
     letter-spacing: 1px;
 }
 
-.bankroll-value,
-.total-bet-value {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 1.3rem;
-    color: var(--text-primary, #fff);
+.profit-value {
+    color: var(--text-secondary, #aaa);
+    font-weight: 600;
 }
 
-.bankroll-value.profit { color: var(--win-green); }
-.bankroll-value.loss { color: var(--lose-red); }
-.total-bet-value { color: var(--gold); }
+.profit-value.profit {
+    color: var(--win-green);
+}
+
+.profit-value.loss {
+    color: var(--lose-red);
+}
+
+.bet-value {
+    color: var(--gold);
+    font-weight: 600;
+}
 
 .top-bar-actions {
     display: flex;
@@ -499,6 +556,76 @@
 .player-seat.active {
     background: rgba(255, 215, 0, 0.1);
     box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+}
+
+/* Horizontal Split Hands Container */
+.split-hands-container {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.split-hand-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 12px;
+    background: rgba(0, 0, 0, 0.25);
+    border-radius: 12px;
+    border: 2px solid transparent;
+    transition: all 0.3s ease;
+    position: relative;
+    min-width: 90px;
+}
+
+.split-hand-wrapper.active-hand {
+    border-color: var(--gold);
+    background: rgba(255, 215, 0, 0.1);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.4), inset 0 0 20px rgba(255, 215, 0, 0.05);
+    transform: scale(1.05);
+}
+
+.hand-number {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.3);
+}
+
+.hand-number.playing {
+    background: linear-gradient(135deg, var(--gold), #f39c12);
+    color: #000;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    animation: pulseGlow 1.5s ease-in-out infinite;
+}
+
+.playing-indicator {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #000;
+    animation: blink 1s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 5px rgba(255, 215, 0, 0.5); }
+    50% { box-shadow: 0 0 15px rgba(255, 215, 0, 0.8); }
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
 }
 
 .hand {
@@ -820,11 +947,142 @@
 }
 
 /* =====================================================
-   CONTROL BAR (Bottom)
+   TABLE CHIP AREA (Inside Table)
+   ===================================================== */
+
+.table-chip-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 15px 10px;
+    margin-top: 10px;
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, rgba(0, 0, 0, 0.4) 100%);
+    border-radius: 15px;
+    border-top: 1px solid rgba(255, 215, 0, 0.2);
+}
+
+.chip-rack-inline {
+    display: flex;
+    gap: 6px;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 25px;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 100%;
+}
+
+.table-control-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Auto-Deal Button & Dropdown */
+.auto-deal-container {
+    position: relative;
+}
+
+.btn-auto {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #fff);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 12px 16px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btn-auto:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-auto.active {
+    background: linear-gradient(135deg, rgba(46, 204, 113, 0.3), rgba(39, 174, 96, 0.3));
+    border-color: var(--win-green);
+    color: var(--win-green);
+}
+
+.btn-auto.active .auto-btn-text {
+    font-weight: bold;
+}
+
+.auto-btn-icon {
+    font-size: 0.6rem;
+    opacity: 0.7;
+    transition: transform 0.2s ease;
+}
+
+.auto-deal-dropdown.show + .btn-auto .auto-btn-icon,
+.btn-auto:focus + .auto-deal-dropdown .auto-btn-icon {
+    transform: rotate(180deg);
+}
+
+.auto-deal-dropdown {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(26, 26, 46, 0.98);
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    border-radius: 10px;
+    padding: 6px;
+    display: none;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 80px;
+    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.5);
+    z-index: 100;
+}
+
+.auto-deal-dropdown.show {
+    display: flex;
+    animation: slideUp 0.2s ease;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+}
+
+.auto-deal-option {
+    padding: 8px 12px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #aaa);
+    text-align: center;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: all 0.15s ease;
+}
+
+.auto-deal-option:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary, #fff);
+}
+
+.auto-deal-option.selected {
+    background: rgba(255, 215, 0, 0.2);
+    color: var(--gold);
+    font-weight: 600;
+}
+
+/* =====================================================
+   CONTROL BAR (Bottom - Legacy, Hidden)
    ===================================================== */
 
 .control-bar {
-    display: flex;
+    display: none;
     justify-content: space-between;
     align-items: center;
     padding: 15px 20px;
@@ -1180,134 +1438,328 @@
    RESPONSIVE
    ===================================================== */
 
+/* Tablet */
+@media (max-width: 768px) {
+    .bankroll-display-container {
+        padding: 6px 14px;
+        min-width: 150px;
+    }
+
+    .bankroll-amount {
+        font-size: 1.4rem;
+    }
+
+    .bankroll-details {
+        gap: 12px;
+        font-size: 0.7rem;
+    }
+
+    .split-hands-container {
+        gap: 12px;
+    }
+
+    .split-hand-wrapper {
+        padding: 8px 10px;
+        min-width: 80px;
+    }
+}
+
+/* Mobile */
 @media (max-width: 600px) {
     .game-main {
         padding: 8px;
     }
-    
+
+    .top-bar {
+        padding: 8px 12px;
+    }
+
+    .bankroll-display-container {
+        padding: 6px 12px;
+        min-width: auto;
+        border-radius: 10px;
+    }
+
+    .bankroll-currency {
+        font-size: 0.9rem;
+    }
+
+    .bankroll-amount {
+        font-size: 1.2rem;
+    }
+
+    .bankroll-details {
+        gap: 10px;
+        font-size: 0.65rem;
+    }
+
     .blackjack-table {
-        padding: 12px 12px 20px;
+        padding: 12px 8px 15px;
         border-width: 5px;
-        border-radius: 100px 100px 15px 15px;
+        border-radius: 80px 80px 15px 15px;
+        min-height: auto;
     }
-    
+
     .table-header {
-        font-size: 0.7rem;
+        font-size: 0.65rem;
         letter-spacing: 2px;
-        margin-bottom: 10px;
+        margin-bottom: 8px;
     }
-    
+
     .insurance-line {
         font-size: 0.5rem;
-        margin: 6px 15px;
+        margin: 6px 10px;
         padding: 5px 0;
     }
-    
+
     .betting-area {
-        gap: 25px;
-        padding: 10px 0 5px;
+        gap: 15px;
+        padding: 8px 0 5px;
     }
-    
+
     .betting-spot.main-bet {
-        width: 60px;
-        height: 60px;
+        width: 55px;
+        height: 55px;
     }
-    
+
     .betting-spot.side-bet {
-        width: 38px;
-        height: 38px;
-    }
-    
-    .spot-label {
-        font-size: 0.5rem;
-    }
-    
-    .player-cards-area {
-        gap: 25px;
-        min-height: 100px;
-    }
-    
-    .card {
-        width: 40px;
-        height: 58px;
-    }
-    
-    .card .rank {
-        font-size: 0.85rem;
-    }
-    
-    .card .suit {
-        font-size: 0.95rem;
-    }
-    
-    .hand-total {
-        font-size: 0.85rem;
-        padding: 2px 8px;
-    }
-    
-    .chip {
         width: 36px;
         height: 36px;
+    }
+
+    .spot-label {
+        font-size: 0.45rem;
+    }
+
+    .player-cards-area {
+        gap: 15px;
+        min-height: 90px;
+    }
+
+    /* Split hands on mobile */
+    .split-hands-container {
+        gap: 8px;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding: 5px;
+        max-width: 100%;
+        justify-content: flex-start;
+    }
+
+    .split-hand-wrapper {
+        padding: 6px 8px;
+        min-width: 70px;
+        flex-shrink: 0;
+    }
+
+    .split-hand-wrapper.active-hand {
+        transform: scale(1.02);
+    }
+
+    .hand-number {
         font-size: 0.6rem;
+        padding: 2px 6px;
     }
-    
+
+    .card {
+        width: 36px;
+        height: 52px;
+    }
+
+    .card .rank {
+        font-size: 0.8rem;
+    }
+
+    .card .suit {
+        font-size: 0.9rem;
+    }
+
+    .hand-total {
+        font-size: 0.8rem;
+        padding: 2px 6px;
+    }
+
+    .hand-result {
+        font-size: 0.65rem;
+        padding: 2px 8px;
+    }
+
+    /* Table chip area mobile */
+    .table-chip-area {
+        padding: 10px 8px;
+        gap: 10px;
+        margin-top: 8px;
+    }
+
+    .chip-rack-inline {
+        gap: 4px;
+        padding: 6px 8px;
+    }
+
+    .chip {
+        width: 32px;
+        height: 32px;
+        font-size: 0.55rem;
+    }
+
     .chip-placed {
-        width: 28px;
-        height: 28px;
-        font-size: 0.5rem;
+        width: 26px;
+        height: 26px;
+        font-size: 0.45rem;
     }
-    
+
     .chip-stack .chip-placed {
-        margin-bottom: -23px;
+        margin-bottom: -21px;
     }
-    
+
     .chip-stack .chip-placed:first-child {
         margin-bottom: 0;
     }
-    
+
     .chip-placed::before {
-        inset: 3px;
-        border-width: 1.5px;
+        inset: 2px;
+        border-width: 1px;
     }
-    
-    .chip-rack {
-        gap: 4px;
-        padding: 6px 10px;
-        max-width: 320px;
+
+    .table-control-buttons {
+        gap: 8px;
     }
-    
-    .control-bar {
-        padding: 8px 12px;
-        flex-wrap: wrap;
-        justify-content: center;
-    }
-    
+
     .ctrl-btn {
-        padding: 8px 16px;
-        font-size: 0.75rem;
-    }
-    
-    .action-btn {
-        min-width: 65px;
-        padding: 8px 12px;
+        padding: 10px 14px;
         font-size: 0.7rem;
+        letter-spacing: 1px;
     }
-    
+
+    .btn-auto {
+        padding: 10px 12px;
+    }
+
+    .auto-deal-dropdown {
+        min-width: 70px;
+    }
+
+    .auto-deal-option {
+        padding: 6px 10px;
+        font-size: 0.8rem;
+    }
+
+    .action-btn {
+        min-width: 60px;
+        padding: 10px 14px;
+        font-size: 0.7rem;
+        letter-spacing: 1px;
+    }
+
     .action-buttons {
         gap: 8px;
         padding: 8px;
         min-height: 45px;
     }
-    
+
     .seat-label {
-        font-size: 0.65rem;
+        font-size: 0.6rem;
     }
-    
+
     .dealer-label {
+        font-size: 0.6rem;
+    }
+
+    .dealer-cards {
+        min-height: 70px;
+        gap: 6px;
+    }
+
+    .dealer-total {
+        font-size: 0.95rem;
+    }
+
+    .side-bet-results {
+        gap: 8px;
+        padding: 6px;
+    }
+
+    .side-bet-result {
+        font-size: 0.75rem;
+        padding: 4px 10px;
+    }
+
+    .result-amount {
+        font-size: 2.5rem;
+    }
+
+    .result-countdown {
+        font-size: 0.85rem;
+    }
+
+    /* Modal adjustments */
+    .modal-content {
+        max-height: 85vh;
+        margin: 10px;
+    }
+
+    .payout-section h3 {
+        font-size: 0.85rem;
+    }
+
+    .payout-table {
+        font-size: 0.8rem;
+    }
+}
+
+/* Extra small mobile */
+@media (max-width: 380px) {
+    .bankroll-amount {
+        font-size: 1rem;
+    }
+
+    .bankroll-details {
+        flex-direction: column;
+        gap: 2px;
+        align-items: center;
+    }
+
+    .betting-area {
+        gap: 10px;
+    }
+
+    .betting-spot.main-bet {
+        width: 50px;
+        height: 50px;
+    }
+
+    .betting-spot.side-bet {
+        width: 32px;
+        height: 32px;
+    }
+
+    .chip {
+        width: 28px;
+        height: 28px;
+        font-size: 0.5rem;
+    }
+
+    .card {
+        width: 32px;
+        height: 46px;
+    }
+
+    .card .rank {
+        font-size: 0.7rem;
+    }
+
+    .card .suit {
+        font-size: 0.8rem;
+    }
+
+    .ctrl-btn {
+        padding: 8px 12px;
         font-size: 0.65rem;
     }
-    
-    .dealer-total {
-        font-size: 1rem;
+
+    .action-btn {
+        min-width: 55px;
+        padding: 8px 10px;
+        font-size: 0.65rem;
     }
 }
