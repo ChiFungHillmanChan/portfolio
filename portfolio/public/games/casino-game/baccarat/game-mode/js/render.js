@@ -310,13 +310,24 @@ function renderAllBetChips() {
 }
 
 /**
+ * Check if betting is currently allowed
+ * @returns {boolean} True if betting is allowed
+ */
+function isBettingAllowed() {
+    if (getGamePhase() !== GAME_PHASES.BETTING) return false;
+    // Check if auto-dealing is in progress
+    if (typeof isAutoDealing !== 'undefined' && isAutoDealing) return false;
+    return true;
+}
+
+/**
  * Initialize betting table handlers
  */
 function initBettingTableHandlers() {
     document.querySelectorAll('.bet-spot').forEach(spot => {
         // Left click to add bet
         spot.addEventListener('click', (e) => {
-            if (getGamePhase() !== GAME_PHASES.BETTING) return;
+            if (!isBettingAllowed()) return;
 
             const betType = spot.dataset.bet;
             const chipValue = getSelectedChip();
@@ -332,7 +343,7 @@ function initBettingTableHandlers() {
         // Right click to remove bet
         spot.addEventListener('contextmenu', (e) => {
             e.preventDefault();
-            if (getGamePhase() !== GAME_PHASES.BETTING) return;
+            if (!isBettingAllowed()) return;
 
             const betType = spot.dataset.bet;
             const chipValue = getSelectedChip();
@@ -363,7 +374,18 @@ function updateActionButtons() {
     const hasBetsPlaced = hasBets();
     const hasLastBets = getLastBets() !== null;
 
-    if (phase === GAME_PHASES.BETTING) {
+    // Check if auto-dealing is in progress (global flag from init.js)
+    const autoDealing = typeof isAutoDealing !== 'undefined' && isAutoDealing;
+
+    if (autoDealing) {
+        // Disable all buttons during auto-deal
+        if (clearBtn) clearBtn.disabled = true;
+        if (repeatBtn) repeatBtn.disabled = true;
+        if (dealBtn) {
+            dealBtn.disabled = true;
+            dealBtn.textContent = 'Dealing...';
+        }
+    } else if (phase === GAME_PHASES.BETTING) {
         if (clearBtn) clearBtn.disabled = !hasBetsPlaced;
         if (repeatBtn) repeatBtn.disabled = !hasLastBets;
         if (dealBtn) {

@@ -11,11 +11,16 @@ const GameState = {
     config: {
         decks: 6,
         minBet: 5,
-        maxBet: 500,
-        maxSideBet: 100,
+        maxBet: 100000000,      // 100M max bet
+        maxSideBet: 1000000,    // 1M max side bet
         dealerRule: 'S17',
         blackjackPays: 1.5,
         autoNextDelay: 3000
+    },
+    autoDeal: {
+        enabled: false,
+        interval: 0,  // 0 = off, 10, 30, 45, 60 seconds
+        timerId: null
     },
     bankroll: {
         initial: 1000,
@@ -51,7 +56,7 @@ const GameState = {
     lastRoundResults: null
 };
 
-const CHIP_VALUES = [1, 5, 25, 100, 500];
+const CHIP_VALUES = [1, 5, 10, 25, 100, 500, 1000, 5000, 25000, 100000];
 const STORAGE_KEY = 'blackjack_game_mode_settings';
 const GAME_STATE_KEY = 'blackjack_game_mode_state';
 
@@ -194,16 +199,98 @@ function setupGameEventListeners() {
     document.getElementById('payoutModal').addEventListener('click', function(e) {
         if (e.target === this) hidePayoutModal();
     });
-    
+
     // New game button
     document.getElementById('newGameBtn').addEventListener('click', newGame);
-    
+
     // Control buttons
     document.getElementById('clearBetsBtn').addEventListener('click', clearBets);
     document.getElementById('dealBtn').addEventListener('click', startDeal);
-    
+
+    // Auto-deal button
+    setupAutoDealButton();
+
     // Chip rack
     setupChipRack();
+}
+
+// =====================================================
+// AUTO-DEAL FEATURE
+// =====================================================
+
+function setupAutoDealButton() {
+    var autoBtn = document.getElementById('autoDealBtn');
+    var dropdown = document.getElementById('autoDealDropdown');
+
+    if (!autoBtn || !dropdown) return;
+
+    autoBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        dropdown.classList.toggle('show');
+    });
+
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!autoBtn.contains(e.target) && !dropdown.contains(e.target)) {
+            dropdown.classList.remove('show');
+        }
+    });
+
+    // Setup dropdown options
+    dropdown.querySelectorAll('.auto-deal-option').forEach(function(option) {
+        option.addEventListener('click', function() {
+            var value = parseInt(this.dataset.value);
+            setAutoDealInterval(value);
+            dropdown.classList.remove('show');
+        });
+    });
+
+    updateAutoDealDisplay();
+}
+
+function setAutoDealInterval(seconds) {
+    GameState.autoDeal.interval = seconds;
+    GameState.autoDeal.enabled = seconds > 0;
+
+    updateAutoDealDisplay();
+    saveGameState();
+
+    if (seconds > 0) {
+        showToast('Auto-deal set to ' + seconds + 's');
+    } else {
+        showToast('Auto-deal disabled');
+    }
+}
+
+function updateAutoDealDisplay() {
+    var autoBtn = document.getElementById('autoDealBtn');
+    var dropdown = document.getElementById('autoDealDropdown');
+
+    if (!autoBtn) return;
+
+    // Update button text
+    var btnText = autoBtn.querySelector('.auto-btn-text');
+    if (btnText) {
+        if (GameState.autoDeal.enabled && GameState.autoDeal.interval > 0) {
+            btnText.textContent = GameState.autoDeal.interval + 's';
+            autoBtn.classList.add('active');
+        } else {
+            btnText.textContent = 'AUTO';
+            autoBtn.classList.remove('active');
+        }
+    }
+
+    // Update dropdown selection
+    if (dropdown) {
+        dropdown.querySelectorAll('.auto-deal-option').forEach(function(option) {
+            var value = parseInt(option.dataset.value);
+            if (value === GameState.autoDeal.interval) {
+                option.classList.add('selected');
+            } else {
+                option.classList.remove('selected');
+            }
+        });
+    }
 }
 
 function showPayoutModal() {
@@ -219,19 +306,31 @@ function hidePayoutModal() {
 // =====================================================
 
 function setupChipRack() {
-    var chips = document.querySelectorAll('.chip-rack .chip');
+    // Setup both chip racks (inline and legacy)
+    var chips = document.querySelectorAll('.chip-rack .chip, .chip-rack-inline .chip');
     chips.forEach(function(chip) {
         chip.addEventListener('click', function() {
             selectChip(parseInt(this.dataset.value));
         });
     });
+
+    // Setup inline control buttons
+    var clearBtnInline = document.getElementById('clearBetsBtnInline');
+    var dealBtnInline = document.getElementById('dealBtnInline');
+
+    if (clearBtnInline) {
+        clearBtnInline.addEventListener('click', clearBets);
+    }
+    if (dealBtnInline) {
+        dealBtnInline.addEventListener('click', startDeal);
+    }
 }
 
 function selectChip(value) {
     GameState.selectedChip = value;
-    
-    // Update visual selection
-    document.querySelectorAll('.chip-rack .chip').forEach(function(chip) {
+
+    // Update visual selection on all chip racks
+    document.querySelectorAll('.chip-rack .chip, .chip-rack-inline .chip').forEach(function(chip) {
         chip.classList.remove('selected');
         if (parseInt(chip.dataset.value) === value) {
             chip.classList.add('selected');
@@ -254,7 +353,7 @@ function placeBetOnSpot(spotType, seatIndex) {
         var seat = GameState.table.seats[seatIndex];
         var newBet = seat.bet + chipValue;
         if (newBet > GameState.config.maxBet) {
-            showToast('Max bet is $' + GameState.config.maxBet);
+            showToast('Max bet is $' + GameState.config.maxBet.toLocaleString());
             return;
         }
         seat.bet = newBet;
@@ -264,7 +363,7 @@ function placeBetOnSpot(spotType, seatIndex) {
         var currentBet = GameState.sideBets[spotType] || 0;
         var newBet = currentBet + chipValue;
         if (newBet > GameState.config.maxSideBet) {
-            showToast('Max side bet is $' + GameState.config.maxSideBet);
+            showToast('Max side bet is $' + GameState.config.maxSideBet.toLocaleString());
             return;
         }
         GameState.sideBets[spotType] = newBet;
@@ -327,14 +426,41 @@ function clearBets() {
 function updateTotalBetDisplay() {
     var totalEl = document.getElementById('totalBetDisplay');
     if (totalEl) {
-        totalEl.textContent = '$' + getTotalBets();
+        totalEl.textContent = '$' + getTotalBets().toLocaleString();
     }
-    
-    // Update deal button state
+
+    // Update session profit display
+    updateSessionProfit();
+
+    // Update deal button state (both legacy and inline)
+    var hasMainBet = GameState.table.seats.some(function(s) { return s.bet > 0; });
+
     var dealBtn = document.getElementById('dealBtn');
+    var dealBtnInline = document.getElementById('dealBtnInline');
+
     if (dealBtn) {
-        var hasMainBet = GameState.table.seats.some(function(s) { return s.bet > 0; });
         dealBtn.disabled = !hasMainBet;
+    }
+    if (dealBtnInline) {
+        dealBtnInline.disabled = !hasMainBet;
+    }
+}
+
+function updateSessionProfit() {
+    var profitValueEl = document.getElementById('profitValue');
+    if (!profitValueEl) return;
+
+    var profit = GameState.bankroll.current - GameState.bankroll.initial;
+
+    if (profit > 0) {
+        profitValueEl.textContent = '+$' + profit.toLocaleString();
+        profitValueEl.className = 'profit-value profit';
+    } else if (profit < 0) {
+        profitValueEl.textContent = '-$' + Math.abs(profit).toLocaleString();
+        profitValueEl.className = 'profit-value loss';
+    } else {
+        profitValueEl.textContent = '$0';
+        profitValueEl.className = 'profit-value';
     }
 }
 
@@ -342,14 +468,18 @@ function updateTotalBetDisplay() {
 // CHIP STACK RENDERING
 // =====================================================
 
-function renderChipStack(amount, small) {
+function renderChipStack(amount) {
     if (amount <= 0) return '';
     
     var chips = getChipBreakdown(amount);
     var html = '<div class="chip-stack">';
     
     chips.forEach(function(chip) {
-        html += '<div class="chip-placed chip-' + chip.value + '">' + chip.value + '</div>';
+        var displayValue = chip.value;
+        if (chip.value >= 1000) {
+            displayValue = (chip.value / 1000) + 'K';
+        }
+        html += '<div class="chip-placed chip-' + chip.value + '">' + displayValue + '</div>';
     });
     
     html += '</div>';
@@ -359,7 +489,7 @@ function renderChipStack(amount, small) {
 function getChipBreakdown(amount) {
     var chips = [];
     var remaining = amount;
-    var values = [500, 100, 25, 5, 1];
+    var values = [100000, 25000, 5000, 1000, 500, 100, 25, 10, 5, 1];
     
     values.forEach(function(value) {
         while (remaining >= value && chips.length < 8) {
@@ -918,7 +1048,8 @@ function showResultOverlay(netResult) {
     var overlay = document.getElementById('resultOverlay');
     var amountEl = document.getElementById('resultAmount');
     var countdownEl = document.getElementById('countdown');
-    
+    var countdownTextEl = document.getElementById('countdownText');
+
     if (netResult > 0) {
         amountEl.textContent = '+$' + netResult.toFixed(0);
         amountEl.className = 'result-amount win';
@@ -929,19 +1060,45 @@ function showResultOverlay(netResult) {
         amountEl.textContent = '$0';
         amountEl.className = 'result-amount push';
     }
-    
+
     overlay.style.display = 'flex';
-    
-    var count = 3;
+
+    // Determine countdown based on auto-deal setting
+    var countdownDuration = GameState.autoDeal.enabled && GameState.autoDeal.interval > 0
+        ? GameState.autoDeal.interval
+        : 3;
+
+    var count = countdownDuration;
     countdownEl.textContent = count;
-    
+
+    // Update countdown text based on auto-deal status
+    if (countdownTextEl) {
+        if (GameState.autoDeal.enabled && GameState.autoDeal.interval > 0) {
+            countdownTextEl.textContent = 'Auto-deal in ';
+        } else {
+            countdownTextEl.textContent = 'Next round in ';
+        }
+    }
+
     var countdownInterval = setInterval(function() {
         count--;
         countdownEl.textContent = count;
-        
+
         if (count <= 0) {
             clearInterval(countdownInterval);
             overlay.style.display = 'none';
+
+            // Check if there's a main bet before auto-dealing
+            var hasMainBet = GameState.table.seats.some(function(s) { return s.bet > 0; });
+
+            if (GameState.autoDeal.enabled && !hasMainBet) {
+                // Cancel auto-deal if no bets
+                GameState.autoDeal.enabled = false;
+                GameState.autoDeal.interval = 0;
+                updateAutoDealDisplay();
+                showToast('Auto-deal cancelled - no bets placed');
+            }
+
             startNewRound();
         }
     }, 1000);
@@ -1047,31 +1204,36 @@ function renderGame() {
     renderBankroll();
     renderDealer();
     renderBettingArea();
-    
-    var controlBar = document.querySelector('.control-bar');
-    
+
+    var tableChipArea = document.querySelector('.table-chip-area');
+
     if (GameState.phase === 'betting') {
         document.getElementById('playerCardsArea').innerHTML = '';
         document.getElementById('actionButtons').innerHTML = '';
-        if (controlBar) controlBar.style.display = 'flex';
+        if (tableChipArea) tableChipArea.style.display = 'flex';
     } else {
         renderPlayerCards();
-        if (controlBar) controlBar.style.display = 'none';
+        if (tableChipArea) tableChipArea.style.display = 'none';
     }
-    
+
     updateTotalBetDisplay();
 }
 
 function renderBankroll() {
     var el = document.getElementById('bankrollDisplay');
     if (el) {
-        el.textContent = '$' + GameState.bankroll.current.toLocaleString();
-        
+        el.textContent = GameState.bankroll.current.toLocaleString();
+
         var profit = GameState.bankroll.current - GameState.bankroll.initial;
-        el.classList.remove('profit', 'loss');
-        if (profit > 0) el.classList.add('profit');
-        if (profit < 0) el.classList.add('loss');
+        var container = el.closest('.bankroll-main');
+        if (container) {
+            container.classList.remove('profit', 'loss');
+            if (profit > 0) container.classList.add('profit');
+            if (profit < 0) container.classList.add('loss');
+        }
     }
+
+    updateSessionProfit();
 }
 
 function renderDealer() {
@@ -1207,65 +1369,137 @@ function createBettingSpot(spotType, seatIndex, labelText, betAmount, interactiv
 function renderPlayerCards() {
     var container = document.getElementById('playerCardsArea');
     if (!container) return;
-    
+
     container.innerHTML = '';
-    
+
     GameState.table.seats.forEach(function(seat, seatIndex) {
         if (seat.bet === 0) return;
-        
+
         var seatEl = document.createElement('div');
         seatEl.className = 'player-seat';
-        
-        var isActive = GameState.phase === 'player_turn' && GameState.table.currentSeatIndex === seatIndex;
-        if (isActive) {
+
+        var isActiveSeat = GameState.phase === 'player_turn' && GameState.table.currentSeatIndex === seatIndex;
+        if (isActiveSeat) {
             seatEl.classList.add('active');
         }
-        
-        seat.hands.forEach(function(hand, handIndex) {
-            if (hand.cards.length === 0) return;
-            
-            var handEl = document.createElement('div');
-            handEl.className = 'hand';
-            if (seat.hands.length > 1 && seat.activeHandIndex === handIndex && isActive) {
-                handEl.classList.add('active-hand');
-            }
-            
-            var cardsEl = document.createElement('div');
-            cardsEl.className = 'hand-cards';
-            hand.cards.forEach(function(card) {
-                cardsEl.appendChild(createCardElement(card, false));
+
+        // Check if this seat has split hands
+        var hasSplitHands = seat.hands.length > 1;
+
+        if (hasSplitHands) {
+            // Create horizontal split container
+            var splitContainer = document.createElement('div');
+            splitContainer.className = 'split-hands-container';
+
+            seat.hands.forEach(function(hand, handIndex) {
+                if (hand.cards.length === 0) return;
+
+                var handWrapper = document.createElement('div');
+                handWrapper.className = 'split-hand-wrapper';
+
+                // Check if this is the active hand
+                var isActiveHand = isActiveSeat && seat.activeHandIndex === handIndex && !hand.isComplete;
+
+                if (isActiveHand) {
+                    handWrapper.classList.add('active-hand');
+                }
+
+                // Hand number indicator
+                var handNumEl = document.createElement('div');
+                handNumEl.className = 'hand-number';
+                handNumEl.textContent = 'Hand ' + (handIndex + 1);
+                if (isActiveHand) {
+                    handNumEl.classList.add('playing');
+                    handNumEl.innerHTML = '<span class="playing-indicator"></span>PLAYING';
+                }
+                handWrapper.appendChild(handNumEl);
+
+                var handEl = document.createElement('div');
+                handEl.className = 'hand';
+
+                var cardsEl = document.createElement('div');
+                cardsEl.className = 'hand-cards';
+                hand.cards.forEach(function(card) {
+                    cardsEl.appendChild(createCardElement(card, false));
+                });
+                handEl.appendChild(cardsEl);
+
+                var infoEl = document.createElement('div');
+                infoEl.className = 'hand-info';
+
+                var totalEl = document.createElement('div');
+                totalEl.className = 'hand-total';
+                if (hand.isBusted) {
+                    totalEl.textContent = 'BUST';
+                    totalEl.classList.add('bust');
+                } else if (hand.isBlackjack) {
+                    totalEl.textContent = 'BJ!';
+                    totalEl.classList.add('blackjack');
+                } else {
+                    var text = hand.total.toString();
+                    if (hand.isSoft && hand.total <= 21) text += ' (s)';
+                    totalEl.textContent = text;
+                }
+                infoEl.appendChild(totalEl);
+
+                if (hand.result) {
+                    var resultEl = document.createElement('div');
+                    resultEl.className = 'hand-result ' + hand.result;
+                    resultEl.textContent = hand.result.toUpperCase();
+                    infoEl.appendChild(resultEl);
+                }
+
+                handEl.appendChild(infoEl);
+                handWrapper.appendChild(handEl);
+                splitContainer.appendChild(handWrapper);
             });
-            handEl.appendChild(cardsEl);
-            
-            var infoEl = document.createElement('div');
-            infoEl.className = 'hand-info';
-            
-            var totalEl = document.createElement('div');
-            totalEl.className = 'hand-total';
-            if (hand.isBusted) {
-                totalEl.textContent = 'BUST';
-                totalEl.classList.add('bust');
-            } else if (hand.isBlackjack) {
-                totalEl.textContent = 'BJ!';
-                totalEl.classList.add('blackjack');
-            } else {
-                var text = hand.total.toString();
-                if (hand.isSoft && hand.total <= 21) text += ' (s)';
-                totalEl.textContent = text;
-            }
-            infoEl.appendChild(totalEl);
-            
-            if (hand.result) {
-                var resultEl = document.createElement('div');
-                resultEl.className = 'hand-result ' + hand.result;
-                resultEl.textContent = hand.result.toUpperCase();
-                infoEl.appendChild(resultEl);
-            }
-            
-            handEl.appendChild(infoEl);
-            seatEl.appendChild(handEl);
-        });
-        
+
+            seatEl.appendChild(splitContainer);
+        } else {
+            // Single hand - original layout
+            seat.hands.forEach(function(hand) {
+                if (hand.cards.length === 0) return;
+
+                var handEl = document.createElement('div');
+                handEl.className = 'hand';
+
+                var cardsEl = document.createElement('div');
+                cardsEl.className = 'hand-cards';
+                hand.cards.forEach(function(card) {
+                    cardsEl.appendChild(createCardElement(card, false));
+                });
+                handEl.appendChild(cardsEl);
+
+                var infoEl = document.createElement('div');
+                infoEl.className = 'hand-info';
+
+                var totalEl = document.createElement('div');
+                totalEl.className = 'hand-total';
+                if (hand.isBusted) {
+                    totalEl.textContent = 'BUST';
+                    totalEl.classList.add('bust');
+                } else if (hand.isBlackjack) {
+                    totalEl.textContent = 'BJ!';
+                    totalEl.classList.add('blackjack');
+                } else {
+                    var text = hand.total.toString();
+                    if (hand.isSoft && hand.total <= 21) text += ' (s)';
+                    totalEl.textContent = text;
+                }
+                infoEl.appendChild(totalEl);
+
+                if (hand.result) {
+                    var resultEl = document.createElement('div');
+                    resultEl.className = 'hand-result ' + hand.result;
+                    resultEl.textContent = hand.result.toUpperCase();
+                    infoEl.appendChild(resultEl);
+                }
+
+                handEl.appendChild(infoEl);
+                seatEl.appendChild(handEl);
+            });
+        }
+
         container.appendChild(seatEl);
     });
 }

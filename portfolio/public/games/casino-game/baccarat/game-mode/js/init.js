@@ -222,19 +222,80 @@ function handleRepeatBets() {
     }
 }
 
+// Flag to track if auto-dealing is in progress
+let isAutoDealing = false;
+
+/**
+ * Auto-deal all cards with animation delays
+ * @param {number} cardDelay - Delay between cards in ms
+ */
+async function autoDealAllCards(cardDelay = 600) {
+    isAutoDealing = true;
+    updateActionButtons();
+
+    // Deal cards until hand is complete
+    while (true) {
+        const dest = getNextCardDestination();
+
+        if (dest === 'none') {
+            // All cards dealt, complete the hand
+            const handResult = completeHand();
+            const resolution = resolveRound(handResult);
+
+            renderCards();
+            renderHUD();
+
+            // Show result after a short delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            isAutoDealing = false;
+
+            if (isBankrupt()) {
+                showGameOverOverlay();
+            } else {
+                showResultOverlay(handResult, resolution);
+            }
+            return;
+        }
+
+        // Deal next card
+        const card = dealNextCard();
+        if (card) {
+            renderCards();
+            updateActionButtons();
+
+            // Wait before dealing next card
+            await new Promise(resolve => setTimeout(resolve, cardDelay));
+        } else {
+            // No more cards (shouldn't happen)
+            break;
+        }
+    }
+
+    isAutoDealing = false;
+    updateActionButtons();
+}
+
 /**
  * Handle deal button
  */
 function handleDeal() {
     const phase = getGamePhase();
 
+    // Prevent action if auto-dealing is in progress
+    if (isAutoDealing) return;
+
     if (phase === GAME_PHASES.BETTING) {
         // Start dealing
         if (startNewRound()) {
             renderHUD();
             updateActionButtons();
+
+            // Auto-deal all cards
+            autoDealAllCards();
         }
     } else if (phase === GAME_PHASES.DEALING) {
+        // Manual dealing fallback (in case auto-deal is disabled or interrupted)
         const dest = getNextCardDestination();
 
         if (dest === 'none') {
