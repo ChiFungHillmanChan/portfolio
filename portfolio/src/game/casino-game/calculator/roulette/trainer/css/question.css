@@ -1,0 +1,458 @@
+/* =====================================================
+   ROULETTE TRAINER - Question Display Styles
+   ===================================================== */
+
+/* Game layout */
+.game-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+/* Progress bar */
+.progress-bar {
+    background: var(--bg-card);
+    border-radius: 8px;
+    padding: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+}
+
+.progress-track {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-green), var(--accent-gold));
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.progress-text {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    white-space: nowrap;
+}
+
+/* Timer display */
+.timer-display {
+    display: flex;
+    gap: var(--spacing-lg);
+    justify-content: center;
+    padding: var(--spacing-md);
+    background: var(--bg-card);
+    border-radius: 8px;
+}
+
+.timer-item {
+    text-align: center;
+}
+
+.timer-value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    font-family: 'Courier New', monospace;
+    color: var(--accent-gold);
+}
+
+.timer-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+/* Winning number display */
+.winning-number-display {
+    text-align: center;
+    padding: var(--spacing-lg);
+    background: var(--bg-card);
+    border-radius: 12px;
+}
+
+.winning-number-label {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.winning-number {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+    color: white;
+    border: 4px solid white;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.winning-number.red {
+    background: var(--roulette-red);
+}
+
+.winning-number.black {
+    background: var(--roulette-black);
+}
+
+.winning-number.green {
+    background: var(--roulette-green);
+}
+
+/* Roulette table */
+.roulette-table {
+    background: var(--roulette-green);
+    border-radius: 12px;
+    padding: var(--spacing-md);
+    overflow-x: auto;
+}
+
+.table-grid {
+    display: grid;
+    gap: 2px;
+    width: fit-content;
+    margin: 0 auto;
+}
+
+/* Table numbers */
+.table-cell {
+    width: var(--table-cell-size);
+    height: var(--table-cell-size);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    position: relative;
+}
+
+.table-cell.red {
+    background: var(--roulette-red);
+    color: white;
+}
+
+.table-cell.black {
+    background: var(--roulette-black);
+    color: white;
+}
+
+.table-cell.green {
+    background: var(--roulette-green);
+    color: white;
+}
+
+.table-cell.winner {
+    box-shadow: 0 0 0 3px var(--accent-gold), 0 0 20px var(--accent-gold);
+    z-index: 10;
+}
+
+/* Outside bet areas */
+.outside-area {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: var(--spacing-sm);
+    text-align: center;
+    font-size: 0.8rem;
+    color: white;
+}
+
+/* Chip display on table */
+.chip-stack {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+}
+
+.chip {
+    width: var(--chip-size);
+    height: var(--chip-size);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.7rem;
+    font-weight: bold;
+    border: 3px dashed rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.chip.small {
+    width: var(--chip-size-small);
+    height: var(--chip-size-small);
+    font-size: 0.6rem;
+}
+
+/* Chip colors */
+.chip-1 { background: #ffffff; color: #333; border-color: #ccc; }
+.chip-5 { background: #e63946; }
+.chip-10 { background: #3498db; }
+.chip-25 { background: #2ecc71; }
+.chip-100 { background: #1a1a1a; }
+.chip-500 { background: #9b59b6; }
+
+/* Losing chip indicator */
+.chip.losing {
+    opacity: 0.4;
+    filter: grayscale(50%);
+}
+
+/* Bet list (alternative to table view) */
+.bet-list {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+}
+
+.bet-list h3 {
+    margin-bottom: var(--spacing-md);
+    color: var(--accent-gold);
+    font-size: 1rem;
+}
+
+.bet-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) var(--spacing-md);
+    margin-bottom: var(--spacing-xs);
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 6px;
+    border-left: 3px solid transparent;
+}
+
+.bet-item.winning {
+    border-left-color: var(--accent-green);
+    background: rgba(0, 210, 106, 0.1);
+}
+
+.bet-item.losing {
+    border-left-color: var(--accent-red);
+    opacity: 0.6;
+}
+
+.bet-item.outside {
+    border-left-color: var(--accent-blue);
+}
+
+.bet-type {
+    font-weight: 500;
+}
+
+.bet-amount {
+    color: var(--accent-gold);
+    font-weight: bold;
+}
+
+/* Call bet indicator */
+.call-bet-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    font-size: 0.7rem;
+    font-weight: bold;
+    border-radius: 4px;
+    margin-left: var(--spacing-sm);
+    text-transform: uppercase;
+}
+
+/* Answer input section */
+.answer-section {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: var(--spacing-xl);
+}
+
+.answer-step {
+    margin-bottom: var(--spacing-lg);
+}
+
+.answer-step:last-child {
+    margin-bottom: 0;
+}
+
+.answer-step-header {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-md);
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+.step-number.completed {
+    background: var(--accent-green);
+}
+
+.step-number.waiting {
+    background: var(--text-muted);
+}
+
+.step-label {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.step-hint {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+.answer-input-group {
+    display: flex;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.answer-input {
+    flex: 1;
+    padding: var(--spacing-md);
+    font-size: 1.5rem;
+    text-align: center;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+.answer-input:focus {
+    border-color: var(--accent-gold);
+}
+
+.answer-input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Quick feedback */
+.feedback {
+    padding: var(--spacing-md);
+    border-radius: 8px;
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-top: var(--spacing-md);
+}
+
+.feedback.correct {
+    background: rgba(0, 210, 106, 0.2);
+    color: var(--accent-green);
+    border: 2px solid var(--accent-green);
+}
+
+.feedback.incorrect {
+    background: rgba(230, 57, 70, 0.2);
+    color: var(--accent-red);
+    border: 2px solid var(--accent-red);
+}
+
+/* Notes section */
+.notes-section {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+}
+
+.notes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-md);
+}
+
+.notes-header h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.notes-toggle {
+    background: none;
+    border: none;
+    color: var(--accent-gold);
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.notes-textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: var(--spacing-md);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+    outline: none;
+}
+
+.notes-textarea:focus {
+    border-color: var(--accent-gold);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .game-container {
+        padding: var(--spacing-sm);
+    }
+
+    .progress-bar {
+        flex-direction: column;
+        gap: var(--spacing-sm);
+    }
+
+    .timer-display {
+        flex-wrap: wrap;
+    }
+
+    .winning-number {
+        width: 60px;
+        height: 60px;
+        font-size: 1.5rem;
+    }
+
+    .table-cell {
+        width: 40px;
+        height: 40px;
+        font-size: 0.8rem;
+    }
+
+    .chip {
+        width: 24px;
+        height: 24px;
+        font-size: 0.6rem;
+    }
+
+    .answer-input {
+        font-size: 1.2rem;
+    }
+}

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="Roulette Dealer Trainer - Hard Mode">
+    <title>Hard Mode - Roulette Trainer</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="../../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="../css/trainer.css">
+    <link rel="stylesheet" href="../css/question.css">
+    <link rel="stylesheet" href="../css/results.css">
+</head>
+<body>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Trainer">
+        <span class="back-icon">←</span>
+        <span class="back-text">Trainer</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Trainer Modes</div>
+            <a href="../easy/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🟢</span>
+                <span>Easy Mode</span>
+            </a>
+            <a href="../medium/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🔵</span>
+                <span>Medium Mode</span>
+            </a>
+            <a href="index.html" class="dropdown-item active">
+                <span class="dropdown-icon">🔴</span>
+                <span>Hard Mode</span>
+                <span class="current-badge">Current</span>
+            </a>
+            <a href="../exam/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏆</span>
+                <span>Exam Mode</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎯</span>
+                <span>Trainer Menu</span>
+            </a>
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette Game</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="trainer-container">
+        <div class="trainer-header">
+            <h1>Hard Mode</h1>
+            <p>Includes call bets (Tiers, Voisins, Orphelins, Neighbours)</p>
+        </div>
+
+        <div class="game-container" id="game-section">
+            <div class="progress-bar">
+                <div class="progress-track">
+                    <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+                </div>
+                <span class="progress-text" id="progress-text">1 / 20</span>
+            </div>
+
+            <div class="timer-display">
+                <div class="timer-item">
+                    <div class="timer-value" id="question-timer">0:00.0</div>
+                    <div class="timer-label">Question</div>
+                </div>
+                <div class="timer-item">
+                    <div class="timer-value" id="session-timer">0:00</div>
+                    <div class="timer-label">Total</div>
+                </div>
+            </div>
+
+            <div class="winning-number-display">
+                <div class="winning-number-label">Winning Number</div>
+                <div class="winning-number green" id="winning-number">0</div>
+            </div>
+
+            <div id="table-container"></div>
+
+            <div class="answer-section">
+                <div class="answer-step">
+                    <div class="answer-step-header">
+                        <div class="step-number" id="step-1">1</div>
+                        <div>
+                            <div class="step-label">Outside Bets Payout</div>
+                            <div class="step-hint">1:1 and 2:1 bets (Red/Black, Columns, Dozens)</div>
+                        </div>
+                    </div>
+                    <div class="answer-input-group">
+                        <input type="number" class="answer-input" id="outside-input" placeholder="0" min="0" autocomplete="off">
+                        <button class="btn btn-primary" id="outside-submit">Submit</button>
+                    </div>
+                </div>
+
+                <div class="answer-step">
+                    <div class="answer-step-header">
+                        <div class="step-number waiting" id="step-2">2</div>
+                        <div>
+                            <div class="step-label">Inside Bets Payout</div>
+                            <div class="step-hint">Straight, Split, Corner, Street, Line bets</div>
+                        </div>
+                    </div>
+                    <div class="answer-input-group">
+                        <input type="number" class="answer-input" id="inside-input" placeholder="0" min="0" disabled autocomplete="off">
+                        <button class="btn btn-primary" id="inside-submit" disabled>Submit</button>
+                    </div>
+                </div>
+
+                <div class="feedback hidden" id="feedback"></div>
+            </div>
+        </div>
+
+        <div class="results-container hidden" id="results-section">
+            <div id="results-container"></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeGame, getState, submitOutsideAnswer, submitInsideAnswer, nextQuestion, getSessionResults, resetGame } from '../js/state/game-state.js';
+        import { renderTable, getNumberColor } from '../js/ui/render-table.js';
+        import { startTimer, stopTimer, resetTimers, formatTime, formatTimeWithTenths, getQuestionTime, getSessionTime } from '../js/ui/render-timer.js';
+        import { renderResults } from '../js/ui/render-results.js';
+
+        const MODE = 'hard';
+        const QUESTION_COUNT = 20;
+        let timerInterval = null;
+
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+        hamburgerBtn.addEventListener('click', () => {
+            const isExpanded = hamburgerBtn.getAttribute('aria-expanded') === 'true';
+            hamburgerBtn.setAttribute('aria-expanded', !isExpanded);
+            dropdownMenu.classList.toggle('open');
+        });
+        document.addEventListener('click', (e) => {
+            if (!hamburgerBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+                dropdownMenu.classList.remove('open');
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', () => { initGame(); setupEventListeners(); });
+
+        function initGame() {
+            resetGame();
+            initializeGame(MODE, QUESTION_COUNT);
+            document.getElementById('game-section').classList.remove('hidden');
+            document.getElementById('results-section').classList.add('hidden');
+            resetTimers();
+            startTimerUpdates();
+            renderCurrentQuestion();
+        }
+
+        function startTimerUpdates() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                document.getElementById('question-timer').textContent = formatTimeWithTenths(getQuestionTime());
+                document.getElementById('session-timer').textContent = formatTime(getSessionTime());
+            }, 100);
+        }
+
+        function renderCurrentQuestion() {
+            const state = getState();
+            if (!state.currentQuestion) { showResults(); return; }
+            const winningEl = document.getElementById('winning-number');
+            winningEl.textContent = state.currentQuestion.winningNumber;
+            winningEl.className = 'winning-number ' + getNumberColor(state.currentQuestion.winningNumber);
+            document.getElementById('progress-fill').style.width = `${state.progress.percentage}%`;
+            document.getElementById('progress-text').textContent = `${state.progress.current} / ${state.progress.total}`;
+            renderTable(state.currentQuestion);
+            resetInputs();
+            setTimeout(() => document.getElementById('outside-input').focus(), 100);
+        }
+
+        function resetInputs() {
+            document.getElementById('outside-input').value = '';
+            document.getElementById('outside-input').disabled = false;
+            document.getElementById('inside-input').value = '';
+            document.getElementById('inside-input').disabled = true;
+            document.getElementById('outside-submit').disabled = false;
+            document.getElementById('inside-submit').disabled = true;
+            document.getElementById('step-1').classList.remove('completed');
+            document.getElementById('step-1').textContent = '1';
+            document.getElementById('step-2').classList.add('waiting');
+            document.getElementById('step-2').classList.remove('completed');
+            document.getElementById('step-2').textContent = '2';
+            document.getElementById('feedback').classList.add('hidden');
+        }
+
+        function handleOutsideSubmit() {
+            const value = parseInt(document.getElementById('outside-input').value) || 0;
+            submitOutsideAnswer(value);
+            document.getElementById('outside-input').disabled = true;
+            document.getElementById('outside-submit').disabled = true;
+            document.getElementById('inside-input').disabled = false;
+            document.getElementById('inside-submit').disabled = false;
+            document.getElementById('step-1').classList.add('completed');
+            document.getElementById('step-1').innerHTML = '&#10003;';
+            document.getElementById('step-2').classList.remove('waiting');
+            document.getElementById('inside-input').focus();
+        }
+
+        function handleInsideSubmit() {
+            const value = parseInt(document.getElementById('inside-input').value) || 0;
+            const validation = submitInsideAnswer(value);
+            document.getElementById('inside-input').disabled = true;
+            document.getElementById('inside-submit').disabled = true;
+            document.getElementById('step-2').classList.add('completed');
+            document.getElementById('step-2').innerHTML = '&#10003;';
+            const feedback = document.getElementById('feedback');
+            feedback.classList.remove('hidden', 'correct', 'incorrect');
+            feedback.classList.add(validation.allCorrect ? 'correct' : 'incorrect');
+            feedback.textContent = validation.allCorrect ? 'Correct!' : `Incorrect: Outside=${validation.correctOutside}, Inside=${validation.correctInside}`;
+            setTimeout(() => {
+                const question = nextQuestion();
+                if (question) { startTimer(); renderCurrentQuestion(); }
+                else { showResults(); }
+            }, 1500);
+        }
+
+        function showResults() {
+            stopTimer();
+            if (timerInterval) clearInterval(timerInterval);
+            document.getElementById('game-section').classList.add('hidden');
+            document.getElementById('results-section').classList.remove('hidden');
+            renderResults(getSessionResults());
+            document.getElementById('results-restart')?.addEventListener('click', initGame);
+            document.getElementById('results-menu')?.addEventListener('click', () => window.location.href = '../index.html');
+        }
+
+        function setupEventListeners() {
+            document.getElementById('outside-submit').addEventListener('click', handleOutsideSubmit);
+            document.getElementById('outside-input').addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.target.disabled) handleOutsideSubmit(); });
+            document.getElementById('inside-submit').addEventListener('click', handleInsideSubmit);
+            document.getElementById('inside-input').addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.target.disabled) handleInsideSubmit(); });
+        }
+    </script>
+</body>
+</html>

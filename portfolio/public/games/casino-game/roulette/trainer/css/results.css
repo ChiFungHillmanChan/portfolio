@@ -1,0 +1,418 @@
+/* =====================================================
+   ROULETTE TRAINER - Results Display Styles
+   ===================================================== */
+
+/* Results container */
+.results-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: var(--spacing-lg);
+}
+
+.results-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.results-header h1 {
+    font-size: 2rem;
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-sm);
+}
+
+.results-header .subtitle {
+    color: var(--text-secondary);
+}
+
+/* Score card */
+.score-card {
+    background: var(--bg-card);
+    border-radius: 16px;
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+    text-align: center;
+}
+
+.score-main {
+    font-size: 4rem;
+    font-weight: bold;
+    color: var(--accent-gold);
+    line-height: 1;
+    margin-bottom: var(--spacing-sm);
+}
+
+.score-label {
+    font-size: 1rem;
+    color: var(--text-muted);
+    margin-bottom: var(--spacing-lg);
+}
+
+.score-grade {
+    display: inline-block;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: 20px;
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: var(--spacing-lg);
+}
+
+.score-grade.excellent {
+    background: rgba(0, 210, 106, 0.2);
+    color: var(--accent-green);
+    border: 2px solid var(--accent-green);
+}
+
+.score-grade.good {
+    background: rgba(52, 152, 219, 0.2);
+    color: var(--accent-blue);
+    border: 2px solid var(--accent-blue);
+}
+
+.score-grade.needs-work {
+    background: rgba(241, 196, 15, 0.2);
+    color: var(--accent-gold);
+    border: 2px solid var(--accent-gold);
+}
+
+.score-grade.poor {
+    background: rgba(230, 57, 70, 0.2);
+    color: var(--accent-red);
+    border: 2px solid var(--accent-red);
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--spacing-md);
+}
+
+.stat-box {
+    background: rgba(255, 255, 255, 0.05);
+    padding: var(--spacing-md);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.stat-box .value {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.stat-box .label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.stat-box.highlight .value {
+    color: var(--accent-gold);
+}
+
+/* Breakdown section */
+.breakdown-section {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.breakdown-section h2 {
+    font-size: 1.2rem;
+    color: var(--accent-gold);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-sm);
+    border-bottom: 1px solid var(--border-color);
+}
+
+/* Question breakdown list */
+.question-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+}
+
+.question-item {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    border-left: 4px solid transparent;
+    overflow: hidden;
+}
+
+.question-item.correct {
+    border-left-color: var(--accent-green);
+}
+
+.question-item.incorrect {
+    border-left-color: var(--accent-red);
+}
+
+.question-summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--spacing-md);
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.question-summary:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.question-number {
+    font-weight: bold;
+    width: 40px;
+}
+
+.question-winning {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.mini-number {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: white;
+}
+
+.mini-number.red { background: var(--roulette-red); }
+.mini-number.black { background: var(--roulette-black); }
+.mini-number.green { background: var(--roulette-green); }
+
+.question-answers {
+    display: flex;
+    gap: var(--spacing-lg);
+    flex: 1;
+    justify-content: center;
+}
+
+.answer-pair {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+    font-size: 0.9rem;
+}
+
+.answer-pair .label {
+    color: var(--text-muted);
+}
+
+.answer-pair .user-value {
+    font-weight: bold;
+}
+
+.answer-pair .correct-value {
+    color: var(--accent-green);
+}
+
+.answer-pair .incorrect-value {
+    color: var(--accent-red);
+    text-decoration: line-through;
+}
+
+.question-time {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    width: 60px;
+    text-align: right;
+}
+
+.question-status {
+    width: 24px;
+    text-align: center;
+    font-size: 1.2rem;
+}
+
+.expand-icon {
+    color: var(--text-muted);
+    transition: transform 0.2s ease;
+}
+
+.question-item.expanded .expand-icon {
+    transform: rotate(180deg);
+}
+
+/* Question detail (expanded view) */
+.question-detail {
+    display: none;
+    padding: var(--spacing-md);
+    border-top: 1px solid var(--border-color);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.question-item.expanded .question-detail {
+    display: block;
+}
+
+.detail-bets {
+    margin-bottom: var(--spacing-md);
+}
+
+.detail-bets h4 {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--spacing-sm);
+}
+
+.detail-bet-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.detail-bet {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.detail-bet.winner {
+    background: rgba(0, 210, 106, 0.1);
+    border-left: 2px solid var(--accent-green);
+}
+
+.detail-bet.loser {
+    opacity: 0.6;
+}
+
+.bet-calc {
+    color: var(--text-muted);
+}
+
+.bet-payout {
+    font-weight: bold;
+    color: var(--accent-gold);
+}
+
+.bet-payout.zero {
+    color: var(--text-muted);
+}
+
+/* Error analysis */
+.error-analysis {
+    background: var(--bg-card);
+    border-radius: 12px;
+    padding: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+}
+
+.error-analysis h2 {
+    font-size: 1.2rem;
+    color: var(--accent-red);
+    margin-bottom: var(--spacing-md);
+}
+
+.error-type-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-sm) 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.error-type-item:last-child {
+    border-bottom: none;
+}
+
+.error-bar {
+    flex: 1;
+    height: 8px;
+    background: var(--bg-secondary);
+    border-radius: 4px;
+    margin: 0 var(--spacing-md);
+    overflow: hidden;
+}
+
+.error-fill {
+    height: 100%;
+    background: var(--accent-red);
+    border-radius: 4px;
+}
+
+/* Actions */
+.results-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+/* Filter tabs */
+.filter-tabs {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+}
+
+.filter-tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.filter-tab.active {
+    background: var(--accent-gold);
+    color: var(--bg-primary);
+    border-color: var(--accent-gold);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .results-container {
+        padding: var(--spacing-sm);
+    }
+
+    .score-main {
+        font-size: 3rem;
+    }
+
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .question-summary {
+        flex-wrap: wrap;
+        gap: var(--spacing-sm);
+    }
+
+    .question-answers {
+        flex-direction: column;
+        gap: var(--spacing-xs);
+        width: 100%;
+    }
+
+    .question-time,
+    .question-status {
+        display: none;
+    }
+
+    .results-actions {
+        flex-direction: column;
+    }
+
+    .results-actions .btn {
+        width: 100%;
+    }
+}

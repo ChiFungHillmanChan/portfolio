@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="Roulette Dealer Trainer - Practice calculating payouts">
+    <title>Roulette Dealer Trainer</title>
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="css/trainer.css">
+    <link rel="stylesheet" href="css/question.css">
+    <link rel="stylesheet" href="css/results.css">
+</head>
+<body>
+    <!-- Fixed Hamburger Menu -->
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Roulette">
+        <span class="back-icon">←</span>
+        <span class="back-text">Roulette</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Trainer Modes</div>
+            <a href="easy/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🟢</span>
+                <span>Easy Mode</span>
+            </a>
+            <a href="medium/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🔵</span>
+                <span>Medium Mode</span>
+            </a>
+            <a href="hard/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🔴</span>
+                <span>Hard Mode</span>
+            </a>
+            <a href="exam/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏆</span>
+                <span>Exam Mode</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette Game</span>
+            </a>
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>All Games</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="trainer-container">
+        <!-- Header -->
+        <div class="trainer-header">
+            <h1>Roulette Dealer Trainer</h1>
+            <p>Practice calculating payouts like a professional dealer</p>
+        </div>
+
+        <!-- Mode Selection -->
+        <div class="mode-selection" id="mode-selection">
+            <a href="easy/index.html" class="mode-card easy">
+                <h2>Easy</h2>
+                <p class="mode-description">
+                    1-2 simple bets (columns, corners, splits)<br>
+                    Max 10 chips per bet<br>
+                    Notes available
+                </p>
+                <div class="mode-stats">
+                    <span id="easy-stats">20 questions per session</span>
+                </div>
+            </a>
+
+            <a href="medium/index.html" class="mode-card medium">
+                <h2>Medium</h2>
+                <p class="mode-description">
+                    3-6 bets including losing distractors<br>
+                    10-100 chips per bet<br>
+                    Notes available
+                </p>
+                <div class="mode-stats">
+                    <span id="medium-stats">20 questions per session</span>
+                </div>
+            </a>
+
+            <a href="hard/index.html" class="mode-card hard">
+                <h2>Hard</h2>
+                <p class="mode-description">
+                    Includes call bets (Tiers, Voisins, Orphelins)<br>
+                    Complex multi-bet scenarios<br>
+                    No notes
+                </p>
+                <div class="mode-stats">
+                    <span id="hard-stats">20 questions per session</span>
+                </div>
+            </a>
+
+            <a href="exam/index.html" class="mode-card exam">
+                <h2>Exam</h2>
+                <p class="mode-description">
+                    50 questions, progressive difficulty<br>
+                    Easy → Medium → Hard<br>
+                    No notes
+                </p>
+                <div class="mode-stats">
+                    <span id="exam-stats">50 questions</span>
+                </div>
+            </a>
+        </div>
+
+        <!-- Stats Summary -->
+        <div class="stats-summary" id="stats-summary">
+            <div class="stat-item">
+                <div class="stat-value" id="total-sessions">0</div>
+                <div class="stat-label">Total Sessions</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="last-session">-</div>
+                <div class="stat-label">Last Practiced</div>
+            </div>
+        </div>
+
+        <!-- Payout Reference -->
+        <div class="stats-summary">
+            <h3 style="grid-column: 1 / -1; text-align: center; color: var(--accent-gold); margin-bottom: 1rem;">Payout Reference</h3>
+            <div class="stat-item">
+                <div class="stat-value">35:1</div>
+                <div class="stat-label">Straight (1 num)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">17:1</div>
+                <div class="stat-label">Split (2 nums)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">11:1</div>
+                <div class="stat-label">Street (3 nums)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">8:1</div>
+                <div class="stat-label">Corner (4 nums)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">5:1</div>
+                <div class="stat-label">Six Line (6 nums)</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">2:1</div>
+                <div class="stat-label">Column/Dozen</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">1:1</div>
+                <div class="stat-label">Even Money</div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { getStatsSummary } from './js/state/storage.js';
+
+        // Hamburger menu functionality
+        const hamburgerBtn = document.getElementById('hamburgerBtn');
+        const dropdownMenu = document.getElementById('dropdownMenu');
+
+        hamburgerBtn.addEventListener('click', () => {
+            const isExpanded = hamburgerBtn.getAttribute('aria-expanded') === 'true';
+            hamburgerBtn.setAttribute('aria-expanded', !isExpanded);
+            dropdownMenu.classList.toggle('open');
+            dropdownMenu.setAttribute('aria-hidden', isExpanded);
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!hamburgerBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                hamburgerBtn.setAttribute('aria-expanded', 'false');
+                dropdownMenu.classList.remove('open');
+                dropdownMenu.setAttribute('aria-hidden', 'true');
+            }
+        });
+
+        // Load and display stats
+        function loadStats() {
+            const summary = getStatsSummary();
+
+            document.getElementById('total-sessions').textContent = summary.totalSessions;
+            document.getElementById('last-session').textContent = summary.lastSession || '-';
+
+            // Update mode stats
+            if (summary.modes.easy.played > 0) {
+                document.getElementById('easy-stats').textContent =
+                    `Accuracy: ${summary.modes.easy.accuracy} | Avg: ${summary.modes.easy.avgTime}`;
+            }
+            if (summary.modes.medium.played > 0) {
+                document.getElementById('medium-stats').textContent =
+                    `Accuracy: ${summary.modes.medium.accuracy} | Avg: ${summary.modes.medium.avgTime}`;
+            }
+            if (summary.modes.hard.played > 0) {
+                document.getElementById('hard-stats').textContent =
+                    `Accuracy: ${summary.modes.hard.accuracy} | Avg: ${summary.modes.hard.avgTime}`;
+            }
+            if (summary.modes.exam.played > 0) {
+                document.getElementById('exam-stats').textContent =
+                    `Best: ${summary.modes.exam.bestScore}/50 | Time: ${summary.modes.exam.bestTime || '-'}`;
+            }
+        }
+
+        loadStats();
+    </script>
+</body>
+</html>
