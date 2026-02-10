@@ -37,6 +37,8 @@ jobs:
         run: npm run build
         env:
           CI: false # Prevents treating warnings as errors
+          REACT_APP_BUGSPARK_API_KEY: ${{ secrets.REACT_APP_BUGSPARK_API_KEY }}
+          REACT_APP_BUGSPARK_ENDPOINT: ${{ secrets.REACT_APP_BUGSPARK_ENDPOINT }}
 
       - name: Configure AWS Credentials
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'

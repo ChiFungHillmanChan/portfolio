@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom';
+import BugSpark from '@bugspark/widget';
 import AboutMe from './components/AboutMe';
 import Layout from './Layout';
 import MainContent from './MainContent';
@@ -35,6 +36,13 @@ const getGameComponentFromHostname = () => {
 };
 
 function App() {
+  useEffect(() => {
+    BugSpark.init({
+      apiKey: process.env.REACT_APP_BUGSPARK_API_KEY,
+      endpoint: process.env.REACT_APP_BUGSPARK_ENDPOINT,
+    });
+  }, []);
+
   const SubdomainGame = getGameComponentFromHostname();
 
   if (SubdomainGame) {
