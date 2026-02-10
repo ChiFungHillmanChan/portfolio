@@ -1,0 +1,10 @@
+# AI assistant config
+CLAUDE.md
+.claude/
+portfolio/.claude/
+
+# Playwright MCP
+.playwright-mcp/
+
+# Screenshots
+*.png
