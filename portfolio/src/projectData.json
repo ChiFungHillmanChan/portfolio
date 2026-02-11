@@ -122,10 +122,10 @@
       "shortDescription": "A bug reporting SaaS that captures screenshots, console logs, network requests, and session data automatically — so users report better bugs and teams resolve them faster.",
       "fullDescription": "BugSpark is a comprehensive bug reporting platform designed to streamline the entire bug lifecycle. It allows users to capture annotated screenshots directly in the browser, automatically collects console logs, network request waterfalls, session replays, and device metadata alongside every report. With built-in webhooks and API integrations, BugSpark fits seamlessly into existing development workflows, enabling teams to reproduce and resolve issues in record time. The platform features a clean, modern UI with an intuitive dashboard for managing and triaging reports, making it ideal for QA teams, developers, and product managers alike.",
       "image": "BugSpark.png",
-      "url": "https://dashboard-wine-pi-78.vercel.app/",
+      "url": "https://bugspark.hillmanchan.com",
       "category": "fullstack",
       "sourceCode": "no-source-code",
-      "demoUrl": "https://dashboard-wine-pi-78.vercel.app/",
+      "demoUrl": "https://bugspark.hillmanchan.com",
       "liveDemo": "no-demo",
       "technologies": ["Next.js", "React", "TypeScript", "TailwindCSS", "Node.js", "PostgreSQL", "Stripe", "Vercel"]
     },
