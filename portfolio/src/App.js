@@ -37,10 +37,12 @@ const getGameComponentFromHostname = () => {
 
 function App() {
   useEffect(() => {
-    BugSpark.init({
-      apiKey: process.env.REACT_APP_BUGSPARK_API_KEY,
-      endpoint: process.env.REACT_APP_BUGSPARK_ENDPOINT,
-    });
+    if (process.env.REACT_APP_BUGSPARK_ENABLED === 'true') {
+      BugSpark.init({
+        projectKey: process.env.REACT_APP_BUGSPARK_PROJECT_KEY,
+        endpoint: process.env.REACT_APP_BUGSPARK_ENDPOINT,
+      });
+    }
   }, []);
 
   const SubdomainGame = getGameComponentFromHostname();
