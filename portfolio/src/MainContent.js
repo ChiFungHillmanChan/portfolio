@@ -30,15 +30,6 @@ const MainContent = () => {
     const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
     const navigate = useNavigate();
 
-    // Top 3 delighted projects: BugSpark, Resume Builder, Hong Kong Teacher System
-    const getTop3DelightedProjects = () => {
-        const delightedProjectIds = [10, 1, 2]; // BugSpark, Resume Builder, Hong Kong Teacher System
-        return delightedProjectIds
-            .map(id => projectData.find(project => project.id === id))
-            .filter(project => project !== undefined);
-    };
-    const top3DelightedProjects = getTop3DelightedProjects();
-
     const [timeOfDay, setTimeOfDay] = useState('');
     useEffect(() => {
         const currentHour = new Date().getHours();
@@ -160,7 +151,7 @@ const MainContent = () => {
                     </div>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                    {top3DelightedProjects.map(project => (
+                    {filteredProjects.slice(0,3).map(project => (
                         <motion.div
                             key={project.id}
                             initial={{ opacity: 0, y: 50 }}

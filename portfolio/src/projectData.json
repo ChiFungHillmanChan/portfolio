@@ -1,6 +1,19 @@
 [
     {
       "id": 1,
+      "title": "BugSpark",
+      "shortDescription": "A bug reporting SaaS that captures screenshots, console logs, network requests, and session data automatically — so users report better bugs and teams resolve them faster.",
+      "fullDescription": "BugSpark is a comprehensive bug reporting platform designed to streamline the entire bug lifecycle. It allows users to capture annotated screenshots directly in the browser, automatically collects console logs, network request waterfalls, session replays, and device metadata alongside every report. With built-in webhooks and API integrations, BugSpark fits seamlessly into existing development workflows, enabling teams to reproduce and resolve issues in record time. The platform features a clean, modern UI with an intuitive dashboard for managing and triaging reports, making it ideal for QA teams, developers, and product managers alike.",
+      "image": "BugSpark.png",
+      "url": "https://bugspark.hillmanchan.com",
+      "category": "fullstack",
+      "sourceCode": "no-source-code",
+      "demoUrl": "https://bugspark.hillmanchan.com",
+      "liveDemo": "no-demo",
+      "technologies": ["Next.js", "React", "TypeScript", "TailwindCSS", "Node.js", "PostgreSQL", "Stripe", "Vercel"]
+    },
+    {
+      "id": 2,
       "title": "Resume Builder & Interview Prep Tool",
       "shortDescription":"A powerful tool to simplify job applications, allowing users to create professional resumes with customizable templates and prepare for interviews with AI-driven, role-specific practice sessions.",
       "fullDescription": "The Resume Builder & Interview Prep Tool is a comprehensive platform designed to enhance job application processes. Users can create visually appealing, professional resumes using customizable templates that suit various job profiles. The tool also offers an AI-driven interview preparation feature, tailored to specific job roles, helping users practice commonly asked questions and develop effective responses. Built with HTML, CSS, JavaScript, Python, Django, and MySQL, this project combines both frontend and backend development skills to deliver a seamless, user-friendly experience that prepares candidates to stand out in competitive job markets.",
@@ -13,7 +26,7 @@
       "technologies":["HTML", "CSS", "JavaScript", "Python", "Django", "MySQL"]
     },
     {
-      "id": 2,
+      "id": 3,
       "title": "Hong Kong Teacher System",
       "shortDescription": "A centralized SEN platform to manage multiple schools and students, streamline needs tracking, and save regular meeting records.",
       "fullDescription": "This project is a multi-tenant system for SEN schools that unifies student records, school needs, and recurring meeting notes in one place. Educators can quickly surface individual student needs and school-level priorities through fast search and structured tagging. An AI ingestion module lets users import existing student data in various formats, eliminating one-by-one manual entry and improving data consistency. Early traction includes interest from three former school teachers and a collaboration inquiry from Hong Kong company “Evoke AI Lab.” The project is estimated to be valued at ~HKD 100,000+.",
@@ -26,7 +39,7 @@
       "technologies": ["React", "TypeScript", "Node.js", "Express", "MongoDB", "Gemini API", "bcrypt"]
     },
     {
-      "id": 3,
+      "id": 4,
       "title": "Job Tracker & Finder",
       "shortDescription": "A comprehensive job search feature integrated into an existing Next.js job application tracker, featuring Reed.co.uk API integration, interactive mapping, and intelligent job saving with subscription-based limits.",
       "fullDescription": "This project represents a major feature expansion of an existing job application tracker, adding sophisticated external job search capabilities through seamless Reed.co.uk API integration. The implementation showcases advanced full-stack development skills including real-time job search with intelligent caching, interactive Leaflet mapping with marker clustering, and comprehensive location services using Nominatim geocoding. Key technical achievements include building a scalable microservice architecture for external job integration, implementing subscription-based feature gating with usage limits, and creating a responsive React component library with advanced filtering capabilities. The solution features sophisticated state management through custom React hooks, optimized database schemas for external job data, and seamless import functionality to convert external listings into trackable applications. This development demonstrates expertise in API integration patterns, geospatial data handling, premium feature implementation, and creating intuitive user experiences that bridge external job discovery with internal application tracking workflows.",
@@ -39,7 +52,7 @@
       "technologies": ["Next.js", "React.js", "Node.js", "MongoDB", "Mongoose", "Reed.co.uk API", "Leaflet", "TailwindCSS", "JavaScript", "Axios", "React Hooks", "Context API", "Vercel"]
     },
     {
-      "id": 4,
+      "id": 5,
       "title": "Personal ChatBot",
       "shortDescription": "A customizable training chatbot that responds based on keyword-matching patterns and predefined mood-based responses, designed to simulate a personal conversational assistant.",
       "fullDescription":"This project is a keyword-driven training chatbot that uses a JSON-based structure to simulate dynamic and context-aware responses. It operates by matching user inputs to categorized patterns such as greetings, education, technologies, projects, hobbies, and more. Each category includes multiple natural-language patterns and a curated list of potential responses, complete with tone ('mood'), tags, and optional follow-up prompts to enhance interactivity. The bot also supports 'easter eggs' — special hidden responses triggered by specific phrases, adding personality and engagement. This modular structure makes it easy to extend with new patterns, responses, or themes, making it suitable for personal portfolio sites or onboarding chatbots. The project showcases skills in natural language pattern recognition, structured data design, and user-centric conversational flow.",
@@ -52,7 +65,7 @@
       "technologies":["HTML", "CSS", "JavaScript"]
     },
     {
-      "id": 5,
+      "id": 6,
       "title": "Never Have I Ever Card Game",
       "shortDescription": "A multilingual interactive “Never Have I Ever” card game built in React, featuring dynamic prompts, custom question input, and language selection.",
       "fullDescription": "This project is a web-based “Never Have I Ever” card game implemented in React and react-i18next for seamless internationalization. Players can switch between English, French, Simplified Chinese, and Traditional Chinese, then draw random cards with fun, engaging prompts. It includes smooth CSS animations, responsive design, keyboard accessibility, and a custom-question form so users can add their own cards. The modular, component-driven codebase—leveraging React hooks, i18n, and clean CSS—makes it easy to extend with new game modes or languages. It showcases proficiency in front-end development, user-centric design, and localization best practices.",
@@ -65,7 +78,7 @@
       "technologies": ["React", "react-i18next", "JavaScript", "CSS"]
     },
     {
-      "id": 6,
+      "id": 7,
       "title": "Prompt Hunter",
       "shortDescription": "A multilingual AI-powered game where players use creative prompts and unique character abilities to defeat monsters.",
       "fullDescription": "This project is an interactive web game that combines AI tools with RPG-style mechanics. Players choose from different character roles—such as Engineer, who debugs code to attack, or Healer, who types rapidly to defend and exhaust the monster. Each role offers a distinct playstyle, encouraging strategy and replayability. The game supports both English and Cantonese, making it accessible to a wider audience. Built with modular design and responsive UI, it showcases skills in game logic, localization, and creative AI integration.",
@@ -78,7 +91,7 @@
       "technologies": ["React", "CSS", "i18next", "Gemini API", "TypeScript"]
     },  
     {
-      "id": 7,
+      "id": 8,
       "title": "Dream Record",
       "shortDescription": "A beautiful AI-powered dream journal app with voice recording, dream analysis, weekly reports, and streak tracking.",
       "fullDescription": "Dream Record is a full-stack dream journaling application that helps users capture and understand their dreams. Built with Next.js 16, it features voice-to-text recording using both Web Speech API and OpenAI Whisper for PWA mode, AI-powered dream analysis using GPT-4, weekly insight reports with generated imagery, and streak tracking to encourage consistent journaling. The app includes user authentication with JWT, subscription management via Stripe, and a beautiful dark theme with Traditional Chinese (Cantonese) localization. Users can tag their dreams, search history via an interactive calendar, and receive personalized psychological insights based on dream patterns.",
@@ -91,7 +104,7 @@
       "technologies": ["Next.js", "React", "TypeScript", "Prisma", "PostgreSQL", "OpenAI GPT-4", "Stripe", "Tailwind CSS", "Framer Motion", "JWT Auth"]
     },
     {
-      "id": 8,
+      "id": 9,
       "title": "Casino Edge Calculator",
       "shortDescription": "A comprehensive casino game calculator featuring Roulette, Blackjack, and Baccarat with card counting, EV tracking, and betting strategy tools.",
       "fullDescription": "Casino Edge Calculator is a suite of tools for understanding the mathematical edge in casino games. It includes three fully-featured games: Roulette with European/American variants, physics-based wheel simulation, and hot/cold number tracking; Blackjack with Hi-Lo card counting, true count calculation, Kelly Criterion bet sizing, basic strategy with Illustrious 18 deviations, and practice modes; Baccarat with card counting tools, Egalité side bet analysis, Dragon Bonus tracking, and real-time EV calculations. The project demonstrates advanced JavaScript skills including state management, complex probability calculations, responsive UI design, and educational game mechanics. Built as a pure HTML/CSS/JS application with no dependencies.",
@@ -104,7 +117,7 @@
       "technologies": ["HTML", "CSS", "JavaScript", "Probability Math", "Physics Simulation"]
     },
     {
-      "id": 9,
+      "id": 10,
       "title": "AI detection tool",
       "shortDescription": "An AI detection tool that uses machine learning to detect if a text is written by AI.",
       "fullDescription":"An AI detection tool that uses machine learning to detect if a text is written by AI.",
@@ -115,19 +128,6 @@
       "demoUrl":"no-demo-url",
       "liveDemo":"no-demo",
       "technologies":["Next.js", "OpenAI", "React", "TailwindCSS"]
-    },
-    {
-      "id": 10,
-      "title": "BugSpark",
-      "shortDescription": "A bug reporting SaaS that captures screenshots, console logs, network requests, and session data automatically — so users report better bugs and teams resolve them faster.",
-      "fullDescription": "BugSpark is a comprehensive bug reporting platform designed to streamline the entire bug lifecycle. It allows users to capture annotated screenshots directly in the browser, automatically collects console logs, network request waterfalls, session replays, and device metadata alongside every report. With built-in webhooks and API integrations, BugSpark fits seamlessly into existing development workflows, enabling teams to reproduce and resolve issues in record time. The platform features a clean, modern UI with an intuitive dashboard for managing and triaging reports, making it ideal for QA teams, developers, and product managers alike.",
-      "image": "BugSpark.png",
-      "url": "https://bugspark.hillmanchan.com",
-      "category": "fullstack",
-      "sourceCode": "no-source-code",
-      "demoUrl": "https://bugspark.hillmanchan.com",
-      "liveDemo": "no-demo",
-      "technologies": ["Next.js", "React", "TypeScript", "TailwindCSS", "Node.js", "PostgreSQL", "Stripe", "Vercel"]
     },
     {
       "id": 11,
