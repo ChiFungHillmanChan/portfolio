@@ -63,12 +63,12 @@
     <div class="tab-content active" id="scraping">
       <div class="card">
         <h2>Web Scraping 網頁抓取</h2>
-        <div class="subtitle">你已經知道網址，只想提取特定資料</div>
+        <div class="subtitle">已經知道網址，只想提取特定資料</div>
         <p>
-          我想同你講下 Web Scraping 呢個技術。簡單講，Scraping 就係當你<strong>已經知道網址</strong>嘅時候，去嗰個網頁度<strong>提取你想要嘅特定資料</strong>。
+          以下介紹 Web Scraping 呢個技術。簡單講，Scraping 就係當<strong>已經知道網址</strong>嘅時候，去嗰個網頁度<strong>提取想要嘅特定資料</strong>。
         </p>
         <p>
-          舉個例——假設你每日都想知 Amazon 上面廁紙嘅價錢。你已經有個 product URL，你唔需要喺成個 Amazon 度搵，你只係想攞嗰個價錢。呢個就係 Scraping 嘅典型應用。
+          舉個例——假設需要每日追蹤 Amazon 上面廁紙嘅價錢。已經有個 product URL，唔需要喺成個 Amazon 度搵，只係想攞嗰個價錢。呢個就係 Scraping 嘅典型應用。
         </p>
 
         <div class="diagram-container">
@@ -171,9 +171,9 @@
 
         <h3>Scraping 嘅步驟</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>你已經有目標 URL——例如某個產品頁、某個新聞網站嘅文章頁。</span></li>
+          <li><span class="step-num">1</span><span>已經有目標 URL——例如某個產品頁、某個新聞網站嘅文章頁。</span></li>
           <li><span class="step-num">2</span><span>用 Scraper 工具（例如 Python 嘅 BeautifulSoup、Scrapy）去攞呢個網頁嘅 HTML。</span></li>
-          <li><span class="step-num">3</span><span>解析 HTML，提取你需要嘅特定資料——可能係價錢、標題、日期、評論等等。</span></li>
+          <li><span class="step-num">3</span><span>解析 HTML，提取需要嘅特定資料——可能係價錢、標題、日期、評論等等。</span></li>
           <li><span class="step-num">4</span><span>將數據儲存落 Database、CSV 或者其他格式，方便之後分析。</span></li>
           <li><span class="step-num">5</span><span>設定定時執行（例如每日跑一次），持續收集數據。</span></li>
         </ol>
@@ -181,7 +181,7 @@
         <div class="key-points">
           <div class="key-point">
             <h4>目標明確</h4>
-            <p>Scraping 嘅重點係你已經知道去邊度攞資料，目標非常清晰——唔係亂爬，係針對性提取。</p>
+            <p>Scraping 嘅重點係已經知道去邊度攞資料，目標非常清晰——唔係亂爬，係針對性提取。</p>
           </div>
           <div class="key-point">
             <h4>常見用例</h4>
@@ -208,12 +208,12 @@
     <div class="tab-content" id="crawling">
       <div class="card">
         <h2>Web Crawling 網頁爬行</h2>
-        <div class="subtitle">你唔知有咩網址，要探索同建立網站地圖</div>
+        <div class="subtitle">唔知有咩網址，要探索同建立網站地圖</div>
         <p>
-          Web Crawling 就完全唔同。Crawling 係關於<strong>可發現性（Discoverability）</strong>——你去到一個網站，唔知入面有咩，於是你四圍戳、搵連結、跟住連結去新頁面、再搵更多連結。最後你就可以建立出<strong>成個網站嘅地圖</strong>。
+          Web Crawling 就完全唔同。Crawling 係關於<strong>可發現性（Discoverability）</strong>——去到一個網站，唔知入面有咩，於是四圍戳、搵連結、跟住連結去新頁面、再搵更多連結。最後就可以建立出<strong>成個網站嘅地圖</strong>。
         </p>
         <p>
-          Google 做嘅就係呢樣嘢。Google 嘅 Crawler（叫 Googlebot）會從一組種子 URL 開始，不斷爬、不斷發現新網頁，建立一個包含幾千億個頁面嘅索引。呢個索引就係你用 Google Search 嘅時候搵到結果嘅基礎。
+          Google 做嘅就係呢樣嘢。Google 嘅 Crawler（叫 Googlebot）會從一組種子 URL 開始，不斷爬、不斷發現新網頁，建立一個包含幾千億個頁面嘅索引。呢個索引就係用 Google Search 嘅時候搵到結果嘅基礎。
         </p>
 
         <div class="diagram-container">
@@ -358,7 +358,7 @@
 
         <div class="use-case">
           <h4>真實案例：Google Search</h4>
-          <p>當你喺 Google Search 打「廣東話教學」，Google 點知有邊啲網頁包含呢個關鍵字？就係因為 Googlebot 爬過成個互聯網，建立咗一個包含幾千億個頁面嘅索引。每次搜尋其實係喺呢個索引度搵，唔係即時去爬網站——咁樣先可以做到毫秒級嘅回應速度。</p>
+          <p>當喺 Google Search 打「廣東話教學」，Google 點知有邊啲網頁包含呢個關鍵字？就係因為 Googlebot 爬過成個互聯網，建立咗一個包含幾千億個頁面嘅索引。每次搜尋其實係喺呢個索引度搵，唔係即時去爬網站——咁樣先可以做到毫秒級嘅回應速度。</p>
         </div>
       </div>
     </div>
@@ -397,13 +397,13 @@
               <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1" filter="url(#shadowComp)"/>
               <text x="160" y="22" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="600">目標</text>
               <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">提取特定資料</text>
-              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">你已經知道去邊度攞咩</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">已經知道去邊度攞咩</text>
             </g>
             <g transform="translate(430,120)">
               <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1" filter="url(#shadowComp)"/>
               <text x="160" y="22" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600">目標</text>
               <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">探索同建立地圖</text>
-              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">你唔知有咩，要去發現</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">唔知有咩，要去發現</text>
             </g>
 
             <!-- Label -->

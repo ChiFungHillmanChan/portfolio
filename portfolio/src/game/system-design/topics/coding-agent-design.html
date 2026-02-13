@@ -297,7 +297,7 @@
         <h2>Plan 階段 — 準備工作</h2>
         <div class="subtitle">點樣壓縮 context、搵返相關 code，先至開始真正寫 code</div>
         <p>
-          我要同你講 Coding Agent 嘅核心設計。成個流程係一個 loop：Plan（計劃）→ Execute（執行）→ Verify（驗證）。如果驗證通過，就返俾用戶；如果唔 pass，就再 loop 一次。Plan 階段係第一步，目的係準備好所有背景資料，令 Agent 有足夠 context 去理解應該寫啲乜嘢 code。
+          以下介紹 Coding Agent 嘅核心設計。成個流程係一個 loop：Plan（計劃）→ Execute（執行）→ Verify（驗證）。如果驗證通過，就返俾用戶；如果唔 pass，就再 loop 一次。Plan 階段係第一步，目的係準備好所有背景資料，令 Agent 有足夠 context 去理解應該寫啲乜嘢 code。
         </p>
 
         <div class="diagram-container">
@@ -401,7 +401,7 @@
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>Compacting（壓縮）</strong>——用另一個 LLM 將長篇嘅 context 縮短成摘要，節省 token。我發現好多系統會用平啲嘅 model 做呢步，專門做 summarization。呢個係最基本嘅優化手法。</span>
+            <span><strong>Compacting（壓縮）</strong>——用另一個 LLM 將長篇嘅 context 縮短成摘要，節省 token。常見做法係用平啲嘅 model 做呢步，專門做 summarization。呢個係最基本嘅優化手法。</span>
           </li>
           <li>
             <span class="step-num">2</span>
@@ -413,7 +413,7 @@
           </li>
           <li>
             <span class="step-num">4</span>
-            <span><strong>Sub-Agents（子 Agent）</strong>——將某啲專門任務交俾另一個 Agent 處理，佢有自己嘅 context window，唔會影響主 Agent。我覺得呢個係最靈活嘅方法，適合複雜任務。</span>
+            <span><strong>Sub-Agents（子 Agent）</strong>——將某啲專門任務交俾另一個 Agent 處理，佢有自己嘅 context window，唔會影響主 Agent。關鍵在於呢個係最靈活嘅方法，適合複雜任務。</span>
           </li>
         </ol>
 
@@ -430,7 +430,7 @@
         <h2>Execute 階段 — 真正寫 Code</h2>
         <div class="subtitle">有咗 context 之後，點樣實際執行、調用工具、生成代碼</div>
         <p>
-          準備好 context 之後，就到 Execute 階段。呢個階段係真正寫 code、調用工具、執行任務嘅地方。我會教你三個主要嘅執行方式：MCP（外部工具）、Scripts（本地腳本）、Codegen（Agent 自己生成代碼）。呢三個方法各有用途，要視乎情況選擇。
+          準備好 context 之後，就到 Execute 階段。呢個階段係真正寫 code、調用工具、執行任務嘅地方。以下講解三個主要嘅執行方式：MCP（外部工具）、Scripts（本地腳本）、Codegen（Agent 自己生成代碼）。呢三個方法各有用途，要視乎情況選擇。
         </p>
 
         <div class="diagram-container">
@@ -536,7 +536,7 @@
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>MCP（Model Context Protocol）</strong>——用 MCP 連接外部工具，例如 database query、API 調用、檔案系統操作。我認為呢個係標準化嘅工具接口，好適合連接各種外部服務。</span>
+            <span><strong>MCP（Model Context Protocol）</strong>——用 MCP 連接外部工具，例如 database query、API 調用、檔案系統操作。呢個係標準化嘅工具接口，好適合連接各種外部服務。</span>
           </li>
           <li>
             <span class="step-num">2</span>
@@ -544,7 +544,7 @@
           </li>
           <li>
             <span class="step-num">3</span>
-            <span><strong>Codegen（代碼生成）</strong>——Agent 自己寫 code，可能會用 sub-agent 嚟處理呢個任務，保留主 Agent 嘅 context window。我發現呢個係最靈活嘅方法，適合複雜嘅代碼生成需求。</span>
+            <span><strong>Codegen（代碼生成）</strong>——Agent 自己寫 code，可能會用 sub-agent 嚟處理呢個任務，保留主 Agent 嘅 context window。呢個係最靈活嘅方法，適合複雜嘅代碼生成需求。</span>
           </li>
         </ol>
 
@@ -565,7 +565,7 @@
 
         <div class="highlight-box green">
           <h4>Execute 階段嘅核心</h4>
-          <p>Execute 階段係實際執行任務嘅地方。三個方法各有優勢：MCP 適合外部工具、Scripts 適合本地快速驗證、Codegen 最靈活。我建議視乎任務需求選擇合適嘅方式，甚至可以組合使用。</p>
+          <p>Execute 階段係實際執行任務嘅地方。三個方法各有優勢：MCP 適合外部工具、Scripts 適合本地快速驗證、Codegen 最靈活。建議視乎任務需求選擇合適嘅方式，甚至可以組合使用。</p>
         </div>
       </div>
     </div>
@@ -576,7 +576,7 @@
         <h2>Verify 階段 — 驗證成果</h2>
         <div class="subtitle">執行完之後，點樣驗證代碼係咪真係啱？</div>
         <p>
-          執行完任務之後，就到 Verify 階段。呢個階段係驗證 Agent 寫出嚟嘅 code 係咪正確、有冇 bug、符唔符合要求。我會教你三個主要嘅驗證方法：Unit Tests（單元測試）、LLM-as-Judge（用 LLM 做評審）、Visual Testing（視覺測試）。如果驗證唔通過，就 loop 返去 Plan 階段再嚟過。
+          執行完任務之後，就到 Verify 階段。呢個階段係驗證 Agent 寫出嚟嘅 code 係咪正確、有冇 bug、符唔符合要求。以下講解三個主要嘅驗證方法：Unit Tests（單元測試）、LLM-as-Judge（用 LLM 做評審）、Visual Testing（視覺測試）。如果驗證唔通過，就 loop 返去 Plan 階段再嚟過。
         </p>
 
         <div class="diagram-container">
@@ -698,22 +698,22 @@
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>Unit Tests（單元測試）</strong>——跑測試，睇 pass 定 fail。呢個係最客觀、最可靠嘅驗證方法。我建議一定要有 unit tests，唔好淨係靠人手檢查。</span>
+            <span><strong>Unit Tests（單元測試）</strong>——跑測試，睇 pass 定 fail。呢個係最客觀、最可靠嘅驗證方法。建議一定要有 unit tests，唔好淨係靠人手檢查。</span>
           </li>
           <li>
             <span class="step-num amber">2</span>
-            <span><strong>LLM-as-Judge（用 LLM 評審）</strong>——有啲嘢唔係黑白分明，例如 code style、可讀性、註釋質量。呢啲灰色地帶可以用另一個 LLM 評審。我覺得呢個方法好適合處理主觀判斷。</span>
+            <span><strong>LLM-as-Judge（用 LLM 評審）</strong>——有啲嘢唔係黑白分明，例如 code style、可讀性、註釋質量。呢啲灰色地帶可以用另一個 LLM 評審。呢個方法好適合處理主觀判斷。</span>
           </li>
           <li>
             <span class="step-num green">3</span>
-            <span><strong>Visual Testing（視覺測試）</strong>——用 Playwright 等工具，透過 MCP server 連接，檢查 UI 輸出係咪正確。我認為呢個係驗證前端 code 嘅必備方法。</span>
+            <span><strong>Visual Testing（視覺測試）</strong>——用 Playwright 等工具，透過 MCP server 連接，檢查 UI 輸出係咪正確。呢個係驗證前端 code 嘅必備方法。</span>
           </li>
         </ol>
 
         <div class="use-case">
           <h4>完整流程循環</h4>
           <p>
-            如果 Verify 階段發現問題（測試 fail、LLM 評審唔通過、視覺輸出錯誤），就會 loop 返去 Plan 階段。Agent 會重新準備 context，可能會加入錯誤訊息作為新嘅背景資料，然後再執行、再驗證。呢個 loop 會不斷重複，直到驗證通過為止。我見過有啲系統會設上限，例如最多 loop 3 次，避免無限循環。
+            如果 Verify 階段發現問題（測試 fail、LLM 評審唔通過、視覺輸出錯誤），就會 loop 返去 Plan 階段。Agent 會重新準備 context，可能會加入錯誤訊息作為新嘅背景資料，然後再執行、再驗證。呢個 loop 會不斷重複，直到驗證通過為止。常見情況係有啲系統會設上限，例如最多 loop 3 次，避免無限循環。
           </p>
         </div>
 
@@ -734,7 +734,7 @@
 
         <div class="highlight-box amber">
           <h4>Verify 階段嘅取捨</h4>
-          <p>驗證越嚴格，Agent 產出嘅質量就越高，但同時會慢好多（因為要 loop 多次）。我建議根據項目性質調整：對於關鍵系統，嚴格驗證；對於快速 prototype，寬鬆啲都可以接受。</p>
+          <p>驗證越嚴格，Agent 產出嘅質量就越高，但同時會慢好多（因為要 loop 多次）。建議根據項目性質調整：對於關鍵系統，嚴格驗證；對於快速 prototype，寬鬆啲都可以接受。</p>
         </div>
 
         <div class="highlight-box">

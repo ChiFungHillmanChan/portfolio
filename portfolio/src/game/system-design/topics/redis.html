@@ -58,10 +58,10 @@
         <h2>Redis 係咩？</h2>
         <div class="subtitle">In-Memory Key-Value Database</div>
         <p>
-          我想同你講一個好重要嘅概念。傳統嘅資料庫（好似 Postgres、MySQL）將資料存喺硬碟度，所以每次查詢都要經過磁碟 I/O。而 <strong style="color:#34d399">Redis 將資料存喺 RAM（記憶體）入面</strong>，完全跳過咗磁碟呢一層。結果係：<strong style="color:#6366f1">微秒級（microsecond）嘅延遲</strong>。
+          呢度有一個好重要嘅概念。傳統嘅資料庫（好似 Postgres、MySQL）將資料存喺硬碟度，所以每次查詢都要經過磁碟 I/O。而 <strong style="color:#34d399">Redis 將資料存喺 RAM（記憶體）入面</strong>，完全跳過咗磁碟呢一層。結果係：<strong style="color:#6366f1">微秒級（microsecond）嘅延遲</strong>。
         </p>
         <p>
-          呢個係一個 Key-Value Store，即係話你用一個 key 去攞對應嘅 value。好似一個超快嘅字典咁。Redis 支援唔同嘅資料結構：String、List、Set、Hash、Sorted Set 等等。所以佢唔止係簡單嘅 key-value，仲可以做好多複雜嘅操作。
+          呢個係一個 Key-Value Store，即係用一個 key 去攞對應嘅 value。好似一個超快嘅字典咁。Redis 支援唔同嘅資料結構：String、List、Set、Hash、Sorted Set 等等。所以佢唔止係簡單嘅 key-value，仲可以做好多複雜嘅操作。
         </p>
 
         <div class="diagram-container">
@@ -182,7 +182,7 @@
         <h2>Trade-offs</h2>
         <div class="subtitle">冇嘢係完美嘅 — RAM 嘅代價</div>
         <p>
-          好，而家我要同你講 Redis 嘅缺點。因為 Redis 將所有嘢放喺 RAM 入面，呢個決定帶嚟兩個核心問題：<strong style="color:#f87171">RAM 好貴而且好有限</strong>，同埋 <strong style="color:#f87171">資料喺 crash 嘅時候會遺失</strong>。我哋逐個拆解。
+          而家講下 Redis 嘅缺點。因為 Redis 將所有嘢放喺 RAM 入面，呢個決定帶嚟兩個核心問題：<strong style="color:#f87171">RAM 好貴而且好有限</strong>，同埋 <strong style="color:#f87171">資料喺 crash 嘅時候會遺失</strong>。以下逐個拆解。
         </p>
 
         <div class="diagram-container">
@@ -252,14 +252,14 @@
 
         <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">核心 Trade-offs</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span><strong>成本高昂：</strong>RAM 比 SSD 貴成 100 倍。如果你要儲 1TB 嘅資料，用 Disk 可能只係 $100，但用 RAM 就要成萬蚊。所以 Redis 通常只會用嚟存最熱門嘅資料。</span></li>
+          <li><span class="step-num">1</span><span><strong>成本高昂：</strong>RAM 比 SSD 貴成 100 倍。如果要儲 1TB 嘅資料，用 Disk 可能只係 $100，但用 RAM 就要成萬蚊。所以 Redis 通常只會用嚟存最熱門嘅資料。</span></li>
           <li><span class="step-num">2</span><span><strong>容量有限：</strong>一台 Server 嘅 RAM 通常只有幾十 GB，唔似 Disk 可以去到幾 TB。所以 Redis 唔適合做主資料庫，通常係做 Cache 或者 Session Store。</span></li>
           <li><span class="step-num">3</span><span><strong>資料會遺失：</strong>Server crash 或者重啟嘅時候，RAM 入面嘅嘢會全部清空。雖然有 RDB 同 AOF 兩種備份方法，但都會遺失最近嘅寫入。呢個係無可避免嘅。</span></li>
-          <li><span class="step-num">4</span><span><strong>唔適合做唯一資料來源：</strong>因為以上嘅問題，我哋通常會將 Redis 同傳統資料庫（好似 Postgres）一齊用。Redis 做快取，Postgres 做持久化。呢個就係最常見嘅組合策略。</span></li>
+          <li><span class="step-num">4</span><span><strong>唔適合做唯一資料來源：</strong>因為以上嘅問題，通常會將 Redis 同傳統資料庫（好似 Postgres）一齊用。Redis 做快取，Postgres 做持久化。呢個就係最常見嘅組合策略。</span></li>
         </ol>
 
         <div class="highlight-box">
-          <p>我嘅結論：Redis 唔係用嚟取代傳統資料庫，而係補充佢。用 Redis 嘅速度處理熱門資料，用 Postgres 嘅持久性保護重要資料。</p>
+          <p>結論：Redis 唔係用嚟取代傳統資料庫，而係補充佢。用 Redis 嘅速度處理熱門資料，用 Postgres 嘅持久性保護重要資料。</p>
         </div>
       </div>
     </div>
@@ -269,7 +269,7 @@
         <h2>實戰應用</h2>
         <div class="subtitle">遊戲排行榜：Redis + Postgres 組合策略</div>
         <p>
-          我而家想同你講一個真實場景：即時排行榜系統。假設你做緊一個遊戲，需要顯示全球玩家嘅即時排名。呢個場景需要：<strong style="color:#34d399">超低延遲</strong>（玩家打完一局即刻更新）同 <strong style="color:#34d399">高併發</strong>（成千上萬玩家同時玩）。呢個就係 Redis 嘅完美用途。
+          以下用一個真實場景說明：即時排行榜系統。假設係做緊一個遊戲，需要顯示全球玩家嘅即時排名。呢個場景需要：<strong style="color:#34d399">超低延遲</strong>（玩家打完一局即刻更新）同 <strong style="color:#34d399">高併發</strong>（成千上萬玩家同時玩）。呢個就係 Redis 嘅完美用途。
         </p>
 
         <div class="diagram-container">
@@ -383,7 +383,7 @@
 
         <div class="use-case">
           <h4>組合策略嘅核心原則</h4>
-          <p>Redis 做熱數據快取（排行榜、Session），Postgres 做冷數據持久化（用戶資料、歷史記錄）。呢個係最經典嘅組合。Redis 俾你速度，Postgres 俾你可靠性。兩個一齊用，先係完整嘅方案。</p>
+          <p>Redis 做熱數據快取（排行榜、Session），Postgres 做冷數據持久化（用戶資料、歷史記錄）。呢個係最經典嘅組合。Redis 提供速度，Postgres 提供可靠性。兩個一齊用，先係完整嘅方案。</p>
         </div>
 
         <div class="highlight-box">

@@ -73,12 +73,12 @@
     <div class="tab-content active" id="server">
       <div class="card">
         <h2>Server 方案：完全掌控</h2>
-        <div class="subtitle">你話事，你負責，乜都喺你手</div>
+        <div class="subtitle">自主掌控，全權負責，乜都自己話事</div>
         <p>
-          我先同你講傳統 Server 嘅玩法。<strong class="tag-server">Server</strong> 就係你自己租或者買一台機——可以係雲端嘅 EC2、可以係自己屋企嘅實體機——然後你話事晒所有嘢。
+          重點係傳統 Server 嘅玩法。<strong class="tag-server">Server</strong> 就係自己租或者買一台機——可以係雲端嘅 EC2、可以係自己屋企嘅實體機——然後開發者話事晒所有嘢。
         </p>
         <p>
-          你揀 <strong>GPU</strong>、揀 <strong>RAM</strong>、揀 <strong>儲存空間</strong>。你決定裝咩作業系統、裝咩軟件、開咩 port。你負責做 OS update、security patch、防火牆設定。你話要幾多台就幾多台——但你要自己管理 load balancing 同 auto scaling。
+          自行揀 <strong>GPU</strong>、揀 <strong>RAM</strong>、揀 <strong>儲存空間</strong>。自行決定裝咩作業系統、裝咩軟件、開咩 port。開發者負責做 OS update、security patch、防火牆設定。要幾多台就幾多台——但要自己管理 load balancing 同 auto scaling。
         </p>
 
         <div class="diagram-container">
@@ -104,12 +104,12 @@
             </defs>
 
             <!-- Title -->
-            <text x="400" y="30" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="600">Server 架構：你要管理所有層級</text>
+            <text x="400" y="30" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="600">Server 架構：需要管理所有層級</text>
 
             <!-- You (top) -->
             <g transform="translate(325,60)">
               <rect width="150" height="50" rx="14" fill="#6366f1" filter="url(#glow)"/>
-              <text x="75" y="32" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">你（開發者）</text>
+              <text x="75" y="32" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">開發者</text>
             </g>
 
             <!-- Arrow down -->
@@ -119,14 +119,14 @@
             <!-- Server Layer -->
             <g transform="translate(150,160)">
               <rect width="500" height="260" rx="14" fill="url(#serverGrad)" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
-              <text x="250" y="25" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Server（你嘅責任範圍）</text>
+              <text x="250" y="25" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Server（開發者嘅責任範圍）</text>
 
               <!-- Hardware -->
               <g transform="translate(20,50)">
                 <rect width="210" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
                 <text x="105" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">硬件配置</text>
                 <text x="105" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">GPU / RAM / Storage</text>
-                <text x="105" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">你揀規格，你付錢</text>
+                <text x="105" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">自揀規格，自付費用</text>
               </g>
 
               <!-- OS & Security -->
@@ -134,7 +134,7 @@
                 <rect width="230" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
                 <text x="115" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">作業系統 + 安全</text>
                 <text x="115" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">OS updates / Security patch</text>
-                <text x="115" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">你負責定期更新同防護</text>
+                <text x="115" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">需要定期更新同防護</text>
               </g>
 
               <!-- Scaling -->
@@ -163,19 +163,19 @@
         <div class="key-points">
           <div class="key-point">
             <h4>完全控制權</h4>
-            <p>你話點改就點改。想裝咩軟件、想用咩 port、想點配 network 都得。冇人阻止你。</p>
+            <p>想點改就點改。想裝咩軟件、想用咩 port、想點配 network 都得。冇任何限制。</p>
           </div>
           <div class="key-point">
             <h4>Always-on 成本</h4>
-            <p>Server 係 24 小時開住嘅——就算冇人用，你都要畀錢。雲端按小時計，自己嘅機就係電費。</p>
+            <p>Server 係 24 小時開住嘅——就算冇人用，都要畀錢。雲端按小時計，自己嘅機就係電費。</p>
           </div>
           <div class="key-point">
             <h4>自己管理維護</h4>
-            <p>OS update、security patch、監控、備份——全部你負責。有問題半夜三更都要你起身搞。</p>
+            <p>OS update、security patch、監控、備份——全部自行負責。有問題半夜三更都要起身搞。</p>
           </div>
           <div class="key-point">
             <h4>手動擴展</h4>
-            <p>流量多咗要自己加 Server。可以寫 auto scaling script，但都係你自己搞，唔會自動幫你。</p>
+            <p>流量多咗要自己加 Server。可以寫 auto scaling script，但都係自己搞，唔會自動處理。</p>
           </div>
         </div>
 
@@ -195,14 +195,14 @@
               <li>Always-on = 冇流量都照收錢</li>
               <li>要有人手管理維護</li>
               <li>擴展要時間（手動加機）</li>
-              <li>你負責所有安全問題</li>
+              <li>開發者負責所有安全問題</li>
             </ul>
           </div>
         </div>
 
         <div class="use-case">
           <h4>適合場景</h4>
-          <p>流量穩定、有專人維護、長期運行嘅服務。例如公司內部系統、穩定嘅 API、大型網站後端。如果你有技術團隊去管理，Server 長遠嚟講可能平過 Serverless。</p>
+          <p>流量穩定、有專人維護、長期運行嘅服務。例如公司內部系統、穩定嘅 API、大型網站後端。如果有技術團隊去管理，Server 長遠嚟講可能平過 Serverless。</p>
         </div>
       </div>
     </div>
@@ -210,13 +210,13 @@
     <!-- ===================== TAB 2: Serverless ===================== -->
     <div class="tab-content" id="serverless">
       <div class="card">
-        <h2>Serverless 方案：雲端幫你搞</h2>
-        <div class="subtitle">你只管寫 code，其他嘢雲端供應商幫你搞晒</div>
+        <h2>Serverless 方案：雲端幫手搞</h2>
+        <div class="subtitle">只管寫 code，其他嘢雲端供應商幫手搞晒</div>
         <p>
-          我再同你講 <strong class="tag-serverless">Serverless</strong> 嘅玩法。Serverless 唔係話冇 Server——而係話你<strong>唔使管 Server</strong>。硬件、作業系統、擴展、維護——全部雲端供應商幫你搞，你只需要 deploy code。
+          跟住講 <strong class="tag-serverless">Serverless</strong> 嘅玩法。Serverless 唔係話冇 Server——而係<strong>唔使管 Server</strong>。硬件、作業系統、擴展、維護——全部雲端供應商處理，開發者只需要 deploy code。
         </p>
         <p>
-          最常見嘅係 <strong>AWS Lambda</strong>、<strong>Google Cloud Functions</strong>、<strong>Azure Functions</strong>。你寫一個 function，上傳，然後每次有 request 就自動幫你執行。用完即棄，冇 request 就唔收錢。
+          最常見嘅係 <strong>AWS Lambda</strong>、<strong>Google Cloud Functions</strong>、<strong>Azure Functions</strong>。寫一個 function，上傳，然後每次有 request 就自動執行。用完即棄，冇 request 就唔收錢。
         </p>
 
         <div class="diagram-container">
@@ -244,7 +244,7 @@
             <!-- You (top) -->
             <g transform="translate(325,60)">
               <rect width="150" height="50" rx="14" fill="#6366f1" filter="url(#glowOrange)"/>
-              <text x="75" y="32" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">你（開發者）</text>
+              <text x="75" y="32" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">開發者</text>
             </g>
 
             <!-- Arrow down -->
@@ -254,7 +254,7 @@
             <!-- Your Code Layer (small) -->
             <g transform="translate(300,160)">
               <rect width="200" height="50" rx="14" fill="#1e293b" stroke="#6366f1" stroke-width="2"/>
-              <text x="100" y="22" text-anchor="middle" fill="#6366f1" font-size="12" font-weight="700">你嘅 Code</text>
+              <text x="100" y="22" text-anchor="middle" fill="#6366f1" font-size="12" font-weight="700">應用 Code</text>
               <text x="100" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">deploy 就收工</text>
             </g>
 
@@ -264,14 +264,14 @@
             <!-- Cloud Provider Layer -->
             <g transform="translate(150,250)">
               <rect width="500" height="170" rx="14" fill="url(#serverlessGrad)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
-              <text x="250" y="25" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="700">雲端供應商負責（你唔使理）</text>
+              <text x="250" y="25" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="700">雲端供應商負責（唔使理）</text>
 
               <!-- Hardware -->
               <g transform="translate(20,45)">
                 <rect width="140" height="60" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
                 <text x="70" y="20" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">硬件</text>
-                <text x="70" y="36" text-anchor="middle" fill="#9ca3af" font-size="9">佢哋揀</text>
-                <text x="70" y="50" text-anchor="middle" fill="#9ca3af" font-size="9">你唔使管</text>
+                <text x="70" y="36" text-anchor="middle" fill="#9ca3af" font-size="9">供應商揀</text>
+                <text x="70" y="50" text-anchor="middle" fill="#9ca3af" font-size="9">唔使管</text>
               </g>
 
               <!-- Scaling -->
@@ -298,7 +298,7 @@
             </g>
 
             <!-- Bottom note -->
-            <text x="400" y="445" text-anchor="middle" fill="#6b7280" font-size="11">零維護 = 零控制（你改唔到底層）</text>
+            <text x="400" y="445" text-anchor="middle" fill="#6b7280" font-size="11">零維護 = 零控制（改唔到底層）</text>
           </svg>
         </div>
 
@@ -306,11 +306,11 @@
         <div class="key-points">
           <div class="key-point">
             <h4>雲端揀硬件</h4>
-            <p>你唔使揀 GPU、RAM、Storage。雲端供應商會自動配置適合嘅硬件，你唔需要知道底層跑緊咩機。</p>
+            <p>唔使揀 GPU、RAM、Storage。雲端供應商會自動配置適合嘅硬件，唔需要知道底層跑緊咩機。</p>
           </div>
           <div class="key-point">
             <h4>自動擴展</h4>
-            <p>流量多咗會自動加 instance，流量少咗會自動減。完全唔使你操心，全自動處理。</p>
+            <p>流量多咗會自動加 instance，流量少咗會自動減。完全唔使操心，全自動處理。</p>
           </div>
           <div class="key-point">
             <h4>按 request 收費</h4>
@@ -318,7 +318,7 @@
           </div>
           <div class="key-point">
             <h4>零維護負擔</h4>
-            <p>OS update、security patch、監控——全部雲端供應商搞。你唔使半夜起身處理服務器問題。</p>
+            <p>OS update、security patch、監控——全部雲端供應商搞。唔使半夜起身處理服務器問題。</p>
           </div>
         </div>
 
@@ -338,18 +338,18 @@
               <li>大流量時成本爆升</li>
               <li>Vendor lock-in（好難搬走）</li>
               <li>Cold start 延遲問題</li>
-              <li>你改唔到底層配置</li>
+              <li>改唔到底層配置</li>
             </ul>
           </div>
         </div>
 
         <div class="use-case">
           <h4>適合場景</h4>
-          <p>流量唔穩定、spiky 嘅服務。例如每日淨係繁忙時間先有流量嘅 App、週末先多人用嘅服務、event-driven 嘅工作（處理上傳、發送通知）。如果你唔想請人管 Server、預算充裕，Serverless 係好選擇。</p>
+          <p>流量唔穩定、spiky 嘅服務。例如每日淨係繁忙時間先有流量嘅 App、週末先多人用嘅服務、event-driven 嘅工作（處理上傳、發送通知）。如果唔想請人管 Server、預算充裕，Serverless 係好選擇。</p>
         </div>
 
         <div class="highlight-box">
-          <p><strong>Cold Start 係咩？</strong>第一次 request 嚟嘅時候，Serverless function 要「開機」——要 load code、建立連接。呢個過程可能要幾百 ms 甚至幾秒。如果你需要低延遲，就要考慮呢個問題。</p>
+          <p><strong>Cold Start 係咩？</strong>第一次 request 嚟嘅時候，Serverless function 要「開機」——要 load code、建立連接。呢個過程可能要幾百 ms 甚至幾秒。如果需要低延遲，就要考慮呢個問題。</p>
         </div>
       </div>
     </div>
@@ -360,7 +360,7 @@
         <h2>點樣揀：三個關鍵問題</h2>
         <div class="subtitle">根據流量模式、預算、團隊規模嚟決定</div>
         <p>
-          我總結咗三個關鍵因素畀你。你問自己呢三條問題，基本上就知道應該揀 Server 定 Serverless。
+          總結如下三個關鍵因素。問以下呢三條問題，基本上就知道應該揀 Server 定 Serverless。
         </p>
 
         <div class="diagram-container">
@@ -464,7 +464,7 @@
             <div class="step-num">3</div>
             <div>
               <strong>控制權 vs 便利性</strong><br>
-              需要完全控制硬件同軟件（例如特殊嘅 GPU、自訂網絡設定）？就要用 Server。如果你只係想跑 code、唔想理底層，Serverless 係完美選擇。
+              需要完全控制硬件同軟件（例如特殊嘅 GPU、自訂網絡設定）？就要用 Server。如果只係想跑 code、唔想理底層，Serverless 係完美選擇。
             </div>
           </li>
         </ul>
@@ -480,20 +480,20 @@
           <tbody>
             <tr><td class="label">適合流量</td><td>穩定、持續</td><td>Spiky、唔穩定</td></tr>
             <tr><td class="label">成本模式</td><td>Always-on，按小時計</td><td>Pay-per-request，冇 request 免費</td></tr>
-            <tr><td class="label">維護負擔</td><td>你負責 OS、安全、監控</td><td>雲端供應商負責</td></tr>
-            <tr><td class="label">擴展方式</td><td>手動或者自己寫 auto scaling</td><td>完全自動，唔使你理</td></tr>
+            <tr><td class="label">維護負擔</td><td>開發者負責 OS、安全、監控</td><td>雲端供應商負責</td></tr>
+            <tr><td class="label">擴展方式</td><td>手動或者自己寫 auto scaling</td><td>完全自動，唔使理</td></tr>
             <tr><td class="label">控制權</td><td>完全控制</td><td>零控制（改唔到底層）</td></tr>
             <tr><td class="label">適合團隊</td><td>有技術人手管理</td><td>小團隊、唔想煩</td></tr>
           </tbody>
         </table>
 
         <div class="use-case">
-          <h4>我嘅建議</h4>
+          <h4>最佳做法</h4>
           <p>
-            如果你係 startup，一開始用 Serverless——快速上線、唔使管 Server、成本低（因為一開始流量少）。但當你 scale 到一定規模、流量穩定咗，就要考慮搬去 Server——因為大流量下 Serverless 會好貴。
+            如果係 startup，一開始用 Serverless——快速上線、唔使管 Server、成本低（因為一開始流量少）。但當 scale 到一定規模、流量穩定咗，就要考慮搬去 Server——因為大流量下 Serverless 會好貴。
           </p>
           <p>
-            如果你有技術團隊、流量穩定、長期運行，一開始就用 Server——控制權高、成本可預測。但要有人手去管理維護。
+            如果有技術團隊、流量穩定、長期運行，一開始就用 Server——控制權高、成本可預測。但要有人手去管理維護。
           </p>
         </div>
 

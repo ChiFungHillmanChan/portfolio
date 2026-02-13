@@ -77,7 +77,7 @@
           部署應用程式有兩大陣營：用雲端服務（例如 <span class="tag-cloud">AWS</span>）定係自己管理 Server（<span class="tag-self">Self-host</span>）。兩個都得，但 trade-off 完全唔同。
         </p>
         <p>
-          簡單講：<span class="tag-cloud">Cloud</span> 就好似租酒店——乜都幫你搞好，但每個月要交租。<span class="tag-self">Self-host</span> 就好似買間屋——前期投入大、所有嘢自己搞，但長遠可能平啲同自由啲。
+          簡單講：<span class="tag-cloud">Cloud</span> 就好似租酒店——乜都幫晒手，但每個月要交租。<span class="tag-self">Self-host</span> 就好似買間屋——前期投入大、所有嘢自己搞，但長遠可能平啲同自由啲。
         </p>
 
         <div class="diagram-container">
@@ -108,13 +108,13 @@
               <rect width="300" height="70" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1" filter="url(#shadow)"/>
               <text x="150" y="22" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="600">🖥 託管</text>
               <text x="150" y="40" text-anchor="middle" fill="#c0c4cc" font-size="11">EC2 / Lambda</text>
-              <text x="150" y="56" text-anchor="middle" fill="#9ca3af" font-size="10">揀你需要嘅，唔使管硬件</text>
+              <text x="150" y="56" text-anchor="middle" fill="#9ca3af" font-size="10">按需揀，唔使管硬件</text>
             </g>
             <g transform="translate(450,110)">
               <rect width="300" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1" filter="url(#shadow)"/>
               <text x="150" y="22" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600">🏠 託管</text>
               <text x="150" y="40" text-anchor="middle" fill="#c0c4cc" font-size="11">自己嘅 Server（屋企/機房）</text>
-              <text x="150" y="56" text-anchor="middle" fill="#9ca3af" font-size="10">完全控制，仲可以幫你暖屋 😂</text>
+              <text x="150" y="56" text-anchor="middle" fill="#9ca3af" font-size="10">完全控制，廢熱仲可以暖屋</text>
             </g>
 
             <!-- Label -->
@@ -168,7 +168,7 @@
           </thead>
           <tbody>
             <tr><td class="label">💰 成本模式</td><td>按用量收費（pay-as-you-go）</td><td>前期硬件投入 + 電費 + 時間</td></tr>
-            <tr><td class="label">🛠 管理難度</td><td>AWS 幫你管基礎設施</td><td>所有嘢自己搞：硬件、網絡、安全</td></tr>
+            <tr><td class="label">🛠 管理難度</td><td>AWS 負責管基礎設施</td><td>所有嘢自己搞：硬件、網絡、安全</td></tr>
             <tr><td class="label">📈 擴展能力</td><td>幾分鐘內加減 Server</td><td>要買新硬件，可能要等幾日</td></tr>
             <tr><td class="label">🔒 安全性</td><td>AWS 有專業安全團隊</td><td>自己負責所有安全更新同防護</td></tr>
             <tr><td class="label">🎛 控制權</td><td>受限於 AWS 嘅規則同定價</td><td>完全控制，想點改就點改</td></tr>
@@ -182,14 +182,14 @@
     <div class="tab-content" id="hosting">
       <div class="card">
         <h2>🖥 託管方式比較</h2>
-        <div class="subtitle">你嘅 App 跑喺邊度？</div>
+        <div class="subtitle">App 跑喺邊度？</div>
 
         <h3 style="color:#f59e0b;">☁️ AWS 方案：EC2 / Lambda</h3>
         <p>
-          <strong style="color:#f59e0b">EC2</strong> 就好似喺 AWS 租一台電腦——你揀 CPU、記憶體、硬碟大小，然後 SSH 入去裝你嘅 App。唔使買硬件、唔使擔心硬碟壞咗。
+          <strong style="color:#f59e0b">EC2</strong> 就好似喺 AWS 租一台電腦——揀 CPU、記憶體、硬碟大小，然後 SSH 入去裝 App。唔使買硬件、唔使擔心硬碟壞咗。
         </p>
         <p>
-          <strong style="color:#f59e0b">Lambda</strong> 更加方便——你只需要寫 code，唔使管 Server。AWS 自動幫你跑，用幾多秒收幾多錢。適合簡單嘅 API 或者 event-driven 嘅工作。
+          <strong style="color:#f59e0b">Lambda</strong> 更加方便——只需要寫 code，唔使管 Server。AWS 自動執行，用幾多秒收幾多錢。適合簡單嘅 API 或者 event-driven 嘅工作。
         </p>
         <div class="pros-cons">
           <div class="pros">
@@ -214,7 +214,7 @@
 
         <h3 style="color:#34d399; margin-top:28px;">🏠 Self-host 方案：自己嘅 Server</h3>
         <p>
-          自己買一台（或者幾台）Server，放喺屋企或者租機房空間（colocation）。所有嘢自己控制——作業系統、網絡設定、安全配置。影片入面嗰位仁兄仲話佢嘅 Server 幫佢暖屋，一舉兩得。😂
+          自己買一台（或者幾台）Server，放喺屋企或者租機房空間（colocation）。所有嘢自己控制——作業系統、網絡設定、安全配置。甚至有人話自架 Server 嘅廢熱可以暖屋，一舉兩得。
         </p>
         <div class="pros-cons">
           <div class="pros">
@@ -249,11 +249,11 @@
         <p>
           AWS ECS（Elastic Container Service）可以根據 CPU 使用率、記憶體或者自訂 metric 自動加減 Container 數量。例如 CPU 超過 70% 就加一台，低過 30% 就減一台。全自動，唔使人手操作。
         </p>
-        <p>仲有 <strong>AWS Fargate</strong>——唔使管 Server，只管 Container。ECS + Fargate 基本上係 Serverless Container，AWS 幫你搞晒底層。</p>
+        <p>仲有 <strong>AWS Fargate</strong>——唔使管 Server，只管 Container。ECS + Fargate 基本上係 Serverless Container，AWS 負責搞晒底層。</p>
 
         <h3 style="color:#34d399; margin-top:24px;">🏠 Kubernetes（K8s）</h3>
         <p>
-          Kubernetes 係 Google 開源嘅 Container 編排工具，完全免費。佢可以做到同 AWS ECS 一樣嘅自動擴展——但你要自己搭建同管理 K8s cluster。
+          Kubernetes 係 Google 開源嘅 Container 編排工具，完全免費。佢可以做到同 AWS ECS 一樣嘅自動擴展——但需要自己搭建同管理 K8s cluster。
         </p>
         <p>K8s 嘅 <strong>Horizontal Pod Autoscaler（HPA）</strong> 可以根據 CPU / 記憶體自動增減 Pod（Container）數量。仲支援自訂 metric。</p>
 
@@ -282,7 +282,7 @@
     <div class="tab-content" id="monitoring">
       <div class="card">
         <h2>📊 監控與日誌比較</h2>
-        <div class="subtitle">出咗事你點知？點搵原因？</div>
+        <div class="subtitle">出咗事點知？點搵原因？</div>
 
         <h3 style="color:#f59e0b;">☁️ AWS CloudWatch</h3>
         <p>
@@ -292,12 +292,12 @@
 
         <h3 style="color:#34d399; margin-top:24px;">🏠 Prometheus + Grafana</h3>
         <p>
-          <strong style="color:#34d399">Prometheus</strong>：開源嘅 metrics 收集同儲存系統。用 pull 模式——佢主動去你嘅 Server 攞數據。內置 alert 功能。
+          <strong style="color:#34d399">Prometheus</strong>：開源嘅 metrics 收集同儲存系統。用 pull 模式——主動去各個 Server 攞數據。內置 alert 功能。
         </p>
         <p>
           <strong style="color:#34d399">Grafana</strong>：開源嘅 dashboard 工具。將 Prometheus 收集嘅數據用靚靚嘅圖表顯示出嚟。社區有幾千個現成嘅 dashboard template。
         </p>
-        <p>兩個都係<strong>完全免費</strong>，但你要自己搭建、自己維護、自己寫 alert rule。</p>
+        <p>兩個都係<strong>完全免費</strong>，但需要自己搭建、自己維護、自己寫 alert rule。</p>
 
         <div class="key-points" style="margin-top:20px;">
           <div class="key-point">

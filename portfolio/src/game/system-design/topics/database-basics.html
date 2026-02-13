@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>Database 基礎</h1>
-      <p>我帶你認識 Database 嘅基本概念、分類同埋管理系統</p>
+      <p>以下介紹 Database 嘅基本概念、分類同埋管理系統</p>
     </header>
 
     <div class="tabs">
@@ -55,8 +55,8 @@
       <div class="card">
         <h2>Database 係一個非常廣闊嘅概念</h2>
         <div class="subtitle">電子化儲存嘅數據</div>
-        <p>我想先同你講清楚，Database 呢個詞其實係一個非常廣闊嘅概念。簡單嚟講，只要係電子化儲存嘅數據，都可以叫做 Database。</p>
-        <p>好多人一聽到 Database 就會諗起好複雜嘅系統，但其實你每日用緊嘅好多嘢都係 Database。我哋睇下幾個常見例子：</p>
+        <p>首先要搞清楚，Database 呢個詞其實係一個非常廣闊嘅概念。簡單嚟講，只要係電子化儲存嘅數據，都可以叫做 Database。</p>
+        <p>好多人一聽到 Database 就會諗起好複雜嘅系統，但其實日常用緊嘅好多嘢都係 Database。以下係幾個常見例子：</p>
 
         <div class="diagram-container">
           <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
@@ -134,7 +134,7 @@
           </div>
           <div class="key-point">
             <h4>Google Sheets</h4>
-            <p>你冇睇錯，試算表都係一種 Database，只係比較簡單</p>
+            <p>冇睇錯，試算表都係一種 Database，只係比較簡單</p>
           </div>
           <div class="key-point">
             <h4>甚至筆記簿</h4>
@@ -143,8 +143,8 @@
         </div>
 
         <div class="use-case">
-          <h4>我想同你強調</h4>
-          <p>Database 唔一定要好複雜、好高科技。只要係電子化儲存數據，無論係 Excel、Google Sheets 定係專業嘅 Postgres、MongoDB，本質上都係 Database。重點係佢哋點樣幫你組織同管理數據。</p>
+          <h4>重點</h4>
+          <p>Database 唔一定要好複雜、好高科技。只要係電子化儲存數據，無論係 Excel、Google Sheets 定係專業嘅 Postgres、MongoDB，本質上都係 Database。重點係佢哋點樣組織同管理數據。</p>
         </div>
       </div>
     </div>
@@ -153,7 +153,7 @@
       <div class="card">
         <h2>唔係所有 Database 都保證 ACID</h2>
         <div class="subtitle">SQL vs NoSQL 嘅核心分別</div>
-        <p>好多人以為所有 Database 都會保證某啲特性，例如原子性（Atomicity）、一致性（Consistency）。但我要同你講，呢個係一個常見嘅誤解。</p>
+        <p>好多人以為所有 Database 都會保證某啲特性，例如原子性（Atomicity）、一致性（Consistency）。但事實上，呢個係一個常見嘅誤解。</p>
         <p>ACID 合規只係其中一個類別。大部分 SQL 數據庫都係 ACID 合規，但 NoSQL 數據庫就唔一定會強制執行 ACID。</p>
 
         <div class="diagram-container">
@@ -248,8 +248,8 @@
         </ul>
 
         <div class="use-case">
-          <h4>我嘅建議</h4>
-          <p>唔好假設所有 Database 都有相同嘅保證。SQL 同 NoSQL 係兩個唔同嘅世界，各有優勢。你要根據實際需求去選擇：需要強一致性就用 SQL，需要高擴展性就考慮 NoSQL。</p>
+          <h4>建議</h4>
+          <p>唔好假設所有 Database 都有相同嘅保證。SQL 同 NoSQL 係兩個唔同嘅世界，各有優勢。需要根據實際需求去選擇：需要強一致性就用 SQL，需要高擴展性就考慮 NoSQL。</p>
         </div>
       </div>
     </div>
@@ -258,7 +258,7 @@
       <div class="card">
         <h2>Database 同 DBMS 嘅分別</h2>
         <div class="subtitle">數據 vs 管理軟件</div>
-        <p>我想同你解釋清楚一個技術上嘅分別。嚴格嚟講，Database 只係指數據本身，而 DBMS（Database Management System）先係管理呢啲數據嘅軟件。</p>
+        <p>呢度要搞清楚一個技術上嘅分別。嚴格嚟講，Database 只係指數據本身，而 DBMS（Database Management System）先係管理呢啲數據嘅軟件。</p>
         <p>不過喺日常交流入面，大部分人都會直接叫 DBMS 做 Database。例如講 Postgres，其實係指緊 DBMS，但大家都會簡單咁叫佢做 Database。</p>
 
         <div class="diagram-container">
@@ -310,7 +310,7 @@
 
             <rect x="150" y="270" width="400" height="100" rx="14" fill="rgba(99, 102, 241, 0.15)" stroke="#6366f1" stroke-width="2" filter="url(#shadow)" />
             <text x="350" y="300" text-anchor="middle" fill="#a5b4fc" font-size="15" font-weight="600">日常用語</text>
-            <text x="350" y="325" text-anchor="middle" fill="#e0e0e0" font-size="13">我哋講「Postgres」、「MySQL」</text>
+            <text x="350" y="325" text-anchor="middle" fill="#e0e0e0" font-size="13">講「Postgres」、「MySQL」</text>
             <text x="350" y="347" text-anchor="middle" fill="#e0e0e0" font-size="13">其實係指 DBMS，但大家都叫佢 Database</text>
           </svg>
         </div>
@@ -330,14 +330,14 @@
           </li>
           <li>
             <span class="step-num">4</span>
-            <span><strong>常見 DBMS 例子</strong>：Postgres、MySQL、MongoDB、DynamoDB 呢啲都係 DBMS，但我哋日常都簡稱佢哋做 Database。</span>
+            <span><strong>常見 DBMS 例子</strong>：Postgres、MySQL、MongoDB、DynamoDB 呢啲都係 DBMS，但日常都簡稱佢哋做 Database。</span>
           </li>
         </ul>
 
         <div class="key-points">
           <div class="key-point">
             <h4>查詢功能</h4>
-            <p>DBMS 俾你可以用 SQL 或其他語言嚟搵出你需要嘅數據</p>
+            <p>DBMS 提供 SQL 或其他語言嚟搵出所需嘅數據</p>
           </div>
           <div class="key-point">
             <h4>數據操作</h4>
@@ -354,8 +354,8 @@
         </div>
 
         <div class="use-case">
-          <h4>我嘅結論</h4>
-          <p>雖然技術上 Database 同 DBMS 係兩樣嘢，但喺實際工作入面，你唔使太執著呢個分別。當你講 Postgres 或者 MySQL 嘅時候，大家都明你係講緊成個系統。重點係要明白 DBMS 嘅角色：佢唔只係儲存數據，更加係提供一整套工具嚟管理、查詢同保護你嘅數據。</p>
+          <h4>結論</h4>
+          <p>雖然技術上 Database 同 DBMS 係兩樣嘢，但喺實際工作入面，唔使太執著呢個分別。當講 Postgres 或者 MySQL 嘅時候，大家都明係講緊成個系統。重點係要明白 DBMS 嘅角色：佢唔只係儲存數據，更加係提供一整套工具嚟管理、查詢同保護數據。</p>
         </div>
       </div>
     </div>

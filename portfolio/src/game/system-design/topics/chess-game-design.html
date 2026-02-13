@@ -56,10 +56,10 @@
         <h2>配對系統設計</h2>
         <div class="subtitle">按技術等級分流，確保公平競技</div>
         <p>
-          我要同你講一個好實際嘅問題：點樣將兩個玩家配對埋一齊玩國際象棋？表面睇好簡單，實際上要考慮好多嘢。最核心嘅係<strong style="color:#34d399">公平性</strong>——唔可以將一個初學者同棋王擺埋一齊，呢場比賽會毫無意義。
+          重點係一個好實際嘅問題：點樣將兩個玩家配對埋一齊玩國際象棋？表面睇好簡單，實際上要考慮好多嘢。最核心嘅係<strong style="color:#34d399">公平性</strong>——唔可以將一個初學者同棋王擺埋一齊，呢場比賽會毫無意義。
         </p>
         <p>
-          所以我嘅做法係按玩家嘅技術等級分成三個隊列：<strong style="color:#fbbf24">低技術、中等技術、高技術</strong>。當玩家按「Join」嘅時候，系統會根據佢嘅 rank 將佢放入對應嘅隊列入面等待。配對系統會優先將同一個隊列入面嘅第一個玩家配對埋一齊。
+          所以常見做法係按玩家嘅技術等級分成三個隊列：<strong style="color:#fbbf24">低技術、中等技術、高技術</strong>。當玩家按「Join」嘅時候，系統會根據佢嘅 rank 將佢放入對應嘅隊列入面等待。配對系統會優先將同一個隊列入面嘅第一個玩家配對埋一齊。
         </p>
 
         <div class="diagram-container">
@@ -164,7 +164,7 @@
           配對完成之後，下一步就係將兩個玩家連接到同一個遊戲容器。呢個係整個架構最關鍵嘅部分——<strong style="color:#34d399">兩個玩家必須連到同一台 Server</strong>，否則佢哋根本冇辦法即時對戰。
         </p>
         <p>
-          我用 <strong style="color:#6366f1">Application Load Balancer (ALB) with Sticky Sessions</strong> 嚟解決呢個問題。當 Matchmaking Service 將兩個玩家配對成功後，佢會發送一個請求俾 Game Service。ALB 會用 sticky session 嘅機制，確保呢兩個玩家嘅連接都會被路由到同一個 Game Container。
+          可以用 <strong style="color:#6366f1">Application Load Balancer (ALB) with Sticky Sessions</strong> 嚟解決呢個問題。當 Matchmaking Service 將兩個玩家配對成功後，佢會發送一個請求俾 Game Service。ALB 會用 sticky session 嘅機制，確保呢兩個玩家嘅連接都會被路由到同一個 Game Container。
         </p>
 
         <div class="diagram-container">
@@ -267,7 +267,7 @@
           國際象棋係一個<strong style="color:#6366f1">回合制、慢節奏</strong>嘅遊戲。玩家每步棋可能要諗幾分鐘，所以延遲 100ms 同 10ms 根本冇分別——玩家根本感受唔到。但係，如果有一步棋嘅訊息丟失咗，個遊戲就會出現嚴重 bug（例如玩家 A 已經移動咗棋子，但玩家 B 睇唔到）。
         </p>
         <p>
-          所以我揀咗 <strong style="color:#34d399">WebSocket（基於 TCP）</strong>。TCP 會保證每一個訊息都<strong>準確送達</strong>，而且<strong>按順序送達</strong>。呢個對國際象棋嚟講係最重要嘅——可靠性遠比低延遲重要。
+          所以適合用 <strong style="color:#34d399">WebSocket（基於 TCP）</strong>。TCP 會保證每一個訊息都<strong>準確送達</strong>，而且<strong>按順序送達</strong>。呢個對國際象棋嚟講係最重要嘅——可靠性遠比低延遲重要。
         </p>
 
         <div class="key-points" style="margin-top:20px;">
@@ -359,7 +359,7 @@
 
         <div class="use-case">
           <h4>實際考量</h4>
-          <p>對於國際象棋呢類遊戲，我會優先考慮可靠性、狀態一致性、訊息順序。TCP 完美符合呢啲需求。如果你做緊 FPS 遊戲，咁就應該考慮 UDP + 自訂可靠性層（例如只對重要訊息做 ACK）。記住：技術選型永遠要根據業務需求。</p>
+          <p>對於國際象棋呢類遊戲，應該優先考慮可靠性、狀態一致性、訊息順序。TCP 完美符合呢啲需求。如果係做緊 FPS 遊戲，咁就應該考慮 UDP + 自訂可靠性層（例如只對重要訊息做 ACK）。記住：技術選型永遠要根據業務需求。</p>
         </div>
       </div>
     </div>
