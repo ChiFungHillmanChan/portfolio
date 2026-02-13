@@ -49,10 +49,18 @@
       border-bottom: 1px solid #1e2030;
       cursor: pointer;
       transition: background 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 12px;
     }
 
     .sidebar-header:hover {
       background: rgba(255, 255, 255, 0.02);
+    }
+
+    .sidebar-header-text {
+      flex: 1;
+      min-width: 0;
     }
 
     .sidebar-header h1 {
@@ -438,15 +446,11 @@
 
     /* ==================== Coffee Button ==================== */
     .coffee-btn {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 300;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
       background: linear-gradient(135deg, rgba(165, 180, 252, 0.25), rgba(99, 102, 241, 0.15));
       border: 2px solid rgba(99, 102, 241, 0.5);
@@ -455,8 +459,7 @@
       font-size: 1.3rem;
       text-decoration: none;
       transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      backdrop-filter: blur(8px);
-      -webkit-backdrop-filter: blur(8px);
+      flex-shrink: 0;
     }
 
     .coffee-btn:hover,
@@ -471,16 +474,6 @@
       transform: translateY(0) scale(0.96);
       box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
     }
-
-    @media (max-width: 768px) {
-      .coffee-btn {
-        top: 10px;
-        right: 60px;
-        width: 36px;
-        height: 36px;
-        font-size: 1rem;
-      }
-    }
   </style>
 </head>
 <body>
@@ -492,15 +485,15 @@
   </div>
   <div class="overlay" id="overlay"></div>
 
-  <!-- Coffee / Donation Button -->
-  <a class="coffee-btn" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee">☕</a>
-
   <div class="app-layout">
     <!-- ==================== Sidebar ==================== -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-header" id="sidebarHeader">
-        <h1>系統架構圖解教室</h1>
-        <p>用廣東話，輕鬆學系統設計</p>
+        <div class="sidebar-header-text">
+          <h1>系統架構圖解教室</h1>
+          <p>輕鬆學系統設計</p>
+        </div>
+        <a class="coffee-btn" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee" onclick="event.stopPropagation()">☕</a>
       </div>
 
       <div class="sidebar-filters">
@@ -513,6 +506,7 @@
         <button class="filter-chip" data-filter="async">異步</button>
         <button class="filter-chip" data-filter="app">應用</button>
         <button class="filter-chip" data-filter="security">安全</button>
+        <button class="filter-chip" data-filter="deploy">部署</button>
       </div>
 
       <div class="sidebar-search">
@@ -941,6 +935,17 @@
           <span class="nav-item-text">
             <span class="nav-item-title">防禦 AI 爬蟲</span>
             <span class="nav-item-sub">robots.txt / Honeypot / Bot 偵測</span>
+          </span>
+        </button>
+
+        <!-- ===== 部署與託管 ===== -->
+        <div class="nav-section-title" data-section="deploy">部署與託管</div>
+
+        <button class="nav-item" data-topic="topics/deployment.html" data-category="deploy">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">🚀</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">免費部署平台</span>
+            <span class="nav-item-sub">Vercel / Railway / Supabase / Firebase</span>
           </span>
         </button>
       </nav>

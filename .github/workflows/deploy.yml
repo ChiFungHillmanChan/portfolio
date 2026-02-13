@@ -69,3 +69,8 @@ jobs:
           # Upload index.html with no-cache to ensure updates are seen immediately
           aws s3 cp portfolio/build/index.html s3://$S3_BUCKET/index.html --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate" --metadata-directive REPLACE
 
+      - name: Invalidate CloudFront Cache
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
+

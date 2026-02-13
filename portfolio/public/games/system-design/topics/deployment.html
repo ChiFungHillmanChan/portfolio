@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>免費部署平台 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } .accordion-summary { flex-wrap: wrap; } .acc-stats { display: none; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .highlight-box { background: rgba(245,158,11,0.1); border-left: 3px solid #F59E0B; border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 16px 0; }
+    .highlight-box p { color: #fbbf24; font-size: 0.95rem; line-height: 1.8; margin: 0; font-weight: 500; }
+
+    /* Detail table */
+    .detail-table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 0.88rem; }
+    .detail-table th, .detail-table td { padding: 10px 14px; text-align: left; border-bottom: 1px solid #2a2d3a; }
+    .detail-table th { color: #6b7280; font-weight: 600; width: 140px; white-space: nowrap; background: rgba(15,17,23,0.5); }
+    .detail-table td { color: #c0c4cc; line-height: 1.6; }
+    .detail-table tr:nth-child(even) td { background: rgba(15,17,23,0.3); }
+    .detail-table tr:last-child th, .detail-table tr:last-child td { border-bottom: none; }
+
+    /* Tier badge */
+    .tier-badge { display: inline-block; font-size: 0.72rem; font-weight: 700; padding: 3px 10px; border-radius: 100px; vertical-align: middle; }
+    .tier-badge.free { background: rgba(52,211,153,0.15); color: #34d399; }
+
+    /* ===== Accordion ===== */
+    .accordion { background: #1a1d27; border-radius: 14px; margin-bottom: 12px; border: 1px solid #2a2d3a; overflow: hidden; transition: border-color 0.2s ease; }
+    .accordion.open { border-color: #3a3d4a; }
+    .accordion-summary { display: flex; align-items: center; gap: 14px; padding: 18px 22px; cursor: pointer; transition: background 0.2s ease; user-select: none; }
+    .accordion-summary:hover { background: rgba(255,255,255,0.02); }
+    .acc-icon { width: 40px; height: 40px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .acc-info { flex: 1; min-width: 0; }
+    .acc-title { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+    .acc-title h3 { font-size: 1.05rem; font-weight: 700; color: #fff; white-space: nowrap; }
+    .acc-link { font-size: 0.78rem; color: #6366f1; text-decoration: none; font-weight: 500; }
+    .acc-link:hover { color: #a5b4fc; text-decoration: underline; }
+    .acc-desc { font-size: 0.82rem; color: #9ca3af; line-height: 1.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .acc-stats { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+    .stat-chip { font-size: 0.72rem; padding: 3px 10px; border-radius: 6px; background: rgba(99,102,241,0.1); color: #a5b4fc; white-space: nowrap; border: 1px solid rgba(99,102,241,0.15); }
+    .acc-chevron { width: 20px; height: 20px; flex-shrink: 0; color: #4b5563; transition: transform 0.3s ease; }
+    .accordion.open .acc-chevron { transform: rotate(180deg); color: #6366f1; }
+    .accordion-body { max-height: 0; overflow: hidden; transition: max-height 0.35s ease; }
+    .accordion.open .accordion-body { max-height: 2000px; }
+    .accordion-inner { padding: 0 22px 22px; }
+    .accordion-inner p { font-size: 0.92rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>免費部署平台</h1>
+      <p>Free Tier 部署指南 — Frontend / Backend / Database</p>
+    </header>
+
+    <!-- ===== Decision Flowchart SVG ===== -->
+    <div class="diagram-container">
+      <svg viewBox="0 0 780 420" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/></filter>
+          <filter id="glowGreen">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feFlood flood-color="#34d399" flood-opacity="0.25"/>
+            <feComposite in2="blur" operator="in"/>
+            <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glowIndigo">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feFlood flood-color="#6366f1" flood-opacity="0.25"/>
+            <feComposite in2="blur" operator="in"/>
+            <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <linearGradient id="gradCenter" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#3730a3"/><stop offset="100%" stop-color="#1e293b"/>
+          </linearGradient>
+          <linearGradient id="gradFront" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#065f46"/><stop offset="100%" stop-color="#1e293b"/>
+          </linearGradient>
+          <linearGradient id="gradBack" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#7c2d12"/><stop offset="100%" stop-color="#1e293b"/>
+          </linearGradient>
+          <linearGradient id="gradPy" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/>
+          </linearGradient>
+          <linearGradient id="gradFull" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#581c87"/><stop offset="100%" stop-color="#1e293b"/>
+          </linearGradient>
+          <linearGradient id="gradDB" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#713f12"/><stop offset="100%" stop-color="#1e293b"/>
+          </linearGradient>
+          <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+          <marker id="arrAmber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+          <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3B82F6"/></marker>
+          <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+          <marker id="arrRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f87171"/></marker>
+        </defs>
+
+        <!-- Center node -->
+        <g transform="translate(310,170)" filter="url(#glowIndigo)">
+          <rect width="160" height="70" rx="14" fill="url(#gradCenter)" stroke="#6366f1" stroke-width="2" filter="url(#shadow)"/>
+          <text x="80" y="30" text-anchor="middle" fill="#a5b4fc" font-size="14" font-weight="700">部署咩？</text>
+          <text x="80" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">What are you deploying?</text>
+        </g>
+
+        <!-- Frontend -->
+        <g transform="translate(30,20)" filter="url(#glowGreen)">
+          <rect width="150" height="65" rx="14" fill="url(#gradFront)" stroke="#10B981" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="75" y="25" text-anchor="middle" fill="#34d399" font-size="12" font-weight="700">Frontend 前端</text>
+          <text x="75" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">GitHub Pages / Vercel</text>
+        </g>
+
+        <!-- Backend -->
+        <g transform="translate(600,20)">
+          <rect width="150" height="65" rx="14" fill="url(#gradBack)" stroke="#f87171" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="75" y="25" text-anchor="middle" fill="#f87171" font-size="12" font-weight="700">Backend 後端</text>
+          <text x="75" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">Render / Railway</text>
+
+        </g>
+
+        <!-- Python -->
+        <g transform="translate(30,330)">
+          <rect width="150" height="65" rx="14" fill="url(#gradPy)" stroke="#3B82F6" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="75" y="25" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">Python 專用</text>
+          <text x="75" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">PythonAnywhere</text>
+        </g>
+
+        <!-- Full Stack -->
+        <g transform="translate(600,330)">
+          <rect width="150" height="65" rx="14" fill="url(#gradFull)" stroke="#8B5CF6" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="75" y="25" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Full Stack 全棧</text>
+          <text x="75" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">Cloudflare</text>
+        </g>
+
+        <!-- Database -->
+        <g transform="translate(315,340)">
+          <rect width="150" height="65" rx="14" fill="url(#gradDB)" stroke="#fbbf24" stroke-width="1.5" filter="url(#shadow)"/>
+          <text x="75" y="25" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="700">Database</text>
+          <text x="75" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">Supabase / Neon / Firebase</text>
+        </g>
+
+        <!-- Arrows -->
+        <path d="M 310 195 Q 220 120 180 87" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrGreen)"/>
+        <path d="M 470 195 Q 560 120 600 87" fill="none" stroke="#f87171" stroke-width="2" marker-end="url(#arrRed)"/>
+        <path d="M 310 240 Q 220 300 180 330" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrBlue)"/>
+        <path d="M 470 240 Q 560 300 600 330" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrPurple)"/>
+        <path d="M 390 240 Q 390 290 390 338" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrAmber)"/>
+      </svg>
+    </div>
+
+    <!-- ===== Tabs ===== -->
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="frontend">① Frontend</button>
+      <button class="tab-btn" data-tab="backend">② Backend</button>
+      <button class="tab-btn" data-tab="python">③ Python</button>
+      <button class="tab-btn" data-tab="fullstack">④ Full Stack</button>
+      <button class="tab-btn" data-tab="database">⑤ Database</button>
+    </div>
+
+    <!-- ==================== Tab 1: Frontend ==================== -->
+    <div class="tab-content active" id="frontend">
+
+      <!-- GitHub Pages -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(52,211,153,0.12)">📄</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>GitHub Pages</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">純靜態託管 — 1 GB repo、100 GB/月頻寬、零設定部署</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">100 GB/月</span>
+            <span class="stat-chip">靜態</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://pages.github.com" target="_blank" rel="noopener noreferrer">pages.github.com ↗</a></p>
+            <p>GitHub 內建嘅靜態網站託管服務。只要將 HTML/CSS/JS 推上 repo，就可以自動部署。支援 Jekyll 靜態網站生成器，亦都可以直接放純靜態檔案。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>GitHub Free（所有帳號內建）</td></tr>
+              <tr><th>儲存空間</th><td>每個 repo 上限 1 GB（建議保持細小）</td></tr>
+              <tr><th>頻寬</th><td>100 GB / 月（soft limit）</td></tr>
+              <tr><th>項目數量</th><td>1 個 user site + 無限 project sites</td></tr>
+              <tr><th>自訂域名</th><td>支援（CNAME 記錄）+ 自動 SSL</td></tr>
+              <tr><th>休眠</th><td>無 — 靜態資產長期可用</td></tr>
+              <tr><th>主要限制</th><td>只支援靜態內容、無 server-side、repo 須 public（Free 帳號）</td></tr>
+              <tr><th>下一級</th><td>GitHub Pro $4/月（private repo Pages）</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>個人作品集、開源文檔、靜態 blog。零設定、零費用、直接從 Git 部署。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Vercel -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(99,102,241,0.12)">▲</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Vercel</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">Next.js 官方平台 — 100 萬 function 調用、Preview Deploy、SSR</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">100 GB/月</span>
+            <span class="stat-chip">SSR</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://vercel.com" target="_blank" rel="noopener noreferrer">vercel.com ↗</a></p>
+            <p>專為前端框架優化嘅部署平台。Next.js 嘅官方託管商，亦支援 React、Vue、Svelte。每次 Git push 自動觸發 Preview Deployment，開發體驗極佳。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Hobby Plan（只限非商業用途）</td></tr>
+              <tr><th>頻寬</th><td>100 GB / 月</td></tr>
+              <tr><th>Functions</th><td>每月 100 萬次調用、每次 10 秒限時</td></tr>
+              <tr><th>項目數量</th><td>最多 200 個</td></tr>
+              <tr><th>Build 時間</th><td>6,000 分鐘 / 月</td></tr>
+              <tr><th>自訂域名</th><td>支援（每項目最多 50 個）+ 自動 SSL</td></tr>
+              <tr><th>休眠</th><td>Serverless — cold start ~250ms</td></tr>
+              <tr><th>主要限制</th><td>非商業限制、無 team 功能、1 個成員</td></tr>
+              <tr><th>下一級</th><td>Pro $20/月/成員</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>Next.js / React 項目、SSR 網站。Preview deployment 對開發 workflow 幫助極大。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Tab 2: Backend ==================== -->
+    <div class="tab-content" id="backend">
+
+      <!-- Render -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(52,211,153,0.12)">⚡</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Render</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">Heroku 替代品 — 512 MB RAM、750 hrs/月、15 分鐘休眠</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">512 MB</span>
+            <span class="stat-chip">休眠</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://render.com" target="_blank" rel="noopener noreferrer">render.com ↗</a></p>
+            <p>現代化嘅 PaaS 平台，支援 Node.js、Python、Go、Rust 等語言。提供 Web Service、Background Worker、Cron Job 等服務類型。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Free Instance（Individual plan 內建）</td></tr>
+              <tr><th>CPU / RAM</th><td>0.1 CPU / 512 MB RAM</td></tr>
+              <tr><th>頻寬</th><td>100 GB / 月</td></tr>
+              <tr><th>運行時間</th><td>750 小時 / 月（所有 free services 共用）</td></tr>
+              <tr><th>休眠</th><td>15 分鐘無流量休眠，cold start 30-60 秒</td></tr>
+              <tr><th>自訂域名</th><td>支援 + 自動 SSL</td></tr>
+              <tr><th>主要限制</th><td>Free PostgreSQL 30 天過期、ephemeral filesystem、無 SSH</td></tr>
+              <tr><th>下一級</th><td>Starter $7/月</td></tr>
+            </table>
+            <div class="highlight-box" style="background:rgba(52,211,153,0.08); border-left-color:#10B981;">
+              <p style="color:#34d399;">防止 Cold Start 技巧：用 <a class="acc-link" href="https://uptimerobot.com" target="_blank" rel="noopener noreferrer" style="color:#34d399; text-decoration:underline;">UptimeRobot</a>（免費）每 5 分鐘 ping 一次 health endpoint，就可以避開 15 分鐘休眠。呢個係完全合法嘅做法，Render 無禁止外部 monitoring。但要留意 750 hrs/月上限 — 24/7 keep alive 大概用 720 hrs，淨係夠跑一個 service。如果有多個 free instance，需要計清楚總時數。</p>
+            </div>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>小型 REST API、demo 後端、Hackathon 項目。配合 UptimeRobot 可以解決 cold start 問題。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Railway -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(139,92,246,0.12)">🚂</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Railway</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">$5 credit/月、無休眠、一鍵部署 + DB、比 Render 更實用</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">$5/月</span>
+            <span class="stat-chip">無休眠</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://railway.app" target="_blank" rel="noopener noreferrer">railway.app ↗</a></p>
+            <p>現代化 PaaS 平台，主打簡潔嘅開發者體驗。最大優勢係 free tier 無休眠機制，$5 credit/月按用量扣費。可以一鍵部署 PostgreSQL、MySQL、Redis、MongoDB 等 database。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Trial Plan（$5 credit / 月，需驗證 GitHub 帳號）</td></tr>
+              <tr><th>CPU / RAM</th><td>最高 8 vCPU / 8 GB RAM（按用量扣 credit）</td></tr>
+              <tr><th>執行時間</th><td>500 小時 / 月（Trial 限制）</td></tr>
+              <tr><th>儲存空間</th><td>按用量計費（credit 內包含）</td></tr>
+              <tr><th>休眠</th><td>無休眠 — 服務持續運行直到 credit 用完</td></tr>
+              <tr><th>自訂域名</th><td>支援 + 自動 SSL</td></tr>
+              <tr><th>Database</th><td>一鍵部署 Postgres / MySQL / Redis / MongoDB</td></tr>
+              <tr><th>主要限制</th><td>$5 credit 用完即停、Trial 有 500 hrs 上限、需 GitHub 驗證</td></tr>
+              <tr><th>下一級</th><td>Hobby $5/月 + 用量（移除 500 hrs 限制）</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>需要持續運行嘅後端 API（無休眠）、Backend + DB 一站式部署。$5 credit 對低流量項目夠用一個月。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== Tab 3: Python ==================== -->
+    <div class="tab-content" id="python">
+
+      <!-- PythonAnywhere -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(59,130,246,0.12)">🐍</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>PythonAnywhere</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">Python 專用 — 512 MB 磁碟、100 CPU 秒/日、1 個 web app</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">512 MB</span>
+            <span class="stat-chip">100 CPU-s/日</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://www.pythonanywhere.com" target="_blank" rel="noopener noreferrer">pythonanywhere.com ↗</a></p>
+            <p>專為 Python 設計嘅雲端託管平台。提供瀏覽器內嘅 Python console 同 web app 託管。Flask / Django 初學者嘅極低門檻起步平台，但 free tier 限制多。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Beginner Account</td></tr>
+              <tr><th>儲存空間</th><td>512 MB 磁碟空間</td></tr>
+              <tr><th>CPU</th><td>100 CPU 秒 / 日（daily reset）</td></tr>
+              <tr><th>Web App</th><td>只限 1 個 web app</td></tr>
+              <tr><th>自訂域名</th><td>不支援（只有 username.pythonanywhere.com）</td></tr>
+              <tr><th>外部網絡</th><td>只能連接白名單內嘅外部 API（嚴格限制）</td></tr>
+              <tr><th>休眠</th><td>3 個月無活動停用（需手動重啟）</td></tr>
+              <tr><th>主要限制</th><td>無自訂域名、外部網絡白名單、100 CPU 秒極低、無 WebSocket</td></tr>
+              <tr><th>下一級</th><td>Developer $10/月（自訂域名 + 外部網絡）</td></tr>
+            </table>
+            <div class="highlight-box">
+              <p>外部網絡白名單係最大限制：只能存取特定 API（Google、GitHub 等）。如果需要連接自訂 API 或數據庫，必須升級。</p>
+            </div>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>Python / Flask / Django 學習同練習、課堂作業展示。唔適合正式項目或者需要外部 API 嘅應用。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Tab 4: Full Stack ==================== -->
+    <div class="tab-content" id="fullstack">
+
+      <!-- Cloudflare -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(245,158,11,0.12)">☁️</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Cloudflare</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">最慷慨 Free Tier — Workers 100K/日 + Pages 無限頻寬 + D1 5GB + R2 10GB</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">100K req/日</span>
+            <span class="stat-chip">Edge</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://www.cloudflare.com" target="_blank" rel="noopener noreferrer">cloudflare.com ↗</a></p>
+            <p>免費產品線非常豐富：Workers（edge serverless）、Pages（靜態 + SSR）、D1（SQLite）、R2（物件存儲）、KV（鍵值存儲）。組合起來可以搭建完整嘅 full-stack 應用。</p>
+            <table class="detail-table">
+              <tr><th>Workers</th><td>100,000 次請求/日、10ms CPU/次、1 MB script</td></tr>
+              <tr><th>Pages</th><td>無限頻寬、500 次 build/月</td></tr>
+              <tr><th>D1 Database</th><td>5 GB 儲存、500 萬行讀取/日、10 萬行寫入/日</td></tr>
+              <tr><th>R2 Storage</th><td>10 GB 儲存、100 萬 Class A ops/月</td></tr>
+              <tr><th>KV</th><td>1 GB 儲存、10 萬次讀取/日</td></tr>
+              <tr><th>休眠</th><td>無休眠 — edge serverless，cold start ~0ms</td></tr>
+              <tr><th>主要限制</th><td>Workers 10ms CPU 限制、D1 仍係 beta、KV 最終一致性</td></tr>
+              <tr><th>下一級</th><td>Workers Paid $5/月（1000 萬次 + 30ms CPU）</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>Edge-first 應用、API proxy、全棧 side project。目前最慷慨嘅 free tier 組合，特別適合需要全球低延遲嘅場景。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ==================== Tab 5: Database ==================== -->
+    <div class="tab-content" id="database">
+
+      <!-- Supabase -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(52,211,153,0.12)">⚡</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Supabase</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">開源 Firebase — PostgreSQL 500MB + Auth 50K MAU + Storage 1GB</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">500 MB</span>
+            <span class="stat-chip">PostgreSQL</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://supabase.com" target="_blank" rel="noopener noreferrer">supabase.com ↗</a></p>
+            <p>開源嘅 Firebase 替代品，底層係 PostgreSQL。提供數據庫、Auth、Storage、Edge Functions、Realtime 等功能。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Free Plan</td></tr>
+              <tr><th>數據庫</th><td>500 MB PostgreSQL + 1 GB 檔案存儲</td></tr>
+              <tr><th>項目數量</th><td>最多 2 個活躍項目</td></tr>
+              <tr><th>Auth</th><td>50,000 MAU（月活躍用戶）</td></tr>
+              <tr><th>Edge Functions</th><td>500,000 次調用 / 月</td></tr>
+              <tr><th>Realtime</th><td>200 個同時連接</td></tr>
+              <tr><th>休眠</th><td>7 天無活動自動暫停（每月最多 2 次恢復）</td></tr>
+              <tr><th>主要限制</th><td>7 天暫停、只有 2 個項目、無 daily backup</td></tr>
+              <tr><th>下一級</th><td>Pro $25/月（8 GB DB + 無暫停）</td></tr>
+            </table>
+            <div class="highlight-box">
+              <p>7 天暫停機制最需要留意。無流量超過 7 天就自動暫停，恢復需幾分鐘，每月只能恢復 2 次。</p>
+            </div>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>需要 PostgreSQL + Auth + Storage 嘅全棧項目。DX 非常好，dashboard 直接管理數據庫。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Neon -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(99,102,241,0.12)">🐘</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Neon</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">Serverless PostgreSQL — 0.5 GB 儲存、自動擴縮、branching 功能</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">0.5 GB</span>
+            <span class="stat-chip">Serverless PG</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://neon.tech" target="_blank" rel="noopener noreferrer">neon.tech ↗</a></p>
+            <p>Serverless PostgreSQL 平台，特色係 database branching（好似 Git branch 咁開分支數據庫）。自動 scale-to-zero 慳成本，啟動延遲極低。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Free Plan（永久免費）</td></tr>
+              <tr><th>儲存空間</th><td>0.5 GB</td></tr>
+              <tr><th>Compute</th><td>最多 0.25 vCPU，共 191.9 compute hours/月</td></tr>
+              <tr><th>Branches</th><td>10 個 database branches</td></tr>
+              <tr><th>項目數量</th><td>1 個項目</td></tr>
+              <tr><th>休眠</th><td>5 分鐘無活動 scale-to-zero，cold start ~500ms</td></tr>
+              <tr><th>主要限制</th><td>0.5 GB 容量細、1 個項目、無 point-in-time restore</td></tr>
+              <tr><th>下一級</th><td>Launch $19/月（10 GB + 300 compute hrs）</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>純 PostgreSQL 需求（唔需要 Auth/Storage 全套）。Branching 功能對開發同測試 workflow 幫助極大。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Firebase -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(245,158,11,0.12)">🔥</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Firebase</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">Google 全家桶 — Firestore 1GB + Auth 免費 + Hosting 10GB + Functions 200萬/月</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">1 GB</span>
+            <span class="stat-chip">NoSQL</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://firebase.google.com" target="_blank" rel="noopener noreferrer">firebase.google.com ↗</a></p>
+            <p>Google 嘅 BaaS（Backend as a Service）平台。Spark Plan 免費額度相當慷慨，包含 Firestore、Authentication、Hosting、Cloud Functions、Storage 等服務。特別適合 mobile app 同 SPA 後端。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>Spark Plan（永久免費）</td></tr>
+              <tr><th>Firestore</th><td>1 GB 儲存 + 50K 讀取 / 20K 寫入 / 20K 刪除 / 日</td></tr>
+              <tr><th>Authentication</th><td>免費（無限用戶、Email/Google/GitHub 等 provider）</td></tr>
+              <tr><th>Hosting</th><td>10 GB 儲存 + 360 MB/日 頻寬</td></tr>
+              <tr><th>Functions</th><td>200 萬次調用/月 + 400K GB-seconds</td></tr>
+              <tr><th>Storage</th><td>5 GB 儲存 + 1 GB/日 下載</td></tr>
+              <tr><th>休眠</th><td>無休眠 — serverless 按需</td></tr>
+              <tr><th>主要限制</th><td>NoSQL only（無 SQL）、vendor lock-in、Functions 需 Blaze 先用 Node.js 以外語言</td></tr>
+              <tr><th>下一級</th><td>Blaze Plan（pay-as-you-go，超過免費額度先收費）</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>Mobile app 後端、SPA + Auth 場景、需要 realtime sync 嘅應用。Auth 完全免費呢點非常吸引。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MongoDB Atlas -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(52,211,153,0.12)">🍃</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>MongoDB Atlas</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">Document DB — M0 512 MB、100 連接、無休眠、Atlas Search</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">512 MB</span>
+            <span class="stat-chip">NoSQL</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://www.mongodb.com/atlas" target="_blank" rel="noopener noreferrer">mongodb.com/atlas ↗</a></p>
+            <p>MongoDB 官方雲端數據庫。M0 Free Cluster 提供 512 MB 儲存，支援 Atlas Search、Charts 等附加功能嘅基本版本。</p>
+            <table class="detail-table">
+              <tr><th>Free Tier</th><td>M0 Shared Cluster</td></tr>
+              <tr><th>儲存空間</th><td>512 MB</td></tr>
+              <tr><th>連接數</th><td>最多 100 個同時連接</td></tr>
+              <tr><th>Operations</th><td>100 ops / 秒（讀寫合計）</td></tr>
+              <tr><th>備份</th><td>不支援（M0 無 backup）</td></tr>
+              <tr><th>休眠</th><td>無休眠 — cluster 持續運行</td></tr>
+              <tr><th>主要限制</th><td>512 MB 容量細、無 backup、100 ops/sec、無 VPC peering</td></tr>
+              <tr><th>下一級</th><td>M2 ~$9/月（2 GB + backup）</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>MongoDB 學習、小型 CRUD 應用。512 MB 對文字數據可以存幾萬條記錄。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Azure -->
+      <div class="accordion">
+        <div class="accordion-summary" onclick="this.parentElement.classList.toggle('open')">
+          <span class="acc-icon" style="background:rgba(59,130,246,0.12)">🔷</span>
+          <div class="acc-info">
+            <div class="acc-title">
+              <h3>Microsoft Azure</h3>
+              <span class="tier-badge free">Free</span>
+            </div>
+            <div class="acc-desc">企業級 — Cosmos DB 25GB + Functions 100萬/月 + Students $100 credit</div>
+          </div>
+          <div class="acc-stats">
+            <span class="stat-chip">25 GB</span>
+            <span class="stat-chip">Enterprise</span>
+          </div>
+          <svg class="acc-chevron" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"/></svg>
+        </div>
+        <div class="accordion-body">
+          <div class="accordion-inner">
+            <p><a class="acc-link" href="https://azure.microsoft.com" target="_blank" rel="noopener noreferrer">azure.microsoft.com ↗</a></p>
+            <p>Always Free 產品線包含多項永久免費服務。Students 計劃提供 $100 credit 無需信用卡。</p>
+            <table class="detail-table">
+              <tr><th>Cosmos DB</th><td>1,000 RU/s + 25 GB 儲存（永久免費）</td></tr>
+              <tr><th>Functions</th><td>100 萬次調用/月（永久免費）</td></tr>
+              <tr><th>App Service</th><td>10 apps、1 GB 磁碟、60 分鐘 CPU/日（F1）</td></tr>
+              <tr><th>Students</th><td>$100 credit/年（無需信用卡，.edu 驗證）</td></tr>
+              <tr><th>休眠</th><td>App Service F1：20 分鐘休眠；Functions：按需</td></tr>
+              <tr><th>主要限制</th><td>Always Free 產品有限、部分 12 個月後收費、介面複雜</td></tr>
+            </table>
+            <div class="use-case">
+              <h4>最適合...</h4>
+              <p>學生（$100 credit）、企業級 Cosmos DB 項目、.NET / C# 用戶。</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== Quick Selection Guide ===== -->
+    <div class="card" style="margin-top:32px;">
+      <h2>快速選擇指南</h2>
+      <div class="subtitle">根據需求揀平台</div>
+      <div class="key-points">
+        <div class="key-point" style="border-left-color:#10B981;">
+          <h4>純靜態網站</h4>
+          <p>GitHub Pages — 零設定、100 GB/月、直接從 Git 部署</p>
+        </div>
+        <div class="key-point" style="border-left-color:#6366f1;">
+          <h4>React / Next.js</h4>
+          <p>Vercel — SSR 支援、Preview Deploy、最佳前端 DX</p>
+        </div>
+        <div class="key-point" style="border-left-color:#8B5CF6;">
+          <h4>Backend API（無休眠）</h4>
+          <p>Railway — $5 credit/月、持續運行、一鍵部署 DB</p>
+        </div>
+        <div class="key-point" style="border-left-color:#f87171;">
+          <h4>Edge + 全棧</h4>
+          <p>Cloudflare — 最慷慨 free tier（Workers + Pages + D1 + R2）</p>
+        </div>
+        <div class="key-point" style="border-left-color:#fbbf24;">
+          <h4>PostgreSQL + Auth</h4>
+          <p>Supabase — 開源 Firebase 替代、500 MB DB + 50K MAU</p>
+        </div>
+        <div class="key-point" style="border-left-color:#3B82F6;">
+          <h4>Mobile App 後端</h4>
+          <p>Firebase — Auth 完全免費、Firestore 1 GB、realtime sync</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab switching
+    const tabBtns = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => b.classList.remove('active'));
+        tabContents.forEach(c => c.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>
