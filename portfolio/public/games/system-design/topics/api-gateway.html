@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>API Gateway 網關</h1>
-      <p>我教你點樣用統一入口處理 auth、rate limiting 同 routing</p>
+      <p>點樣用統一入口處理 auth、rate limiting 同 routing</p>
     </header>
 
     <div class="tabs">
@@ -54,13 +54,13 @@
     <!-- TAB 1: Overview -->
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我先同你講 API Gateway 係咩</h2>
+        <h2>API Gateway 係咩</h2>
         <div class="subtitle">所有 Client 請求嘅「大門」——統一入口</div>
         <p>
-          我想你諗像一個超大嘅商場，入口只有一個大門。保安企喺度檢查你有冇會員卡、限制入場人數、然後告訴你要去嘅店鋪喺幾樓。API Gateway 就係呢個「大門保安」——佢企喺你所有後端服務嘅前面，統一處理所有請求。
+          想像一個超大嘅商場，入口只有一個大門。保安企喺度檢查訪客有冇會員卡、限制入場人數、然後指引去邊個店鋪喺幾樓。API Gateway 就係呢個「大門保安」——企喺所有後端服務嘅前面，統一處理所有請求。
         </p>
         <p>
-          我要你明白呢一點：冇 API Gateway 嘅話，Client 要知道每個微服務嘅地址（User Service 喺 port 3001、Order Service 喺 port 3002......）。有咗 Gateway，Client 只需要知道一個地址，其餘嘅由 Gateway 路由。呢個就係我哋講嘅「關注點分離」。
+          關鍵在於：冇 API Gateway 嘅話，Client 要知道每個微服務嘅地址（User Service 喺 port 3001、Order Service 喺 port 3002......）。有咗 Gateway，Client 只需要知道一個地址，其餘嘅由 Gateway 路由。呢個就係所謂嘅「關注點分離」。
         </p>
 
         <div class="diagram-container">
@@ -145,10 +145,10 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我話你知佢點樣運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作流程</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>Mobile App 或 Web 前端發請求到 API Gateway——呢個係你系統嘅唯一入口地址。</span></li>
-          <li><span class="step-num">2</span><span>Gateway 首先驗證用戶身份（叫 Auth Service 檢查 JWT token）。我要你記住：驗證永遠係第一步。</span></li>
+          <li><span class="step-num">1</span><span>Mobile App 或 Web 前端發請求到 API Gateway——呢個係系統嘅唯一入口地址。</span></li>
+          <li><span class="step-num">2</span><span>Gateway 首先驗證用戶身份（叫 Auth Service 檢查 JWT token）。重點係：驗證永遠係第一步。</span></li>
           <li><span class="step-num">3</span><span>然後檢查 Rate Limiting——呢個用戶有冇超額？超咗就直接返回 429。</span></li>
           <li><span class="step-num">4</span><span>最後根據 URL path 將請求路由到對應嘅後端服務（/users 去 User Service，/orders 去 Order Service）。</span></li>
         </ol>
@@ -158,17 +158,17 @@
     <!-- TAB 2: Features -->
     <div class="tab-content" id="features">
       <div class="card">
-        <h2>我教你 API Gateway 嘅核心功能</h2>
-        <div class="subtitle">API Gateway 做嘅嘢遠唔止路由咁簡單，你要全部識</div>
+        <h2>API Gateway 嘅核心功能</h2>
+        <div class="subtitle">API Gateway 做嘅嘢遠唔止路由咁簡單，全部都要識</div>
 
         <div class="key-points">
           <div class="key-point">
             <h4>Authentication / Authorization</h4>
-            <p>我建議你將身份驗證統一放喺 Gateway。每個後端服務唔使自己做 JWT 驗證，Gateway 做一次就夠。驗證通過先放行，唔通過直接返回 401。</p>
+            <p>最佳做法係將身份驗證統一放喺 Gateway。每個後端服務唔使自己做 JWT 驗證，Gateway 做一次就夠。驗證通過先放行，唔通過直接返回 401。</p>
           </div>
           <div class="key-point">
             <h4>Rate Limiting / Throttling</h4>
-            <p>你一定要加限流。可以按 user、IP、API endpoint 分別限流。超額就返回 429 Too Many Requests。唔加嘅話，俾人濫用你嘅 API 你就知死。</p>
+            <p>限流係必須嘅。可以按 user、IP、API endpoint 分別限流。超額就返回 429 Too Many Requests。唔加嘅話，API 俾人濫用後果好嚴重。</p>
           </div>
           <div class="key-point">
             <h4>Request Routing</h4>
@@ -176,23 +176,23 @@
           </div>
           <div class="key-point">
             <h4>Request / Response 轉換</h4>
-            <p>Gateway 可以修改 request（加 header、改 body）同 response（過濾敏感欄位、合併多個服務嘅結果）。我教你一招：Mobile 同 Web 可以收到唔同格式嘅 response，各取所需。</p>
+            <p>Gateway 可以修改 request（加 header、改 body）同 response（過濾敏感欄位、合併多個服務嘅結果）。實用技巧：Mobile 同 Web 可以收到唔同格式嘅 response，各取所需。</p>
           </div>
           <div class="key-point">
             <h4>Logging / Monitoring</h4>
-            <p>所有請求都經過 Gateway，你可以統一記錄 access log、latency、error rate。一個地方就睇到成個系統嘅健康狀況，呢個超方便。</p>
+            <p>所有請求都經過 Gateway，可以統一記錄 access log、latency、error rate。一個地方就睇到成個系統嘅健康狀況，呢個超方便。</p>
           </div>
           <div class="key-point">
             <h4>SSL Termination</h4>
-            <p>HTTPS 嘅加解密交俾 Gateway 處理，後端服務之間用 HTTP 通訊就得。我建議你一定咁做——減少後端 Server 嘅 CPU 負擔。</p>
+            <p>HTTPS 嘅加解密交俾 Gateway 處理，後端服務之間用 HTTP 通訊就得。建議一定咁做——減少後端 Server 嘅 CPU 負擔。</p>
           </div>
           <div class="key-point">
             <h4>Caching</h4>
-            <p>對於唔常改嘅資料（例如商品列表），Gateway 可以直接 cache response，唔使每次都打後端服務。你要諗清楚邊啲資料適合 cache。</p>
+            <p>對於唔常改嘅資料（例如商品列表），Gateway 可以直接 cache response，唔使每次都打後端服務。要諗清楚邊啲資料適合 cache。</p>
           </div>
           <div class="key-point">
             <h4>Circuit Breaker</h4>
-            <p>如果某個後端服務掛咗，Gateway 可以快速返回錯誤（而唔係等 timeout），防止故障擴散到成個系統。呢個概念你一定要識，面試好常考。</p>
+            <p>如果某個後端服務掛咗，Gateway 可以快速返回錯誤（而唔係等 timeout），防止故障擴散到成個系統。呢個概念必須要識，面試好常考。</p>
           </div>
         </div>
       </div>
@@ -201,41 +201,41 @@
     <!-- TAB 3: Practice -->
     <div class="tab-content" id="practice">
       <div class="card">
-        <h2>我分享幾個實戰要點</h2>
+        <h2>幾個實戰要點</h2>
         <div class="subtitle">面試同實際開發都要知嘅重點</div>
 
         <h3 style="color:#fff; font-size:1.1rem; margin: 16px 0 12px;">Single Point of Failure？</h3>
         <p>
-          我要你特別留意呢一點：API Gateway 成為所有請求嘅唯一入口，如果佢掛咗，成個系統就冇嘢用。所以生產環境一定要部署多個 Gateway instance，前面再加一個 Load Balancer 做故障轉移。呢個係必須嘅。
+          要特別留意呢一點：API Gateway 成為所有請求嘅唯一入口，如果 Gateway 掛咗，成個系統就冇嘢用。所以生產環境一定要部署多個 Gateway instance，前面再加一個 Load Balancer 做故障轉移。呢個係必須嘅。
         </p>
 
         <h3 style="color:#fff; font-size:1.1rem; margin: 20px 0 12px;">BFF 模式（Backend for Frontend）</h3>
         <p>
-          呢個模式我好推薦你了解。唔同嘅 Client（Mobile、Web、IoT）可能需要唔同格式嘅資料。BFF 模式就係為每種 Client 做一個專屬嘅 Gateway，各自 aggregate 同 transform 資料。例如 Mobile BFF 返少啲欄位（慳 bandwidth），Web BFF 返多啲（螢幕大可以顯示更多）。
+          呢個模式好值得了解。唔同嘅 Client（Mobile、Web、IoT）可能需要唔同格式嘅資料。BFF 模式就係為每種 Client 做一個專屬嘅 Gateway，各自 aggregate 同 transform 資料。例如 Mobile BFF 返少啲欄位（慳 bandwidth），Web BFF 返多啲（螢幕大可以顯示更多）。
         </p>
 
         <div class="key-points" style="margin-top:20px;">
           <div class="key-point">
             <h4>常見方案</h4>
-            <p>AWS API Gateway、Kong、Nginx、Envoy、Traefik。我建議你選擇主要考慮三樣嘢：功能需求、性能、同你嘅雲平台整合程度。</p>
+            <p>AWS API Gateway、Kong、Nginx、Envoy、Traefik。選擇時主要考慮三樣嘢：功能需求、性能、同雲平台嘅整合程度。</p>
           </div>
           <div class="key-point">
             <h4>Latency 考量</h4>
-            <p>Gateway 多做一層處理，自然會增加延遲。所以我提醒你：Gateway 嘅 code 要盡量輕量，重邏輯應該放喺後端服務做，唔好塞太多嘢入 Gateway。</p>
+            <p>Gateway 多做一層處理，自然會增加延遲。所以要注意：Gateway 嘅 code 要盡量輕量，重邏輯應該放喺後端服務做，唔好塞太多嘢入 Gateway。</p>
           </div>
           <div class="key-point">
             <h4>API Versioning</h4>
-            <p>Gateway 可以處理 API 版本管理：/api/v1/ 同 /api/v2/ 路由去唔同嘅服務版本，做到平滑升級。呢個好實用，你做多版本 API 嘅時候會好感激有呢個功能。</p>
+            <p>Gateway 可以處理 API 版本管理：/api/v1/ 同 /api/v2/ 路由去唔同嘅服務版本，做到平滑升級。呢個好實用，做多版本 API 嘅時候會好感激有呢個功能。</p>
           </div>
           <div class="key-point">
             <h4>CORS 處理</h4>
-            <p>跨域問題統一喺 Gateway 處理，後端服務唔使理。Gateway 加上 Access-Control-Allow-Origin 等 header 就搞掂。我建議你唔好喺每個服務重複做呢啲設定。</p>
+            <p>跨域問題統一喺 Gateway 處理，後端服務唔使理。Gateway 加上 Access-Control-Allow-Origin 等 header 就搞掂。唔好喺每個服務重複做呢啲設定。</p>
           </div>
         </div>
 
         <div class="use-case">
           <h4>大規模系統嘅實踐</h4>
-          <p>好多大型公司嘅 API Gateway 每日處理超過數百億個 API 請求。佢哋嘅 Gateway 做晒 auth、routing、rate limiting、A/B testing、canary deployment。呢個就係 API Gateway 喺大規模系統嘅真實價值——你將所有橫切關注點集中喺一處管理。</p>
+          <p>好多大型公司嘅 API Gateway 每日處理超過數百億個 API 請求。大規模 Gateway 做晒 auth、routing、rate limiting、A/B testing、canary deployment。呢個就係 API Gateway 喺大規模系統嘅真實價值——將所有橫切關注點集中喺一處管理。</p>
         </div>
       </div>
     </div>

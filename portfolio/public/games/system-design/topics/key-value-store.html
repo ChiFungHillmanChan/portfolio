@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>Key-Value Store 鍵值存儲</h1>
-      <p>我帶你睇分佈式 KV 存儲，partition 同 replication 點樣設計</p>
+      <p>深入了解分佈式 KV 存儲，partition 同 replication 點樣設計</p>
     </header>
 
     <div class="tabs">
@@ -53,10 +53,10 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我教你理解分佈式 Key-Value Store</h2>
+        <h2>分佈式 Key-Value Store 核心概念</h2>
         <div class="subtitle">用 key 搵 value，但係要分佈喺多台機器上面</div>
         <p>
-          我要同你講一個好核心嘅概念。好似 Redis、DynamoDB、Cassandra 咁，就係 Key-Value Store。你要諗清楚一個問題：當數據量好大嘅時候，要放喺多台機器，一個 key 應該去邊台機器？點樣做 replication？我嘅答案係用 <strong style="color:#fbbf24">Consistent Hashing（一致性哈希）</strong> 做 partition，用 <strong style="color:#34d399">Quorum</strong> 做 replication。你記住呢兩個核心機制，面試同實戰都會用到。
+          呢個係一個好核心嘅概念。好似 Redis、DynamoDB、Cassandra 咁，就係 Key-Value Store。核心問題係：當數據量好大嘅時候，要放喺多台機器，一個 key 應該去邊台機器？點樣做 replication？答案係用 <strong style="color:#fbbf24">Consistent Hashing（一致性哈希）</strong> 做 partition，用 <strong style="color:#34d399">Quorum</strong> 做 replication。呢兩個核心機制，面試同實戰都會用到。
         </p>
 
         <div class="diagram-container">
@@ -132,41 +132,41 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">完整流程</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>Client 發送讀寫請求去 Coordinator——你可以理解佢做「交通指揮官」。</span></li>
-          <li><span class="step-num">2</span><span>Coordinator 用 Consistent Hashing 搵出呢個 key 屬於邊個 partition，對應邊個 Primary Node。我建議你記住：hash ring 上面，每個 node 負責一段範圍。</span></li>
-          <li><span class="step-num">3</span><span>寫入時：Primary 接收寫入，然後同步去 Replica nodes。你要明白，呢步就係 replication 嘅核心。</span></li>
-          <li><span class="step-num">4</span><span>讀取時：可以讀 Primary 或者 Replica，視乎你對 consistency 嘅要求有幾高。</span></li>
+          <li><span class="step-num">1</span><span>Client 發送讀寫請求去 Coordinator——可以理解為「交通指揮官」。</span></li>
+          <li><span class="step-num">2</span><span>Coordinator 用 Consistent Hashing 搵出呢個 key 屬於邊個 partition，對應邊個 Primary Node。重點係：hash ring 上面，每個 node 負責一段範圍。</span></li>
+          <li><span class="step-num">3</span><span>寫入時：Primary 接收寫入，然後同步去 Replica nodes。呢步就係 replication 嘅核心。</span></li>
+          <li><span class="step-num">4</span><span>讀取時：可以讀 Primary 或者 Replica，視乎對 consistency 嘅要求有幾高。</span></li>
         </ol>
       </div>
     </div>
 
     <div class="tab-content" id="quorum">
       <div class="card">
-        <h2>我教你 Quorum 機制</h2>
+        <h2>Quorum 機制詳解</h2>
         <div class="subtitle">W + R &gt; N 保證讀到最新數據</div>
         <p>
-          呢個係我最想你記住嘅公式。假設有 N 個 replica。寫入時要等 W 個 node 確認先算成功；讀取時要等 R 個 node 回應。只要 <strong style="color:#34d399">W + R &gt; N</strong>，你就一定可以保證讀到最新嘅寫入——因為讀同寫一定有 overlap。
+          呢個係最關鍵嘅公式。假設有 N 個 replica。寫入時要等 W 個 node 確認先算成功；讀取時要等 R 個 node 回應。只要 <strong style="color:#34d399">W + R &gt; N</strong>，就一定可以保證讀到最新嘅寫入——因為讀同寫一定有 overlap。
         </p>
-        <p>我畀你一個具體例子：N=3，W=2，R=2。寫入 2 個成功，讀取 2 個，讀到嘅 2 個入面至少有一個係寫入過嘅 node。你自己畫個圖就會好清楚。</p>
+        <p>具體例子：N=3，W=2，R=2。寫入 2 個成功，讀取 2 個，讀到嘅 2 個入面至少有一個係寫入過嘅 node。畫個圖就會好清楚。</p>
 
         <div class="key-points">
           <div class="key-point">
             <h4>Consistent Hashing</h4>
-            <p>我要同你講清楚：將 key 映射到 hash ring 上面，每個 node 負責一段。加減 node 嘅時候只會影響相鄰 node，唔會 rehash 全部 key。呢個就係佢嘅威力。</p>
+            <p>核心原理：將 key 映射到 hash ring 上面，每個 node 負責一段。加減 node 嘅時候只會影響相鄰 node，唔會 rehash 全部 key。呢個就係 Consistent Hashing 嘅威力。</p>
           </div>
           <div class="key-point">
             <h4>Quorum (W+R&gt;N)</h4>
-            <p>寫 W 個、讀 R 個，W+R&gt;N 確保 read-after-write consistency。你可以 trade-off：W 大啲讀快啲，R 大啲寫快啲。我建議你諗清楚你嘅 workload 再揀。</p>
+            <p>寫 W 個、讀 R 個，W+R&gt;N 確保 read-after-write consistency。可以 trade-off：W 大啲讀快啲，R 大啲寫快啲。建議根據實際 workload 再揀。</p>
           </div>
           <div class="key-point">
             <h4>Vector Clock</h4>
-            <p>處理並發更新嘅時候，你要用 vector clock 判斷邊個版本新啲，或者 detect conflict 要 merge。我提醒你：呢個係處理 conflict 嘅關鍵工具。</p>
+            <p>處理並發更新嘅時候，需要用 vector clock 判斷邊個版本新啲，或者 detect conflict 要 merge。呢個係處理 conflict 嘅關鍵工具。</p>
           </div>
           <div class="key-point">
             <h4>Gossip Protocol</h4>
-            <p>Node 之間用 gossip 傳播 membership 同 metadata。無中心 node，任何 node 都可以加入或離開集群。我想你記住：gossip 就好似流言咁傳開，最終全部 node 都會知。</p>
+            <p>Node 之間用 gossip 傳播 membership 同 metadata。無中心 node，任何 node 都可以加入或離開集群。關鍵在於：gossip 就好似流言咁傳開，最終全部 node 都會知。</p>
           </div>
         </div>
       </div>
@@ -175,29 +175,29 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我幫你整理設計 KV Store 嘅關鍵決策</div>
+        <div class="subtitle">設計 KV Store 嘅關鍵決策</div>
         <div class="key-points">
           <div class="key-point">
             <h4>Partition 策略</h4>
-            <p>Consistent Hashing 之外，我建議你一定要用 Virtual Nodes 解決 load imbalance——每個 physical node 對應多個 virtual node，咁分佈先會均勻。</p>
+            <p>Consistent Hashing 之外，必須要用 Virtual Nodes 解決 load imbalance——每個 physical node 對應多個 virtual node，咁分佈先會均勻。</p>
           </div>
           <div class="key-point">
             <h4>Consistency vs Availability</h4>
-            <p>你要理解 CAP 定理：network partition 時要揀 CP 定 AP。Dynamo 系揀 AP（eventual consistency）；想要強一致就用 CP。我建議你先搞清楚你嘅 business 需要邊種。</p>
+            <p>必須理解 CAP 定理：network partition 時要揀 CP 定 AP。Dynamo 系揀 AP（eventual consistency）；想要強一致就用 CP。關鍵在於先搞清楚 business 需要邊種。</p>
           </div>
           <div class="key-point">
             <h4>Hinted Handoff</h4>
-            <p>Replica node 暫時 down 咗，其他 node 會幫佢 hold 住數據，等佢 recover 再送返去。我想你記住，呢個機制大幅提升 availability。</p>
+            <p>Replica node 暫時 down 咗，其他 node 會幫手 hold 住數據，等 recover 再送返去。重點係，呢個機制大幅提升 availability。</p>
           </div>
           <div class="key-point">
             <h4>Compaction</h4>
-            <p>LSM-tree 結構會有大量 SST 文件，你要定期做 compaction 合併，reclaim 空間、加速讀取。唔好忽略呢步，會影響性能。</p>
+            <p>LSM-tree 結構會有大量 SST 文件，需要定期做 compaction 合併，reclaim 空間、加速讀取。唔好忽略呢步，會影響性能。</p>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>我嘅總結</h4>
-          <p>Amazon DynamoDB、Cassandra、Redis Cluster 都係呢種架構。我建議你重點理解 Dynamo 嘅設計思路，因為佢係呢套設計嘅始祖，影響咗好多 NoSQL 系統。掌握咗呢啲概念，你設計分佈式存儲就有底氣。</p>
+          <h4>總結</h4>
+          <p>Amazon DynamoDB、Cassandra、Redis Cluster 都係呢種架構。重點理解 Dynamo 嘅設計思路，因為呢套設計係始祖，影響咗好多 NoSQL 系統。掌握咗呢啲概念，設計分佈式存儲就有底氣。</p>
         </div>
       </div>
     </div>

@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dependency Injection 依賴注入</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } .comparison-grid { grid-template-columns: 1fr; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .code-block { background: #0a0b10; border-radius: 8px; padding: 16px; font-family: "SF Mono", "Fira Code", monospace; font-size: 0.85rem; line-height: 1.7; overflow-x: auto; color: #c0c4cc; }
+    .code-block .keyword { color: #c084fc; }
+    .code-block .class-name { color: #67e8f9; }
+    .code-block .string { color: #34d399; }
+    .code-block .comment { color: #6b7280; font-style: italic; }
+    .code-block .func { color: #fbbf24; }
+    .code-block .param { color: #f9a8d4; }
+    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .comparison-col { background: #13151c; border-radius: 12px; padding: 20px; border: 1px solid #2a2d3a; }
+    .comparison-col.bad { border-top: 3px solid #f87171; }
+    .comparison-col.good { border-top: 3px solid #34d399; }
+    .comparison-col h4 { font-size: 0.95rem; margin-bottom: 12px; }
+    .comparison-col.bad h4 { color: #f87171; }
+    .comparison-col.good h4 { color: #34d399; }
+    .comparison-col p { font-size: 0.85rem; color: #9ca3af; line-height: 1.7; margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header>
+      <h1>Dependency Injection</h1>
+      <p>OOP 設計模式 — 將依賴從外部注入，而唔係喺內部建立</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tab-concept">基本概念</button>
+      <button class="tab-btn" data-tab="tab-comparison">有 vs 冇 DI</button>
+      <button class="tab-btn" data-tab="tab-testing">測試優勢</button>
+    </div>
+
+    <!-- ==================== TAB 1: 基本概念 ==================== -->
+    <div id="tab-concept" class="tab-content active">
+
+      <div class="card">
+        <h2>咩係 Dependency Injection？</h2>
+        <div class="subtitle">OOP Design Pattern — 由外部提供依賴</div>
+        <p>
+          Dependency Injection（依賴注入）係一個 OOP 設計模式。核心概念係：一個 Class 所需要嘅依賴，唔應該由佢自己喺內部用 <code>new</code> keyword 去建立，而係應該由外部提供（注入）畀佢。
+        </p>
+        <p>
+          最常見嘅做法係透過 Constructor 嘅參數嚟接收依賴。噉樣做嘅好處係：Class 本身唔需要知道依賴嘅具體實作，只需要知道依賴嘅 Interface 就夠。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="grad-external" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-constructor" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-class" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#34d399" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-dep" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <filter id="glow-indigo">
+                <feGaussianBlur stdDeviation="6" result="blur"/>
+                <feFlood flood-color="#6366f1" flood-opacity="0.4" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge>
+                  <feMergeNode in="glow"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="shadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <marker id="arrow-indigo" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#6366f1"/>
+              </marker>
+              <marker id="arrow-amber" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#f59e0b"/>
+              </marker>
+              <marker id="arrow-green" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <!-- External Caller -->
+            <rect x="40" y="50" width="160" height="70" rx="14" fill="url(#grad-external)" stroke="#6366f1" stroke-width="1.5" filter="url(#glow-indigo)"/>
+            <text x="120" y="82" text-anchor="middle" fill="#a5b4fc" font-size="12" font-weight="600">External Caller</text>
+            <text x="120" y="102" text-anchor="middle" fill="#9ca3af" font-size="11">( Main / Factory )</text>
+
+            <!-- Dependency -->
+            <rect x="40" y="210" width="160" height="70" rx="14" fill="url(#grad-dep)" stroke="#a78bfa" stroke-width="1.5" filter="url(#shadow)"/>
+            <text x="120" y="242" text-anchor="middle" fill="#c4b5fd" font-size="12" font-weight="600">Logger</text>
+            <text x="120" y="262" text-anchor="middle" fill="#9ca3af" font-size="11">( Dependency )</text>
+
+            <!-- Constructor -->
+            <rect x="320" y="110" width="160" height="70" rx="14" fill="url(#grad-constructor)" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow)"/>
+            <text x="400" y="142" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">Constructor</text>
+            <text x="400" y="162" text-anchor="middle" fill="#9ca3af" font-size="11">( Parameter )</text>
+
+            <!-- Target Class -->
+            <rect x="590" y="110" width="170" height="70" rx="14" fill="url(#grad-class)" stroke="#34d399" stroke-width="1.5" filter="url(#shadow)"/>
+            <text x="675" y="142" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="600">UserService</text>
+            <text x="675" y="162" text-anchor="middle" fill="#9ca3af" font-size="11">( Uses Dependency )</text>
+
+            <!-- Arrow: External -> Constructor -->
+            <path d="M200,85 C260,85 260,145 320,145" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrow-indigo)"/>
+            <text x="260" y="100" text-anchor="middle" fill="#a5b4fc" font-size="10">new Logger()</text>
+
+            <!-- Arrow: Dependency -> Constructor -->
+            <path d="M200,245 C280,245 280,155 320,155" fill="none" stroke="#f59e0b" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-amber)"/>
+            <text x="275" y="218" text-anchor="middle" fill="#fbbf24" font-size="10">inject</text>
+
+            <!-- Arrow: Constructor -> Class -->
+            <path d="M480,145 C530,145 540,145 590,145" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green)"/>
+            <text x="535" y="135" text-anchor="middle" fill="#6ee7b7" font-size="10">this.logger</text>
+
+            <!-- Label -->
+            <text x="400" y="310" text-anchor="middle" fill="#6b7280" font-size="12">Dependency 由外部建立，再透過 Constructor 注入到 Class 入面</text>
+          </svg>
+        </div>
+
+        <ul class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span>External Caller（例如 Main function 或者 Factory）負責建立依賴嘅 Instance，例如 <code>new Logger()</code></span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span>建立好嘅依賴會透過 Constructor 嘅參數傳入目標 Class，而唔係喺 Class 內部用 <code>new</code> 建立</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span>目標 Class 只需要使用依賴提供嘅方法（例如 <code>this.logger.log()</code>），完全唔需要知道依賴嘅具體實作</span>
+          </li>
+        </ul>
+
+        <div class="use-case">
+          <h4>關鍵在於</h4>
+          <p>Class 唔負責建立自己嘅依賴 — 依賴由外部控制同注入。呢個原則叫做 Inversion of Control (IoC)。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 2: 有 vs 冇 DI ==================== -->
+    <div id="tab-comparison" class="tab-content">
+
+      <div class="card">
+        <h2>冇 DI vs 有 DI</h2>
+        <div class="subtitle">Tightly Coupled vs Loosely Coupled</div>
+        <p>
+          重點係理解兩種寫法嘅分別。冇用 DI 嘅時候，Class 會自己喺 Constructor 入面用 <code>new</code> keyword 建立依賴，造成緊密耦合（Tightly Coupled）。用咗 DI 之後，依賴由外部傳入，Class 同具體實作之間就鬆散耦合（Loosely Coupled）。
+        </p>
+
+        <div class="comparison-grid">
+          <div class="comparison-col bad">
+            <h4>冇 DI — Tightly Coupled</h4>
+            <div class="code-block">
+              <span class="keyword">class</span> <span class="class-name">UserService</span> {<br>
+              &nbsp;&nbsp;<span class="func">constructor</span>() {<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 直接喺內部建立依賴</span><br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">this</span>.logger = <span class="keyword">new</span> <span class="class-name">ConsoleLogger</span>();<br>
+              &nbsp;&nbsp;}<br>
+              }
+            </div>
+            <p>Class 自己決定用邊個 Logger — 冇辦法換走佢，測試都好難做 Mock。</p>
+          </div>
+          <div class="comparison-col good">
+            <h4>有 DI — Loosely Coupled</h4>
+            <div class="code-block">
+              <span class="keyword">class</span> <span class="class-name">UserService</span> {<br>
+              &nbsp;&nbsp;<span class="func">constructor</span>(<span class="param">logger</span>) {<br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="comment">// 依賴由外部注入</span><br>
+              &nbsp;&nbsp;&nbsp;&nbsp;<span class="keyword">this</span>.logger = <span class="param">logger</span>;<br>
+              &nbsp;&nbsp;}<br>
+              }
+            </div>
+            <p>外部決定傳入邊個 Logger — 可以隨時替換，測試時傳入 Mock 就得。</p>
+          </div>
+        </div>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="grad-red" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f87171" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-green2" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-neutral" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#64748b" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <filter id="glow-red">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#f87171" flood-opacity="0.35" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge>
+                  <feMergeNode in="glow"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="glow-green">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#34d399" flood-opacity="0.35" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge>
+                  <feMergeNode in="glow"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="shadow2">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <marker id="arrow-red" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#f87171"/>
+              </marker>
+              <marker id="arrow-green2" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <!-- Section Labels -->
+            <text x="200" y="30" text-anchor="middle" fill="#f87171" font-size="14" font-weight="700">Without DI</text>
+            <text x="600" y="30" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">With DI</text>
+
+            <!-- Divider -->
+            <line x1="400" y1="15" x2="400" y2="365" stroke="#2a2d3a" stroke-width="1" stroke-dasharray="8,6"/>
+
+            <!-- === LEFT SIDE: Without DI === -->
+            <rect x="80" y="60" width="240" height="80" rx="14" fill="url(#grad-red)" stroke="#f87171" stroke-width="1.5" filter="url(#glow-red)"/>
+            <text x="200" y="92" text-anchor="middle" fill="#fca5a5" font-size="13" font-weight="600">UserService</text>
+            <text x="200" y="115" text-anchor="middle" fill="#9ca3af" font-size="11">this.logger = new Logger()</text>
+
+            <rect x="110" y="220" width="180" height="65" rx="14" fill="url(#grad-neutral)" stroke="#64748b" stroke-width="1.5" filter="url(#shadow2)"/>
+            <text x="200" y="250" text-anchor="middle" fill="#94a3b8" font-size="12" font-weight="600">ConsoleLogger</text>
+            <text x="200" y="268" text-anchor="middle" fill="#6b7280" font-size="10">( Hard-coded )</text>
+
+            <!-- Arrow: UserService -> ConsoleLogger -->
+            <path d="M200,140 C200,170 200,185 200,220" fill="none" stroke="#f87171" stroke-width="2" marker-end="url(#arrow-red)"/>
+            <text x="215" y="183" fill="#f87171" font-size="10">new</text>
+
+            <text x="200" y="330" text-anchor="middle" fill="#f87171" font-size="11">Cannot swap dependency</text>
+            <text x="200" y="350" text-anchor="middle" fill="#6b7280" font-size="10">Tightly Coupled</text>
+
+            <!-- === RIGHT SIDE: With DI === -->
+            <rect x="460" y="60" width="180" height="55" rx="14" fill="url(#grad-green2)" stroke="#34d399" stroke-width="1" filter="url(#shadow2)"/>
+            <text x="550" y="85" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="600">External Caller</text>
+            <text x="550" y="100" text-anchor="middle" fill="#9ca3af" font-size="10">new Logger() + inject</text>
+
+            <rect x="470" y="170" width="220" height="65" rx="14" fill="url(#grad-green2)" stroke="#34d399" stroke-width="1.5" filter="url(#glow-green)"/>
+            <text x="580" y="197" text-anchor="middle" fill="#6ee7b7" font-size="13" font-weight="600">UserService</text>
+            <text x="580" y="217" text-anchor="middle" fill="#9ca3af" font-size="11">constructor(logger)</text>
+
+            <rect x="440" y="290" width="120" height="55" rx="14" fill="url(#grad-neutral)" stroke="#a78bfa" stroke-width="1" filter="url(#shadow2)"/>
+            <text x="500" y="315" text-anchor="middle" fill="#c4b5fd" font-size="11" font-weight="600">RealLogger</text>
+            <text x="500" y="332" text-anchor="middle" fill="#6b7280" font-size="9">Production</text>
+
+            <rect x="600" y="290" width="120" height="55" rx="14" fill="url(#grad-neutral)" stroke="#fbbf24" stroke-width="1" filter="url(#shadow2)"/>
+            <text x="660" y="315" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="600">MockLogger</text>
+            <text x="660" y="332" text-anchor="middle" fill="#6b7280" font-size="9">Testing</text>
+
+            <!-- Arrow: Caller -> UserService -->
+            <path d="M550,115 C550,135 580,150 580,170" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green2)"/>
+            <text x="590" y="143" fill="#34d399" font-size="10">inject</text>
+
+            <!-- Arrow: UserService -> RealLogger -->
+            <path d="M540,235 C520,260 510,270 500,290" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-green2)"/>
+
+            <!-- Arrow: UserService -> MockLogger -->
+            <path d="M620,235 C640,260 650,270 660,290" fill="none" stroke="#fbbf24" stroke-width="1.5" stroke-dasharray="5,4" marker-end="url(#arrow-green2)"/>
+
+            <text x="580" y="365" text-anchor="middle" fill="#34d399" font-size="11">Swap freely between implementations</text>
+          </svg>
+        </div>
+
+        <ul class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>冇 DI：</strong>UserService 喺 Constructor 入面直接 <code>new ConsoleLogger()</code>，同 ConsoleLogger 呢個具體實作綁死咗。想換做 FileLogger 就要改 UserService 嘅 code。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>有 DI：</strong>UserService 嘅 Constructor 接受一個 <code>logger</code> 參數。邊個 Logger 實作由外部決定 — 可以係 RealLogger、FileLogger、甚至 MockLogger。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>結果：</strong>UserService 完全唔知道具體用緊邊個 Logger，只要符合相同嘅 Interface 就可以注入，達到 Loosely Coupled 嘅效果。</span>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ==================== TAB 3: 測試優勢 ==================== -->
+    <div id="tab-testing" class="tab-content">
+
+      <div class="card">
+        <h2>DI 嘅測試優勢</h2>
+        <div class="subtitle">Mock Dependencies for Unit Testing</div>
+        <p>
+          Dependency Injection 最大嘅實際好處之一，就係令 Unit Testing 變得簡單。重點係：當 Class 嘅依賴由外部注入，測試嘅時候就可以傳入 Mock（模擬物件），而唔需要依賴真實嘅 Service。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 350" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="grad-test" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-mock" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-target" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="grad-result" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#34d399" stop-opacity="0.3"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <filter id="glow-amber">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#fbbf24" flood-opacity="0.4" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge>
+                  <feMergeNode in="glow"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="shadow3">
+                <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <marker id="arrow-amber2" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#fbbf24"/>
+              </marker>
+              <marker id="arrow-indigo2" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#6366f1"/>
+              </marker>
+              <marker id="arrow-green3" markerWidth="10" markerHeight="8" refX="9" refY="4" orient="auto">
+                <path d="M0,0 L10,4 L0,8" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <!-- Test File -->
+            <rect x="40" y="60" width="180" height="80" rx="14" fill="url(#grad-test)" stroke="#fbbf24" stroke-width="1.5" filter="url(#glow-amber)"/>
+            <text x="130" y="90" text-anchor="middle" fill="#fbbf24" font-size="13" font-weight="600">Unit Test</text>
+            <text x="130" y="112" text-anchor="middle" fill="#9ca3af" font-size="10">userService.test.js</text>
+
+            <!-- Mock Logger -->
+            <rect x="40" y="210" width="180" height="70" rx="14" fill="url(#grad-mock)" stroke="#f59e0b" stroke-width="1.5" filter="url(#shadow3)"/>
+            <text x="130" y="240" text-anchor="middle" fill="#fbbf24" font-size="12" font-weight="600">MockLogger</text>
+            <text x="130" y="260" text-anchor="middle" fill="#9ca3af" font-size="10">{ log: jest.fn() }</text>
+
+            <!-- UserService under test -->
+            <rect x="330" y="110" width="200" height="80" rx="14" fill="url(#grad-target)" stroke="#6366f1" stroke-width="1.5" filter="url(#shadow3)"/>
+            <text x="430" y="140" text-anchor="middle" fill="#a5b4fc" font-size="13" font-weight="600">UserService</text>
+            <text x="430" y="163" text-anchor="middle" fill="#9ca3af" font-size="10">new UserService(mockLogger)</text>
+
+            <!-- Result -->
+            <rect x="620" y="120" width="150" height="60" rx="14" fill="url(#grad-result)" stroke="#34d399" stroke-width="1.5" filter="url(#shadow3)"/>
+            <text x="695" y="148" text-anchor="middle" fill="#6ee7b7" font-size="12" font-weight="600">Test Passes</text>
+            <text x="695" y="165" text-anchor="middle" fill="#9ca3af" font-size="10">Isolated + Fast</text>
+
+            <!-- Arrow: Test -> UserService -->
+            <path d="M220,100 C270,100 280,140 330,145" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrow-amber2)"/>
+            <text x="275" y="108" fill="#fbbf24" font-size="10">create</text>
+
+            <!-- Arrow: Test -> MockLogger -->
+            <path d="M130,140 C130,165 130,180 130,210" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrow-amber2)"/>
+            <text x="150" y="178" fill="#f59e0b" font-size="10">build mock</text>
+
+            <!-- Arrow: MockLogger -> UserService (inject) -->
+            <path d="M220,245 C280,245 300,165 330,155" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="6,4" marker-end="url(#arrow-indigo2)"/>
+            <text x="285" y="220" fill="#a5b4fc" font-size="10">inject</text>
+
+            <!-- Arrow: UserService -> Result -->
+            <path d="M530,150 C570,150 590,150 620,150" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrow-green3)"/>
+            <text x="575" y="140" fill="#34d399" font-size="10">assert</text>
+
+            <!-- Bottom label -->
+            <text x="400" y="325" text-anchor="middle" fill="#6b7280" font-size="12">Mock 取代真實依賴 — 測試快速、獨立、可靠</text>
+          </svg>
+        </div>
+
+        <p>
+          喺上面嘅流程入面，Unit Test 首先建立一個 MockLogger（例如用 <code>jest.fn()</code>），然後將佢注入去 UserService。測試執行嘅時候，UserService 用嘅係 Mock 而唔係真正嘅 Logger，所以測試唔會受到外部因素影響。
+        </p>
+
+        <div class="comparison-grid" style="margin-bottom:24px;">
+          <div class="comparison-col bad">
+            <h4>冇 DI 嘅測試困難</h4>
+            <div class="code-block">
+              <span class="comment">// UserService 自己 new ConsoleLogger()</span><br>
+              <span class="comment">// 冇辦法替換依賴</span><br>
+              <span class="comment">// 測試會觸發真正嘅 console.log</span><br>
+              <span class="comment">// 難以驗證 log 被調用咗幾次</span>
+            </div>
+          </div>
+          <div class="comparison-col good">
+            <h4>有 DI 嘅測試寫法</h4>
+            <div class="code-block">
+              <span class="keyword">const</span> mock = { <span class="func">log</span>: jest.<span class="func">fn</span>() };<br>
+              <span class="keyword">const</span> svc = <span class="keyword">new</span> <span class="class-name">UserService</span>(mock);<br>
+              svc.<span class="func">createUser</span>(<span class="string">"Alice"</span>);<br>
+              <span class="func">expect</span>(mock.log).<span class="func">toHaveBeenCalled</span>();
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>DI 帶來嘅核心好處</h2>
+        <div class="subtitle">Beyond Testing — Design Benefits</div>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Loose Coupling</h4>
+            <p>Class 唔再同具體嘅依賴實作綁死。只要 Interface 一致，可以自由替換任何實作。</p>
+          </div>
+          <div class="key-point">
+            <h4>Testability</h4>
+            <p>測試嘅時候可以注入 Mock / Stub / Fake，唔需要啟動真實嘅 Database 或者 API。</p>
+          </div>
+          <div class="key-point">
+            <h4>Single Responsibility</h4>
+            <p>Class 只負責自己嘅邏輯，唔需要負責建立同管理依賴。符合 SRP 原則。</p>
+          </div>
+          <div class="key-point">
+            <h4>Flexibility</h4>
+            <p>Production 用 RealLogger、Testing 用 MockLogger、Staging 用 FileLogger — 全部由外部控制。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>常見應用場景</h4>
+          <p>大型應用通常會用 DI Container（如 Spring、Angular 嘅 Injector）嚟自動管理依賴嘅建立同注入，減少手動 wiring 嘅工作量。不過核心原理同手動 Constructor Injection 係一樣嘅。</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

@@ -53,13 +53,13 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我教你 Task Queue 係咩</h2>
+        <h2>Task Queue 係咩</h2>
         <div class="subtitle">將耗時任務放入隊列，Worker 慢慢處理，唔阻塞 API 回應</div>
         <p>
-          我要同你講一個你做後端一定會遇到嘅問題。當你嘅 API 要做一啲好慢嘅嘢——例如發郵件、生成 PDF、壓縮影片——如果你等佢做完先回覆用戶，用戶會等到頸都長。我嘅建議係：用 Task Queue。API 即刻回覆「收到喇」，然後偷偷哋將任務放入隊列，由背後嘅 Worker 慢慢做。
+          呢個係做後端一定會遇到嘅問題。當 API 要做一啲好慢嘅嘢——例如發郵件、生成 PDF、壓縮影片——如果等做完先回覆用戶，用戶會等到頸都長。解決方案係：用 Task Queue。API 即刻回覆「收到喇」，然後偷偷哋將任務放入隊列，由背後嘅 Worker 慢慢做。
         </p>
         <p>
-          我用一個比喻你就明：就好似餐廳落單，收銀員即刻話「好呀收到」，然後將單傳去廚房慢慢煮。你唔使企喺度等廚師煮完先至離開收銀台。
+          用一個比喻就明：就好似餐廳落單，收銀員即刻話「好呀收到」，然後將單傳去廚房慢慢煮。唔使企喺度等廚師煮完先至離開收銀台。
         </p>
 
         <div class="diagram-container">
@@ -128,38 +128,38 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我話你知點樣運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作流程</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>API 收到請求（例如：發送歡迎郵件），你要即時回覆 202 Accepted，然後將任務 push 入 Task Queue。我成日提醒新手：千祈唔好等任務做完先回覆！</span></li>
-          <li><span class="step-num">2</span><span>Worker 不斷從 Queue 度 pull 任務，逐個處理。你可以加多幾個 Worker 嚟並行工作，呢個就係橫向擴展嘅美妙之處。</span></li>
-          <li><span class="step-num">3</span><span>如果處理失敗，系統會重試。我要你記住：重試多次都失敗嘅任務要送去 Dead Letter Queue（DLQ），等人工排查，千祈唔好無限重試。</span></li>
+          <li><span class="step-num">1</span><span>API 收到請求（例如：發送歡迎郵件），應該即時回覆 202 Accepted，然後將任務 push 入 Task Queue。重點係：千祈唔好等任務做完先回覆！</span></li>
+          <li><span class="step-num">2</span><span>Worker 不斷從 Queue 度 pull 任務，逐個處理。可以加多幾個 Worker 嚟並行工作，呢個就係橫向擴展嘅美妙之處。</span></li>
+          <li><span class="step-num">3</span><span>如果處理失敗，系統會重試。必須記住：重試多次都失敗嘅任務要送去 Dead Letter Queue（DLQ），等人工排查，千祈唔好無限重試。</span></li>
         </ol>
       </div>
     </div>
 
     <div class="tab-content" id="retry">
       <div class="card">
-        <h2>我教你重試機制</h2>
+        <h2>重試機制</h2>
         <div class="subtitle">點樣處理失敗任務，唔會無限重試搞死系統</div>
         <p>
-          我要同你講一個殘酷嘅現實：網絡唔穩定、下游服務暫時掛咗、資料庫鎖表……任務失敗係家常便飯。你唔可以假設任務一定會成功。我教你用 <strong style="color:#f59e0b">Exponential Backoff（指數退避）</strong>：第一次失敗等 1 秒重試，第二次等 2 秒，第三次等 4 秒……越嚟越耐，畀系統喘息嘅空間。呢個係我認為最重要嘅重試策略。
+          殘酷嘅現實係：網絡唔穩定、下游服務暫時掛咗、資料庫鎖表……任務失敗係家常便飯。唔可以假設任務一定會成功。正確做法係用 <strong style="color:#f59e0b">Exponential Backoff（指數退避）</strong>：第一次失敗等 1 秒重試，第二次等 2 秒，第三次等 4 秒……越嚟越耐，畀系統喘息嘅空間。呢個係最重要嘅重試策略。
         </p>
         <div class="key-points">
           <div class="key-point">
             <h4>Exponential Backoff</h4>
-            <p>重試間隔：1s → 2s → 4s → 8s → 16s。你要記住呢個模式，佢可以避免失敗任務瘋狂重試拖垮下游服務。</p>
+            <p>重試間隔：1s → 2s → 4s → 8s → 16s。必須記住呢個模式，可以避免失敗任務瘋狂重試拖垮下游服務。</p>
           </div>
           <div class="key-point">
             <h4>Max Retries</h4>
-            <p>我建議你設定最大重試次數（例如 5 次），超過就送去 DLQ。千祈唔好無限重試，否則隊列會積壓到爆。</p>
+            <p>建議設定最大重試次數（例如 5 次），超過就送去 DLQ。千祈唔好無限重試，否則隊列會積壓到爆。</p>
           </div>
           <div class="key-point">
             <h4>Jitter（隨機抖動）</h4>
-            <p>我教你一個進階技巧：重試時間加少少隨機數，避免大量任務同一秒重試，造成「驚群效應」（thundering herd）。</p>
+            <p>進階技巧：重試時間加少少隨機數，避免大量任務同一秒重試，造成「驚群效應」（thundering herd）。</p>
           </div>
           <div class="key-point">
             <h4>Dead Letter Queue</h4>
-            <p>DLQ 儲存處理唔到嘅任務。我建議你一定要定期檢查 DLQ，可能係 bug 要修，或者資料有問題要人手處理。設定 alert 好重要。</p>
+            <p>DLQ 儲存處理唔到嘅任務。一定要定期檢查 DLQ，可能係 bug 要修，或者資料有問題要人手處理。設定 alert 好重要。</p>
           </div>
         </div>
       </div>
@@ -168,28 +168,28 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我幫你整理面試同實際開發都會用到嘅重點</div>
+        <div class="subtitle">面試同實際開發都會用到嘅重點整理</div>
         <div class="key-points">
           <div class="key-point">
             <h4>異步處理耗時任務</h4>
-            <p>我嘅經驗係：發郵件、生成報表、轉碼影片……任何超過幾秒嘅操作都應該入隊列。你要養成呢個習慣——API 永遠即刻回覆。</p>
+            <p>經驗法則：發郵件、生成報表、轉碼影片……任何超過幾秒嘅操作都應該入隊列。最佳實踐係——API 永遠即刻回覆。</p>
           </div>
           <div class="key-point">
             <h4>Retry + Exponential Backoff</h4>
-            <p>我再強調：失敗要重試，但一定要用指數退避，唔好一失敗就瘋狂 retry。加埋 jitter 就更穩陣。</p>
+            <p>再次強調：失敗要重試，但一定要用指數退避，唔好一失敗就瘋狂 retry。加埋 jitter 就更穩陣。</p>
           </div>
           <div class="key-point">
             <h4>Dead Letter Queue</h4>
-            <p>重試多次都失敗嘅任務送去 DLQ。我建議你設 alert 監控 DLQ，要有人定期去處理呢啲「孤兒任務」，唔好放喺度唔理。</p>
+            <p>重試多次都失敗嘅任務送去 DLQ。建議設 alert 監控 DLQ，要有人定期去處理呢啲「孤兒任務」，唔好放喺度唔理。</p>
           </div>
           <div class="key-point">
             <h4>Priority Queue</h4>
-            <p>我教你一個實用技巧：緊急任務（例如付款通知）可以設高優先級，VIP 用戶嘅任務排前面處理。呢個對用戶體驗好重要。</p>
+            <p>實用技巧：緊急任務（例如付款通知）可以設高優先級，VIP 用戶嘅任務排前面處理。呢個對用戶體驗好重要。</p>
           </div>
         </div>
         <div class="use-case">
-          <h4>我推薦嘅常見實現方案</h4>
-          <p>AWS SQS、Redis + Bull/BullMQ、RabbitMQ、Celery（Python）都係我覺得好用嘅 Task Queue 方案。仲有 delayed jobs 你要識：例如「30 分鐘後發送提醒郵件」，可以用 Redis sorted set 或者 SQS delay 功能實現。我建議初學者由 BullMQ 開始上手。</p>
+          <h4>常見實現方案</h4>
+          <p>AWS SQS、Redis + Bull/BullMQ、RabbitMQ、Celery（Python）都係實用嘅 Task Queue 方案。仲有 delayed jobs 必須要識：例如「30 分鐘後發送提醒郵件」，可以用 Redis sorted set 或者 SQS delay 功能實現。建議初學者由 BullMQ 開始上手。</p>
         </div>
       </div>
     </div>

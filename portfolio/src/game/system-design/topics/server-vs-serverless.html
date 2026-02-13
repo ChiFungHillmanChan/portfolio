@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Server vs Serverless — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card h3 { color: #ffffff; font-size: 1.1rem; margin: 20px 0 12px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .pros-cons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    @media (max-width: 600px) { .pros-cons { grid-template-columns: 1fr; } .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } .tab-btn { font-size: 0.8rem; padding: 10px 12px; } }
+    .pros, .cons { background: #13151c; border-radius: 10px; padding: 16px; }
+    .pros h4 { color: #34d399; font-size: 0.9rem; margin-bottom: 8px; }
+    .cons h4 { color: #f87171; font-size: 0.9rem; margin-bottom: 8px; }
+    .pros ul, .cons ul { list-style: none; padding: 0; }
+    .pros li, .cons li { font-size: 0.85rem; color: #c0c4cc; padding: 4px 0; line-height: 1.5; border-bottom: none; display: block; gap: 0; }
+    .pros li::before { content: "✓ "; color: #34d399; font-weight: 700; }
+    .cons li::before { content: "✗ "; color: #f87171; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .compare-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
+    .compare-table th { text-align: left; padding: 12px 14px; background: #13151c; color: #a5b4fc; font-weight: 600; border-bottom: 2px solid #2a2d3a; }
+    .compare-table td { padding: 10px 14px; border-bottom: 1px solid #2a2d3a; color: #c0c4cc; vertical-align: top; line-height: 1.6; }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table .label { color: #9ca3af; font-weight: 500; white-space: nowrap; width: 120px; }
+    .tag-server { color: #34d399; font-weight: 600; }
+    .tag-serverless { color: #f59e0b; font-weight: 600; }
+    .highlight-box { background: rgba(99, 102, 241, 0.08); border: 1px solid #6366f1; border-radius: 10px; padding: 16px; margin-top: 16px; }
+    .highlight-box strong { color: #a5b4fc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Server vs Serverless</h1>
+      <p>傳統 Server 定 Serverless？兩種完全唔同嘅遊戲規則</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="server">① Server 方案</button>
+      <button class="tab-btn" data-tab="serverless">② Serverless 方案</button>
+      <button class="tab-btn" data-tab="decision">③ 點樣揀</button>
+    </div>
+
+    <!-- ===================== TAB 1: Server ===================== -->
+    <div class="tab-content active" id="server">
+      <div class="card">
+        <h2>Server 方案：完全掌控</h2>
+        <div class="subtitle">你話事，你負責，乜都喺你手</div>
+        <p>
+          我先同你講傳統 Server 嘅玩法。<strong class="tag-server">Server</strong> 就係你自己租或者買一台機——可以係雲端嘅 EC2、可以係自己屋企嘅實體機——然後你話事晒所有嘢。
+        </p>
+        <p>
+          你揀 <strong>GPU</strong>、揀 <strong>RAM</strong>、揀 <strong>儲存空間</strong>。你決定裝咩作業系統、裝咩軟件、開咩 port。你負責做 OS update、security patch、防火牆設定。你話要幾多台就幾多台——但你要自己管理 load balancing 同 auto scaling。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="serverGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#34d399;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#34d399;stop-opacity:0.05" />
+              </linearGradient>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <filter id="shadow">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+              </filter>
+              <marker id="arrowGreen" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#34d399" />
+              </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="400" y="30" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="600">Server 架構：你要管理所有層級</text>
+
+            <!-- You (top) -->
+            <g transform="translate(325,60)">
+              <rect width="150" height="50" rx="14" fill="#6366f1" filter="url(#glow)"/>
+              <text x="75" y="32" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">你（開發者）</text>
+            </g>
+
+            <!-- Arrow down -->
+            <path d="M 400 110 L 400 150" stroke="#34d399" stroke-width="2" fill="none" marker-end="url(#arrowGreen)"/>
+            <text x="420" y="135" fill="#34d399" font-size="11" font-weight="600">管理</text>
+
+            <!-- Server Layer -->
+            <g transform="translate(150,160)">
+              <rect width="500" height="260" rx="14" fill="url(#serverGrad)" stroke="#34d399" stroke-width="2" filter="url(#shadow)"/>
+              <text x="250" y="25" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Server（你嘅責任範圍）</text>
+
+              <!-- Hardware -->
+              <g transform="translate(20,50)">
+                <rect width="210" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
+                <text x="105" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">硬件配置</text>
+                <text x="105" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">GPU / RAM / Storage</text>
+                <text x="105" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">你揀規格，你付錢</text>
+              </g>
+
+              <!-- OS & Security -->
+              <g transform="translate(250,50)">
+                <rect width="230" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
+                <text x="115" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">作業系統 + 安全</text>
+                <text x="115" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">OS updates / Security patch</text>
+                <text x="115" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">你負責定期更新同防護</text>
+              </g>
+
+              <!-- Scaling -->
+              <g transform="translate(20,140)">
+                <rect width="210" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
+                <text x="105" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">擴展 Scaling</text>
+                <text x="105" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">手動加減 Server</text>
+                <text x="105" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">要自己設定 auto scaling</text>
+              </g>
+
+              <!-- Cost -->
+              <g transform="translate(250,140)">
+                <rect width="230" height="70" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+                <text x="115" y="20" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600">成本模式</text>
+                <text x="115" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">Always-on = Always-paying</text>
+                <text x="115" y="54" text-anchor="middle" fill="#9ca3af" font-size="9">開住機就收住錢（按小時計）</text>
+              </g>
+            </g>
+
+            <!-- Bottom note -->
+            <text x="400" y="445" text-anchor="middle" fill="#6b7280" font-size="11">完全控制 = 完全責任</text>
+          </svg>
+        </div>
+
+        <h3>重點特性</h3>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>完全控制權</h4>
+            <p>你話點改就點改。想裝咩軟件、想用咩 port、想點配 network 都得。冇人阻止你。</p>
+          </div>
+          <div class="key-point">
+            <h4>Always-on 成本</h4>
+            <p>Server 係 24 小時開住嘅——就算冇人用，你都要畀錢。雲端按小時計，自己嘅機就係電費。</p>
+          </div>
+          <div class="key-point">
+            <h4>自己管理維護</h4>
+            <p>OS update、security patch、監控、備份——全部你負責。有問題半夜三更都要你起身搞。</p>
+          </div>
+          <div class="key-point">
+            <h4>手動擴展</h4>
+            <p>流量多咗要自己加 Server。可以寫 auto scaling script，但都係你自己搞，唔會自動幫你。</p>
+          </div>
+        </div>
+
+        <div class="pros-cons">
+          <div class="pros">
+            <h4>優點</h4>
+            <ul>
+              <li>完全控制硬件同軟件</li>
+              <li>可以優化到極致</li>
+              <li>長期穩定流量成本可預測</li>
+              <li>冇 vendor lock-in</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>缺點</h4>
+            <ul>
+              <li>Always-on = 冇流量都照收錢</li>
+              <li>要有人手管理維護</li>
+              <li>擴展要時間（手動加機）</li>
+              <li>你負責所有安全問題</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>適合場景</h4>
+          <p>流量穩定、有專人維護、長期運行嘅服務。例如公司內部系統、穩定嘅 API、大型網站後端。如果你有技術團隊去管理，Server 長遠嚟講可能平過 Serverless。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 2: Serverless ===================== -->
+    <div class="tab-content" id="serverless">
+      <div class="card">
+        <h2>Serverless 方案：雲端幫你搞</h2>
+        <div class="subtitle">你只管寫 code，其他嘢雲端供應商幫你搞晒</div>
+        <p>
+          我再同你講 <strong class="tag-serverless">Serverless</strong> 嘅玩法。Serverless 唔係話冇 Server——而係話你<strong>唔使管 Server</strong>。硬件、作業系統、擴展、維護——全部雲端供應商幫你搞，你只需要 deploy code。
+        </p>
+        <p>
+          最常見嘅係 <strong>AWS Lambda</strong>、<strong>Google Cloud Functions</strong>、<strong>Azure Functions</strong>。你寫一個 function，上傳，然後每次有 request 就自動幫你執行。用完即棄，冇 request 就唔收錢。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="serverlessGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.3" />
+                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.05" />
+              </linearGradient>
+              <filter id="glowOrange">
+                <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+                <feMerge>
+                  <feMergeNode in="coloredBlur"/>
+                  <feMergeNode in="SourceGraphic"/>
+                </feMerge>
+              </filter>
+              <marker id="arrowOrange" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#f59e0b" />
+              </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="400" y="30" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="600">Serverless 架構：雲端供應商管理底層</text>
+
+            <!-- You (top) -->
+            <g transform="translate(325,60)">
+              <rect width="150" height="50" rx="14" fill="#6366f1" filter="url(#glowOrange)"/>
+              <text x="75" y="32" text-anchor="middle" fill="#fff" font-size="13" font-weight="700">你（開發者）</text>
+            </g>
+
+            <!-- Arrow down -->
+            <path d="M 400 110 L 400 150" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arrowOrange)"/>
+            <text x="420" y="135" fill="#f59e0b" font-size="11" font-weight="600">只寫 code</text>
+
+            <!-- Your Code Layer (small) -->
+            <g transform="translate(300,160)">
+              <rect width="200" height="50" rx="14" fill="#1e293b" stroke="#6366f1" stroke-width="2"/>
+              <text x="100" y="22" text-anchor="middle" fill="#6366f1" font-size="12" font-weight="700">你嘅 Code</text>
+              <text x="100" y="38" text-anchor="middle" fill="#c0c4cc" font-size="10">deploy 就收工</text>
+            </g>
+
+            <!-- Arrow down -->
+            <path d="M 400 210 L 400 240" stroke="#f59e0b" stroke-width="2" fill="none" marker-end="url(#arrowOrange)" stroke-dasharray="4,4"/>
+
+            <!-- Cloud Provider Layer -->
+            <g transform="translate(150,250)">
+              <rect width="500" height="170" rx="14" fill="url(#serverlessGrad)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+              <text x="250" y="25" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="700">雲端供應商負責（你唔使理）</text>
+
+              <!-- Hardware -->
+              <g transform="translate(20,45)">
+                <rect width="140" height="60" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+                <text x="70" y="20" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">硬件</text>
+                <text x="70" y="36" text-anchor="middle" fill="#9ca3af" font-size="9">佢哋揀</text>
+                <text x="70" y="50" text-anchor="middle" fill="#9ca3af" font-size="9">你唔使管</text>
+              </g>
+
+              <!-- Scaling -->
+              <g transform="translate(180,45)">
+                <rect width="140" height="60" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+                <text x="70" y="20" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">自動擴展</text>
+                <text x="70" y="36" text-anchor="middle" fill="#9ca3af" font-size="9">流量多自動加</text>
+                <text x="70" y="50" text-anchor="middle" fill="#9ca3af" font-size="9">流量少自動減</text>
+              </g>
+
+              <!-- Maintenance -->
+              <g transform="translate(340,45)">
+                <rect width="140" height="60" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1"/>
+                <text x="70" y="20" text-anchor="middle" fill="#f59e0b" font-size="10" font-weight="600">維護</text>
+                <text x="70" y="36" text-anchor="middle" fill="#9ca3af" font-size="9">OS update</text>
+                <text x="70" y="50" text-anchor="middle" fill="#9ca3af" font-size="9">Security patch</text>
+              </g>
+
+              <!-- Cost box -->
+              <g transform="translate(130,120)">
+                <rect width="240" height="30" rx="8" fill="#1e293b" stroke="#34d399" stroke-width="1"/>
+                <text x="120" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">Pay per request — 冇 request 就免費</text>
+              </g>
+            </g>
+
+            <!-- Bottom note -->
+            <text x="400" y="445" text-anchor="middle" fill="#6b7280" font-size="11">零維護 = 零控制（你改唔到底層）</text>
+          </svg>
+        </div>
+
+        <h3>重點特性</h3>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>雲端揀硬件</h4>
+            <p>你唔使揀 GPU、RAM、Storage。雲端供應商會自動配置適合嘅硬件，你唔需要知道底層跑緊咩機。</p>
+          </div>
+          <div class="key-point">
+            <h4>自動擴展</h4>
+            <p>流量多咗會自動加 instance，流量少咗會自動減。完全唔使你操心，全自動處理。</p>
+          </div>
+          <div class="key-point">
+            <h4>按 request 收費</h4>
+            <p>冇 request 就唔收錢——真正嘅 pay-as-you-go。但流量大嘅時候帳單會好驚人。</p>
+          </div>
+          <div class="key-point">
+            <h4>零維護負擔</h4>
+            <p>OS update、security patch、監控——全部雲端供應商搞。你唔使半夜起身處理服務器問題。</p>
+          </div>
+        </div>
+
+        <div class="pros-cons">
+          <div class="pros">
+            <h4>優點</h4>
+            <ul>
+              <li>冇流量就免費（真正按用量收費）</li>
+              <li>自動 scaling，唔使人手操作</li>
+              <li>零維護，唔使管 Server</li>
+              <li>快速部署，幾分鐘就上線</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>缺點</h4>
+            <ul>
+              <li>大流量時成本爆升</li>
+              <li>Vendor lock-in（好難搬走）</li>
+              <li>Cold start 延遲問題</li>
+              <li>你改唔到底層配置</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>適合場景</h4>
+          <p>流量唔穩定、spiky 嘅服務。例如每日淨係繁忙時間先有流量嘅 App、週末先多人用嘅服務、event-driven 嘅工作（處理上傳、發送通知）。如果你唔想請人管 Server、預算充裕，Serverless 係好選擇。</p>
+        </div>
+
+        <div class="highlight-box">
+          <p><strong>Cold Start 係咩？</strong>第一次 request 嚟嘅時候，Serverless function 要「開機」——要 load code、建立連接。呢個過程可能要幾百 ms 甚至幾秒。如果你需要低延遲，就要考慮呢個問題。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 3: Decision Guide ===================== -->
+    <div class="tab-content" id="decision">
+      <div class="card">
+        <h2>點樣揀：三個關鍵問題</h2>
+        <div class="subtitle">根據流量模式、預算、團隊規模嚟決定</div>
+        <p>
+          我總結咗三個關鍵因素畀你。你問自己呢三條問題，基本上就知道應該揀 Server 定 Serverless。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="decisionGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" style="stop-color:#34d399;stop-opacity:0.2" />
+                <stop offset="50%" style="stop-color:#6366f1;stop-opacity:0.2" />
+                <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0.2" />
+              </linearGradient>
+              <marker id="arrowDecision" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#6366f1" />
+              </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="400" y="30" text-anchor="middle" fill="#9ca3af" font-size="14" font-weight="600">決策流程圖</text>
+
+            <!-- Question 1 -->
+            <g transform="translate(300,60)">
+              <rect width="200" height="60" rx="14" fill="#1e293b" stroke="#6366f1" stroke-width="2"/>
+              <text x="100" y="24" text-anchor="middle" fill="#a5b4fc" font-size="11" font-weight="600">問題 1：流量模式</text>
+              <text x="100" y="40" text-anchor="middle" fill="#c0c4cc" font-size="10">穩定定 Spiky？</text>
+            </g>
+
+            <!-- Branches from Q1 -->
+            <path d="M 300 90 L 180 150" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDecision)"/>
+            <path d="M 500 90 L 620 150" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDecision)"/>
+
+            <!-- Steady Traffic -->
+            <g transform="translate(50,150)">
+              <rect width="180" height="70" rx="12" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+              <text x="90" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">穩定流量</text>
+              <text x="90" y="38" text-anchor="middle" fill="#c0c4cc" font-size="9">24 小時都有人用</text>
+              <text x="90" y="52" text-anchor="middle" fill="#c0c4cc" font-size="9">流量波動唔大</text>
+              <text x="90" y="64" text-anchor="middle" fill="#34d399" font-size="9" font-weight="600">→ Server 平啲</text>
+            </g>
+
+            <!-- Spiky Traffic -->
+            <g transform="translate(570,150)">
+              <rect width="180" height="70" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="90" y="20" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600">Spiky 流量</text>
+              <text x="90" y="38" text-anchor="middle" fill="#c0c4cc" font-size="9">大部分時間冇流量</text>
+              <text x="90" y="52" text-anchor="middle" fill="#c0c4cc" font-size="9">繁忙時間先爆</text>
+              <text x="90" y="64" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="600">→ Serverless 抵啲</text>
+            </g>
+
+            <!-- Question 2 -->
+            <g transform="translate(300,260)">
+              <rect width="200" height="60" rx="14" fill="#1e293b" stroke="#6366f1" stroke-width="2"/>
+              <text x="100" y="24" text-anchor="middle" fill="#a5b4fc" font-size="11" font-weight="600">問題 2：預算</text>
+              <text x="100" y="40" text-anchor="middle" fill="#c0c4cc" font-size="10">有錢定要慳錢？</text>
+            </g>
+
+            <!-- Branches from Q2 -->
+            <path d="M 300 290 L 180 350" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDecision)"/>
+            <path d="M 500 290 L 620 350" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDecision)"/>
+
+            <!-- Budget tight -->
+            <g transform="translate(50,350)">
+              <rect width="180" height="70" rx="12" fill="#1e293b" stroke="#34d399" stroke-width="1.5"/>
+              <text x="90" y="20" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">預算有限</text>
+              <text x="90" y="38" text-anchor="middle" fill="#c0c4cc" font-size="9">要慳錢</text>
+              <text x="90" y="52" text-anchor="middle" fill="#c0c4cc" font-size="9">有技術人手</text>
+              <text x="90" y="64" text-anchor="middle" fill="#34d399" font-size="9" font-weight="600">→ Server（長遠平）</text>
+            </g>
+
+            <!-- Deep pockets -->
+            <g transform="translate(570,350)">
+              <rect width="180" height="70" rx="12" fill="#1e293b" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="90" y="20" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="600">預算充裕</text>
+              <text x="90" y="38" text-anchor="middle" fill="#c0c4cc" font-size="9">用錢買時間</text>
+              <text x="90" y="52" text-anchor="middle" fill="#c0c4cc" font-size="9">唔想煩</text>
+              <text x="90" y="64" text-anchor="middle" fill="#f59e0b" font-size="9" font-weight="600">→ Serverless（方便）</text>
+            </g>
+
+            <!-- Question 3 -->
+            <g transform="translate(300,460)">
+              <rect width="200" height="30" rx="10" fill="#1e293b" stroke="#6366f1" stroke-width="2"/>
+              <text x="100" y="20" text-anchor="middle" fill="#a5b4fc" font-size="10" font-weight="600">問題 3：有冇人管 Server？</text>
+            </g>
+          </svg>
+        </div>
+
+        <ul class="steps">
+          <li>
+            <div class="step-num">1</div>
+            <div>
+              <strong>流量模式</strong><br>
+              如果流量穩定（例如 24 小時都有人用），Server always-on 嘅成本反而平過 Serverless 按 request 收費。但如果流量 spiky（例如淨係繁忙時間先有），Serverless 就抵好多——大部分時間免費。
+            </div>
+          </li>
+          <li>
+            <div class="step-num">2</div>
+            <div>
+              <strong>預算同團隊</strong><br>
+              有技術人手去管 Server？預算有限？咁用 Server，長遠平啲。如果冇人手、唔想煩、預算充裕，就用 Serverless——用錢買方便。
+            </div>
+          </li>
+          <li>
+            <div class="step-num">3</div>
+            <div>
+              <strong>控制權 vs 便利性</strong><br>
+              需要完全控制硬件同軟件（例如特殊嘅 GPU、自訂網絡設定）？就要用 Server。如果你只係想跑 code、唔想理底層，Serverless 係完美選擇。
+            </div>
+          </li>
+        </ul>
+
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Server</th>
+              <th>Serverless</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="label">適合流量</td><td>穩定、持續</td><td>Spiky、唔穩定</td></tr>
+            <tr><td class="label">成本模式</td><td>Always-on，按小時計</td><td>Pay-per-request，冇 request 免費</td></tr>
+            <tr><td class="label">維護負擔</td><td>你負責 OS、安全、監控</td><td>雲端供應商負責</td></tr>
+            <tr><td class="label">擴展方式</td><td>手動或者自己寫 auto scaling</td><td>完全自動，唔使你理</td></tr>
+            <tr><td class="label">控制權</td><td>完全控制</td><td>零控制（改唔到底層）</td></tr>
+            <tr><td class="label">適合團隊</td><td>有技術人手管理</td><td>小團隊、唔想煩</td></tr>
+          </tbody>
+        </table>
+
+        <div class="use-case">
+          <h4>我嘅建議</h4>
+          <p>
+            如果你係 startup，一開始用 Serverless——快速上線、唔使管 Server、成本低（因為一開始流量少）。但當你 scale 到一定規模、流量穩定咗，就要考慮搬去 Server——因為大流量下 Serverless 會好貴。
+          </p>
+          <p>
+            如果你有技術團隊、流量穩定、長期運行，一開始就用 Server——控制權高、成本可預測。但要有人手去管理維護。
+          </p>
+        </div>
+
+        <div class="highlight-box">
+          <p><strong>混合用都得！</strong>好多公司其實係混合用嘅——主要 App 跑喺 Server 度（穩定流量），但簡單嘅 background job（例如發 email、處理圖片）就用 Serverless。唔使二揀一，按需求混搭先係最聰明。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

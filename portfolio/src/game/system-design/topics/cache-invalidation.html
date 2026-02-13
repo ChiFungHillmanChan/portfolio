@@ -280,7 +280,7 @@
   <div class="container">
     <header>
       <h1>Cache 失效策略</h1>
-      <p>我帶你用最簡單嘅方式，搞清楚四種常見嘅 Cache（快取）更新策略</p>
+      <p>用最簡單嘅方式，搞清楚四種常見嘅 Cache（快取）更新策略</p>
     </header>
 
     <div class="tabs">
@@ -296,7 +296,7 @@
         <h2>TTL — Time to Live（時間到期）</h2>
         <div class="subtitle">最簡單嘅 Cache 失效方法：設個時限，到期就刪</div>
         <p>
-          我用個簡單嘅例子同你講。你去餐廳叫外賣，啲嘢食放雪櫃最多擺 5 分鐘就要掉咗佢。TTL 就係咁嘅概念——你嘅 Cache 入面嘅資料，放咗一段時間之後就會自動被移除，下次有人嚟攞資料，系統就會去資料庫攞返最新嘅。我建議你由呢個策略開始學，因為佢係最易理解嘅。
+          用個簡單嘅例子嚟理解。去餐廳叫外賣，啲嘢食放雪櫃最多擺 5 分鐘就要掉咗佢。TTL 就係咁嘅概念——Cache 入面嘅資料，放咗一段時間之後就會自動被移除，下次有人嚟攞資料，系統就會去資料庫攞返最新嘅。建議由呢個策略開始學，因為佢係最易理解嘅。
         </p>
 
         <div class="diagram-container">
@@ -379,19 +379,19 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你點樣理解佢嘅運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作原理</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span>用戶想攞啲資料，系統先去 Cache 度睇下有冇。你要記住，Cache 係第一道防線。</span>
+            <span>用戶想攞啲資料，系統先去 Cache 度睇下有冇。重點係，Cache 係第一道防線。</span>
           </li>
           <li>
             <span class="step-num">2</span>
-            <span>如果 Cache 冇（我哋叫佢做「Cache Miss」），就去資料庫攞返，然後順便存入 Cache。</span>
+            <span>如果 Cache 冇（即係「Cache Miss」），就去資料庫攞返，然後順便存入 Cache。</span>
           </li>
           <li>
             <span class="step-num">3</span>
-            <span>呢份資料喺 Cache 擺咗 5 分鐘之後，就會自動被移除。你可以理解為佢有「保質期」。</span>
+            <span>呢份資料喺 Cache 擺咗 5 分鐘之後，就會自動被移除。可以理解為佢有「保質期」。</span>
           </li>
           <li>
             <span class="step-num">4</span>
@@ -403,7 +403,7 @@
           <div class="pros">
             <h4>👍 好處</h4>
             <ul>
-              <li>實現超簡單，我建議初學嘅你由呢個開始</li>
+              <li>實現超簡單，建議初學者由呢個開始</li>
               <li>唔使理資料幾時被改過</li>
               <li>適合用嚟快取第三方 API 嘅資料</li>
             </ul>
@@ -412,14 +412,14 @@
             <h4>👎 壞處</h4>
             <ul>
               <li>喺 TTL 到期之前，用戶可能會睇到舊資料</li>
-              <li>如果資料庫嘅嘢被人改咗，Cache 唔會即時更新</li>
+              <li>如果資料庫嘅資料被更改咗，Cache 唔會即時更新</li>
             </ul>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>💡 我建議你幾時用？</h4>
-          <p>當你用緊第三方 API（例如天氣預報、匯率），你控制唔到人哋幾時改資料，用 TTL 就最啱。我自己好多時候都會先試呢個方法。</p>
+          <h4>💡 適用場景</h4>
+          <p>當系統用緊第三方 API（例如天氣預報、匯率），而且控制唔到對方幾時改資料，用 TTL 就最啱。實戰中好多時候都會先試呢個方法。</p>
         </div>
       </div>
     </div>
@@ -430,7 +430,7 @@
         <h2>Write Through — 同步寫入</h2>
         <div class="subtitle">寫入資料嘅時候，Cache 同資料庫一齊更新</div>
         <p>
-          我用個生活例子同你解釋。你記低電話號碼，你會同時寫喺手機同紙上面，兩邊都有最新嘅資料。Write Through 就係咁——每次有人改資料，系統會同時更新 Cache 同資料庫，咁樣 Cache 入面永遠都係最新嘅。你要記住呢個策略嘅核心：<strong>兩邊同步</strong>。
+          用個生活例子嚟解釋。記低電話號碼嘅時候，同時寫喺手機同紙上面，兩邊都有最新嘅資料。Write Through 就係咁——每次有人改資料，系統會同時更新 Cache 同資料庫，咁樣 Cache 入面永遠都係最新嘅。呢個策略嘅核心係：<strong>兩邊同步</strong>。
         </p>
 
         <div class="diagram-container">
@@ -509,11 +509,11 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你理解佢嘅運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作原理</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span>用戶想改資料（例如改名、改地址）。你要知道，呢個係一個「寫入」操作。</span>
+            <span>用戶想改資料（例如改名、改地址）。注意，呢個係一個「寫入」操作。</span>
           </li>
           <li>
             <span class="step-num">2</span>
@@ -521,7 +521,7 @@
           </li>
           <li>
             <span class="step-num">3</span>
-            <span>之後有人讀取呢份資料嘅時候，Cache 入面已經係最新版本。你完全唔使擔心資料過期嘅問題。</span>
+            <span>之後有人讀取呢份資料嘅時候，Cache 入面已經係最新版本。完全唔使擔心資料過期嘅問題。</span>
           </li>
         </ol>
 
@@ -531,7 +531,7 @@
             <ul>
               <li>Cache 入面嘅資料永遠係最新</li>
               <li>讀取速度快，因為 Cache 一定有資料</li>
-              <li>資料一致性強，你唔使怕 Cache 同 DB 唔同步</li>
+              <li>資料一致性強，唔使怕 Cache 同 DB 唔同步</li>
             </ul>
           </div>
           <div class="cons">
@@ -545,8 +545,8 @@
         </div>
 
         <div class="use-case">
-          <h4>💡 我建議你幾時用？</h4>
-          <p>當你需要 Cache 入面嘅資料永遠都係最新，而且你可以接受寫入慢少少嘅時候。例如用戶個人資料、帳戶設定呢啲經常被讀取嘅資料，我會推薦你用呢個策略。</p>
+          <h4>💡 適用場景</h4>
+          <p>當需要 Cache 入面嘅資料永遠都係最新，而且可以接受寫入慢少少嘅時候。例如用戶個人資料、帳戶設定呢啲經常被讀取嘅資料，最適合用呢個策略。</p>
         </div>
       </div>
     </div>
@@ -557,7 +557,7 @@
         <h2>Write Around — 繞過快取寫入</h2>
         <div class="subtitle">寫入嘅時候只寫資料庫，然後踢走 Cache 入面嘅舊資料</div>
         <p>
-          我同你講個比喻。你更新咗屋企嘅電話簿，但你唔急住喺手機度同步，你只係刪除手機舊嘅記錄。下次你需要嗰個號碼嘅時候，再從電話簿抄返。Write Around 就係咁——寫入嘅時候只更新資料庫，然後將 Cache 入面嘅舊記錄刪除，等下次有人需要嘅時候再重新快取。你要記住呢個模式：<strong>寫 DB、踢 Cache、懶加載</strong>。
+          用個比喻嚟理解。更新咗屋企嘅電話簿，但唔急住喺手機度同步，只係刪除手機舊嘅記錄。下次需要嗰個號碼嘅時候，再從電話簿抄返。Write Around 就係咁——寫入嘅時候只更新資料庫，然後將 Cache 入面嘅舊記錄刪除，等下次有人需要嘅時候再重新快取。關鍵在於呢個模式：<strong>寫 DB、踢 Cache、懶加載</strong>。
         </p>
 
         <div class="diagram-container">
@@ -634,15 +634,15 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你理解佢嘅運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作原理</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span>用戶想改資料，系統直接寫入資料庫，唔寫 Cache。你留意到冇？佢「繞過」咗 Cache。</span>
+            <span>用戶想改資料，系統直接寫入資料庫，唔寫 Cache。留意，佢「繞過」咗 Cache。</span>
           </li>
           <li>
             <span class="step-num">2</span>
-            <span>如果 Cache 入面有呢份資料嘅舊版本，即刻刪除佢（我哋叫做「evict」）。呢步好重要，唔好忘記。</span>
+            <span>如果 Cache 入面有呢份資料嘅舊版本，即刻刪除佢（即係「evict」）。呢步好重要，唔好忽略。</span>
           </li>
           <li>
             <span class="step-num">3</span>
@@ -656,7 +656,7 @@
             <ul>
               <li>唔使擔心 Cache 同資料庫唔同步</li>
               <li>寫入只寫一個地方，減低出錯風險</li>
-              <li>簡單直接，我好推薦初學者用呢個</li>
+              <li>簡單直接，好適合初學者使用</li>
             </ul>
           </div>
           <div class="cons">
@@ -669,8 +669,8 @@
         </div>
 
         <div class="use-case">
-          <h4>💡 我建議你幾時用？</h4>
-          <p>當你改完資料之後，唔預期即刻會有人讀返佢，或者你唔想處理 Cache 同資料庫同步出錯嘅問題嘅時候。例如日誌記錄、歷史資料更新等，我都會揀呢個策略。</p>
+          <h4>💡 適用場景</h4>
+          <p>當改完資料之後，唔預期即刻會有人讀返佢，或者唔想處理 Cache 同資料庫同步出錯嘅問題嘅時候。例如日誌記錄、歷史資料更新等，呢個策略係最佳選擇。</p>
         </div>
       </div>
     </div>
@@ -681,7 +681,7 @@
         <h2>Write Back — 延遲寫入（寫先快取）</h2>
         <div class="subtitle">追求最快寫入速度：先寫 Cache，遲啲再同步去資料庫</div>
         <p>
-          我要同你講一個進階嘅策略。想像你喺白板度快速記低嘢，遲啲得閒先抄入筆記簿。Write Back 就係呢個概念——用戶改資料嘅時候，系統只寫入 Cache（超快！），然後背景會有個「小助手」定時將 Cache 入面嘅新資料同步返去資料庫。你要特別留意佢嘅風險：<strong>Cache 一掛，未同步嘅資料就冇咗</strong>。
+          呢個係一個進階嘅策略。想像一下喺白板度快速記低嘢，遲啲得閒先抄入筆記簿。Write Back 就係呢個概念——用戶改資料嘅時候，系統只寫入 Cache（超快！），然後背景會有個「小助手」定時將 Cache 入面嘅新資料同步返去資料庫。要特別留意嘅風險係：<strong>Cache 一掛，未同步嘅資料就冇咗</strong>。
         </p>
 
         <div class="diagram-container">
@@ -770,7 +770,7 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你理解佢嘅運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作原理</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
@@ -778,7 +778,7 @@
           </li>
           <li>
             <span class="step-num">2</span>
-            <span>背景有個自動任務（Async Job），會定時將 Cache 入面嘅新資料同步返去資料庫。你可以理解為有個「小助手」幫你搞。</span>
+            <span>背景有個自動任務（Async Job），會定時將 Cache 入面嘅新資料同步返去資料庫。可以理解為有個「小助手」自動處理同步。</span>
           </li>
           <li>
             <span class="step-num">3</span>
@@ -800,14 +800,14 @@
             <ul>
               <li>如果 Cache 掛咗（例如斷電），未同步嘅資料可能會不見</li>
               <li>資料庫同 Cache 之間會有短暫嘅唔一致</li>
-              <li>實現比較複雜，你需要處理同步失敗嘅情況</li>
+              <li>實現比較複雜，需要處理同步失敗嘅情況</li>
             </ul>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>💡 我建議你幾時用？</h4>
-          <p>當你最在乎寫入速度，而且可以接受短暫嘅資料唔一致。例如社交媒體嘅「讚」數、即時通訊嘅訊息狀態、遊戲入面嘅分數記錄等。我提醒你，用呢個策略之前一定要做好容錯機制。</p>
+          <h4>💡 適用場景</h4>
+          <p>當最在乎寫入速度，而且可以接受短暫嘅資料唔一致。例如社交媒體嘅「讚」數、即時通訊嘅訊息狀態、遊戲入面嘅分數記錄等。注意，用呢個策略之前一定要做好容錯機制。</p>
         </div>
       </div>
     </div>

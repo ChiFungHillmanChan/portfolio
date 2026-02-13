@@ -46,7 +46,7 @@
   <div class="container">
     <header>
       <h1>Session Manager 管理器</h1>
-      <p>我教你點樣管理用戶登入狀態同 Session 生命週期</p>
+      <p>用戶登入狀態同 Session 生命週期管理全解</p>
     </header>
 
     <div class="tabs">
@@ -58,13 +58,13 @@
     <!-- TAB 1 -->
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我先同你講，Session Manager 係咩</h2>
+        <h2>Session Manager 係咩</h2>
         <div class="subtitle">管理「邊個用戶正在登入緊」嘅系統</div>
         <p>
-          我想你咁樣理解：你去酒店 check-in，前台俾你一張房卡。之後你用房卡就可以出入房間、泳池、健身房。Session Manager 就係網絡世界嘅「前台」——佢負責記住邊個用戶登入咗、佢嘅身份係咩、幾時要踢佢出去。
+          想像一下：去酒店 check-in，前台俾一張房卡。之後用房卡就可以出入房間、泳池、健身房。Session Manager 就係網絡世界嘅「前台」——負責記住邊個用戶登入咗、身份係咩、幾時要踢出去。
         </p>
         <p>
-          我要你特別留意呢個問題：當你有多台 Server（Load Balancer 分流）嘅時候，點樣確保用戶無論去到邊台 Server 都可以保持登入狀態？呢個就係 Session Manager 要解決嘅核心問題，我而家教你。
+          特別留意呢個問題：當有多台 Server（Load Balancer 分流）嘅時候，點樣確保用戶無論去到邊台 Server 都可以保持登入狀態？呢個就係 Session Manager 要解決嘅核心問題，以下詳細拆解。
         </p>
 
         <div class="diagram-container">
@@ -137,13 +137,13 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>用戶登入之後，Browser 收到一個 Session ID（存喺 Cookie 或者 JWT 入面）。呢個 ID 就係你嘅「房卡」。</span></li>
-          <li><span class="step-num">2</span><span>之後每次請求，Browser 都會自動帶住呢個 ID 送去 Server。你唔使手動處理，瀏覽器幫你搞掂。</span></li>
-          <li><span class="step-num">3</span><span>Load Balancer 可能將你送去 Server 1 或 Server 2——但我要你記住，兩台 Server 都係 Stateless（無狀態）嘅，佢哋自己唔存任何 session 資料。</span></li>
-          <li><span class="step-num">4</span><span>Server 拿到你嘅 Session ID，就去 Redis（Session Store）查你嘅登入資料。所有驗證邏輯都喺呢度。</span></li>
-          <li><span class="step-num">5</span><span>因為所有 Server 共用同一個 Session Store，所以去邊台 Server 都一樣。呢個就係我要你掌握嘅核心設計。</span></li>
+          <li><span class="step-num">1</span><span>用戶登入之後，Browser 收到一個 Session ID（存喺 Cookie 或者 JWT 入面）。呢個 ID 就係「房卡」。</span></li>
+          <li><span class="step-num">2</span><span>之後每次請求，Browser 都會自動帶住呢個 ID 送去 Server。唔使手動處理，瀏覽器自動搞掂。</span></li>
+          <li><span class="step-num">3</span><span>Load Balancer 可能將請求送去 Server 1 或 Server 2——重點係，兩台 Server 都係 Stateless（無狀態）嘅，本身唔存任何 session 資料。</span></li>
+          <li><span class="step-num">4</span><span>Server 拿到 Session ID，就去 Redis（Session Store）查登入資料。所有驗證邏輯都喺呢度。</span></li>
+          <li><span class="step-num">5</span><span>因為所有 Server 共用同一個 Session Store，所以去邊台 Server 都一樣。呢個就係必須掌握嘅核心設計。</span></li>
         </ol>
       </div>
     </div>
@@ -151,11 +151,11 @@
     <!-- TAB 2 -->
     <div class="tab-content" id="compare">
       <div class="card">
-        <h2>我教你分辨 Cookie vs JWT</h2>
-        <div class="subtitle">兩種主流方法，我幫你分析利弊</div>
+        <h2>Cookie vs JWT 分辨</h2>
+        <div class="subtitle">兩種主流方法嘅利弊分析</div>
 
         <h3 style="color:#fff; font-size:1.1rem; margin: 20px 0 12px;">Cookie-based Session</h3>
-        <p>我先講傳統做法：Server 生成一個隨機 Session ID，存喺 Cookie 入面。用戶每次發 Request，瀏覽器自動帶上 Cookie，Server 拿 ID 去 Session Store 查資料。呢個方法穩陣，我建議大部分場景優先考慮。</p>
+        <p>傳統做法：Server 生成一個隨機 Session ID，存喺 Cookie 入面。用戶每次發 Request，瀏覽器自動帶上 Cookie，Server 拿 ID 去 Session Store 查資料。呢個方法穩陣，大部分場景建議優先考慮。</p>
         <div class="pros-cons">
           <div class="pros">
             <h4>好處</h4>
@@ -176,7 +176,7 @@
         </div>
 
         <h3 style="color:#fff; font-size:1.1rem; margin: 28px 0 12px;">JWT-based Session</h3>
-        <p>另一個做法：Server 將用戶資料簽名成一個 JWT Token，送返俾 Client。Client 每次發 Request 帶上 JWT，Server 直接驗證簽名就知道用戶身份，唔使查 Store。我要你留意，呢個做法適合微服務架構，但有啲 trade-off 你要清楚。</p>
+        <p>另一個做法：Server 將用戶資料簽名成一個 JWT Token，送返俾 Client。Client 每次發 Request 帶上 JWT，Server 直接驗證簽名就知道用戶身份，唔使查 Store。要留意，呢個做法適合微服務架構，但有啲 trade-off 需要清楚。</p>
         <div class="pros-cons">
           <div class="pros">
             <h4>好處</h4>
@@ -202,17 +202,17 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我要你設計 Session 系統時記住呢幾點</div>
+        <div class="subtitle">設計 Session 系統時必須記住呢幾點</div>
         <ol class="steps">
-          <li><span class="step-num">1</span><span><strong>Session TTL</strong>：我建議你設定 Session 嘅過期時間（例如 30 分鐘），用戶太耐冇操作就自動登出。Redis 嘅 EXPIRE 天生支援呢個功能，你一定要用。</span></li>
-          <li><span class="step-num">2</span><span><strong>Sticky Session</strong>：Load Balancer 可以設定將同一個用戶永遠送去同一台 Server。但我要提醒你，呢個做法唔好——因為如果嗰台 Server 掛咗，用戶 Session 就冇咗。唔夠可靠。</span></li>
-          <li><span class="step-num">3</span><span><strong>Shared Session Store</strong>：我推薦嘅最佳做法係用 Redis 做中央 Session Store，所有 Server 共享。就算某台 Server 掛咗，用戶去第二台一樣用到。呢個先係 production 級嘅設計。</span></li>
-          <li><span class="step-num">4</span><span><strong>安全性</strong>：你要確保 Session ID 夠長（128 bits 以上），用 HTTPS 傳輸，Cookie 設定 HttpOnly + Secure + SameSite。我見過好多初學者忽略呢啲，千祈唔好。</span></li>
+          <li><span class="step-num">1</span><span><strong>Session TTL</strong>：建議設定 Session 嘅過期時間（例如 30 分鐘），用戶太耐冇操作就自動登出。Redis 嘅 EXPIRE 天生支援呢個功能，必須善用。</span></li>
+          <li><span class="step-num">2</span><span><strong>Sticky Session</strong>：Load Balancer 可以設定將同一個用戶永遠送去同一台 Server。但呢個做法唔好——因為如果嗰台 Server 掛咗，用戶 Session 就冇咗。唔夠可靠。</span></li>
+          <li><span class="step-num">3</span><span><strong>Shared Session Store</strong>：最佳做法係用 Redis 做中央 Session Store，所有 Server 共享。就算某台 Server 掛咗，用戶去第二台一樣用到。呢個先係 production 級嘅設計。</span></li>
+          <li><span class="step-num">4</span><span><strong>安全性</strong>：必須確保 Session ID 夠長（128 bits 以上），用 HTTPS 傳輸，Cookie 設定 HttpOnly + Secure + SameSite。常見嘅錯誤係忽略呢啲安全設定，千祈唔好。</span></li>
         </ol>
 
         <div class="use-case">
-          <h4>我幫你準備嘅面試答案</h4>
-          <p>如果有人問你：「系統有 100 台 Server，用戶 Session 點管理？」——你就答：用中央 Session Store（Redis），每台 Server 都係 Stateless，Session 資料全部放喺 Redis。咁樣 scale out 加幾多台 Server 都冇問題。呢個就係我教你嘅標準答案。</p>
+          <h4>面試標準答案</h4>
+          <p>如果面試問：「系統有 100 台 Server，用戶 Session 點管理？」——標準答案係：用中央 Session Store（Redis），每台 Server 都係 Stateless，Session 資料全部放喺 Redis。咁樣 scale out 加幾多台 Server 都冇問題。呢個就係最佳實踐。</p>
         </div>
       </div>
     </div>

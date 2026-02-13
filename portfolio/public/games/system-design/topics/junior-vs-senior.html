@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Junior vs Senior Engineer：Task 定 Goal？ — 系統架構圖解</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      font-size: 1rem;
+      color: #9ca3af;
+      line-height: 1.6;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #1a1d27;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 32px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .tab-btn:hover {
+      color: #e0e0e0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: #6366f1;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: #1a1d27;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid #2a2d3a;
+    }
+
+    .card h2 {
+      font-size: 1.5rem;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .card .subtitle {
+      font-size: 0.95rem;
+      color: #6366f1;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: #c0c4cc;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+
+    /* Diagram Container */
+    .diagram-container {
+      background: #13151c;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      overflow-x: auto;
+      border: 1px solid #2a2d3a;
+    }
+
+    .diagram-container svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Step List */
+    .steps {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+
+    .steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #2a2d3a;
+      font-size: 0.95rem;
+      color: #c0c4cc;
+      line-height: 1.6;
+    }
+
+    .steps li:last-child {
+      border-bottom: none;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* Key Points Grid */
+    .key-points {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .key-points {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .key-point {
+      background: #13151c;
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid #2a2d3a;
+    }
+
+    .key-point h4 {
+      color: #6366f1;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    .key-point p {
+      font-size: 0.85rem;
+      color: #c0c4cc;
+      line-height: 1.5;
+      margin-bottom: 0;
+    }
+
+    .use-case {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+      border-left: 3px solid #6366f1;
+      border-radius: 0 10px 10px 0;
+      padding: 16px 20px;
+      margin-top: 16px;
+    }
+
+    .use-case h4 {
+      color: #a5b4fc;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .use-case p {
+      font-size: 0.9rem;
+      color: #c0c4cc;
+      margin-bottom: 0;
+    }
+
+    /* Quote block */
+    .quote-block {
+      background: rgba(99, 102, 241, 0.06);
+      border-left: 3px solid #818cf8;
+      border-radius: 0 10px 10px 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-style: italic;
+    }
+
+    .quote-block p {
+      color: #a5b4fc;
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container {
+        padding: 24px 16px;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .tabs {
+        flex-wrap: nowrap;
+      }
+
+      .tab-btn {
+        font-size: 0.8rem;
+        padding: 10px 12px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Junior vs Senior Engineer：Task 定 Goal？</h1>
+      <p>最大分別：Junior 做 Task，Senior 做 Goal</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="junior-task">① Junior 做 Task</button>
+      <button class="tab-btn" data-tab="senior-goal">② Senior 做 Goal</button>
+      <button class="tab-btn" data-tab="upgrade-path">③ 點樣升級</button>
+    </div>
+
+    <!-- ===================== TAB 1: Junior Task ===================== -->
+    <div class="tab-content active" id="junior-task">
+      <div class="card">
+        <h2>Junior 做 Task — 清晰嘅任務</h2>
+        <div class="subtitle">有明確嘅 Acceptance Criteria，execute 就完</div>
+        <p>
+          我想同你講清楚 Junior Engineer 做緊啲咩。簡單嚟講，Junior 嘅工作係接到一個清晰嘅 Task，然後完成佢。呢啲 Task 都有好清楚嘅定義同埋 Acceptance Criteria——你知道起點同終點喺邊，執行落去就可以。
+        </p>
+        <p>
+          舉例：你會收到一個 Task 話「Build 一個 REST API endpoint 去 return user profile」，或者「將個系統由 Java 8 升上去 Java 17」。呢啲都係好明確嘅 Task，你知道要做啲咩，只需要完成佢就夠。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow1" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowTask" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#34d399" flood-opacity="0.25" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradTask1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradTask2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e2235"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <text x="400" y="35" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Junior Engineer 嘅工作流程</text>
+
+            <!-- Task 1 -->
+            <g transform="translate(60,80)">
+              <rect width="320" height="120" rx="14" fill="url(#gradTask1)" stroke="#34d399" stroke-width="2" filter="url(#shadow1)"/>
+              <text x="160" y="30" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Task 例子 ①</text>
+              <line x1="30" y1="42" x2="290" y2="42" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="160" y="65" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Build REST API Endpoint</text>
+              <text x="30" y="88" fill="#9ca3af" font-size="10.5">Acceptance Criteria:</text>
+              <text x="30" y="105" fill="#c0c4cc" font-size="10">✓ Return user profile as JSON</text>
+            </g>
+
+            <!-- Task 2 -->
+            <g transform="translate(420,80)">
+              <rect width="320" height="120" rx="14" fill="url(#gradTask1)" stroke="#34d399" stroke-width="2" filter="url(#shadow1)"/>
+              <text x="160" y="30" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Task 例子 ②</text>
+              <line x1="30" y1="42" x2="290" y2="42" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="160" y="65" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Upgrade Java 8 to 17</text>
+              <text x="30" y="88" fill="#9ca3af" font-size="10.5">Acceptance Criteria:</text>
+              <text x="30" y="105" fill="#c0c4cc" font-size="10">✓ All tests pass on Java 17</text>
+            </g>
+
+            <!-- Arrow down -->
+            <path d="M400,210 L400,245" stroke="#34d399" stroke-width="2.5" fill="none" marker-end="url(#arrowGreen)"/>
+
+            <!-- Work Process -->
+            <g transform="translate(140,250)">
+              <rect width="520" height="130" rx="14" fill="url(#gradTask2)" stroke="#6366f1" stroke-width="2" filter="url(#glowTask)"/>
+              <text x="260" y="30" text-anchor="middle" fill="#6366f1" font-size="13" font-weight="700">Junior 嘅工作方式</text>
+              <line x1="30" y1="45" x2="490" y2="45" stroke="#2a2d3a" stroke-width="1"/>
+
+              <g transform="translate(30,60)">
+                <circle cx="15" cy="10" r="10" fill="#6366f1"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">1</text>
+                <text x="35" y="15" fill="#c0c4cc" font-size="11">收到清晰嘅 Task + Acceptance Criteria</text>
+              </g>
+
+              <g transform="translate(280,60)">
+                <circle cx="15" cy="10" r="10" fill="#6366f1"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">2</text>
+                <text x="35" y="15" fill="#c0c4cc" font-size="11">Execute 個 Task</text>
+              </g>
+
+              <g transform="translate(30,90)">
+                <circle cx="15" cy="10" r="10" fill="#6366f1"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">3</text>
+                <text x="35" y="15" fill="#c0c4cc" font-size="11">Complete = Done，唔駛諗其他嘢</text>
+              </g>
+
+              <g transform="translate(280,90)">
+                <circle cx="15" cy="10" r="10" fill="#34d399"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">✓</text>
+                <text x="35" y="15" fill="#34d399" font-size="11">Task 完成</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <div class="quote-block">
+          <p>「Junior Engineer 嘅 Task 特點：簡單、清晰、有明確嘅 Acceptance Criteria。Complete task = done。」</p>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">Task 嘅特徵</h3>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>清晰嘅起點同終點</h4>
+            <p>你知道要做啲咩，有明確嘅定義。唔需要自己去 define 個問題，個問題已經俾你 define 好晒。</p>
+          </div>
+          <div class="key-point">
+            <h4>明確嘅 Acceptance Criteria</h4>
+            <p>有 checklist 話你知點樣先算完成。例如「All tests pass」、「API return correct JSON format」。</p>
+          </div>
+          <div class="key-point">
+            <h4>執行導向</h4>
+            <p>你嘅重點係執行，唔係設計。有人已經諗好點樣做，你只需要實現出嚟。</p>
+          </div>
+          <div class="key-point">
+            <h4>Complete = Done</h4>
+            <p>一旦完成 Acceptance Criteria，個 Task 就完。唔駛負責其他後續嘅設計決策。</p>
+          </div>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-top:24px; margin-bottom:12px;">典型嘅 Junior Task 例子</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>Build API endpoint:</strong> 例如「寫個 GET /users/:id 返 user profile」。有清楚嘅 spec 話你知要做啲咩。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>Upgrade library:</strong> 例如「將 Java 8 升上 Java 17」。好清楚嘅技術任務，有明確嘅成功標準。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>Fix bug:</strong> 例如「修復登入頁面嘅驗證錯誤」。問題已經 identify 咗，你只需要解決佢。</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span><strong>Add feature:</strong> 例如「加個 filter 功能去 user list page」。功能已經 spec 好晒，implement 就得。</span>
+          </li>
+        </ol>
+
+        <div class="use-case">
+          <h4>重點理解</h4>
+          <p>Junior Task 嘅核心：有人已經諗好晒點樣做，你只需要執行。呢個唔係貶低，而係清楚嘅分工——你專注喺實現，唔駛負責高層次嘅設計決策。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 2: Senior Goal ===================== -->
+    <div class="tab-content" id="senior-goal">
+      <div class="card">
+        <h2>Senior 做 Goal — 模糊嘅目標</h2>
+        <div class="subtitle">冇 initial tasks，需要自己 design + break down</div>
+        <p>
+          我同你講下 Senior Engineer 做緊啲咩。同 Junior 最大嘅分別係：Senior 唔係收 Task，而係收 Goal。呢個 Goal 係模糊嘅、冇清晰答案嘅。例如「管理 100M users 嘅數據」——你睇下，呢個係目標，唔係 Task。
+        </p>
+        <p>
+          冇人會話你知要點樣做，你需要自己去做 System Design，諗出最適合嘅方案，然後將佢 break down 做一堆堆 Task，再分配俾 Junior 同其他團隊成員去做。你係帶領整個 execution，唔係淨係執行一個 Task。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 480" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow2" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowGoal" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#6366f1" flood-opacity="0.25" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradGoal1" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#252840"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradGoal2" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e2235"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradTask3" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/>
+              </marker>
+              <marker id="arrowGreen2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <text x="400" y="35" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Senior Engineer 嘅工作流程</text>
+
+            <!-- Ambiguous Goal -->
+            <g transform="translate(240,65)">
+              <rect width="320" height="80" rx="14" fill="url(#gradGoal1)" stroke="#f59e0b" stroke-width="2.5" filter="url(#glowGoal)"/>
+              <text x="160" y="28" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="700">模糊嘅 Goal</text>
+              <text x="160" y="50" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">「管理 100M users 嘅數據」</text>
+              <text x="160" y="68" text-anchor="middle" fill="#9ca3af" font-size="10">冇話你知點樣做，冇 initial tasks</text>
+            </g>
+
+            <!-- Arrow down -->
+            <path d="M400,155 L400,185" stroke="#f59e0b" stroke-width="2.5" fill="none" marker-end="url(#arrowBlue)"/>
+
+            <!-- System Design Phase -->
+            <g transform="translate(190,190)">
+              <rect width="420" height="100" rx="14" fill="url(#gradGoal2)" stroke="#6366f1" stroke-width="2" filter="url(#shadow2)"/>
+              <text x="210" y="28" text-anchor="middle" fill="#6366f1" font-size="13" font-weight="700">Senior 做 System Design</text>
+              <line x1="30" y1="40" x2="390" y2="40" stroke="#2a2d3a" stroke-width="1"/>
+
+              <text x="30" y="60" fill="#c0c4cc" font-size="10.5">• 諗出點樣設計個系統去支持 100M users</text>
+              <text x="30" y="78" fill="#c0c4cc" font-size="10.5">• 權衡唔同方案嘅 Trade-off (e.g., Sharding vs Replication)</text>
+              <text x="30" y="96" fill="#c0c4cc" font-size="10.5">• 決定用咩 Database、Cache、Load Balancer</text>
+            </g>
+
+            <!-- Arrow down -->
+            <path d="M400,300 L400,330" stroke="#6366f1" stroke-width="2.5" fill="none" marker-end="url(#arrowGreen2)"/>
+
+            <!-- Break down into Tasks -->
+            <g transform="translate(100,335)">
+              <rect width="600" height="125" rx="14" fill="url(#gradTask3)" stroke="#34d399" stroke-width="2" filter="url(#shadow2)"/>
+              <text x="300" y="28" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Break Down 成 Tasks → 分配俾 Junior</text>
+              <line x1="30" y1="40" x2="570" y2="40" stroke="#2a2d3a" stroke-width="1"/>
+
+              <g transform="translate(20,55)">
+                <rect width="165" height="55" rx="8" fill="rgba(99,102,241,0.1)" stroke="#6366f1" stroke-width="1"/>
+                <text x="82" y="20" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="600">Task 1</text>
+                <text x="82" y="38" text-anchor="middle" fill="#9ca3af" font-size="9">Set up Database Sharding</text>
+                <text x="82" y="50" text-anchor="middle" fill="#6b7280" font-size="8">→ 分配俾 Junior A</text>
+              </g>
+
+              <g transform="translate(210,55)">
+                <rect width="165" height="55" rx="8" fill="rgba(99,102,241,0.1)" stroke="#6366f1" stroke-width="1"/>
+                <text x="82" y="20" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="600">Task 2</text>
+                <text x="82" y="38" text-anchor="middle" fill="#9ca3af" font-size="9">Implement Cache Layer</text>
+                <text x="82" y="50" text-anchor="middle" fill="#6b7280" font-size="8">→ 分配俾 Junior B</text>
+              </g>
+
+              <g transform="translate(400,55)">
+                <rect width="165" height="55" rx="8" fill="rgba(99,102,241,0.1)" stroke="#6366f1" stroke-width="1"/>
+                <text x="82" y="20" text-anchor="middle" fill="#6366f1" font-size="10" font-weight="600">Task 3</text>
+                <text x="82" y="38" text-anchor="middle" fill="#9ca3af" font-size="9">Add Load Balancer</text>
+                <text x="82" y="50" text-anchor="middle" fill="#6b7280" font-size="8">→ 分配俾 Junior C</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <div class="quote-block">
+          <p>「Senior Engineer own goal，唔係 own task。冇人話你知點樣做，你要自己設計晒成個系統。」</p>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">Goal 嘅特徵</h3>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>模糊嘅起點</h4>
+            <p>Goal 係一個方向，唔係一個清晰嘅任務。例如「支持 100M users」——點樣支持？冇人話你知。</p>
+          </div>
+          <div class="key-point">
+            <h4>冇 Initial Tasks</h4>
+            <p>唔似 Junior 有清楚嘅 Task，你一開始乜都冇。你需要自己去 define 要做啲咩先可以達成個 Goal。</p>
+          </div>
+          <div class="key-point">
+            <h4>需要 System Design</h4>
+            <p>你要諗晒成個系統應該點樣設計，權衡唔同方案嘅 Trade-off，然後做決策。</p>
+          </div>
+          <div class="key-point">
+            <h4>帶領 Junior</h4>
+            <p>你將個 Goal break down 成 Task，然後分配俾團隊成員。你唔係淨係執行，而係帶領整個 execution。</p>
+          </div>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-top:24px; margin-bottom:12px;">Senior 點樣處理 Goal</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>收到模糊嘅 Goal：</strong>例如「管理 100M users 嘅數據」。呢個唔係 Task，係方向。冇人話你知點樣做。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>做 System Design：</strong>諗晒成個系統應該點樣設計。Database 用 Sharding？Cache 點樣擺？Load Balancer 擺邊？</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>權衡 Trade-off：</strong>冇完美方案，只有最適合嘅。你要諗清楚每個選擇嘅利弊，然後做決策。</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span><strong>Break down 成 Tasks：</strong>將個大 Goal 拆細做一堆清晰嘅 Task，每個 Task 都有明確嘅 Acceptance Criteria。</span>
+          </li>
+          <li>
+            <span class="step-num">5</span>
+            <span><strong>分配 Tasks 俾 Junior：</strong>你將呢啲 Task 分配俾團隊成員去執行。你帶領整個過程，確保個 Goal 達成。</span>
+          </li>
+        </ol>
+
+        <div class="use-case">
+          <h4>核心分別</h4>
+          <p>Junior 嘅工作係「執行已經 define 好嘅 Task」，Senior 嘅工作係「將模糊嘅 Goal 變做清晰嘅 Task」。呢個就係最大分別。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 3: Upgrade Path ===================== -->
+    <div class="tab-content" id="upgrade-path">
+      <div class="card">
+        <h2>點樣由 Junior 升做 Senior</h2>
+        <div class="subtitle">關鍵：主動搵模糊嘅任務，唔好等清晰嘅 Task</div>
+        <p>
+          我要同你講清楚點樣快速升級。最快嘅方法就係——主動搵啲模糊嘅、冇清晰答案嘅任務嚟做。唔好淨係等人分配清晰嘅 Task 俾你，要主動去搵啲需要諗 System Design、需要權衡 Trade-off 嘅任務。
+        </p>
+        <p>
+          點解？因為呢啲模糊嘅任務先可以訓練你做 Senior 需要嘅能力——System Design、Trade-off 思考、將 Goal break down 成 Task。而且，呢啲能力令你變得 irreplaceable by AI，因為 AI 暫時幫唔到你做呢啲決策。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow3" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowPath" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#a5b4fc" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradJun" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradSen" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#252840"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradAmb" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a2518"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowUpgrade" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#a5b4fc"/>
+              </marker>
+            </defs>
+
+            <text x="400" y="35" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">Junior → Senior 升級路徑</text>
+
+            <!-- Left: Junior Zone -->
+            <g transform="translate(40,70)">
+              <rect width="280" height="160" rx="14" fill="url(#gradJun)" stroke="#34d399" stroke-width="2" filter="url(#shadow3)"/>
+              <text x="140" y="28" text-anchor="middle" fill="#34d399" font-size="13" font-weight="700">Junior Zone</text>
+              <line x1="25" y1="40" x2="255" y2="40" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="140" y="62" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">清晰嘅 Task</text>
+              <text x="25" y="82" fill="#9ca3af" font-size="10">• 有明確嘅 Acceptance Criteria</text>
+              <text x="25" y="100" fill="#9ca3af" font-size="10">• Execute 就完</text>
+              <text x="25" y="118" fill="#9ca3af" font-size="10">• 唔駛諗 System Design</text>
+              <text x="25" y="136" fill="#34d399" font-size="10" font-weight="600">AI 可以幫到手</text>
+            </g>
+
+            <!-- Right: Senior Zone -->
+            <g transform="translate(480,70)">
+              <rect width="280" height="160" rx="14" fill="url(#gradSen)" stroke="#6366f1" stroke-width="2" filter="url(#shadow3)"/>
+              <text x="140" y="28" text-anchor="middle" fill="#6366f1" font-size="13" font-weight="700">Senior Zone</text>
+              <line x1="25" y1="40" x2="255" y2="40" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="140" y="62" text-anchor="middle" fill="#fff" font-size="11" font-weight="600">模糊嘅 Goal</text>
+              <text x="25" y="82" fill="#9ca3af" font-size="10">• 冇清晰答案</text>
+              <text x="25" y="100" fill="#9ca3af" font-size="10">• 需要 System Design</text>
+              <text x="25" y="118" fill="#9ca3af" font-size="10">• 需要權衡 Trade-off</text>
+              <text x="25" y="136" fill="#a5b4fc" font-size="10" font-weight="600">Irreplaceable by AI</text>
+            </g>
+
+            <!-- Curved upgrade path -->
+            <path d="M325,150 C360,150 440,150 475,150" stroke="#a5b4fc" stroke-width="3" fill="none" marker-end="url(#arrowUpgrade)" stroke-dasharray="8,4" filter="url(#glowPath)"/>
+            <text x="400" y="140" text-anchor="middle" fill="#a5b4fc" font-size="11" font-weight="600">升級路徑</text>
+
+            <!-- Key to fast promotion -->
+            <g transform="translate(100,260)">
+              <rect width="600" height="170" rx="14" fill="url(#gradAmb)" stroke="#f59e0b" stroke-width="2.5" filter="url(#shadow3)"/>
+              <text x="300" y="30" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="700">快速升級嘅關鍵</text>
+              <line x1="30" y1="45" x2="570" y2="45" stroke="#2a2d3a" stroke-width="1"/>
+
+              <g transform="translate(30,60)">
+                <circle cx="15" cy="10" r="10" fill="#f59e0b"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">1</text>
+                <text x="35" y="15" fill="#fbbf24" font-size="11" font-weight="600">主動搵模糊嘅任務</text>
+              </g>
+              <text x="50" y="88" fill="#c0c4cc" font-size="10">唔好淨係等人分配清晰嘅 Task，要主動搵啲需要諗 System Design 嘅任務。</text>
+
+              <g transform="translate(30,105)">
+                <circle cx="15" cy="10" r="10" fill="#f59e0b"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">2</text>
+                <text x="35" y="15" fill="#fbbf24" font-size="11" font-weight="600">練習 System Design 思維</text>
+              </g>
+              <text x="50" y="133" fill="#c0c4cc" font-size="10">訓練自己諗「點樣設計個系統」、「權衡 Trade-off」、「Break down Goal」。</text>
+
+              <g transform="translate(30,150)">
+                <circle cx="15" cy="10" r="10" fill="#a5b4fc"/>
+                <text x="15" y="15" text-anchor="middle" fill="#fff" font-size="9" font-weight="700">✓</text>
+                <text x="35" y="15" fill="#a5b4fc" font-size="11" font-weight="600">變得 Irreplaceable by AI</text>
+              </g>
+            </g>
+          </svg>
+        </div>
+
+        <div class="quote-block">
+          <p>「快速升級嘅秘訣：主動搵啲模糊嘅、冇清晰答案嘅任務嚟做。呢啲任務先可以訓練你做 Senior 需要嘅能力。」</p>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">升級策略</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>主動搵模糊嘅任務：</strong>唔好淨係等人分配清晰嘅 Task 俾你。主動問「有冇啲需要設計嘅任務？」、「呢個 Goal 應該點樣實現？」必須主動出擊。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>練習 System Design：</strong>就算你而家做緊 Junior Task，都要諗「如果係我設計，我會點樣做？」訓練自己嘅思維。呢個好重要。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>學權衡 Trade-off：</strong>冇完美方案，只有最適合嘅。每次做決策都要諗「呢個方案嘅利弊係咩？」養成呢個習慣。</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span><strong>練習 Break Down Goal：</strong>試下將大 Goal 拆細做小 Task。例如「支持 100M users」可以拆成「Database Sharding + Cache + Load Balancer」。</span>
+          </li>
+          <li>
+            <span class="step-num">5</span>
+            <span><strong>唔好怕犯錯：</strong>模糊嘅任務冇標準答案，你可能會錯。但犯錯先學得快。必須擁抱呢個過程。</span>
+          </li>
+        </ol>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-top:24px; margin-bottom:12px;">點解模糊任務令你 Irreplaceable by AI</h3>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>AI 幫唔到做決策</h4>
+            <p>AI 可以幫你寫 Code，但幫唔到你決定「應該用邊個架構」、「呢兩個方案邊個好」。呢啲判斷只有人做得到。</p>
+          </div>
+          <div class="key-point">
+            <h4>AI 幫唔到權衡 Trade-off</h4>
+            <p>每個方案都有利弊，AI 可以列出利弊，但唔可以根據你公司嘅實際情況去做最終決定。</p>
+          </div>
+          <div class="key-point">
+            <h4>AI 幫唔到理解業務需求</h4>
+            <p>System Design 唔係淨係技術問題，係業務問題。你要理解公司需要啲咩，先可以設計出適合嘅系統。</p>
+          </div>
+          <div class="key-point">
+            <h4>AI 幫唔到帶領團隊</h4>
+            <p>將 Goal break down 成 Task，分配俾團隊成員，跟進進度——呢啲係 leadership，唔係 coding。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>行動建議</h4>
+          <p>由聽日開始，每次收到 Task，都問自己：「如果係我設計個系統，我會點樣做？」就算你而家只係執行，都要訓練自己諗 System Design。呢個習慣會令你快速升級。</p>
+        </div>
+
+        <div class="use-case" style="margin-top:16px; border-left-color:#34d399;">
+          <h4>最後總結</h4>
+          <p>Junior 做 Task，Senior 做 Goal。想升級？主動搵模糊嘅任務，練習 System Design，變得 irreplaceable by AI。呢個就係升級嘅最快路徑。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

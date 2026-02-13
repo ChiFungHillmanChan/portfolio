@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>⚡ Distributed Cache 分佈式快取</h1>
-      <p>我帶你搞清楚 Redis / Memcached 快取策略同 Cache Invalidation 嘅核心概念</p>
+      <p>搞清楚 Redis / Memcached 快取策略同 Cache Invalidation 嘅核心概念</p>
     </header>
 
     <div class="tabs">
@@ -56,7 +56,7 @@
         <h2>分佈式快取係咩？</h2>
         <div class="subtitle">多台 Cache Server 組成嘅快取集群</div>
         <p>
-          我要同你講一個好重要嘅概念。當你嘅資料太多，一台 Redis 放唔晒嘅時候，就需要多台 Cache Server 組成集群。你可能會問：一個 key 應該放喺邊台 Server？答案就係 <strong style="color:#fbbf24">Consistent Hashing（一致性哈希）</strong>。我教你點樣理解佢。
+          呢度有一個好重要嘅概念。當資料太多，一台 Redis 放唔晒嘅時候，就需要多台 Cache Server 組成集群。問題係：一個 key 應該放喺邊台 Server？答案就係 <strong style="color:#fbbf24">Consistent Hashing（一致性哈希）</strong>。以下係佢嘅運作方式。
         </p>
 
         <div class="diagram-container">
@@ -143,11 +143,11 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你理解佢點樣運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作原理</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>App Server 想查一個 key，用 Consistent Hashing 計算呢個 key 應該去邊個 Cache Node。你要記住，呢個計算係 O(1) 嘅，超快。</span></li>
-          <li><span class="step-num">2</span><span>如果 Cache Node 有呢個 key（Cache Hit），直接返回。超快！呢個就係你想要嘅理想情況。</span></li>
-          <li><span class="step-num">3</span><span>如果 Cache Node 冇（Cache Miss），就去 Database 攞，然後存入 Cache Node。我提醒你，呢個過程叫做「懶加載」。</span></li>
+          <li><span class="step-num">1</span><span>App Server 想查一個 key，用 Consistent Hashing 計算呢個 key 應該去邊個 Cache Node。重點係，呢個計算係 O(1) 嘅，超快。</span></li>
+          <li><span class="step-num">2</span><span>如果 Cache Node 有呢個 key（Cache Hit），直接返回。超快！呢個就係理想情況。</span></li>
+          <li><span class="step-num">3</span><span>如果 Cache Node 冇（Cache Miss），就去 Database 攞，然後存入 Cache Node。注意，呢個過程叫做「懶加載」。</span></li>
         </ol>
       </div>
     </div>
@@ -155,23 +155,23 @@
     <div class="tab-content" id="strategies">
       <div class="card">
         <h2>快取策略</h2>
-        <div class="subtitle">我幫你整理咗四個你一定要識嘅策略</div>
+        <div class="subtitle">四個必須要識嘅策略</div>
         <div class="key-points">
           <div class="key-point">
             <h4>📖 Cache-Aside（旁路快取）</h4>
-            <p>我最推薦你先學呢個。App 先查 Cache，冇就查 DB，然後寫入 Cache。呢個係最常用嘅策略，App 自己控制 Cache 邏輯，你擁有最大嘅靈活性。</p>
+            <p>建議最先學呢個。App 先查 Cache，冇就查 DB，然後寫入 Cache。呢個係最常用嘅策略，App 自己控制 Cache 邏輯，擁有最大嘅靈活性。</p>
           </div>
           <div class="key-point">
             <h4>✍️ Write-Through（同步寫入）</h4>
-            <p>寫入時同時更新 Cache 同 DB。Cache 永遠最新，但寫入會慢啲。我建議你喺需要強一致性嘅場景用呢個。</p>
+            <p>寫入時同時更新 Cache 同 DB。Cache 永遠最新，但寫入會慢啲。喺需要強一致性嘅場景最適合用呢個。</p>
           </div>
           <div class="key-point">
             <h4>📝 Write-Back（延遲寫入）</h4>
-            <p>先寫 Cache，背景異步寫 DB。寫入超快但有資料丟失風險。你要特別小心，確保有容錯機制先好用。</p>
+            <p>先寫 Cache，背景異步寫 DB。寫入超快但有資料丟失風險。要特別小心，確保有容錯機制先好用。</p>
           </div>
           <div class="key-point">
             <h4>🔄 Consistent Hashing</h4>
-            <p>我要同你強調呢個概念。將 key 映射到一個圓環上，每個 Cache Node 負責一段。加減節點時只需要搬移少量 key，唔會影響成個集群。呢個係分佈式系統嘅基石。</p>
+            <p>呢個概念非常重要。將 key 映射到一個圓環上，每個 Cache Node 負責一段。加減節點時只需要搬移少量 key，唔會影響成個集群。呢個係分佈式系統嘅基石。</p>
           </div>
         </div>
       </div>
@@ -180,23 +180,23 @@
     <div class="tab-content" id="problems">
       <div class="card">
         <h2>常見問題同防護</h2>
-        <div class="subtitle">你一定要識嘅四個 Cache 陷阱，我逐個同你講</div>
+        <div class="subtitle">必須要識嘅四個 Cache 陷阱，逐個拆解</div>
         <div class="key-points">
           <div class="key-point">
             <h4>❄️ Cache Avalanche（快取雪崩）</h4>
-            <p>大量 key 同時過期，所有請求衝去 DB——呢個場面你唔想見到。我教你點防：TTL 加隨機偏移，避免同時過期。好簡單但好有效。</p>
+            <p>大量 key 同時過期，所有請求衝去 DB——呢個場面絕對唔想見到。防禦方法：TTL 加隨機偏移，避免同時過期。好簡單但好有效。</p>
           </div>
           <div class="key-point">
             <h4>🐎 Cache Stampede（快取踩踏）</h4>
-            <p>一個熱門 key 過期，瞬間大量請求同時查 DB。你要記住呢個解法：用分佈式鎖（mutex），只有一個請求去 DB，其他等。我建議你面試嘅時候一定要提呢個。</p>
+            <p>一個熱門 key 過期，瞬間大量請求同時查 DB。關鍵解法：用分佈式鎖（mutex），只有一個請求去 DB，其他等。面試嘅時候一定要提呢個。</p>
           </div>
           <div class="key-point">
             <h4>👻 Cache Penetration（快取穿透）</h4>
-            <p>查一個 DB 都冇嘅 key，每次都穿透到 DB。我教你兩個方法：Cache 空值（null），或者用 Bloom Filter 做前置過濾。兩個方法各有長短，你要按場景揀。</p>
+            <p>查一個 DB 都冇嘅 key，每次都穿透到 DB。兩個常用方法：Cache 空值（null），或者用 Bloom Filter 做前置過濾。兩個方法各有長短，要按場景揀。</p>
           </div>
           <div class="key-point">
             <h4>🔄 Cache Invalidation</h4>
-            <p>我要同你講句名言：「電腦科學最難嘅兩件事：Cache Invalidation 同命名。」你要確保資料更新時 Cache 都會更新，否則用戶會睇到舊資料。呢個問題冇完美解，但有好嘅實踐方法。</p>
+            <p>有句名言講：「電腦科學最難嘅兩件事：Cache Invalidation 同命名。」必須確保資料更新時 Cache 都會更新，否則用戶會睇到舊資料。呢個問題冇完美解，但有好嘅實踐方法。</p>
           </div>
         </div>
       </div>

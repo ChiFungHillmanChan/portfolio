@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>🔍 Search Autocomplete 搜尋自動補全</h1>
-      <p>我教你用 Trie 結構同 ranking 演算法實現即時建議</p>
+      <p>用 Trie 結構同 ranking 演算法實現即時建議</p>
     </header>
 
     <div class="tabs">
@@ -53,10 +53,10 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我先同你講自動補全係咩</h2>
-        <div class="subtitle">你喺 Google 打字，出現嘅建議就係 Autocomplete</div>
+        <h2>自動補全係咩</h2>
+        <div class="subtitle">喺 Google 打字，出現嘅建議就係 Autocomplete</div>
         <p>
-          你一定用過呢個功能：當你喺 Google 搜尋框打 "how to"，佢即刻彈出 "how to tie a tie"、"how to cook rice" 等建議。我要教你，呢個功能背後嘅核心數據結構叫 <strong style="color:#34d399">Trie（前綴樹）</strong>，配合搜索頻率排名，就可以做到毫秒級嘅即時建議。
+          呢個功能好常見：喺 Google 搜尋框打 "how to"，即刻彈出 "how to tie a tie"、"how to cook rice" 等建議。呢個功能背後嘅核心數據結構叫 <strong style="color:#34d399">Trie（前綴樹）</strong>，配合搜索頻率排名，就可以做到毫秒級嘅即時建議。
         </p>
 
         <div class="diagram-container">
@@ -129,10 +129,10 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>首先，用戶打字，每個字母都觸發一次 Autocomplete 查詢（例如打 "h" → "ho" → "how"）。我之後會教你用 debounce 優化呢度。</span></li>
-          <li><span class="step-num">2</span><span>Autocomplete Service 喺 Trie 入面搵到所有以呢個前綴開頭嘅詞語。你要記住，Trie 係放喺 memory 入面嘅，所以查詢極快。</span></li>
+          <li><span class="step-num">1</span><span>首先，用戶打字，每個字母都觸發一次 Autocomplete 查詢（例如打 "h" → "ho" → "how"）。後面會講點用 debounce 優化呢度。</span></li>
+          <li><span class="step-num">2</span><span>Autocomplete Service 喺 Trie 入面搵到所有以呢個前綴開頭嘅詞語。重點係，Trie 係放喺 memory 入面嘅，所以查詢極快。</span></li>
           <li><span class="step-num">3</span><span>Ranking Service 根據搜索頻率排序，返回 Top 5-10 個建議俾用戶。呢個排名直接影響用戶體驗。</span></li>
           <li><span class="step-num">4</span><span>最後，用戶嘅每次搜索都被記錄到 Query Logs，定期用嚟更新 Trie 入面嘅頻率數據。呢個係一個持續改進嘅循環。</span></li>
         </ol>
@@ -141,20 +141,20 @@
 
     <div class="tab-content" id="trie">
       <div class="card">
-        <h2>我教你 Trie 數據結構</h2>
+        <h2>Trie 數據結構詳解</h2>
         <div class="subtitle">專門為前綴搜索而生嘅樹狀結構</div>
-        <p>我要同你講清楚 Trie（讀做 "try"）係咩。佢係一棵樹，每個節點代表一個字元。從 root 行到任何一個節點，經過嘅字元串起嚟就係一個前綴。你要將呢個概念記入腦。</p>
-        <p>我用一個例子同你解釋。假設存咗 "tree", "try", "true" 三個詞：</p>
+        <p>Trie（讀做 "try"）係一棵樹，每個節點代表一個字元。從 root 行到任何一個節點，經過嘅字元串起嚟就係一個前綴。呢個概念必須要記入腦。</p>
+        <p>用一個例子嚟解釋。假設存咗 "tree", "try", "true" 三個詞：</p>
         <p style="font-family: monospace; color: #34d399; font-size: 0.9rem; line-height: 2;">
           root → t → r → e → e ✓<br>
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ y ✓<br>
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ u → e ✓
         </p>
-        <p>你睇到嗎？打 "tr" 就可以搵到呢三個詞。每個終點節點仲可以存一個 frequency count，代表呢個詞被搜索過幾多次。我建議你面試嘅時候喺白板上畫呢個圖，會令面試官好有印象。</p>
+        <p>打 "tr" 就可以搵到呢三個詞。每個終點節點仲可以存一個 frequency count，代表呢個詞被搜索過幾多次。面試嘅時候喺白板上畫呢個圖，會令面試官好有印象。</p>
 
         <div class="use-case">
-          <h4>你要注意嘅記憶體考量</h4>
-          <p>Trie 放喺記憶體（In-Memory）入面，查詢速度係 O(prefix_length)，超快！但我提醒你，如果詞彙量超大，可能要用壓縮 Trie（Radix Tree）或者分片存儲。呢個係 scale 嘅時候一定要考慮嘅問題。</p>
+          <h4>記憶體考量</h4>
+          <p>Trie 放喺記憶體（In-Memory）入面，查詢速度係 O(prefix_length)，超快！但要留意，如果詞彙量超大，可能要用壓縮 Trie（Radix Tree）或者分片存儲。呢個係 scale 嘅時候一定要考慮嘅問題。</p>
         </div>
       </div>
     </div>
@@ -165,19 +165,19 @@
         <div class="key-points">
           <div class="key-point">
             <h4>Debounce 防抖</h4>
-            <p>我要同你強調呢一點：唔好每打一個字就發一個 Request！你要用 debounce（延遲 200-300ms），等用戶停低打字先發送。呢個簡單嘅優化可以大幅減少請求次數，面試一定要提。</p>
+            <p>呢一點好重要：唔好每打一個字就發一個 Request！必須用 debounce（延遲 200-300ms），等用戶停低打字先發送。呢個簡單嘅優化可以大幅減少請求次數，面試一定要提。</p>
           </div>
           <div class="key-point">
             <h4>定期更新 Trie</h4>
-            <p>我建議你每隔幾小時從 Query Logs 收集數據，重新計算詞頻，更新 Trie。你記住：唔好每次搜索都即時更新，咁做太浪費資源，而且會影響查詢性能。</p>
+            <p>建議每隔幾小時從 Query Logs 收集數據，重新計算詞頻，更新 Trie。重點係：唔好每次搜索都即時更新，咁做太浪費資源，而且會影響查詢性能。</p>
           </div>
           <div class="key-point">
             <h4>個人化建議</h4>
-            <p>我教你一個進階技巧：可以結合用戶嘅搜索歷史，優先顯示佢之前搜過嘅關鍵字。你需要 per-user 嘅小型 Trie，呢個會令用戶體驗好好多。</p>
+            <p>進階技巧：可以結合用戶嘅搜索歷史，優先顯示之前搜過嘅關鍵字。需要 per-user 嘅小型 Trie，呢個會令用戶體驗好好多。</p>
           </div>
           <div class="key-point">
             <h4>敏感詞過濾</h4>
-            <p>你一定要記住呢個安全考量：自動補全建議入面唔可以出現不雅內容。我建議你設計一個 blocklist（黑名單）做過濾，呢個係 production 環境嘅必備功能。</p>
+            <p>呢個安全考量必須要記住：自動補全建議入面唔可以出現不雅內容。建議設計一個 blocklist（黑名單）做過濾，呢個係 production 環境嘅必備功能。</p>
           </div>
         </div>
       </div>

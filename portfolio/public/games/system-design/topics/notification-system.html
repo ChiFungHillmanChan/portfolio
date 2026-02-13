@@ -53,12 +53,12 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我教你通知系統係咩</h2>
+        <h2>通知系統係咩</h2>
         <div class="subtitle">負責喺啱嘅時間，用啱嘅渠道，送通知俾啱嘅人</div>
         <p>
-          我要同你講一個每個用戶每日都接觸到嘅系統。你手機收到嘅 push notification、email、SMS，背後全部都係由通知系統處理。呢個系統嘅核心挑戰係：點樣確保每個通知都準時送到、唔重複、唔漏送？我帶你逐步拆解。
+          呢個係每個用戶每日都接觸到嘅系統。手機收到嘅 push notification、email、SMS，背後全部都係由通知系統處理。呢個系統嘅核心挑戰係：點樣確保每個通知都準時送到、唔重複、唔漏送？以下逐步拆解。
         </p>
-        <p>我嘅設計理念係：用 <strong style="color:#fbbf24">Message Queue</strong> 做中間緩衝，確保通知可靠投遞。你要記住呢個原則——就算某個渠道（例如 SMS）暫時故障，訊息唔會丟失，等回復之後繼續送。呢個就係 reliability 嘅精髓。</p>
+        <p>核心設計理念係：用 <strong style="color:#fbbf24">Message Queue</strong> 做中間緩衝，確保通知可靠投遞。重點原則——就算某個渠道（例如 SMS）暫時故障，訊息唔會丟失，等回復之後繼續送。呢個就係 reliability 嘅精髓。</p>
 
         <div class="diagram-container">
           <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
@@ -138,34 +138,34 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我話你知點樣運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作流程</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>某個事件觸發通知（例如有人 like 你嘅 post、訂單發貨、驗證碼）。你要設計好 event trigger，確保每個需要通知嘅場景都有對應嘅事件。</span></li>
-          <li><span class="step-num">2</span><span>Notification Service 決定用邊個渠道發送（Push / SMS / Email），然後放入 Message Queue。我建議你將渠道選擇邏輯同發送邏輯分開，呢個係好嘅架構設計。</span></li>
-          <li><span class="step-num">3</span><span>唔同嘅 Worker 從 Queue 攞訊息，透過對應嘅渠道發送出去。你要記住：每個渠道應該有獨立嘅 Worker，方便你獨立擴展。</span></li>
+          <li><span class="step-num">1</span><span>某個事件觸發通知（例如有人 like 某個 post、訂單發貨、驗證碼）。必須設計好 event trigger，確保每個需要通知嘅場景都有對應嘅事件。</span></li>
+          <li><span class="step-num">2</span><span>Notification Service 決定用邊個渠道發送（Push / SMS / Email），然後放入 Message Queue。建議將渠道選擇邏輯同發送邏輯分開，呢個係好嘅架構設計。</span></li>
+          <li><span class="step-num">3</span><span>唔同嘅 Worker 從 Queue 攞訊息，透過對應嘅渠道發送出去。重點係：每個渠道應該有獨立嘅 Worker，方便獨立擴展。</span></li>
         </ol>
       </div>
     </div>
 
     <div class="tab-content" id="channels">
       <div class="card">
-        <h2>我幫你拆解三大通知渠道</h2>
+        <h2>三大通知渠道拆解</h2>
         <div class="key-points">
           <div class="key-point">
             <h4>Push Notification</h4>
-            <p>透過 Apple APNs 或 Google FCM 發送。你要記住：需要用戶嘅 device token。呢個渠道最即時，但需要用戶授權先至用得。我建議你做好 token 管理，過期嘅 token 要及時清理。</p>
+            <p>透過 Apple APNs 或 Google FCM 發送。重點係：需要用戶嘅 device token。呢個渠道最即時，但需要用戶授權先至用得。建議做好 token 管理，過期嘅 token 要及時清理。</p>
           </div>
           <div class="key-point">
             <h4>SMS 短訊</h4>
-            <p>透過 Twilio 等服務發送。我要同你講清楚：SMS 最可靠（唔使網絡），但係最貴。所以我建議你只用喺驗證碼同緊急通知，唔好亂用。</p>
+            <p>透過 Twilio 等服務發送。必須清楚：SMS 最可靠（唔使網絡），但係最貴。所以建議只用喺驗證碼同緊急通知，唔好亂用。</p>
           </div>
           <div class="key-point">
             <h4>Email</h4>
-            <p>透過 AWS SES 或 SendGrid 發送。成本最低，但你要注意到達率受 spam filter 影響。我建議你做好 SPF、DKIM、DMARC 設定，確保郵件唔會入 spam。</p>
+            <p>透過 AWS SES 或 SendGrid 發送。成本最低，但要注意到達率受 spam filter 影響。建議做好 SPF、DKIM、DMARC 設定，確保郵件唔會入 spam。</p>
           </div>
           <div class="key-point">
             <h4>多渠道 Fallback 策略</h4>
-            <p>我教你一個實用技巧：同一個通知可以用多個渠道。先發 Push，如果用戶 5 分鐘冇睇，再發 SMS。呢個叫 fallback 策略，對重要通知好有用。</p>
+            <p>實用技巧：同一個通知可以用多個渠道。先發 Push，如果用戶 5 分鐘冇睇，再發 SMS。呢個叫 fallback 策略，對重要通知好有用。</p>
           </div>
         </div>
       </div>
@@ -177,25 +177,25 @@
         <div class="key-points">
           <div class="key-point">
             <h4>Rate Limiting</h4>
-            <p>我要提醒你一個好容易忽略嘅問題：防止通知轟炸。你要設定同一個用戶每小時最多收到 X 個通知。我見過因為系統 bug 狂發通知搞到用戶投訴嘅慘劇，千祈唔好犯。</p>
+            <p>呢個係好容易忽略嘅問題：防止通知轟炸。必須設定同一個用戶每小時最多收到 X 個通知。常見嘅錯誤係因為系統 bug 狂發通知搞到用戶投訴，千祈唔好犯。</p>
           </div>
           <div class="key-point">
             <h4>用戶偏好設定</h4>
-            <p>我建議你一定要做呢個功能：用戶要可以設定邊啲通知佢想收、用咩渠道收。例如行銷 email 可以 unsubscribe，但交易通知一定要送。呢個係合規要求。</p>
+            <p>呢個功能一定要做：用戶要可以設定邊啲通知想收、用咩渠道收。例如行銷 email 可以 unsubscribe，但交易通知一定要送。呢個係合規要求。</p>
           </div>
           <div class="key-point">
             <h4>重試機制</h4>
-            <p>如果發送失敗（例如 APNs 暫時不可用），你要放回 Queue 遲啲再試。我教你：用 exponential backoff 避免打爆第三方 API，呢個同 Task Queue 嘅重試邏輯一樣。</p>
+            <p>如果發送失敗（例如 APNs 暫時不可用），應該放回 Queue 遲啲再試。重點係：用 exponential backoff 避免打爆第三方 API，呢個同 Task Queue 嘅重試邏輯一樣。</p>
           </div>
           <div class="key-point">
             <h4>送達追蹤</h4>
-            <p>我建議你一定要記錄每個通知嘅狀態：已發送、已送達、已打開。呢啲數據對分析用戶行為超重要，亦都係 PM 最鍾意睇嘅 metrics。</p>
+            <p>一定要記錄每個通知嘅狀態：已發送、已送達、已打開。呢啲數據對分析用戶行為超重要，亦都係 PM 最鍾意睇嘅 metrics。</p>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>我推薦嘅 Template 系統設計</h4>
-          <p>我嘅經驗話我知：好嘅通知系統一定要有 template 功能。你將通知內容同送達邏輯分開，咁 PM 可以自己改通知文案，唔使工程師改 code。呢個會幫你慳好多溝通成本。</p>
+          <h4>Template 系統設計</h4>
+          <p>經驗法則：好嘅通知系統一定要有 template 功能。將通知內容同送達邏輯分開，咁 PM 可以自己改通知文案，唔使工程師改 code。呢個可以慳好多溝通成本。</p>
         </div>
       </div>
     </div>

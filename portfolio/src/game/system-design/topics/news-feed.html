@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>📰 News Feed 動態消息流</h1>
-      <p>我教你設計社交媒體動態，掌握 Fan-out on write vs fan-out on read</p>
+      <p>社交媒體動態設計，掌握 Fan-out on write vs fan-out on read</p>
     </header>
 
     <div class="tabs">
@@ -53,12 +53,12 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我先同你講 News Feed 係咩</h2>
-        <div class="subtitle">你打開 Facebook / Instagram 睇到嗰堆動態，就係 News Feed</div>
+        <h2>News Feed 係咩</h2>
+        <div class="subtitle">打開 Facebook / Instagram 睇到嗰堆動態，就係 News Feed</div>
         <p>
-          我問你一個問題：當你 follow 咗 500 個人，每個人都有新 post，系統點樣決定你首頁要顯示邊啲 post、用咩順序排列？呢個就係 News Feed 系統要解決嘅問題，亦係面試超高頻題目。
+          想像一下：follow 咗 500 個人，每個人都有新 post，系統點樣決定首頁要顯示邊啲 post、用咩順序排列？呢個就係 News Feed 系統要解決嘅問題，亦係面試超高頻題目。
         </p>
-        <p>你要理解核心挑戰：你 follow 嘅人同時發 post，系統要喺毫秒級將呢啲 post 收集、排序、展示俾你。我而家帶你睇成個架構。</p>
+        <p>核心挑戰係：follow 嘅人同時發 post，系統要喺毫秒級將呢啲 post 收集、排序、展示出嚟。以下睇成個架構。</p>
 
         <div class="diagram-container">
           <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
@@ -139,11 +139,11 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>首先，用戶發一條新 post，Feed Service 收到。你要記住，呢個係成個 pipeline 嘅起點。</span></li>
-          <li><span class="step-num">2</span><span>跟住 Fan-out Service 會將呢條 post 推送到所有 follower 嘅 Feed Cache 入面。我之後會詳細教你 fan-out 嘅兩種策略。</span></li>
-          <li><span class="step-num">3</span><span>同時，原始 post 存入 Posts DB 做永久保存。你要明白，Cache 同 DB 係兩個唔同嘅存儲層。</span></li>
+          <li><span class="step-num">1</span><span>首先，用戶發一條新 post，Feed Service 收到。呢個係成個 pipeline 嘅起點。</span></li>
+          <li><span class="step-num">2</span><span>跟住 Fan-out Service 會將呢條 post 推送到所有 follower 嘅 Feed Cache 入面。Fan-out 嘅兩種策略會喺下一節詳細解說。</span></li>
+          <li><span class="step-num">3</span><span>同時，原始 post 存入 Posts DB 做永久保存。重點係，Cache 同 DB 係兩個唔同嘅存儲層。</span></li>
           <li><span class="step-num">4</span><span>最後，Ranking Algorithm 決定 post 喺每個用戶 Feed 入面嘅顯示順序。呢個排序邏輯係整個系統最有商業價值嘅部分。</span></li>
         </ol>
       </div>
@@ -151,23 +151,23 @@
 
     <div class="tab-content" id="fanout">
       <div class="card">
-        <h2>我教你分清 Fan-out 策略</h2>
-        <div class="subtitle">呢個係 News Feed 最核心嘅設計決定，你一定要識</div>
+        <h2>Fan-out 策略比較</h2>
+        <div class="subtitle">呢個係 News Feed 最核心嘅設計決定，必須要識</div>
 
         <h3 style="color:#34d399; font-size:1.1rem; margin: 20px 0 12px;">Fan-out on Write（推模式）</h3>
-        <p>我先同你講推模式。用戶一發 post，系統即刻將 post 寫入所有 follower 嘅 Feed Cache。Follower 打開 App 嘅時候，Feed 已經準備好晒，即刻顯示。</p>
-        <p><strong style="color:#34d399">好處：</strong>讀取超快，因為 Feed 已經 pre-computed。<br><strong style="color:#f87171">壞處：</strong>我要提醒你注意呢個陷阱——如果一個名人有 1000 萬 follower，發一條 post 要寫 1000 萬次，呢個叫做 hotkey problem，超慢！</p>
+        <p>先講推模式。用戶一發 post，系統即刻將 post 寫入所有 follower 嘅 Feed Cache。Follower 打開 App 嘅時候，Feed 已經準備好晒，即刻顯示。</p>
+        <p><strong style="color:#34d399">好處：</strong>讀取超快，因為 Feed 已經 pre-computed。<br><strong style="color:#f87171">壞處：</strong>注意呢個陷阱——如果一個名人有 1000 萬 follower，發一條 post 要寫 1000 萬次，呢個叫做 hotkey problem，超慢！</p>
 
         <h3 style="color:#fbbf24; font-size:1.1rem; margin: 24px 0 12px;">Fan-out on Read（拉模式）</h3>
-        <p>拉模式就唔同。用戶打開 App 嘅時候，系統即時去資料庫拉取佢 follow 嘅人嘅最新 post，然後排序顯示。</p>
-        <p><strong style="color:#34d399">好處：</strong>寫入簡單，發 post 只需要存一次。<br><strong style="color:#f87171">壞處：</strong>讀取慢，因為每次都要即時計算 Feed。你要衡量邊個 trade-off 更適合你嘅場景。</p>
+        <p>拉模式就唔同。用戶打開 App 嘅時候，系統即時去資料庫拉取所 follow 嘅人嘅最新 post，然後排序顯示。</p>
+        <p><strong style="color:#34d399">好處：</strong>寫入簡單，發 post 只需要存一次。<br><strong style="color:#f87171">壞處：</strong>讀取慢，因為每次都要即時計算 Feed。需要衡量邊個 trade-off 更適合實際場景。</p>
 
-        <h3 style="color:#a5b4fc; font-size:1.1rem; margin: 24px 0 12px;">混合模式（我最推薦你用嘅方案）</h3>
-        <p>我嘅結論係：名人（follower 超多）用 <strong>pull 模式</strong>；普通用戶用 <strong>push 模式</strong>。呢個就係最佳平衡，Facebook 同 Twitter 都係咁做。面試嘅時候你主動提呢個混合策略，面試官一定會俾你加分。</p>
+        <h3 style="color:#a5b4fc; font-size:1.1rem; margin: 24px 0 12px;">混合模式（最推薦嘅方案）</h3>
+        <p>結論係：名人（follower 超多）用 <strong>pull 模式</strong>；普通用戶用 <strong>push 模式</strong>。呢個就係最佳平衡，Facebook 同 Twitter 都係咁做。面試嘅時候主動提呢個混合策略，面試官一定會加分。</p>
 
         <div class="use-case">
-          <h4>我想你理解嘅真實做法</h4>
-          <p>大型社交平台用混合模式：普通用戶 post 會 fan-out 到 follower，但名人 post 係讀取時先拉取。再配合 Ranking Algorithm（例如 EdgeRank），根據你同發帖人嘅互動程度嚟決定顯示順序。你設計嘅時候要將呢啲因素全部考慮進去。</p>
+          <h4>真實做法參考</h4>
+          <p>大型社交平台用混合模式：普通用戶 post 會 fan-out 到 follower，但名人 post 係讀取時先拉取。再配合 Ranking Algorithm（例如 EdgeRank），根據用戶同發帖人嘅互動程度嚟決定顯示順序。設計嘅時候要將呢啲因素全部考慮進去。</p>
         </div>
       </div>
     </div>
@@ -178,19 +178,19 @@
         <div class="key-points">
           <div class="key-point">
             <h4>Ranking Algorithm</h4>
-            <p>我要同你講清楚：News Feed 唔係按時間排序咁簡單！大型平台用 machine learning 根據互動率、你嘅興趣、post 類型等因素排序。你設計嘅時候要預留呢個 ranking layer。</p>
+            <p>重點係：News Feed 唔係按時間排序咁簡單！大型平台用 machine learning 根據互動率、用戶興趣、post 類型等因素排序。設計嘅時候要預留呢個 ranking layer。</p>
           </div>
           <div class="key-point">
             <h4>Pagination 分頁</h4>
-            <p>你要記住，Feed 唔可以一次 load 晒。我建議你用 cursor-based pagination，唔好用 offset-based。每次 load 20 條，往下滑再 load 20 條，咁先能承受大流量。</p>
+            <p>重點係，Feed 唔可以一次 load 晒。建議用 cursor-based pagination，唔好用 offset-based。每次 load 20 條，往下滑再 load 20 條，咁先能承受大流量。</p>
           </div>
           <div class="key-point">
             <h4>Cache 策略</h4>
-            <p>我教你一個實戰技巧：每個用戶嘅 Feed 存喺 Redis 入面，用 sorted set 按 score（時間或 rank）排列。新 post 加入時插入對應位置，呢個操作係 O(log N)，超快。</p>
+            <p>實戰技巧：每個用戶嘅 Feed 存喺 Redis 入面，用 sorted set 按 score（時間或 rank）排列。新 post 加入時插入對應位置，呢個操作係 O(log N)，超快。</p>
           </div>
           <div class="key-point">
             <h4>Real-time Updates</h4>
-            <p>我建議你用 WebSocket 或 Server-Sent Events 推送新 post 通知，用戶唔使 refresh 就可以睇到最新動態。呢個會大幅提升用戶體驗。</p>
+            <p>建議用 WebSocket 或 Server-Sent Events 推送新 post 通知，用戶唔使 refresh 就可以睇到最新動態。呢個會大幅提升用戶體驗。</p>
           </div>
         </div>
       </div>

@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>Video Streaming 影片串流系統</h1>
-      <p>我教你點樣設計影片編碼、Adaptive Bitrate 同 CDN 分發架構</p>
+      <p>影片編碼、Adaptive Bitrate 同 CDN 分發架構全解</p>
     </header>
 
     <div class="tabs">
@@ -53,12 +53,12 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我同你拆解影片串流系統</h2>
+        <h2>影片串流系統拆解</h2>
         <div class="subtitle">上傳、轉碼、分發、播放一條龍</div>
         <p>
-          我要你理解一個關鍵概念：用戶上傳一條影片，你唔可以直接俾人睇。你要先做 <strong style="color:#6366f1">Transcoding（轉碼）</strong>——將佢轉成多種解像度同碼率，然後放上 Object Storage，經 <strong style="color:#f59e0b">CDN</strong> 分發到全球各地。播放器用 HLS 或 DASH 協議，根據用戶網速自動揀唔同清晰度，呢個就係 Adaptive Bitrate。
+          關鍵概念：用戶上傳一條影片，唔可以直接俾人睇。必須先做 <strong style="color:#6366f1">Transcoding（轉碼）</strong>——將影片轉成多種解像度同碼率，然後放上 Object Storage，經 <strong style="color:#f59e0b">CDN</strong> 分發到全球各地。播放器用 HLS 或 DASH 協議，根據用戶網速自動揀唔同清晰度，呢個就係 Adaptive Bitrate。
         </p>
-        <p>我教你記住成個流程：佢係一個 <strong style="color:#34d399">DAG Pipeline</strong>——上傳 → 轉碼（多解像度）→ 儲存 → CDN 快取 → 播放。每一步都有依賴關係，你設計嘅時候要諗清楚。</p>
+        <p>成個流程係一個 <strong style="color:#34d399">DAG Pipeline</strong>——上傳 → 轉碼（多解像度）→ 儲存 → CDN 快取 → 播放。每一步都有依賴關係，設計嘅時候要諗清楚。</p>
 
         <div class="diagram-container">
           <svg viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg">
@@ -140,42 +140,42 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>用戶上傳影片，你要將佢送入 Transcoding Pipeline。我推薦你用 FFmpeg，係業界標準。</span></li>
-          <li><span class="step-num">2</span><span>轉碼成多種解像度（1080p、720p、480p、360p），輸出 HLS 格式（.m3u8 + .ts）或 DASH 格式。你要記住，每個 quality level 都係獨立嘅 playlist。</span></li>
-          <li><span class="step-num">3</span><span>分片存入 Object Storage，同時 Video Metadata DB 記錄影片資訊同 playlist URL。我建議你將 metadata 同實際檔案分開存。</span></li>
-          <li><span class="step-num">4</span><span>CDN 快取熱門影片，用戶播放時從最近嘅 edge node 攞。呢個大幅減少延遲，你一定要善用 CDN。</span></li>
-          <li><span class="step-num">5</span><span>播放器根據網速揀唔同清晰度——呢個就係 Adaptive Bitrate Streaming。我要你明白，呢個機制令到用戶體驗好好多。</span></li>
+          <li><span class="step-num">1</span><span>用戶上傳影片，送入 Transcoding Pipeline。推薦用 FFmpeg，係業界標準。</span></li>
+          <li><span class="step-num">2</span><span>轉碼成多種解像度（1080p、720p、480p、360p），輸出 HLS 格式（.m3u8 + .ts）或 DASH 格式。重點係，每個 quality level 都係獨立嘅 playlist。</span></li>
+          <li><span class="step-num">3</span><span>分片存入 Object Storage，同時 Video Metadata DB 記錄影片資訊同 playlist URL。建議將 metadata 同實際檔案分開存。</span></li>
+          <li><span class="step-num">4</span><span>CDN 快取熱門影片，用戶播放時從最近嘅 edge node 攞。呢個大幅減少延遲，必須善用 CDN。</span></li>
+          <li><span class="step-num">5</span><span>播放器根據網速揀唔同清晰度——呢個就係 Adaptive Bitrate Streaming。呢個機制令到用戶體驗大幅提升。</span></li>
         </ol>
       </div>
     </div>
 
     <div class="tab-content" id="transcoding">
       <div class="card">
-        <h2>我教你 Transcoding 流程</h2>
+        <h2>Transcoding 流程詳解</h2>
         <div class="subtitle">點樣將一條片變成多種清晰度</div>
         <p>
-          我要同你解釋清楚：原始影片可能係 4K、單一碼率，你唔可以直接咁送出去。你要用 <strong style="color:#10B981">FFmpeg</strong>（或類似工具）生成多條不同解像度嘅串流。HLS 用 .m3u8 做 playlist，列出每個 segment（.ts 檔）嘅 URL。DASH 就用 MPD（XML）做類似嘅嘢。
+          原始影片可能係 4K、單一碼率，唔可以直接咁送出去。需要用 <strong style="color:#10B981">FFmpeg</strong>（或類似工具）生成多條不同解像度嘅串流。HLS 用 .m3u8 做 playlist，列出每個 segment（.ts 檔）嘅 URL。DASH 就用 MPD（XML）做類似嘅嘢。
         </p>
-        <p>播放器會根據當前 bandwidth 揀最合適嘅 quality level，動態切換。我要你記住，呢個就係 Adaptive Bitrate Streaming 嘅核心原理——唔使用戶手動揀畫質，系統自動幫佢搞掂。</p>
+        <p>播放器會根據當前 bandwidth 揀最合適嘅 quality level，動態切換。呢個就係 Adaptive Bitrate Streaming 嘅核心原理——唔使用戶手動揀畫質，系統自動搞掂。</p>
 
         <div class="key-points">
           <div class="key-point">
             <h4>Transcoding 多解像度</h4>
-            <p>我建議你將一條源片至少轉成 1080p、720p、480p、360p。每種有獨立 playlist，player 按網速自動揀。低端裝置都睇到，高速網絡有靚畫質。</p>
+            <p>建議將一條源片至少轉成 1080p、720p、480p、360p。每種有獨立 playlist，player 按網速自動揀。低端裝置都睇到，高速網絡有靚畫質。</p>
           </div>
           <div class="key-point">
             <h4>HLS / DASH 協議</h4>
-            <p>你要知道兩種主流協議：HLS（Apple 主導）用 .m3u8 + .ts；DASH（開放標準）用 MPD + 分片。兩者都 support adaptive bitrate。我建議你優先用 HLS，兼容性最好。</p>
+            <p>兩種主流協議：HLS（Apple 主導）用 .m3u8 + .ts；DASH（開放標準）用 MPD + 分片。兩者都 support adaptive bitrate。建議優先用 HLS，兼容性最好。</p>
           </div>
           <div class="key-point">
             <h4>CDN Edge Caching</h4>
-            <p>熱門影片嘅 .m3u8 同 .ts segment 會 cache 喺 CDN edge 節點。全球用戶就近下載，大幅減輕 origin server 壓力。我要你諗清楚 cache invalidation 策略。</p>
+            <p>熱門影片嘅 .m3u8 同 .ts segment 會 cache 喺 CDN edge 節點。全球用戶就近下載，大幅減輕 origin server 壓力。必須諗清楚 cache invalidation 策略。</p>
           </div>
           <div class="key-point">
             <h4>DAG Pipeline</h4>
-            <p>成個流程係：上傳 → 轉碼（可以並行多個 quality）→ 儲存 → 通知。我建議你用 DAG 管理依賴關係，某個 step 失敗可以單獨 retry，唔使重頭嚟。</p>
+            <p>成個流程係：上傳 → 轉碼（可以並行多個 quality）→ 儲存 → 通知。建議用 DAG 管理依賴關係，某個 step 失敗可以單獨 retry，唔使重頭嚟。</p>
           </div>
         </div>
       </div>
@@ -184,29 +184,29 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我要你設計影片串流系統時注意呢幾點</div>
+        <div class="subtitle">設計影片串流系統時必須注意呢幾點</div>
         <div class="key-points">
           <div class="key-point">
             <h4>轉碼時間</h4>
-            <p>我同你講，一條 1 小時嘅片轉碼可能要幾十分鐘。你要用 worker 集群並行處理，或者 pre-transcode 熱門片。用戶唔會等你慢慢轉。</p>
+            <p>一條 1 小時嘅片轉碼可能要幾十分鐘。需要用 worker 集群並行處理，或者 pre-transcode 熱門片。用戶唔會等慢慢轉。</p>
           </div>
           <div class="key-point">
             <h4>Segment 長度</h4>
-            <p>HLS segment 一般 2 到 10 秒。我建議你用 6 秒——太短 overhead 多，太長切換 quality 嘅反應就唔夠快。呢個係個平衡點。</p>
+            <p>HLS segment 一般 2 到 10 秒。建議用 6 秒——太短 overhead 多，太長切換 quality 嘅反應就唔夠快。呢個係個平衡點。</p>
           </div>
           <div class="key-point">
             <h4>進度通知</h4>
-            <p>轉碼完成後你要通知前端。我建議你用 Webhook 或者 Server-Sent Events，唔好用 polling——浪費資源。更新影片狀態為「可播放」。</p>
+            <p>轉碼完成後需要通知前端。建議用 Webhook 或者 Server-Sent Events，唔好用 polling——浪費資源。更新影片狀態為「可播放」。</p>
           </div>
           <div class="key-point">
             <h4>存儲成本</h4>
-            <p>你要留意，多解像度 = 多倍存儲成本。我嘅建議係：熱門片保留所有 quality，冷門片只留 360p 或者用分層存儲（hot/cold tier），慳錢之餘唔影響用戶體驗。</p>
+            <p>要留意，多解像度 = 多倍存儲成本。建議係：熱門片保留所有 quality，冷門片只留 360p 或者用分層存儲（hot/cold tier），慳錢之餘唔影響用戶體驗。</p>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>我嘅總結</h4>
-          <p>影片串流系統嘅核心就係三個字：Transcoding + CDN + Adaptive Bitrate。你掌握呢三個概念，就可以設計出一個 production-ready 嘅串流架構。記住，先從小規模開始，但架構要可以水平擴展。</p>
+          <h4>總結</h4>
+          <p>影片串流系統嘅核心就係三個字：Transcoding + CDN + Adaptive Bitrate。掌握呢三個概念，就可以設計出一個 production-ready 嘅串流架構。記住，先從小規模開始，但架構要可以水平擴展。</p>
         </div>
       </div>
     </div>

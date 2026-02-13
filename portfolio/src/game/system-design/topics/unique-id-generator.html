@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>Unique ID Generator 全局唯一 ID 生成器</h1>
-      <p>我教你喺分佈式環境下生成全局唯一 ID，掌握 Snowflake 設計</p>
+      <p>深入了解分佈式環境下生成全局唯一 ID，掌握 Snowflake 設計</p>
     </header>
 
     <div class="tabs">
@@ -53,10 +53,10 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我話你知全局唯一 ID 點解咁重要</h2>
+        <h2>全局唯一 ID 點解咁重要</h2>
         <div class="subtitle">多台 Server 各自 generate，點樣唔會撞？</div>
         <p>
-          我要同你講一個好實際嘅問題。當你有幾百台 App Server，每台都要 generate 唯一 ID（例如 order_id、tweet_id），你點搞？用 database 自增？會 bottleneck。用 UUID？又長又唔 time-sortable。我建議你學 <strong style="color:#34d399">Snowflake</strong> 嘅 64-bit 方案：無需 coordination，高性能，而且 ID 按時間遞增。呢個係我認為最 balanced 嘅設計。
+          呢個係一個好實際嘅問題。當有幾百台 App Server，每台都要 generate 唯一 ID（例如 order_id、tweet_id），點搞？用 database 自增？會 bottleneck。用 UUID？又長又唔 time-sortable。最佳做法係用 <strong style="color:#34d399">Snowflake</strong> 嘅 64-bit 方案：無需 coordination，高性能，而且 ID 按時間遞增。呢個係目前最 balanced 嘅設計。
         </p>
 
         <div class="diagram-container">
@@ -137,11 +137,11 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">完整流程</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>App Service 叫 ID Generator 要一個新 ID。你要知道，呢個 call 係本地嘅，唔使 network round trip。</span></li>
-          <li><span class="step-num">2</span><span>Generator 用 timestamp (41 bits) + datacenter ID (5) + machine ID (5) + sequence (12) 組成 64-bit ID。我建議你記住呢四段嘅分配。</span></li>
-          <li><span class="step-num">3</span><span>同一毫秒內有多個請求就用 sequence 遞增，最多 4096 個/ms。我想你明白：呢個 throughput 對絕大部分場景都夠用。</span></li>
+          <li><span class="step-num">1</span><span>App Service 叫 ID Generator 要一個新 ID。重點係，呢個 call 係本地嘅，唔使 network round trip。</span></li>
+          <li><span class="step-num">2</span><span>Generator 用 timestamp (41 bits) + datacenter ID (5) + machine ID (5) + sequence (12) 組成 64-bit ID。呢四段嘅分配必須要記住。</span></li>
+          <li><span class="step-num">3</span><span>同一毫秒內有多個請求就用 sequence 遞增，最多 4096 個/ms。呢個 throughput 對絕大部分場景都夠用。</span></li>
           <li><span class="step-num">4</span><span>無需問 database、無需同其他 node 協調，本地 generate 就搞掂。呢個就係 Snowflake 嘅核心優勢。</span></li>
         </ol>
       </div>
@@ -149,29 +149,29 @@
 
     <div class="tab-content" id="structure">
       <div class="card">
-        <h2>我幫你拆解 ID 結構</h2>
+        <h2>ID 結構拆解</h2>
         <div class="subtitle">64-bit 點樣分配</div>
         <p>
-          我要同你講清楚 Snowflake 嘅 64-bit 點樣分：<strong style="color:#34d399">1 bit sign</strong>（通常 0）+ <strong style="color:#fbbf24">41 bits timestamp</strong>（毫秒級，可用 69 年）+ <strong style="color:#6366f1">10 bits</strong>（5 bit datacenter + 5 bit machine）+ <strong style="color:#f59e0b">12 bits sequence</strong>。你記住呢個分配，面試一定會問。
+          Snowflake 嘅 64-bit 點樣分：<strong style="color:#34d399">1 bit sign</strong>（通常 0）+ <strong style="color:#fbbf24">41 bits timestamp</strong>（毫秒級，可用 69 年）+ <strong style="color:#6366f1">10 bits</strong>（5 bit datacenter + 5 bit machine）+ <strong style="color:#f59e0b">12 bits sequence</strong>。呢個分配必須記住，面試一定會問。
         </p>
-        <p>我再幫你計一計：12 bits sequence = 4096，即係同一毫秒同一部機最多 generate 4096 個 ID。超過就等下一毫秒。你要知道，呢個限制對 99% 嘅場景都唔係問題。</p>
+        <p>計算一下：12 bits sequence = 4096，即係同一毫秒同一部機最多 generate 4096 個 ID。超過就等下一毫秒。呢個限制對 99% 嘅場景都唔係問題。</p>
 
         <div class="key-points">
           <div class="key-point">
             <h4>Snowflake 64-bit</h4>
-            <p>每部機有唯一 datacenter+machine ID，無需中心化協調，高性能。我認為呢個係分佈式 ID 生成嘅最佳實踐之一。</p>
+            <p>每部機有唯一 datacenter+machine ID，無需中心化協調，高性能。呢個係分佈式 ID 生成嘅最佳實踐之一。</p>
           </div>
           <div class="key-point">
             <h4>Time-sortable</h4>
-            <p>ID 按時間遞增，唔使查 database 就可以按創建時間排序。我想你記住：呢個特性對 index 同 B-tree 好友好，insert 性能好。</p>
+            <p>ID 按時間遞增，唔使查 database 就可以按創建時間排序。關鍵在於：呢個特性對 index 同 B-tree 好友好，insert 性能好。</p>
           </div>
           <div class="key-point">
             <h4>4096 IDs/ms</h4>
-            <p>每毫秒每部機 4096 個。如果你嘅場景唔夠，可以調整 bit 分配——例如多啲 sequence bits、少啲 machine bits。我建議你根據實際需求靈活調整。</p>
+            <p>每毫秒每部機 4096 個。如果場景唔夠，可以調整 bit 分配——例如多啲 sequence bits、少啲 machine bits。建議根據實際需求靈活調整。</p>
           </div>
           <div class="key-point">
             <h4>Coordination-free</h4>
-            <p>唔使問 Zookeeper、Redis。每部機嘅 (datacenter, machine) 唔同就得，部署時配置好。我要同你強調：呢個特性令 Snowflake 可以水平擴展。</p>
+            <p>唔使問 Zookeeper、Redis。每部機嘅 (datacenter, machine) 唔同就得，部署時配置好。重點係：呢個特性令 Snowflake 可以水平擴展。</p>
           </div>
         </div>
       </div>
@@ -180,29 +180,29 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我幫你整理設計 ID 生成器嘅注意事項</div>
+        <div class="subtitle">設計 ID 生成器嘅注意事項</div>
         <div class="key-points">
           <div class="key-point">
             <h4>時鐘回撥</h4>
-            <p>NTP 同步可能令時鐘回撥，會 generate 重複 ID。我教你點處理：拒絕 generate，等時鐘追返；或者記錄上次 timestamp，回撥時用 sequence 頂住。呢個坑你一定要知。</p>
+            <p>NTP 同步可能令時鐘回撥，會 generate 重複 ID。處理方法：拒絕 generate，等時鐘追返；或者記錄上次 timestamp，回撥時用 sequence 頂住。呢個坑一定要知。</p>
           </div>
           <div class="key-point">
             <h4>Machine ID 分配</h4>
-            <p>5+5=10 bits = 1024 部機。你可以用 Zookeeper 或者 DB 分配，又或者用 IP/MAC hash。我提醒你：一定要確保唔重複，否則會出大問題。</p>
+            <p>5+5=10 bits = 1024 部機。可以用 Zookeeper 或者 DB 分配，又或者用 IP/MAC hash。注意：一定要確保唔重複，否則會出大問題。</p>
           </div>
           <div class="key-point">
             <h4>其他方案對比</h4>
-            <p>UUID v4：random，唔 time-sortable。DB 自增：bottleneck。Redis INCR：要額外 service。我嘅結論係 Snowflake 係 balance 得最好嘅一類方案。</p>
+            <p>UUID v4：random，唔 time-sortable。DB 自增：bottleneck。Redis INCR：要額外 service。結論係 Snowflake 係 balance 得最好嘅一類方案。</p>
           </div>
           <div class="key-point">
             <h4>開源實現</h4>
-            <p>業界有唔少成熟嘅開源 Snowflake 實現，你可以參考佢哋嘅代碼學習。我建議你動手 implement 一次，理解會更深刻。</p>
+            <p>業界有唔少成熟嘅開源 Snowflake 實現，可以參考相關代碼學習。建議動手 implement 一次，理解會更深刻。</p>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>我嘅總結</h4>
-          <p>大量社交平台嘅 post ID、訂單系統嘅 order_id 都用呢類設計。簡單、高效、易擴展。我建議你將 Snowflake 嘅設計思路徹底掌握，因為呢個係分佈式系統面試嘅高頻題目。</p>
+          <h4>總結</h4>
+          <p>大量社交平台嘅 post ID、訂單系統嘅 order_id 都用呢類設計。簡單、高效、易擴展。Snowflake 嘅設計思路值得徹底掌握，因為呢個係分佈式系統面試嘅高頻題目。</p>
         </div>
       </div>
     </div>

@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>Metrics & Logging 監控日誌系統</h1>
-      <p>我教你點樣設計時序數據收集同 aggregation pipeline</p>
+      <p>點樣設計時序數據收集同 aggregation pipeline</p>
     </header>
 
     <div class="tabs">
@@ -54,12 +54,12 @@
     <div class="tab-content active" id="overview">
       <div class="card">
         <h2>Metrics & Logging 係咩？</h2>
-        <div class="subtitle">我教你點樣收集系統運行數據，做監控、告警同排查問題</div>
+        <div class="subtitle">點樣收集系統運行數據，做監控、告警同排查問題</div>
         <p>
-          我問你：你嘅系統出咗事，你點樣知？CPU 爆咗、請求慢、錯誤率升……你靠嘅就係 <strong style="color:#6366f1">Metrics（指標）</strong> 同 <strong style="color:#6366f1">Logs（日誌）</strong> 嚟掌握系統狀態。我要你分清楚：Metrics 係數字（CPU%、QPS、延遲），Logs 係文字記錄（邊個 API 幾時出錯）。
+          系統出咗事，點樣知？CPU 爆咗、請求慢、錯誤率升……靠嘅就係 <strong style="color:#6366f1">Metrics（指標）</strong> 同 <strong style="color:#6366f1">Logs（日誌）</strong> 嚟掌握系統狀態。必須分清楚：Metrics 係數字（CPU%、QPS、延遲），Logs 係文字記錄（邊個 API 幾時出錯）。
         </p>
         <p>
-          我教你成條 pipeline 嘅流程：呢啲數據由 App Server 產生，經過 Log Agent 收集，再送去 Kafka 做 buffer，最後存入 Time Series DB 或 Elasticsearch，用 Grafana 畫圖表畀你睇。你記住呢個流程。
+          成條 pipeline 嘅流程：呢啲數據由 App Server 產生，經過 Log Agent 收集，再送去 Kafka 做 buffer，最後存入 Time Series DB 或 Elasticsearch，用 Grafana 畫圖表。記住呢個流程。
         </p>
 
         <div class="diagram-container">
@@ -168,11 +168,11 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你成個流程點樣運作</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程點樣運作</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>App Server 產生 Log（寫入檔）同 Metrics（記憶體計數）。Log Agent（Fluentd、Filebeat）會定期讀取或接收推送。我要你記住：呢個係數據嘅源頭。</span></li>
-          <li><span class="step-num">2</span><span>Log Agent 將數據 push 去 Kafka。我同你講 Kafka 嘅角色好重要——佢做 buffer：流量突增時下游唔使即時處理，可以慢慢消費，唔會丟數據。</span></li>
-          <li><span class="step-num">3</span><span>時序數據（CPU、QPS）去 Time Series DB；Log 文字去 Elasticsearch。Grafana 畫圖表同設定告警規則。我建議你記住呢個分工。</span></li>
+          <li><span class="step-num">1</span><span>App Server 產生 Log（寫入檔）同 Metrics（記憶體計數）。Log Agent（Fluentd、Filebeat）會定期讀取或接收推送。重點係：呢個係數據嘅源頭。</span></li>
+          <li><span class="step-num">2</span><span>Log Agent 將數據 push 去 Kafka。Kafka 嘅角色好重要——做 buffer：流量突增時下游唔使即時處理，可以慢慢消費，唔會丟數據。</span></li>
+          <li><span class="step-num">3</span><span>時序數據（CPU、QPS）去 Time Series DB；Log 文字去 Elasticsearch。Grafana 畫圖表同設定告警規則。記住呢個分工。</span></li>
         </ol>
       </div>
     </div>
@@ -180,29 +180,29 @@
     <div class="tab-content" id="collect">
       <div class="card">
         <h2>收集模式：Push vs Pull</h2>
-        <div class="subtitle">我教你兩種唔同嘅方式去收集 Metrics 同 Logs</div>
+        <div class="subtitle">兩種唔同嘅方式去收集 Metrics 同 Logs</div>
         <p>
-          我要你分清楚兩種模式。<strong style="color:#34d399">Push 模式</strong>：App 主動將數據送去 collector。適合分散式系統，每個服務自己 push。缺點係 collector 要處理大量連接。
+          必須分清楚兩種模式。<strong style="color:#34d399">Push 模式</strong>：App 主動將數據送去 collector。適合分散式系統，每個服務自己 push。缺點係 collector 要處理大量連接。
         </p>
         <p>
-          <strong style="color:#f59e0b">Pull 模式</strong>：Collector（例如 Prometheus）主動去 scrape 每個 target 嘅 metrics endpoint。集中管理，容易加減 target。Prometheus 就用呢種。我建議你兩種都要識。
+          <strong style="color:#f59e0b">Pull 模式</strong>：Collector（例如 Prometheus）主動去 scrape 每個 target 嘅 metrics endpoint。集中管理，容易加減 target。Prometheus 就用呢種。建議兩種都要識。
         </p>
         <div class="key-points">
           <div class="key-point">
             <h4>Push vs Pull 收集</h4>
-            <p>Push：App → Collector。Pull：Collector 定期去 App 攞。我教你個原則：Log 通常 Push，Metrics 兩種都得。你要根據場景揀。</p>
+            <p>Push：App → Collector。Pull：Collector 定期去 App 攞。原則係：Log 通常 Push，Metrics 兩種都得。根據場景揀。</p>
           </div>
           <div class="key-point">
             <h4>Kafka Buffer</h4>
-            <p>我要你記住：高流量時下游可能處理唔切。Kafka 做 buffer，解耦 producer 同 consumer，唔會丟數據。呢個係關鍵設計。</p>
+            <p>重點係：高流量時下游可能處理唔切。Kafka 做 buffer，解耦 producer 同 consumer，唔會丟數據。呢個係關鍵設計。</p>
           </div>
           <div class="key-point">
             <h4>Time Series DB</h4>
-            <p>InfluxDB、Prometheus、VictoriaMetrics 專為時序數據設計，壓縮好、查詢快。我建議你一定要學識用至少一種。</p>
+            <p>InfluxDB、Prometheus、VictoriaMetrics 專為時序數據設計，壓縮好、查詢快。建議一定要學識用至少一種。</p>
           </div>
           <div class="key-point">
             <h4>Alert Rules</h4>
-            <p>我教你設定告警：CPU > 80% 就發 Slack、錯誤率升就 call on-call。Grafana Alertmanager 係最常用嘅組合。</p>
+            <p>設定告警嘅方法：CPU > 80% 就發 Slack、錯誤率升就 call on-call。Grafana Alertmanager 係最常用嘅組合。</p>
           </div>
         </div>
       </div>
@@ -211,28 +211,28 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我教你監控系統設計嘅關鍵決策</div>
+        <div class="subtitle">監控系統設計嘅關鍵決策</div>
         <div class="key-points">
           <div class="key-point">
             <h4>Push vs Pull 收集</h4>
-            <p>我建議你：Push 適合分散式、短生命週期服務（例如 Kubernetes Pod）。Pull 適合集中管理、穩定嘅 target list。你要根據你嘅架構去揀。</p>
+            <p>Push 適合分散式、短生命週期服務（例如 Kubernetes Pod）。Pull 適合集中管理、穩定嘅 target list。根據架構去揀。</p>
           </div>
           <div class="key-point">
             <h4>Kafka Buffer</h4>
-            <p>我要你記住一個原則：千萬唔好 App 直接寫 DB。Kafka 做 buffer，下游可以慢慢處理，流量高峰都頂得住。呢個係我嘅實戰經驗。</p>
+            <p>重要原則：千萬唔好 App 直接寫 DB。Kafka 做 buffer，下游可以慢慢處理，流量高峰都頂得住。呢個係實戰經驗。</p>
           </div>
           <div class="key-point">
             <h4>Time Series DB</h4>
-            <p>我教你點揀：Metrics 用 InfluxDB、Prometheus；Log 用 Elasticsearch。唔好用 MySQL 存時序數據，會好慢。你要記住呢個 trade-off。</p>
+            <p>點揀：Metrics 用 InfluxDB、Prometheus；Log 用 Elasticsearch。唔好用 MySQL 存時序數據，會好慢。記住呢個 trade-off。</p>
           </div>
           <div class="key-point">
             <h4>Alert Rules</h4>
-            <p>我建議你學識 Golden Signals：延遲、吞吐量、錯誤率、飽和度。設定合理 threshold，避免告警疲勞。呢四個指標係你嘅起步點。</p>
+            <p>建議學識 Golden Signals：延遲、吞吐量、錯誤率、飽和度。設定合理 threshold，避免告警疲勞。呢四個指標係起步點。</p>
           </div>
         </div>
         <div class="use-case">
-          <h4>我推薦嘅常見組合</h4>
-          <p>Prometheus + Grafana 做 metrics；Elasticsearch + Kibana 做 log 搜尋；Loki 係 lightweight 嘅 log 方案。Kafka 串起成條 pipeline，確保高可用。你跟住呢個組合去學就啱。</p>
+          <h4>推薦嘅常見組合</h4>
+          <p>Prometheus + Grafana 做 metrics；Elasticsearch + Kibana 做 log 搜尋；Loki 係 lightweight 嘅 log 方案。Kafka 串起成條 pipeline，確保高可用。跟住呢個組合去學就啱。</p>
         </div>
       </div>
     </div>

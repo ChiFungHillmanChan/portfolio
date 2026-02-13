@@ -35,16 +35,16 @@
   <div class="container">
     <header>
       <h1>Web Crawler 網頁爬蟲系統</h1>
-      <p>我教你設計大規模爬蟲，掌握 BFS、Politeness 同去重策略</p>
+      <p>大規模爬蟲設計全解：BFS、Politeness 同去重策略</p>
     </header>
 
     <div class="card">
-      <h2>我先同你講，爬蟲系統到底係咩</h2>
+      <h2>爬蟲系統到底係咩</h2>
       <div class="subtitle">Google 點樣搵到全世界嘅網頁？就係靠 Web Crawler</div>
       <p>
-        我要你咁樣理解 Web Crawler：佢就好似一隻蜘蛛，從一組「種子 URL」開始，打開網頁、下載內容、搵出入面嘅所有連結，然後再去爬嗰啲連結。不斷重複，就可以爬遍全個互聯網。你諗下，呢個循環有幾強大。
+        Web Crawler 就好似一隻蜘蛛，從一組「種子 URL」開始，打開網頁、下載內容、搵出入面嘅所有連結，然後再去爬嗰啲連結。不斷重複，就可以爬遍全個互聯網。呢個循環嘅威力非常強大。
       </p>
-      <p>我舉個例——Google 嘅爬蟲叫 Googlebot，每日爬幾十億個網頁。你設計呢個系統嘅時候，最大嘅挑戰就係：點樣做到快、唔重複、同時唔被網站 ban。我逐個同你拆解。</p>
+      <p>舉個例——Google 嘅爬蟲叫 Googlebot，每日爬幾十億個網頁。設計呢個系統嘅時候，最大嘅挑戰就係：點樣做到快、唔重複、同時唔被網站 ban。以下逐個拆解。</p>
 
       <div class="diagram-container">
         <svg viewBox="0 0 850 310" xmlns="http://www.w3.org/2000/svg">
@@ -130,37 +130,37 @@
         </svg>
       </div>
 
-      <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+      <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
       <ol class="steps">
-        <li><span class="step-num">1</span><span>首先，你要有一組 Seed URLs（初始網址列表），我建議你揀高質量嘅起點，放入 URL Frontier（待爬隊列）。</span></li>
-        <li><span class="step-num">2</span><span>然後 Fetcher（多個 Worker）從 Frontier 攞 URL，下載網頁內容。你要記住，Worker 數量直接影響爬取速度。</span></li>
-        <li><span class="step-num">3</span><span>HTML Parser 負責解析網頁，提取出入面嘅所有連結。我提醒你，呢度要處理好各種 edge case，例如 relative URL、redirect 等。</span></li>
-        <li><span class="step-num">4</span><span>新連結經過 Dedup 模組（Bloom Filter 去重）過濾。我教你點理解：Bloom Filter 用好少記憶體就可以判斷 URL 有冇見過，非常高效。</span></li>
-        <li><span class="step-num">5</span><span>唯一嘅新連結放返 URL Frontier，形成循環。同時，下載嘅內容存入 Storage，等你之後做 indexing。</span></li>
+        <li><span class="step-num">1</span><span>首先，準備一組 Seed URLs（初始網址列表），建議揀高質量嘅起點，放入 URL Frontier（待爬隊列）。</span></li>
+        <li><span class="step-num">2</span><span>然後 Fetcher（多個 Worker）從 Frontier 攞 URL，下載網頁內容。重點係，Worker 數量直接影響爬取速度。</span></li>
+        <li><span class="step-num">3</span><span>HTML Parser 負責解析網頁，提取出入面嘅所有連結。呢度要處理好各種 edge case，例如 relative URL、redirect 等。</span></li>
+        <li><span class="step-num">4</span><span>新連結經過 Dedup 模組（Bloom Filter 去重）過濾。原理係：Bloom Filter 用好少記憶體就可以判斷 URL 有冇見過，非常高效。</span></li>
+        <li><span class="step-num">5</span><span>唯一嘅新連結放返 URL Frontier，形成循環。同時，下載嘅內容存入 Storage，之後做 indexing。</span></li>
       </ol>
 
       <div class="key-points" style="margin-top:24px;">
         <div class="key-point">
           <h4>BFS 策略</h4>
-          <p>我建議你用 Breadth-First Search（廣度優先搜索）遍歷網頁，一層一層咁爬。咁樣可以確保你先爬到重要嘅頁面，唔會一頭扎得太深。</p>
+          <p>建議用 Breadth-First Search（廣度優先搜索）遍歷網頁，一層一層咁爬。咁樣可以確保先爬到重要嘅頁面，唔會一頭扎得太深。</p>
         </div>
         <div class="key-point">
           <h4>Bloom Filter 去重</h4>
-          <p>呢個係一個超省記憶體嘅數據結構，我好鍾意用佢。佢可以快速判斷一個 URL 有冇爬過。你要知道，佢可能有極小概率嘅 false positive，但唔會有 false negative——呢個 trade-off 係值得嘅。</p>
+          <p>呢個係一個超省記憶體嘅數據結構，實戰中非常好用。可以快速判斷一個 URL 有冇爬過。要留意，可能有極小概率嘅 false positive，但唔會有 false negative——呢個 trade-off 係值得嘅。</p>
         </div>
         <div class="key-point">
           <h4>robots.txt 禮貌規則</h4>
-          <p>你記住，每個網站嘅 robots.txt 指定咗邊啲頁面可以爬、邊啲唔可以。我要求你設計嘅爬蟲一定要遵守呢啲規則，同埋控制爬取速率——唔好打爆人哋 Server，呢個係基本禮儀。</p>
+          <p>每個網站嘅 robots.txt 指定咗邊啲頁面可以爬、邊啲唔可以。設計爬蟲一定要遵守呢啲規則，同埋控制爬取速率——唔好打爆人哋 Server，呢個係基本禮儀。</p>
         </div>
         <div class="key-point">
           <h4>並行爬取</h4>
-          <p>我教你用多個 Worker 同時爬取唔同嘅 URL。但你要注意，同一個 domain 嘅請求要限速（例如每秒最多 1 次），呢個就係 Politeness Policy。違反嘅話會被 ban IP。</p>
+          <p>用多個 Worker 同時爬取唔同嘅 URL。但要注意，同一個 domain 嘅請求要限速（例如每秒最多 1 次），呢個就係 Politeness Policy。違反嘅話會被 ban IP。</p>
         </div>
       </div>
 
       <div class="use-case">
-        <h4>我想你記住嘅重點</h4>
-        <p>Google 嘅爬蟲每日爬超過 100 億個網頁，建立嘅索引包含超過 5000 億個頁面。呢個規模嘅系統需要數千台 Server 同時運作。你設計嘅時候，要從小規模開始諗，但架構要可以 scale up。</p>
+        <h4>核心重點</h4>
+        <p>Google 嘅爬蟲每日爬超過 100 億個網頁，建立嘅索引包含超過 5000 億個頁面。呢個規模嘅系統需要數千台 Server 同時運作。設計嘅時候，要從小規模開始諗，但架構要可以 scale up。</p>
       </div>
     </div>
   </div>

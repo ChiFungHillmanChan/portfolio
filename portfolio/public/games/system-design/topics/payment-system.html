@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>Payment System 支付系統</h1>
-      <p>我教你設計交易一致性、冪等性同重試機制</p>
+      <p>交易一致性、冪等性同重試機制全解</p>
     </header>
 
     <div class="tabs">
@@ -53,10 +53,10 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我同你講，支付系統最要注意乜嘢</h2>
+        <h2>支付系統最要注意乜嘢</h2>
         <div class="subtitle">錢唔可以重複扣、唔可以少記——呢個係鐵律</div>
         <p>
-          我要你記住，用戶畀錢買嘢，最驚就係三件事：<strong style="color:#f87171">重複扣款</strong>、<strong style="color:#f87171">扣咗錢但訂單冇成立</strong>、<strong style="color:#f87171">退款處理錯</strong>。所以你設計支付系統，必須做到：<strong style="color:#34d399">冪等性</strong>（同一請求重複發多次，只會處理一次）、<strong style="color:#6366f1">雙向記帳</strong>（Double-entry，每筆交易 debit = credit）、同埋用 <strong style="color:#f59e0b">Webhook</strong> 同步支付結果。呢三個係你嘅核心防線。
+          重點係，用戶畀錢買嘢，最驚就係三件事：<strong style="color:#f87171">重複扣款</strong>、<strong style="color:#f87171">扣咗錢但訂單冇成立</strong>、<strong style="color:#f87171">退款處理錯</strong>。所以設計支付系統，必須做到：<strong style="color:#34d399">冪等性</strong>（同一請求重複發多次，只會處理一次）、<strong style="color:#6366f1">雙向記帳</strong>（Double-entry，每筆交易 debit = credit）、同埋用 <strong style="color:#f59e0b">Webhook</strong> 同步支付結果。呢三個係核心防線。
         </p>
 
         <div class="diagram-container">
@@ -133,41 +133,41 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次支付流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">支付流程一覽</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>User 發起付款，你要確保帶上 Idempotency Key（我建議你用 order_id + 請求 hash）。呢個 key 係防止重複扣款嘅關鍵。</span></li>
-          <li><span class="step-num">2</span><span>Payment Service 首先檢查呢個 Idempotency Key 有冇處理過——有嘅話，直接返回上次結果，唔會再扣錢。你要記住呢個邏輯。</span></li>
-          <li><span class="step-num">3</span><span>然後調用 Payment Gateway（Stripe / PayPal）。成功後 Ledger 做雙向記帳：用戶 -100，商家 +100。我要你理解，debit 永遠等於 credit。</span></li>
-          <li><span class="step-num">4</span><span>Gateway 用 Webhook 異步通知最終結果。你要留意，呢個可能有延遲，所以你要處理好 async 狀態同步。</span></li>
+          <li><span class="step-num">1</span><span>User 發起付款，必須帶上 Idempotency Key（建議用 order_id + 請求 hash）。呢個 key 係防止重複扣款嘅關鍵。</span></li>
+          <li><span class="step-num">2</span><span>Payment Service 首先檢查呢個 Idempotency Key 有冇處理過——有嘅話，直接返回上次結果，唔會再扣錢。呢個邏輯非常重要。</span></li>
+          <li><span class="step-num">3</span><span>然後調用 Payment Gateway（Stripe / PayPal）。成功後 Ledger 做雙向記帳：用戶 -100，商家 +100。核心原則係，debit 永遠等於 credit。</span></li>
+          <li><span class="step-num">4</span><span>Gateway 用 Webhook 異步通知最終結果。要留意，呢個可能有延遲，所以要處理好 async 狀態同步。</span></li>
         </ol>
       </div>
     </div>
 
     <div class="tab-content" id="idempotency">
       <div class="card">
-        <h2>我教你冪等性設計</h2>
+        <h2>冪等性設計詳解</h2>
         <div class="subtitle">呢個係防止重複扣款嘅核心武器</div>
         <p>
-          我要你徹底理解 <strong style="color:#34d399">Idempotency Key</strong>：Client 每次付款請求帶一個唯一 key（例如 UUID 或者 order_id）。Server 第一次處理時記錄 key → 結果；之後再用同一個 key 請求，直接返回 cached 結果，唔會再 call Payment Gateway。就係咁簡單，但效果強大。
+          <strong style="color:#34d399">Idempotency Key</strong> 嘅原理：Client 每次付款請求帶一個唯一 key（例如 UUID 或者 order_id）。Server 第一次處理時記錄 key → 結果；之後再用同一個 key 請求，直接返回 cached 結果，唔會再 call Payment Gateway。就係咁簡單，但效果強大。
         </p>
-        <p>我建議你幫呢個 Key 設定 expiry（例如 24 小時），避免永遠佔住存儲。實現可以用 Redis 或者 DB，key 做 unique constraint。呢個 pattern 你一定要識。</p>
+        <p>建議幫呢個 Key 設定 expiry（例如 24 小時），避免永遠佔住存儲。實現可以用 Redis 或者 DB，key 做 unique constraint。呢個 pattern 必須要識。</p>
 
         <div class="key-points">
           <div class="key-point">
             <h4>Idempotency Key</h4>
-            <p>每次請求帶唯一 key，Server 記錄 (key → response)。重複請求返回相同結果，唔會重複扣款。我要你記住，呢個係支付系統嘅第一道防線。</p>
+            <p>每次請求帶唯一 key，Server 記錄 (key → response)。重複請求返回相同結果，唔會重複扣款。呢個係支付系統嘅第一道防線。</p>
           </div>
           <div class="key-point">
             <h4>Double-entry Bookkeeping</h4>
-            <p>我教你傳統銀行嘅做法：每筆交易兩邊記帳——用戶帳戶 -X，商家帳戶 +X。debit = credit 永遠成立，方便你對帳同 audit。</p>
+            <p>傳統銀行嘅做法：每筆交易兩邊記帳——用戶帳戶 -X，商家帳戶 +X。debit = credit 永遠成立，方便對帳同 audit。</p>
           </div>
           <div class="key-point">
             <h4>Saga Pattern</h4>
-            <p>呢個係分佈式事務嘅利器：多個 step，每個 step 有 compensate 動作。某 step 失敗就執行補償。我建議你用 Saga 保證最終一致性。</p>
+            <p>呢個係分佈式事務嘅利器：多個 step，每個 step 有 compensate 動作。某 step 失敗就執行補償。建議用 Saga 保證最終一致性。</p>
           </div>
           <div class="key-point">
             <h4>Webhook 處理</h4>
-            <p>Payment Gateway 異步通知支付結果。你要做好三件事：驗簽（防偽造）、idempotent 處理（同一個 webhook 可能送多次）、同埋更新本地狀態。</p>
+            <p>Payment Gateway 異步通知支付結果。需要做好三件事：驗簽（防偽造）、idempotent 處理（同一個 webhook 可能送多次）、同埋更新本地狀態。</p>
           </div>
         </div>
       </div>
@@ -176,29 +176,29 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我要你設計支付系統時特別小心呢幾點</div>
+        <div class="subtitle">設計支付系統時必須特別小心呢幾點</div>
         <div class="key-points">
           <div class="key-point">
             <h4>重試機制</h4>
-            <p>網路可能 fail，Client 會 retry。你必須用 Idempotency Key，否則 retry = 重複扣款。我要你特別注意：Gateway 超時嘅情況——可能已經扣咗款但冇回應，要靠 Webhook 最終確認。</p>
+            <p>網路可能 fail，Client 會 retry。必須用 Idempotency Key，否則 retry = 重複扣款。特別注意：Gateway 超時嘅情況——可能已經扣咗款但冇回應，要靠 Webhook 最終確認。</p>
           </div>
           <div class="key-point">
             <h4>每日對帳</h4>
-            <p>我建議你每日同 Payment Gateway 對帳，確保自己 Ledger 嘅數字同 Gateway 報表一致。唔一樣就即刻 alert。呢個係發現問題嘅最後防線。</p>
+            <p>建議每日同 Payment Gateway 對帳，確保 Ledger 嘅數字同 Gateway 報表一致。唔一樣就即刻 alert。呢個係發現問題嘅最後防線。</p>
           </div>
           <div class="key-point">
             <h4>Webhook 安全</h4>
-            <p>你要驗證 Webhook 簽名（例如 Stripe 用 HMAC），防止偽造。我建議你 store webhook 嘅 raw body 做 audit trail，出事嘅時候有得查。</p>
+            <p>必須驗證 Webhook 簽名（例如 Stripe 用 HMAC），防止偽造。建議 store webhook 嘅 raw body 做 audit trail，出事嘅時候有得查。</p>
           </div>
           <div class="key-point">
             <h4>最終一致性</h4>
-            <p>支付成功後你可能要更新訂單、庫存、積分。我教你用 message queue 異步處理，唔好同步 block。用 Saga Pattern 處理 partial failure，保證每個環節都有補償方案。</p>
+            <p>支付成功後可能要更新訂單、庫存、積分。建議用 message queue 異步處理，唔好同步 block。用 Saga Pattern 處理 partial failure，保證每個環節都有補償方案。</p>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>我嘅總結</h4>
-          <p>支付系統嘅三大支柱係：Idempotency Key 防重複、Double-entry Ledger 防差錯、Webhook 做異步同步。你掌握呢三個概念，就可以設計出一個可靠嘅支付架構。記住，寧可多一重保障，都唔好少一重。</p>
+          <h4>總結</h4>
+          <p>支付系統嘅三大支柱係：Idempotency Key 防重複、Double-entry Ledger 防差錯、Webhook 做異步同步。掌握呢三個概念，就可以設計出一個可靠嘅支付架構。記住，寧可多一重保障，都唔好少一重。</p>
         </div>
       </div>
     </div>

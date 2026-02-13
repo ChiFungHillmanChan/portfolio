@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>系統架構圖解教室</title>
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="系統架構圖解教室">
+  <meta property="og:description" content="用廣東話，輕鬆學系統設計。每一課都有互動圖解、真實例子。">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="系統架構圖解教室">
+  <meta name="twitter:description" content="用廣東話，輕鬆學系統設計。每一課都有互動圖解、真實例子。">
   <style>
     * {
       margin: 0;
@@ -209,6 +215,46 @@
       color: #9ca3af;
     }
 
+    .nav-item:focus {
+      outline: 1px solid #6366f1;
+      outline-offset: -1px;
+    }
+
+    .viewed-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #34d399;
+      margin-left: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-search {
+      padding: 10px 10px 6px;
+      border-bottom: 1px solid #1e2030;
+    }
+
+    .sidebar-search input {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1px solid #2a2d3a;
+      background: #13151c;
+      color: #e0e0e0;
+      font-size: 0.82rem;
+      font-family: inherit;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .sidebar-search input::placeholder {
+      color: #4b5563;
+    }
+
+    .sidebar-search input:focus {
+      border-color: #6366f1;
+    }
+
     .coming-soon-badge {
       font-size: 0.62rem;
       color: #6b7280;
@@ -389,6 +435,52 @@
       background: #2a2d3a;
       border-radius: 4px;
     }
+
+    /* ==================== Coffee Button ==================== */
+    .coffee-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 300;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, rgba(165, 180, 252, 0.25), rgba(99, 102, 241, 0.15));
+      border: 2px solid rgba(99, 102, 241, 0.5);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.2);
+      color: #a5b4fc;
+      font-size: 1.3rem;
+      text-decoration: none;
+      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .coffee-btn:hover,
+    .coffee-btn:focus {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 10px 22px rgba(99, 102, 241, 0.35);
+      border-color: rgba(129, 140, 248, 0.8);
+      outline: none;
+    }
+
+    .coffee-btn:active {
+      transform: translateY(0) scale(0.96);
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+    }
+
+    @media (max-width: 768px) {
+      .coffee-btn {
+        top: 10px;
+        right: 60px;
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -399,6 +491,9 @@
     <span class="mobile-title">系統架構圖解教室</span>
   </div>
   <div class="overlay" id="overlay"></div>
+
+  <!-- Coffee / Donation Button -->
+  <a class="coffee-btn" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee">☕</a>
 
   <div class="app-layout">
     <!-- ==================== Sidebar ==================== -->
@@ -411,31 +506,36 @@
       <div class="sidebar-filters">
         <button class="filter-chip active" data-filter="all">全部</button>
         <button class="filter-chip" data-filter="career">面試</button>
+        <button class="filter-chip" data-filter="engineering">工程</button>
         <button class="filter-chip" data-filter="network">網絡</button>
-        <button class="filter-chip" data-filter="cache">快取</button>
         <button class="filter-chip" data-filter="storage">存儲</button>
+        <button class="filter-chip" data-filter="cache">快取</button>
         <button class="filter-chip" data-filter="async">異步</button>
         <button class="filter-chip" data-filter="app">應用</button>
         <button class="filter-chip" data-filter="security">安全</button>
+      </div>
+
+      <div class="sidebar-search">
+        <input type="text" id="navSearch" placeholder="搜尋課題..." autocomplete="off">
       </div>
 
       <nav class="sidebar-nav">
         <!-- ===== 職場與面試 ===== -->
         <div class="nav-section-title" data-section="career">職場與面試</div>
 
-        <button class="nav-item" data-topic="topics/coding-interview.html" data-category="career">
-          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">💻</span>
+        <button class="nav-item" data-topic="topics/backend-roadmap.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🗺</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">程式面試攻略</span>
-            <span class="nav-item-sub">釐清問題 / 溝通 / 合作態度</span>
+            <span class="nav-item-title">Backend 學習路線</span>
+            <span class="nav-item-sub">Java / Linux / DB / API / Cloud</span>
           </span>
         </button>
 
-        <button class="nav-item" data-topic="topics/star-method.html" data-category="career">
-          <span class="nav-icon" style="background:rgba(251,191,36,0.15)">⭐</span>
+        <button class="nav-item" data-topic="topics/junior-vs-senior.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📊</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">STAR 面試法</span>
-            <span class="nav-item-sub">Behavioral Interview 答題框架</span>
+            <span class="nav-item-title">Junior 定 Senior</span>
+            <span class="nav-item-sub">Tasks vs Goals / 升職策略</span>
           </span>
         </button>
 
@@ -447,8 +547,107 @@
           </span>
         </button>
 
+        <button class="nav-item" data-topic="topics/interview-process.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">🏢</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Big Tech 面試流程</span>
+            <span class="nav-item-sub">HR Screen → On-site → Team Match</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/star-method.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(251,191,36,0.15)">⭐</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">STAR 面試法</span>
+            <span class="nav-item-sub">Behavioral Interview 答題框架</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/coding-interview.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">💻</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">程式面試攻略</span>
+            <span class="nav-item-sub">釐清問題 / 溝通 / 合作態度</span>
+          </span>
+        </button>
+
+        <!-- ===== 工程實踐 ===== -->
+        <div class="nav-section-title" data-section="engineering">工程實踐</div>
+
+        <button class="nav-item" data-topic="topics/git-vs-github.html" data-category="engineering">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">🔀</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Git vs GitHub</span>
+            <span class="nav-item-sub">本地版本控制 vs 雲端協作</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/print-vs-debugger.html" data-category="engineering">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">🔎</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Print 定 Debugger</span>
+            <span class="nav-item-sub">Breakpoint / stdout / 點樣揀</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/docker.html" data-category="engineering">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">🐳</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Docker 容器化</span>
+            <span class="nav-item-sub">Alpine 瘦身 / .dockerignore / 擴展</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/dependency-injection.html" data-category="engineering">
+          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">💉</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">依賴注入</span>
+            <span class="nav-item-sub">解耦 / Mock 測試 / Constructor DI</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/system-design-patterns.html" data-category="engineering">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">🧩</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">系統設計模式總覽</span>
+            <span class="nav-item-sub">擴展 / 實時 / 可靠性模式</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/coding-agent-design.html" data-category="engineering">
+          <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🤖</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Coding Agent 設計</span>
+            <span class="nav-item-sub">ReAct Loop / Tool Use / Sandbox</span>
+          </span>
+        </button>
+
         <!-- ===== 網絡與流量控制 ===== -->
         <div class="nav-section-title" data-section="network">網絡與流量控制</div>
+
+        <button class="nav-item" data-topic="topics/port-forwarding.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(248,113,113,0.15)">🔌</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Port Forwarding</span>
+            <span class="nav-item-sub">NAT / Router 規則 / Tunneling</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/localhost-hosting.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">🏠</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">本地開發分享</span>
+            <span class="nav-item-sub">ngrok / Cloudflare Tunnel</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/cdn.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">🌐</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">CDN 內容分發</span>
+            <span class="nav-item-sub">GeoDNS / Edge Cache / Purge</span>
+          </span>
+        </button>
 
         <button class="nav-item" data-topic="topics/load-balancer.html" data-category="network">
           <span class="nav-icon" style="background:rgba(245,158,11,0.15)">⚖️</span>
@@ -466,11 +665,11 @@
           </span>
         </button>
 
-        <button class="nav-item" data-topic="topics/cdn.html" data-category="network">
-          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">🌐</span>
+        <button class="nav-item" data-topic="topics/large-api-response.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">📦</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">CDN 內容分發</span>
-            <span class="nav-item-sub">GeoDNS / Edge Cache / Purge</span>
+            <span class="nav-item-title">大型 API 回應</span>
+            <span class="nav-item-sub">Pagination / 壓縮 / S3 卸載</span>
           </span>
         </button>
 
@@ -482,43 +681,40 @@
           </span>
         </button>
 
-        <!-- ===== 快取與讀取優化 ===== -->
-        <div class="nav-section-title" data-section="cache">快取與讀取優化</div>
-
-        <button class="nav-item" data-topic="topics/cache-invalidation.html" data-category="cache">
-          <span class="nav-icon cache">⚡</span>
+        <button class="nav-item" data-topic="topics/scraping-vs-crawling.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🕷</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">Cache 失效策略</span>
-            <span class="nav-item-sub">TTL / Write Through / Around / Back</span>
-          </span>
-        </button>
-
-        <button class="nav-item" data-topic="topics/distributed-cache.html" data-category="cache">
-          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">⚡</span>
-          <span class="nav-item-text">
-            <span class="nav-item-title">分散式快取</span>
-            <span class="nav-item-sub">Consistent Hashing / 雪崩防護</span>
-          </span>
-        </button>
-
-        <button class="nav-item" data-topic="topics/scale-reads.html" data-category="cache">
-          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📈</span>
-          <span class="nav-item-text">
-            <span class="nav-item-title">讀取擴展</span>
-            <span class="nav-item-sub">索引 / 三層快取 / 讀取副本</span>
-          </span>
-        </button>
-
-        <button class="nav-item" data-topic="topics/fix-slow-database.html" data-category="cache">
-          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">🐌</span>
-          <span class="nav-item-text">
-            <span class="nav-item-title">Debug 慢 Database</span>
-            <span class="nav-item-sub">Slow Query / Index / Cache / 換 DB</span>
+            <span class="nav-item-title">Scraping vs Crawling</span>
+            <span class="nav-item-sub">數據提取 / 網站地圖 / SEO</span>
           </span>
         </button>
 
         <!-- ===== 數據與存儲 ===== -->
         <div class="nav-section-title" data-section="storage">數據與存儲</div>
+
+        <button class="nav-item" data-topic="topics/database-basics.html" data-category="storage">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">🗃</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Database 基礎</span>
+            <span class="nav-item-sub">DBMS / ACID / SQL vs NoSQL</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/pick-database.html" data-category="storage">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">🎯</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">點揀 Database</span>
+            <span class="nav-item-sub">CAP 定理 / SQL vs NoSQL</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/redis.html" data-category="storage">
+          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">⚡</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Redis</span>
+            <span class="nav-item-sub">In-Memory / Leaderboard / Postgres 配合</span>
+          </span>
+        </button>
 
         <button class="nav-item" data-topic="topics/key-value-store.html" data-category="storage">
           <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🗄</span>
@@ -544,16 +740,43 @@
           </span>
         </button>
 
-        <!-- ===== 異步與消息處理 ===== -->
-        <div class="nav-section-title" data-section="async">異步與消息處理</div>
+        <!-- ===== 快取與讀取優化 ===== -->
+        <div class="nav-section-title" data-section="cache">快取與讀取優化</div>
 
-        <button class="nav-item" data-topic="topics/message-queue.html" data-category="async">
-          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">📨</span>
+        <button class="nav-item" data-topic="topics/cache-invalidation.html" data-category="cache">
+          <span class="nav-icon cache">⚡</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">消息佇列</span>
-            <span class="nav-item-sub">Kafka / 發佈訂閱 / 精確一次</span>
+            <span class="nav-item-title">Cache 失效策略</span>
+            <span class="nav-item-sub">TTL / Write Through / Around / Back</span>
           </span>
         </button>
+
+        <button class="nav-item" data-topic="topics/fix-slow-database.html" data-category="cache">
+          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">🐌</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Debug 慢 Database</span>
+            <span class="nav-item-sub">Slow Query / Index / Cache / 換 DB</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/scale-reads.html" data-category="cache">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📈</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">讀取擴展</span>
+            <span class="nav-item-sub">索引 / 三層快取 / 讀取副本</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/distributed-cache.html" data-category="cache">
+          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">⚡</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">分散式快取</span>
+            <span class="nav-item-sub">Consistent Hashing / 雪崩防護</span>
+          </span>
+        </button>
+
+        <!-- ===== 異步與消息處理 ===== -->
+        <div class="nav-section-title" data-section="async">異步與消息處理</div>
 
         <button class="nav-item" data-topic="topics/task-queue.html" data-category="async">
           <span class="nav-icon" style="background:rgba(99,102,241,0.15)">📋</span>
@@ -571,6 +794,14 @@
           </span>
         </button>
 
+        <button class="nav-item" data-topic="topics/message-queue.html" data-category="async">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">📨</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">消息佇列</span>
+            <span class="nav-item-sub">Kafka / 發佈訂閱 / 精確一次</span>
+          </span>
+        </button>
+
         <!-- ===== 應用系統設計 ===== -->
         <div class="nav-section-title" data-section="app">應用系統設計</div>
 
@@ -582,19 +813,11 @@
           </span>
         </button>
 
-        <button class="nav-item" data-topic="topics/chat-system.html" data-category="app">
-          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">💬</span>
+        <button class="nav-item" data-topic="topics/session-manager.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">🔐</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">即時通訊系統</span>
-            <span class="nav-item-sub">WebSocket / 消息佇列 / 離線消息</span>
-          </span>
-        </button>
-
-        <button class="nav-item" data-topic="topics/news-feed.html" data-category="app">
-          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📰</span>
-          <span class="nav-item-text">
-            <span class="nav-item-title">動態消息流</span>
-            <span class="nav-item-sub">寫時推送 vs 讀時拉取 / 排名</span>
+            <span class="nav-item-title">Session 管理器</span>
+            <span class="nav-item-sub">Cookie vs JWT / Redis 存儲</span>
           </span>
         </button>
 
@@ -614,6 +837,30 @@
           </span>
         </button>
 
+        <button class="nav-item" data-topic="topics/news-feed.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📰</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">動態消息流</span>
+            <span class="nav-item-sub">寫時推送 vs 讀時拉取 / 排名</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/chat-system.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">💬</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">即時通訊系統</span>
+            <span class="nav-item-sub">WebSocket / 消息佇列 / 離線消息</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/chess-game-design.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">♟</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">線上棋類遊戲</span>
+            <span class="nav-item-sub">Matchmaking / WebSocket / Game State</span>
+          </span>
+        </button>
+
         <button class="nav-item" data-topic="topics/video-streaming.html" data-category="app">
           <span class="nav-icon" style="background:rgba(236,72,153,0.15)">🎬</span>
           <span class="nav-item-text">
@@ -630,22 +877,54 @@
           </span>
         </button>
 
-        <button class="nav-item" data-topic="topics/session-manager.html" data-category="app">
-          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">🔐</span>
+        <!-- ===== 監控與安全 ===== -->
+        <div class="nav-section-title" data-section="security">監控與安全</div>
+
+        <button class="nav-item" data-topic="topics/authentication.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(248,113,113,0.15)">🔑</span>
           <span class="nav-item-text">
-            <span class="nav-item-title">Session 管理器</span>
-            <span class="nav-item-sub">Cookie vs JWT / Redis 存儲</span>
+            <span class="nav-item-title">Authentication 驗證</span>
+            <span class="nav-item-sub">Basic / Session / JWT</span>
           </span>
         </button>
 
-        <!-- ===== 監控與安全 ===== -->
-        <div class="nav-section-title" data-section="security">監控與安全</div>
+        <button class="nav-item" data-topic="topics/server-vs-serverless.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">🖥</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Server vs Serverless</span>
+            <span class="nav-item-sub">VPS / Lambda / 點樣揀</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/self-host-vs-cloud.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">☁️</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">自架 vs 雲端</span>
+            <span class="nav-item-sub">AWS vs 自架 / 擴展 / 監控比較</span>
+          </span>
+        </button>
 
         <button class="nav-item" data-topic="topics/metrics-logging.html" data-category="security">
           <span class="nav-icon" style="background:rgba(99,102,241,0.15)">📊</span>
           <span class="nav-item-text">
             <span class="nav-item-title">監控與日誌</span>
             <span class="nav-item-sub">Kafka / Prometheus / Grafana</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/monitoring.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">📡</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">應用程式監控</span>
+            <span class="nav-item-sub">Prometheus / Grafana / 告警系統</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/cicd-pipeline.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">🔄</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">CI/CD 自動化部署</span>
+            <span class="nav-item-sub">GitHub Actions / IaC / 自動測試</span>
           </span>
         </button>
 
@@ -656,9 +935,18 @@
             <span class="nav-item-sub">Lethal Trifecta / Guardrail 防護</span>
           </span>
         </button>
+
+        <button class="nav-item" data-topic="topics/ai-scraper-defense.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🕸️</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">防禦 AI 爬蟲</span>
+            <span class="nav-item-sub">robots.txt / Honeypot / Bot 偵測</span>
+          </span>
+        </button>
       </nav>
 
       <div class="sidebar-footer">
+        <div id="progressCount"></div>
         用最簡單嘅方式學最複雜嘅概念
       </div>
     </aside>
@@ -669,7 +957,7 @@
       <div class="welcome-screen" id="welcomeScreen">
         <div class="welcome-icon">🏗</div>
         <h2>歡迎嚟到系統架構教室</h2>
-        <p>呢度用廣東話，用最簡單、最直白嘅方式，幫你理解各種系統設計嘅概念同架構圖。</p>
+        <p>呢度用廣東話，用最簡單、最直白嘅方式，理解各種系統設計嘅概念同架構圖。</p>
         <div class="welcome-hint">
           <span class="arrow">👈</span>
           <span>喺左邊揀一個課題開始學習</span>
@@ -689,8 +977,61 @@
     const overlay = document.getElementById('overlay');
     const menuBtn = document.getElementById('menuBtn');
     const sidebarHeader = document.getElementById('sidebarHeader');
+    const navSearch = document.getElementById('navSearch');
 
-    // Load topic
+    // ==================== Hash Deep Linking ====================
+    function topicToHash(url) {
+      return url.replace('topics/', '').replace('.html', '');
+    }
+
+    function hashToTopic(hash) {
+      const slug = hash.replace('#', '');
+      return slug ? 'topics/' + slug + '.html' : '';
+    }
+
+    // ==================== Progress Tracker ====================
+    const STORAGE_KEY = 'sa-viewed-topics';
+
+    function getViewedTopics() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+      } catch { return []; }
+    }
+
+    function markTopicViewed(url) {
+      const viewed = getViewedTopics();
+      if (!viewed.includes(url)) {
+        viewed.push(url);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(viewed));
+      }
+      updateViewedIndicators();
+      updateProgressCount();
+    }
+
+    function updateViewedIndicators() {
+      const viewed = getViewedTopics();
+      document.querySelectorAll('.nav-item[data-topic]').forEach(item => {
+        const existing = item.querySelector('.viewed-dot');
+        if (existing) existing.remove();
+        if (viewed.includes(item.getAttribute('data-topic')) && !item.querySelector('.coming-soon-badge')) {
+          const dot = document.createElement('span');
+          dot.className = 'viewed-dot';
+          item.appendChild(dot);
+        }
+      });
+    }
+
+    function updateProgressCount() {
+      const viewed = getViewedTopics();
+      const total = document.querySelectorAll('.nav-item:not(.coming-soon)[data-topic]').length;
+      const count = viewed.filter(url =>
+        document.querySelector(`.nav-item[data-topic="${url}"]`)
+      ).length;
+      const el = document.getElementById('progressCount');
+      if (el) el.textContent = count > 0 ? `已閱讀 ${count} / ${total} 課` : '';
+    }
+
+    // ==================== Load Topic ====================
     function loadTopic(url, btn) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       if (btn) btn.classList.add('active');
@@ -698,6 +1039,12 @@
       welcomeScreen.classList.add('hidden');
       topicFrame.style.display = 'block';
       topicFrame.src = url;
+
+      // Update hash
+      window.location.hash = topicToHash(url);
+
+      // Track progress
+      markTopicViewed(url);
 
       sidebar.classList.remove('open');
       overlay.classList.remove('visible');
@@ -709,6 +1056,8 @@
       welcomeScreen.classList.add('hidden');
       topicFrame.style.display = 'block';
       topicFrame.src = 'topics/welcome.html';
+
+      history.replaceState(null, '', window.location.pathname + window.location.search);
 
       sidebar.classList.remove('open');
       overlay.classList.remove('visible');
@@ -725,8 +1074,40 @@
       });
     });
 
-    // Default: load welcome page
-    goHome();
+    // ==================== Hash-aware Init ====================
+    function initFromHash() {
+      const hash = window.location.hash;
+      if (hash && hash.length > 1) {
+        const topicUrl = hashToTopic(hash);
+        const targetBtn = document.querySelector(`.nav-item[data-topic="${topicUrl}"]`);
+        if (targetBtn && !targetBtn.classList.contains('coming-soon')) {
+          loadTopic(topicUrl, targetBtn);
+          return;
+        }
+      }
+      goHome();
+    }
+
+    initFromHash();
+
+    // Browser back/forward
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash;
+      if (!hash || hash === '#') {
+        goHome();
+        return;
+      }
+      const topicUrl = hashToTopic(hash);
+      const targetBtn = document.querySelector(`.nav-item[data-topic="${topicUrl}"]`);
+      if (targetBtn && !targetBtn.classList.contains('coming-soon')) {
+        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+        targetBtn.classList.add('active');
+        welcomeScreen.classList.add('hidden');
+        topicFrame.style.display = 'block';
+        topicFrame.src = topicUrl;
+        markTopicViewed(topicUrl);
+      }
+    });
 
     // Mobile menu
     menuBtn.addEventListener('click', () => {
@@ -741,6 +1122,7 @@
 
     // Listen for navigation requests from welcome page (iframe postMessage)
     window.addEventListener('message', (e) => {
+      if (e.origin !== window.location.origin) return;
       if (e.data && e.data.type === 'loadTopic' && e.data.url) {
         const targetBtn = document.querySelector(`.nav-item[data-topic="${e.data.url}"]`);
         if (targetBtn) {
@@ -754,29 +1136,91 @@
     const sectionTitles = document.querySelectorAll('.nav-section-title[data-section]');
     const filteredItems = document.querySelectorAll('.nav-item[data-category]');
 
+    function getActiveFilter() {
+      const active = document.querySelector('.filter-chip.active');
+      return active ? active.getAttribute('data-filter') : 'all';
+    }
+
+    function applyFilter(filter) {
+      if (filter === 'all') {
+        sectionTitles.forEach(t => t.classList.remove('hidden'));
+        filteredItems.forEach(i => i.classList.remove('hidden'));
+      } else {
+        sectionTitles.forEach(t => {
+          t.classList.toggle('hidden', t.getAttribute('data-section') !== filter);
+        });
+        filteredItems.forEach(i => {
+          i.classList.toggle('hidden', i.getAttribute('data-category') !== filter);
+        });
+      }
+    }
+
     filterChips.forEach(chip => {
       chip.addEventListener('click', () => {
         const filter = chip.getAttribute('data-filter');
-
-        // Update active chip
         filterChips.forEach(c => c.classList.remove('active'));
         chip.classList.add('active');
-
-        if (filter === 'all') {
-          // Show everything
-          sectionTitles.forEach(t => t.classList.remove('hidden'));
-          filteredItems.forEach(i => i.classList.remove('hidden'));
-        } else {
-          // Hide/show sections and items by category
-          sectionTitles.forEach(t => {
-            t.classList.toggle('hidden', t.getAttribute('data-section') !== filter);
-          });
-          filteredItems.forEach(i => {
-            i.classList.toggle('hidden', i.getAttribute('data-category') !== filter);
-          });
-        }
+        navSearch.value = '';
+        applyFilter(filter);
       });
     });
+
+    // ==================== Sidebar Search ====================
+    navSearch.addEventListener('input', () => {
+      const query = navSearch.value.trim().toLowerCase();
+
+      if (!query) {
+        // Restore to current filter
+        applyFilter(getActiveFilter());
+        return;
+      }
+
+      // Search across all items regardless of filter
+      filteredItems.forEach(item => {
+        const title = (item.querySelector('.nav-item-title')?.textContent || '').toLowerCase();
+        const sub = (item.querySelector('.nav-item-sub')?.textContent || '').toLowerCase();
+        item.classList.toggle('hidden', !title.includes(query) && !sub.includes(query));
+      });
+
+      // Show/hide section titles based on visible children
+      sectionTitles.forEach(title => {
+        const section = title.getAttribute('data-section');
+        const hasVisible = Array.from(
+          document.querySelectorAll(`.nav-item[data-category="${section}"]`)
+        ).some(i => !i.classList.contains('hidden'));
+        title.classList.toggle('hidden', !hasVisible);
+      });
+    });
+
+    // ==================== Keyboard Navigation ====================
+    document.addEventListener('keydown', (e) => {
+      const active = document.activeElement;
+      if (active === topicFrame || active === navSearch) return;
+
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        const visible = Array.from(document.querySelectorAll('.nav-item:not(.hidden):not(.coming-soon)'));
+        if (!visible.length) return;
+
+        const currentIdx = visible.indexOf(document.activeElement);
+        let nextIdx;
+        if (e.key === 'ArrowDown') {
+          nextIdx = currentIdx < 0 ? 0 : Math.min(currentIdx + 1, visible.length - 1);
+        } else {
+          nextIdx = currentIdx < 0 ? visible.length - 1 : Math.max(currentIdx - 1, 0);
+        }
+        visible[nextIdx].focus();
+        visible[nextIdx].scrollIntoView({ block: 'nearest' });
+      }
+
+      if (e.key === 'Enter' && active?.classList.contains('nav-item')) {
+        active.click();
+      }
+    });
+
+    // ==================== Init Progress UI ====================
+    updateViewedIndicators();
+    updateProgressCount();
   </script>
 </body>
 </html>

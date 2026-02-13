@@ -42,7 +42,7 @@
   <div class="container">
     <header>
       <h1>🔗 URL Shortener 短網址服務</h1>
-      <p>我教你點樣將長 URL 轉換成短 URL，涉及 hashing 同 DB 設計</p>
+      <p>點樣將長 URL 轉換成短 URL，涉及 hashing 同 DB 設計</p>
     </header>
 
     <div class="tabs">
@@ -53,12 +53,12 @@
 
     <div class="tab-content active" id="overview">
       <div class="card">
-        <h2>我先同你講短網址服務係咩</h2>
+        <h2>短網址服務係咩</h2>
         <div class="subtitle">將超長嘅 URL 變成幾個字元嘅短連結</div>
         <p>
-          你試過喺 WhatsApp 分享一條超長嘅網址，搞到成個畫面都係 URL 嗎？我教你點樣解決呢個問題。短網址服務就係將好似 <code style="color:#fbbf24">https://example.com/very/long/path?param=abc&id=12345</code> 咁嘅長 URL，變成好似 <code style="color:#34d399">https://tiny.url/abc123</code> 咁嘅短 URL。
+          喺 WhatsApp 分享一條超長嘅網址，成個畫面都係 URL，點樣解決呢個問題？短網址服務就係將好似 <code style="color:#fbbf24">https://example.com/very/long/path?param=abc&id=12345</code> 咁嘅長 URL，變成好似 <code style="color:#34d399">https://tiny.url/abc123</code> 咁嘅短 URL。
         </p>
-        <p>你要理解背後嘅核心邏輯：生成一個唯一嘅短碼，同長 URL 做對應關係存入資料庫。當用戶訪問短 URL 嘅時候，系統查返長 URL，然後 redirect 過去。我而家用圖解帶你睇晒成個流程。</p>
+        <p>背後嘅核心邏輯係：生成一個唯一嘅短碼，同長 URL 做對應關係存入資料庫。當用戶訪問短 URL 嘅時候，系統查返長 URL，然後 redirect 過去。以下用圖解睇晒成個流程。</p>
 
         <div class="diagram-container">
           <svg viewBox="0 0 780 340" xmlns="http://www.w3.org/2000/svg">
@@ -139,12 +139,12 @@
           </svg>
         </div>
 
-        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
         <ol class="steps">
-          <li><span class="step-num">1</span><span>首先，用戶提交一條長 URL 俾 API Service。你要記住，呢個就係成個流程嘅起點。</span></li>
-          <li><span class="step-num">2</span><span>跟住 API Service 會用 ID Generator（Base62 編碼）生成一個唯一嘅短碼，例如 "abc123"。我之後會詳細教你 Base62 點運作。</span></li>
+          <li><span class="step-num">1</span><span>首先，用戶提交一條長 URL 俾 API Service。呢個就係成個流程嘅起點。</span></li>
+          <li><span class="step-num">2</span><span>跟住 API Service 會用 ID Generator（Base62 編碼）生成一個唯一嘅短碼，例如 "abc123"。Base62 嘅運作原理會喺下一節詳細解說。</span></li>
           <li><span class="step-num">3</span><span>然後系統將「短碼 → 長 URL」嘅對應關係存入 Database。呢個 mapping 就係成個服務嘅核心。</span></li>
-          <li><span class="step-num">4</span><span>我建議你留意 Cache 呢層——熱門 URL 會被放入 Redis Cache，大幅加速 redirect 速度。</span></li>
+          <li><span class="step-num">4</span><span>留意 Cache 呢層——熱門 URL 會被放入 Redis Cache，大幅加速 redirect 速度。</span></li>
           <li><span class="step-num">5</span><span>最後，Analytics 模組會記錄每次點擊（時間、地區、裝置等），呢啲數據對業務超有價值。</span></li>
         </ol>
       </div>
@@ -152,19 +152,19 @@
 
     <div class="tab-content" id="encoding">
       <div class="card">
-        <h2>我教你 Base62 編碼</h2>
+        <h2>Base62 編碼詳解</h2>
         <div class="subtitle">用 62 個字元（a-z, A-Z, 0-9）表示短碼</div>
-        <p>你要知道 Base62 用 62 個字元：26 個小楷 + 26 個大楷 + 10 個數字 = 62。我同你計一計，一個 7 位嘅 Base62 短碼可以表示 62^7 ≈ <strong style="color:#34d399">3.5 萬億</strong>個唯一 URL——絕對夠用。</p>
-        <p>具體做法係咁：將一個自增 ID（或者 Snowflake ID）轉換成 Base62 字串。例如 ID = 12345 → Base62 = "dnh"。我建議你記住呢個轉換邏輯，面試一定會問。</p>
+        <p>Base62 用 62 個字元：26 個小楷 + 26 個大楷 + 10 個數字 = 62。計一計，一個 7 位嘅 Base62 短碼可以表示 62^7 ≈ <strong style="color:#34d399">3.5 萬億</strong>個唯一 URL——絕對夠用。</p>
+        <p>具體做法係咁：將一個自增 ID（或者 Snowflake ID）轉換成 Base62 字串。例如 ID = 12345 → Base62 = "dnh"。呢個轉換邏輯必須要識，面試一定會問。</p>
 
         <div class="key-points">
           <div class="key-point">
             <h4>301 vs 302 Redirect</h4>
-            <p>呢個好重要，我要同你講清楚。301（永久重定向）：瀏覽器會 cache，下次直接去長 URL，唔經你嘅 Server。302（暫時重定向）：每次都經你嘅 Server，可以追蹤點擊數。你記住：如果要做 analytics，一定要用 302！</p>
+            <p>呢個好重要，必須講清楚。301（永久重定向）：瀏覽器會 cache，下次直接去長 URL，唔經 Server。302（暫時重定向）：每次都經 Server，可以追蹤點擊數。重點係：如果要做 analytics，一定要用 302！</p>
           </div>
           <div class="key-point">
             <h4>Hash Collision 處理</h4>
-            <p>我要提醒你注意呢個陷阱：如果兩條唔同嘅長 URL 生成咗同一個短碼，就出大問題。解決方法好簡單——先查 DB，如果短碼已存在就重試或者加 salt 再 hash。面試嘅時候記得主動提呢一點。</p>
+            <p>注意呢個陷阱：如果兩條唔同嘅長 URL 生成咗同一個短碼，就出大問題。解決方法好簡單——先查 DB，如果短碼已存在就重試或者加 salt 再 hash。面試嘅時候記得主動提呢一點。</p>
           </div>
         </div>
       </div>
@@ -173,29 +173,29 @@
     <div class="tab-content" id="practice">
       <div class="card">
         <h2>實戰要點</h2>
-        <div class="subtitle">我幫你整理面試高頻考點</div>
+        <div class="subtitle">面試高頻考點整理</div>
         <div class="key-points">
           <div class="key-point">
             <h4>讀多寫少嘅特性</h4>
-            <p>我要同你強調，短網址服務嘅讀取（redirect）遠多過寫入（create），所以 Cache 超重要。你一定要識講：用 Redis 放熱門 URL 可以大幅減少 DB 壓力。</p>
+            <p>重點係，短網址服務嘅讀取（redirect）遠多過寫入（create），所以 Cache 超重要。必須要識講：用 Redis 放熱門 URL 可以大幅減少 DB 壓力。</p>
           </div>
           <div class="key-point">
             <h4>自定義短碼</h4>
-            <p>你要預備面試官會問：「如果用戶想用自己揀嘅短碼（例如 tiny.url/my-brand）點算？」我教你點答——加一個 uniqueness check，確保自定義短碼唔會同現有嘅撞。</p>
+            <p>面試官好可能會問：「如果用戶想用自己揀嘅短碼（例如 tiny.url/my-brand）點算？」答案係——加一個 uniqueness check，確保自定義短碼唔會同現有嘅撞。</p>
           </div>
           <div class="key-point">
             <h4>URL 過期機制</h4>
-            <p>我建議你喺設計嘅時候加入 TTL（Time To Live）。可以設定短網址嘅有效期限，過期嘅 URL 自動刪除或者返回 404。呢個對安全同儲存管理都好重要。</p>
+            <p>設計嘅時候建議加入 TTL（Time To Live）。可以設定短網址嘅有效期限，過期嘅 URL 自動刪除或者返回 404。呢個對安全同儲存管理都好重要。</p>
           </div>
           <div class="key-point">
             <h4>安全性考量</h4>
-            <p>你要記住安全性呢個考量。要防止惡意 URL（phishing），我建議加入 URL 安全檢查（例如用 Google Safe Browsing API）。面試講到呢點會好加分。</p>
+            <p>安全性係重要考量。要防止惡意 URL（phishing），建議加入 URL 安全檢查（例如用 Google Safe Browsing API）。面試講到呢點會好加分。</p>
           </div>
         </div>
 
         <div class="use-case">
-          <h4>我想你知道嘅真實規模</h4>
-          <p>bit.ly 每月處理超過 10 億次 redirect。Twitter 嘅 t.co 短網址服務每日處理數以億計嘅點擊。你設計嘅時候要以呢個規模作為參考，思考你嘅系統能唔能承受咁大嘅流量。</p>
+          <h4>真實規模參考</h4>
+          <p>bit.ly 每月處理超過 10 億次 redirect。Twitter 嘅 t.co 短網址服務每日處理數以億計嘅點擊。設計嘅時候要以呢個規模作為參考，思考系統能唔能承受咁大嘅流量。</p>
         </div>
       </div>
     </div>

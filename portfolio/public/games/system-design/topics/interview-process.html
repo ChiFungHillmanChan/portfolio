@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Big Tech 面試流程 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🏢 Big Tech 面試流程</h1>
+      <p>由 HR Screen 到 On-site，拆解科技公司嘅完整面試流程</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 面試流程</button>
+      <button class="tab-btn" data-tab="preparation">② 每輪準備</button>
+      <button class="tab-btn" data-tab="tips">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>Big Tech 面試流程全覽</h2>
+        <div class="subtitle">由申請到 Offer，通常要經過四大階段</div>
+        <p>
+          Big Tech（Google、Meta、Amazon、Apple、Microsoft）嘅面試流程大致相同，由 HR Screen 開始，經過 Virtual Technical，再到 On-site，最後係 Team Match。每一輪都有唔同嘅考核重點。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 220" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#F59E0B" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradHR" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradTech" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradOnsite" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradTeam" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3B82F6"/></marker>
+              <marker id="arrAmber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#F59E0B"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#10B981"/></marker>
+            </defs>
+
+            <!-- HR Screen -->
+            <g transform="translate(20,50)">
+              <rect width="160" height="75" rx="14" fill="url(#gradHR)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="80" y="32" text-anchor="middle" fill="#3B82F6" font-size="14" font-weight="700">HR Screen</text>
+              <text x="80" y="55" text-anchor="middle" fill="#9ca3af" font-size="10">30 min</text>
+            </g>
+            <text x="100" y="148" text-anchor="middle" fill="#9ca3af" font-size="10">背景 / 動機 / 薪資</text>
+
+            <!-- Virtual Technical -->
+            <g transform="translate(220,50)">
+              <rect width="160" height="75" rx="14" fill="url(#gradTech)" stroke="#F59E0B" stroke-width="2.5" filter="url(#glowAmber)"/>
+              <text x="80" y="32" text-anchor="middle" fill="#F59E0B" font-size="14" font-weight="700">Virtual Technical</text>
+              <text x="80" y="55" text-anchor="middle" fill="#9ca3af" font-size="10">45-60 min</text>
+            </g>
+            <text x="300" y="148" text-anchor="middle" fill="#9ca3af" font-size="10">Coding x2</text>
+
+            <!-- On-site -->
+            <g transform="translate(420,50)">
+              <rect width="160" height="75" rx="14" fill="url(#gradOnsite)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="80" y="32" text-anchor="middle" fill="#10B981" font-size="14" font-weight="700">On-site</text>
+              <text x="80" y="55" text-anchor="middle" fill="#9ca3af" font-size="10">4-6 Rounds</text>
+            </g>
+            <text x="500" y="148" text-anchor="middle" fill="#9ca3af" font-size="10">DSA / Design / BQ</text>
+
+            <!-- Team Match -->
+            <g transform="translate(620,50)">
+              <rect width="160" height="75" rx="14" fill="url(#gradTeam)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="80" y="32" text-anchor="middle" fill="#8B5CF6" font-size="14" font-weight="700">Team Match</text>
+              <text x="80" y="55" text-anchor="middle" fill="#9ca3af" font-size="10">Manager Chat</text>
+            </g>
+            <text x="700" y="148" text-anchor="middle" fill="#9ca3af" font-size="10">雙向選擇</text>
+
+            <!-- Arrows: HR → Tech -->
+            <path d="M182,87 C195,87 207,87 218,87" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <!-- Arrows: Tech → On-site -->
+            <path d="M382,87 C395,87 407,87 418,87" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrAmber)"/>
+            <!-- Arrows: On-site → Team Match -->
+            <path d="M582,87 C595,87 607,87 618,87" fill="none" stroke="#10B981" stroke-width="2" marker-end="url(#arrGreen)"/>
+          </svg>
+        </div>
+
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>HR Screen：通常 30 分鐘電話，主要了解背景、動機同薪資期望。呢一輪嘅淘汰率其實好低，重點係展示對公司嘅熱誠。</span></li>
+          <li><span class="step-num">2</span><span>Virtual Technical：遠程技術面試，通常 45-60 分鐘。會有 2 題 LeetCode medium 到 hard 難度嘅 coding 題目。重點係邊寫 code 邊講解思路。</span></li>
+          <li><span class="step-num">3</span><span>On-site：最核心嘅環節，通常 4-6 輪面試，包括 DSA（數據結構同演算法）、System Design、Behavioral 同 Coding。每輪 45-60 分鐘。</span></li>
+          <li><span class="step-num">4</span><span>Team Match：通過技術面試之後，會同唔同 team 嘅 manager 傾，搵最適合嘅團隊。呢一步唔係技術考核，而係雙向選擇。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="preparation">
+      <div class="card">
+        <h2>每一輪嘅準備重點</h2>
+        <div class="subtitle">針對唔同面試類型，準備方向完全唔同</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>HR Screen 準備</h4>
+            <p>準備好「點解想加入呢間公司」同「過往經驗 highlight」。薪資問題建議用範圍回答，唔好俾確實數字。保持自然、有禮、有熱誠。</p>
+          </div>
+          <div class="key-point">
+            <h4>Coding 面試準備</h4>
+            <p>LeetCode 至少刷 150-200 題，重點掌握 Array、HashMap、Tree、Graph、DP。面試時一定要先釐清問題、講解思路，再寫 code。時間管理係關鍵。</p>
+          </div>
+          <div class="key-point">
+            <h4>System Design 準備</h4>
+            <p>熟讀常見系統設計題目（URL Shortener、Chat System、News Feed 等）。掌握估算能力（QPS、Storage）同常用組件（LB、Cache、MQ、DB Sharding）。</p>
+          </div>
+          <div class="key-point">
+            <h4>Behavioral 準備</h4>
+            <p>用 STAR 方法準備 8-10 個故事，涵蓋 leadership、conflict resolution、failure、impact。Amazon 特別重視 Leadership Principles，要逐條準備例子。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="tips">
+      <div class="card">
+        <h2>面試實戰要點</h2>
+        <div class="subtitle">好多人技術過關但最後失敗，通常係呢啲原因</div>
+        <p>溝通能力同技術能力一樣重要。面試官想知道嘅唔係淨係答案，而係思考過程。每一步都要講出嚟：「呢度用 HashMap 因為需要 O(1) lookup」。</p>
+        <p>遇到唔識嘅題目唔好死撐。承認唔確定，然後講出最接近嘅思路，面試官會引導。最差嘅做法係沉默或者亂答。</p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>時間管理</h4>
+            <p>Coding 面試通常得 35-40 分鐘寫 code（扣除溝通時間）。如果 15 分鐘都冇思路，果斷要求提示。卡住浪費時間係大忌。</p>
+          </div>
+          <div class="key-point">
+            <h4>Code Quality</h4>
+            <p>面試唔係 LeetCode 提交，要寫出可讀嘅 code。用有意義嘅變數名、加簡單註釋、處理 edge case。寫完之後主動 dry run 一次。</p>
+          </div>
+          <div class="key-point">
+            <h4>System Design 框架</h4>
+            <p>標準流程：Requirements → Estimation → API Design → High-Level Design → Deep Dive → Bottlenecks。唔好跳步，每步都要同面試官確認。</p>
+          </div>
+          <div class="key-point">
+            <h4>面試後跟進</h4>
+            <p>每輪面試後發 thank you email 俾 recruiter。如果有多個 offer，合理地利用 competing offer 談判。整個過程保持專業同禮貌。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>總結</h4>
+          <p>Big Tech 面試流程雖然長，但每一步都有明確嘅準備方向。關鍵在於提早開始準備、持續練習、同埋保持良好嘅心態。技術係基本門檻，溝通同態度先係真正嘅決勝關鍵。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

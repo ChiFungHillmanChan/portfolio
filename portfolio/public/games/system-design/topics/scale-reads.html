@@ -294,7 +294,7 @@
   <div class="container">
     <header>
       <h1>Scale Reads — 擴展讀取能力</h1>
-      <p>我教你點樣應對：你嘅 App 突然爆紅，一夜之間由 0 去到 100 萬用戶</p>
+      <p>點樣應對：App 突然爆紅，一夜之間由 0 去到 100 萬用戶</p>
     </header>
 
     <div class="tabs">
@@ -308,9 +308,9 @@
     <div class="tab-content active" id="overview">
       <div class="card">
         <h2>全局思路 — 逐步解決讀取瓶頸</h2>
-        <div class="subtitle">我要同你講一個好重要嘅原則：唔好亂嚟，先搵出邊度出事</div>
+        <div class="subtitle">一個好重要嘅原則：唔好亂嚟，先搵出邊度出事</div>
         <p>
-          我用個比喻同你講。想像你開咗間餐廳，突然一夜之間排晒隊入嚟——你第一件事唔係即刻請多 50 個廚師，而係先搵出邊度最塞：係落單嗰度慢？定係廚房煮嘢慢？定係上菜太慢？系統設計都係一樣，我教你嘅第一步永遠係「搵出瓶頸喺邊」。
+          用個比喻嚟理解。想像開咗間餐廳，突然一夜之間排晒隊入嚟——第一件事唔係即刻請多 50 個廚師，而係先搵出邊度最塞：係落單嗰度慢？定係廚房煮嘢慢？定係上菜太慢？系統設計都係一樣，第一步永遠係「搵出瓶頸喺邊」。
         </p>
 
         <div class="diagram-container">
@@ -356,7 +356,7 @@
             </defs>
 
             <!-- Title -->
-            <text x="400" y="25" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="600">我教你解決讀取瓶頸嘅四個層級</text>
+            <text x="400" y="25" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="600">解決讀取瓶頸嘅四個層級</text>
 
             <!-- Problem -->
             <g transform="translate(250,40)" filter="url(#glowRed)">
@@ -427,19 +427,19 @@
           </svg>
         </div>
 
-        <h3>我教你嘅核心思路：逐層加碼</h3>
+        <h3>核心思路：逐層加碼</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>先搵出瓶頸</strong>——係 Server 唔夠力？定係資料庫頂唔住讀取？定係寫入太多？我要求你唔好未搞清就亂加嘢，呢個好重要。</span>
+            <span><strong>先搵出瓶頸</strong>——係 Server 唔夠力？定係資料庫頂唔住讀取？定係寫入太多？重點係唔好未搞清就亂加嘢，呢個好重要。</span>
           </li>
           <li>
             <span class="step-num">2</span>
-            <span><strong>優化查詢同加 Index</strong>——呢個成本最低、效果最快。我成日同學生講，就好似你間餐廳先優化流程，再諗請人。</span>
+            <span><strong>優化查詢同加 Index</strong>——呢個成本最低、效果最快。就好似間餐廳先優化流程，再諗請人。</span>
           </li>
           <li>
             <span class="step-num">3</span>
-            <span><strong>加 Cache</strong>——三個地方：伺服器前面、CDN 邊緣節點、用戶裝置上。大部分讀取請求都唔使再去資料庫。我之後會詳細教你。</span>
+            <span><strong>加 Cache</strong>——三個地方：伺服器前面、CDN 邊緣節點、用戶裝置上。大部分讀取請求都唔使再去資料庫。後面會詳細講解。</span>
           </li>
           <li>
             <span class="step-num">4</span>
@@ -448,8 +448,8 @@
         </ol>
 
         <div class="highlight-box amber">
-          <h4>⚠️ 你要記住呢個重點</h4>
-          <p>唔好一開始就跳去最複雜嘅方案。面試嘅時候，展示你識得「逐步升級」嘅思路，比直接講最複雜嘅答案更加加分。我見過太多人一上嚟就講 Sharding，面試官反而覺得你唔識判斷輕重。</p>
+          <h4>⚠️ 關鍵重點</h4>
+          <p>唔好一開始就跳去最複雜嘅方案。面試嘅時候，展示識得「逐步升級」嘅思路，比直接講最複雜嘅答案更加加分。常見嘅錯誤係一上嚟就講 Sharding，面試官反而覺得唔識判斷輕重。</p>
         </div>
       </div>
     </div>
@@ -458,9 +458,9 @@
     <div class="tab-content" id="indexing">
       <div class="card">
         <h2>優化查詢 + 加索引（Index）</h2>
-        <div class="subtitle">我教你成本最低嘅第一步：唔使加機器，改善查詢就有效果</div>
+        <div class="subtitle">成本最低嘅第一步：唔使加機器，改善查詢就有效果</div>
         <p>
-          我用個比喻同你解釋。你去圖書館搵一本書。如果冇索引（目錄），你要行晒每一行書架先搵到。但如果有索引，你可以直接知道本書喺邊個書架、邊個位置。資料庫嘅 Index 就係咁——幫資料庫快速搵到你要嘅資料，唔使逐條記錄慢慢揾。你一定要理解呢個概念。
+          用個比喻嚟解釋。去圖書館搵一本書。如果冇索引（目錄），要行晒每一行書架先搵到。但如果有索引，可以直接知道本書喺邊個書架、邊個位置。資料庫嘅 Index 就係咁——幫資料庫快速搵到需要嘅資料，唔使逐條記錄慢慢揾。呢個概念必須要理解。
         </p>
 
         <div class="diagram-container">
@@ -548,7 +548,7 @@
             <!-- Bottom section: What to do -->
             <g transform="translate(100,210)">
               <rect width="600" height="150" rx="14" fill="url(#gradPractice)" stroke="#6366f1" stroke-width="1.5"/>
-              <text x="300" y="28" text-anchor="middle" fill="#a5b4fc" font-size="13" font-weight="700">🔍 我教你實際點做</text>
+              <text x="300" y="28" text-anchor="middle" fill="#a5b4fc" font-size="13" font-weight="700">🔍 實際點做</text>
 
               <text x="30" y="55" fill="#4ade80" font-size="11" font-weight="600">❶ 檢查邊啲查詢最慢</text>
               <text x="50" y="72" fill="#9ca3af" font-size="10">搵出花最多時間嘅 query，呢啲就係瓶頸</text>
@@ -562,19 +562,19 @@
           </svg>
         </div>
 
-        <h3>我教你點做</h3>
+        <h3>具體做法</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>檢查邊啲查詢最慢</strong>——用 monitoring 工具搵出花最多時間嘅 query，呢啲就係你要優化嘅重點。我建議你用 EXPLAIN 嚟分析。</span>
+            <span><strong>檢查邊啲查詢最慢</strong>——用 monitoring 工具搵出花最多時間嘅 query，呢啲就係需要優化嘅重點。建議用 EXPLAIN 嚟分析。</span>
           </li>
           <li>
             <span class="step-num">2</span>
-            <span><strong>確認資料庫類型啱唔啱</strong>——如果你嘅資料係大量 key-value 查詢，用 SQL 可能唔係最快。揀啱嘅工具好重要，我見過太多人用錯 DB。</span>
+            <span><strong>確認資料庫類型啱唔啱</strong>——如果資料係大量 key-value 查詢，用 SQL 可能唔係最快。揀啱嘅工具好重要，常見嘅錯誤係用錯 DB 類型。</span>
           </li>
           <li>
             <span class="step-num">3</span>
-            <span><strong>加 Index</strong>——為最常被查詢嘅欄位加索引。資料庫就可以跳過逐條掃描，直接搵到你要嘅記錄。你一定要優先做呢步。</span>
+            <span><strong>加 Index</strong>——為最常被查詢嘅欄位加索引。資料庫就可以跳過逐條掃描，直接搵到需要嘅記錄。呢步一定要優先做。</span>
           </li>
         </ol>
 
@@ -584,7 +584,7 @@
             <ul>
               <li>成本最低——唔使加機器、唔使改架構</li>
               <li>效果明顯——常見查詢可能快幾十倍</li>
-              <li>我建議你最優先做呢一步</li>
+              <li>最優先做呢一步</li>
             </ul>
           </div>
           <div class="cons">
@@ -597,8 +597,8 @@
         </div>
 
         <div class="highlight-box green">
-          <h4>💡 你要記住</h4>
-          <p>面試嘅時候，永遠先講呢一步。我教你呢個思維方式：「用最低成本先解決問題」。面試官好鍾意呢種答法，因為佢展示咗你嘅工程判斷力。</p>
+          <h4>💡 重點記住</h4>
+          <p>面試嘅時候，永遠先講呢一步。核心思維方式係：「用最低成本先解決問題」。面試官好鍾意呢種答法，因為佢展示咗工程判斷力。</p>
         </div>
       </div>
     </div>
@@ -607,9 +607,9 @@
     <div class="tab-content" id="caching">
       <div class="card">
         <h2>三層 Cache — 層層攔截讀取請求</h2>
-        <div class="subtitle">我教你喺三個唔同嘅地方放 Cache，令大部分請求根本唔使去到資料庫</div>
+        <div class="subtitle">喺三個唔同嘅地方放 Cache，令大部分請求根本唔使去到資料庫</div>
         <p>
-          我同你講個比喻。想像你係一間超人氣餐廳嘅老闆。與其每個客人都要入廚房問廚師，你可以：① 喺前台放個餐牌（伺服器 Cache）、② 喺附近嘅分店都放（CDN）、③ 俾客人帶餐牌返屋企（裝置 Cache）。咁樣大部分人根本唔使行到你嘅廚房。你要理解呢個「層層攔截」嘅概念。
+          用個比喻嚟理解。想像一間超人氣餐廳。與其每個客人都要入廚房問廚師，可以：① 喺前台放個餐牌（伺服器 Cache）、② 喺附近嘅分店都放（CDN）、③ 俾客人帶餐牌返屋企（裝置 Cache）。咁樣大部分人根本唔使行到廚房。呢個就係「層層攔截」嘅概念。
         </p>
 
         <div class="diagram-container">
@@ -764,15 +764,15 @@
           </svg>
         </div>
 
-        <h3>我教你三層 Cache 分別點用</h3>
+        <h3>三層 Cache 分別點用</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>伺服器 Cache（Redis / Memcached）</strong>——放喺 Server 同資料庫之間。好常見嘅查詢（例如攞一條爆紅影片嘅資料）唔使每次都打去資料庫。我建議你由呢層開始實作。</span>
+            <span><strong>伺服器 Cache（Redis / Memcached）</strong>——放喺 Server 同資料庫之間。好常見嘅查詢（例如攞一條爆紅影片嘅資料）唔使每次都打去資料庫。建議由呢層開始實作。</span>
           </li>
           <li>
             <span class="step-num">2</span>
-            <span><strong>CDN 邊緣快取</strong>——全球各地都有伺服器。用戶喺東京？就從東京嘅 CDN 攞內容，唔使飛去美國嘅主伺服器。你要知道，熱門內容根本唔使去到你嘅 origin server。</span>
+            <span><strong>CDN 邊緣快取</strong>——全球各地都有伺服器。用戶喺東京？就從東京嘅 CDN 攞內容，唔使飛去美國嘅主伺服器。重點係，熱門內容根本唔使去到 origin server。</span>
           </li>
           <li>
             <span class="step-num">3</span>
@@ -781,8 +781,8 @@
         </ol>
 
         <div class="highlight-box">
-          <h4>💡 我解釋俾你聽點解要三層</h4>
-          <p>每一層 Cache 擋住唔同類型嘅請求。裝置擋住重複嘅、CDN 擋住熱門嘅、伺服器 Cache 擋住常見嘅。三層加埋，資料庫只需要處理好少嘅請求。你要記住呢個「層層防禦」嘅概念。</p>
+          <h4>💡 點解要三層</h4>
+          <p>每一層 Cache 擋住唔同類型嘅請求。裝置擋住重複嘅、CDN 擋住熱門嘅、伺服器 Cache 擋住常見嘅。三層加埋，資料庫只需要處理好少嘅請求。關鍵在於呢個「層層防禦」嘅概念。</p>
         </div>
       </div>
     </div>
@@ -791,9 +791,9 @@
     <div class="tab-content" id="replicas">
       <div class="card">
         <h2>Read Replicas — 讀取副本</h2>
-        <div class="subtitle">當 Cache 都唔夠用，我教你開多幾個資料庫一齊分擔</div>
+        <div class="subtitle">當 Cache 都唔夠用，開多幾個資料庫一齊分擔</div>
         <p>
-          我用個比喻同你講。你嘅餐廳得一個廚房（資料庫），就算前台做咗好多分流，廚房仲係忙到頂唔住。解決方法？開多幾個廚房（Read Replicas），每個廚房都有同一份餐牌同食材，可以同時服務唔同嘅客人。但你要記住：只有一個「主廚房」負責更新食譜，其他都係跟住同步。
+          用個比喻嚟理解。餐廳得一個廚房（資料庫），就算前台做咗好多分流，廚房仲係忙到頂唔住。解決方法？開多幾個廚房（Read Replicas），每個廚房都有同一份餐牌同食材，可以同時服務唔同嘅客人。重點係：只有一個「主廚房」負責更新食譜，其他都係跟住同步。
         </p>
 
         <div class="diagram-container">
@@ -910,23 +910,23 @@
           </svg>
         </div>
 
-        <h3>我教你理解佢點樣運作</h3>
+        <h3>運作原理</h3>
         <ol class="steps">
           <li>
             <span class="step-num">1</span>
-            <span><strong>主資料庫（Primary）</strong>負責所有寫入操作——改資料、加資料、刪資料全部喺佢度做。你要記住，寫入永遠只去一個地方。</span>
+            <span><strong>主資料庫（Primary）</strong>負責所有寫入操作——改資料、加資料、刪資料全部喺佢度做。重點係，寫入永遠只去一個地方。</span>
           </li>
           <li>
             <span class="step-num">2</span>
-            <span><strong>讀取副本（Read Replicas）</strong>係主資料庫嘅複製品。佢哋有同一份資料，但只負責讀取。你可以理解為「只讀嘅影印本」。</span>
+            <span><strong>讀取副本（Read Replicas）</strong>係主資料庫嘅複製品。佢哋有同一份資料，但只負責讀取。可以理解為「只讀嘅影印本」。</span>
           </li>
           <li>
             <span class="step-num">3</span>
-            <span><strong>Server 做負載均衡</strong>——將用戶嘅讀取請求分配俾唔同嘅副本，每個副本都分擔一部分壓力。我建議你用 round-robin 或者 least-connections 策略。</span>
+            <span><strong>Server 做負載均衡</strong>——將用戶嘅讀取請求分配俾唔同嘅副本，每個副本都分擔一部分壓力。建議用 round-robin 或者 least-connections 策略。</span>
           </li>
           <li>
             <span class="step-num">4</span>
-            <span><strong>主 DB 自動同步</strong>——每次主 DB 有新嘅資料，就會自動複製去所有副本。你要注意，呢個同步有短暫延遲。</span>
+            <span><strong>主 DB 自動同步</strong>——每次主 DB 有新嘅資料，就會自動複製去所有副本。要注意，呢個同步有短暫延遲。</span>
           </li>
         </ol>
 
@@ -950,8 +950,8 @@
         </div>
 
         <div class="highlight-box">
-          <h4>💡 我建議你幾時用？</h4>
-          <p>當大部分請求都係獨特嘅資料（唔重複），Cache 幫唔到太多嘅時候。例如：每個用戶查自己嘅訂單、個人化推薦結果等。呢啲查詢冇辦法用 Cache 攔截，所以要靠多個 DB 副本一齊頂住。你要記住，呢個係你最後嘅大招，唔好太早用。</p>
+          <h4>💡 適用場景</h4>
+          <p>當大部分請求都係獨特嘅資料（唔重複），Cache 幫唔到太多嘅時候。例如：每個用戶查自己嘅訂單、個人化推薦結果等。呢啲查詢冇辦法用 Cache 攔截，所以要靠多個 DB 副本一齊頂住。要記住，呢個係最後嘅大招，唔好太早用。</p>
         </div>
       </div>
     </div>
