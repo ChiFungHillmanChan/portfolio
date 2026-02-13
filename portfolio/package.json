@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "@bugspark/widget": "^0.2.1",
+    "@bugspark/widget": "^0.2.4",
     "@emailjs/browser": "^4.4.1",
     "@supabase/supabase-js": "^2.50.3",
     "@testing-library/jest-dom": "^5.17.0",

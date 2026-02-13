@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>歡迎 — 系統架構圖解教室</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 48px 0 40px;
+    }
+
+    .hero-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: rgba(99, 102, 241, 0.12);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.4rem;
+      margin-bottom: 24px;
+    }
+
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero .tagline {
+      font-size: 1.1rem;
+      color: #9ca3af;
+      line-height: 1.7;
+      max-width: 560px;
+      margin: 0 auto 24px;
+    }
+
+    .hero .author {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.88rem;
+      color: #6b7280;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 8px 18px;
+      border-radius: 100px;
+      border: 1px solid #1e2030;
+    }
+
+    .hero .author a {
+      color: #a5b4fc;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .hero .author a:hover {
+      color: #c7d2fe;
+      text-decoration: underline;
+    }
+
+    /* Section */
+    .section {
+      margin-bottom: 36px;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .section-header .icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+
+    .section-header h2 {
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .section-header .count {
+      font-size: 0.72rem;
+      color: #6b7280;
+      background: rgba(75, 85, 99, 0.25);
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 4px;
+    }
+
+    .section > p {
+      font-size: 0.9rem;
+      color: #9ca3af;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+
+    /* Card grid */
+    .card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 10px;
+    }
+
+    .topic-card {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .topic-card:hover {
+      border-color: #6366f1;
+      background: rgba(99, 102, 241, 0.06);
+    }
+
+    .topic-card .card-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .topic-card .card-text {
+      min-width: 0;
+    }
+
+    .topic-card .card-title {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: #e0e0e0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .topic-card .card-sub {
+      font-size: 0.68rem;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Divider */
+    .divider {
+      height: 1px;
+      background: #1e2030;
+      margin: 36px 0;
+    }
+
+    /* About box */
+    .about-box {
+      background: #1a1d27;
+      border: 1px solid #2a2d3a;
+      border-radius: 14px;
+      padding: 28px;
+    }
+
+    .about-box h3 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #fff;
+      margin-bottom: 12px;
+    }
+
+    .about-box p {
+      font-size: 0.88rem;
+      color: #9ca3af;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+
+    .about-box p:last-child {
+      margin-bottom: 0;
+    }
+
+    .about-box a {
+      color: #a5b4fc;
+      text-decoration: none;
+    }
+
+    .about-box a:hover {
+      text-decoration: underline;
+    }
+
+    /* Source tag */
+    .source-tag {
+      display: inline-block;
+      font-size: 0.68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+
+    .source-tag.original {
+      background: rgba(99, 102, 241, 0.15);
+      color: #a5b4fc;
+    }
+
+    .source-tag.community {
+      background: rgba(52, 211, 153, 0.15);
+      color: #34d399;
+    }
+
+    /* Footer */
+    .page-footer {
+      text-align: center;
+      padding-top: 20px;
+      font-size: 0.78rem;
+      color: #4b5563;
+      line-height: 1.7;
+    }
+
+    .page-footer a {
+      color: #6b7280;
+      text-decoration: none;
+    }
+
+    .page-footer a:hover {
+      color: #a5b4fc;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container {
+        padding: 24px 16px 48px;
+      }
+
+      .hero h1 {
+        font-size: 1.6rem;
+      }
+
+      .hero .tagline {
+        font-size: 1rem;
+      }
+
+      .card-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- ===== Hero ===== -->
+    <div class="hero">
+      <div class="hero-icon">🏗</div>
+      <h1>系統架構圖解教室</h1>
+      <p class="tagline">
+        用廣東話，用最簡單、最直白嘅方式，幫你理解系統設計嘅核心概念。<br>
+        每一課都有互動圖解、真實例子、同埋可以即學即用嘅重點。
+      </p>
+      <span class="author">
+        by <a href="https://hillmanchan.com" target="_blank" rel="noopener noreferrer">Hillman Chan</a>
+      </span>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ===== 關於呢個教室 ===== -->
+    <div class="section">
+      <div class="about-box">
+        <h3>呢個教室係咩？</h3>
+        <p>
+          呢度係我整理同消化各種系統設計知識之後，用廣東話重新寫成嘅教學筆記。我嘅目標係將複雜嘅概念變成任何人都睇得明嘅圖解同解說。
+        </p>
+        <p>
+          內容分兩類：
+        </p>
+        <p>
+          <span class="source-tag original">我嘅分享</span> 嚟自我自己嘅工作經驗、面試心得、同對行業趨勢嘅觀察。
+        </p>
+        <p>
+          <span class="source-tag community">社區知識</span> 基於業界廣泛認可嘅系統設計知識，參考咗 YouTube 教學、技術書籍（例如 Alex Xu 嘅《System Design Interview》系列）、線上課程、同各種開源文檔。我用自己嘅方式重新消化同整理，再用廣東話寫出嚟。
+        </p>
+        <p>
+          所有內容都以第一人稱教學嘅方式寫成——就好似我喺度親自教你咁。如果你發現任何錯誤或者想交流，歡迎聯繫我：<a href="https://hillmanchan.com" target="_blank" rel="noopener noreferrer">hillmanchan.com</a>
+        </p>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ===== 我嘅分享 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(99,102,241,0.15)">💡</span>
+        <h2>我嘅分享</h2>
+        <span class="source-tag original">原創</span>
+        <span class="count">3 課</span>
+      </div>
+      <p>嚟自我自己嘅工作經驗同面試心得，用親身經歷幫你準備。</p>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/coding-interview.html">
+          <span class="card-icon" style="background:rgba(34,197,94,0.15)">💻</span>
+          <span class="card-text">
+            <span class="card-title">程式面試攻略</span>
+            <span class="card-sub">釐清問題 / 溝通 / 合作態度</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/star-method.html">
+          <span class="card-icon" style="background:rgba(251,191,36,0.15)">⭐</span>
+          <span class="card-text">
+            <span class="card-title">STAR 面試法</span>
+            <span class="card-sub">Behavioral Interview 答題框架</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/ai-vs-software-engineer.html">
+          <span class="card-icon" style="background:rgba(99,102,241,0.15)">🤖</span>
+          <span class="card-text">
+            <span class="card-title">AI 會取代工程師？</span>
+            <span class="card-sub">寫 Code 從來唔係主要工作</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== 網絡與流量控制 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(245,158,11,0.15)">🌐</span>
+        <h2>網絡與流量控制</h2>
+        <span class="source-tag community">社區知識</span>
+        <span class="count">4 課</span>
+      </div>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/load-balancer.html">
+          <span class="card-icon" style="background:rgba(245,158,11,0.15)">⚖️</span>
+          <span class="card-text">
+            <span class="card-title">負載均衡器</span>
+            <span class="card-sub">Round Robin / L4 vs L7</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/api-gateway.html">
+          <span class="card-icon" style="background:rgba(245,158,11,0.15)">🚪</span>
+          <span class="card-text">
+            <span class="card-title">API 閘道</span>
+            <span class="card-sub">驗證 / 限流 / 路由分發</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/cdn.html">
+          <span class="card-icon" style="background:rgba(34,197,94,0.15)">🌐</span>
+          <span class="card-text">
+            <span class="card-title">CDN 內容分發</span>
+            <span class="card-sub">GeoDNS / Edge Cache / Purge</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/rate-limiter.html">
+          <span class="card-icon" style="background:rgba(239,68,68,0.15)">🚦</span>
+          <span class="card-text">
+            <span class="card-title">流量限制器</span>
+            <span class="card-sub">Token Bucket / Sliding Window</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== 快取與讀取優化 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(99,102,241,0.15)">⚡</span>
+        <h2>快取與讀取優化</h2>
+        <span class="source-tag community">社區知識</span>
+        <span class="count">3 課</span>
+      </div>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/cache-invalidation.html">
+          <span class="card-icon" style="background:rgba(99,102,241,0.15)">⚡</span>
+          <span class="card-text">
+            <span class="card-title">Cache 失效策略</span>
+            <span class="card-sub">TTL / Write Through / Back</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/distributed-cache.html">
+          <span class="card-icon" style="background:rgba(239,68,68,0.15)">⚡</span>
+          <span class="card-text">
+            <span class="card-title">分散式快取</span>
+            <span class="card-sub">Consistent Hashing / 雪崩防護</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/scale-reads.html">
+          <span class="card-icon" style="background:rgba(245,158,11,0.15)">📈</span>
+          <span class="card-text">
+            <span class="card-title">讀取擴展</span>
+            <span class="card-sub">索引 / 快取 / 讀取副本</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== 數據與存儲 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(139,92,246,0.15)">🗄</span>
+        <h2>數據與存儲</h2>
+        <span class="source-tag community">社區知識</span>
+        <span class="count">3 課</span>
+      </div>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/key-value-store.html">
+          <span class="card-icon" style="background:rgba(139,92,246,0.15)">🗄</span>
+          <span class="card-text">
+            <span class="card-title">鍵值存儲</span>
+            <span class="card-sub">分區 / 複製 / Quorum 共識</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/object-storage.html">
+          <span class="card-icon" style="background:rgba(245,158,11,0.15)">📦</span>
+          <span class="card-text">
+            <span class="card-title">物件存儲</span>
+            <span class="card-sub">預簽名網址 / 分段上傳</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/unique-id-generator.html">
+          <span class="card-icon" style="background:rgba(34,197,94,0.15)">❄️</span>
+          <span class="card-text">
+            <span class="card-title">唯一 ID 生成器</span>
+            <span class="card-sub">Snowflake 64-bit / 時間排序</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== 異步與消息處理 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(16,185,129,0.15)">📨</span>
+        <h2>異步與消息處理</h2>
+        <span class="source-tag community">社區知識</span>
+        <span class="count">3 課</span>
+      </div>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/message-queue.html">
+          <span class="card-icon" style="background:rgba(16,185,129,0.15)">📨</span>
+          <span class="card-text">
+            <span class="card-title">消息佇列</span>
+            <span class="card-sub">Kafka / 發佈訂閱 / 精確一次</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/task-queue.html">
+          <span class="card-icon" style="background:rgba(99,102,241,0.15)">📋</span>
+          <span class="card-text">
+            <span class="card-title">任務佇列</span>
+            <span class="card-sub">異步任務 / 重試機制 / 死信佇列</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/notification-system.html">
+          <span class="card-icon" style="background:rgba(236,72,153,0.15)">🔔</span>
+          <span class="card-text">
+            <span class="card-title">通知系統</span>
+            <span class="card-sub">推送 / 短訊 / 電郵多渠道</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== 應用系統設計 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(236,72,153,0.15)">🛠</span>
+        <h2>應用系統設計</h2>
+        <span class="source-tag community">社區知識</span>
+        <span class="count">8 課</span>
+      </div>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/url-shortener.html">
+          <span class="card-icon" style="background:rgba(16,185,129,0.15)">🔗</span>
+          <span class="card-text">
+            <span class="card-title">短網址系統</span>
+            <span class="card-sub">Base62 / 301 vs 302</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/chat-system.html">
+          <span class="card-icon" style="background:rgba(59,130,246,0.15)">💬</span>
+          <span class="card-text">
+            <span class="card-title">即時通訊系統</span>
+            <span class="card-sub">WebSocket / 離線消息</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/news-feed.html">
+          <span class="card-icon" style="background:rgba(245,158,11,0.15)">📰</span>
+          <span class="card-text">
+            <span class="card-title">動態消息流</span>
+            <span class="card-sub">推送拉取 / 排名算法</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/search-autocomplete.html">
+          <span class="card-icon" style="background:rgba(139,92,246,0.15)">🔍</span>
+          <span class="card-text">
+            <span class="card-title">搜尋自動補全</span>
+            <span class="card-sub">Trie 前綴樹 / 排名算法</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/web-crawler.html">
+          <span class="card-icon" style="background:rgba(248,113,113,0.15)">🕷</span>
+          <span class="card-text">
+            <span class="card-title">網頁爬蟲</span>
+            <span class="card-sub">廣度優先 / 布隆過濾器</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/video-streaming.html">
+          <span class="card-icon" style="background:rgba(236,72,153,0.15)">🎬</span>
+          <span class="card-text">
+            <span class="card-title">影片串流</span>
+            <span class="card-sub">轉碼 / HLS-DASH</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/payment-system.html">
+          <span class="card-icon" style="background:rgba(34,197,94,0.15)">💳</span>
+          <span class="card-text">
+            <span class="card-title">支付系統</span>
+            <span class="card-sub">冪等性 / 複式記帳</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/session-manager.html">
+          <span class="card-icon" style="background:rgba(99,102,241,0.15)">🔐</span>
+          <span class="card-text">
+            <span class="card-title">Session 管理器</span>
+            <span class="card-sub">Cookie vs JWT / Redis 存儲</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <!-- ===== 監控與安全 ===== -->
+    <div class="section">
+      <div class="section-header">
+        <span class="icon" style="background:rgba(248,113,113,0.15)">🛡</span>
+        <h2>監控與安全</h2>
+        <span class="source-tag community">社區知識</span>
+        <span class="count">2 課</span>
+      </div>
+      <div class="card-grid">
+        <a class="topic-card" data-nav="topics/metrics-logging.html">
+          <span class="card-icon" style="background:rgba(99,102,241,0.15)">📊</span>
+          <span class="card-text">
+            <span class="card-title">監控與日誌</span>
+            <span class="card-sub">Prometheus / Grafana</span>
+          </span>
+        </a>
+        <a class="topic-card" data-nav="topics/secure-ai-agents.html">
+          <span class="card-icon" style="background:rgba(248,113,113,0.15)">🛡</span>
+          <span class="card-text">
+            <span class="card-title">AI Agent 安全</span>
+            <span class="card-sub">Lethal Trifecta / Guardrail</span>
+          </span>
+        </a>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- ===== Footer ===== -->
+    <div class="page-footer">
+      <p>
+        由 <a href="https://hillmanchan.com" target="_blank" rel="noopener noreferrer">Hillman Chan</a> 用廣東話撰寫
+      </p>
+      <p>
+        部分系統設計內容參考自業界廣泛認可嘅教材同開源資源，經消化後以原創圖解方式呈現。
+      </p>
+    </div>
+
+  </div>
+
+  <script>
+    // Navigate to topic via parent iframe
+    document.querySelectorAll('.topic-card[data-nav]').forEach(card => {
+      card.addEventListener('click', () => {
+        const topic = card.getAttribute('data-nav');
+        if (topic && window.parent !== window) {
+          // Tell parent to load this topic
+          window.parent.postMessage({ type: 'loadTopic', url: topic }, '*');
+        }
+      });
+    });
+  </script>
+</body>
+</html>

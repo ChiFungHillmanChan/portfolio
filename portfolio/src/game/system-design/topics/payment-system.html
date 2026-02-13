@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Payment System 支付系統 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Payment System 支付系統</h1>
+      <p>我教你設計交易一致性、冪等性同重試機制</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="idempotency">② 冪等性設計</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我同你講，支付系統最要注意乜嘢</h2>
+        <div class="subtitle">錢唔可以重複扣、唔可以少記——呢個係鐵律</div>
+        <p>
+          我要你記住，用戶畀錢買嘢，最驚就係三件事：<strong style="color:#f87171">重複扣款</strong>、<strong style="color:#f87171">扣咗錢但訂單冇成立</strong>、<strong style="color:#f87171">退款處理錯</strong>。所以你設計支付系統，必須做到：<strong style="color:#34d399">冪等性</strong>（同一請求重複發多次，只會處理一次）、<strong style="color:#6366f1">雙向記帳</strong>（Double-entry，每筆交易 debit = credit）、同埋用 <strong style="color:#f59e0b">Webhook</strong> 同步支付結果。呢三個係你嘅核心防線。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 740 350" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#F59E0B" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#172033"/></linearGradient>
+              <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#13251e"/></linearGradient>
+              <linearGradient id="gradAmber" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#1f1a10"/></linearGradient>
+              <linearGradient id="gradPurple" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#1c1530"/></linearGradient>
+              <linearGradient id="gradPink" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#25132a"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f59e0b"/></marker>
+              <marker id="arrPink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#EC4899"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+            </defs>
+
+            <!-- User -->
+            <g transform="translate(20,125)">
+              <rect width="100" height="70" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="50" y="30" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">User</text>
+              <text x="50" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">發起付款</text>
+            </g>
+
+            <!-- Payment Service -->
+            <g transform="translate(170,115)">
+              <rect width="155" height="90" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="77" y="30" text-anchor="middle" fill="#10B981" font-size="14" font-weight="700">Payment Service</text>
+              <text x="77" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">Idempotency Key</text>
+              <text x="77" y="70" text-anchor="middle" fill="#34d399" font-size="10">Double-entry Ledger</text>
+            </g>
+
+            <!-- Ledger -->
+            <g transform="translate(385,40)">
+              <rect width="140" height="70" rx="12" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#8B5CF6" font-size="13" font-weight="700">Ledger</text>
+              <text x="70" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">Double Entry</text>
+              <text x="70" y="62" text-anchor="middle" fill="#a5b4fc" font-size="9">debit = credit</text>
+            </g>
+
+            <!-- Payment Gateway -->
+            <g transform="translate(385,145)">
+              <rect width="140" height="65" rx="12" fill="url(#gradAmber)" stroke="#F59E0B" stroke-width="2" filter="url(#glowAmber)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="700">Payment Gateway</text>
+              <text x="70" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">Stripe / PayPal</text>
+            </g>
+
+            <!-- External Provider -->
+            <g transform="translate(580,105)">
+              <rect width="135" height="70" rx="12" fill="url(#gradPink)" stroke="#EC4899" stroke-width="2" filter="url(#shadow)"/>
+              <text x="67" y="28" text-anchor="middle" fill="#EC4899" font-size="12" font-weight="700">Stripe / PayPal</text>
+              <text x="67" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">Webhook 回調</text>
+            </g>
+
+            <!-- Arrows - curved paths -->
+            <path d="M 120 160 Q 145 155 168 152" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="145" y="143" fill="#a5b4fc" font-size="10">Pay</text>
+
+            <path d="M 325 130 Q 355 95 383 80" fill="none" stroke="#8B5CF6" stroke-width="1.5" marker-end="url(#arrPurple)"/>
+            <text x="358" y="100" fill="#a5b4fc" font-size="9">記帳</text>
+
+            <path d="M 325 168 Q 355 172 383 175" fill="none" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrYellow)"/>
+            <text x="355" y="162" fill="#f59e0b" font-size="9">Charge</text>
+
+            <path d="M 525 170 Q 552 155 578 145" fill="none" stroke="#EC4899" stroke-width="1.5" marker-end="url(#arrPink)"/>
+            <text x="550" y="148" fill="#EC4899" font-size="9">調用</text>
+
+            <!-- Webhook callback - dashed curved arrow -->
+            <path d="M 647 178 Q 650 250 400 250 Q 250 250 248 208" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrGreen)"/>
+            <text x="450" y="268" fill="#34d399" font-size="9">Webhook 異步回調</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次支付流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>User 發起付款，你要確保帶上 Idempotency Key（我建議你用 order_id + 請求 hash）。呢個 key 係防止重複扣款嘅關鍵。</span></li>
+          <li><span class="step-num">2</span><span>Payment Service 首先檢查呢個 Idempotency Key 有冇處理過——有嘅話，直接返回上次結果，唔會再扣錢。你要記住呢個邏輯。</span></li>
+          <li><span class="step-num">3</span><span>然後調用 Payment Gateway（Stripe / PayPal）。成功後 Ledger 做雙向記帳：用戶 -100，商家 +100。我要你理解，debit 永遠等於 credit。</span></li>
+          <li><span class="step-num">4</span><span>Gateway 用 Webhook 異步通知最終結果。你要留意，呢個可能有延遲，所以你要處理好 async 狀態同步。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="idempotency">
+      <div class="card">
+        <h2>我教你冪等性設計</h2>
+        <div class="subtitle">呢個係防止重複扣款嘅核心武器</div>
+        <p>
+          我要你徹底理解 <strong style="color:#34d399">Idempotency Key</strong>：Client 每次付款請求帶一個唯一 key（例如 UUID 或者 order_id）。Server 第一次處理時記錄 key → 結果；之後再用同一個 key 請求，直接返回 cached 結果，唔會再 call Payment Gateway。就係咁簡單，但效果強大。
+        </p>
+        <p>我建議你幫呢個 Key 設定 expiry（例如 24 小時），避免永遠佔住存儲。實現可以用 Redis 或者 DB，key 做 unique constraint。呢個 pattern 你一定要識。</p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Idempotency Key</h4>
+            <p>每次請求帶唯一 key，Server 記錄 (key → response)。重複請求返回相同結果，唔會重複扣款。我要你記住，呢個係支付系統嘅第一道防線。</p>
+          </div>
+          <div class="key-point">
+            <h4>Double-entry Bookkeeping</h4>
+            <p>我教你傳統銀行嘅做法：每筆交易兩邊記帳——用戶帳戶 -X，商家帳戶 +X。debit = credit 永遠成立，方便你對帳同 audit。</p>
+          </div>
+          <div class="key-point">
+            <h4>Saga Pattern</h4>
+            <p>呢個係分佈式事務嘅利器：多個 step，每個 step 有 compensate 動作。某 step 失敗就執行補償。我建議你用 Saga 保證最終一致性。</p>
+          </div>
+          <div class="key-point">
+            <h4>Webhook 處理</h4>
+            <p>Payment Gateway 異步通知支付結果。你要做好三件事：驗簽（防偽造）、idempotent 處理（同一個 webhook 可能送多次）、同埋更新本地狀態。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰要點</h2>
+        <div class="subtitle">我要你設計支付系統時特別小心呢幾點</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>重試機制</h4>
+            <p>網路可能 fail，Client 會 retry。你必須用 Idempotency Key，否則 retry = 重複扣款。我要你特別注意：Gateway 超時嘅情況——可能已經扣咗款但冇回應，要靠 Webhook 最終確認。</p>
+          </div>
+          <div class="key-point">
+            <h4>每日對帳</h4>
+            <p>我建議你每日同 Payment Gateway 對帳，確保自己 Ledger 嘅數字同 Gateway 報表一致。唔一樣就即刻 alert。呢個係發現問題嘅最後防線。</p>
+          </div>
+          <div class="key-point">
+            <h4>Webhook 安全</h4>
+            <p>你要驗證 Webhook 簽名（例如 Stripe 用 HMAC），防止偽造。我建議你 store webhook 嘅 raw body 做 audit trail，出事嘅時候有得查。</p>
+          </div>
+          <div class="key-point">
+            <h4>最終一致性</h4>
+            <p>支付成功後你可能要更新訂單、庫存、積分。我教你用 message queue 異步處理，唔好同步 block。用 Saga Pattern 處理 partial failure，保證每個環節都有補償方案。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>我嘅總結</h4>
+          <p>支付系統嘅三大支柱係：Idempotency Key 防重複、Double-entry Ledger 防差錯、Webhook 做異步同步。你掌握呢三個概念，就可以設計出一個可靠嘅支付架構。記住，寧可多一重保障，都唔好少一重。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

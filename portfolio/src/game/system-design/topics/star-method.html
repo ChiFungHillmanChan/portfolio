@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>STAR 面試法 — 系統架構圖解</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 40px 24px;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    header p {
+      font-size: 1rem;
+      color: #9ca3af;
+      line-height: 1.6;
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: #1a1d27;
+      border-radius: 12px;
+      padding: 4px;
+      margin-bottom: 32px;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 0.9rem;
+      font-weight: 500;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      white-space: nowrap;
+      font-family: inherit;
+    }
+
+    .tab-btn:hover {
+      color: #e0e0e0;
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .tab-btn.active {
+      background: #6366f1;
+      color: #ffffff;
+      font-weight: 600;
+    }
+
+    /* Tab Content */
+    .tab-content {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card {
+      background: #1a1d27;
+      border-radius: 16px;
+      padding: 32px;
+      margin-bottom: 24px;
+      border: 1px solid #2a2d3a;
+    }
+
+    .card h2 {
+      font-size: 1.5rem;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .card .subtitle {
+      font-size: 0.95rem;
+      color: #6366f1;
+      font-weight: 500;
+      margin-bottom: 16px;
+    }
+
+    .card p {
+      font-size: 0.95rem;
+      color: #c0c4cc;
+      line-height: 1.8;
+      margin-bottom: 12px;
+    }
+
+    /* Diagram Container */
+    .diagram-container {
+      background: #13151c;
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      overflow-x: auto;
+      border: 1px solid #2a2d3a;
+    }
+
+    .diagram-container svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Step List */
+    .steps {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0;
+    }
+
+    .steps li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #2a2d3a;
+      font-size: 0.95rem;
+      color: #c0c4cc;
+      line-height: 1.6;
+    }
+
+    .steps li:last-child {
+      border-bottom: none;
+    }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #6366f1;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.8rem;
+      font-weight: 700;
+    }
+
+    /* Pros and Cons */
+    .pros-cons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    @media (max-width: 600px) {
+      .pros-cons {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .pros, .cons {
+      background: #13151c;
+      border-radius: 10px;
+      padding: 16px;
+    }
+
+    .pros h4 {
+      color: #34d399;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .cons h4 {
+      color: #f87171;
+      font-size: 0.9rem;
+      margin-bottom: 8px;
+    }
+
+    .pros ul, .cons ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .pros li, .cons li {
+      font-size: 0.85rem;
+      color: #c0c4cc;
+      padding: 4px 0;
+      line-height: 1.5;
+    }
+
+    .pros li::before {
+      content: "\2713  ";
+      color: #34d399;
+      font-weight: 700;
+    }
+
+    .cons li::before {
+      content: "\2717  ";
+      color: #f87171;
+      font-weight: 700;
+    }
+
+    .use-case {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05));
+      border-left: 3px solid #6366f1;
+      border-radius: 0 10px 10px 0;
+      padding: 16px 20px;
+      margin-top: 16px;
+    }
+
+    .use-case h4 {
+      color: #a5b4fc;
+      font-size: 0.9rem;
+      margin-bottom: 6px;
+    }
+
+    .use-case p {
+      font-size: 0.9rem;
+      color: #c0c4cc;
+      margin-bottom: 0;
+    }
+
+    /* Quote block */
+    .quote-block {
+      background: rgba(99, 102, 241, 0.06);
+      border-left: 3px solid #818cf8;
+      border-radius: 0 10px 10px 0;
+      padding: 16px 20px;
+      margin: 16px 0;
+      font-style: italic;
+    }
+
+    .quote-block p {
+      color: #a5b4fc;
+      font-size: 0.9rem;
+      margin-bottom: 0;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .container {
+        padding: 24px 16px;
+      }
+
+      header h1 {
+        font-size: 1.5rem;
+      }
+
+      .tabs {
+        flex-wrap: nowrap;
+      }
+
+      .tab-btn {
+        font-size: 0.8rem;
+        padding: 10px 12px;
+      }
+
+      .card {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>STAR 面試法 — 用故事征服 Behavioral Interview</h1>
+      <p>我教你用 Situation → Task → Action → Result 嘅框架，答好每一條行為面試題</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="star-overview">① 咩係 STAR</button>
+      <button class="tab-btn" data-tab="star-example">② 真實示範</button>
+      <button class="tab-btn" data-tab="star-tips">③ 答題技巧</button>
+      <button class="tab-btn" data-tab="star-takeaway">④ 重點總結</button>
+    </div>
+
+    <!-- ===================== TAB 1: STAR Overview ===================== -->
+    <div class="tab-content active" id="star-overview">
+      <div class="card">
+        <h2>STAR 方法係咩？</h2>
+        <div class="subtitle">Situation → Task → Action → Result</div>
+        <p>
+          Behavioral interview（行為面試）係大廠面試最常見嘅環節之一。面試官唔係想聽你背書，而係想聽你真實經歷過嘅故事。我教你用 STAR 方法，將任何經歷都包裝成一個有結構、有說服力嘅答案。你跟住我嘅方法做，一定答得好。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 340" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow1" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowS" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#6366f1" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowT" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#34d399" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowA" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#f59e0b" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowR" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#f87171" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradS" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#252840"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradT" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradAc" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a2518"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradRe" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a1a1a"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowRight" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/>
+              </marker>
+            </defs>
+
+            <text x="400" y="30" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">STAR 框架流程</text>
+
+            <!-- S -->
+            <g transform="translate(30,60)">
+              <rect width="160" height="120" rx="14" fill="url(#gradS)" stroke="#6366f1" stroke-width="2.5" filter="url(#glowS)"/>
+              <circle cx="80" cy="35" r="22" fill="#6366f1"/>
+              <text x="80" y="42" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">S</text>
+              <text x="80" y="72" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Situation</text>
+              <text x="80" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">背景係咩？</text>
+              <text x="80" y="106" text-anchor="middle" fill="#9ca3af" font-size="10">你喺邊個團隊做咩？</text>
+            </g>
+
+            <!-- Arrow S->T (curved) -->
+            <path d="M195,120 C205,120 215,120 225,120" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowRight)"/>
+
+            <!-- T -->
+            <g transform="translate(230,60)">
+              <rect width="160" height="120" rx="14" fill="url(#gradT)" stroke="#34d399" stroke-width="2.5" filter="url(#glowT)"/>
+              <circle cx="80" cy="35" r="22" fill="#34d399"/>
+              <text x="80" y="42" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">T</text>
+              <text x="80" y="72" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Task</text>
+              <text x="80" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">你嘅任務係咩？</text>
+              <text x="80" y="106" text-anchor="middle" fill="#9ca3af" font-size="10">你要解決咩問題？</text>
+            </g>
+
+            <!-- Arrow T->A (curved) -->
+            <path d="M395,120 C405,120 415,120 425,120" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowRight)"/>
+
+            <!-- A -->
+            <g transform="translate(430,60)">
+              <rect width="160" height="120" rx="14" fill="url(#gradAc)" stroke="#f59e0b" stroke-width="2.5" filter="url(#glowA)"/>
+              <circle cx="80" cy="35" r="22" fill="#f59e0b"/>
+              <text x="80" y="42" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">A</text>
+              <text x="80" y="72" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Action</text>
+              <text x="80" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">你做咗啲咩？</text>
+              <text x="80" y="106" text-anchor="middle" fill="#9ca3af" font-size="10">具體步驟係點？</text>
+            </g>
+
+            <!-- Arrow A->R (curved) -->
+            <path d="M595,120 C605,120 615,120 625,120" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowRight)"/>
+
+            <!-- R -->
+            <g transform="translate(630,60)">
+              <rect width="160" height="120" rx="14" fill="url(#gradRe)" stroke="#f87171" stroke-width="2.5" filter="url(#glowR)"/>
+              <circle cx="80" cy="35" r="22" fill="#f87171"/>
+              <text x="80" y="42" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">R</text>
+              <text x="80" y="72" text-anchor="middle" fill="#fff" font-size="12" font-weight="600">Result</text>
+              <text x="80" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">結果係點？</text>
+              <text x="80" y="106" text-anchor="middle" fill="#9ca3af" font-size="10">你學到咩教訓？</text>
+            </g>
+
+            <!-- Bottom summary -->
+            <g transform="translate(120,220)">
+              <rect width="560" height="90" rx="14" fill="rgba(99,102,241,0.08)" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="6,4"/>
+              <text x="280" y="28" text-anchor="middle" fill="#a5b4fc" font-size="13" font-weight="700">面試官想聽嘅係</text>
+              <text x="280" y="50" text-anchor="middle" fill="#9ca3af" font-size="11">唔係你識咩技術，而係你遇到問題時點樣思考、點樣行動、點樣收尾</text>
+              <text x="280" y="72" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">STAR = 有結構嘅故事 = 令人信服嘅答案</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="quote-block">
+          <p>「Tell me about a time when...」— 幾乎所有 behavioral question 都係呢個格式。你需要一個框架去組織你嘅答案，我教你嘅就係呢個。</p>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我同你講點解一定要用 STAR</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>防止你答到一舊飯咁。</strong>我見過好多人一緊張就東拉西扯，STAR 幫你保持結構清晰，唔會跑題。你要靠呢個框架做你嘅安全網。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>確保你答到重點。</strong>面試官想聽嘅係「你做咗啲咩」同「結果係點」。STAR 確保你唔會只講背景唔講行動。我教你嘅比例係 Action 佔 60%。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>展示你嘅思考過程。</strong>大廠面試最重視嘅唔係答案本身，而係你點樣去思考同解決問題。STAR 幫你將呢啲展示出嚟。</span>
+          </li>
+        </ol>
+
+        <div class="use-case">
+          <h4>我建議你用喺呢啲場景</h4>
+          <p>Amazon Leadership Principles 面試、Google Behavioral Round、Meta System Design 嘅 follow-up 問題——全部都可以用 STAR 嚟答。你準備好幾個故事，就可以應付大部分情況。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 2: Real Example ===================== -->
+    <div class="tab-content" id="star-example">
+      <div class="card">
+        <h2>真實示範：「講一次你 deploy 炸咗 Production」</h2>
+        <div class="subtitle">Describe a time where you deployed code that took down a production environment</div>
+        <p>
+          我用一個真實例子嚟示範畀你睇，STAR 框架點樣將一個「出事」嘅經歷變成一個加分嘅答案。我要你記住：好多人怕講自己搞砸嘅嘢，但面試官其實最欣賞嘅係你點樣處理危機同從中學習。你唔好迴避失敗——呢個先係加分嘅關鍵。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 580" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow2" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowAction" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feFlood flood-color="#f59e0b" flood-opacity="0.25" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradSit" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#252840"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradTsk" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradAct" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#2a2518"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradRes" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stop-color="#2a1a1a"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowDown" markerWidth="8" markerHeight="8" refX="4" refY="7" orient="auto">
+                <path d="M0,0 L4,8 L8,0 Z" fill="#6366f1"/>
+              </marker>
+            </defs>
+
+            <text x="400" y="30" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">STAR 示範：Production Incident</text>
+
+            <!-- S: Situation -->
+            <g transform="translate(40,50)">
+              <rect width="720" height="90" rx="14" fill="url(#gradSit)" stroke="#6366f1" stroke-width="2" filter="url(#shadow2)"/>
+              <circle cx="40" cy="45" r="24" fill="#6366f1"/>
+              <text x="40" y="52" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">S</text>
+              <text x="80" y="30" fill="#a5b4fc" font-size="13" font-weight="700">Situation — 背景</text>
+              <text x="80" y="50" fill="#c0c4cc" font-size="11">我喺 Amazon 做 Network Automation Team 嘅 Software Engineer</text>
+              <text x="80" y="68" fill="#c0c4cc" font-size="11">負責一套 Microservices，每日處理大約 1,000 萬個 requests</text>
+            </g>
+
+            <!-- Arrow (curved) -->
+            <path d="M400,145 C400,155 400,160 400,170" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+
+            <!-- T: Task -->
+            <g transform="translate(40,175)">
+              <rect width="720" height="90" rx="14" fill="url(#gradTsk)" stroke="#34d399" stroke-width="2" filter="url(#shadow2)"/>
+              <circle cx="40" cy="45" r="24" fill="#34d399"/>
+              <text x="40" y="52" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">T</text>
+              <text x="80" y="30" fill="#34d399" font-size="13" font-weight="700">Task — 任務</text>
+              <text x="80" y="50" fill="#c0c4cc" font-size="11">負責將一個 Legacy Service 由 Java 8 升級去 Java 17</text>
+              <text x="80" y="68" fill="#c0c4cc" font-size="11">目的：提升系統嘅可維護性同效能</text>
+            </g>
+
+            <!-- Arrow (curved) -->
+            <path d="M400,270 C400,280 400,285 400,295" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+
+            <!-- A: Action -->
+            <g transform="translate(40,300)">
+              <rect width="720" height="130" rx="14" fill="url(#gradAct)" stroke="#f59e0b" stroke-width="2" filter="url(#glowAction)"/>
+              <circle cx="40" cy="65" r="24" fill="#f59e0b"/>
+              <text x="40" y="72" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">A</text>
+              <text x="80" y="25" fill="#fbbf24" font-size="13" font-weight="700">Action — 我做咗啲咩</text>
+              <text x="80" y="46" fill="#c0c4cc" font-size="11">1. 喺本地升級 JDK 17，修正 encapsulation 差異造成嘅問題</text>
+              <text x="80" y="64" fill="#c0c4cc" font-size="11">2. Deploy 去 Test 環境 → 通過；再 deploy 去 Pre-prod 環境跑真實流量一個禮拜</text>
+              <text x="80" y="82" fill="#c0c4cc" font-size="11">3. 同另一位工程師一齊做 Controlled Deployment 去 Production</text>
+              <text x="80" y="100" fill="#f87171" font-size="11" font-weight="600">4. 5 分鐘內客戶投訴 → 確認同 deploy 相關 → 即刻 rollback → 服務恢復</text>
+              <text x="80" y="118" fill="#34d399" font-size="11">5. 搵到 root cause：Prod 同 Pre-prod 嘅 runtime 設定有差異</text>
+            </g>
+
+            <!-- Arrow (curved) -->
+            <path d="M400,435 C400,445 400,450 400,460" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrowDown)"/>
+
+            <!-- R: Result -->
+            <g transform="translate(40,465)">
+              <rect width="720" height="90" rx="14" fill="url(#gradRes)" stroke="#f87171" stroke-width="2" filter="url(#shadow2)"/>
+              <circle cx="40" cy="45" r="24" fill="#f87171"/>
+              <text x="40" y="52" text-anchor="middle" fill="#fff" font-size="18" font-weight="800">R</text>
+              <text x="80" y="30" fill="#f87171" font-size="13" font-weight="700">Result — 結果同改善</text>
+              <text x="80" y="50" fill="#c0c4cc" font-size="11">寫咗詳細嘅 Post-mortem 文件，記錄成件事嘅時間線同 root cause</text>
+              <text x="80" y="68" fill="#c0c4cc" font-size="11">建立咗新嘅 Alarm 同 Test Case，確保同類問題唔會再發生</text>
+            </g>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我幫你逐步拆解</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">S</span>
+            <span><strong>Situation：</strong>我喺 Amazon 做 Network Automation Team，負責一套每日處理 1,000 萬 requests 嘅 Microservices。你要記住，呢度嘅重點係畀面試官知道你嘅規模同責任範圍——唔好太長，2-3 句就夠。</span>
+          </li>
+          <li>
+            <span class="step-num">T</span>
+            <span><strong>Task：</strong>將 Legacy Service 由 Java 8 升去 Java 17，目的係提升可維護性同效能。我建議你簡潔講清楚你要做咩就得，唔好喺呢度花太多時間。</span>
+          </li>
+          <li>
+            <span class="step-num">A</span>
+            <span><strong>Action：</strong>呢度係最重要嘅部分——我要你講清楚每一步做咗啲咩：本地修 bug → test 環境 → pre-prod 跑一個禮拜 → controlled deployment → 出事後即刻 rollback → 搵 root cause。你要展示你嘅系統性思維。</span>
+          </li>
+          <li>
+            <span class="step-num">R</span>
+            <span><strong>Result：</strong>寫 post-mortem、建 alarm 同 test case。面試官想聽嘅唔只係「搞掂咗」，而係你有冇從中學到嘢、有冇建立防止再犯嘅機制。你一定要講呢部分。</span>
+          </li>
+        </ol>
+
+        <div class="use-case">
+          <h4>我話你知點解呢個答案好</h4>
+          <p>呢個答案好就好在佢冇迴避失敗——反而展示咗冷靜處理危機嘅能力、系統性嘅 debug 思維、同埋預防再犯嘅改善行動。你要記住：面試官唔係想聽你樣樣完美，而係想睇你遇到問題時嘅反應。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 3: Tips ===================== -->
+    <div class="tab-content" id="star-tips">
+      <div class="card">
+        <h2>答 Behavioral 問題嘅實戰技巧</h2>
+        <div class="subtitle">我教你點樣用 STAR 答得好、答得有說服力</div>
+        <p>
+          識 STAR 框架唔代表識答。我見過好多人知道 STAR，但一開口就犯晒典型錯誤。我同你講幾個最關鍵嘅技巧，幫你由「識框架」變成「答得好」。你認真聽，呢啲全部係我嘅經驗。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow3" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowWrong" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feFlood flood-color="#f87171" flood-opacity="0.15" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowRight" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feFlood flood-color="#34d399" flood-opacity="0.15" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradWrong" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a1a1a"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradCorrect" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+            </defs>
+
+            <text x="400" y="30" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">常見錯誤 vs 正確做法</text>
+
+            <!-- Wrong side -->
+            <g transform="translate(30,55)">
+              <rect width="355" height="310" rx="14" fill="url(#gradWrong)" stroke="#f87171" stroke-width="2" filter="url(#glowWrong)"/>
+              <text x="177" y="30" text-anchor="middle" fill="#f87171" font-size="14" font-weight="700">常見錯誤</text>
+              <line x1="20" y1="45" x2="335" y2="45" stroke="#2a2d3a" stroke-width="1"/>
+
+              <text x="20" y="72" fill="#f87171" font-size="11" font-weight="600">1. Situation 講太長</text>
+              <text x="25" y="90" fill="#9ca3af" font-size="10">花 3 分鐘講背景，面試官已經唔耐煩</text>
+
+              <text x="20" y="118" fill="#f87171" font-size="11" font-weight="600">2. Action 太模糊</text>
+              <text x="25" y="136" fill="#9ca3af" font-size="10">「我哋一齊解決咗問題」— 你做咗咩？</text>
+
+              <text x="20" y="164" fill="#f87171" font-size="11" font-weight="600">3. 用「我哋」代替「我」</text>
+              <text x="25" y="182" fill="#9ca3af" font-size="10">面試官想知你個人嘅貢獻，唔係團隊</text>
+
+              <text x="20" y="210" fill="#f87171" font-size="11" font-weight="600">4. 冇 Result</text>
+              <text x="25" y="228" fill="#9ca3af" font-size="10">講完做咗咩就停，冇交代結果同學到咩</text>
+
+              <text x="20" y="256" fill="#f87171" font-size="11" font-weight="600">5. 迴避失敗經歷</text>
+              <text x="25" y="274" fill="#9ca3af" font-size="10">答「我冇試過出問題」= 冇可信度</text>
+              <text x="25" y="292" fill="#9ca3af" font-size="10">或者經驗唔夠豐富</text>
+            </g>
+
+            <!-- Right side -->
+            <g transform="translate(415,55)">
+              <rect width="355" height="310" rx="14" fill="url(#gradCorrect)" stroke="#34d399" stroke-width="2" filter="url(#glowRight)"/>
+              <text x="177" y="30" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">正確做法</text>
+              <line x1="20" y1="45" x2="335" y2="45" stroke="#2a2d3a" stroke-width="1"/>
+
+              <text x="20" y="72" fill="#34d399" font-size="11" font-weight="600">1. Situation 用 2-3 句講完</text>
+              <text x="25" y="90" fill="#9ca3af" font-size="10">公司、團隊、規模 — 夠 context 就得</text>
+
+              <text x="20" y="118" fill="#34d399" font-size="11" font-weight="600">2. Action 要具體到每一步</text>
+              <text x="25" y="136" fill="#9ca3af" font-size="10">「我先做 X，然後做 Y，最後做 Z」</text>
+
+              <text x="20" y="164" fill="#34d399" font-size="11" font-weight="600">3. 用「我」做主語</text>
+              <text x="25" y="182" fill="#9ca3af" font-size="10">「我負責 X」、「我決定 Y」、「我帶領 Z」</text>
+
+              <text x="20" y="210" fill="#34d399" font-size="11" font-weight="600">4. Result 要有具體數據或改善</text>
+              <text x="25" y="228" fill="#9ca3af" font-size="10">「之後再冇出過同類 incident」</text>
+
+              <text x="20" y="256" fill="#34d399" font-size="11" font-weight="600">5. 坦誠面對失敗 + 展示成長</text>
+              <text x="25" y="274" fill="#9ca3af" font-size="10">承認錯誤 → 講你點處理 → 講你學到咩</text>
+              <text x="25" y="292" fill="#9ca3af" font-size="10">呢個先係面試官想聽嘅嘢</text>
+            </g>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我嘅 5 個實戰建議</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>準備 5-8 個真實故事。</strong>我建議你面試前將你嘅經歷整理成 STAR 格式。大部分 behavioral 問題都可以用同一批故事嚟答，只係角度唔同。你由今日開始寫。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>Action 部分要佔成個答案嘅 60%。</strong>呢度係你展示能力嘅地方。我教你嘅比例：Situation 同 Task 加埋唔應該超過 30 秒。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>數字會加分。</strong>「處理 1,000 萬 requests」、「5 分鐘內 rollback」、「之後零同類 incident」——具體數字令你嘅答案更有可信度。你要記住加數字。</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span><strong>唔好怕講「我搞砸咗」。</strong>面試官問你失敗經歷，就係想睇你有冇自我反省能力。我同你講，坦誠 + 有改善行動 = 加分。</span>
+          </li>
+          <li>
+            <span class="step-num">5</span>
+            <span><strong>練到自然為止。</strong>STAR 唔係要你背稿，而係幫你組織思路。我建議你練到可以自然咁講出嚟，聽落似講故事而唔似背書。</span>
+          </li>
+        </ol>
+
+        <div class="pros-cons">
+          <div class="pros">
+            <h4>面試官會加分嘅表現</h4>
+            <ul>
+              <li>答案有清晰結構，唔會跑題</li>
+              <li>坦誠面對自己嘅失敗同不足</li>
+              <li>Action 部分有具體、可驗證嘅步驟</li>
+              <li>展示從失敗中學習同改善嘅能力</li>
+            </ul>
+          </div>
+          <div class="cons">
+            <h4>面試官會扣分嘅表現</h4>
+            <ul>
+              <li>答案冇結構，東拉西扯</li>
+              <li>全程用「我哋」，聽唔出你個人做咗咩</li>
+              <li>迴避問題或者答「我冇遇過」</li>
+              <li>只講結果，唔講過程同思考</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>我建議你即刻行動</h4>
+          <p>你而家就可以開始準備——揀你最深刻嘅 5 個工作經歷，用 STAR 寫低佢哋。面試時你唔係要「即場作答」，而係「揀一個最啱嘅故事嚟講」。你準備得越早，到時就越自信。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 4: Takeaway ===================== -->
+    <div class="tab-content" id="star-takeaway">
+      <div class="card">
+        <h2>重點總結 — STAR 嘅核心精神</h2>
+        <div class="subtitle">面試唔係考你記性，而係考你點樣面對問題</div>
+        <p>
+          我嘅總結好簡單：Behavioral interview 考嘅唔係你有幾叻，而係你遇到問題時會點做。STAR 幫你將經歷變成有說服力嘅故事，而最好嘅故事，往往係你曾經搞砸、但從中學到嘢嗰啲。我要你記住呢個核心。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 380" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow4" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowPlan" x="-15%" y="-15%" width="130%" height="130%">
+                <feGaussianBlur stdDeviation="4" result="blur"/>
+                <feFlood flood-color="#34d399" flood-opacity="0.2" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradP4" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#252840"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradG4" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1a2e28"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradA4" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a2518"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradR4" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#2a1a1a"/>
+                <stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+            </defs>
+
+            <text x="400" y="35" text-anchor="middle" fill="#fff" font-size="15" font-weight="700">你嘅 Action Plan</text>
+
+            <!-- Step 1 -->
+            <g transform="translate(40,60)">
+              <rect width="340" height="80" rx="12" fill="url(#gradP4)" stroke="#6366f1" stroke-width="2" filter="url(#shadow4)"/>
+              <circle cx="35" cy="40" r="20" fill="#6366f1"/>
+              <text x="35" y="46" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">1</text>
+              <text x="70" y="30" fill="#fff" font-size="12" font-weight="600">整理你嘅經歷庫</text>
+              <text x="70" y="50" fill="#9ca3af" font-size="10.5">揀 5-8 個真實工作故事</text>
+              <text x="70" y="66" fill="#6b7280" font-size="10">涵蓋：領導力、失敗、衝突、deadline 壓力</text>
+            </g>
+
+            <!-- Step 2 -->
+            <g transform="translate(420,60)">
+              <rect width="340" height="80" rx="12" fill="url(#gradG4)" stroke="#34d399" stroke-width="2" filter="url(#shadow4)"/>
+              <circle cx="35" cy="40" r="20" fill="#34d399"/>
+              <text x="35" y="46" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">2</text>
+              <text x="70" y="30" fill="#fff" font-size="12" font-weight="600">用 STAR 格式寫低每個故事</text>
+              <text x="70" y="50" fill="#9ca3af" font-size="10.5">每個故事控制喺 2 分鐘內講完</text>
+              <text x="70" y="66" fill="#6b7280" font-size="10">Action 部分要最詳細，Situation 最精簡</text>
+            </g>
+
+            <!-- Step 3 -->
+            <g transform="translate(40,170)">
+              <rect width="340" height="80" rx="12" fill="url(#gradA4)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow4)"/>
+              <circle cx="35" cy="40" r="20" fill="#f59e0b"/>
+              <text x="35" y="46" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">3</text>
+              <text x="70" y="30" fill="#fff" font-size="12" font-weight="600">對住鏡練習講出嚟</text>
+              <text x="70" y="50" fill="#9ca3af" font-size="10.5">講到自然流暢，唔似背稿</text>
+              <text x="70" y="66" fill="#6b7280" font-size="10">錄音聽返自己，修正語速同重點</text>
+            </g>
+
+            <!-- Step 4 -->
+            <g transform="translate(420,170)">
+              <rect width="340" height="80" rx="12" fill="url(#gradR4)" stroke="#f87171" stroke-width="2" filter="url(#shadow4)"/>
+              <circle cx="35" cy="40" r="20" fill="#f87171"/>
+              <text x="35" y="46" text-anchor="middle" fill="#fff" font-size="14" font-weight="800">4</text>
+              <text x="70" y="30" fill="#fff" font-size="12" font-weight="600">面試時靈活配對</text>
+              <text x="70" y="50" fill="#9ca3af" font-size="10.5">聽到問題 → 揀最啱嘅故事 → 用 STAR 講</text>
+              <text x="70" y="66" fill="#6b7280" font-size="10">同一個故事可以答唔同類型嘅問題</text>
+            </g>
+
+            <!-- Bottom summary -->
+            <g transform="translate(120,285)">
+              <rect width="560" height="75" rx="14" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="2" filter="url(#glowPlan)"/>
+              <text x="280" y="30" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">記住：最好嘅答案來自真實經歷</text>
+              <text x="280" y="52" text-anchor="middle" fill="#9ca3af" font-size="11">唔需要完美嘅故事，只需要真實嘅故事 + 清晰嘅結構</text>
+              <text x="280" y="68" text-anchor="middle" fill="#9ca3af" font-size="11">STAR 唔係模板，而係幫你講好故事嘅工具</text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="quote-block">
+          <p>「Software Engineer 嘅使命就係解決已知嘅問題，同時發現新嘅問題去解決。」— 面試考嘅都係呢件事。</p>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我畀你嘅最後忠告</h3>
+        <ol class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong>唔好怕講失敗。</strong>我教過嘅例子——deploy 炸咗 production——但用 STAR 將呢件事變成咗一個展示危機處理能力嘅加分項。你要學識呢種轉化。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong>展示你嘅系統性思維。</strong>即刻 rollback → 搵 root cause → 寫 post-mortem → 建立預防機制。呢個流程本身就係面試官想睇嘅嘢。我建議你每個故事都有呢個結構。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong>面試前做功課。</strong>我建議你了解間公司重視咩 values（例如 Amazon 嘅 Leadership Principles），然後揀啱嘅故事去配對。</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span><strong>由今日開始準備。</strong>唔好等到收到面試通知先開始——而家就可以開始整理你嘅經歷庫，到時候你會多謝自己。我話你知，準備得越早越好。</span>
+          </li>
+        </ol>
+
+        <div class="use-case">
+          <h4>我嘅最後一句</h4>
+          <p>Behavioral interview 唔係要你做完美嘅人，而係要你做一個識面對問題、識反思、識改善嘅工程師。你嘅每一次失敗，都係你最有價值嘅面試素材。我教你嘅就係呢個道理。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

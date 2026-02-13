@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Storage 物件存儲系統 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Object Storage 物件存儲系統</h1>
+      <p>我教你設計大檔案上傳同 CDN 分發，好似 S3 咁嘅架構</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="upload">② 上傳策略</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我帶你理解 Object Storage</h2>
+        <div class="subtitle">唔係 file system，係 key-value 存大檔案</div>
+        <p>
+          我要同你講清楚：傳統檔案系統係 hierarchy（folder/file），但 Object Storage（例如 AWS S3）用 <strong style="color:#6366f1">bucket + key</strong> 嘅方式存儲。每個 object 有唯一 key，value 就係檔案內容（blob）。你要記住一個重點：metadata（檔名、size、content-type）同 actual data 係分開存嘅，各司其職。
+        </p>
+        <p>我建議你一定要掌握兩個關鍵設計：大檔案上傳要 support <strong style="color:#34d399">Multipart Upload</strong>；分發要用 <strong style="color:#f59e0b">CDN</strong> 加速下載。呢兩樣嘢係 Object Storage 嘅核心。</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 720 380" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#F59E0B" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowPink" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5" result="blur"/><feFlood flood-color="#EC4899" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradAmber" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPurple" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e1a47"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPink" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3d0a2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f59e0b"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+              <marker id="arrPink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#EC4899"/></marker>
+            </defs>
+
+            <!-- Client -->
+            <g transform="translate(20,140)">
+              <rect width="110" height="75" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="55" y="30" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">Client</text>
+              <text x="55" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">上傳 / 下載</text>
+            </g>
+
+            <!-- Upload Service -->
+            <g transform="translate(185,130)">
+              <rect width="140" height="85" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Upload</text>
+              <text x="70" y="48" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Service</text>
+              <text x="70" y="70" text-anchor="middle" fill="#9ca3af" font-size="10">Presigned URL</text>
+            </g>
+
+            <!-- S3 Object Store -->
+            <g transform="translate(400,40)">
+              <rect width="160" height="75" rx="12" fill="url(#gradAmber)" stroke="#F59E0B" stroke-width="2" filter="url(#glowAmber)"/>
+              <text x="80" y="30" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">S3 Object Store</text>
+              <text x="80" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">Blob 存儲</text>
+            </g>
+
+            <!-- Metadata DB -->
+            <g transform="translate(400,150)">
+              <rect width="160" height="68" rx="12" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="80" y="28" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Metadata DB</text>
+              <text x="80" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">key, size, path</text>
+            </g>
+
+            <!-- CDN -->
+            <g transform="translate(400,260)">
+              <rect width="160" height="75" rx="12" fill="url(#gradPink)" stroke="#EC4899" stroke-width="2" filter="url(#glowPink)"/>
+              <text x="80" y="30" text-anchor="middle" fill="#EC4899" font-size="13" font-weight="700">CDN</text>
+              <text x="80" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">邊緣快取分發</text>
+            </g>
+
+            <!-- Arrows: smooth curves -->
+            <path d="M132,175 C155,172 168,170 183,168" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrBlue)"/>
+            <text x="148,158" fill="#a5b4fc" font-size="10">Upload</text>
+
+            <path d="M327,148 C355,120 375,95 398,85" stroke="#f59e0b" stroke-width="1.5" fill="none" marker-end="url(#arrYellow)"/>
+            <text x="355" y="108" fill="#f59e0b" font-size="9">Blob</text>
+
+            <path d="M327,175 C355,178 375,180 398,182" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arrPurple)"/>
+            <text x="355" y="172" fill="#a5b4fc" font-size="9">Metadata</text>
+
+            <path d="M480,120 C480,170 480,220 480,258" stroke="#EC4899" stroke-width="1.5" fill="none" marker-end="url(#arrPink)"/>
+            <text x="488" y="210" fill="#EC4899" font-size="9">CDN 分發</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你成個流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>Client 想上傳大檔案，先問 Upload Service 攞 Presigned URL。我要同你強調：呢步好關鍵，因為之後 Client 可以直接 upload 去 S3，唔使經你嘅 Server。</span></li>
+          <li><span class="step-num">2</span><span>Client 直接 upload 去 S3，大幅減輕 backend 負擔。你要記住，呢個就係 Presigned URL 嘅威力。</span></li>
+          <li><span class="step-num">3</span><span>Metadata DB 記錄 object key、path、size、上傳時間等。我建議你將 metadata 同 blob 分開，方便搜尋。</span></li>
+          <li><span class="step-num">4</span><span>下載時經 CDN，熱門檔案喺 edge 快取。我想你記住：全球用戶就近下載，速度快好多。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="upload">
+      <div class="card">
+        <h2>我教你上傳策略</h2>
+        <div class="subtitle">Presigned URL 同 Multipart Upload</div>
+        <p>
+          我要同你講兩個最重要嘅上傳機制。<strong style="color:#34d399">Presigned URL</strong>：Server 生成一個帶簽名嘅 URL，Client 可以直接用呢個 URL 上傳或下載，唔使經過你嘅 API。限時有效，安全又減負載。你一定要掌握呢個設計。
+        </p>
+        <p><strong style="color:#f59e0b">Multipart Upload</strong>：大檔案（例如 >100MB）分做多個 part 上傳，最後 merge。我想你記住佢嘅優勢：支援斷點續傳，失敗咗只需重傳失敗嘅 part，唔使由頭嚟。</p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Presigned URL</h4>
+            <p>Server 簽名 URL，Client 直接同 S3 溝通。限時（例如 15 min），過期無效。我建議你用呢個方式，唔使暴露 AWS key。</p>
+          </div>
+          <div class="key-point">
+            <h4>Multipart Upload</h4>
+            <p>分 part 上傳（每 part 5MB–5GB），流程係 Initiate → Upload parts → Complete。你可以並行上傳多個 part，大幅加速大檔案傳輸。</p>
+          </div>
+          <div class="key-point">
+            <h4>CDN 分發</h4>
+            <p>熱門檔案 cache 喺 edge 節點，用戶就近下載。我想你記住：CDN 減少 origin 壓力，加快全球訪問速度。</p>
+          </div>
+          <div class="key-point">
+            <h4>Metadata 同 Blob 分開</h4>
+            <p>Metadata（檔名、大小、path）放 DB 方便搜尋；blob 放 Object Store 低成本存儲。我建議你一定要分開，各司其職先係正確設計。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰要點</h2>
+        <div class="subtitle">我幫你整理設計 Object Storage 要諗嘅嘢</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Part Size</h4>
+            <p>Multipart 最小 5MB（最後 part 可以細啲）。我建議你用 5-10MB 做 balance：太大 part 失敗重傳成本高；太細 overhead 多。</p>
+          </div>
+          <div class="key-point">
+            <h4>斷點續傳</h4>
+            <p>記錄已上傳嘅 part，resume 時跳過。你要 persist upload_id 同 completed parts，呢步唔好偷懶。</p>
+          </div>
+          <div class="key-point">
+            <h4>Abort 清理</h4>
+            <p>用戶 cancel 或者超時，你一定要 call Abort Multipart Upload。我提醒你：orphan parts 會佔空間收錢，唔清理會浪費資源。</p>
+          </div>
+          <div class="key-point">
+            <h4>權限控制</h4>
+            <p>Presigned URL 可以限制 HTTP method、content-type、expiry。我建議你下載都用 signed URL + CDN，安全又快。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>我嘅總結</h4>
+          <p>AWS S3、Google Cloud Storage、阿里雲 OSS 都係 Object Storage。好多大型平台背後都用類似架構：上傳經 Presigned/Multipart，下載經 CDN。你掌握咗呢套設計，處理任何大檔案存儲場景都有信心。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

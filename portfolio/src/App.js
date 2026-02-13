@@ -15,12 +15,14 @@ import ChatBotGame from './game/chatbot/ChatBotGame';
 import PromptHunterGame from './game/prompt-hunter/PromptHunterGame';
 import CardGame from './game/card-game/CardGame';
 import CasinoGame from './game/casino-game/CasinoGame';
+import SystemDesignGame from './game/system-design/SystemDesignGame';
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
   'chat-box': ChatBotGame,
   'card-game': CardGame,
   'casino-game': CasinoGame,
+  'system-design': SystemDesignGame,
 };
 
 const getGameComponentFromHostname = () => {
@@ -59,6 +61,7 @@ function App() {
         <Route path="/prompt-hunter" element={<PromptHunterGame />} />
         <Route path="/card-game" element={<CardGame />} />
         <Route path="/casino-game" element={<CasinoGame />} />
+        <Route path="/system-design" element={<SystemDesignGame />} />
 
         {/* Your existing routes with Layout */}
         <Route element={<Layout />}>

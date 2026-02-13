@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Load Balancer 負載均衡器 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Load Balancer 負載均衡器</h1>
+      <p>我教你點樣將流量分配到多台服務器，保證高可用</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="algorithms">② 分配演算法</button>
+      <button class="tab-btn" data-tab="practice">③ L4 vs L7</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我先同你講 Load Balancer 係咩</h2>
+        <div class="subtitle">將大量請求平均分配俾多台 Server 處理</div>
+        <p>
+          我要你想像一個場景：你嘅網站每秒有 10 萬個請求湧入，一台 Server 點搞都搞唔掂。呢個時候你就需要多台 Server 一齊分擔工作。而 Load Balancer 就係負責決定每個請求應該送去邊台 Server 嘅「交通指揮官」。
+        </p>
+        <p>你要記住，Load Balancer 仲會做一樣好重要嘅嘢：<strong style="color:#f87171">Health Check</strong>。佢會定期檢查每台 Server 係咪正常運作。如果某台 Server 掛咗，LB 會自動將流量轉去其他 Server，用戶完全唔會感受到。呢個就係我哋講嘅「高可用」。</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 350" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#F59E0B" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradClient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradLB" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradServer" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f87171"/></marker>
+            </defs>
+
+            <!-- Clients -->
+            <g transform="translate(30,125)">
+              <rect width="120" height="75" rx="14" fill="url(#gradClient)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="30" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">Clients</text>
+              <text x="60" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">大量用戶請求</text>
+            </g>
+
+            <!-- Load Balancer -->
+            <g transform="translate(240,110)">
+              <rect width="150" height="90" rx="14" fill="url(#gradLB)" stroke="#F59E0B" stroke-width="2.5" filter="url(#glowAmber)"/>
+              <text x="75" y="30" text-anchor="middle" fill="#F59E0B" font-size="15" font-weight="700">Load</text>
+              <text x="75" y="50" text-anchor="middle" fill="#F59E0B" font-size="15" font-weight="700">Balancer</text>
+              <text x="75" y="72" text-anchor="middle" fill="#9ca3af" font-size="10">負載均衡</text>
+            </g>
+
+            <!-- Servers -->
+            <g transform="translate(490,30)">
+              <rect width="130" height="58" rx="14" fill="url(#gradServer)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="24" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Server 1</text>
+              <text x="65" y="44" text-anchor="middle" fill="#34d399" font-size="10">Healthy</text>
+            </g>
+
+            <g transform="translate(490,125)">
+              <rect width="130" height="58" rx="14" fill="url(#gradServer)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="24" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Server 2</text>
+              <text x="65" y="44" text-anchor="middle" fill="#34d399" font-size="10">Healthy</text>
+            </g>
+
+            <g transform="translate(490,220)">
+              <rect width="130" height="58" rx="14" fill="url(#gradServer)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="24" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Server 3</text>
+              <text x="65" y="44" text-anchor="middle" fill="#34d399" font-size="10">Healthy</text>
+            </g>
+
+            <!-- Health Check -->
+            <g transform="translate(255,250)">
+              <rect width="135" height="52" rx="12" fill="rgba(239,68,68,0.08)" stroke="#f87171" stroke-width="1.5"/>
+              <text x="68" y="22" text-anchor="middle" fill="#f87171" font-size="11" font-weight="700">Health Check</text>
+              <text x="68" y="40" text-anchor="middle" fill="#f87171" font-size="10">每 5 秒檢查一次</text>
+            </g>
+
+            <!-- Arrow: Clients to LB (curved) -->
+            <path d="M152,162 C190,162 200,155 238,155" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="195" y="148" text-anchor="middle" fill="#a5b4fc" font-size="10">Requests</text>
+
+            <!-- Arrows: LB to Servers (curved) -->
+            <path d="M392,135 C430,125 450,85 488,62" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+            <path d="M392,155 C420,155 460,155 488,155" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+            <path d="M392,175 C430,185 450,225 488,248" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+
+            <!-- Arrow: Health Check to LB (dashed) -->
+            <path d="M322,250 L322,202" fill="none" stroke="#f87171" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrRed)"/>
+          </svg>
+        </div>
+
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>所有 Client 請求先到達 Load Balancer——你要記住，佢係唯一嘅入口。</span></li>
+          <li><span class="step-num">2</span><span>LB 用特定演算法（Round Robin、Least Connections 等）揀一台 Server 去處理請求。我之後會逐個講。</span></li>
+          <li><span class="step-num">3</span><span>Health Check 定期 ping 每台 Server，掛咗嘅自動踢走，確保流量只會去到健康嘅 Server。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="algorithms">
+      <div class="card">
+        <h2>我教你幾種負載分配演算法</h2>
+        <div class="subtitle">揀啱演算法，系統效能差好遠</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Round Robin</h4>
+            <p>最簡單嘅方法，我建議你從呢個開始理解。就係輪流分配：Request 1 去 Server 1，Request 2 去 Server 2，Request 3 去 Server 3，然後再返去 Server 1。</p>
+          </div>
+          <div class="key-point">
+            <h4>Weighted Round Robin</h4>
+            <p>現實中每台 Server 嘅性能唔一樣，所以你要俾高性能嘅 Server 多啲請求。例如 Server A 權重 5，Server B 權重 3，咁 A 就會收到更多流量。</p>
+          </div>
+          <div class="key-point">
+            <h4>Least Connections</h4>
+            <p>我覺得呢個好實用——邊台 Server 現時連接數最少就送去邊台。適合請求處理時間差異大嘅場景，因為佢會自動平衡工作量。</p>
+          </div>
+          <div class="key-point">
+            <h4>IP Hash</h4>
+            <p>根據 Client IP 做 hash 決定去邊台 Server。好處係同一個用戶永遠去同一台 Server（類似 sticky session）。但我要提醒你，呢個方法有風險——如果嗰台 Server 掛咗，用戶就要重新分配。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>L4 vs L7 負載均衡</h2>
+        <div class="subtitle">我要你搞清楚呢兩種唔同層級嘅 Load Balancing</div>
+        <p><strong style="color:#fbbf24">L4（Transport Layer）</strong>：只睇 TCP/IP 資訊（IP + Port），完全唔理 HTTP 內容。速度極快、開銷極小。你可以理解為「盲分」——佢唔知你請求咩，只負責快速轉發。例如 AWS NLB 就係 L4。</p>
+        <p><strong style="color:#34d399">L7（Application Layer）</strong>：可以讀 HTTP header、URL path、cookie 等內容。功能強好多——你可以根據 URL 路由到唔同嘅 Server 組。例如 /api 去 API Server，/static 去 CDN。Nginx 同 AWS ALB 都係 L7。</p>
+
+        <div class="key-points" style="margin-top:20px;">
+          <div class="key-point">
+            <h4>SSL Termination</h4>
+            <p>我建議你將 SSL 解密交俾 LB 處理，後面嘅 Server 只需要處理 HTTP。呢樣可以大幅減少 Server 嘅 CPU 負擔，因為加解密好食 CPU。</p>
+          </div>
+          <div class="key-point">
+            <h4>Sticky Sessions</h4>
+            <p>將同一用戶永遠送去同一台 Server。方便係方便，但我要警告你——如果嗰台 Server 掛咗，用戶嘅 session 就冇咗。所以盡量唔好依賴 sticky session，而係用 Redis 做 shared session。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>我嘅部署建議</h4>
+          <p>生產環境我建議你用兩層 LB：L4（NLB）做第一層，L7（ALB/Nginx）做第二層。L4 做 TCP 分流超快，L7 做智慧路由超靈活。兩者配合，既有性能又有彈性。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

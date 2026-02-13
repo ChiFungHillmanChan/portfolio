@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Search Autocomplete 搜尋自動補全 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🔍 Search Autocomplete 搜尋自動補全</h1>
+      <p>我教你用 Trie 結構同 ranking 演算法實現即時建議</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="trie">② Trie 數據結構</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我先同你講自動補全係咩</h2>
+        <div class="subtitle">你喺 Google 打字，出現嘅建議就係 Autocomplete</div>
+        <p>
+          你一定用過呢個功能：當你喺 Google 搜尋框打 "how to"，佢即刻彈出 "how to tie a tie"、"how to cook rice" 等建議。我要教你，呢個功能背後嘅核心數據結構叫 <strong style="color:#34d399">Trie（前綴樹）</strong>，配合搜索頻率排名，就可以做到毫秒級嘅即時建議。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 780 300" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#3B82F6" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowTrie" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#EF4444" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a3a2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a1a1a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradYellow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a351a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPurple" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+            </defs>
+
+            <!-- Search Input -->
+            <g transform="translate(30,110)">
+              <rect width="120" height="70" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#glowBlue)"/>
+              <text x="60" y="28" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">Search</text>
+              <text x="60" y="46" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">Input</text>
+              <text x="60" y="62" text-anchor="middle" fill="#9ca3af" font-size="10">搜尋框</text>
+            </g>
+
+            <!-- Autocomplete Service -->
+            <g transform="translate(220,100)">
+              <rect width="150" height="80" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="75" y="28" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Autocomplete</text>
+              <text x="75" y="46" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Service</text>
+              <text x="75" y="68" text-anchor="middle" fill="#9ca3af" font-size="10">自動補全服務</text>
+            </g>
+
+            <!-- Trie -->
+            <g transform="translate(450,50)">
+              <rect width="140" height="60" rx="12" fill="url(#gradRed)" stroke="#EF4444" stroke-width="2" filter="url(#glowTrie)"/>
+              <text x="70" y="25" text-anchor="middle" fill="#EF4444" font-size="13" font-weight="700">Trie</text>
+              <text x="70" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">In-Memory 前綴樹</text>
+            </g>
+
+            <!-- Ranking Service -->
+            <g transform="translate(450,170)">
+              <rect width="140" height="60" rx="12" fill="url(#gradYellow)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="25" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Ranking</text>
+              <text x="70" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">頻率排名</text>
+            </g>
+
+            <!-- Query Logs -->
+            <g transform="translate(640,110)">
+              <rect width="120" height="60" rx="12" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="25" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Query Logs</text>
+              <text x="60" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">搜索日誌</text>
+            </g>
+
+            <!-- Arrows: curved paths -->
+            <path d="M152,145 C185,142 195,140 218,140" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrBlue)"/>
+            <text x="185" y="130" text-anchor="middle" fill="#a5b4fc" font-size="10">Prefix</text>
+
+            <path d="M372,125 C400,110 425,95 448,85" stroke="#34d399" stroke-width="1.5" fill="none" marker-end="url(#arrGreen)"/>
+            <text x="420" y="98" fill="#34d399" font-size="10">Lookup</text>
+
+            <path d="M372,155 C400,170 425,185 448,195" stroke="#fbbf24" stroke-width="1.5" fill="none" marker-end="url(#arrYellow)"/>
+            <text x="420" y="185" fill="#fbbf24" font-size="10">Sort</text>
+
+            <path d="M592,200 C610,185 625,170 638,155" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arrPurple)"/>
+            <text x="630" y="185" fill="#a5b4fc" font-size="10">Update freq</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>首先，用戶打字，每個字母都觸發一次 Autocomplete 查詢（例如打 "h" → "ho" → "how"）。我之後會教你用 debounce 優化呢度。</span></li>
+          <li><span class="step-num">2</span><span>Autocomplete Service 喺 Trie 入面搵到所有以呢個前綴開頭嘅詞語。你要記住，Trie 係放喺 memory 入面嘅，所以查詢極快。</span></li>
+          <li><span class="step-num">3</span><span>Ranking Service 根據搜索頻率排序，返回 Top 5-10 個建議俾用戶。呢個排名直接影響用戶體驗。</span></li>
+          <li><span class="step-num">4</span><span>最後，用戶嘅每次搜索都被記錄到 Query Logs，定期用嚟更新 Trie 入面嘅頻率數據。呢個係一個持續改進嘅循環。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="trie">
+      <div class="card">
+        <h2>我教你 Trie 數據結構</h2>
+        <div class="subtitle">專門為前綴搜索而生嘅樹狀結構</div>
+        <p>我要同你講清楚 Trie（讀做 "try"）係咩。佢係一棵樹，每個節點代表一個字元。從 root 行到任何一個節點，經過嘅字元串起嚟就係一個前綴。你要將呢個概念記入腦。</p>
+        <p>我用一個例子同你解釋。假設存咗 "tree", "try", "true" 三個詞：</p>
+        <p style="font-family: monospace; color: #34d399; font-size: 0.9rem; line-height: 2;">
+          root → t → r → e → e ✓<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ y ✓<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ u → e ✓
+        </p>
+        <p>你睇到嗎？打 "tr" 就可以搵到呢三個詞。每個終點節點仲可以存一個 frequency count，代表呢個詞被搜索過幾多次。我建議你面試嘅時候喺白板上畫呢個圖，會令面試官好有印象。</p>
+
+        <div class="use-case">
+          <h4>你要注意嘅記憶體考量</h4>
+          <p>Trie 放喺記憶體（In-Memory）入面，查詢速度係 O(prefix_length)，超快！但我提醒你，如果詞彙量超大，可能要用壓縮 Trie（Radix Tree）或者分片存儲。呢個係 scale 嘅時候一定要考慮嘅問題。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰要點</h2>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Debounce 防抖</h4>
+            <p>我要同你強調呢一點：唔好每打一個字就發一個 Request！你要用 debounce（延遲 200-300ms），等用戶停低打字先發送。呢個簡單嘅優化可以大幅減少請求次數，面試一定要提。</p>
+          </div>
+          <div class="key-point">
+            <h4>定期更新 Trie</h4>
+            <p>我建議你每隔幾小時從 Query Logs 收集數據，重新計算詞頻，更新 Trie。你記住：唔好每次搜索都即時更新，咁做太浪費資源，而且會影響查詢性能。</p>
+          </div>
+          <div class="key-point">
+            <h4>個人化建議</h4>
+            <p>我教你一個進階技巧：可以結合用戶嘅搜索歷史，優先顯示佢之前搜過嘅關鍵字。你需要 per-user 嘅小型 Trie，呢個會令用戶體驗好好多。</p>
+          </div>
+          <div class="key-point">
+            <h4>敏感詞過濾</h4>
+            <p>你一定要記住呢個安全考量：自動補全建議入面唔可以出現不雅內容。我建議你設計一個 blocklist（黑名單）做過濾，呢個係 production 環境嘅必備功能。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

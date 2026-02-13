@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rate Limiter 限流器 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .algo-section { margin-top: 24px; }
+    .algo-section h3 { color: #fff; font-size: 1.1rem; margin-bottom: 16px; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Rate Limiter 限流器</h1>
+      <p>我教你點樣防止系統被過量請求打爆</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="algorithms">② 限流演算法</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <!-- TAB 1: Overview -->
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我先同你講 Rate Limiter 係咩</h2>
+        <div class="subtitle">簡單講：一個「閘口」，限制每個用戶每秒可以發幾多請求</div>
+        <p>
+          我想你諗像去主題公園，每個機動遊戲都有排隊限制——每次只可以放 X 個人入去。Rate Limiter 就係網絡世界嘅「排隊管理員」，佢企喺你嘅 API 前面，確保冇人可以不斷瘋狂咁發請求，搞到成個系統死機。
+        </p>
+        <p>
+          如果有人發太多請求，Rate Limiter 會直接回覆 <strong style="color:#f87171">429 Too Many Requests</strong>（即係「你太快啦，等陣先」），保護後面嘅 API Server 同 Database。我要你記住：呢個係保護你系統嘅第一道防線。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 770 360" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowRed" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#EF4444" flood-opacity="0.2" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradClient" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradLimiter" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d1515"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradRedis" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradAPI" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradDB" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f87171"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+            </defs>
+
+            <!-- Client -->
+            <g transform="translate(30,140)">
+              <rect width="120" height="75" rx="14" fill="url(#gradClient)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="32" text-anchor="middle" fill="#3B82F6" font-size="14" font-weight="700">Client</text>
+              <text x="60" y="54" text-anchor="middle" fill="#9ca3af" font-size="10">用戶 / App</text>
+            </g>
+
+            <!-- Rate Limiter -->
+            <g transform="translate(220,130)">
+              <rect width="150" height="95" rx="14" fill="url(#gradLimiter)" stroke="#EF4444" stroke-width="2.5" filter="url(#glowRed)"/>
+              <text x="75" y="28" text-anchor="middle" fill="#EF4444" font-size="14" font-weight="700">Rate</text>
+              <text x="75" y="48" text-anchor="middle" fill="#EF4444" font-size="14" font-weight="700">Limiter</text>
+              <text x="75" y="68" text-anchor="middle" fill="#9ca3af" font-size="10">限流閘口</text>
+              <text x="75" y="85" text-anchor="middle" fill="#fbbf24" font-size="9">100 req/min per user</text>
+            </g>
+
+            <!-- Redis -->
+            <g transform="translate(240,20)">
+              <rect width="130" height="65" rx="14" fill="url(#gradRedis)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="27" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Redis</text>
+              <text x="65" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">計數器 Counter</text>
+            </g>
+
+            <!-- API Server -->
+            <g transform="translate(450,140)">
+              <rect width="140" height="75" rx="14" fill="url(#gradAPI)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="32" text-anchor="middle" fill="#10B981" font-size="14" font-weight="700">API Server</text>
+              <text x="70" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">處理請求</text>
+            </g>
+
+            <!-- Database -->
+            <g transform="translate(640,140)">
+              <rect width="115" height="75" rx="14" fill="url(#gradDB)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="58" y="32" text-anchor="middle" fill="#8B5CF6" font-size="14" font-weight="700">Database</text>
+              <text x="58" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">資料庫</text>
+            </g>
+
+            <!-- Arrows (curved) -->
+            <path d="M152,177 C180,177 195,172 218,170" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="185" y="165" text-anchor="middle" fill="#a5b4fc" font-size="10">Request</text>
+
+            <path d="M305,128 C305,105 305,95 305,87" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrYellow)"/>
+            <text x="335" y="112" fill="#fbbf24" font-size="10">Check count</text>
+
+            <path d="M372,170 C400,168 420,168 448,170" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrGreen)"/>
+            <text x="410" y="160" text-anchor="middle" fill="#34d399" font-size="10">Allow</text>
+
+            <path d="M592,177 C610,177 620,177 638,177" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrPurple)"/>
+            <text x="615" y="167" text-anchor="middle" fill="#a5b4fc" font-size="10">Query</text>
+
+            <!-- 429 response -->
+            <g transform="translate(220,268)">
+              <rect width="150" height="48" rx="10" fill="rgba(239,68,68,0.1)" stroke="#f87171" stroke-width="1.5"/>
+              <text x="75" y="20" text-anchor="middle" fill="#f87171" font-size="11" font-weight="600">429 Too Many</text>
+              <text x="75" y="38" text-anchor="middle" fill="#f87171" font-size="10">Requests — 你太快啦</text>
+            </g>
+            <path d="M295,227 C295,240 295,255 295,266" fill="none" stroke="#f87171" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrRed)"/>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我話你知成個流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>用戶發一個 Request 過嚟，首先經過 Rate Limiter。你要理解佢係所有請求嘅「閘口」。</span></li>
+          <li><span class="step-num">2</span><span>Rate Limiter 去 Redis 度查返呢個用戶喺過去一段時間（例如 1 分鐘）發咗幾多個 Request。Redis 係最適合做呢樣嘢嘅——因為佢超快。</span></li>
+          <li><span class="step-num">3</span><span>如果未超額，就放佢過去 API Server 正常處理。</span></li>
+          <li><span class="step-num">4</span><span>如果超額，直接回覆 429 Too Many Requests，唔俾佢過。呢個回覆好快，因為根本唔使打後端。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- TAB 2: Algorithms -->
+    <div class="tab-content" id="algorithms">
+      <div class="card">
+        <h2>我教你四種常見限流演算法</h2>
+        <div class="subtitle">每種都有唔同嘅精確度同適用場景</div>
+
+        <div class="algo-section">
+          <h3>Token Bucket（令牌桶）</h3>
+          <p>
+            我想你諗像一個桶，系統會定時放「令牌」入去。每個請求要攞走一個令牌先可以通過。桶滿咗就唔再加令牌。桶空咗就拒絕請求。
+          </p>
+          <p>
+            <strong style="color:#34d399">好處：</strong>可以應付突發流量（burst），因為桶入面可以累積令牌。我覺得呢個係最常用嘅演算法，你一定要識。<br>
+            <strong style="color:#f87171">例子：</strong>每秒加 10 個令牌，桶最多放 50 個。平時用 10 個/秒，但突然嚟 50 個都可以即時處理。
+          </p>
+        </div>
+
+        <div class="algo-section" style="margin-top:24px;">
+          <h3>Sliding Window（滑動窗口）</h3>
+          <p>
+            用一個時間窗口（例如過去 60 秒）嚟計算請求數量。每秒窗口都會「滑動」——舊嘅請求會跌出窗口，新嘅會加入。
+          </p>
+          <p>
+            <strong style="color:#34d399">好處：</strong>計數更加精確，唔會出現固定窗口嘅邊界問題。我建議你做精確限流嘅時候用呢個。<br>
+            <strong style="color:#f87171">複雜度：</strong>要記住每個請求嘅時間戳，記憶體用得多少少。你要衡量精確度同記憶體嘅取捨。
+          </p>
+        </div>
+
+        <div class="algo-section" style="margin-top:24px;">
+          <h3>Fixed Window Counter（固定窗口計數器）</h3>
+          <p>
+            最簡單嘅方法：每分鐘開一個新計數器，過咗就歸零。我建議你初學或者要求唔高嘅場景先用呢個。
+          </p>
+          <p>
+            <strong style="color:#34d399">好處：</strong>實現最簡單，Redis 一個 INCR 就搞掂。<br>
+            <strong style="color:#f87171">壞處：</strong>我要你留意呢個問題——窗口交界位可能突然有雙倍請求通過（例如 59 秒同 00 秒各 100 個，一秒內就有 200 個請求通過）。
+          </p>
+        </div>
+
+        <div class="algo-section" style="margin-top:24px;">
+          <h3>Leaky Bucket（漏桶）</h3>
+          <p>
+            請求好似水咁倒入桶，桶底有個細孔以固定速率漏水出去。桶滿咗就溢出（拒絕請求）。
+          </p>
+          <p>
+            <strong style="color:#34d399">好處：</strong>輸出速率永遠穩定，我建議你喺需要平滑流量嘅場景用呢個。<br>
+            <strong style="color:#f87171">壞處：</strong>突發流量冇辦法即時處理，一定要排隊。呢個就係佢同 Token Bucket 嘅最大分別。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Practice -->
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>我分享幾個實戰要點</h2>
+        <div class="subtitle">面試同實際開發都會問到嘅重點</div>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Per-user vs Per-IP</h4>
+            <p>你可以按用戶 ID 限流（登入用戶），或者按 IP 地址限流（未登入嘅訪客）。我建議你兩種都做——按 user ID 防止帳戶濫用，按 IP 防止匿名攻擊。甚至可以按 API endpoint 嚟分別限流。</p>
+          </div>
+          <div class="key-point">
+            <h4>分佈式限流</h4>
+            <p>如果你有好多台 API Server，你就需要一個中央計數器（例如 Redis）嚟確保所有 Server 共享同一個 count。我要強調：唔用中央計數器嘅話，每台 Server 自己計自己，用戶換一台 Server 就重置 count，限流形同虛設。</p>
+          </div>
+          <div class="key-point">
+            <h4>HTTP Headers</h4>
+            <p>好嘅 Rate Limiter 會喺 response 加 header：X-RateLimit-Limit（上限）、X-RateLimit-Remaining（剩餘）、X-RateLimit-Reset（幾時重置）。我建議你一定要加呢啲 header，俾 Client 知道自己嘅用量。</p>
+          </div>
+          <div class="key-point">
+            <h4>Redis 做計數</h4>
+            <p>用 Redis 嘅 INCR 同 EXPIRE 命令，一行 code 就可以做到原子性嘅計數同過期時間設定。超快！我嘅經驗係 Redis 做 rate limiting 係最穩陣嘅方案。</p>
+          </div>
+        </div>
+
+        <div class="use-case" style="margin-top:24px;">
+          <h4>我嘅總結</h4>
+          <p>GitHub API 限制每小時 5000 次請求；Twitter API 限制每 15 分鐘 900 次。呢啲都係 Rate Limiter 嘅實際應用。我要你記住：如果你嘅 API 係公開嘅，Rate Limiter 係必須嘅——唔加嘅話，DDoS 攻擊或者有人寫個 loop 不停打你嘅 API，你嘅系統好快就會倒下。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

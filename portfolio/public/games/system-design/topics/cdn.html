@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CDN 內容分發網絡 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>CDN 內容分發網絡</h1>
+      <p>我教你點樣用全球加速分發靜態資源</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="cache">② 快取策略</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我先同你講 CDN 係咩</h2>
+        <div class="subtitle">將靜態資源（圖片、影片、JS、CSS）放喺全球各地嘅 Edge Server，用戶就近攞</div>
+        <p>
+          我要你想像一個場景：你嘅網站 Server 喺美國，但你嘅香港用戶要 load 一張圖，呢個請求要跨越半個地球先到。慢到乜咁。CDN（Content Delivery Network）就係我要教你嘅解決方案——喺全球好多地方（香港、東京、倫敦......）擺 Edge Server，將你嘅靜態資源 cache 喺嗰度。
+        </p>
+        <p>
+          當香港用戶問 DNS 嘅時候，DNS 會揀最近嘅 Edge Server（香港 PoP）嘅 IP 返俾佢。用戶直接從香港攞資源，快好多。如果 Edge Server 冇嗰個資源，佢就會去 Origin Server（你嘅主機）拉，拉完 cache 落嚟，之後其他用戶就唔使再問 Origin。你記住呢個流程，好重要。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 740 370" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.2" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradUser" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradDNS" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradEdge" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradOrigin" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#f59e0b"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8b5cf6"/></marker>
+            </defs>
+
+            <!-- User (HK) -->
+            <g transform="translate(30,145)">
+              <rect width="100" height="65" rx="14" fill="url(#gradUser)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="50" y="28" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">User</text>
+              <text x="50" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">(香港)</text>
+            </g>
+
+            <!-- DNS GeoDNS -->
+            <g transform="translate(175,125)">
+              <rect width="135" height="85" rx="14" fill="url(#gradDNS)" stroke="#8b5cf6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="68" y="28" text-anchor="middle" fill="#8b5cf6" font-size="13" font-weight="700">DNS</text>
+              <text x="68" y="48" text-anchor="middle" fill="#8b5cf6" font-size="12" font-weight="600">(GeoDNS)</text>
+              <text x="68" y="70" text-anchor="middle" fill="#9ca3af" font-size="10">按地理位置路由</text>
+            </g>
+
+            <!-- Edge Server HK -->
+            <g transform="translate(365,80)">
+              <rect width="130" height="95" rx="14" fill="url(#gradEdge)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Edge Server</text>
+              <text x="65" y="48" text-anchor="middle" fill="#34d399" font-size="11">(香港 PoP)</text>
+              <text x="65" y="70" text-anchor="middle" fill="#9ca3af" font-size="10">Cache 靜態資源</text>
+              <text x="65" y="85" text-anchor="middle" fill="#34d399" font-size="9">Cache Hit = 超快</text>
+            </g>
+
+            <!-- Edge Server US -->
+            <g transform="translate(365,210)">
+              <rect width="130" height="70" rx="14" fill="url(#gradEdge)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Edge (US PoP)</text>
+              <text x="65" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">美國節點</text>
+            </g>
+
+            <!-- Origin Server -->
+            <g transform="translate(555,100)">
+              <rect width="120" height="75" rx="14" fill="url(#gradOrigin)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="28" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Origin</text>
+              <text x="60" y="48" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="600">Server</text>
+              <text x="60" y="66" text-anchor="middle" fill="#9ca3af" font-size="10">源站</text>
+            </g>
+
+            <!-- Object Storage -->
+            <g transform="translate(555,210)">
+              <rect width="120" height="65" rx="14" fill="url(#gradOrigin)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="28" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="700">Object Storage</text>
+              <text x="60" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">S3 / GCS</text>
+            </g>
+
+            <!-- Arrows (curved) -->
+            <path d="M132,177 C150,177 160,170 173,168" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="152" y="165" text-anchor="middle" fill="#a5b4fc" font-size="9">1. DNS 查詢</text>
+
+            <path d="M312,170 C330,165 345,140 363,132" fill="none" stroke="#8b5cf6" stroke-width="2" marker-end="url(#arrPurple)"/>
+            <text x="332" y="145" text-anchor="middle" fill="#a78bfa" font-size="9">2. 揀 HK PoP</text>
+
+            <path d="M430,175 C430,190 420,200 395,172" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrGreen)"/>
+            <text x="440" y="192" fill="#34d399" font-size="9">3. Cache Hit</text>
+
+            <path d="M497,135 C520,130 535,128 553,130" fill="none" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrYellow)"/>
+            <text x="525" y="122" text-anchor="middle" fill="#f59e0b" font-size="9">Cache Miss</text>
+
+            <path d="M615,175 C615,195 615,205 615,208" fill="none" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arrYellow)"/>
+            <text x="640" y="195" fill="#f59e0b" font-size="9">拉資源</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我話你知成個流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>用戶（香港）請求 static.example.com/image.jpg。DNS（GeoDNS）根據用戶 IP 嘅地理位置，返回最近嘅 Edge Server（香港 PoP）嘅 IP。呢步好關鍵——揀啱節點快好多。</span></li>
+          <li><span class="step-num">2</span><span>用戶向香港 Edge Server 攞資源。如果 Edge 有 cache（Cache Hit），直接返回。我要你記住：Cache Hit 嘅速度通常只有幾毫秒。</span></li>
+          <li><span class="step-num">3</span><span>如果 Edge 冇（Cache Miss），Edge 會去 Origin Server 或 Object Storage 拉資源，cache 落嚟，再返回畀用戶。之後其他用戶請求同一個資源就會 Cache Hit。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="cache">
+      <div class="card">
+        <h2>我教你快取策略</h2>
+        <div class="subtitle">Cache-Control headers 同 Purge 機制——你一定要識</div>
+        <p>
+          CDN 快取幾耐，由 <strong style="color:#6366f1">Cache-Control</strong> header 話事。例如 <code style="background:#13151c;padding:2px 6px;border-radius:4px;">max-age=3600</code> 表示 cache 1 小時。我建議你根據資源類型設定：圖片、影片可以 cache 耐啲（幾個月甚至一年）；HTML 可能要短啲，因為會經常更新。
+        </p>
+        <p>
+          當你更新咗資源（例如改咗 logo），你要做 <strong style="color:#f87171">Purge / Invalidation</strong>：通知 CDN 刪除舊 cache，下次請求就會去 Origin 拉新版本。呢個操作你一定要識，唔係更新咗用戶都仲睇到舊嘢。
+        </p>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>GeoDNS 路由</h4>
+            <p>根據用戶 IP 嘅地理位置，返回最近 Edge 嘅 IP。CloudFlare、AWS CloudFront、Akamai 都支援。你揀邊個 CDN 都會有呢個功能。</p>
+          </div>
+          <div class="key-point">
+            <h4>Cache-Control headers</h4>
+            <p>我教你幾個關鍵值：max-age（幾耐過期）、no-cache（要驗證先用）、immutable（完全唔會變）。正確設定可以大幅提升 hit ratio。</p>
+          </div>
+          <div class="key-point">
+            <h4>Cache hit ratio</h4>
+            <p>Hit / (Hit + Miss)。越高越好，表示多數請求唔使去 Origin。我嘅建議係目標要 >90%，低過嘅話你要檢查設定。</p>
+          </div>
+          <div class="key-point">
+            <h4>Purge / Invalidation</h4>
+            <p>更新內容後要 invalidate cache。可以按 URL、prefix、或者全站 purge。我提醒你：有 quota 限制要留意，唔好亂 purge。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>我分享幾個實戰要點</h2>
+        <div class="subtitle">設計 CDN 架構嘅關鍵——跟住我嘅建議做</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>GeoDNS 路由</h4>
+            <p>用 anycast 或 GeoDNS，確保用戶連去最近嘅 PoP。我見過好多人忽略呢步，結果 latency 高到冇朋友。</p>
+          </div>
+          <div class="key-point">
+            <h4>Cache-Control 策略</h4>
+            <p>我建議靜態資源用 max-age=31536000（1年）+ 檔名加 hash（例如 main.abc123.js），更新時換檔名自然會拉新版本。HTML 就用短 TTL 或 no-cache。</p>
+          </div>
+          <div class="key-point">
+            <h4>監控 Cache hit ratio</h4>
+            <p>你要持續監控 hit ratio。如果低嘅話要檢查：TTL 是否太短？Purge 是否太密？URL 是否太多變化（例如帶 query string）？呢啲都係常見嘅「兇手」。</p>
+          </div>
+          <div class="key-point">
+            <h4>Purge 策略</h4>
+            <p>部署新版本時 purge 相關 URL。但我更建議你用 versioned URL（/v2/image.jpg），可以完全避免 purge，直接換 path 就得。簡單又可靠。</p>
+          </div>
+        </div>
+        <div class="use-case">
+          <h4>我嘅 CDN 供應商建議</h4>
+          <p>CloudFlare（平、功能多，我推薦入門用）、AWS CloudFront（整合 S3 好方便）、Akamai（老牌、企業級）、Fastly（edge computing 強）、Bunny CDN（性價比極高）。你揀咩要睇流量、預算同功能需求。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

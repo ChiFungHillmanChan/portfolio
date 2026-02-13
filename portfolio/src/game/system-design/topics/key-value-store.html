@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Key-Value Store 鍵值存儲 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Key-Value Store 鍵值存儲</h1>
+      <p>我帶你睇分佈式 KV 存儲，partition 同 replication 點樣設計</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="quorum">② Quorum 機制</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我教你理解分佈式 Key-Value Store</h2>
+        <div class="subtitle">用 key 搵 value，但係要分佈喺多台機器上面</div>
+        <p>
+          我要同你講一個好核心嘅概念。好似 Redis、DynamoDB、Cassandra 咁，就係 Key-Value Store。你要諗清楚一個問題：當數據量好大嘅時候，要放喺多台機器，一個 key 應該去邊台機器？點樣做 replication？我嘅答案係用 <strong style="color:#fbbf24">Consistent Hashing（一致性哈希）</strong> 做 partition，用 <strong style="color:#34d399">Quorum</strong> 做 replication。你記住呢兩個核心機制，面試同實戰都會用到。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowYellow" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#F59E0B" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradYellow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0a3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradGray" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2a2d3a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+            </defs>
+
+            <!-- Client -->
+            <g transform="translate(20,150)">
+              <rect width="110" height="65" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="55" y="27" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">Client</text>
+              <text x="55" y="47" text-anchor="middle" fill="#9ca3af" font-size="10">讀寫請求</text>
+            </g>
+
+            <!-- Coordinator -->
+            <g transform="translate(180,130)">
+              <rect width="140" height="85" rx="12" fill="url(#gradYellow)" stroke="#F59E0B" stroke-width="2" filter="url(#glowYellow)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Coordinator</text>
+              <text x="70" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">路由、協調</text>
+              <text x="70" y="68" text-anchor="middle" fill="#F59E0B" font-size="9">Consistent Hash</text>
+            </g>
+
+            <!-- Node 1 Primary -->
+            <g transform="translate(400,35)">
+              <rect width="140" height="68" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="70" y="27" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Node 1 (Primary)</text>
+              <text x="70" y="47" text-anchor="middle" fill="#34d399" font-size="10">主節點</text>
+            </g>
+
+            <!-- Node 2 Replica -->
+            <g transform="translate(400,130)">
+              <rect width="130" height="58" rx="12" fill="url(#gradGray)" stroke="#6B7280" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="24" text-anchor="middle" fill="#9ca3af" font-size="11" font-weight="700">Node 2</text>
+              <text x="65" y="44" text-anchor="middle" fill="#6b7280" font-size="9">Replica</text>
+            </g>
+
+            <!-- Node 3 Replica -->
+            <g transform="translate(400,215)">
+              <rect width="130" height="58" rx="12" fill="url(#gradGray)" stroke="#6B7280" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="24" text-anchor="middle" fill="#9ca3af" font-size="11" font-weight="700">Node 3</text>
+              <text x="65" y="44" text-anchor="middle" fill="#6b7280" font-size="9">Replica</text>
+            </g>
+
+            <!-- Hash Ring -->
+            <ellipse cx="255" cy="340" rx="95" ry="45" fill="none" stroke="#6366f1" stroke-width="1.5" stroke-dasharray="5,3"/>
+            <circle cx="200" cy="315" r="4" fill="#a5b4fc"/>
+            <circle cx="310" cy="320" r="4" fill="#a5b4fc"/>
+            <circle cx="250" cy="370" r="4" fill="#a5b4fc"/>
+            <text x="255" y="332" text-anchor="middle" fill="#a5b4fc" font-size="10">Hash Ring</text>
+            <text x="255" y="355" text-anchor="middle" fill="#6366f1" font-size="11" font-weight="700">key → partition</text>
+
+            <!-- Arrows: smooth curves -->
+            <path d="M132,180 C150,178 160,170 178,168" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrBlue)"/>
+            <text x="148" y="162" fill="#a5b4fc" font-size="10">Request</text>
+
+            <path d="M322,145 C350,120 370,90 398,75" stroke="#10B981" stroke-width="1.5" fill="none" marker-end="url(#arrGreen)"/>
+            <path d="M322,165 C350,162 370,160 398,158" stroke="#34d399" stroke-width="1.5" fill="none" marker-end="url(#arrGreen)"/>
+            <text x="355,148" fill="#34d399" font-size="9">Replication</text>
+            <path d="M322,190 C350,205 370,228 398,240" stroke="#34d399" stroke-width="1.5" fill="none" marker-end="url(#arrGreen)"/>
+
+            <path d="M185,215 C190,260 215,290 230,310" stroke="#fbbf24" stroke-width="1" stroke-dasharray="4,2" fill="none" marker-end="url(#arrYellow)"/>
+            <text x="190" y="270" fill="#fbbf24" font-size="9">hash(key)</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我教你成個流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>Client 發送讀寫請求去 Coordinator——你可以理解佢做「交通指揮官」。</span></li>
+          <li><span class="step-num">2</span><span>Coordinator 用 Consistent Hashing 搵出呢個 key 屬於邊個 partition，對應邊個 Primary Node。我建議你記住：hash ring 上面，每個 node 負責一段範圍。</span></li>
+          <li><span class="step-num">3</span><span>寫入時：Primary 接收寫入，然後同步去 Replica nodes。你要明白，呢步就係 replication 嘅核心。</span></li>
+          <li><span class="step-num">4</span><span>讀取時：可以讀 Primary 或者 Replica，視乎你對 consistency 嘅要求有幾高。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="quorum">
+      <div class="card">
+        <h2>我教你 Quorum 機制</h2>
+        <div class="subtitle">W + R &gt; N 保證讀到最新數據</div>
+        <p>
+          呢個係我最想你記住嘅公式。假設有 N 個 replica。寫入時要等 W 個 node 確認先算成功；讀取時要等 R 個 node 回應。只要 <strong style="color:#34d399">W + R &gt; N</strong>，你就一定可以保證讀到最新嘅寫入——因為讀同寫一定有 overlap。
+        </p>
+        <p>我畀你一個具體例子：N=3，W=2，R=2。寫入 2 個成功，讀取 2 個，讀到嘅 2 個入面至少有一個係寫入過嘅 node。你自己畫個圖就會好清楚。</p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Consistent Hashing</h4>
+            <p>我要同你講清楚：將 key 映射到 hash ring 上面，每個 node 負責一段。加減 node 嘅時候只會影響相鄰 node，唔會 rehash 全部 key。呢個就係佢嘅威力。</p>
+          </div>
+          <div class="key-point">
+            <h4>Quorum (W+R&gt;N)</h4>
+            <p>寫 W 個、讀 R 個，W+R&gt;N 確保 read-after-write consistency。你可以 trade-off：W 大啲讀快啲，R 大啲寫快啲。我建議你諗清楚你嘅 workload 再揀。</p>
+          </div>
+          <div class="key-point">
+            <h4>Vector Clock</h4>
+            <p>處理並發更新嘅時候，你要用 vector clock 判斷邊個版本新啲，或者 detect conflict 要 merge。我提醒你：呢個係處理 conflict 嘅關鍵工具。</p>
+          </div>
+          <div class="key-point">
+            <h4>Gossip Protocol</h4>
+            <p>Node 之間用 gossip 傳播 membership 同 metadata。無中心 node，任何 node 都可以加入或離開集群。我想你記住：gossip 就好似流言咁傳開，最終全部 node 都會知。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰要點</h2>
+        <div class="subtitle">我幫你整理設計 KV Store 嘅關鍵決策</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Partition 策略</h4>
+            <p>Consistent Hashing 之外，我建議你一定要用 Virtual Nodes 解決 load imbalance——每個 physical node 對應多個 virtual node，咁分佈先會均勻。</p>
+          </div>
+          <div class="key-point">
+            <h4>Consistency vs Availability</h4>
+            <p>你要理解 CAP 定理：network partition 時要揀 CP 定 AP。Dynamo 系揀 AP（eventual consistency）；想要強一致就用 CP。我建議你先搞清楚你嘅 business 需要邊種。</p>
+          </div>
+          <div class="key-point">
+            <h4>Hinted Handoff</h4>
+            <p>Replica node 暫時 down 咗，其他 node 會幫佢 hold 住數據，等佢 recover 再送返去。我想你記住，呢個機制大幅提升 availability。</p>
+          </div>
+          <div class="key-point">
+            <h4>Compaction</h4>
+            <p>LSM-tree 結構會有大量 SST 文件，你要定期做 compaction 合併，reclaim 空間、加速讀取。唔好忽略呢步，會影響性能。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>我嘅總結</h4>
+          <p>Amazon DynamoDB、Cassandra、Redis Cluster 都係呢種架構。我建議你重點理解 Dynamo 嘅設計思路，因為佢係呢套設計嘅始祖，影響咗好多 NoSQL 系統。掌握咗呢啲概念，你設計分佈式存儲就有底氣。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

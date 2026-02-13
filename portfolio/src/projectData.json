@@ -52,6 +52,19 @@
       "technologies": ["Next.js", "React.js", "Node.js", "MongoDB", "Mongoose", "Reed.co.uk API", "Leaflet", "TailwindCSS", "JavaScript", "Axios", "React Hooks", "Context API", "Vercel"]
     },
     {
+      "id": 11,
+      "title": "System Design",
+      "shortDescription": "An interactive system design learning platform covering 28 topics — from load balancers and caches to payment systems and AI agent security — with inline SVG architecture diagrams.",
+      "fullDescription": "System Design is a self-contained educational platform that teaches system architecture concepts through interactive diagrams and coaching-style explanations. It covers 28 topics across categories including networking & traffic control (load balancers, API gateways, CDN, rate limiters), caching & read optimisation (cache invalidation, distributed cache, scaling reads), data & storage (key-value stores, object storage, unique ID generators), async & messaging (message queues, task queues, notification systems), application design (URL shorteners, chat systems, news feeds, search autocomplete, web crawlers, video streaming, payment systems, session managers), monitoring & security (metrics/logging, AI agent security), and career prep (coding interviews, STAR method, AI vs software engineers). Each topic features inline SVG architecture diagrams, tabbed explanations, and step-by-step breakdowns. Built as a pure static HTML site with no framework dependencies.",
+      "image": "system_design.png",
+      "url": "https://system-design.hillmanchan.com",
+      "category": "program",
+      "sourceCode": "no-source-code",
+      "demoUrl": "/system-design",
+      "liveDemo": "no-demo",
+      "technologies": ["HTML", "CSS", "JavaScript", "SVG", "System Design"]
+    },
+    {
       "id": 5,
       "title": "Personal ChatBot",
       "shortDescription": "A customizable training chatbot that responds based on keyword-matching patterns and predefined mood-based responses, designed to simulate a personal conversational assistant.",
@@ -130,7 +143,7 @@
       "technologies":["Next.js", "OpenAI", "React", "TailwindCSS"]
     },
     {
-      "id": 11,
+      "id": 12,
       "title": "Coming Soon",
       "shortDescription": "This project demonstration will come soon",
       "fullDescription":"This project demonstration will come soon",

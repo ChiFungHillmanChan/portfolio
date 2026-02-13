@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Crawler 網頁爬蟲系統 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Web Crawler 網頁爬蟲系統</h1>
+      <p>我教你設計大規模爬蟲，掌握 BFS、Politeness 同去重策略</p>
+    </header>
+
+    <div class="card">
+      <h2>我先同你講，爬蟲系統到底係咩</h2>
+      <div class="subtitle">Google 點樣搵到全世界嘅網頁？就係靠 Web Crawler</div>
+      <p>
+        我要你咁樣理解 Web Crawler：佢就好似一隻蜘蛛，從一組「種子 URL」開始，打開網頁、下載內容、搵出入面嘅所有連結，然後再去爬嗰啲連結。不斷重複，就可以爬遍全個互聯網。你諗下，呢個循環有幾強大。
+      </p>
+      <p>我舉個例——Google 嘅爬蟲叫 Googlebot，每日爬幾十億個網頁。你設計呢個系統嘅時候，最大嘅挑戰就係：點樣做到快、唔重複、同時唔被網站 ban。我逐個同你拆解。</p>
+
+      <div class="diagram-container">
+        <svg viewBox="0 0 850 310" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+            <filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#6366f1" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#34d399" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#172033"/></linearGradient>
+            <linearGradient id="gradAmber" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#1f1a10"/></linearGradient>
+            <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#13251e"/></linearGradient>
+            <linearGradient id="gradRed" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#251318"/></linearGradient>
+            <linearGradient id="gradPurple" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#1c1530"/></linearGradient>
+            <linearGradient id="gradPink" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#25132a"/></linearGradient>
+            <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+            <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+            <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+            <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+            <marker id="arrPink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#EC4899"/></marker>
+          </defs>
+
+          <!-- Seed URLs -->
+          <g transform="translate(20,115)">
+            <rect width="110" height="60" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+            <text x="55" y="28" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">Seed URLs</text>
+            <text x="55" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">起始網址</text>
+          </g>
+
+          <!-- URL Frontier -->
+          <g transform="translate(180,100)">
+            <rect width="120" height="75" rx="12" fill="url(#gradAmber)" stroke="#F59E0B" stroke-width="2" filter="url(#glowBlue)"/>
+            <text x="60" y="25" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="700">URL Frontier</text>
+            <text x="60" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">待爬隊列</text>
+            <text x="60" y="62" text-anchor="middle" fill="#fbbf24" font-size="9">優先級排序</text>
+          </g>
+
+          <!-- Fetcher -->
+          <g transform="translate(360,100)">
+            <rect width="120" height="75" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+            <text x="60" y="28" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Fetcher</text>
+            <text x="60" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">多 Worker 下載</text>
+            <text x="60" y="64" text-anchor="middle" fill="#34d399" font-size="9">Politeness 控速</text>
+          </g>
+
+          <!-- HTML Parser -->
+          <g transform="translate(540,50)">
+            <rect width="120" height="60" rx="12" fill="url(#gradRed)" stroke="#EF4444" stroke-width="2" filter="url(#shadow)"/>
+            <text x="60" y="25" text-anchor="middle" fill="#EF4444" font-size="12" font-weight="700">HTML Parser</text>
+            <text x="60" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">解析提取連結</text>
+          </g>
+
+          <!-- Dedup -->
+          <g transform="translate(540,175)">
+            <rect width="130" height="60" rx="12" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+            <text x="65" y="25" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Dedup</text>
+            <text x="65" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">Bloom Filter 去重</text>
+          </g>
+
+          <!-- Storage -->
+          <g transform="translate(720,105)">
+            <rect width="105" height="70" rx="12" fill="url(#gradPink)" stroke="#EC4899" stroke-width="2" filter="url(#shadow)"/>
+            <text x="52" y="28" text-anchor="middle" fill="#EC4899" font-size="12" font-weight="700">Storage</text>
+            <text x="52" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">儲存內容</text>
+          </g>
+
+          <!-- Arrows - curved paths -->
+          <path d="M 130 145 Q 155 138 178 137" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+          <text x="155" y="128" text-anchor="middle" fill="#a5b4fc" font-size="9">Init</text>
+
+          <path d="M 300 137 Q 330 135 358 137" fill="none" stroke="#fbbf24" stroke-width="2" marker-end="url(#arrYellow)"/>
+          <text x="330" y="127" text-anchor="middle" fill="#fbbf24" font-size="9">Next URL</text>
+
+          <path d="M 480 120 Q 510 95 538 82" fill="none" stroke="#EF4444" stroke-width="1.5" marker-end="url(#arrPurple)"/>
+          <text x="518" y="93" fill="#ef4444" font-size="9">HTML</text>
+
+          <path d="M 600 112 Q 602 145 602 173" fill="none" stroke="#8B5CF6" stroke-width="1.5" marker-end="url(#arrPurple)"/>
+          <text x="622" y="148" fill="#a5b4fc" font-size="9">New URLs</text>
+
+          <path d="M 540 205 Q 380 260 250 178" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrGreen)"/>
+          <text x="380" y="248" fill="#34d399" font-size="9">Unique URLs 返回隊列</text>
+
+          <path d="M 480 148 Q 600 155 718 142" fill="none" stroke="#EC4899" stroke-width="1.5" marker-end="url(#arrPink)"/>
+          <text x="600" y="165" fill="#EC4899" font-size="9">Save</text>
+        </svg>
+      </div>
+
+      <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我帶你行一次成個流程</h3>
+      <ol class="steps">
+        <li><span class="step-num">1</span><span>首先，你要有一組 Seed URLs（初始網址列表），我建議你揀高質量嘅起點，放入 URL Frontier（待爬隊列）。</span></li>
+        <li><span class="step-num">2</span><span>然後 Fetcher（多個 Worker）從 Frontier 攞 URL，下載網頁內容。你要記住，Worker 數量直接影響爬取速度。</span></li>
+        <li><span class="step-num">3</span><span>HTML Parser 負責解析網頁，提取出入面嘅所有連結。我提醒你，呢度要處理好各種 edge case，例如 relative URL、redirect 等。</span></li>
+        <li><span class="step-num">4</span><span>新連結經過 Dedup 模組（Bloom Filter 去重）過濾。我教你點理解：Bloom Filter 用好少記憶體就可以判斷 URL 有冇見過，非常高效。</span></li>
+        <li><span class="step-num">5</span><span>唯一嘅新連結放返 URL Frontier，形成循環。同時，下載嘅內容存入 Storage，等你之後做 indexing。</span></li>
+      </ol>
+
+      <div class="key-points" style="margin-top:24px;">
+        <div class="key-point">
+          <h4>BFS 策略</h4>
+          <p>我建議你用 Breadth-First Search（廣度優先搜索）遍歷網頁，一層一層咁爬。咁樣可以確保你先爬到重要嘅頁面，唔會一頭扎得太深。</p>
+        </div>
+        <div class="key-point">
+          <h4>Bloom Filter 去重</h4>
+          <p>呢個係一個超省記憶體嘅數據結構，我好鍾意用佢。佢可以快速判斷一個 URL 有冇爬過。你要知道，佢可能有極小概率嘅 false positive，但唔會有 false negative——呢個 trade-off 係值得嘅。</p>
+        </div>
+        <div class="key-point">
+          <h4>robots.txt 禮貌規則</h4>
+          <p>你記住，每個網站嘅 robots.txt 指定咗邊啲頁面可以爬、邊啲唔可以。我要求你設計嘅爬蟲一定要遵守呢啲規則，同埋控制爬取速率——唔好打爆人哋 Server，呢個係基本禮儀。</p>
+        </div>
+        <div class="key-point">
+          <h4>並行爬取</h4>
+          <p>我教你用多個 Worker 同時爬取唔同嘅 URL。但你要注意，同一個 domain 嘅請求要限速（例如每秒最多 1 次），呢個就係 Politeness Policy。違反嘅話會被 ban IP。</p>
+        </div>
+      </div>
+
+      <div class="use-case">
+        <h4>我想你記住嘅重點</h4>
+        <p>Google 嘅爬蟲每日爬超過 100 億個網頁，建立嘅索引包含超過 5000 億個頁面。呢個規模嘅系統需要數千台 Server 同時運作。你設計嘅時候，要從小規模開始諗，但架構要可以 scale up。</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

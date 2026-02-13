@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification System 通知系統 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Notification System 通知系統</h1>
+      <p>Push、SMS、Email 多渠道通知架構</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="channels">② 通知渠道</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>我教你通知系統係咩</h2>
+        <div class="subtitle">負責喺啱嘅時間，用啱嘅渠道，送通知俾啱嘅人</div>
+        <p>
+          我要同你講一個每個用戶每日都接觸到嘅系統。你手機收到嘅 push notification、email、SMS，背後全部都係由通知系統處理。呢個系統嘅核心挑戰係：點樣確保每個通知都準時送到、唔重複、唔漏送？我帶你逐步拆解。
+        </p>
+        <p>我嘅設計理念係：用 <strong style="color:#fbbf24">Message Queue</strong> 做中間緩衝，確保通知可靠投遞。你要記住呢個原則——就算某個渠道（例如 SMS）暫時故障，訊息唔會丟失，等回復之後繼續送。呢個就係 reliability 嘅精髓。</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1a3a2f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradAmber" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3a2f1a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradRed" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3a1a1a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPurple" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPink" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3a1a2f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+              <marker id="arrRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#EF4444"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+              <marker id="arrPink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#EC4899"/></marker>
+            </defs>
+
+            <!-- Event Trigger -->
+            <g transform="translate(30,120)">
+              <rect width="120" height="70" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="28" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">Event</text>
+              <text x="60" y="46" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">Trigger</text>
+              <text x="60" y="62" text-anchor="middle" fill="#9ca3af" font-size="10">觸發事件</text>
+            </g>
+
+            <!-- Notification Service (with glow) -->
+            <g transform="translate(210,110)" filter="url(#glowGreen)">
+              <rect width="150" height="80" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2"/>
+              <text x="75" y="28" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Notification</text>
+              <text x="75" y="46" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Service</text>
+              <text x="75" y="66" text-anchor="middle" fill="#9ca3af" font-size="10">通知服務</text>
+            </g>
+
+            <!-- Message Queue -->
+            <g transform="translate(420,120)">
+              <rect width="130" height="70" rx="12" fill="url(#gradAmber)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Message</text>
+              <text x="65" y="46" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Queue</text>
+            </g>
+
+            <!-- Push -->
+            <g transform="translate(620,30)">
+              <rect width="140" height="55" rx="12" fill="url(#gradRed)" stroke="#EF4444" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="22" text-anchor="middle" fill="#EF4444" font-size="12" font-weight="700">Push</text>
+              <text x="70" y="40" text-anchor="middle" fill="#9ca3af" font-size="10">APNs / FCM</text>
+            </g>
+
+            <!-- SMS -->
+            <g transform="translate(620,120)">
+              <rect width="140" height="55" rx="12" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="22" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">SMS</text>
+              <text x="70" y="40" text-anchor="middle" fill="#9ca3af" font-size="10">Twilio</text>
+            </g>
+
+            <!-- Email -->
+            <g transform="translate(620,210)">
+              <rect width="140" height="55" rx="12" fill="url(#gradPink)" stroke="#EC4899" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="22" text-anchor="middle" fill="#EC4899" font-size="12" font-weight="700">Email</text>
+              <text x="70" y="40" text-anchor="middle" fill="#9ca3af" font-size="10">SES / SendGrid</text>
+            </g>
+
+            <!-- Arrow: Event to Notification Service (curved) -->
+            <path d="M152,155 C178,152 188,150 208,150" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrBlue)"/>
+            <text x="180" y="143" text-anchor="middle" fill="#a5b4fc" font-size="10">Event</text>
+
+            <!-- Arrow: Notification Service to Queue (curved) -->
+            <path d="M362,150 C385,152 400,153 418,155" stroke="#fbbf24" stroke-width="2" fill="none" marker-end="url(#arrYellow)"/>
+            <text x="390" y="143" text-anchor="middle" fill="#fbbf24" font-size="10">Enqueue</text>
+
+            <!-- Arrows: Queue to channels (curved) -->
+            <path d="M552,138 C575,120 595,85 618,65" stroke="#EF4444" stroke-width="1.5" fill="none" marker-end="url(#arrRed)"/>
+            <path d="M552,155 C575,152 595,150 618,148" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arrPurple)"/>
+            <path d="M552,172 C575,190 595,215 618,232" stroke="#EC4899" stroke-width="1.5" fill="none" marker-end="url(#arrPink)"/>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">我話你知點樣運作</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>某個事件觸發通知（例如有人 like 你嘅 post、訂單發貨、驗證碼）。你要設計好 event trigger，確保每個需要通知嘅場景都有對應嘅事件。</span></li>
+          <li><span class="step-num">2</span><span>Notification Service 決定用邊個渠道發送（Push / SMS / Email），然後放入 Message Queue。我建議你將渠道選擇邏輯同發送邏輯分開，呢個係好嘅架構設計。</span></li>
+          <li><span class="step-num">3</span><span>唔同嘅 Worker 從 Queue 攞訊息，透過對應嘅渠道發送出去。你要記住：每個渠道應該有獨立嘅 Worker，方便你獨立擴展。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="channels">
+      <div class="card">
+        <h2>我幫你拆解三大通知渠道</h2>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Push Notification</h4>
+            <p>透過 Apple APNs 或 Google FCM 發送。你要記住：需要用戶嘅 device token。呢個渠道最即時，但需要用戶授權先至用得。我建議你做好 token 管理，過期嘅 token 要及時清理。</p>
+          </div>
+          <div class="key-point">
+            <h4>SMS 短訊</h4>
+            <p>透過 Twilio 等服務發送。我要同你講清楚：SMS 最可靠（唔使網絡），但係最貴。所以我建議你只用喺驗證碼同緊急通知，唔好亂用。</p>
+          </div>
+          <div class="key-point">
+            <h4>Email</h4>
+            <p>透過 AWS SES 或 SendGrid 發送。成本最低，但你要注意到達率受 spam filter 影響。我建議你做好 SPF、DKIM、DMARC 設定，確保郵件唔會入 spam。</p>
+          </div>
+          <div class="key-point">
+            <h4>多渠道 Fallback 策略</h4>
+            <p>我教你一個實用技巧：同一個通知可以用多個渠道。先發 Push，如果用戶 5 分鐘冇睇，再發 SMS。呢個叫 fallback 策略，對重要通知好有用。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰要點</h2>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Rate Limiting</h4>
+            <p>我要提醒你一個好容易忽略嘅問題：防止通知轟炸。你要設定同一個用戶每小時最多收到 X 個通知。我見過因為系統 bug 狂發通知搞到用戶投訴嘅慘劇，千祈唔好犯。</p>
+          </div>
+          <div class="key-point">
+            <h4>用戶偏好設定</h4>
+            <p>我建議你一定要做呢個功能：用戶要可以設定邊啲通知佢想收、用咩渠道收。例如行銷 email 可以 unsubscribe，但交易通知一定要送。呢個係合規要求。</p>
+          </div>
+          <div class="key-point">
+            <h4>重試機制</h4>
+            <p>如果發送失敗（例如 APNs 暫時不可用），你要放回 Queue 遲啲再試。我教你：用 exponential backoff 避免打爆第三方 API，呢個同 Task Queue 嘅重試邏輯一樣。</p>
+          </div>
+          <div class="key-point">
+            <h4>送達追蹤</h4>
+            <p>我建議你一定要記錄每個通知嘅狀態：已發送、已送達、已打開。呢啲數據對分析用戶行為超重要，亦都係 PM 最鍾意睇嘅 metrics。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>我推薦嘅 Template 系統設計</h4>
+          <p>我嘅經驗話我知：好嘅通知系統一定要有 template 功能。你將通知內容同送達邏輯分開，咁 PM 可以自己改通知文案，唔使工程師改 code。呢個會幫你慳好多溝通成本。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+  </script>
+</body>
+</html>

@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>系統架構圖解教室</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif;
+      background: #0a0b10;
+      color: #e0e0e0;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    /* ==================== Layout ==================== */
+    .app-layout {
+      display: flex;
+      height: 100vh;
+    }
+
+    /* ==================== Sidebar ==================== */
+    .sidebar {
+      width: 280px;
+      min-width: 280px;
+      background: #0f1117;
+      border-right: 1px solid #1e2030;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      transition: transform 0.3s ease;
+      z-index: 100;
+    }
+
+    .sidebar-header {
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid #1e2030;
+      cursor: pointer;
+      transition: background 0.2s ease;
+    }
+
+    .sidebar-header:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .sidebar-header h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 4px;
+      letter-spacing: -0.02em;
+    }
+
+    .sidebar-header p {
+      font-size: 0.78rem;
+      color: #6b7280;
+      line-height: 1.5;
+    }
+
+    /* ==================== Filters ==================== */
+    .sidebar-filters {
+      padding: 10px 10px 4px;
+      border-bottom: 1px solid #1e2030;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .filter-chip {
+      padding: 4px 10px;
+      border-radius: 100px;
+      border: 1px solid #2a2d3a;
+      background: transparent;
+      color: #6b7280;
+      font-size: 0.68rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+      white-space: nowrap;
+    }
+
+    .filter-chip:hover {
+      border-color: #4b5563;
+      color: #9ca3af;
+    }
+
+    .filter-chip.active {
+      background: rgba(99, 102, 241, 0.15);
+      border-color: #6366f1;
+      color: #a5b4fc;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 10px;
+    }
+
+    .nav-section-title {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #4b5563;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 16px 10px 8px;
+    }
+
+    .nav-section-title.hidden,
+    .nav-item.hidden {
+      display: none;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font-family: inherit;
+      color: #9ca3af;
+      font-size: 0.88rem;
+      position: relative;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: #d1d5db;
+    }
+
+    .nav-item.active {
+      background: rgba(99, 102, 241, 0.12);
+      color: #a5b4fc;
+    }
+
+    .nav-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 20px;
+      background: #6366f1;
+      border-radius: 0 3px 3px 0;
+    }
+
+    .nav-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.95rem;
+      flex-shrink: 0;
+    }
+
+    .nav-item-text {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+    }
+
+    .nav-item-title {
+      font-weight: 500;
+      font-size: 0.85rem;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-item-sub {
+      font-size: 0.72rem;
+      color: #6b7280;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .nav-item.active .nav-item-sub {
+      color: #818cf8;
+    }
+
+    /* Topic badge colors */
+    .nav-icon.cache { background: rgba(99, 102, 241, 0.15); }
+    .nav-icon.placeholder { background: rgba(75, 85, 99, 0.2); }
+
+    .nav-item.coming-soon {
+      opacity: 0.45;
+      cursor: default;
+    }
+
+    .nav-item.coming-soon:hover {
+      background: transparent;
+      color: #9ca3af;
+    }
+
+    .coming-soon-badge {
+      font-size: 0.62rem;
+      color: #6b7280;
+      background: rgba(75, 85, 99, 0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-left: auto;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    .sidebar-footer {
+      padding: 16px 20px;
+      border-top: 1px solid #1e2030;
+      font-size: 0.72rem;
+      color: #4b5563;
+      text-align: center;
+    }
+
+    /* ==================== Main Content ==================== */
+    .main-content {
+      flex: 1;
+      overflow: hidden;
+      position: relative;
+      background: #0f1117;
+    }
+
+    .main-content iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      background: #0f1117;
+    }
+
+    /* Welcome screen (when no topic is loaded yet) */
+    .welcome-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 40px;
+    }
+
+    .welcome-screen.hidden {
+      display: none;
+    }
+
+    .welcome-icon {
+      width: 80px;
+      height: 80px;
+      border-radius: 20px;
+      background: rgba(99, 102, 241, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      margin-bottom: 24px;
+    }
+
+    .welcome-screen h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 8px;
+    }
+
+    .welcome-screen p {
+      font-size: 0.95rem;
+      color: #6b7280;
+      line-height: 1.7;
+      max-width: 400px;
+    }
+
+    .welcome-hint {
+      margin-top: 32px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #4b5563;
+      font-size: 0.82rem;
+    }
+
+    .welcome-hint .arrow {
+      font-size: 1.2rem;
+    }
+
+    /* ==================== Mobile hamburger ==================== */
+    .mobile-header {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 52px;
+      background: #0f1117;
+      border-bottom: 1px solid #1e2030;
+      z-index: 200;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+    }
+
+    .hamburger {
+      width: 36px;
+      height: 36px;
+      border: none;
+      background: transparent;
+      color: #9ca3af;
+      font-size: 1.3rem;
+      cursor: pointer;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hamburger:hover {
+      background: rgba(255, 255, 255, 0.05);
+    }
+
+    .mobile-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 99;
+    }
+
+    .overlay.visible {
+      display: block;
+    }
+
+    /* ==================== Responsive ==================== */
+    @media (max-width: 768px) {
+      .mobile-header {
+        display: flex;
+      }
+
+      .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transform: translateX(-100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        padding-top: 52px;
+      }
+
+      .main-content iframe {
+        height: calc(100% - 0px);
+      }
+    }
+
+    /* Scrollbar */
+    .sidebar-nav::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: #2a2d3a;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <button class="hamburger" id="menuBtn">☰</button>
+    <span class="mobile-title">系統架構圖解教室</span>
+  </div>
+  <div class="overlay" id="overlay"></div>
+
+  <div class="app-layout">
+    <!-- ==================== Sidebar ==================== -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header" id="sidebarHeader">
+        <h1>系統架構圖解教室</h1>
+        <p>用廣東話，輕鬆學系統設計</p>
+      </div>
+
+      <div class="sidebar-filters">
+        <button class="filter-chip active" data-filter="all">全部</button>
+        <button class="filter-chip" data-filter="career">面試</button>
+        <button class="filter-chip" data-filter="network">網絡</button>
+        <button class="filter-chip" data-filter="cache">快取</button>
+        <button class="filter-chip" data-filter="storage">存儲</button>
+        <button class="filter-chip" data-filter="async">異步</button>
+        <button class="filter-chip" data-filter="app">應用</button>
+        <button class="filter-chip" data-filter="security">安全</button>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- ===== 職場與面試 ===== -->
+        <div class="nav-section-title" data-section="career">職場與面試</div>
+
+        <button class="nav-item" data-topic="topics/coding-interview.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">💻</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">程式面試攻略</span>
+            <span class="nav-item-sub">釐清問題 / 溝通 / 合作態度</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/star-method.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(251,191,36,0.15)">⭐</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">STAR 面試法</span>
+            <span class="nav-item-sub">Behavioral Interview 答題框架</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/ai-vs-software-engineer.html" data-category="career">
+          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">🤖</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">AI 會取代工程師？</span>
+            <span class="nav-item-sub">寫 Code 從來唔係主要工作</span>
+          </span>
+        </button>
+
+        <!-- ===== 網絡與流量控制 ===== -->
+        <div class="nav-section-title" data-section="network">網絡與流量控制</div>
+
+        <button class="nav-item" data-topic="topics/load-balancer.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">⚖️</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">負載均衡器</span>
+            <span class="nav-item-sub">Round Robin / L4 vs L7 / Health Check</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/api-gateway.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">🚪</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">API 閘道</span>
+            <span class="nav-item-sub">驗證 / 限流 / 路由分發</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/cdn.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">🌐</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">CDN 內容分發</span>
+            <span class="nav-item-sub">GeoDNS / Edge Cache / Purge</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/rate-limiter.html" data-category="network">
+          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">🚦</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">流量限制器</span>
+            <span class="nav-item-sub">Token Bucket / Sliding Window / 429</span>
+          </span>
+        </button>
+
+        <!-- ===== 快取與讀取優化 ===== -->
+        <div class="nav-section-title" data-section="cache">快取與讀取優化</div>
+
+        <button class="nav-item" data-topic="topics/cache-invalidation.html" data-category="cache">
+          <span class="nav-icon cache">⚡</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Cache 失效策略</span>
+            <span class="nav-item-sub">TTL / Write Through / Around / Back</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/distributed-cache.html" data-category="cache">
+          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">⚡</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">分散式快取</span>
+            <span class="nav-item-sub">Consistent Hashing / 雪崩防護</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/scale-reads.html" data-category="cache">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📈</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">讀取擴展</span>
+            <span class="nav-item-sub">索引 / 三層快取 / 讀取副本</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/fix-slow-database.html" data-category="cache">
+          <span class="nav-icon" style="background:rgba(239,68,68,0.15)">🐌</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Debug 慢 Database</span>
+            <span class="nav-item-sub">Slow Query / Index / Cache / 換 DB</span>
+          </span>
+        </button>
+
+        <!-- ===== 數據與存儲 ===== -->
+        <div class="nav-section-title" data-section="storage">數據與存儲</div>
+
+        <button class="nav-item" data-topic="topics/key-value-store.html" data-category="storage">
+          <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🗄</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">鍵值存儲</span>
+            <span class="nav-item-sub">分區 / 複製 / Quorum 共識</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/object-storage.html" data-category="storage">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📦</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">物件存儲</span>
+            <span class="nav-item-sub">預簽名網址 / 分段上傳 / CDN</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/unique-id-generator.html" data-category="storage">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">❄️</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">唯一 ID 生成器</span>
+            <span class="nav-item-sub">Snowflake 64-bit / 時間排序</span>
+          </span>
+        </button>
+
+        <!-- ===== 異步與消息處理 ===== -->
+        <div class="nav-section-title" data-section="async">異步與消息處理</div>
+
+        <button class="nav-item" data-topic="topics/message-queue.html" data-category="async">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">📨</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">消息佇列</span>
+            <span class="nav-item-sub">Kafka / 發佈訂閱 / 精確一次</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/task-queue.html" data-category="async">
+          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">📋</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">任務佇列</span>
+            <span class="nav-item-sub">異步任務 / 重試機制 / 死信佇列</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/notification-system.html" data-category="async">
+          <span class="nav-icon" style="background:rgba(236,72,153,0.15)">🔔</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">通知系統</span>
+            <span class="nav-item-sub">推送 / 短訊 / 電郵多渠道</span>
+          </span>
+        </button>
+
+        <!-- ===== 應用系統設計 ===== -->
+        <div class="nav-section-title" data-section="app">應用系統設計</div>
+
+        <button class="nav-item" data-topic="topics/url-shortener.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(16,185,129,0.15)">🔗</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">短網址系統</span>
+            <span class="nav-item-sub">Base62 / 301 vs 302 / 數據分析</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/chat-system.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(59,130,246,0.15)">💬</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">即時通訊系統</span>
+            <span class="nav-item-sub">WebSocket / 消息佇列 / 離線消息</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/news-feed.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(245,158,11,0.15)">📰</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">動態消息流</span>
+            <span class="nav-item-sub">寫時推送 vs 讀時拉取 / 排名</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/search-autocomplete.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(139,92,246,0.15)">🔍</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">搜尋自動補全</span>
+            <span class="nav-item-sub">Trie 前綴樹 / 排名 / 防抖</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/web-crawler.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(248,113,113,0.15)">🕷</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">網頁爬蟲</span>
+            <span class="nav-item-sub">廣度優先 / 布隆過濾器 / robots.txt</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/video-streaming.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(236,72,153,0.15)">🎬</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">影片串流</span>
+            <span class="nav-item-sub">轉碼 / HLS-DASH / CDN 分發</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/payment-system.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(34,197,94,0.15)">💳</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">支付系統</span>
+            <span class="nav-item-sub">冪等性 / 複式記帳 / Saga / Webhook</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/session-manager.html" data-category="app">
+          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">🔐</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">Session 管理器</span>
+            <span class="nav-item-sub">Cookie vs JWT / Redis 存儲</span>
+          </span>
+        </button>
+
+        <!-- ===== 監控與安全 ===== -->
+        <div class="nav-section-title" data-section="security">監控與安全</div>
+
+        <button class="nav-item" data-topic="topics/metrics-logging.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(99,102,241,0.15)">📊</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">監控與日誌</span>
+            <span class="nav-item-sub">Kafka / Prometheus / Grafana</span>
+          </span>
+        </button>
+
+        <button class="nav-item" data-topic="topics/secure-ai-agents.html" data-category="security">
+          <span class="nav-icon" style="background:rgba(248,113,113,0.15)">🛡</span>
+          <span class="nav-item-text">
+            <span class="nav-item-title">AI Agent 安全</span>
+            <span class="nav-item-sub">Lethal Trifecta / Guardrail 防護</span>
+          </span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        用最簡單嘅方式學最複雜嘅概念
+      </div>
+    </aside>
+
+    <!-- ==================== Main Content ==================== -->
+    <main class="main-content" id="mainContent">
+      <!-- Welcome screen -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-icon">🏗</div>
+        <h2>歡迎嚟到系統架構教室</h2>
+        <p>呢度用廣東話，用最簡單、最直白嘅方式，幫你理解各種系統設計嘅概念同架構圖。</p>
+        <div class="welcome-hint">
+          <span class="arrow">👈</span>
+          <span>喺左邊揀一個課題開始學習</span>
+        </div>
+      </div>
+
+      <!-- Topic iframe (hidden initially) -->
+      <iframe id="topicFrame" style="display:none;" title="課題內容"></iframe>
+    </main>
+  </div>
+
+  <script>
+    const navItems = document.querySelectorAll('.nav-item:not(.coming-soon)');
+    const welcomeScreen = document.getElementById('welcomeScreen');
+    const topicFrame = document.getElementById('topicFrame');
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('overlay');
+    const menuBtn = document.getElementById('menuBtn');
+    const sidebarHeader = document.getElementById('sidebarHeader');
+
+    // Load topic
+    function loadTopic(url, btn) {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+
+      welcomeScreen.classList.add('hidden');
+      topicFrame.style.display = 'block';
+      topicFrame.src = url;
+
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+    }
+
+    // Go home
+    function goHome() {
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      welcomeScreen.classList.add('hidden');
+      topicFrame.style.display = 'block';
+      topicFrame.src = 'topics/welcome.html';
+
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+    }
+
+    // Sidebar header → home
+    sidebarHeader.addEventListener('click', goHome);
+
+    // Nav items
+    navItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const topic = item.getAttribute('data-topic');
+        if (topic) loadTopic(topic, item);
+      });
+    });
+
+    // Default: load welcome page
+    goHome();
+
+    // Mobile menu
+    menuBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+      overlay.classList.toggle('visible');
+    });
+
+    overlay.addEventListener('click', () => {
+      sidebar.classList.remove('open');
+      overlay.classList.remove('visible');
+    });
+
+    // Listen for navigation requests from welcome page (iframe postMessage)
+    window.addEventListener('message', (e) => {
+      if (e.data && e.data.type === 'loadTopic' && e.data.url) {
+        const targetBtn = document.querySelector(`.nav-item[data-topic="${e.data.url}"]`);
+        if (targetBtn) {
+          loadTopic(e.data.url, targetBtn);
+        }
+      }
+    });
+
+    // ==================== Filters ====================
+    const filterChips = document.querySelectorAll('.filter-chip');
+    const sectionTitles = document.querySelectorAll('.nav-section-title[data-section]');
+    const filteredItems = document.querySelectorAll('.nav-item[data-category]');
+
+    filterChips.forEach(chip => {
+      chip.addEventListener('click', () => {
+        const filter = chip.getAttribute('data-filter');
+
+        // Update active chip
+        filterChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+
+        if (filter === 'all') {
+          // Show everything
+          sectionTitles.forEach(t => t.classList.remove('hidden'));
+          filteredItems.forEach(i => i.classList.remove('hidden'));
+        } else {
+          // Hide/show sections and items by category
+          sectionTitles.forEach(t => {
+            t.classList.toggle('hidden', t.getAttribute('data-section') !== filter);
+          });
+          filteredItems.forEach(i => {
+            i.classList.toggle('hidden', i.getAttribute('data-category') !== filter);
+          });
+        }
+      });
+    });
+  </script>
+</body>
+</html>
