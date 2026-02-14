@@ -888,7 +888,12 @@
       line-height: 1.7;
       white-space: pre-wrap;
       word-break: break-word;
+      max-height: 280px;
+      overflow-y: auto;
     }
+
+    .chat-viber-output::-webkit-scrollbar { width: 4px; }
+    .chat-viber-output::-webkit-scrollbar-thumb { background: #2a2d3a; border-radius: 4px; }
 
     .chat-copy-btn {
       margin-top: 8px;
@@ -926,6 +931,19 @@
     }
 
     .chat-topic-picker select:focus { border-color: #6366f1; }
+
+    .chat-topic-picker select optgroup {
+      color: #a5b4fc;
+      font-weight: 600;
+      font-size: 0.8rem;
+      padding: 4px 0;
+    }
+
+    .chat-topic-picker select option {
+      color: #e0e0e0;
+      font-weight: 400;
+      padding: 4px 8px;
+    }
 
     .chat-topic-picker label {
       display: block;
@@ -1565,7 +1583,10 @@
   <div class="chat-panel" id="chatPanel">
     <div class="chat-panel-header">
       <span>🤖 AI 助手</span>
-      <button class="chat-close-btn" id="chatCloseBtn" aria-label="關閉">✕</button>
+      <div style="display:flex;gap:4px;">
+        <button class="chat-close-btn" id="chatClearBtn" aria-label="清除對話" title="清除對話">🗑</button>
+        <button class="chat-close-btn" id="chatCloseBtn" aria-label="關閉">✕</button>
+      </div>
     </div>
 
     <!-- Welcome / Login view -->
@@ -1588,11 +1609,11 @@
         </div>
       </div>
 
-      <a class="chat-coffee-cta" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer">
-        <span class="cta-icon">☕</span>
+      <a class="chat-coffee-cta" href="https://buy.stripe.com/6oU7sF6V20nA5Nhcip3Nm05" target="_blank" rel="noopener noreferrer">
+        <span class="cta-icon">🔓</span>
         <div class="cta-text">
-          <strong>Buy Me a Coffee 解鎖 AI 功能</strong>
-          <span>付款後會收到電郵同存取碼</span>
+          <strong>HK$150 一次性解鎖 AI 功能</strong>
+          <span>付款後即時收到電郵同永久存取碼</span>
         </div>
         <span class="cta-arrow">→</span>
       </a>
@@ -1621,6 +1642,11 @@
           <span class="action-icon">✍️</span>
           <span class="action-label">Prompt 生成器</span>
           <span class="action-desc">AI Viber Prompt</span>
+        </button>
+        <button class="chat-action-btn" data-mode="suggest" id="actionSuggest">
+          <span class="action-icon">💡</span>
+          <span class="action-label">建議課題</span>
+          <span class="action-desc">想學咩話我知</span>
         </button>
       </div>
 
@@ -1901,6 +1927,7 @@
       const fab = document.getElementById('chatFab');
       const panel = document.getElementById('chatPanel');
       const closeBtn = document.getElementById('chatCloseBtn');
+      const clearBtn = document.getElementById('chatClearBtn');
       const welcomeView = document.getElementById('chatWelcomeView');
       const mainView = document.getElementById('chatMainView');
       const emailInput = document.getElementById('chatEmail');
@@ -1915,6 +1942,7 @@
       const topicSelect = document.getElementById('chatTopicSelect');
 
       let currentMode = 'search';
+      function chatHistoryKey() { return 'sa-chat-history-' + currentMode; }
 
       // ---- JWT helpers ----
       function decodePayload(token) {
@@ -1949,12 +1977,42 @@
         loginError.textContent = '';
       }
 
+      // ---- Chat history persistence ----
+      function saveChatHistory() {
+        const items = [];
+        messages.querySelectorAll('.chat-msg').forEach((el) => {
+          const type = el.classList.contains('user') ? 'user' : el.classList.contains('error') ? 'bot error' : 'bot';
+          items.push({ type, html: el.innerHTML });
+        });
+        try { localStorage.setItem(chatHistoryKey(), JSON.stringify(items)); } catch {}
+      }
+
+      function restoreChatHistory() {
+        try {
+          const items = JSON.parse(localStorage.getItem(chatHistoryKey()) || '[]');
+          items.forEach((item) => {
+            const div = document.createElement('div');
+            div.className = `chat-msg ${item.type}`;
+            div.innerHTML = item.html;
+            messages.appendChild(div);
+          });
+          if (items.length) messages.scrollTop = messages.scrollHeight;
+        } catch {}
+      }
+
+      function clearChatHistory() {
+        messages.innerHTML = '';
+        localStorage.removeItem('sa-chat-history-search');
+        localStorage.removeItem('sa-chat-history-viber');
+      }
+
       // ---- UI state ----
       function showChat() {
         if (getToken()) {
           welcomeView.style.display = 'none';
           mainView.classList.add('active');
           populateTopicSelect();
+          if (!messages.children.length) restoreChatHistory();
         } else {
           welcomeView.style.display = '';
           mainView.classList.remove('active');
@@ -1970,6 +2028,10 @@
       closeBtn.addEventListener('click', () => {
         panel.classList.remove('open');
         fab.classList.remove('open');
+      });
+
+      clearBtn.addEventListener('click', () => {
+        clearChatHistory();
       });
 
       // ---- Login ----
@@ -2017,39 +2079,78 @@
       // ---- Mode toggle (action buttons) ----
       actionBtns.forEach((btn) => {
         btn.addEventListener('click', () => {
+          const newMode = btn.getAttribute('data-mode');
+          if (newMode === currentMode) return;
+
+          // Save current mode's history before switching
+          saveChatHistory();
+
           actionBtns.forEach((b) => b.classList.remove('active'));
           btn.classList.add('active');
-          currentMode = btn.getAttribute('data-mode');
+          currentMode = newMode;
+
+          // Clear messages and restore the new mode's history
+          messages.innerHTML = '';
 
           if (currentMode === 'search') {
             topicPicker.style.display = 'none';
             chatInput.placeholder = '輸入關鍵字搜尋課題...';
-          } else {
+          } else if (currentMode === 'viber') {
             topicPicker.style.display = '';
             chatInput.placeholder = '描述具體需求，例如「電商平台嘅支付系統」...';
+          } else if (currentMode === 'suggest') {
+            topicPicker.style.display = 'none';
+            chatInput.placeholder = '你想學咩課題？例如「Kubernetes 入門」...';
           }
+
+          restoreChatHistory();
         });
       });
 
-      // ---- Populate topic dropdown from sidebar nav items ----
+      // ---- Populate topic dropdown grouped by category ----
       let topicSelectPopulated = false;
 
       function populateTopicSelect() {
         if (topicSelectPopulated) return;
         topicSelectPopulated = true;
 
-        // Build from sidebar nav items that have AI Viber content
-        const allNavItems = document.querySelectorAll('.nav-item[data-topic]:not(.coming-soon)');
-        allNavItems.forEach((item) => {
+        const categoryNames = {
+          career: '職場與面試',
+          engineering: '工程實踐',
+          network: '網絡與流量控制',
+          storage: '數據與存儲',
+          cache: '快取與讀取優化',
+          async: '異步與消息處理',
+          app: '應用系統設計',
+          security: '監控與安全',
+          deploy: '部署與託管',
+        };
+
+        // Group nav items by category
+        const groups = {};
+        document.querySelectorAll('.nav-item[data-topic]:not(.coming-soon)').forEach((item) => {
           const url = item.getAttribute('data-topic');
+          const cat = item.getAttribute('data-category') || 'other';
           const title = item.querySelector('.nav-item-title')?.textContent || '';
-          if (title) {
+          if (!title) return;
+          if (!groups[cat]) groups[cat] = [];
+          groups[cat].push({ url, title });
+        });
+
+        // Build optgroups
+        for (const [cat, categoryLabel] of Object.entries(categoryNames)) {
+          const items = groups[cat];
+          if (!items || !items.length) continue;
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = categoryLabel;
+          items.forEach(({ url, title }) => {
             const opt = document.createElement('option');
             opt.value = url;
             opt.textContent = title;
-            topicSelect.appendChild(opt);
-          }
-        });
+            optgroup.appendChild(opt);
+          });
+          topicSelect.appendChild(optgroup);
+        }
       }
 
       // ---- Linkify helper: convert URLs in text to clickable links ----
@@ -2071,6 +2172,7 @@
         }
         messages.appendChild(div);
         messages.scrollTop = messages.scrollHeight;
+        saveChatHistory();
         return div;
       }
 
@@ -2080,6 +2182,7 @@
         div.innerHTML = html;
         messages.appendChild(div);
         messages.scrollTop = messages.scrollHeight;
+        saveChatHistory();
         return div;
       }
 
@@ -2190,6 +2293,8 @@
         let reqBody;
         if (currentMode === 'search') {
           reqBody = { mode: 'search', query: value };
+        } else if (currentMode === 'suggest') {
+          reqBody = { mode: 'suggest', suggestion: value };
         } else {
           reqBody = { mode: 'viber', text: value, topicUrl: topicSelect.value };
         }
@@ -2225,6 +2330,9 @@
 
           if (currentMode === 'search') {
             renderSearchResults(data.results || []);
+          } else if (currentMode === 'suggest') {
+            const remaining = data.monthRemaining ?? '?';
+            addMsg(`多謝你嘅建議！我會盡快睇下可唔可以加入。今個月仲可以建議 ${remaining} 次。`, 'bot');
           } else {
             renderViber(data.generated || '無回應');
           }
