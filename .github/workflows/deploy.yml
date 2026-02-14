@@ -62,9 +62,11 @@ jobs:
             aws s3 cp portfolio/build/static/media/ s3://$S3_BUCKET/static/media/ --recursive --cache-control "public,max-age=31536000,immutable" --metadata-directive REPLACE
           fi
           
-          # Upload everything else (games, content, etc) except static and index
-          # Using sync here to handle deletions of old files
-          aws s3 sync portfolio/build/ s3://$S3_BUCKET/ --delete --exclude "static/*" --exclude "index.html"
+          # Upload game HTML files with short cache so updates appear without invalidation
+          aws s3 sync portfolio/build/games/ s3://$S3_BUCKET/games/ --delete --cache-control "public,max-age=60" --metadata-directive REPLACE
+          
+          # Upload everything else (assets, etc) except static, games, and index
+          aws s3 sync portfolio/build/ s3://$S3_BUCKET/ --delete --exclude "static/*" --exclude "index.html" --exclude "games/*"
           
           # Upload index.html with no-cache to ensure updates are seen immediately
           aws s3 cp portfolio/build/index.html s3://$S3_BUCKET/index.html --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate" --metadata-directive REPLACE
