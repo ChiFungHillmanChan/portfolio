@@ -412,8 +412,9 @@
       .sidebar {
         position: fixed;
         left: 0;
-        top: 0;
+        top: 52px;
         bottom: 0;
+        height: auto;
         transform: translateX(-100%);
       }
 
@@ -490,7 +491,9 @@
       cursor: pointer;
       z-index: 300;
       box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  box-shadow 0.2s ease,
+                  opacity 0.3s ease;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -501,7 +504,11 @@
       box-shadow: 0 6px 28px rgba(99, 102, 241, 0.55);
     }
 
-    .chat-fab.open { display: none; }
+    .chat-fab.open {
+      transform: scale(0) rotate(90deg);
+      opacity: 0;
+      pointer-events: none;
+    }
 
     .chat-panel {
       position: fixed;
@@ -513,13 +520,28 @@
       border: 1px solid #2a2d3a;
       border-radius: 16px;
       z-index: 301;
-      display: none;
+      display: flex;
       flex-direction: column;
       overflow: hidden;
       box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+      pointer-events: none;
+      visibility: hidden;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  visibility 0s 0.3s;
     }
 
-    .chat-panel.open { display: flex; }
+    .chat-panel.open {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: auto;
+      visibility: visible;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+                  visibility 0s 0s;
+    }
 
     .chat-panel-header {
       display: flex;
@@ -2030,11 +2052,23 @@
         });
       }
 
+      // ---- Linkify helper: convert URLs in text to clickable links ----
+      function linkify(text) {
+        const urlRegex = /(https?:\/\/[^\s<>"')\]]+)/g;
+        return escapeHtml(text).replace(urlRegex, (url) => {
+          return `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color:#818cf8;text-decoration:underline;word-break:break-all;">${url}</a>`;
+        });
+      }
+
       // ---- Messages ----
       function addMsg(content, type) {
         const div = document.createElement('div');
         div.className = `chat-msg ${type}`;
-        div.textContent = content;
+        if (type === 'bot' || type === 'bot error') {
+          div.innerHTML = linkify(content);
+        } else {
+          div.textContent = content;
+        }
         messages.appendChild(div);
         messages.scrollTop = messages.scrollHeight;
         return div;
@@ -2080,12 +2114,17 @@
         let html = '';
         for (const r of results) {
           const hasViber = r.prompts && r.prompts.length > 0;
+          const topicHash = r.url ? '#' + r.url.replace('topics/', '').replace('.html', '') : '';
+          const fullLink = topicHash ? `${window.location.origin}${window.location.pathname}${topicHash}` : '';
           html += `<div class="chat-result-card" data-url="${r.url}">`;
           html += `<div class="card-title">${escapeHtml(r.h1 || r.title)}</div>`;
           if (r.description) {
             html += `<div class="card-desc">${escapeHtml(r.description)}</div>`;
           }
           html += `<div class="card-cat">${escapeHtml(r.category || '')}${hasViber ? ' · AI Viber' : ''}</div>`;
+          if (fullLink) {
+            html += `<div style="margin-top:4px;font-size:0.68rem;"><a href="${topicHash}" style="color:#818cf8;text-decoration:none;word-break:break-all;" title="直接跳轉">🔗 ${escapeHtml(r.h1 || r.title)}</a></div>`;
+          }
           html += '</div>';
         }
 
@@ -2106,7 +2145,7 @@
 
       // ---- Viber prompt result ----
       function renderViber(generated) {
-        let html = `<div class="chat-viber-output">${escapeHtml(generated)}</div>`;
+        let html = `<div class="chat-viber-output">${linkify(generated)}</div>`;
         html += '<button class="chat-copy-btn" id="chatCopyViber">📋 複製 Prompt</button>';
 
         const container = addBotHtml(html);
