@@ -389,6 +389,11 @@
       font-size: 0.9rem;
       font-weight: 600;
       color: #fff;
+      flex: 1;
+    }
+
+    .mobile-coffee {
+      display: none;
     }
 
     .overlay {
@@ -407,6 +412,13 @@
     @media (max-width: 768px) {
       .mobile-header {
         display: flex;
+      }
+
+      .mobile-coffee {
+        display: inline-flex;
+        width: 34px;
+        height: 34px;
+        font-size: 1rem;
       }
 
       .sidebar {
@@ -482,6 +494,7 @@
   <div class="mobile-header">
     <button class="hamburger" id="menuBtn">☰</button>
     <span class="mobile-title">系統架構圖解教室</span>
+    <a class="coffee-btn mobile-coffee" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="Buy me a coffee">☕</a>
   </div>
   <div class="overlay" id="overlay"></div>
 
@@ -1037,6 +1050,42 @@
     }
 
     // ==================== Load Topic ====================
+    // Mobile-friendly CSS injected into topic iframes
+    const mobileDiagramCSS = `
+      @media (max-width: 768px) {
+        .diagram-container { -webkit-overflow-scrolling: touch; position: relative; }
+        .diagram-container svg { min-width: 600px; height: auto; }
+        .diagram-container::after {
+          content: '← 左右滑動查看 →';
+          display: block;
+          text-align: center;
+          font-size: 0.75rem;
+          color: #6b7280;
+          padding-top: 8px;
+        }
+        .container { padding: 20px 12px; }
+        header h1 { font-size: 1.3rem; }
+        .card { padding: 16px; border-radius: 12px; }
+        .card h2 { font-size: 1.2rem; }
+        .tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+        .tab-btn { padding: 10px 12px; font-size: 0.8rem; min-width: max-content; }
+      }
+    `;
+
+    function injectMobileCSS(iframe) {
+      try {
+        const doc = iframe.contentDocument || iframe.contentWindow.document;
+        if (!doc || !doc.head) return;
+        if (doc.getElementById('mobile-diagram-fix')) return;
+        const style = doc.createElement('style');
+        style.id = 'mobile-diagram-fix';
+        style.textContent = mobileDiagramCSS;
+        doc.head.appendChild(style);
+      } catch (e) { /* cross-origin guard */ }
+    }
+
+    topicFrame.addEventListener('load', () => injectMobileCSS(topicFrame));
+
     function loadTopic(url, btn) {
       document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
       if (btn) btn.classList.add('active');
