@@ -410,6 +410,10 @@
 
     /* ==================== Responsive ==================== */
     @media (max-width: 768px) {
+      .app-layout {
+        flex-direction: column;
+      }
+
       .mobile-header {
         display: flex;
       }
@@ -426,19 +430,31 @@
         left: 0;
         top: 0;
         bottom: 0;
+        width: 280px;
+        min-width: 0;
         transform: translateX(-100%);
+        z-index: 300;
       }
 
       .sidebar.open {
         transform: translateX(0);
       }
 
+      .overlay {
+        z-index: 250;
+      }
+
       .main-content {
+        flex: 1;
         padding-top: 52px;
+        width: 100vw;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .main-content iframe {
-        height: calc(100% - 0px);
+        height: 100%;
+        width: 100%;
       }
     }
 
