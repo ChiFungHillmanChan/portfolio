@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="strategies">② 快取策略</button>
       <button class="tab-btn" data-tab="problems">③ 常見問題</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -201,12 +210,56 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計分佈式快取層架構</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個分佈式快取層，技術棧用 <span class="placeholder">[Redis Cluster / Memcached]</span>，應用場景係 <span class="placeholder">[電商產品頁 / 社交媒體 Feed / API Response]</span>。
+
+要求包括：
+- 用 Consistent Hashing 做 key 分佈，解釋點樣 hash ring 運作
+- 實現 Cache-Aside 策略，包括 cache miss 時嘅 fallback 邏輯
+- 設定合理嘅 TTL 策略，加隨機偏移防止 Cache Avalanche
+- 加入 Bloom Filter 防止 Cache Penetration
+- 用分佈式鎖（Redis SETNX）解決 Cache Stampede
+- 提供完整嘅 code 示範，語言用 <span class="placeholder">[Node.js / Python / Go]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 快取一致性同 Invalidation 策略</h4>
+          <div class="prompt-text" id="prompt2">設計一套 Cache Invalidation 機制，場景係 <span class="placeholder">[用戶資料更新 / 庫存變動 / 價格調整]</span>，資料庫用 <span class="placeholder">[PostgreSQL / MySQL]</span>，快取用 Redis。
+
+要求包括：
+- 比較 Write-Through、Write-Back、Cache-Aside 三種策略嘅適用場景
+- 處理 DB 同 Cache 之間嘅 race condition（先更新 DB 定先刪 Cache？）
+- 實現 Event-Driven Invalidation（用 CDC / Pub-Sub 監聽 DB 變更自動清 Cache）
+- 設計 Cache Warm-up 策略，避免冷啟動時大量 Cache Miss
+- 監控方案：Cache Hit Rate、Latency、Memory Usage dashboard
+- 提供完整嘅實現 code 同配置</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

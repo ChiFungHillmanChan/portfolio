@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="collect">② 收集模式</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -236,12 +245,91 @@
         </div>
       </div>
     </div>
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 Metrics + Logging 基礎設施</h4>
+          <div class="prompt-text" id="prompt1">為 <span class="placeholder">[項目名稱，例如：SaaS 訂閱平台]</span> 設計一套完整嘅 Metrics 同 Logging 基礎設施。
+
+技術棧：<span class="placeholder">[例如：Node.js + PostgreSQL + Redis，部署喺 AWS ECS]</span>
+
+請輸出以下內容：
+1. Metrics Pipeline 架構圖（文字描述）：App → Log Agent → Kafka → Time Series DB → Grafana
+2. 需要收集嘅 Golden Signals：Latency（p50/p95/p99）、Traffic（RPS）、Error Rate、Saturation（CPU/Memory）
+3. 每個 Metric 嘅具體實現方式（用咩 Library、點樣 instrument code）
+4. Kafka 作為 Buffer 嘅配置建議（Topic 設計、Retention Policy、Consumer Group）
+5. Grafana Dashboard 佈局設計（幾個 Panel、每個 Panel 顯示咩數據）
+6. Alert Rules 清單（至少 5 條，包括 Threshold 同通知渠道）
+
+最後列出部署順序同估算嘅 Infrastructure 成本。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 建立 Structured Logging Pipeline</h4>
+          <div class="prompt-text" id="prompt2">為 <span class="placeholder">[微服務名稱，例如：Payment Service]</span> 建立一套 Structured Logging Pipeline。
+
+要求：
+1. 定義統一嘅 Log Format（JSON），包含以下 Fields：
+   - timestamp, service_name, log_level, trace_id, span_id
+   - request_id, user_id, endpoint, method, status_code
+   - duration_ms, error_message, stack_trace（如適用）
+
+2. 用 <span class="placeholder">[語言/框架，例如：Node.js + Winston]</span> 寫一個 Logger Utility，支持：
+   - 自動注入 trace_id 同 request_id
+   - 區分 INFO / WARN / ERROR / DEBUG 級別
+   - 喺 Production 自動隱藏 DEBUG 級別
+
+3. Log 收集方案：Fluentd 配置檔，將 Log 送去 Elasticsearch
+4. Kibana 查詢模板：5 個常用嘅 Query（例如「過去 1 小時所有 5xx 錯誤」）
+5. Log Rotation 同 Retention 策略建議
+
+請直接輸出可以用嘅 Code 同 Config 檔案。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 設計 Alerting 規則同 Runbook</h4>
+          <div class="prompt-text" id="prompt3">為 <span class="placeholder">[系統名稱，例如：電商平台]</span> 設計一套完整嘅 Alerting 規則同對應嘅 Runbook。
+
+系統架構：<span class="placeholder">[簡述，例如：3 個微服務 + PostgreSQL + Redis + Nginx]</span>
+
+請輸出：
+1. 至少 8 條 Alert Rules，每條包含：
+   - 指標名稱同 PromQL 表達式
+   - Threshold 數值（Warning 同 Critical 兩個級別）
+   - 通知渠道（Slack / Email / PagerDuty）
+   - 預期觸發頻率
+
+2. 每條 Alert 對應嘅 Runbook，包含：
+   - 問題描述（呢個 Alert 代表咩情況）
+   - 排查步驟（由第一步到定位問題嘅完整流程）
+   - 常見根因（Top 3 最可能嘅原因）
+   - 修復方案（臨時同永久嘅解決方法）
+
+3. Alert 分組同靜默策略（避免 Alert Fatigue）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

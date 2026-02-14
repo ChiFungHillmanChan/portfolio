@@ -346,6 +346,14 @@
         padding: 20px;
       }
     }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -360,6 +368,7 @@
       <button class="tab-btn" data-tab="fail-vs-pass">② 肥佬 vs 過關</button>
       <button class="tab-btn" data-tab="clarify">③ 釐清問題</button>
       <button class="tab-btn" data-tab="communicate">④ 溝通同合作</button>
+      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Overview ===================== -->
@@ -867,6 +876,85 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 生成 Coding Interview 練習計劃</h4>
+          <div class="prompt-text" id="prompt1">幫手制定一個 <span class="placeholder">[4 / 8 / 12 週]</span> 嘅 Coding Interview 練習計劃。
+
+背景資料：
+- 目標公司類型：<span class="placeholder">[例如：FAANG / 中型科技公司 / Startup]</span>
+- 目前水平：<span class="placeholder">[例如：識基本 Data Structure，但 Medium 題做得慢]</span>
+- 每日可用練習時間：<span class="placeholder">[例如：2 小時]</span>
+- 主要用嘅程式語言：<span class="placeholder">[例如：Python / JavaScript / Java]</span>
+
+計劃要求：
+1. 按主題分階段（Array → String → LinkedList → Tree → Graph → DP）
+2. 每個主題列出必做嘅經典題目（Easy / Medium / Hard 比例大約 2:5:3）
+3. 每週安排 1-2 次模擬面試練習（限時 45 分鐘）
+4. 包含「溝通練習」環節——練習邊寫邊講、釐清問題、講出假設
+5. 每週有 Review Checkpoint，評估進度
+
+請用表格形式列出每週嘅計劃，包含具體題目名稱同預計完成時間。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Mock Interview Session</h4>
+          <div class="prompt-text" id="prompt2">扮演一個嚴格但公平嘅 Coding Interview 面試官，進行一場完整嘅 Mock Interview。
+
+面試設定：
+- 難度級別：<span class="placeholder">[例如：Medium / Hard]</span>
+- 題目類型：<span class="placeholder">[例如：Array + HashMap / Tree + DFS / Dynamic Programming]</span>
+- 時間限制：45 分鐘
+- 目標公司風格：<span class="placeholder">[例如：Google / Meta / Amazon]</span>
+
+面試流程：
+1. 出一條題目（故意留低模糊空間，等面試者主動問）
+2. 面試者釐清問題時，適當回答同引導
+3. 面試者講出計劃時，評估合理性
+4. 面試者寫 code 時，適時提示（如果卡住超過 5 分鐘）
+5. 完成後畀詳細 Feedback：
+   - 溝通能力評分（1-5）
+   - 問題釐清能力評分（1-5）
+   - Code 質素評分（1-5）
+   - 整體通過機率
+   - 具體改善建議
+
+請即刻出題開始面試。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 練習釐清問題同溝通技巧</h4>
+          <div class="prompt-text" id="prompt3">幫手設計一個專門練習 Coding Interview 溝通技巧嘅訓練。
+
+出一條 <span class="placeholder">[例如：Medium 難度嘅 Design 題 / Algorithm 題]</span>，然後：
+
+第一階段 — 釐清問題練習：
+- 列出呢條題目入面所有模糊嘅地方
+- 提供 10 個應該主動問嘅問題範例
+- 標記邊啲問題最能展示工程思維
+
+第二階段 — 假設列舉練習：
+- 示範點樣列出合理嘅假設
+- 示範點樣同面試官確認假設
+- 提供「好嘅假設」同「差嘅假設」嘅對比
+
+第三階段 — 邊寫邊講練習：
+- 提供一個完整嘅「思路講解」script 範例
+- 標記每一步應該講咩、點樣解釋決定
+- 包含遇到困難時嘅應對話術
+
+目標係建立一套可以重複使用嘅溝通 Framework。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -883,6 +971,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

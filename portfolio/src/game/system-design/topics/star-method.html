@@ -94,6 +94,15 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+
     .card {
       background: #1a1d27;
       border-radius: 16px;
@@ -304,6 +313,7 @@
       <button class="tab-btn" data-tab="star-example">② 真實示範</button>
       <button class="tab-btn" data-tab="star-tips">③ 答題技巧</button>
       <button class="tab-btn" data-tab="star-takeaway">④ 重點總結</button>
+      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: STAR Overview ===================== -->
@@ -839,6 +849,75 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 生成 STAR 格式面試答案</h4>
+          <div class="prompt-text" id="prompt1">幫手用 STAR 框架撰寫一個 Behavioral Interview 嘅答案。
+
+面試問題：<span class="placeholder">[例如：Tell me about a time when you had to deal with a tight deadline]</span>
+
+背景資料：
+- 職位：<span class="placeholder">[Software Engineer / Frontend Developer / Backend Developer]</span>
+- 公司類型：<span class="placeholder">[大廠 / Startup / 中型企業]</span>
+- 相關經歷簡述：<span class="placeholder">[簡單描述發生過嘅事件]</span>
+
+要求：
+- 嚴格跟 STAR 格式：Situation → Task → Action → Result
+- Situation 同 Task 加埋唔超過 30 秒（2-3 句）
+- Action 部分佔成個答案嘅 60%，要有具體步驟
+- Result 要有數據或可量化嘅成果
+- 總長度控制喺 2 分鐘以內講完
+- 用第一人稱「I」做主語，強調個人貢獻
+- 最後附一段精簡版本（30 秒 elevator pitch）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — Behavioral Interview 模擬練習</h4>
+          <div class="prompt-text" id="prompt2">扮演一個 <span class="placeholder">[Amazon / Google / Meta / Microsoft]</span> 嘅 Behavioral Interview 面試官，進行模擬面試。
+
+設定：
+- 應徵職位：<span class="placeholder">[Software Engineer L4 / Senior SWE / Engineering Manager]</span>
+- 面試輪次：Behavioral Round（45 分鐘）
+- 重點考核：<span class="placeholder">[Leadership / Conflict Resolution / Failure Handling / Teamwork]</span>
+
+流程：
+1. 先問一條 behavioral question
+2. 等回答之後，用 STAR 框架評分（S/T/A/R 各 1-5 分）
+3. 指出答案嘅優點同可以改善嘅地方
+4. 提供 follow-up question（面試官通常會追問嘅問題）
+5. 之後再問下一條，模擬真實面試節奏
+6. 最後俾一個整體評價同改善建議
+
+一共問 <span class="placeholder">[3 / 5]</span> 條問題，涵蓋唔同類型嘅 behavioral competency。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立個人 STAR 故事庫</h4>
+          <div class="prompt-text" id="prompt3">幫手整理一個完整嘅 STAR 故事庫，準備 Behavioral Interview。
+
+個人背景：
+- 工作年資：<span class="placeholder">[1-3 年 / 3-5 年 / 5+ 年]</span>
+- 目標公司：<span class="placeholder">[FAANG / Startup / 特定公司名]</span>
+- 過往經歷重點：<span class="placeholder">[列出 3-5 個印象最深嘅工作經歷]</span>
+
+要求：
+1. 根據提供嘅經歷，整理成 5-8 個 STAR 格式嘅故事
+2. 每個故事標記適合回答邊類問題（Leadership、Conflict、Failure、Innovation、Teamwork、Deadline Pressure）
+3. 建立一個配對表：常見 behavioral question → 最適合用邊個故事
+4. 每個故事提供精簡版（30 秒）同完整版（2 分鐘）
+5. 標記每個故事嘅「數字亮點」（例如：影響幾多用戶、節省幾多時間）
+6. 最後俾一個準備 checklist 同練習計劃</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -856,6 +935,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

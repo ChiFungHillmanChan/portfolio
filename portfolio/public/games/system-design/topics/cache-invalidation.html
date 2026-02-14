@@ -274,6 +274,14 @@
         padding: 20px;
       }
     }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -288,6 +296,7 @@
       <button class="tab-btn" data-tab="write-through">② Write Through 同步寫入</button>
       <button class="tab-btn" data-tab="write-around">③ Write Around 繞過快取</button>
       <button class="tab-btn" data-tab="write-back">④ Write Back 延遲寫入</button>
+      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: TTL ===================== -->
@@ -811,6 +820,64 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 Cache 失效策略</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅 Cache 失效策略，應用場景係 <span class="placeholder">[業務場景，例如：電商產品頁、社交媒體 Feed、即時排行榜]</span>。
+
+技術棧：<span class="placeholder">[技術棧，例如：Redis + MySQL / Memcached + PostgreSQL]</span>
+數據特徵：<span class="placeholder">[讀寫比例、數據更新頻率、一致性要求]</span>
+流量規模：<span class="placeholder">[預計 QPS，例如：讀 100K QPS、寫 5K QPS]</span>
+
+要求：
+1. 分析 Write Through、Write Around、Write Back 三種策略，推薦最適合嘅方案
+2. 設計 TTL 策略——唔同類型嘅數據用唔同嘅 TTL
+3. 處理 Cache Stampede（緩存雪崩）嘅方案：mutex lock / probabilistic early expiration
+4. 處理 Cache Penetration（穿透）：Bloom Filter 擋住唔存在嘅 key
+5. 設計 Cache Warming 策略，避免冷啟動問題
+6. 提供完整嘅代碼實現，包括 cache middleware</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 選擇 Cache Pattern 同實作方案</h4>
+          <div class="prompt-text" id="prompt2">根據以下場景，設計最適合嘅 Cache Pattern 同具體實作：
+
+場景描述：<span class="placeholder">[具體場景，例如：用戶 Profile 頁面，寫入少但讀取非常頻繁]</span>
+一致性要求：<span class="placeholder">[可接受幾秒延遲 / 必須即時一致]</span>
+現有架構：<span class="placeholder">[現有嘅 DB 同 Cache 技術]</span>
+
+要求：
+1. 對比 Cache-Aside、Read-Through、Write-Through、Write-Behind 四種 pattern
+2. 針對呢個場景推薦最佳 pattern，解釋原因
+3. 設計 cache key 命名規則同 namespace 策略
+4. 實現 cache invalidation 觸發機制（DB trigger / event-driven / TTL）
+5. 處理分佈式環境下嘅 cache consistency（多節點同步）
+6. 加入 cache hit rate monitoring 同 alerting
+7. 提供完整嘅 Redis 配置同應用層代碼</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 實作 Cache Stampede 防護機制</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[技術棧，例如：Node.js + Redis / Python + Redis / Go + Redis]</span> 實作一個 Cache Stampede（緩存雪崩）防護模組：
+
+要求：
+1. 實現 Mutex Lock 方案：Cache Miss 時只有一個 request 去 DB 查，其他 request 等待
+2. 實現 Probabilistic Early Expiration：喺 TTL 到期之前隨機提前刷新
+3. 實現 Stale-While-Revalidate：返回舊數據嘅同時背景刷新
+4. 對比三種方案嘅 latency 同 throughput 影響
+5. 寫 load test 腳本模擬 stampede 場景，驗證防護效果
+6. 提供完整嘅代碼，包括 unit test 同 integration test</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -830,6 +897,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

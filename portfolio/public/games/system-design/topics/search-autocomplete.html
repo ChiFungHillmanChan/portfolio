@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="trie">② Trie 數據結構</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -182,12 +191,77 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 用 Trie 建立 Search Autocomplete</h4>
+          <div class="prompt-text" id="prompt1">用 <span class="placeholder">[TypeScript / Python / Go]</span> 實現一個 Search Autocomplete 系統。
+
+核心要求：
+- 用 Trie（前綴樹）做 in-memory 數據結構
+- 每個節點儲存 frequency count，支援按搜索頻率排序
+- 提供 insert(word, frequency) 同 search(prefix, topK) 兩個 API
+- search 返回 Top <span class="placeholder">[5 / 10]</span> 個最高頻嘅建議詞
+- 實現 Trie 嘅壓縮版本（Radix Tree）以節省記憶體
+- 前端用 debounce（<span class="placeholder">[200ms / 300ms]</span>）控制請求頻率
+- 寫埋完整嘅 REST API 同前端搜尋框 UI
+- 包含單元測試，測試空前綴、單字前綴、完整匹配等 edge case</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Typeahead Suggestion 系統</h4>
+          <div class="prompt-text" id="prompt2">設計一個完整嘅 Typeahead Suggestion 系統，支援大規模搜索場景。
+
+系統規格：
+- 預計詞庫大小：<span class="placeholder">[100 萬 / 1000 萬]</span> 個關鍵詞
+- 用 Elasticsearch 做後端搜索引擎
+- 支援模糊匹配（typo tolerance）同中英文混合搜索
+- 實現個人化建議（結合用戶搜索歷史）
+- 加入敏感詞過濾（blocklist 機制）
+- 用 Redis 做 hot query cache，減少 Elasticsearch 壓力
+- 設計 Query Log 收集 pipeline，定期更新搜索頻率
+- 技術棧：<span class="placeholder">[Node.js / Python]</span> + Elasticsearch + Redis
+- 畫出完整嘅系統架構圖同數據流</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 前端即時搜尋體驗優化</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[React / Vue / Vanilla JS]</span> 建立一個高效能嘅前端搜尋自動補全組件。
+
+功能需求：
+- 搜尋框輸入時即時顯示建議列表
+- 實現 debounce（300ms）避免過多 API 請求
+- 支援鍵盤導航（上下箭頭選擇、Enter 確認、Esc 關閉）
+- 高亮顯示匹配嘅前綴部分
+- 顯示搜索歷史（localStorage 儲存最近 <span class="placeholder">[10 / 20]</span> 條）
+- 處理 race condition（確保顯示最新一次請求嘅結果）
+- 支援 loading 狀態同空結果提示
+- 完全 accessible（ARIA attributes、screen reader 支援）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

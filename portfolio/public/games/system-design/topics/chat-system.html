@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="websocket">② WebSocket 解說</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -194,12 +203,59 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計即時聊天系統</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個即時聊天系統，支持 <span class="placeholder">[1 對 1 私聊 / Group Chat / 兩者都要]</span>，預期同時在線用戶數係 <span class="placeholder">[1 萬 / 10 萬 / 100 萬]</span>，技術棧用 <span class="placeholder">[Node.js + Socket.io / Go + Gorilla WebSocket / Java + Spring WebSocket]</span>。
+
+要求包括：
+- WebSocket Gateway 設計：管理長連接，支持 heartbeat 保活
+- Message Queue（Kafka / Redis Pub-Sub）做消息路由同解耦
+- Chat Service 處理消息邏輯：存儲、轉發、Group fan-out
+- Message DB 設計：用 <span class="placeholder">[Cassandra / MongoDB / PostgreSQL]</span> 做消息持久化
+- 消息排序方案：Snowflake ID 或 Timestamp + Sequence
+- Group Chat fan-out 策略：write fan-out vs read fan-out
+- 提供完整嘅 WebSocket server code 同資料庫 schema</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 處理離線消息同消息可靠投遞</h4>
+          <div class="prompt-text" id="prompt2">設計離線消息同可靠投遞機制，場景係 <span class="placeholder">[企業通訊 App / 社交聊天 App / 客服系統]</span>，需要保證消息唔會丟失。
+
+要求包括：
+- 離線消息存儲：用戶唔 online 時，消息存入「未讀消息」表，上線後 sync
+- 消息投遞保證：at-least-once delivery，用 ACK 機制確認收到
+- 已讀回執功能：單聊同群聊嘅已讀狀態追蹤
+- 消息重複處理：Idempotency Key 防止重複顯示
+- Presence Service：追蹤用戶在線狀態（online / offline / typing）
+- Push Notification 整合：離線用戶收到 FCM / APNs 推送通知
+- 消息歷史記錄 API：分頁加載、搜尋功能
+- 提供完整嘅 code 同資料庫 schema</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

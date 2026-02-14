@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="channels">② 通知渠道</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -199,12 +208,86 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計多渠道通知系統</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個多渠道通知系統，支援 Push Notification（APNs / FCM）、SMS（Twilio）、Email（SES / SendGrid）三個渠道。
+
+技術要求：
+- 用 Message Queue 做中間緩衝，確保通知唔會丟失
+- 每個渠道有獨立嘅 Worker，可以獨立擴展
+- 支援 Fallback 策略：先發 Push，<span class="placeholder">[X 分鐘]</span>冇睇就發 SMS
+- 需要 Rate Limiting，每個用戶每小時最多收到 <span class="placeholder">[N 個]</span> 通知
+- 包含送達追蹤（已發送、已送達、已打開）
+
+應用場景係 <span class="placeholder">[例如：電商平台 / 社交 App / SaaS 產品]</span>，預計日均通知量 <span class="placeholder">[例如：100 萬條]</span>。
+
+請提供完整嘅架構圖、API 設計、同 Database Schema。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 建立通知偏好同 Throttling 系統</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一個通知偏好管理同 Throttling 系統，要求如下：
+
+功能需求：
+- 用戶可以設定邊啲類型嘅通知想收（交易、行銷、系統）
+- 用戶可以揀每種通知用咩渠道（Push / Email / SMS）
+- 行銷類通知必須支援 Unsubscribe，符合 GDPR 同 CAN-SPAM 合規要求
+- 交易類通知（例如付款確認）唔可以被關閉
+
+Throttling 規則：
+- 同一用戶同一類型通知，<span class="placeholder">[X 分鐘]</span>內只發一次
+- 全局 Rate Limit：每用戶每日最多 <span class="placeholder">[N 條]</span> 通知
+- 支援 Exponential Backoff 重試（發送失敗時）
+
+技術棧建議用 <span class="placeholder">[例如：Node.js + Redis + PostgreSQL]</span>。
+請提供 Database Schema、API Endpoints、同核心邏輯嘅 Pseudocode。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立 Notification Template 系統</h4>
+          <div class="prompt-text" id="prompt3">幫手設計一個 Notification Template 系統，令非技術人員（例如 PM）可以自己管理通知內容，唔使改 code。
+
+核心功能：
+- Template 支援變數插入（例如 {{user_name}}、{{order_id}}）
+- 每個 Template 支援多語言版本（至少中文同英文）
+- 每個渠道（Push / Email / SMS）有獨立嘅 Template 格式
+- Email Template 支援 HTML 排版
+- 版本控制：可以回滾到之前嘅版本
+
+管理介面需求：
+- Template CRUD 操作
+- 預覽功能（填入測試數據即時預覽效果）
+- 發送測試通知
+
+應用場景係 <span class="placeholder">[例如：電商平台 / 金融 App]</span>。
+請提供 Database Schema、API 設計、同前端管理介面嘅關鍵頁面設計。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

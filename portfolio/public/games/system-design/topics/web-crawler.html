@@ -29,6 +29,21 @@
     .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
     .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
     .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -38,6 +53,12 @@
       <p>大規模爬蟲設計全解：BFS、Politeness 同去重策略</p>
     </header>
 
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="ai-viber">② AI Viber</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
     <div class="card">
       <h2>爬蟲系統到底係咩</h2>
       <div class="subtitle">Google 點樣搵到全世界嘅網頁？就係靠 Web Crawler</div>
@@ -163,6 +184,66 @@
         <p>Google 嘅爬蟲每日爬超過 100 億個網頁，建立嘅索引包含超過 5000 億個頁面。呢個規模嘅系統需要數千台 Server 同時運作。設計嘅時候，要從小規模開始諗，但架構要可以 scale up。</p>
       </div>
     </div>
+    </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — Build 一個 Web Crawler 系統</h4>
+          <div class="prompt-text" id="prompt1">幫手設計同實作一個 Web Crawler 系統，目標係爬取 <span class="placeholder">[目標網站類型，例如：新聞網站、電商產品頁、技術文檔]</span> 嘅內容。
+
+技術棧：<span class="placeholder">[技術棧，例如：Python + Scrapy / Node.js + Puppeteer / Go + Colly]</span>
+爬取規模：<span class="placeholder">[預計爬取量，例如：每日 10 萬個頁面]</span>
+存儲方式：<span class="placeholder">[MongoDB / Elasticsearch / S3]</span>
+
+要求：
+1. 設計完整嘅爬蟲架構：URL Frontier、Fetcher、Parser、Dedup、Storage
+2. 實現 BFS 遍歷策略，支持 URL 優先級排序
+3. 用 Bloom Filter 做 URL 去重，避免重複爬取
+4. 遵守 robots.txt 規則，實現 Politeness Policy（同域名限速）
+5. 處理 JavaScript 渲染嘅頁面（SSR vs Headless Browser）
+6. 加入錯誤處理同 retry 機制
+7. 提供完整嘅代碼同 Docker Compose 部署配置</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Crawler Politeness 同 Rate Limiting</h4>
+          <div class="prompt-text" id="prompt2">設計一個 Web Crawler 嘅 Politeness 同 Rate Limiting 模組：
+
+爬取目標：<span class="placeholder">[目標網站數量同類型，例如：1000 個唔同 domain 嘅網站]</span>
+爬取頻率要求：<span class="placeholder">[例如：同一 domain 每秒最多 1 個請求]</span>
+
+要求：
+1. 設計 per-domain rate limiter，用 Token Bucket 或 Sliding Window 算法
+2. 實現 robots.txt parser，自動讀取同遵守每個網站嘅規則
+3. 設計 crawl delay 機制，根據 robots.txt 嘅 Crawl-delay 指令
+4. 處理 HTTP 429 (Too Many Requests) 同 503 嘅 backoff 策略
+5. 實現 User-Agent rotation 同 IP rotation（如果需要）
+6. 設計 priority queue，對重要嘅 URL 優先爬取
+7. 加入 monitoring dashboard，顯示每個 domain 嘅爬取狀態同速率</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
 </body>
 </html>

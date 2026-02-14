@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -50,6 +58,7 @@
       <button class="tab-btn active" data-tab="tab-print">① Print Statement</button>
       <button class="tab-btn" data-tab="tab-debugger">② Debugger</button>
       <button class="tab-btn" data-tab="tab-choose">③ 點樣揀</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ==================== TAB 1: Print Statement ==================== -->
@@ -342,12 +351,56 @@
 
     </div>
 
+    <!-- ==================== TAB 4: AI Viber ==================== -->
+    <div id="ai-viber" class="tab-content">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設定 VS Code Debugging 工作流程</h4>
+          <div class="prompt-text" id="prompt1">幫手設定一個完整嘅 VS Code debugging 工作流程，適用於 <span class="placeholder">[語言，例如 Python / Node.js / TypeScript]</span> 項目。
+
+要求：
+1. 生成 .vscode/launch.json 配置檔，包含最常用嘅 debug 設定
+2. 設定 Breakpoint 嘅最佳實踐位置建議（例如 API endpoint handler、error handling block）
+3. 加入 Conditional Breakpoint 同 Logpoint 嘅示範
+4. 如果係 <span class="placeholder">[框架，例如 Express / FastAPI / Next.js]</span>，要支援 hot reload debugging
+5. 附加一份 Debug Cheatsheet，列出最常用嘅 Step Over / Step Into / Watch Expression 快捷鍵</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Logging 策略取代 Print Debugging</h4>
+          <div class="prompt-text" id="prompt2">設計一個 production-grade 嘅 logging 策略，完全取代 print statement debugging，適用於 <span class="placeholder">[語言，例如 Python / Node.js / Java]</span> 項目。
+
+要求：
+1. 用 <span class="placeholder">[logging library，例如 Winston / Pino / Python logging / Log4j]</span> 設定 structured logging
+2. 定義 log levels（DEBUG / INFO / WARN / ERROR）嘅使用準則
+3. 加入 request ID / correlation ID 追蹤，方便喺分散式環境 debug
+4. 設定 log rotation 同 output format（JSON for production, pretty-print for dev）
+5. 示範點樣用 environment variable 控制 log level，唔使改 code
+6. 加入敏感資訊過濾（例如唔好 log 密碼、token）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

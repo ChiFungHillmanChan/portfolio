@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="fanout">② Fan-out 策略</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -195,12 +204,75 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 News Feed 系統（Fan-out 策略）</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個 News Feed 系統嘅後端架構。
+
+要求：
+- 支援 Fan-out on Write 同 Fan-out on Read 兩種模式
+- 普通用戶（follower 少於 <span class="placeholder">[5000]</span>）用 push 模式，名人用戶用 pull 模式
+- 用 Redis Sorted Set 做每個用戶嘅 Feed Cache
+- 用 <span class="placeholder">[Node.js / Python / Go]</span> 寫核心邏輯
+- 包含 Feed Service、Fan-out Service、Ranking Service 三個主要組件
+- 支援 cursor-based pagination，每頁載入 20 條 post
+- 畫出完整嘅系統架構圖，標明每個組件之間嘅數據流向</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Feed Ranking Algorithm</h4>
+          <div class="prompt-text" id="prompt2">用 <span class="placeholder">[Python / TypeScript]</span> 實現一個 News Feed Ranking Algorithm。
+
+需求：
+- 輸入：一組候選 post（包含 post_id、author_id、created_at、likes、comments、shares）
+- 輸出：按 relevance score 排序嘅 post 列表
+- Ranking 因素包括：
+  1. 時間衰減（越新嘅 post 分數越高，用 exponential decay）
+  2. 互動率（likes + comments * 2 + shares * 3）
+  3. 用戶同作者嘅親密度（基於歷史互動次數）
+  4. Post 類型加權（<span class="placeholder">[圖片 1.2x / 影片 1.5x / 文字 1.0x]</span>）
+- 寫埋單元測試，驗證排序結果係咪合理
+- 附帶解釋每個因素嘅權重點樣調整</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立 Real-time Feed 推送</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[Node.js + Socket.io / Go + WebSocket]</span> 建立一個 Real-time News Feed 推送系統。
+
+功能要求：
+- 當有新 post 發佈時，即時推送通知俾相關 follower
+- 用 Redis Pub/Sub 做消息廣播
+- 前端收到通知後顯示「有 X 條新動態」嘅提示
+- 支援多台 Server 嘅分佈式場景
+- 包含 connection 管理（心跳檢測、自動重連）
+- 預計用戶量：<span class="placeholder">[10,000 / 100,000]</span> 同時在線
+- 寫出完整嘅前後端代碼同部署建議</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① Snowflake 架構</button>
       <button class="tab-btn" data-tab="structure">② ID 結構解析</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -206,12 +215,74 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計分佈式 ID 生成服務</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個分佈式唯一 ID 生成服務，基於 Snowflake 架構。
+
+技術要求：
+- 64-bit ID 結構：1 bit sign + 41 bits timestamp + 5 bits datacenter + 5 bits machine + 12 bits sequence
+- 每毫秒每部機最多生成 4096 個 ID
+- 無需中心化協調（Coordination-free），每個 node 本地生成
+- 處理時鐘回撥問題（NTP sync 導致嘅 clock drift）
+- ID 必須 time-sortable，方便 B-tree index 插入
+
+部署環境：<span class="placeholder">[例如：3 個 Datacenter，每個 Datacenter 最多 32 部機]</span>
+預計 QPS：<span class="placeholder">[例如：每秒 10 萬個 ID]</span>
+技術棧：<span class="placeholder">[例如：Go / Java / Rust]</span>
+
+請提供完整嘅 code 實現、unit test、同 benchmark 測試。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 揀選 ID 策略分析</h4>
+          <div class="prompt-text" id="prompt2">幫手分析以下三種 ID 生成策略，揀出最適合嘅方案：
+
+三個候選方案：
+1. Snowflake 64-bit（timestamp + datacenter + machine + sequence）
+2. UUID v4（128-bit random）
+3. ULID（128-bit，timestamp prefix + random suffix）
+
+項目背景：
+- 應用類型：<span class="placeholder">[例如：電商訂單系統 / 社交平台 / IoT 設備管理]</span>
+- 預計每日生成 ID 數量：<span class="placeholder">[例如：5000 萬個]</span>
+- 資料庫類型：<span class="placeholder">[例如：PostgreSQL / MySQL / DynamoDB]</span>
+- 需要 time-sortable：<span class="placeholder">[是 / 否]</span>
+- 需要 URL-safe：<span class="placeholder">[是 / 否]</span>
+
+請從以下維度做對比分析：
+- 碰撞機率
+- 存儲空間
+- Index 性能（B-tree 友好度）
+- 可讀性同 Debug 難度
+- 實現複雜度
+
+最後畀出明確嘅建議同理由。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

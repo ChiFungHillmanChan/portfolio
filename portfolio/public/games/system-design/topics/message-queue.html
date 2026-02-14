@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="semantics">② 消息語義</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -211,12 +220,81 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計異步消息架構</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個基於 Message Queue 嘅異步消息架構，場景係 <span class="placeholder">[業務場景，例如：電商訂單處理、即時通知系統、數據管道]</span>。
+
+技術棧：<span class="placeholder">[後端技術棧，例如：Java Spring Boot / Node.js / Go]</span>
+預計消息量：<span class="placeholder">[每秒消息數，例如：50,000 msg/s]</span>
+消息語義要求：<span class="placeholder">[At-least-once / Exactly-once]</span>
+
+要求：
+1. 畫出完整嘅架構圖，標明 Producer、Broker、Consumer 嘅角色
+2. 設計 Topic 同 Partition 嘅劃分策略，解釋分幾多個 Partition
+3. Consumer Group 嘅設計——邊啲服務共用一個 Group，邊啲獨立消費
+4. 處理消息失敗嘅 Dead Letter Queue（DLQ）機制
+5. 保證消息唔會重複處理嘅冪等性方案
+6. 提供 Producer 同 Consumer 嘅代碼範例</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — Kafka vs RabbitMQ vs SQS 選型</h4>
+          <div class="prompt-text" id="prompt2">根據以下需求，分析應該用 Kafka、RabbitMQ 定 AWS SQS：
+
+業務場景：<span class="placeholder">[描述場景，例如：微服務間通訊、Event Sourcing、任務排程]</span>
+關鍵需求：<span class="placeholder">[列出關鍵需求，例如：消息順序性、持久化、replay 能力]</span>
+團隊規模：<span class="placeholder">[團隊大小同運維能力]</span>
+部署環境：<span class="placeholder">[雲端 / 自建 / 混合]</span>
+
+要求：
+1. 對比三者嘅架構差異（push vs pull、broker 模式、存儲機制）
+2. 分析 throughput、latency、message ordering 嘅差異
+3. 運維複雜度同成本對比
+4. 針對呢個場景嘅最佳選擇同理由
+5. 提供選定方案嘅部署架構圖同配置建議
+6. 設計 monitoring 同 alerting 策略</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 實作 Event-Driven 微服務</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[技術棧，例如：Node.js + Kafka / Java + RabbitMQ]</span> 實作一個 Event-Driven 微服務系統：
+
+場景：<span class="placeholder">[具體場景，例如：用戶註冊後觸發歡迎郵件、建立預設設定、記錄 analytics]</span>
+
+要求：
+1. 設計 Event Schema（包括 event type、payload、metadata、timestamp）
+2. 實作 Producer Service，發佈事件到 Message Queue
+3. 實作至少 2 個 Consumer Service，各自處理同一事件
+4. 實現 retry 機制同 Dead Letter Queue 處理失敗消息
+5. 加入冪等性保障（用 event ID 做 dedup）
+6. 寫 Docker Compose 配置，一鍵啟動成個系統</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

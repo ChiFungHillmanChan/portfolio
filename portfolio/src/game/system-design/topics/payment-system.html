@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="idempotency">② 冪等性設計</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -202,12 +211,80 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計支付處理 Pipeline</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅支付處理 Pipeline，要求如下：
+
+核心功能：
+- 支援 <span class="placeholder">[例如：Stripe / PayPal / 本地支付]</span> 作為 Payment Gateway
+- Idempotency Key 機制：同一請求重複發多次，只會處理一次
+- Double-entry Bookkeeping：每筆交易 debit = credit
+- Webhook 處理：接收 Payment Gateway 嘅異步回調，包含簽名驗證
+- 支援退款流程（Full Refund 同 Partial Refund）
+
+安全要求：
+- Webhook 簽名驗證（HMAC）
+- PCI DSS 合規考量
+- 敏感數據加密存儲
+
+應用場景：<span class="placeholder">[例如：電商平台 / SaaS 訂閱 / Marketplace]</span>
+預計每日交易量：<span class="placeholder">[例如：10 萬筆]</span>
+
+請提供完整嘅架構圖、Database Schema（包含 Ledger 表設計）、API Endpoints、同核心流程嘅 Sequence Diagram。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 處理支付失敗、重試同冪等性</h4>
+          <div class="prompt-text" id="prompt2">幫手設計支付系統入面嘅失敗處理、重試同冪等性機制。
+
+需要處理嘅失敗場景：
+1. 網絡超時：Payment Gateway 冇回應（可能已經扣咗款）
+2. Gateway 返回錯誤（卡餘額不足、被拒絕等）
+3. Webhook 延遲或重複送達
+4. 部分成功：扣款成功但訂單更新失敗
+
+冪等性設計：
+- Idempotency Key 嘅生成策略（建議用 <span class="placeholder">[order_id + hash / UUID]</span>）
+- Key 嘅存儲方案（Redis / DB）同 TTL 設定
+- 重複請求嘅回應策略
+
+重試機制：
+- Exponential Backoff 參數（初始間隔、最大間隔、最大重試次數）
+- 用 Saga Pattern 處理分佈式事務失敗
+- 每個 step 嘅 compensate 動作設計
+
+每日對帳需求：
+- 同 Payment Gateway 報表自動對帳
+- 差異檢測同 Alert 機制
+
+技術棧：<span class="placeholder">[例如：Node.js + PostgreSQL + Redis + Message Queue]</span>
+請提供核心邏輯嘅 Pseudocode 同 State Machine Diagram。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

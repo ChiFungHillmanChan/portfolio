@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="tools">① 監控工具</button>
       <button class="tab-btn" data-tab="metrics">② 關鍵指標</button>
       <button class="tab-btn" data-tab="alerting">③ 告警系統</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- Tab 1: 監控工具 -->
@@ -451,12 +460,79 @@
       </div>
     </div>
 
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計監控 + 告警系統架構</h4>
+          <div class="prompt-text" id="prompt1">為 <span class="placeholder">[系統名稱，例如：線上教育平台]</span> 設計一套完整嘅監控同告警系統。
+
+系統架構：<span class="placeholder">[簡述，例如：React 前端 + Node.js API + PostgreSQL + Redis，部署喺 Kubernetes]</span>
+
+請輸出以下內容：
+1. 監控架構圖（文字描述），包含：
+   - Metrics 收集路徑：Application → Prometheus → Grafana
+   - Logs 收集路徑：Application → Fluentd → Elasticsearch → Kibana
+   - Tracing 路徑（如適用）：Application → Jaeger
+
+2. 必須追蹤嘅 5 大關鍵指標：
+   - 每個指標嘅 PromQL 查詢語句
+   - 正常範圍同異常 Threshold
+   - 對應嘅 Grafana Panel 類型（Gauge / Graph / Table）
+
+3. 告警規則設計（至少 6 條）：
+   - Warning 同 Critical 兩個級別
+   - 每條規則嘅通知渠道同靜默策略
+
+4. Dashboard 佈局建議（Overview Dashboard + Service-level Dashboard）
+
+5. 由零開始嘅部署步驟（用 Docker Compose 或 Helm Chart）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — Build Health Check Dashboard</h4>
+          <div class="prompt-text" id="prompt2">用 <span class="placeholder">[技術棧，例如：Node.js + Express]</span> 建立一個 Health Check Dashboard 系統。
+
+需要監控嘅服務：<span class="placeholder">[列出服務，例如：API Server、Database、Redis、Message Queue、Third-party Payment API]</span>
+
+功能要求：
+1. Health Check Endpoint（/health）：
+   - 檢查每個依賴服務嘅連接狀態
+   - 返回 JSON 格式嘅健康報告（每個服務嘅狀態、延遲、最後檢查時間）
+   - 整體狀態判斷邏輯（全部 healthy = 200，部分 degraded = 200 + warning，核心服務 down = 503）
+
+2. Dashboard 前端頁面：
+   - 實時顯示所有服務嘅健康狀態（綠 / 黃 / 紅）
+   - 歷史 Uptime 百分比（過去 24 小時 / 7 日 / 30 日）
+   - 自動刷新（每 30 秒）
+
+3. 告警整合：
+   - 服務狀態變化時發送 <span class="placeholder">[通知渠道，例如：Slack Webhook]</span> 通知
+   - 避免重複告警（同一個問題只通知一次，恢復時再通知）
+
+請直接輸出可以運行嘅完整 Code。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
 <script>
   const tabs = document.querySelectorAll('.tab-btn');
   const contents = document.querySelectorAll('.tab-content');
   tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+  function copyPrompt(id, btn) {
+    const text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✅ 已複製';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
 </script>
 </body>
 </html>

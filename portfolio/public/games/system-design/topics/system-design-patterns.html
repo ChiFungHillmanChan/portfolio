@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="tab-scale">擴展模式</button>
       <button class="tab-btn" data-tab="tab-realtime">實時與異步</button>
       <button class="tab-btn" data-tab="tab-reliability">可靠性模式</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ============ TAB 1: 擴展模式 ============ -->
@@ -388,12 +397,89 @@
       </div>
     </div>
 
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 將設計模式應用到實際項目</h4>
+          <div class="prompt-text" id="prompt1">分析 <span class="placeholder">[項目名稱，例如：社交媒體平台]</span> 嘅架構需求，推薦最適合嘅系統設計模式組合。
+
+項目概況：
+- 預計用戶量：<span class="placeholder">[例如：100 萬日活用戶]</span>
+- 讀寫比例：<span class="placeholder">[例如：讀取佔 90%，寫入佔 10%]</span>
+- 核心功能：<span class="placeholder">[例如：Feed 流、即時通訊、通知推送、搜索]</span>
+
+請針對每個核心功能，推薦適用嘅設計模式並解釋原因：
+
+1. 擴展模式（Scale Reads / Scale Writes / CQRS）：
+   - 邊個功能適合用邊個模式？
+   - Caching 策略點設計？Cache Invalidation 用咩方式？
+   - 需唔需要做 Sharding？用咩 Sharding Key？
+
+2. 實時與異步模式：
+   - 即時功能用 WebSocket 定 SSE？
+   - 長流程任務用咩 Message Queue？
+   - Worker Pool 嘅併發數點樣設定？
+
+3. 可靠性模式：
+   - 邊啲 API 需要 Idempotency？
+   - Circuit Breaker 加喺邊啲服務之間？
+   - Self-healing 機制點設計？
+
+最後輸出一份完整嘅架構設計文件，包含技術選型同 Trade-off 分析。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 架構模式選擇決策指南</h4>
+          <div class="prompt-text" id="prompt2">建立一份「架構模式選擇決策指南」，幫助喺 <span class="placeholder">[場景，例如：Monolith 轉 Microservices 過程中]</span> 做出正確嘅技術決策。
+
+請針對以下每對架構選擇，輸出詳細嘅對比分析：
+
+1. Monolith vs Microservices
+   - 團隊規模喺幾多人以下適合 Monolith？
+   - 咩時候先真正需要拆分微服務？
+   - 拆分嘅具體步驟同風險
+
+2. SQL vs NoSQL
+   - 根據數據模型點揀？
+   - 需要 ACID Transaction 嘅場景用咩？
+   - 可以混合使用嘅最佳實踐
+
+3. Synchronous vs Asynchronous Communication
+   - 邊啲 API 一定要同步？
+   - 引入 Message Queue 嘅判斷標準
+   - Event-Driven Architecture 嘅適用條件
+
+4. Cache-Aside vs Write-Through vs Write-Behind
+   - 每種策略嘅一致性保證
+   - 根據讀寫比例點揀？
+
+每個決策點都需要：
+- 決策流程圖（用文字描述 If-Else 邏輯）
+- 真實案例（邊間公司用咗邊個方案、點解）
+- 常見踩坑同避免方法</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

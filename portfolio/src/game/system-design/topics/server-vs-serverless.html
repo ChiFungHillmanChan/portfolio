@@ -45,6 +45,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
     .compare-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
     .compare-table th { text-align: left; padding: 12px 14px; background: #13151c; color: #a5b4fc; font-weight: 600; border-bottom: 2px solid #2a2d3a; }
     .compare-table td { padding: 10px 14px; border-bottom: 1px solid #2a2d3a; color: #c0c4cc; vertical-align: top; line-height: 1.6; }
@@ -67,6 +75,7 @@
       <button class="tab-btn active" data-tab="server">① Server 方案</button>
       <button class="tab-btn" data-tab="serverless">② Serverless 方案</button>
       <button class="tab-btn" data-tab="decision">③ 點樣揀</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Server ===================== -->
@@ -502,6 +511,84 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 4: AI Viber -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 評估 Server vs Serverless 方案</h4>
+          <div class="prompt-text" id="prompt1">幫手做一份 Server vs Serverless 技術評估報告，針對以下項目：
+
+項目類型：<span class="placeholder">[項目描述，例如 SaaS 平台 / 電商網站 / 內部工具]</span>
+預計用戶量：<span class="placeholder">[用戶數，例如 10K DAU / 100K MAU]</span>
+流量模式：<span class="placeholder">[穩定 / Spiky / 有明顯高峰時段]</span>
+團隊規模：<span class="placeholder">[人數，例如 2 人 / 5 人 / 10 人以上]</span>
+預算範圍：<span class="placeholder">[月預算，例如 $100 / $500 / $2000]</span>
+
+評估內容：
+1. 兩個方案嘅月成本估算（包含 compute、storage、bandwidth）
+2. 開發同部署時間比較
+3. 維護負擔分析（需要幾多人手、幾多時間）
+4. Scaling 能力評估（流量增長 10x 時嘅應對方案）
+5. Cold Start 影響分析（如果揀 Serverless）
+6. Vendor Lock-in 風險評估
+7. 最終建議：揀邊個方案，附帶理由
+
+輸出格式：結構化報告，每個評估項目附帶數據同結論。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Serverless 架構（AWS Lambda / Cloudflare Workers）</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一套完整嘅 Serverless 架構，用 <span class="placeholder">[平台，例如 AWS Lambda + API Gateway / Cloudflare Workers]</span> 實現以下功能：
+
+應用類型：<span class="placeholder">[應用描述，例如 REST API / 圖片處理 Pipeline / Webhook 處理器]</span>
+主要功能：<span class="placeholder">[功能列表，例如 用戶認證、CRUD 操作、文件上傳]</span>
+Database：<span class="placeholder">[數據庫選擇，例如 DynamoDB / Supabase / PlanetScale]</span>
+
+包含以下內容：
+1. 架構圖（用文字描述每個 component 同佢哋嘅連接）
+2. 每個 Lambda Function / Worker 嘅職責劃分
+3. API Gateway / Router 配置
+4. Database schema 設計
+5. 認證方案（JWT / API Key）
+6. 完整嘅 serverless.yml 或 wrangler.toml 配置
+7. CI/CD pipeline 設定（GitHub Actions）
+8. 監控同 logging 方案（CloudWatch / Sentry）
+9. Cold Start 優化策略
+
+輸出格式：架構文檔 + 可以直接用嘅配置檔同 boilerplate code。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 混合架構設計（Server + Serverless）</h4>
+          <div class="prompt-text" id="prompt3">幫手設計一套混合架構，將 Server 同 Serverless 結合使用：
+
+項目背景：<span class="placeholder">[項目描述，例如 電商平台需要處理訂單 + 發送通知 + 生成報表]</span>
+
+設計要求：
+- 主要 API 用 Server（<span class="placeholder">[框架，例如 Express / FastAPI / Go]</span>）處理穩定流量
+- Background Job 用 Serverless 處理（<span class="placeholder">[任務類型，例如 發送 Email / 圖片壓縮 / PDF 生成]</span>）
+- 兩者之間用 Message Queue 連接
+
+包含以下內容：
+1. 整體架構圖（邊啲 component 用 Server、邊啲用 Serverless）
+2. Message Queue 選擇同配置（SQS / Redis Queue / Kafka）
+3. Server 部分嘅 Docker + 部署配置
+4. Serverless 部分嘅 Function 設計
+5. 兩者之間嘅通訊協議同錯誤處理
+6. 成本估算（Server always-on + Serverless pay-per-use）
+7. 監控方案（統一 logging 同 alerting）
+
+輸出格式：架構設計文檔 + 核心 code snippet + 部署指南。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -516,6 +603,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

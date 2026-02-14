@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="matchmaking">① 配對系統</button>
       <button class="tab-btn" data-tab="game-service">② 遊戲服務</button>
       <button class="tab-btn" data-tab="websocket">③ WebSocket vs UDP</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="matchmaking">
@@ -363,12 +372,68 @@
         </div>
       </div>
     </div>
+
+    <!-- ==================== Tab 4: AI Viber ==================== -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計國際象棋遊戲架構（OOP）</h4>
+          <div class="prompt-text" id="prompt1">幫手用 <span class="placeholder">[語言，例如 TypeScript / Python / Java / C#]</span> 設計一個國際象棋遊戲嘅 OOP 架構。
+
+要求：
+1. 設計 class hierarchy：
+   - 抽象 Piece class（共用邏輯）→ King / Queen / Rook / Bishop / Knight / Pawn 子類
+   - Board class 管理 8x8 棋盤狀態
+   - Game class 管理遊戲流程（輪次、勝負判定）
+   - Player class（白方 / 黑方）
+2. 每隻棋子實作 getValidMoves() 方法，返回所有合法移動位置
+3. 實作特殊規則：Castling（王車易位）、En Passant（吃過路兵）、Pawn Promotion（兵升變）
+4. 實作 Check（將軍）同 Checkmate（將殺）判定邏輯
+5. 用 Design Patterns：Strategy Pattern（棋子移動策略）、Observer Pattern（UI 更新通知）
+6. 提供完整嘅 UML class diagram 描述</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實作即時對戰 Game State 管理系統</h4>
+          <div class="prompt-text" id="prompt2">幫手實作一個即時對戰嘅 game state 管理系統，用 <span class="placeholder">[技術棧，例如 Node.js + Socket.IO / Python + WebSocket / Go + gorilla/websocket]</span>。
+
+要求：
+1. 設計 Game State 數據結構：
+   - 棋盤狀態（每格嘅棋子資訊）
+   - 當前輪次（白方 / 黑方）
+   - 移動歷史記錄（支援 undo / replay）
+   - 計時器狀態（每方剩餘時間）
+2. 實作 WebSocket server 處理即時通訊：
+   - 玩家連接 / 斷線重連機制
+   - 棋步驗證（server-side validation，防止作弊）
+   - 廣播棋步俾對手
+3. 實作 matchmaking 配對邏輯（按 ELO rating 分隊列）
+4. 遊戲結束後更新玩家 ranking（ELO 計算公式）
+5. 加入 spectator mode（觀戰功能）——只接收 state update，唔可以操作
+6. 處理 edge cases：玩家斷線超過 <span class="placeholder">[時間，例如 60 秒]</span> 自動判負</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

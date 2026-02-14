@@ -276,6 +276,15 @@
       .card { padding: 20px; }
       .key-points { grid-template-columns: 1fr; }
     }
+
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -289,6 +298,7 @@
       <button class="tab-btn active" data-tab="plan">① Plan 階段</button>
       <button class="tab-btn" data-tab="execute">② Execute 階段</button>
       <button class="tab-btn" data-tab="verify">③ Verify 階段</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Plan ===================== -->
@@ -743,6 +753,68 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 AI Coding Agent 架構</h4>
+          <div class="prompt-text" id="prompt1">幫我設計一個 AI coding agent 嘅完整架構，基於 Plan → Execute → Verify loop。
+
+用途：<span class="placeholder">[例如：自動修 bug / 自動寫 unit test / 自動做 code review / 自動生成 API endpoint]</span>
+技術棧：<span class="placeholder">[例如：Python + OpenAI API / TypeScript + Anthropic Claude API]</span>
+
+要求：
+- Plan 階段：設計 context 收集策略（Shell Search + Semantic Search）
+- Execute 階段：定義 Agent 可以用嘅 tools（file read/write、shell command、API call）
+- Verify 階段：設計驗證機制（run tests、LLM-as-Judge）
+- 實作 loop 控制（最多重試 3 次，避免無限循環）
+- 設計 system prompt，令 Agent 知道自己嘅角色同限制
+- 加入 token 使用量追蹤同 cost estimation
+- 寫出完整嘅 code skeleton，包括主要嘅 class 同 function</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實作 Tool-Using AI Agent</h4>
+          <div class="prompt-text" id="prompt2">幫我用 <span class="placeholder">[OpenAI Function Calling / Anthropic Tool Use / LangChain]</span> 實作一個 tool-using AI agent。
+
+Agent 需要以下工具：
+- 讀取檔案內容（read_file）
+- 寫入 / 修改檔案（write_file）
+- 執行 shell 指令（run_command）
+- 搜尋 codebase（search_code）
+- <span class="placeholder">[其他自訂工具，例如：query database / call API / send notification]</span>
+
+要求：
+- 定義每個 tool 嘅 JSON schema（name、description、parameters）
+- 實作 tool execution layer（接收 LLM 嘅 tool call，執行對應操作，返回結果）
+- 加入安全限制（例如：唔可以刪除 production 檔案、shell 指令白名單）
+- 實作 conversation loop（LLM 可以連續調用多個 tools）
+- 加入 error handling（tool 執行失敗嘅時候，將 error 返俾 LLM 處理）
+- 寫出完整嘅可運行 code</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — Sub-Agent 架構設計</h4>
+          <div class="prompt-text" id="prompt3">幫我設計一個 multi-agent 系統，有一個 main agent 協調多個 sub-agents。
+
+場景：<span class="placeholder">[例如：全端開發團隊 — 有 frontend agent、backend agent、testing agent / Code review 系統 — 有 security agent、performance agent、style agent]</span>
+
+要求：
+- Main Agent：負責理解需求、拆分任務、分配俾 sub-agents
+- Sub-Agent 設計：每個 sub-agent 有獨立嘅 system prompt 同 tools
+- 通訊機制：定義 agents 之間嘅 message format
+- Context 管理：每個 sub-agent 有自己嘅 context window，唔會互相污染
+- 結果合併：Main Agent 收集所有 sub-agent 嘅輸出，整合成最終結果
+- 用 <span class="placeholder">[Python / TypeScript]</span> 寫出完整嘅 framework code</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -759,6 +831,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

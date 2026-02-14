@@ -36,6 +36,14 @@
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        /* AI Viber */
+        .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+        .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+        .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+        .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+        .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        .copy-btn:hover { background: #4f46e5; }
+        .copy-btn.copied { background: #10B981; }
     </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
             <button class="tab-btn active" data-tab="git-basics">① Git 基礎</button>
             <button class="tab-btn" data-tab="github-collab">② GitHub 協作</button>
             <button class="tab-btn" data-tab="learning">③ 學習路線</button>
+            <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
         </div>
 
         <!-- Tab 1: Git 基礎 -->
@@ -296,12 +305,61 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tab 4: AI Viber -->
+        <div id="ai-viber" class="tab-content">
+            <div class="card">
+                <h2>AI Viber</h2>
+                <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+                <div class="prompt-card">
+                    <h4>Prompt 1 — 設計 Git Branching 策略</h4>
+                    <div class="prompt-text" id="prompt1">幫手設計一個適合 <span class="placeholder">[團隊規模，例如 2-5 人 / 10+ 人]</span> 嘅 Git branching 策略，項目類型係 <span class="placeholder">[項目類型，例如 SaaS Web App / Mobile App / Open Source Library]</span>。
+
+要求：
+1. 定義 branch 命名規範（feature / bugfix / hotfix / release）
+2. 畫出完整嘅 branching workflow（由開 branch 到 merge 入 main）
+3. 定義 merge 策略（squash merge / rebase / merge commit）同適用場景
+4. 設定 branch protection rules（require PR review、status checks、no force push）
+5. 加入 commit message 規範（Conventional Commits format）
+6. 處理 conflict resolution 嘅標準流程</div>
+                    <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+                </div>
+
+                <div class="prompt-card">
+                    <h4>Prompt 2 — 設定 GitHub Actions CI/CD Pipeline</h4>
+                    <div class="prompt-text" id="prompt2">幫手設定一個完整嘅 GitHub Actions CI/CD pipeline，適用於 <span class="placeholder">[框架，例如 Next.js / Express / Django / Spring Boot]</span> 項目，部署到 <span class="placeholder">[平台，例如 Vercel / AWS / Railway / Docker]</span>。
+
+要求：
+1. 生成 .github/workflows/ci.yml，包含以下 jobs：
+   - Lint check（ESLint / Prettier / Black）
+   - Unit test（Jest / Pytest / JUnit）
+   - Build verification
+2. 生成 .github/workflows/deploy.yml，包含：
+   - 自動部署 main branch 到 production
+   - PR 自動部署 preview environment
+3. 設定 environment secrets 管理（API keys、database URL）
+4. 加入 cache 策略加速 CI（node_modules / pip cache）
+5. 設定 PR template 同 auto-labeling</div>
+                    <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
         tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+        function copyPrompt(id, btn) {
+          const text = document.getElementById(id).innerText;
+          navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = '✅ 已複製';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+          });
+        }
     </script>
 </body>
 </html>

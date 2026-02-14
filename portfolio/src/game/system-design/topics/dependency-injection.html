@@ -51,6 +51,14 @@
     .comparison-col.bad h4 { color: #f87171; }
     .comparison-col.good h4 { color: #34d399; }
     .comparison-col p { font-size: 0.85rem; color: #9ca3af; line-height: 1.7; margin-bottom: 0; }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -65,6 +73,7 @@
       <button class="tab-btn active" data-tab="tab-concept">基本概念</button>
       <button class="tab-btn" data-tab="tab-comparison">有 vs 冇 DI</button>
       <button class="tab-btn" data-tab="tab-testing">測試優勢</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ==================== TAB 1: 基本概念 ==================== -->
@@ -482,12 +491,74 @@
       </div>
     </div>
 
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 喺 Project 入面實現 DI Pattern</h4>
+          <div class="prompt-text" id="prompt1">幫手喺 <span class="placeholder">[語言：TypeScript / Java / Python / Go]</span> Project 入面實現 Dependency Injection Pattern。
+
+Project 類型：<span class="placeholder">[REST API / CLI 工具 / Web Application]</span>
+框架：<span class="placeholder">[Express / Spring Boot / FastAPI / Gin]</span>
+
+需要實現：
+1. 定義核心 Interface / Abstract Class：
+   - Logger Interface（ConsoleLogger、FileLogger、CloudLogger 實作）
+   - Database Interface（PostgresDB、MockDB 實作）
+   - EmailService Interface（SMTPService、MockEmailService 實作）
+2. Constructor Injection：所有 Service Class 透過 Constructor 接收依賴
+3. DI Container / Composition Root：集中管理所有依賴嘅建立同注入
+4. 環境切換：Production 用真實依賴，Testing 用 Mock 依賴
+5. Unit Test 範例：展示點樣用 Mock 測試每個 Service
+
+請提供完整嘅 code 結構、每個 Interface 同實作嘅 code、同 DI Container 嘅配置。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 重構現有 Code 使用 DI</h4>
+          <div class="prompt-text" id="prompt2">幫手將以下 tightly coupled 嘅 code 重構為使用 Dependency Injection。
+
+現有 code（有問題嘅寫法）：
+<span class="placeholder">[貼上需要重構嘅 code，例如：
+class OrderService {
+  constructor() {
+    this.db = new PostgresDatabase();
+    this.mailer = new SMTPMailer();
+    this.logger = new ConsoleLogger();
+  }
+}]</span>
+
+重構要求：
+1. 將所有 hard-coded 依賴改為 Constructor Injection
+2. 為每個依賴定義 Interface / Type
+3. 建立 Composition Root，集中管理依賴 wiring
+4. 提供對應嘅 Unit Test，用 Mock 替代所有外部依賴
+5. 確保重構後功能完全唔變（行為一致）
+6. 加入清楚嘅註釋解釋每個改動嘅原因
+
+請逐步展示重構過程，由識別問題 → 定義 Interface → 改寫 Constructor → 建立 DI Container → 寫 Test。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="manual">① 手動部署問題</button>
       <button class="tab-btn" data-tab="iac">② Infrastructure as Code</button>
       <button class="tab-btn" data-tab="cicd">③ CI/CD Pipeline</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- Tab 1: 手動部署問題 -->
@@ -387,12 +396,92 @@
         </div>
       </div>
     </div>
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計完整嘅 CI/CD Pipeline</h4>
+          <div class="prompt-text" id="prompt1">為 <span class="placeholder">[項目名稱，例如：全端 SaaS 應用]</span> 設計一條完整嘅 CI/CD Pipeline。
+
+技術棧：<span class="placeholder">[例如：React 前端 + Node.js API + PostgreSQL，部署喺 AWS ECS]</span>
+CI/CD 工具：<span class="placeholder">[例如：GitHub Actions]</span>
+
+請輸出以下內容：
+
+1. Pipeline 各階段設計：
+   - Build Stage：編譯、安裝 Dependencies、生成 Docker Image
+   - Test Stage：Unit Test → Integration Test → E2E Test（並行執行策略）
+   - Security Stage：Dependency Vulnerability Scan、SAST 靜態分析
+   - Deploy Staging：自動部署到 Staging 環境 + Smoke Test
+   - Deploy Production：Blue-Green 或 Rolling Deployment + Health Check
+
+2. 完整嘅 GitHub Actions YAML 設定檔（可直接使用）
+
+3. 環境管理策略：
+   - Staging 同 Production 嘅環境變數管理（用 GitHub Secrets）
+   - Docker Image Tag 策略（Git SHA / Semantic Version）
+
+4. Rollback 機制：
+   - 自動 Rollback 觸發條件
+   - 手動 Rollback 嘅操作步驟
+
+5. Pipeline 優化建議：
+   - Cache 策略（Node Modules / Docker Layer）
+   - 並行執行同 Matrix Build
+   - 預計每次 Pipeline 嘅執行時間</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現自動化測試 + 部署策略</h4>
+          <div class="prompt-text" id="prompt2">為 <span class="placeholder">[項目名稱，例如：電商 API 後端]</span> 實現一套自動化測試同部署策略。
+
+技術棧：<span class="placeholder">[例如：Node.js + Express + PostgreSQL + Redis]</span>
+
+請輸出以下完整方案：
+
+1. 測試金字塔設計：
+   - Unit Test：核心業務邏輯嘅測試（目標覆蓋率 80%+）
+   - Integration Test：API Endpoint + Database 嘅整合測試
+   - E2E Test：關鍵用戶流程嘅端到端測試
+   - 每層嘅測試框架選擇同配置
+
+2. Infrastructure as Code：
+   - Docker Compose 開發環境設定（Application + DB + Redis）
+   - Dockerfile 最佳實踐（多階段 Build、最小化 Image Size）
+   - 環境變數管理方案（.env 檔案結構）
+
+3. 部署策略比較同建議：
+   - Rolling Deployment vs Blue-Green vs Canary
+   - 根據項目規模推薦最適合嘅策略
+   - Health Check Endpoint 設計（/health 返回咩數據）
+
+4. 可直接使用嘅設定檔：
+   - Dockerfile
+   - docker-compose.yml
+   - GitHub Actions workflow YAML
+   - 測試 Config 檔案</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

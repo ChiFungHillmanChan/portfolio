@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="retry">② 重試機制</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -193,12 +202,57 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 建立異步任務處理系統</h4>
+          <div class="prompt-text" id="prompt1">幫手建立一個異步任務處理系統，用 <span class="placeholder">[BullMQ + Redis / AWS SQS / RabbitMQ]</span>，應用場景係 <span class="placeholder">[發送電郵通知 / 生成 PDF 報表 / 影片轉碼]</span>。
+
+要求包括：
+- Producer 端：API 收到請求後即時返回 202 Accepted，將任務 push 入 Queue
+- Consumer 端：Worker 從 Queue pull 任務並處理，支持多個 Worker 並行
+- 任務狀態追蹤：pending → processing → completed / failed
+- 支援 Priority Queue，緊急任務優先處理
+- 支援 Delayed Jobs（例如 30 分鐘後發送提醒）
+- 提供完整嘅 code，語言用 <span class="placeholder">[Node.js / Python / Go]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計重試同 Dead Letter Queue 策略</h4>
+          <div class="prompt-text" id="prompt2">設計一套完整嘅任務重試同錯誤處理機制，用 <span class="placeholder">[BullMQ / AWS SQS / Celery]</span>，場景係 <span class="placeholder">[支付回調處理 / 第三方 API 調用 / 資料同步]</span>。
+
+要求包括：
+- 實現 Exponential Backoff 重試策略（1s → 2s → 4s → 8s → 16s）
+- 加入 Jitter（隨機抖動）避免 Thundering Herd
+- 設定 Max Retries（建議 5 次），超過就送去 Dead Letter Queue
+- DLQ 監控同 Alert 機制（例如 DLQ 有新訊息就發 Slack 通知）
+- 任務冪等性設計（Idempotency Key），防止重試造成重複處理
+- 提供 DLQ 訊息重新處理嘅 Admin API
+- 提供完整嘅 code 同配置</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

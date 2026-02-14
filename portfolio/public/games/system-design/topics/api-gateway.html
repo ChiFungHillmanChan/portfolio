@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="features">② 核心功能</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1: Overview -->
@@ -239,6 +248,44 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 API Gateway 架構</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個 API Gateway，後端有 <span class="placeholder">[3-5 個微服務，例如 User / Order / Payment / Notification]</span>，技術棧用 <span class="placeholder">[Kong / Express.js + http-proxy / Nginx / AWS API Gateway]</span>。
+
+要求包括：
+- 統一入口路由：根據 URL path 將請求轉發去對應嘅微服務
+- JWT Authentication middleware，Gateway 統一驗證 token
+- Request / Response 轉換：為 Mobile 同 Web 返回唔同格式嘅 response（BFF 模式）
+- SSL Termination 配置
+- Logging middleware 記錄所有請求嘅 latency、status code、user info
+- Circuit Breaker 機制：後端服務掛咗就快速返回錯誤
+- 提供完整嘅 code 同配置文件，語言用 <span class="placeholder">[Node.js / Go / Python]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Rate Limiting 同 Auth 中間件</h4>
+          <div class="prompt-text" id="prompt2">喺 API Gateway 層面實現 Rate Limiting 同 Authentication 機制，場景係 <span class="placeholder">[SaaS 平台 / 開放 API / 電商系統]</span>，預期 QPS 係 <span class="placeholder">[1000 / 5000 / 10000]</span>。
+
+要求包括：
+- Rate Limiting 策略：支持按 user、IP、API endpoint 分別限流
+- 實現 Token Bucket 或 Sliding Window 算法
+- 超額時返回 429 Too Many Requests，附帶 Retry-After header
+- API Key / JWT 雙重驗證機制
+- CORS 跨域處理，統一喺 Gateway 設定
+- API Versioning 支持（/api/v1/ 同 /api/v2/ 路由去唔同版本）
+- 用 Redis 做分佈式限流計數器
+- 提供完整嘅 middleware code 同測試</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -253,6 +300,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

@@ -38,6 +38,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -51,6 +59,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="algorithms">② 限流演算法</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1: Overview -->
@@ -237,6 +246,51 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 實現 Rate Limiter（Token Bucket + Sliding Window）</h4>
+          <div class="prompt-text" id="prompt1">用 <span class="placeholder">[Node.js / Python / Go]</span> + Redis 實現兩種 Rate Limiting 演算法。
+
+要求：
+- 實現 Token Bucket 演算法：
+  - 每秒補充 <span class="placeholder">[10 / 50]</span> 個 token，桶容量上限 <span class="placeholder">[50 / 200]</span>
+  - 每個 request 消耗 1 個 token
+  - 用 Redis 儲存每個用戶嘅 token 數量同最後補充時間
+- 實現 Sliding Window 演算法：
+  - 窗口大小 <span class="placeholder">[1 分鐘 / 15 分鐘]</span>
+  - 每個窗口最多 <span class="placeholder">[100 / 900]</span> 個請求
+  - 用 Redis Sorted Set 記錄每個請求嘅 timestamp
+- 兩種演算法都要寫成 middleware，可以直接掛載到 API route
+- 超限時返回 429 Too Many Requests，包含 Retry-After header
+- 寫埋 HTTP response headers：X-RateLimit-Limit、X-RateLimit-Remaining、X-RateLimit-Reset</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計分佈式 Rate Limiting 系統</h4>
+          <div class="prompt-text" id="prompt2">設計一個 production-grade 嘅分佈式 Rate Limiting 系統。
+
+場景：
+- <span class="placeholder">[10 / 50]</span> 台 API Server 共享同一套限流規則
+- 支援多維度限流：per-user、per-IP、per-API-endpoint
+- 技術棧：<span class="placeholder">[Node.js / Go]</span> + Redis Cluster
+
+詳細要求：
+- 用 Redis 做中央計數器，確保所有 Server 共享 count
+- 用 Lua Script 保證 check-and-increment 嘅原子性
+- 設計 fallback 機制：Redis 掛咗嘅時候點處理（放行 vs 拒絕）
+- 實現多層限流規則（例如：每秒 10 次 + 每分鐘 100 次 + 每小時 1000 次）
+- 包含監控 dashboard 設計（顯示每個用戶嘅用量、被 rate limit 嘅次數）
+- 寫出完整代碼同配置文件</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -251,6 +305,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

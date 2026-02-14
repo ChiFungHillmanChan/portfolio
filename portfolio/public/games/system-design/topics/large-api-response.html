@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="pagination">① 分頁處理</button>
       <button class="tab-btn" data-tab="compression">② 數據壓縮</button>
       <button class="tab-btn" data-tab="offload">③ S3 卸載</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ==================== TAB 1: PAGINATION ==================== -->
@@ -494,6 +503,51 @@
       </div>
     </div>
 
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 實現 Pagination + Streaming 大數據回應</h4>
+          <div class="prompt-text" id="prompt1">幫手實現一個完整嘅 Large API Response 處理方案，用 <span class="placeholder">[Node.js / Python / Go / Java]</span> 建立。
+
+需求場景：一個 API endpoint 需要回傳 <span class="placeholder">[用戶列表 / 訂單紀錄 / 產品目錄]</span>，總數據量可能達到 <span class="placeholder">[10 萬 / 100 萬]</span> 條記錄。
+
+需要實現以下功能：
+1. Cursor-based Pagination：用 cursor 取代 offset，確保大數據量下效能穩定
+2. Server-Sent Events (SSE) Streaming：對需要即時更新嘅場景提供 streaming response
+3. Response 自動壓縮 Middleware（gzip + brotli，根據 Accept-Encoding 自動選擇）
+4. 分頁 metadata 標準格式（nextCursor、hasMore、totalCount）
+5. Rate Limiting 防止 client 過度請求
+
+技術棧：<span class="placeholder">[框架名]</span> + <span class="placeholder">[PostgreSQL / MySQL]</span> + Redis（快取熱門查詢）
+
+請提供完整嘅 API code、Database query 優化建議、同 client 端消費範例。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 API Response 優化架構</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一個完整嘅 API Response 優化架構，針對 <span class="placeholder">[電商平台 / SaaS 應用 / 數據分析平台]</span>。
+
+現有問題：
+- 部分 API endpoint 回應時間超過 <span class="placeholder">[3 秒 / 5 秒 / 10 秒]</span>
+- Response payload 大小經常超過 <span class="placeholder">[5MB / 10MB / 50MB]</span>
+- 大量 export 請求會拖慢整個 API server
+
+需要設計嘅方案：
+1. 多層快取策略：CDN Cache → Redis Cache → Application Cache
+2. S3 Offloading Pipeline：大檔案匯出 → 上傳 S3 → 回傳 pre-signed URL
+3. 異步 Job Queue：長時間嘅數據處理放入 background job，用 webhook 或 polling 通知完成
+4. GraphQL 或 Sparse Fieldsets：令 client 只請求需要嘅 field，減少 response size
+5. 監控同 alerting：追蹤 response time、payload size、error rate
+
+請提供架構圖描述、每個組件嘅技術選型建議、同實施優先順序。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -507,6 +561,15 @@
         document.getElementById(tab.dataset.tab)?.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

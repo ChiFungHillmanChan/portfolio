@@ -36,6 +36,14 @@
         .tab-content { display: none; animation: fadeIn 0.3s ease; }
         .tab-content.active { display: block; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        /* AI Viber */
+        .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+        .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+        .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+        .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+        .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+        .copy-btn:hover { background: #4f46e5; }
+        .copy-btn.copied { background: #10B981; }
     </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
             <button class="tab-btn active" data-tab="evolution">① 驗證方式演進</button>
             <button class="tab-btn" data-tab="jwt">② JWT 詳解</button>
             <button class="tab-btn" data-tab="comparison">③ 實戰比較</button>
+            <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
         </div>
 
         <!-- Tab 1: 驗證方式演進 -->
@@ -216,12 +225,73 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tab 4: AI Viber -->
+        <div id="ai-viber" class="tab-content">
+            <div class="card">
+                <h2>AI Viber</h2>
+                <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+                <div class="prompt-card">
+                    <h4>Prompt 1 — 實作 JWT Authentication 系統</h4>
+                    <div class="prompt-text" id="prompt1">幫手實作一個完整嘅 JWT authentication 系統，用 <span class="placeholder">[框架，例如 Express + Node.js / FastAPI + Python / Spring Boot]</span>，數據庫用 <span class="placeholder">[數據庫，例如 PostgreSQL / MongoDB / MySQL]</span>。
+
+要求：
+1. 實作 Register / Login / Logout API endpoints
+2. 用 bcrypt hash 密碼，絕對唔好明文儲存
+3. 實作 Access Token（15 分鐘過期）+ Refresh Token（7 日過期）機制
+4. Access Token 用 RS256 簽名，Refresh Token 儲存喺 httpOnly Cookie
+5. 實作 Token Rotation——每次用 Refresh Token 換新 Access Token 時，同時更新 Refresh Token
+6. 加入 middleware 驗證 JWT，保護需要登入嘅 API routes
+7. 處理 token 過期、無效 token、被 revoke 嘅 token 等 error cases</div>
+                    <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+                </div>
+
+                <div class="prompt-card">
+                    <h4>Prompt 2 — 設計 Multi-Factor Authentication 流程</h4>
+                    <div class="prompt-text" id="prompt2">幫手設計同實作一個 Multi-Factor Authentication (MFA) 流程，整合到現有嘅 <span class="placeholder">[框架，例如 Next.js / React + Express / Django]</span> 項目。
+
+要求：
+1. 實作 TOTP（Time-based One-Time Password）——支援 Google Authenticator / Authy
+2. 生成 QR Code 俾用戶掃描綁定 authenticator app
+3. 提供 backup recovery codes（一次性使用，共 10 組）
+4. 設計 MFA 嘅啟用 / 停用流程（需要先驗證密碼）
+5. Login 流程：密碼驗證通過後，要求輸入 6 位 TOTP code
+6. 處理 edge cases：recovery code 用完、裝置遺失、時鐘偏移
+7. 加入 rate limiting 防止暴力破解 TOTP code</div>
+                    <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+                </div>
+
+                <div class="prompt-card">
+                    <h4>Prompt 3 — 實作 OAuth 2.0 第三方登入</h4>
+                    <div class="prompt-text" id="prompt3">幫手實作 OAuth 2.0 第三方登入功能，支援 <span class="placeholder">[Provider，例如 Google / GitHub / Discord]</span>，用 <span class="placeholder">[框架，例如 Next.js + NextAuth / Express + Passport.js / Django + allauth]</span>。
+
+要求：
+1. 設定 OAuth 2.0 Authorization Code Flow（唔好用 Implicit Flow）
+2. 處理 callback URL、state parameter（防 CSRF）、PKCE
+3. 取得用戶 profile 資訊（name、email、avatar）後，建立或關聯本地帳號
+4. 如果用戶已經用 email 註冊過，自動關聯帳號而唔係建立新帳號
+5. 儲存 OAuth tokens 同 provider 資訊到數據庫
+6. 實作 account linking——容許一個帳號綁定多個 OAuth provider</div>
+                    <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script>
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
         tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+        function copyPrompt(id, btn) {
+          const text = document.getElementById(id).innerText;
+          navigator.clipboard.writeText(text).then(() => {
+            btn.textContent = '✅ 已複製';
+            btn.classList.add('copied');
+            setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+          });
+        }
     </script>
 </body>
 </html>

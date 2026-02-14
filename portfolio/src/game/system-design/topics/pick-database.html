@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="framework">① 選擇框架</button>
       <button class="tab-btn" data-tab="cap">② CAP 定理</button>
       <button class="tab-btn" data-tab="advice">③ 實戰建議</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="framework">
@@ -258,12 +267,74 @@
         </div>
       </div>
     </div>
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 幫 Project 揀啱 Database</h4>
+          <div class="prompt-text" id="prompt1">幫手分析同推薦最適合嘅 Database 方案。
+
+Project 背景：
+- 應用類型：<span class="placeholder">[電商平台 / 社交媒體 / SaaS 工具 / IoT 數據平台]</span>
+- 預計用戶量：<span class="placeholder">[1 萬 / 10 萬 / 100 萬]</span> 月活躍用戶
+- 數據特性：<span class="placeholder">[結構化交易數據 / 非結構化用戶內容 / 時序數據 / 混合]</span>
+- 讀寫比例：<span class="placeholder">[讀多寫少 / 讀寫均衡 / 寫多讀少]</span>
+- 一致性需求：<span class="placeholder">[強一致性（涉及金錢）/ 最終一致性]</span>
+- 團隊經驗：<span class="placeholder">[熟悉嘅 Database 列表]</span>
+
+需要分析：
+1. 根據以上條件推薦主 Database + 輔助 Database 組合
+2. 每個推薦嘅理由（對應 CAP 定理嘅取捨）
+3. Schema 設計建議（核心 table / collection 結構）
+4. Index 策略建議
+5. 未來 scaling 路線（Sharding / Read Replica / 遷移方案）
+
+請提供詳細嘅技術分析同最終推薦方案。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Multi-Database 架構</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一個 Multi-Database 架構方案，適用於 <span class="placeholder">[應用類型描述]</span>。
+
+系統需要處理以下唔同類型嘅數據：
+1. 用戶帳戶同交易紀錄（需要 ACID 同強一致性）
+2. 用戶 session 同快取數據（需要低延遲 key-value 存取）
+3. <span class="placeholder">[搜尋索引 / 日誌數據 / 文件儲存 / 即時分析]</span>
+
+需要設計：
+1. 每種數據用邊個 Database，附詳細理由
+2. Database 之間嘅數據同步策略（CDC / Event Sourcing / Dual Write）
+3. 統一嘅 Data Access Layer 設計（Repository Pattern）
+4. 連線池管理同 connection 配置建議
+5. 備份同災難恢復方案
+6. 監控指標（query latency、connection count、replication lag）
+
+技術棧偏好：<span class="placeholder">[語言 + 框架]</span>
+部署環境：<span class="placeholder">[AWS / GCP / Azure / 自建]</span>
+
+請提供完整嘅架構設計同實施步驟。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

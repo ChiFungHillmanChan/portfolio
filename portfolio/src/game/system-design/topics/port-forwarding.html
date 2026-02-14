@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="basics">① Port Forwarding 基礎</button>
       <button class="tab-btn" data-tab="nat">② NAT 網絡轉換</button>
       <button class="tab-btn" data-tab="tunneling">③ Tunneling 穿透</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1: Basics -->
@@ -385,6 +394,71 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 4: AI Viber -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設定 Local Dev Server Port Forwarding</h4>
+          <div class="prompt-text" id="prompt1">幫手寫一份完整嘅 Port Forwarding 設定教學，目標係將本地 <span class="placeholder">[開發框架，例如 Next.js / Express / Flask]</span> 跑緊嘅 dev server（port <span class="placeholder">[本地 port，例如 3000]</span>）透過 Router Port Forwarding 俾外部裝置 access。
+
+包含以下內容：
+1. 點樣搵到本機內網 IP（macOS + Windows 指令）
+2. Router 管理頁面入面 Port Forwarding 規則應該點填（External Port、Internal IP、Internal Port）
+3. 用 whatismyip.com 驗證 Public IP，再用外部裝置測試連線
+4. 檢查係咪 CGNAT 嘅方法（對比 Router WAN IP 同 Public IP）
+5. 如果係 CGNAT，建議用 ngrok 或 Cloudflare Tunnel 作為替代方案
+
+輸出格式：Step-by-step 教學，每步附帶實際指令或截圖提示。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 用 Nginx Reverse Proxy 做 Port Mapping</h4>
+          <div class="prompt-text" id="prompt2">幫手寫一份 Nginx reverse proxy 配置，實現以下 port mapping：
+
+目標環境：<span class="placeholder">[部署環境，例如 Ubuntu VPS / Docker]</span>
+Domain：<span class="placeholder">[domain 名，例如 myapp.example.com]</span>
+
+需要 mapping 嘅 service：
+- 主應用跑喺 localhost:<span class="placeholder">[port，例如 3000]</span> → 對外 port 80/443
+- API service 跑喺 localhost:<span class="placeholder">[port，例如 8080]</span> → 對外路徑 /api
+
+包含以下內容：
+1. 完整嘅 nginx.conf 或 sites-available 配置檔
+2. SSL 設定（用 Let's Encrypt / Certbot）
+3. WebSocket proxy 支持（如果適用）
+4. 常見錯誤排查（502 Bad Gateway、connection refused）
+5. 用 curl 測試每個 route 嘅指令
+
+輸出格式：可以直接複製貼上嘅配置檔 + 部署步驟。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — Cloudflare Tunnel 快速部署 Local Service</h4>
+          <div class="prompt-text" id="prompt3">幫手寫一份 Cloudflare Tunnel（cloudflared）嘅完整設定指南，將本地 <span class="placeholder">[service 類型，例如 Web App / Minecraft Server / NAS]</span> 安全咁暴露到 Internet。
+
+本地 service 跑緊嘅 port：<span class="placeholder">[port，例如 3000]</span>
+想用嘅 domain：<span class="placeholder">[domain，例如 app.mydomain.com]</span>
+
+包含以下內容：
+1. 安裝 cloudflared（macOS / Linux / Windows）
+2. 登入 Cloudflare 帳戶同埋授權
+3. 建立 Tunnel 同埋配置 config.yml
+4. DNS record 自動設定
+5. 設定為 system service（開機自動啟動）
+6. 加 Access Policy 做認證保護（可選）
+7. 同 ngrok 嘅比較（免費版功能、速度、穩定性）
+
+輸出格式：從零開始嘅 Step-by-step 指南，每步附帶終端指令。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -399,6 +473,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

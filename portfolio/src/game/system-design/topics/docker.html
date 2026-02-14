@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 點解用 Docker</button>
       <button class="tab-btn" data-tab="optimize">② Image 優化</button>
       <button class="tab-btn" data-tab="practice">③ 實戰建議</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ==================== Tab 1: 點解用 Docker ==================== -->
@@ -261,12 +270,63 @@
         </div>
       </div>
     </div>
+
+    <!-- ==================== Tab 4: AI Viber ==================== -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 將應用容器化（Dockerfile + 優化）</h4>
+          <div class="prompt-text" id="prompt1">幫手將一個 <span class="placeholder">[框架，例如 Next.js / Express / FastAPI / Spring Boot]</span> 應用完全容器化。
+
+要求：
+1. 寫一個 production-ready Dockerfile，用 multi-stage build
+2. Base image 用 Alpine 版本（例如 node:20-alpine / python:3.12-alpine）
+3. 第一個 stage 做 build（安裝依賴 + 編譯），第二個 stage 只複製 build 產物
+4. 善用 layer cache——將 package.json / requirements.txt COPY 同 install 放喺 COPY app code 之前
+5. 用非 root USER 運行 container
+6. 生成 .dockerignore 排除 .git / node_modules / .env / *.log / .vscode
+7. 最終 image size 目標：<span class="placeholder">[目標，例如 < 200MB / < 100MB]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Docker Compose 多容器開發環境</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一個完整嘅 Docker Compose 開發環境，包含以下服務：
+- App：<span class="placeholder">[框架，例如 Next.js / Express / Django]</span>
+- Database：<span class="placeholder">[數據庫，例如 PostgreSQL / MySQL / MongoDB]</span>
+- Cache：Redis
+- <span class="placeholder">[其他服務，例如 Nginx reverse proxy / Elasticsearch / RabbitMQ]</span>
+
+要求：
+1. 生成 docker-compose.yml，定義所有 services、networks、volumes
+2. App service 要支援 hot reload（mount source code 做 volume）
+3. Database 要用 named volume 持久化數據，唔好用 bind mount
+4. 設定 healthcheck 確保 database ready 先啟動 app（depends_on + condition）
+5. 用 .env file 管理環境變數（database password、API keys）
+6. 加入 docker-compose.override.yml 分開 dev 同 production 配置
+7. 新開發者只需要 docker compose up 就可以啟動完整環境</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

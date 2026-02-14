@@ -42,6 +42,14 @@
     .warning-box { background: rgba(245, 158, 11, 0.1); border-left: 3px solid #f59e0b; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
     .warning-box h4 { color: #f59e0b; font-size: 0.9rem; margin-bottom: 6px; }
     .warning-box p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -55,6 +63,7 @@
       <button class="tab-btn active" data-tab="ngrok">① ngrok 快速分享</button>
       <button class="tab-btn" data-tab="debug">② Debug Dashboard</button>
       <button class="tab-btn" data-tab="permanent">③ 永久自架方案</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: ngrok 快速分享 ===================== -->
@@ -554,6 +563,65 @@ $ cloudflared tunnel --url localhost:3000 run my-app-tunnel
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設定本地開發環境</h4>
+          <div class="prompt-text" id="prompt1">幫我設定一個完整嘅本地開發環境，用 Docker Compose 一鍵啟動所有服務。
+
+項目類型：<span class="placeholder">[例如：Full-stack web app / API backend + database / Microservices 架構]</span>
+技術棧：<span class="placeholder">[例如：Next.js + Node.js + PostgreSQL + Redis / Python FastAPI + MongoDB]</span>
+
+要求：
+- 寫一個 docker-compose.yml，包含所有需要嘅服務
+- 每個服務有 health check
+- 設定 hot reload（改 code 唔使重啟 container）
+- Database 有 volume persistence（唔好每次 restart 就清空數據）
+- 加入 seed data script（初始化測試數據）
+- 設定 .env.example 檔案，列出所有環境變數
+- 寫一個 Makefile 或者 shell script，簡化常用指令（start、stop、logs、reset）
+- 加入 README 說明點樣 setup</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 用 Cloudflare Tunnel 暴露本地服務</h4>
+          <div class="prompt-text" id="prompt2">幫我設定 Cloudflare Tunnel，將本地跑緊嘅 <span class="placeholder">[服務類型，例如：Next.js app / API server / self-hosted n8n / Minecraft server]</span> 暴露到互聯網。
+
+環境：<span class="placeholder">[例如：macOS / Ubuntu Server / Raspberry Pi]</span>
+Domain：<span class="placeholder">[例如：app.mydomain.com]</span>
+
+要求：
+- 完整嘅 step-by-step 安裝同設定指南
+- cloudflared 嘅 config.yml 設定檔內容
+- DNS 設定步驟
+- 設定 cloudflared 做 systemd service（開機自動啟動）
+- 加入 Cloudflare Access 做認證（只有指定 email 可以 access）
+- 如果有多個本地服務，設定 subdomain routing（例如 api.mydomain.com → localhost:8080，app.mydomain.com → localhost:3000）
+- 排除常見問題嘅 troubleshooting 指南</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — Webhook 測試環境搭建</h4>
+          <div class="prompt-text" id="prompt3">幫我搭建一個本地 webhook 測試環境，用嚟開發同 debug <span class="placeholder">[webhook 來源，例如：Stripe payment webhook / GitHub webhook / Telegram Bot]</span>。
+
+要求：
+- 用 ngrok 將本地 server 暴露出去
+- 寫一個簡單嘅 <span class="placeholder">[Node.js Express / Python Flask]</span> server 接收 webhook
+- 加入 webhook signature 驗證（確保 request 係真嘅）
+- 將每個收到嘅 webhook 記錄到 log 檔案（包括 headers、body、timestamp）
+- 設定 ngrok inspect dashboard（localhost:4040）做 debug
+- 加入 webhook retry 測試功能
+- 寫出完整嘅可運行 code，包括 package.json / requirements.txt</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -568,6 +636,15 @@ $ cloudflared tunnel --url localhost:3000 run my-app-tunnel
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

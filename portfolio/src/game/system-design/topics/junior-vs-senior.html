@@ -246,6 +246,15 @@
       margin-bottom: 0;
     }
 
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+
     /* Responsive */
     @media (max-width: 600px) {
       .container {
@@ -282,6 +291,7 @@
       <button class="tab-btn active" data-tab="junior-task">① Junior 做 Task</button>
       <button class="tab-btn" data-tab="senior-goal">② Senior 做 Goal</button>
       <button class="tab-btn" data-tab="upgrade-path">③ 點樣升級</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Junior Task ===================== -->
@@ -745,6 +755,80 @@
         </div>
       </div>
     </div>
+
+    <!-- TAB 4: AI Viber -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 制定個人發展計劃（Junior → Senior）</h4>
+          <div class="prompt-text" id="prompt1">幫手制定一份 6 個月嘅個人發展計劃，目標係由 Junior Engineer 升級到 Senior Engineer 水平。
+
+目前技術棧：<span class="placeholder">[技術棧，例如 React + Node.js / Python + Django / Java + Spring Boot]</span>
+目前工作年資：<span class="placeholder">[年資，例如 1 年 / 2 年]</span>
+目前主要工作內容：<span class="placeholder">[工作內容，例如 寫 CRUD API / 前端頁面開發 / Bug fixing]</span>
+想發展嘅方向：<span class="placeholder">[方向，例如 Backend Architecture / Full-stack / DevOps]</span>
+
+計劃需要包含：
+1. 每月學習目標同里程碑
+2. System Design 練習計劃（每週一個經典題目，例如設計 URL Shortener、Chat System）
+3. 推薦嘅學習資源（書籍、課程、開源項目）
+4. 實戰項目建議——用嚟練習將 Goal break down 成 Tasks 嘅能力
+5. 每週自我評估 checklist（技術決策能力、Trade-off 思考、溝通能力）
+6. 點樣喺日常工作中主動搵模糊任務嘅具體策略
+7. 建立技術影響力嘅方法（Code Review、Tech Talk、寫文檔）
+
+輸出格式：週曆式計劃表，每週有明確嘅學習同實踐目標。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Code Review 流程提升團隊能力</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一套 Code Review 流程同規範，目標係透過 Code Review 提升整個團隊嘅技術水平。
+
+團隊規模：<span class="placeholder">[人數，例如 3-5 人 / 5-10 人]</span>
+主要技術棧：<span class="placeholder">[技術棧，例如 TypeScript + React + Node.js]</span>
+目前痛點：<span class="placeholder">[痛點，例如 Review 流於形式 / 冇統一標準 / Junior 唔知點 Review]</span>
+
+流程設計需要包含：
+1. Code Review Checklist（分 Junior 同 Senior 兩個版本）
+   - Junior 版：專注喺 code quality、naming、error handling
+   - Senior 版：專注喺架構設計、scalability、security
+2. PR Template（描述變更、影響範圍、測試方案）
+3. Review 優先級分類（Critical / Major / Minor / Nitpick）
+4. 建設性 feedback 嘅寫法示範（好 vs 壞嘅 review comment 對比）
+5. Pair Review 機制——Senior 帶 Junior 一齊做 Review
+6. 每週 Review Recap 會議嘅議程模板
+7. 衡量 Review 質量嘅指標（Review 時間、Comment 質量、Bug 發現率）
+
+輸出格式：完整嘅 Code Review 規範文檔 + 可以直接用嘅模板。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — System Design 練習：將 Goal 拆解成 Tasks</h4>
+          <div class="prompt-text" id="prompt3">模擬一個 Senior Engineer 嘅工作場景，幫手練習將模糊 Goal 拆解成可執行 Tasks。
+
+模糊嘅 Goal：<span class="placeholder">[Goal 描述，例如「設計一個支持 50K 同時在線嘅即時聊天系統」/「建立一個可以處理每日 1M 訂單嘅電商後端」]</span>
+
+請按照以下步驟拆解：
+1. 需求分析——呢個 Goal 實際上要解決啲咩問題？列出功能性同非功能性需求
+2. 技術方案設計——提出 2-3 個可行方案，每個方案列出 Tech Stack
+3. Trade-off 分析——每個方案嘅優缺點對比表
+4. 最終決策——推薦邊個方案，附帶理由
+5. Task Breakdown——將最終方案拆成 8-12 個獨立嘅 Task
+   - 每個 Task 要有：標題、描述、Acceptance Criteria、預估時間、優先級
+   - 標明邊啲 Task 適合分配俾 Junior、邊啲需要 Senior 自己做
+6. 執行順序——Task 之間嘅依賴關係同建議執行順序
+7. 風險評估——可能遇到嘅技術風險同 mitigation 策略
+
+輸出格式：完整嘅技術設計文檔，可以直接用嚟做 Sprint Planning。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -762,6 +846,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

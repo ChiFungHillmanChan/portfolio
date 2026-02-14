@@ -40,6 +40,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -53,6 +61,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="compare">② Cookie vs JWT</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1 -->
@@ -216,6 +225,46 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 用 Redis 設計 Session Management 系統</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅 Session Management 系統，用 Redis 做中央 Session Store。
+
+技術棧：<span class="placeholder">[Node.js + Express / Python + FastAPI / Go + Gin]</span>
+
+要求：
+- 用戶登入後生成 Session ID（128 bits 以上，cryptographically secure）
+- Session 存入 Redis，設定 TTL 為 <span class="placeholder">[30 分鐘 / 1 小時]</span>
+- Cookie 設定：HttpOnly、Secure、SameSite=Strict
+- 支援多台 Server 共享 Session（Stateless Server 架構）
+- 包含 Session 續期邏輯（用戶有操作就自動延長 TTL）
+- 實現強制登出功能（刪除 Redis 入面嘅 Session）
+- 寫埋 middleware 代碼同 Redis 連接配置</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 JWT + Session 混合驗證系統</h4>
+          <div class="prompt-text" id="prompt2">用 <span class="placeholder">[Node.js / Python / Go]</span> 實現一個 JWT + Session 混合嘅身份驗證系統。
+
+架構設計：
+- 登入時同時發出 JWT Access Token（短期，15 分鐘）同 Refresh Token（長期，7 日）
+- Access Token 用嚟做 API 驗證（無狀態，唔查 Redis）
+- Refresh Token 存喺 Redis，用嚟換新嘅 Access Token
+- 實現 Token Rotation：每次用 Refresh Token 就發一個新嘅
+- 支援 Token Revocation：可以主動撤銷某個用戶嘅所有 Token
+- 包含完整嘅 Login、Logout、Refresh、Revoke API
+- 寫埋錯誤處理同安全性檢查（例如偵測 Token 重用攻擊）
+- 目標場景：<span class="placeholder">[Web App / Mobile App / 微服務架構]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -230,6 +279,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

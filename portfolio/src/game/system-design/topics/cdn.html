@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="cache">② 快取策略</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -209,12 +218,75 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 CDN 策略</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅 CDN 策略，適用於 <span class="placeholder">[例如：電商網站 / 影片串流平台 / SaaS Dashboard]</span>。
+
+項目背景：
+- 主要用戶分佈地區：<span class="placeholder">[例如：亞太區為主，歐美為次]</span>
+- 靜態資源類型：<span class="placeholder">[例如：圖片、JS/CSS Bundle、影片、PDF]</span>
+- 預計每日流量：<span class="placeholder">[例如：50TB]</span>
+- Origin Server 位置：<span class="placeholder">[例如：AWS us-east-1]</span>
+
+需要設計嘅部分：
+1. GeoDNS 路由策略：點樣確保用戶連去最近嘅 PoP
+2. Cache-Control Header 策略：
+   - 圖片 / 影片：長 TTL + content hash 檔名
+   - HTML：短 TTL 或 no-cache
+   - API Response：按場景設定
+3. Origin Shield 配置（減少 Origin 壓力）
+4. CDN 供應商選擇建議（CloudFlare / CloudFront / Fastly）
+
+請提供具體嘅 HTTP Header 設定範例、DNS 配置、同預期嘅 Cache Hit Ratio 分析。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Cache Invalidation 策略</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一套完整嘅 CDN Cache Invalidation 策略，解決「更新咗內容但用戶仲睇到舊版本」嘅問題。
+
+需要覆蓋嘅場景：
+1. 前端部署新版本（JS / CSS Bundle）
+2. 用戶上傳新嘅圖片（替換舊圖）
+3. 緊急修復：需要即時令所有 Edge 失效
+4. API Response Cache 更新
+
+建議方案對比：
+- Versioned URL（例如 main.abc123.js）vs Purge API
+- Tag-based Invalidation（Surrogate Key）
+- Soft Purge vs Hard Purge
+
+自動化需求：
+- CI/CD Pipeline 整合：部署時自動 invalidate 相關資源
+- CDN 供應商：<span class="placeholder">[例如：CloudFlare / CloudFront / Fastly]</span>
+- 監控 Cache Hit Ratio 嘅 Dashboard 設計
+
+請提供 CI/CD Pipeline 配置範例、Invalidation API 調用嘅 code、同監控 Alert 規則。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

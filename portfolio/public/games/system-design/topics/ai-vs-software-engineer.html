@@ -267,6 +267,15 @@
       margin-bottom: 0;
     }
 
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+
     /* Responsive */
     @media (max-width: 600px) {
       .container {
@@ -304,6 +313,7 @@
       <button class="tab-btn" data-tab="real-job">② 真正嘅工作</button>
       <button class="tab-btn" data-tab="market-demand">③ 市場需求</button>
       <button class="tab-btn" data-tab="takeaway">④ 重點總結</button>
+      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Core Debate ===================== -->
@@ -834,6 +844,66 @@
         </div>
       </div>
     </div>
+    <!-- ===================== TAB 5: AI Viber ===================== -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 評估 AI 工具喺開發流程嘅實際價值</h4>
+          <div class="prompt-text" id="prompt1">針對 <span class="placeholder">[項目名稱，例如：電商平台後端]</span> 嘅開發流程，評估以下 AI 工具嘅實際應用價值：
+
+1. Code Autocomplete（如 GitHub Copilot）— 喺邊啲場景最有用？邊啲場景反而會拖慢速度？
+2. AI Code Review — 可以取代人工 Code Review 嘅邊啲部分？邊啲部分一定要人手做？
+3. AI Testing — 自動生成 Unit Test 嘅質素點樣？覆蓋率同可維護性點樣？
+
+針對每個工具，列出：
+- 適合嘅使用場景（具體到 Task 層面）
+- 唔適合嘅場景（會增加風險嘅情況）
+- 預計節省時間嘅百分比（保守估算）
+- 需要額外投入嘅學習成本同配置時間
+
+最後建議一個「漸進式引入」計劃，分三個月逐步整合 AI 工具到團隊工作流程。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 AI 輔助嘅系統設計工作流程</h4>
+          <div class="prompt-text" id="prompt2">設計一個 AI-Augmented System Design 工作流程，應用喺 <span class="placeholder">[系統類型，例如：高併發即時通訊系統]</span>。
+
+核心要求：
+- 明確劃分「AI 負責」同「工程師負責」嘅職責邊界
+- AI 負責嘅範圍：Boilerplate Code 生成、API Schema 草稿、Test Case 生成、文件初稿
+- 工程師負責嘅範圍：架構決策、Trade-off 分析、安全性審查、性能調優策略
+
+請輸出以下內容：
+1. 系統設計階段嘅分工矩陣（邊啲步驟用 AI、邊啲步驟要人手）
+2. AI 生成內容嘅 Review Checklist（點樣快速驗證 AI 輸出嘅質素）
+3. 一個具體嘅例子：用 AI 生成 <span class="placeholder">[具體功能，例如：用戶認證模組]</span> 嘅初版設計，再由工程師審查同修改
+4. 衡量呢個工作流程效率嘅 KPI（例如 Time-to-Design、Bug Rate 等）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立工程師技能進化路線圖</h4>
+          <div class="prompt-text" id="prompt3">基於「AI 時代工程師嘅核心價值唔係寫 Code，而係解決問題」呢個前提，設計一份為期 6 個月嘅技能進化路線圖。
+
+目標角色：<span class="placeholder">[當前職級，例如：Mid-level Backend Engineer]</span>
+目標方向：<span class="placeholder">[發展方向，例如：System Design + AI-Augmented Development]</span>
+
+路線圖需要包含：
+1. 每月嘅學習重點（由基礎到進階）
+2. 實戰項目練習（每個月至少一個 Mini Project）
+3. AI 工具熟練度目標（由「識用」到「高效運用」）
+4. 系統設計能力目標（由「理解概念」到「獨立設計」）
+5. 每個月嘅自我評估 Checklist
+
+重點係平衡「AI 工具掌握」同「系統設計思維」兩條線，唔好只偏向一邊。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -851,6 +921,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

@@ -44,6 +44,14 @@
     .compare-table .label { color: #9ca3af; font-weight: 500; white-space: nowrap; width: 120px; }
     .tag-scraping { color: #f59e0b; font-weight: 600; }
     .tag-crawling { color: #34d399; font-weight: 600; }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -57,6 +65,7 @@
       <button class="tab-btn active" data-tab="scraping">① Web Scraping</button>
       <button class="tab-btn" data-tab="crawling">② Web Crawling</button>
       <button class="tab-btn" data-tab="comparison">③ 分別同應用</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Web Scraping ===================== -->
@@ -525,6 +534,64 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 建立 Web Scraper 提取特定數據</h4>
+          <div class="prompt-text" id="prompt1">幫我用 Python 寫一個 web scraper，從 <span class="placeholder">[目標網站，例如：某個電商網站 / 新聞網站 / 房地產平台]</span> 提取以下數據：
+
+目標數據：<span class="placeholder">[例如：產品名稱、價格、評論數、評分 / 文章標題、日期、內容摘要]</span>
+
+要求：
+- 用 requests + BeautifulSoup 做基本 scraping
+- 如果網頁有 JavaScript rendering，用 Playwright 處理
+- 加入 rate limiting（每次請求之間等 2-3 秒）
+- 處理 pagination（自動翻頁抓取所有結果）
+- 加入 error handling 同 retry 機制
+- 將結果儲存到 CSV 同 SQLite database
+- 加入 User-Agent rotation 避免被 block
+- 遵守 robots.txt 規則</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計合規嘅 Web Crawling 系統</h4>
+          <div class="prompt-text" id="prompt2">幫我設計一個合規嘅 web crawling 系統，用嚟探索 <span class="placeholder">[目標範圍，例如：某個特定 domain 嘅所有頁面 / 某個行業嘅相關網站]</span>。
+
+要求：
+- 用 Python + Scrapy framework
+- 實作 BFS（廣度優先搜索）爬取策略
+- 自動解析頁面中嘅所有連結，加入待爬隊列
+- 用 Bloom Filter 或 Set 做 URL 去重
+- 實作 Politeness Policy：遵守 robots.txt、每個 domain 每秒最多 1 次請求
+- 設定最大爬取深度同頁面數量上限
+- 儲存爬取結果（URL、標題、meta description）到 database
+- 加入 logging 同進度追蹤
+- 輸出 sitemap（XML 格式）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 定時價格監控 Scraper</h4>
+          <div class="prompt-text" id="prompt3">幫我建立一個定時執行嘅價格監控 scraper。
+
+監控目標：<span class="placeholder">[例如：Amazon 上面某幾個產品 / 機票價格 / 加密貨幣交易所價格]</span>
+
+要求：
+- 用 Python 寫 scraper，提取產品名同價格
+- 設定 cron job 每日定時執行（例如每朝 9 點）
+- 將每次抓取嘅價格記錄到 SQLite database（包括 timestamp）
+- 當價格跌破指定閾值，發送通知（用 <span class="placeholder">[Email / Telegram Bot / Discord Webhook]</span>）
+- 用 matplotlib 生成價格走勢圖
+- 加入 Docker 部署方案，方便喺 server 上面長期跑</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -539,6 +606,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

@@ -32,6 +32,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
     .highlight-box { background: rgba(245,158,11,0.1); border-left: 3px solid #F59E0B; border-radius: 0 10px 10px 0; padding: 16px 20px; margin: 16px 0; }
     .highlight-box p { color: #fbbf24; font-size: 0.95rem; line-height: 1.8; margin: 0; font-weight: 500; }
 
@@ -177,6 +185,7 @@
       <button class="tab-btn" data-tab="python">③ Python</button>
       <button class="tab-btn" data-tab="fullstack">④ Full Stack</button>
       <button class="tab-btn" data-tab="database">⑤ Database</button>
+      <button class="tab-btn" data-tab="ai-viber">⑥ AI Viber</button>
     </div>
 
     <!-- ==================== Tab 1: Frontend ==================== -->
@@ -642,6 +651,44 @@
       </div>
     </div>
 
+    <!-- ==================== Tab 6: AI Viber ==================== -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計完整 Deployment Pipeline</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅 deployment pipeline，適用於 <span class="placeholder">[框架，例如 Next.js / Express / Django / Spring Boot]</span> 項目，部署到 <span class="placeholder">[平台，例如 Vercel / Render / Railway / AWS]</span>。
+
+要求：
+1. 定義完整嘅 CI/CD 流程（Code Push → Build → Test → Deploy）
+2. 設定 staging 同 production 兩個環境，staging 用 PR preview
+3. 生成所有需要嘅配置檔（Dockerfile / docker-compose / GitHub Actions workflow）
+4. 設定 environment variables 管理（唔好 hardcode secrets）
+5. 加入 health check endpoint 確保部署成功
+6. 設定 rollback 策略——部署失敗時自動回退到上一個版本
+7. 如果用免費平台，加入防止 cold start 嘅策略（例如 UptimeRobot ping）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實作 Blue-Green / Canary 部署策略</h4>
+          <div class="prompt-text" id="prompt2">幫手實作一個 <span class="placeholder">[策略，例如 Blue-Green / Canary / Rolling Update]</span> 部署策略，用 <span class="placeholder">[工具，例如 Docker + Nginx / Kubernetes / AWS ECS]</span>。
+
+要求：
+1. 設計部署架構圖，標明流量點樣喺新舊版本之間切換
+2. 實作 zero-downtime deployment——用戶喺部署過程中完全唔受影響
+3. 如果係 Blue-Green：設定兩組完全相同嘅環境，用 load balancer 切換流量
+4. 如果係 Canary：先將 10% 流量導去新版本，觀察 metrics 後逐步增加
+5. 設定自動化 health check——新版本健康先切換流量
+6. 實作自動 rollback 機制——error rate 超過 <span class="placeholder">[閾值，例如 5%]</span> 即刻回退
+7. 生成所有需要嘅配置檔同部署 scripts</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
     <!-- ===== Quick Selection Guide ===== -->
     <div class="card" style="margin-top:32px;">
       <h2>快速選擇指南</h2>
@@ -688,6 +735,15 @@
         document.getElementById(btn.dataset.tab).classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

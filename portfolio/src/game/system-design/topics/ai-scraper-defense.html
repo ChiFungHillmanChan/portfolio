@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="tab-robots">① robots.txt</button>
       <button class="tab-btn" data-tab="tab-detection">② Bot 偵測</button>
       <button class="tab-btn" data-tab="tab-honeypot">③ Honeypot 陷阱</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: robots.txt ===================== -->
@@ -627,12 +636,82 @@
         </div>
       </div>
     </div>
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 建立 Anti-Scraping 防禦系統</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅 Anti-Scraping 防禦系統，用 <span class="placeholder">[Node.js / Python / Go]</span> 實現。
+
+需要包含以下功能：
+1. robots.txt 自動生成器，可以動態更新已知 AI Crawler 嘅 User Agent 清單
+2. Request 分析 Middleware，檢查 User Agent、IP 地址、請求頻率
+3. Bot Profiler 評分系統，綜合多個維度計算風險分數
+4. Rate Limiter，對高風險請求進行限速
+5. 可疑請求嘅 logging 同 alert 機制
+
+技術棧：<span class="placeholder">[Express / FastAPI / Gin]</span> + Redis（儲存 IP 同評分數據）
+部署環境：<span class="placeholder">[AWS / GCP / 自建伺服器]</span>
+
+請提供完整嘅 project 結構、核心 code、同部署建議。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Honeypot Dungeon 陷阱系統</h4>
+          <div class="prompt-text" id="prompt2">幫手建立一個 Honeypot Dungeon 陷阱系統，用嚟捕捉同消耗 AI Scraper 嘅資源。
+
+核心需求：
+1. Dungeon Page Generator：自動生成 <span class="placeholder">[500 / 1000 / 5000]</span> 頁睇起嚟真實但無用嘅靜態 HTML 頁面
+2. 頁面之間要互相連結，形成網狀迷宮結構
+3. Invisible Link Injector Middleware：對可疑請求嘅 response 注入隱藏 Anchor Link
+4. 隱藏連結要用 CSS 技巧令真人睇唔到（display:none、off-screen positioning 等）
+5. Dungeon 訪客追蹤系統：記錄邊啲 IP 進入咗 Dungeon，自動標記為確認 Bot
+6. 數據回饋到 Bot Profiler，強化偵測準確率
+
+Dungeon 頁面主題：<span class="placeholder">[電商產品頁 / 新聞文章 / 技術文檔]</span>
+技術棧：<span class="placeholder">[語言 + 框架]</span>
+
+請提供 Generator script、Middleware code、同追蹤系統嘅完整實現。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — Bot Detection + CAPTCHA 整合方案</h4>
+          <div class="prompt-text" id="prompt3">幫手設計一個 Bot Detection 同 CAPTCHA 整合方案，用 <span class="placeholder">[語言 + 框架]</span> 實現。
+
+需要包含：
+1. 多維度 Bot 偵測 Pipeline：User Agent 分析 → IP 信譽查詢 → 流量模式分析 → 瀏覽器指紋檢測
+2. 風險評分引擎：根據以上維度計算綜合分數（0-100）
+3. 分級應對策略：
+   - 低風險（0-30）：正常放行
+   - 中風險（30-70）：觸發 CAPTCHA 驗證
+   - 高風險（70-100）：導向 Honeypot 或直接封鎖
+4. 整合 <span class="placeholder">[reCAPTCHA v3 / hCaptcha / Turnstile]</span>
+5. Dashboard 顯示即時偵測統計
+
+請提供完整嘅架構設計、核心 code、同 CAPTCHA 整合步驟。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

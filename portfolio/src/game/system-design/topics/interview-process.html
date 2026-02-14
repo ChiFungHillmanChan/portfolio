@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 面試流程</button>
       <button class="tab-btn" data-tab="preparation">② 每輪準備</button>
       <button class="tab-btn" data-tab="tips">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -180,12 +189,97 @@
         </div>
       </div>
     </div>
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 制定面試準備計劃</h4>
+          <div class="prompt-text" id="prompt1">幫手制定一個完整嘅 Big Tech 面試準備計劃。
+
+背景資料：
+- 目標公司：<span class="placeholder">[Google / Meta / Amazon / Apple / Microsoft]</span>
+- 目標職位：<span class="placeholder">[Software Engineer / Senior SWE / Staff Engineer]</span>
+- 現有經驗：<span class="placeholder">[年資同技術棧]</span>
+- 準備時間：<span class="placeholder">[2 個月 / 3 個月 / 6 個月]</span>
+
+需要包含：
+1. 每週詳細嘅學習同練習時間表
+2. LeetCode 刷題計劃（按 topic 分類，由易到難）
+3. System Design 學習路線同練習題目清單
+4. Behavioral 面試 STAR 故事準備框架（至少 8 個故事主題）
+5. Mock Interview 安排建議
+6. 每個階段嘅 milestone 同自我評估標準
+
+請按照準備時間制定詳細嘅每週計劃。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 模擬 System Design 面試</h4>
+          <div class="prompt-text" id="prompt2">模擬一場 45 分鐘嘅 System Design 面試。
+
+面試題目：設計 <span class="placeholder">[URL Shortener / Chat System / News Feed / Rate Limiter / 其他系統]</span>
+
+請扮演面試官，按以下流程進行：
+1. 先提出題目，等候 Requirements Clarification
+2. 引導完成 Capacity Estimation（QPS、Storage、Bandwidth）
+3. 討論 API Design（endpoints、request/response format）
+4. High-Level Architecture 設計（畫出核心組件）
+5. Deep Dive 其中一個組件嘅細節
+6. 討論 Bottleneck 同 Scaling 方案
+
+每一步都要：
+- 提出追問問題，測試深度理解
+- 對回答畀評價同改善建議
+- 最後畀出整體評分（Hire / No Hire）同詳細 Feedback
+
+面試官風格：<span class="placeholder">[友善引導型 / 嚴格挑戰型]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — Behavioral 面試故事準備</h4>
+          <div class="prompt-text" id="prompt3">幫手用 STAR 方法整理 Behavioral 面試故事。
+
+以下係需要準備嘅情境，請針對每個情境生成一個結構化嘅 STAR 故事框架：
+
+1. 一次帶領團隊完成困難 project 嘅經驗
+2. 同事意見唔同、需要解決 conflict 嘅經驗
+3. 一次技術決策失誤同點樣補救
+4. 喺 tight deadline 下交付 project
+5. 主動發現同解決一個冇人注意到嘅問題
+
+背景：<span class="placeholder">[過往工作經驗簡述]</span>
+目標公司：<span class="placeholder">[公司名，如 Amazon 需要對應 Leadership Principles]</span>
+
+每個故事需要包含：
+- Situation：清晰嘅背景描述（2-3 句）
+- Task：具體嘅責任同目標
+- Action：採取咗咩具體行動（重點部分，要詳細）
+- Result：量化嘅成果（數字、百分比、影響範圍）
+
+請同時標注每個故事適合回答邊啲常見 Behavioral 問題。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

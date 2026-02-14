@@ -235,6 +235,15 @@
     }
     .highlight-box.amber h4 { color: #fbbf24; }
 
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+
     @media (max-width: 600px) {
       .container { padding: 24px 16px; }
       header h1 { font-size: 1.5rem; }
@@ -255,6 +264,7 @@
       <button class="tab-btn" data-tab="attack-flow">② 攻擊流程</button>
       <button class="tab-btn" data-tab="guardrails">③ 防護措施</button>
       <button class="tab-btn" data-tab="best-practices">④ 最佳實踐</button>
+      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Lethal Trifecta ===================== -->
@@ -822,6 +832,63 @@
         </div>
       </div>
     </div>
+    <!-- ===================== TAB 5: AI Viber ===================== -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 AI Agent 嘅安全防護層</h4>
+          <div class="prompt-text" id="prompt1">為 <span class="placeholder">[AI Agent 用途，例如：客服電郵自動回覆 Agent]</span> 設計一套完整嘅安全防護層。
+
+Agent 嘅能力範圍：
+- 可以讀取 <span class="placeholder">[數據源，例如：用戶收件箱、CRM 系統]</span>
+- 可以執行 <span class="placeholder">[操作，例如：發送電郵、更新工單狀態]</span>
+
+請基於「致命三角」（私人資料存取 + 不受信任內容 + 對外通訊）框架，輸出：
+
+1. 威脅模型分析：列出所有可能嘅攻擊向量（至少 5 個）
+2. Input Guardrail 設計：
+   - Prompt Injection 檢測邏輯（規則 + AI 雙重檢查）
+   - 可疑內容嘅評分機制（0-100 風險分數）
+   - 攔截後嘅處理流程（隔離、通知、記錄）
+3. Output Guardrail 設計：
+   - 敏感資料檢測（PII、密碼、API Key 等）
+   - 對外通訊嘅白名單機制
+   - 異常行為偵測（例如一次過讀取大量電郵）
+4. 工具權限矩陣：邊啲工具預設開啟、邊啲需要人工審批
+5. 監控同告警機制：點樣偵測 Agent 被入侵嘅跡象</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Prompt Injection 防禦系統</h4>
+          <div class="prompt-text" id="prompt2">用 <span class="placeholder">[語言/框架，例如：Python + FastAPI]</span> 實現一個 Prompt Injection 防禦系統，保護 AI Agent 免受間接注入攻擊。
+
+系統需要包含以下組件：
+
+1. Input Sanitizer：
+   - 掃描所有輸入文字，偵測隱藏指令模式（例如 "ignore previous instructions"、"system: "、角色扮演攻擊等）
+   - 支持多語言偵測（英文 + 中文 + 常見編碼混淆）
+   - 返回風險評分同具體觸發嘅規則
+
+2. Content Isolation Layer：
+   - 將「用戶指令」同「外來內容」分開處理
+   - 外來內容用特殊 Token 包裹，防止 LLM 將內容當指令執行
+   - 實現 Context Window 隔離
+
+3. Output Validator：
+   - 檢查 Agent 嘅回應有冇包含唔應該出現嘅資料
+   - 對比 Agent 嘅行為同預期行為模式，偵測異常
+
+4. 測試套件：至少 15 個 Prompt Injection 測試案例（包括直接注入、間接注入、編碼繞過）
+
+請直接輸出可以運行嘅 Code。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -838,6 +905,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

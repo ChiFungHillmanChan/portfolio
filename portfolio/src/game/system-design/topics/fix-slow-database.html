@@ -37,6 +37,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
     .flow-step { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; position: relative; }
     .flow-step .flow-number { position: absolute; top: -12px; left: 20px; background: #6366f1; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
     .flow-step h4 { color: #ffffff; font-size: 1rem; margin-bottom: 8px; padding-left: 4px; }
@@ -61,6 +69,7 @@
       <button class="tab-btn active" data-tab="overview">① 排查流程</button>
       <button class="tab-btn" data-tab="detail">② 逐步拆解</button>
       <button class="tab-btn" data-tab="practice">③ 實戰技巧</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Overview ===================== -->
@@ -354,6 +363,73 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);</div>
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 診斷同修復慢 Query</h4>
+          <div class="prompt-text" id="prompt1">幫手分析同優化以下慢 Query 嘅效能問題。
+
+Database：<span class="placeholder">[PostgreSQL / MySQL]</span>
+Table 結構：
+- users 表：id, name, email, created_at（<span class="placeholder">[100 萬 / 1000 萬]</span> 行）
+- orders 表：id, user_id, total, status, created_at（<span class="placeholder">[500 萬 / 5000 萬]</span> 行）
+
+慢 Query：
+<span class="placeholder">[貼上需要優化嘅 SQL Query]</span>
+
+請做以下分析：
+1. 用 EXPLAIN ANALYZE 解讀執行計劃，指出樽頸位
+2. 檢查有冇 Full Table Scan、N+1 問題、不必要嘅 JOIN
+3. 建議需要加嘅 Index（包括 Composite Index）
+4. 提供優化後嘅 Query 寫法
+5. 如果適用，建議 Denormalization 或 Partitioning 策略
+6. 估算優化前後嘅執行時間差異</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Database Indexing 策略</h4>
+          <div class="prompt-text" id="prompt2">幫手為一個 <span class="placeholder">[電商平台 / SaaS 應用 / 社交平台]</span> 設計完整嘅 Database Indexing 策略。
+
+Database：<span class="placeholder">[PostgreSQL / MySQL]</span>
+
+主要 Table 同常見 Query Pattern：
+<span class="placeholder">[描述主要嘅 table 結構同最常用嘅查詢模式]</span>
+
+要求：
+1. 分析每個常用 Query，建議最適合嘅 Index 類型（B-Tree、Hash、GIN、GiST）
+2. 設計 Composite Index，考慮 column 順序對效能嘅影響
+3. 識別唔需要嘅 Index（避免 over-indexing 拖慢寫入）
+4. 建議 Partial Index 同 Covering Index 嘅使用場景
+5. 提供 Index 維護計劃（REINDEX、VACUUM 頻率）
+6. 估算加 Index 後對讀寫效能嘅影響
+7. 寫出所有 CREATE INDEX 語句，附帶解釋</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立 Database 效能監控系統</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[Node.js / Python]</span> 建立一個 Database 效能監控同自動告警系統。
+
+監控目標：<span class="placeholder">[PostgreSQL / MySQL]</span>
+
+功能需求：
+- 自動收集 Slow Query Log（threshold: <span class="placeholder">[500ms / 1s]</span>）
+- 定期分析 pg_stat_statements / performance_schema 嘅數據
+- 識別 Top 10 最慢嘅 Query 同最頻繁嘅 Query
+- 監控 Connection Pool 使用率
+- 檢測 Missing Index（分析 sequential scan 嘅頻率）
+- 當出現異常時發送告警（Slack / Email）
+- 提供一個簡單嘅 Dashboard UI 顯示監控數據
+- 包含自動建議功能（例如：「呢個 Query 建議加 Index」）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -368,6 +444,15 @@ CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);</div>
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

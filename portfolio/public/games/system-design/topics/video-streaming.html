@@ -36,6 +36,14 @@
     .tab-content { display: none; animation: fadeIn 0.3s ease; }
     .tab-content.active { display: block; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -49,6 +57,7 @@
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="transcoding">② Transcoding 流程</button>
       <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -210,12 +219,58 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 建立影片串流平台架構</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個影片串流平台嘅後端架構，類似 <span class="placeholder">[YouTube / 線上課程平台 / 企業內部影片系統]</span>，預期影片數量係 <span class="placeholder">[1000 / 10000 / 100000]</span> 條。
+
+要求包括：
+- 影片上傳 API：支持大檔案 Multipart Upload，上傳完觸發 Transcoding Pipeline
+- Transcoding 服務：用 FFmpeg 將源片轉成 1080p、720p、480p、360p
+- 輸出 HLS 格式（.m3u8 + .ts segments），segment 長度 6 秒
+- DAG Pipeline 管理：上傳 → 轉碼 → 儲存 → 通知，每步可獨立 retry
+- Video Metadata DB 設計：標題、描述、長度、playlist URL、轉碼狀態
+- CDN 配置：熱門影片 cache 喺 edge 節點
+- 提供完整嘅 code 同系統架構圖，語言用 <span class="placeholder">[Node.js / Python / Go]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Adaptive Bitrate Streaming</h4>
+          <div class="prompt-text" id="prompt2">實現一個 Adaptive Bitrate Streaming 播放方案，場景係 <span class="placeholder">[Web 播放器 / Mobile App / Smart TV]</span>，需要支持 <span class="placeholder">[HLS / DASH / 兩者都要]</span>。
+
+要求包括：
+- FFmpeg 轉碼配置：生成多個 quality level（1080p@5Mbps、720p@2.5Mbps、480p@1Mbps、360p@500Kbps）
+- Master playlist（.m3u8）結構設計，列出所有 quality variant
+- 前端播放器整合：用 hls.js 或 dash.js，自動根據 bandwidth 切換清晰度
+- Bandwidth estimation 算法邏輯
+- 進度通知機制：轉碼完成後用 Webhook 通知前端更新狀態
+- 存儲成本優化：熱門片保留所有 quality，冷門片只留低解像度
+- 提供完整嘅前後端 code 同 FFmpeg 命令</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
     tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>

@@ -288,6 +288,14 @@
         padding: 20px;
       }
     }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
   </style>
 </head>
 <body>
@@ -302,6 +310,7 @@
       <button class="tab-btn" data-tab="indexing">② 優化查詢 + 索引</button>
       <button class="tab-btn" data-tab="caching">③ 三層 Cache</button>
       <button class="tab-btn" data-tab="replicas">④ 讀取副本</button>
+      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Overview ===================== -->
@@ -955,6 +964,76 @@
         </div>
       </div>
     </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計讀取擴展策略</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個完整嘅讀取擴展策略，應對 App 突然爆紅嘅場景。
+
+項目背景：
+- 應用類型：<span class="placeholder">[例如：社交平台 / 影片串流 / 電商]</span>
+- 目前用戶量：<span class="placeholder">[例如：1 萬]</span>，目標：<span class="placeholder">[例如：100 萬]</span>
+- 資料庫：<span class="placeholder">[例如：PostgreSQL / MySQL]</span>
+- 讀寫比例：<span class="placeholder">[例如：讀 90% / 寫 10%]</span>
+- 目前瓶頸：<span class="placeholder">[例如：資料庫 CPU 長期 >80%，查詢延遲 >500ms]</span>
+
+請按以下四個層級逐步設計：
+
+第一步：優化查詢 + 加 Index
+- 分析常見嘅慢查詢模式
+- 建議加邊啲 Index
+- 用 EXPLAIN 驗證效果
+
+第二步：加 Cache（三層快取）
+- 伺服器 Cache（Redis）：Cache 咩數據、TTL 策略、Invalidation 方案
+- CDN Cache：靜態資源同 API Response Cache 設定
+- 客戶端 Cache：HTTP Cache Header 策略
+
+第三步：Read Replicas
+- 幾多個副本、負載均衡策略
+- 處理 Replication Lag 嘅方案
+
+第四步：進階方案（如果需要）
+- CQRS Pattern 考量
+- 資料庫 Sharding 策略
+
+每一步都要標明「幾時應該用」同「預期效果」。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Read Replica 架構</h4>
+          <div class="prompt-text" id="prompt2">幫手實現一個 Read Replica 架構，包含完整嘅配置同 Application 層設計。
+
+技術棧：
+- 資料庫：<span class="placeholder">[例如：PostgreSQL / MySQL]</span>
+- 雲平台：<span class="placeholder">[例如：AWS RDS / GCP Cloud SQL / 自建]</span>
+- 應用層語言：<span class="placeholder">[例如：Node.js / Python / Go]</span>
+
+架構要求：
+1. 一個 Primary DB（負責所有寫入）
+2. <span class="placeholder">[2-3]</span> 個 Read Replica（負責讀取）
+3. Application 層嘅讀寫分離邏輯：
+   - 所有 SELECT 查詢自動路由到 Replica
+   - 所有 INSERT / UPDATE / DELETE 路由到 Primary
+   - 寫入後嘅即時讀取要路由到 Primary（避免 Replication Lag 問題）
+
+需要提供：
+- 資料庫 Replication 配置步驟
+- Application 層嘅 Connection Pool 設計
+- 讀寫分離嘅 Middleware / Proxy 實現
+- Replication Lag 監控同 Alert 設定
+- Failover 策略：Replica 掛咗點處理
+
+請提供完整嘅配置檔案同 code 範例。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -971,6 +1050,15 @@
         if (target) target.classList.add('active');
       });
     });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
   </script>
 </body>
 </html>
