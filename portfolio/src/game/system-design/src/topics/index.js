@@ -1,13 +1,9 @@
+import { lazy } from 'react';
 import LoadBalancer from './LoadBalancer';
 import AIBasicsStartHere from './AIBasicsStartHere';
-import AIEvaluationLoop from './AIEvaluationLoop';
-import AIIdeaGeneration from './AIIdeaGeneration';
-import AIModelComparison from './AIModelComparison';
 import AIScraperDefense from './AIScraperDefense';
-import AIToolsLandscape from './AIToolsLandscape';
 import AIVsSoftwareEngineer from './AIVsSoftwareEngineer';
 import APIGateway from './APIGateway';
-import APITokenSecurity from './APITokenSecurity';
 import Authentication from './Authentication';
 import BackendRoadmap from './BackendRoadmap';
 import CacheInvalidation from './CacheInvalidation';
@@ -17,7 +13,6 @@ import ChessGameDesign from './ChessGameDesign';
 import CICDPipeline from './CICDPipeline';
 import CodingAgentDesign from './CodingAgentDesign';
 import CodingInterview from './CodingInterview';
-import ContextRotSolution from './ContextRotSolution';
 import DatabaseBasics from './DatabaseBasics';
 import DependencyInjection from './DependencyInjection';
 import Deployment from './Deployment';
@@ -30,12 +25,9 @@ import JuniorVsSenior from './JuniorVsSenior';
 import KeyValueStore from './KeyValueStore';
 import LargeAPIResponse from './LargeAPIResponse';
 import LocalhostHosting from './LocalhostHosting';
-import MCPProtocol from './MCPProtocol';
 import MessageQueue from './MessageQueue';
 import MetricsLogging from './MetricsLogging';
-import MockDesign from './MockDesign';
 import Monitoring from './Monitoring';
-import MultiAIWorkflow from './MultiAIWorkflow';
 import NewsFeed from './NewsFeed';
 import NotificationSystem from './NotificationSystem';
 import ObjectStorage from './ObjectStorage';
@@ -43,20 +35,16 @@ import PaymentSystem from './PaymentSystem';
 import PickDatabase from './PickDatabase';
 import PortForwarding from './PortForwarding';
 import PrintVsDebugger from './PrintVsDebugger';
-import PromptCheatSheet from './PromptCheatSheet';
-import PromptEngineering from './PromptEngineering';
 import RateLimiter from './RateLimiter';
 import Redis from './Redis';
 import References from './References';
 import ScaleReads from './ScaleReads';
 import ScrapingVsCrawling from './ScrapingVsCrawling';
-import SDDSpecDrivenDevelopment from './SDDSpecDrivenDevelopment';
 import SearchAutocomplete from './SearchAutocomplete';
 import SecureAIAgents from './SecureAIAgents';
 import SelfHostVsCloud from './SelfHostVsCloud';
 import ServerVsServerless from './ServerVsServerless';
 import SessionManager from './SessionManager';
-import SkillVsAgent from './SkillVsAgent';
 import StarMethod from './StarMethod';
 import SystemDesignPatterns from './SystemDesignPatterns';
 import TaskQueue from './TaskQueue';
@@ -65,17 +53,47 @@ import URLShortener from './URLShortener';
 import VideoStreaming from './VideoStreaming';
 import WebCrawler from './WebCrawler';
 
+// Free AI-core topics — static imports (always in main bundle)
+import AIToolsLandscape from './AIToolsLandscape';
+import AIModelComparison from './AIModelComparison';
+
+// Premium AI-core topics — lazy imports (code-split into separate chunks).
+// These chunks are only fetched when the component renders, so non-premium
+// users never download the content. Combined with the page-level gate in
+// TopicPage.jsx, the content is not accessible via DevTools.
+const PromptEngineering = lazy(() => import('./PromptEngineering'));
+const PromptCheatSheet = lazy(() => import('./PromptCheatSheet'));
+const SkillVsAgent = lazy(() => import('./SkillVsAgent'));
+const ContextRotSolution = lazy(() => import('./ContextRotSolution'));
+const SDDSpecDrivenDevelopment = lazy(() => import('./SDDSpecDrivenDevelopment'));
+const APITokenSecurity = lazy(() => import('./APITokenSecurity'));
+const MultiAIWorkflow = lazy(() => import('./MultiAIWorkflow'));
+const AIEvaluationLoop = lazy(() => import('./AIEvaluationLoop'));
+const MCPProtocol = lazy(() => import('./MCPProtocol'));
+const AIIdeaGeneration = lazy(() => import('./AIIdeaGeneration'));
+const MockDesign = lazy(() => import('./MockDesign'));
+const OpenSourceAI = lazy(() => import('./OpenSourceAI'));
+
 const topicComponents = {
   'load-balancer': LoadBalancer,
   'ai-basics-start-here': AIBasicsStartHere,
-  'ai-evaluation-loop': AIEvaluationLoop,
-  'ai-idea-generation': AIIdeaGeneration,
-  'ai-model-comparison': AIModelComparison,
-  'ai-scraper-defense': AIScraperDefense,
   'ai-tools-landscape': AIToolsLandscape,
+  'ai-model-comparison': AIModelComparison,
+  'prompt-engineering': PromptEngineering,
+  'prompt-cheat-sheet': PromptCheatSheet,
+  'skill-vs-agent': SkillVsAgent,
+  'context-rot-solution': ContextRotSolution,
+  'sdd-spec-driven-development': SDDSpecDrivenDevelopment,
+  'api-token-security': APITokenSecurity,
+  'multi-ai-workflow': MultiAIWorkflow,
+  'ai-evaluation-loop': AIEvaluationLoop,
+  'mcp-protocol': MCPProtocol,
+  'ai-idea-generation': AIIdeaGeneration,
+  'mock-design': MockDesign,
+  'open-source-ai': OpenSourceAI,
+  'ai-scraper-defense': AIScraperDefense,
   'ai-vs-software-engineer': AIVsSoftwareEngineer,
   'api-gateway': APIGateway,
-  'api-token-security': APITokenSecurity,
   'authentication': Authentication,
   'backend-roadmap': BackendRoadmap,
   'cache-invalidation': CacheInvalidation,
@@ -85,7 +103,6 @@ const topicComponents = {
   'cicd-pipeline': CICDPipeline,
   'coding-agent-design': CodingAgentDesign,
   'coding-interview': CodingInterview,
-  'context-rot-solution': ContextRotSolution,
   'database-basics': DatabaseBasics,
   'dependency-injection': DependencyInjection,
   'deployment': Deployment,
@@ -98,12 +115,9 @@ const topicComponents = {
   'key-value-store': KeyValueStore,
   'large-api-response': LargeAPIResponse,
   'localhost-hosting': LocalhostHosting,
-  'mcp-protocol': MCPProtocol,
   'message-queue': MessageQueue,
   'metrics-logging': MetricsLogging,
-  'mock-design': MockDesign,
   'monitoring': Monitoring,
-  'multi-ai-workflow': MultiAIWorkflow,
   'news-feed': NewsFeed,
   'notification-system': NotificationSystem,
   'object-storage': ObjectStorage,
@@ -111,20 +125,16 @@ const topicComponents = {
   'pick-database': PickDatabase,
   'port-forwarding': PortForwarding,
   'print-vs-debugger': PrintVsDebugger,
-  'prompt-cheat-sheet': PromptCheatSheet,
-  'prompt-engineering': PromptEngineering,
   'rate-limiter': RateLimiter,
   'redis': Redis,
   'references': References,
   'scale-reads': ScaleReads,
   'scraping-vs-crawling': ScrapingVsCrawling,
-  'sdd-spec-driven-development': SDDSpecDrivenDevelopment,
   'search-autocomplete': SearchAutocomplete,
   'secure-ai-agents': SecureAIAgents,
   'self-host-vs-cloud': SelfHostVsCloud,
   'server-vs-serverless': ServerVsServerless,
   'session-manager': SessionManager,
-  'skill-vs-agent': SkillVsAgent,
   'star-method': StarMethod,
   'system-design-patterns': SystemDesignPatterns,
   'task-queue': TaskQueue,

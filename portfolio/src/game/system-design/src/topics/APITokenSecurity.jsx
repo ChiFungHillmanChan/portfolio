@@ -20,11 +20,11 @@ function OverviewTab() {
       <p>而家 AI API 嘅定價差異極大，揀錯模型分分鐘月尾帳單嚇死你。所以搞清楚 token security 同 cost 係每個工程師嘅基本功。</p>
 
       <div className="diagram-container">
-        <svg viewBox="0 0 750 420" xmlns="http://www.w3.org/2000/svg">
+        <svg viewBox="0 0 750 470" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <filter id="shadow-ts" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.3" /></filter>
           </defs>
-          <text x="375" y="28" textAnchor="middle" fill="#e2e8f0" fontSize="15" fontWeight="700">2025-2026 主流 AI 模型 API 定價對比</text>
+          <text x="375" y="28" textAnchor="middle" fill="#e2e8f0" fontSize="15" fontWeight="700">2026 主流 AI 模型 API 定價對比</text>
 
           {/* Table header */}
           <rect x="20" y="42" width="710" height="30" rx="6" fill="#1e293b" />
@@ -33,69 +33,80 @@ function OverviewTab() {
           <text x="480" y="62" fill="#9ca3af" fontSize="10" fontWeight="700">Output (per 1M tokens)</text>
           <text x="650" y="62" fill="#9ca3af" fontSize="10" fontWeight="700">定位</text>
 
-          {/* Row 1: Claude 4 Opus */}
+          {/* Row 1: Claude Opus 4.6 */}
           <rect x="20" y="76" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
-          <text x="40" y="95" fill="#a78bfa" fontSize="10" fontWeight="600">Claude 4 Opus</text>
+          <text x="40" y="95" fill="#a78bfa" fontSize="10" fontWeight="600">Claude Opus 4.6</text>
           <text x="280" y="95" fill="#ef4444" fontSize="10">$15.00</text>
           <text x="480" y="95" fill="#ef4444" fontSize="10">$75.00</text>
           <text x="650" y="95" fill="#9ca3af" fontSize="9">旗艦推理</text>
 
-          {/* Row 2: Claude 4 Sonnet */}
+          {/* Row 2: Claude Sonnet 4.5 */}
           <rect x="20" y="104" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
-          <text x="40" y="123" fill="#a78bfa" fontSize="10" fontWeight="600">Claude 4 Sonnet</text>
+          <text x="40" y="123" fill="#a78bfa" fontSize="10" fontWeight="600">Claude Sonnet 4.5</text>
           <text x="280" y="123" fill="#F59E0B" fontSize="10">$3.00</text>
           <text x="480" y="123" fill="#F59E0B" fontSize="10">$15.00</text>
           <text x="650" y="123" fill="#9ca3af" fontSize="9">性價比之選</text>
 
-          {/* Row 3: GPT-5 */}
+          {/* Row 3: GPT-5.3 Codex */}
           <rect x="20" y="132" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
-          <text x="40" y="151" fill="#34d399" fontSize="10" fontWeight="600">GPT-5</text>
-          <text x="280" y="151" fill="#F59E0B" fontSize="10">$1.25</text>
+          <text x="40" y="151" fill="#34d399" fontSize="10" fontWeight="600">GPT-5.3 Codex</text>
+          <text x="280" y="151" fill="#F59E0B" fontSize="10">$2.00</text>
           <text x="480" y="151" fill="#F59E0B" fontSize="10">$10.00</text>
-          <text x="650" y="151" fill="#9ca3af" fontSize="9">全能型</text>
+          <text x="650" y="151" fill="#9ca3af" fontSize="9">Agentic 編程</text>
 
-          {/* Row 4: Gemini 2.5 Pro */}
+          {/* Row 4: Gemini 3 Pro */}
           <rect x="20" y="160" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
-          <text x="40" y="179" fill="#F59E0B" fontSize="10" fontWeight="600">Gemini 2.5 Pro</text>
-          <text x="280" y="179" fill="#F59E0B" fontSize="10">$1.25 - $2.50</text>
-          <text x="480" y="179" fill="#F59E0B" fontSize="10">$10.00 - $15.00</text>
+          <text x="40" y="179" fill="#F59E0B" fontSize="10" fontWeight="600">Gemini 3 Pro</text>
+          <text x="280" y="179" fill="#F59E0B" fontSize="10">$2.00 - $4.00</text>
+          <text x="480" y="179" fill="#F59E0B" fontSize="10">$12.00 - $18.00</text>
           <text x="650" y="179" fill="#9ca3af" fontSize="9">長 Context</text>
 
-          {/* Row 5: Gemini 2.0 Flash */}
+          {/* Row 5: Gemini 3 Flash */}
           <rect x="20" y="188" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
-          <text x="40" y="207" fill="#34d399" fontSize="10" fontWeight="600">Gemini 2.0 Flash</text>
-          <text x="280" y="207" fill="#34d399" fontSize="10">$0.075</text>
-          <text x="480" y="207" fill="#34d399" fontSize="10">$0.30</text>
+          <text x="40" y="207" fill="#34d399" fontSize="10" fontWeight="600">Gemini 3 Flash</text>
+          <text x="280" y="207" fill="#34d399" fontSize="10">$0.10</text>
+          <text x="480" y="207" fill="#34d399" fontSize="10">$0.40</text>
           <text x="650" y="207" fill="#9ca3af" fontSize="9">超平快速</text>
 
+          {/* Row 6: DeepSeek V3.2 */}
+          <rect x="20" y="216" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
+          <text x="40" y="235" fill="#ef4444" fontSize="10" fontWeight="600">DeepSeek V3.2</text>
+          <text x="280" y="235" fill="#34d399" fontSize="10">$0.28</text>
+          <text x="480" y="235" fill="#34d399" fontSize="10">$0.42</text>
+          <text x="650" y="235" fill="#9ca3af" fontSize="9">開源最平</text>
+
           {/* Separator */}
-          <line x1="20" y1="228" x2="730" y2="228" stroke="#475569" strokeWidth="0.5" />
+          <line x1="20" y1="256" x2="730" y2="256" stroke="#475569" strokeWidth="0.5" />
 
           {/* Cost comparison visual */}
-          <text x="375" y="252" textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="700">Output 成本對比（每 1M tokens）</text>
+          <text x="375" y="280" textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="700">Output 成本對比（每 1M tokens）</text>
 
           {/* Bars */}
-          <text x="40" y="280" fill="#a78bfa" fontSize="9">Claude 4 Opus</text>
-          <rect x="180" y="270" width="500" height="14" rx="3" fill="#7c3aed" opacity="0.8" />
-          <text x="690" y="281" fill="#e2e8f0" fontSize="9">$75</text>
+          <text x="40" y="308" fill="#a78bfa" fontSize="9">Claude Opus 4.6</text>
+          <rect x="180" y="298" width="500" height="14" rx="3" fill="#7c3aed" opacity="0.8" />
+          <text x="690" y="309" fill="#e2e8f0" fontSize="9">$75</text>
 
-          <text x="40" y="302" fill="#a78bfa" fontSize="9">Claude 4 Sonnet</text>
-          <rect x="180" y="292" width="100" height="14" rx="3" fill="#8b5cf6" opacity="0.7" />
-          <text x="290" y="303" fill="#e2e8f0" fontSize="9">$15</text>
+          <text x="40" y="330" fill="#a78bfa" fontSize="9">Claude Sonnet 4.5</text>
+          <rect x="180" y="320" width="100" height="14" rx="3" fill="#8b5cf6" opacity="0.7" />
+          <text x="290" y="331" fill="#e2e8f0" fontSize="9">$15</text>
 
-          <text x="40" y="324" fill="#34d399" fontSize="9">GPT-5</text>
-          <rect x="180" y="314" width="67" height="14" rx="3" fill="#059669" opacity="0.7" />
-          <text x="257" y="325" fill="#e2e8f0" fontSize="9">$10</text>
+          <text x="40" y="352" fill="#34d399" fontSize="9">GPT-5.3 Codex</text>
+          <rect x="180" y="342" width="67" height="14" rx="3" fill="#059669" opacity="0.7" />
+          <text x="257" y="353" fill="#e2e8f0" fontSize="9">$10</text>
 
-          <text x="40" y="346" fill="#F59E0B" fontSize="9">Gemini 2.5 Pro</text>
-          <rect x="180" y="336" width="100" height="14" rx="3" fill="#d97706" opacity="0.7" />
-          <text x="290" y="347" fill="#e2e8f0" fontSize="9">$10-15</text>
+          <text x="40" y="374" fill="#F59E0B" fontSize="9">Gemini 3 Pro</text>
+          <rect x="180" y="364" width="120" height="14" rx="3" fill="#d97706" opacity="0.7" />
+          <text x="310" y="375" fill="#e2e8f0" fontSize="9">$12-18</text>
 
-          <text x="40" y="368" fill="#34d399" fontSize="9">Gemini 2.0 Flash</text>
-          <rect x="180" y="358" width="2" height="14" rx="1" fill="#10B981" opacity="0.8" />
-          <text x="192" y="369" fill="#e2e8f0" fontSize="9">$0.30</text>
+          <text x="40" y="396" fill="#34d399" fontSize="9">Gemini 3 Flash</text>
+          <rect x="180" y="386" width="3" height="14" rx="1" fill="#10B981" opacity="0.8" />
+          <text x="193" y="397" fill="#e2e8f0" fontSize="9">$0.40</text>
 
-          <text x="375" y="400" textAnchor="middle" fill="#9ca3af" fontSize="9">Opus output 成本係 Flash 嘅 250 倍 — 揀錯模型真係會破產</text>
+          <text x="40" y="418" fill="#ef4444" fontSize="9">DeepSeek V3.2</text>
+          <rect x="180" y="408" width="3" height="14" rx="1" fill="#ef4444" opacity="0.8" />
+          <text x="193" y="419" fill="#e2e8f0" fontSize="9">$0.42</text>
+
+          <text x="375" y="450" textAnchor="middle" fill="#9ca3af" fontSize="9">Opus output 成本係 Flash 嘅 188 倍 — 揀錯模型真係會破產</text>
         </svg>
       </div>
 
@@ -283,13 +294,14 @@ app.post('/api/chat', async (req, res) => {
             Output：1,000 users x 5 msg x 800 tokens x 30 days = <strong>120M tokens</strong><br /><br />
             <strong>月費對比：</strong><br />
             <code style={{ display: 'block', background: '#1a1d27', padding: '8px 12px', borderRadius: 8, margin: '8px 0', fontSize: 13, whiteSpace: 'pre-wrap' }}>
-{`Claude 4 Opus:    75 x $15 + 120 x $75    = $1,125 + $9,000  = $10,125/月
-Claude 4 Sonnet:  75 x $3  + 120 x $15    = $225   + $1,800  = $2,025/月
-GPT-5:            75 x $1.25 + 120 x $10  = $93.75 + $1,200  = $1,293.75/月
-Gemini 2.5 Pro:   75 x $2.50 + 120 x $15  = $187.50 + $1,800 = $1,987.50/月
-Gemini 2.0 Flash: 75 x $0.075 + 120 x $0.30 = $5.63 + $36   = $41.63/月`}
+{`Claude Opus 4.6:  75 x $15 + 120 x $75    = $1,125 + $9,000  = $10,125/月
+Claude Sonnet 4.5: 75 x $3  + 120 x $15   = $225   + $1,800  = $2,025/月
+GPT-5.3 Codex:   75 x $2   + 120 x $10    = $150   + $1,200  = $1,350/月
+Gemini 3 Pro:    75 x $4   + 120 x $18    = $300   + $2,160  = $2,460/月
+Gemini 3 Flash:  75 x $0.10 + 120 x $0.40 = $7.50  + $48     = $55.50/月
+DeepSeek V3.2:   75 x $0.28 + 120 x $0.42 = $21    + $50.40  = $71.40/月`}
             </code>
-            <strong style={{ color: '#ef4444' }}>Opus 比 Flash 貴 243 倍</strong>。所以真實 production 通常會用 routing：簡單問題用 Flash，複雜問題先升級用 Opus。呢個叫做 <strong>model routing / cascading</strong>。
+            <strong style={{ color: '#ef4444' }}>Opus 比 Flash 貴 182 倍</strong>。所以真實 production 通常會用 routing：簡單問題用 Flash，複雜問題先升級用 Opus。呢個叫做 <strong>model routing / cascading</strong>。DeepSeek V3.2 質量接近 GPT-5.3 但成本只需 5%，係開源陣營嘅性價比之王。
           </span>
         </li>
       </ol>
@@ -326,11 +338,12 @@ function AIViberTab() {
 請你：
 1. 計算每月總 token 用量（input + output 分開算）
 2. 用以下模型計算月費：
-   - Claude 4 Opus ($15/$75 per 1M)
-   - Claude 4 Sonnet ($3/$15 per 1M)
-   - GPT-5 ($1.25/$10 per 1M)
-   - Gemini 2.5 Pro ($2.50/$15 per 1M)
-   - Gemini 2.0 Flash ($0.075/$0.30 per 1M)
+   - Claude Opus 4.6 ($15/$75 per 1M)
+   - Claude Sonnet 4.5 ($3/$15 per 1M)
+   - GPT-5.3 Codex ($2/$10 per 1M)
+   - Gemini 3 Pro ($4/$18 per 1M)
+   - Gemini 3 Flash ($0.10/$0.40 per 1M)
+   - DeepSeek V3.2 ($0.28/$0.42 per 1M)
 3. 建議最佳嘅 model routing 策略（邊啲 request 用平模型，邊啲用貴模型）
 4. 預估用 routing 策略後嘅實際月費（通常慳 60-80%）`}
         </div>
@@ -367,7 +380,7 @@ function QuizTab() {
   const questions = [
     { id: 1, q: '以下邊個做法最危險？', options: ['將 API Key 存喺 .env 檔案', '將 API Key hardcode 喺 frontend JavaScript', '將 API Key 存喺 Cloud Secret Manager', '用 backend proxy 隱藏 API Key'], correct: 1 },
     { id: 2, q: 'Authentication 同 Authorization 嘅分別係咩？', options: ['一樣嘅嘢，只係叫法唔同', 'Authentication 驗證身份，Authorization 決定權限', 'Authentication 決定權限，Authorization 驗證身份', '兩者都同 API Key 無關'], correct: 1 },
-    { id: 3, q: '如果你嘅 app 用 Claude 4 Opus 處理每月 100M output tokens，月費大約幾多？', options: ['$750', '$1,500', '$7,500', '$15,000'], correct: 2 },
+    { id: 3, q: '如果你嘅 app 用 Claude Opus 4.6 處理每月 100M output tokens，月費大約幾多？', options: ['$750', '$1,500', '$7,500', '$15,000'], correct: 2 },
     { id: 4, q: '以下邊個係正確嘅 API Key 保護策略？', options: ['Frontend 直接 call OpenAI API，用 HTTPS 就安全', '將 key 存喺 localStorage 加密', '用 backend proxy，key 只存 server side', '將 key base64 encode 放喺 frontend'], correct: 2 },
     { id: 5, q: 'Key Rotation 嘅建議頻率係幾多？', options: ['只要冇洩露就唔使換', '每 30-90 日', '每年一次', '每次 deploy 都換'], correct: 1 },
   ];

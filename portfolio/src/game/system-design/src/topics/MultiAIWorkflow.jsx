@@ -47,7 +47,7 @@ function OverviewTab() {
           <g transform="translate(170,60)">
             <rect width="130" height="95" rx="14" fill="#1a1d27" stroke="#10B981" strokeWidth="2" filter="url(#glowGreen)" />
             <text x="65" y="25" textAnchor="middle" fill="#10B981" fontSize="13" fontWeight="700">Architecture</text>
-            <text x="65" y="48" textAnchor="middle" fill="#6ee7b7" fontSize="10">ChatGPT / Claude</text>
+            <text x="65" y="48" textAnchor="middle" fill="#6ee7b7" fontSize="10">GPT-5.3 / Claude</text>
             <text x="65" y="64" textAnchor="middle" fill="#9ca3af" fontSize="9">推理 + 長 context</text>
             <text x="65" y="80" textAnchor="middle" fill="#9ca3af" fontSize="9">設計 spec + 架構</text>
           </g>
@@ -101,11 +101,11 @@ function OverviewTab() {
 
       <h3 style={{ color: '#e2e8f0', marginTop: 24 }}>工具定位矩陣</h3>
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>文字 AI</strong>：ChatGPT（框架設計、brainstorm）、Claude（長文件分析、200K context）、Gemini（多模態、圖片+文字混合輸入）</span></li>
+        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>文字 AI</strong>：GPT-5.3 Codex（框架設計、brainstorm）、Claude Opus 4.6（長文件分析、1M context beta）、DeepSeek V3.2（預算友好嘅開源替代）、Gemini（多模態、圖片+文字混合輸入）</span></li>
         <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>搜尋 AI</strong>：Perplexity（即時搜尋 + 引用來源）、Notion AI（團隊知識庫搜尋同整理）</span></li>
-        <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>開發 AI</strong>：Cursor（IDE 內 AI 編碼、整個 codebase context）、Copilot（行內補全 + 測試生成）</span></li>
+        <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>開發 AI</strong>：Cursor（IDE 內 AI 編碼、整個 codebase context）、Copilot（行內補全 + 測試生成）、OpenClaw（開源 AI agent、適合自建部署）</span></li>
         <li><span className="step-num">4</span><span><strong style={{ color: '#8B5CF6' }}>設計 AI</strong>：Figma AI（wireframe 同 UI 設計）、Canva（海報、社交媒體、文檔排版）</span></li>
-        <li><span className="step-num">5</span><span><strong style={{ color: '#EF4444' }}>自動化</strong>：Zapier / Make（服務串接、workflow 自動化）、LangChain（多模型 orchestration）、MCP（統一 context 協議）</span></li>
+        <li><span className="step-num">5</span><span><strong style={{ color: '#EF4444' }}>自動化</strong>：Zapier / Make（服務串接、workflow 自動化）、LangChain（多模型 orchestration）、MCP（統一 context 協議）。開源方案可以用 Llama 4 做 self-hosted inference</span></li>
       </ol>
     </div>
   );
@@ -153,8 +153,8 @@ function PracticeTab() {
 
       <h3 style={{ color: '#e2e8f0', marginTop: 8 }}>場景一：建一個新嘅 REST API</h3>
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>Perplexity Research</strong>：搵 3-5 個類似 API 嘅設計模式同 best practices。例如要做 payment API，Perplexity 會搵到 Stripe、PayPal 嘅 API 設計文檔，附帶引用來源。Output：一份 structured research summary。</span></li>
-        <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>Claude Spec 設計</strong>：用 200K context 讀曬 existing codebase + research summary，生成完整嘅 API spec。包括 endpoints、request/response schema、error codes、rate limiting 策略。Claude 嘅長 context 能力喺呢度至關重要。</span></li>
+        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>Perplexity Research</strong>：搵 3-5 個類似 API 嘅設計模式同 best practices。例如要做 payment API，Perplexity 會搵到 Stripe、PayPal 嘅 API 設計文檔，附帶引用來源。Output：一份 structured research summary。如果預算有限，DeepSeek V3.2 API 亦可以做 research summarization，成本只需 Perplexity 嘅 1/10。</span></li>
+        <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>Claude Spec 設計</strong>：用 1M context (beta) 讀曬 existing codebase + research summary，生成完整嘅 API spec。包括 endpoints、request/response schema、error codes、rate limiting 策略。Claude 嘅長 context 能力喺呢度至關重要。</span></li>
         <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>Cursor Code 實作</strong>：喺 IDE 入面用 Cursor，按 spec 逐步實作 endpoints。Cursor 可以 reference 成個 codebase，所以佢生成嘅 code 會 follow 你 existing 嘅 patterns 同 conventions。</span></li>
         <li><span className="step-num">4</span><span><strong style={{ color: '#8B5CF6' }}>Copilot Tests</strong>：自動生成 unit tests + integration tests。Copilot 擅長從 implementation 推斷 test cases，包括 happy path、edge cases 同 error scenarios。</span></li>
         <li><span className="step-num">5</span><span><strong style={{ color: '#EF4444' }}>ChatGPT Docs</strong>：生成 OpenAPI spec + README + usage examples。ChatGPT 嘅文字生成能力喺寫文檔方面好強，可以產出 developer-friendly 嘅文檔。</span></li>
@@ -204,7 +204,7 @@ function AIViberTab() {
    - 期望 output format
 
 2. **Architecture 階段**
-   - 用邊個 AI 做系統設計（ChatGPT / Claude / etc）
+   - 用邊個 AI 做系統設計（GPT-5.3 Codex / Claude Opus 4.6 / DeepSeek V3.2 (budget)）
    - 需要 feed 咩 context 入去
    - 期望產出：API spec / system diagram / data model
 

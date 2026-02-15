@@ -9,6 +9,7 @@ const relatedTopics = [
   { slug: 'ai-vs-software-engineer', label: 'AI 時代做 Software Engineer' },
   { slug: 'system-design-patterns', label: '系統設計模式總覽' },
   { slug: 'task-queue', label: 'Task Queue 任務隊列' },
+  { slug: 'open-source-ai', label: '開源 AI 生態圈' },
 ];
 
 function PlanTab() {
@@ -88,7 +89,7 @@ function PlanTab() {
         <li><span className="step-num">1</span><span><strong>Compacting（壓縮）</strong>——用另一個 LLM 將長篇嘅 context 縮短成摘要，節省 token。常見做法係用平啲嘅 model 做呢步，專門做 summarization。呢個係最基本嘅優化手法。</span></li>
         <li><span className="step-num">2</span><span><strong>Shell Search（Terminal 搜尋）</strong>——直接用 terminal 指令（例如 ls、grep）搵檔案同搜尋內容。呢個方法快、簡單，適合做基礎嘅文字搜尋。建議一定要配合埋。</span></li>
         <li><span className="step-num">3</span><span><strong>Semantic Search（語義搜尋）</strong>——用 vector database 做語義相似度搜尋，搵返真正相關嘅 code，而唔係淨係靠關鍵字。呢個係比較進階嘅做法，但效果好好。</span></li>
-        <li><span className="step-num">4</span><span><strong>Sub-Agents（子 Agent）</strong>——將某啲專門任務交俾另一個 Agent 處理，佢有自己嘅 context window，唔會影響主 Agent。關鍵在於呢個係最靈活嘅方法，適合複雜任務。</span></li>
+        <li><span className="step-num">4</span><span><strong>Sub-Agents（子 Agent）</strong>——將某啲專門任務交俾另一個 Agent 處理，佢有自己嘅 context window，唔會影響主 Agent。關鍵在於呢個係最靈活嘅方法，適合複雜任務。Claude Code 嘅 Agent Teams 功能就係呢個概念嘅實現——多個 Agent 各自有獨立 context，互相協作完成複雜任務。</span></li>
       </ol>
 
       <div className="highlight-box">
@@ -180,7 +181,7 @@ function ExecuteTab() {
 
       <h3>Execute 階段嘅三個執行方式</h3>
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong>MCP（Model Context Protocol）</strong>——用 MCP 連接外部工具，例如 database query、API 調用、檔案系統操作。呢個係標準化嘅工具接口，好適合連接各種外部服務。</span></li>
+        <li><span className="step-num">1</span><span><strong>MCP（Model Context Protocol）</strong>——用 MCP 連接外部工具，例如 database query、API 調用、檔案系統操作。呢個係標準化嘅工具接口，好適合連接各種外部服務。OpenClaw 就係一個開源嘅 coding agent 實現，擁有 100+ AgentSkills，支援 shell、filesystem、web automation 等工具。</span></li>
         <li><span className="step-num">2</span><span><strong>Scripts（腳本）</strong>——直接執行本地嘅測試腳本。例如 run unit tests、linter、formatter 等。呢個方法快速、直接，適合本地開發環境。建議用嚟做快速驗證。</span></li>
         <li><span className="step-num">3</span><span><strong>Codegen（代碼生成）</strong>——Agent 自己寫 code，可能會用 sub-agent 嚟處理呢個任務，保留主 Agent 嘅 context window。呢個係最靈活嘅方法，適合複雜嘅代碼生成需求。</span></li>
       </ol>
@@ -352,7 +353,7 @@ function AIViberTab() {
       <div className="prompt-card">
         <h4>Prompt 3 — Sub-Agent 架構設計</h4>
         <div className="prompt-text">
-          {'幫我設計一個 multi-agent 系統，有一個 main agent 協調多個 sub-agents。\n\n場景：[例如：全端開發團隊 — 有 frontend agent、backend agent、testing agent / Code review 系統 — 有 security agent、performance agent、style agent]\n\n要求：\n- Main Agent：負責理解需求、拆分任務、分配俾 sub-agents\n- Sub-Agent 設計：每個 sub-agent 有獨立嘅 system prompt 同 tools\n- 通訊機制：定義 agents 之間嘅 message format\n- Context 管理：每個 sub-agent 有自己嘅 context window，唔會互相污染\n- 結果合併：Main Agent 收集所有 sub-agent 嘅輸出，整合成最終結果\n- 用 [Python / TypeScript] 寫出完整嘅 framework code'}
+          {'幫我設計一個 multi-agent 系統，有一個 main agent 協調多個 sub-agents。\n\n場景：[例如：全端開發團隊 — 有 frontend agent、backend agent、testing agent / Code review 系統 — 有 security agent、performance agent、style agent / 開源 AI Agent — 用 OpenClaw + DeepSeek 做 self-hosted coding agent]\n\n要求：\n- Main Agent：負責理解需求、拆分任務、分配俾 sub-agents\n- Sub-Agent 設計：每個 sub-agent 有獨立嘅 system prompt 同 tools\n- 通訊機制：定義 agents 之間嘅 message format\n- Context 管理：每個 sub-agent 有自己嘅 context window，唔會互相污染\n- 結果合併：Main Agent 收集所有 sub-agent 嘅輸出，整合成最終結果\n- 用 [Python / TypeScript] 寫出完整嘅 framework code'}
         </div>
       </div>
     </div>
