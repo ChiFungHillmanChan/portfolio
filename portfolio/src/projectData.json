@@ -62,7 +62,7 @@
       "sourceCode": "no-source-code",
       "demoUrl": "/system-design",
       "liveDemo": "no-demo",
-      "technologies": ["HTML", "CSS", "JavaScript", "SVG", "System Design"]
+      "technologies": ["React", "Vite", "TailwindCSS", "JavaScript", "System Design"]
     },
     {
       "id": 5,

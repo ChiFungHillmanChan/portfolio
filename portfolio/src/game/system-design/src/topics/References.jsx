@@ -1,0 +1,343 @@
+import TopicTabs from '../components/TopicTabs';
+import RelatedTopics from '../components/RelatedTopics';
+
+const relatedTopics = [
+  { slug: 'backend-roadmap', label: 'Backend 學習路線' },
+  { slug: 'system-design-patterns', label: '系統設計模式總覽' },
+  { slug: 'coding-interview', label: 'Coding Interview 攻略' },
+];
+
+function YouTubeTab() {
+  return (
+    <div className="card">
+      <h2>YouTube 頻道</h2>
+      <div className="subtitle">睇片學 System Design，由淺入深</div>
+
+      <div className="section-label">System Design 專門頻道</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@ByteByteGo" target="_blank" rel="noopener">ByteByteGo</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span>Alex Xu 主理</div>
+          <p>《System Design Interview》作者嘅官方頻道。每條片都用精美動畫圖解一個系統設計概念，例如 Rate Limiter、Message Queue、Database Sharding。非常適合面試準備同概念速學。更新頻率高，內容覆蓋面廣。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@GauravSen" target="_blank" rel="noopener">Gaurav Sen</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>System Design 經典頻道之一。用白板講解系統設計概念，風格直接易明。涵蓋 Consistent Hashing、Load Balancer、Distributed Systems 等核心概念。適合面試前快速掃一遍。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@jordanhasnolife5163" target="_blank" rel="noopener">Jordan Has No Life</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>深入 Distributed Systems 理論同實踐。內容偏學術但解釋清晰，涵蓋 Consensus Algorithms、Replication、Partitioning 等進階概念。適合想深入理解分佈式系統底層原理嘅人。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@caboram" target="_blank" rel="noopener">CodeCrafters (caboram)</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>拆解真實系統嘅內部運作，例如 Redis、Git、Docker 係點 Build 出嚟。適合想了解底層實作嘅人。</p>
+        </div>
+      </div>
+
+      <div className="section-label">General Software Engineering</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@HusseinNasser-e6l" target="_blank" rel="noopener">Hussein Nasser</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Backend 工程師必睇。深入講解 Networking、Database Internals、Proxy、Protocol 等底層知識。風格係「由原理出發」，唔止講點用，仲講點解係咁設計。長片為主，適合深度學習。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@Fireship" target="_blank" rel="noopener">Fireship</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>「100 Seconds」系列極速講解各種技術概念。適合快速了解一個技術係咩、點解要用。節奏快、製作精良。入門掃盲首選。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@ThePrimeTimeagen" target="_blank" rel="noopener">ThePrimeagen</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Netflix 前 Senior Engineer。風格直率幽默，涵蓋 Algorithms、Data Structures、System Design 討論、Tech News 評論。適合想聽資深工程師點睇技術趨勢嘅人。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@NeetCode" target="_blank" rel="noopener">NeetCode</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>以 LeetCode 題解出名，但亦有 System Design 系列。講解清晰有條理，用圖示輔助。刷題 + 系統設計一站式資源。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@NeetCodeIO" target="_blank" rel="noopener">NeetCodeIO</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>NeetCode 嘅第二頻道，專注 System Design 面試同 Full Mock Interview。有完整嘅 System Design 課程系列，由淺入深。</p>
+        </div>
+      </div>
+
+      <div className="section-label">中文頻道</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@TechWithTim" target="_blank" rel="noopener">Tech With Tim</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Python、Web Dev 為主，適合初學者。Tutorial 風格，Step by step 教學。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.youtube.com/@xiaolincoding" target="_blank" rel="noopener">小林 coding</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-cn">中文</span></div>
+          <p>圖解網絡、操作系統、MySQL 等計算機基礎知識。用圖解方式講解複雜概念，內容紮實。適合打好計算機基礎。</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommunityTab() {
+  return (
+    <div className="card">
+      <h2>社群與論壇</h2>
+      <div className="subtitle">同全球工程師交流、討論、學習</div>
+
+      <div className="section-label">Reddit</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://www.reddit.com/r/systemdesign/" target="_blank" rel="noopener">r/systemdesign</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>專門討論 System Design 面試同架構設計。有人分享面試經驗、設計方案、學習路線。可以 Post 自己嘅設計方案俾人 Review。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.reddit.com/r/ExperiencedDevs/" target="_blank" rel="noopener">r/ExperiencedDevs</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>面向有經驗嘅開發者（3+ 年）。討論架構決策、技術選型、團隊管理、Career Growth。質量高，少灌水。適合想了解 Senior / Staff 級別思維嘅人。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.reddit.com/r/cscareerquestions/" target="_blank" rel="noopener">r/cscareerquestions</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>CS 職業發展最大嘅 Subreddit。面試準備、Offer 比較、公司文化、薪資討論。適合搵工準備期間瀏覽。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.reddit.com/r/softwarearchitecture/" target="_blank" rel="noopener">r/softwarearchitecture</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>專注軟件架構討論。Microservices vs Monolith、Event-Driven Architecture、DDD 等話題。適合正在做架構決策嘅人。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.reddit.com/r/Backend/" target="_blank" rel="noopener">r/Backend</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Backend 開發專屬社群。API 設計、Database 選擇、Performance 優化等實戰討論。</p>
+        </div>
+      </div>
+
+      <div className="section-label">Discord / Slack</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://discord.gg/neetcode" target="_blank" rel="noopener">NeetCode Discord</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>活躍嘅刷題 + System Design 社群。有專門嘅 System Design 討論頻道，可以搵 Study Partner。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://discord.gg/fireship" target="_blank" rel="noopener">Fireship Discord</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Web Dev 同 General Software Engineering 討論。氣氛輕鬆，適合問技術問題。</p>
+        </div>
+      </div>
+
+      <div className="section-label">其他平台</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://news.ycombinator.com/" target="_blank" rel="noopener">Hacker News</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Y Combinator 旗下嘅科技新聞社群。高質量嘅技術討論，經常有大公司工程師分享架構經驗。評論區通常比文章本身更有價值。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://dev.to/" target="_blank" rel="noopener">DEV Community</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>開發者部落格平台。大量 System Design、Backend、DevOps 相關文章。適合搵特定技術嘅教程同最佳實踐。</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ReadingTab() {
+  return (
+    <div className="card">
+      <h2>閱讀資源</h2>
+      <div className="subtitle">書籍、Blog、Newsletter — 深度學習必備</div>
+
+      <div className="section-label">必讀書籍</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://dataintensive.net/" target="_blank" rel="noopener">Designing Data-Intensive Applications (DDIA)</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-paid">付費</span><span className="resource-tag tag-en">English</span>Martin Kleppmann 著</div>
+          <p>分佈式系統聖經。涵蓋 Replication、Partitioning、Transactions、Batch/Stream Processing。每一章都可以獨立閱讀。呢本書唔係教點用某個工具，而係教背後嘅原理同 Trade-off。必讀。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.amazon.com/System-Design-Interview-Insiders-Guide/dp/1736049119" target="_blank" rel="noopener">System Design Interview Vol. 1 &amp; 2</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-paid">付費</span><span className="resource-tag tag-en">English</span>Alex Xu 著</div>
+          <p>面試導向嘅 System Design 書。每章一個經典設計題（URL Shortener、Chat System、News Feed 等），有清晰嘅步驟同圖解。面試準備首選。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.amazon.com/Web-Scalability-Startup-Engineers-Morgan/dp/0071843655" target="_blank" rel="noopener">Web Scalability for Startup Engineers</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-paid">付費</span><span className="resource-tag tag-en">English</span>Artur Ejsmont 著</div>
+          <p>從 Startup 角度講 Scalability。涵蓋 Caching、Message Queue、Data Partitioning、Search。內容比 DDIA 更落地同實用，適合做產品嘅工程師。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://www.amazon.com/Understanding-Distributed-Systems-Second-applications/dp/1838430210" target="_blank" rel="noopener">Understanding Distributed Systems</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-paid">付費</span><span className="resource-tag tag-en">English</span>Roberto Vitillo 著</div>
+          <p>比 DDIA 更易讀嘅分佈式系統入門書。適合覺得 DDIA 太厚或者太理論嘅人先讀呢本打底。</p>
+        </div>
+      </div>
+
+      <div className="section-label">Blog &amp; Newsletter</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://blog.bytebytego.com/" target="_blank" rel="noopener">ByteByteGo Newsletter</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費 / 付費</span><span className="resource-tag tag-en">English</span></div>
+          <p>每週一篇 System Design 文章，配精美圖解。免費版已經好有價值，付費版有完整課程。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://newsletter.systemdesign.one/" target="_blank" rel="noopener">System Design Newsletter</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>每週精選 System Design 相關文章同資源。涵蓋大公司架構 Blog、新技術趨勢、面試準備材料。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://martinfowler.com/" target="_blank" rel="noopener">Martin Fowler's Blog</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>軟件架構大師嘅個人 Blog。Microservices、Event Sourcing、CQRS、Refactoring 等概念好多都係由呢度定義。文章質量極高，係架構設計嘅權威參考。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://highscalability.com/" target="_blank" rel="noopener">High Scalability</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>收集大公司嘅架構分享同案例分析。Netflix、Uber、Twitter 等公司點樣 Scale 佢哋嘅系統。真實案例學習嘅寶庫。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://engineering.fb.com/" target="_blank" rel="noopener">Meta Engineering Blog</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Meta（Facebook）工程團隊嘅技術 Blog。TAO、Memcached、React 等技術都係呢度首發分享。了解超大規模系統設計嘅第一手資料。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://netflixtechblog.com/" target="_blank" rel="noopener">Netflix Tech Blog</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Netflix 技術團隊分享。Chaos Engineering、Microservices、Data Pipeline 等領域嘅先驅。好多 System Design 面試題都源自 Netflix 嘅架構。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://aws.amazon.com/architecture/" target="_blank" rel="noopener">AWS Architecture Center</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>AWS 官方架構參考。有大量 Well-Architected Framework 文檔、架構圖、最佳實踐。設計雲端架構嘅權威指南。</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ToolsTab() {
+  return (
+    <div className="card">
+      <h2>工具與練習平台</h2>
+      <div className="subtitle">動手做先係真正學識</div>
+
+      <div className="section-label">GitHub 開源資源</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://github.com/donnemartin/system-design-primer" target="_blank" rel="noopener">System Design Primer</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span>280k+ Stars</div>
+          <p>GitHub 上最受歡迎嘅 System Design 學習資源。涵蓋 Scalability、Cache、Load Balancer、Database 等所有核心概念。有 Anki 卡片可以用嚟複習。完全免費。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://github.com/karanpratapsingh/system-design" target="_blank" rel="noopener">System Design Course (Karan)</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>結構化嘅 System Design 課程，由基礎概念到完整設計。有清晰嘅章節劃分同圖解。適合系統性學習。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://github.com/bregman-arie/devops-exercises" target="_blank" rel="noopener">DevOps Exercises</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>涵蓋 Linux、Networking、Docker、K8s、CI/CD、Cloud 等 DevOps 面試題。適合準備 Infrastructure 相關嘅面試。</p>
+        </div>
+      </div>
+
+      <div className="section-label">練習平台</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://neetcode.io/" target="_blank" rel="noopener">NeetCode.io</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費 / 付費</span><span className="resource-tag tag-en">English</span></div>
+          <p>結構化嘅刷題路線圖（Roadmap）。有 System Design 課程同 Practice 題。免費版有基礎 Roadmap，付費版有完整 System Design 課。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://leetcode.com/" target="_blank" rel="noopener">LeetCode</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費 / 付費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Coding Interview 練習嘅標準平台。有 2000+ 題目、公司分類、Contest。配合 NeetCode Roadmap 使用效果最好。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://exercism.org/" target="_blank" rel="noopener">Exercism</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span><span className="resource-tag tag-en">English</span></div>
+          <p>學新程式語言嘅最佳平台。有 Mentor Review 功能，適合學習最佳實踐同 Idiomatic Code。支援 70+ 語言。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://codecrafters.io/" target="_blank" rel="noopener">CodeCrafters</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-paid">付費</span><span className="resource-tag tag-en">English</span></div>
+          <p>Build Your Own Redis / Git / Docker / SQLite。從零實作真實系統嘅核心部分，學習底層原理。學 System Design 最好嘅方法就係自己 Build。</p>
+        </div>
+      </div>
+
+      <div className="section-label">畫圖工具</div>
+      <div className="resource-grid">
+        <div className="resource-item">
+          <h4><a href="https://excalidraw.com/" target="_blank" rel="noopener">Excalidraw</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span></div>
+          <p>手繪風格嘅白板工具。System Design 面試畫架構圖首選。支援 Real-time 協作，可以 Export PNG/SVG。簡單直接，零學習成本。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://draw.io/" target="_blank" rel="noopener">draw.io (diagrams.net)</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費</span></div>
+          <p>專業嘅流程圖同架構圖工具。有大量 AWS / GCP / Azure Icon Set。適合畫正式嘅架構文檔。可以直接存去 Google Drive / GitHub。</p>
+        </div>
+
+        <div className="resource-item">
+          <h4><a href="https://miro.com/" target="_blank" rel="noopener">Miro</a></h4>
+          <div className="res-meta"><span className="resource-tag tag-free">免費 / 付費</span></div>
+          <p>協作白板工具。適合團隊一齊做 System Design Workshop、Brainstorming、Architecture Review。免費版有 3 個 Board。</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function References() {
+  return (
+    <>
+      <TopicTabs
+        title="學習資源參考"
+        subtitle="YouTube、Reddit、GitHub、書籍⋯⋯ 精選最實用嘅系統設計學習資源"
+        tabs={[
+          { id: 'youtube', label: '① YouTube', content: <YouTubeTab /> },
+          { id: 'community', label: '② 社群論壇', content: <CommunityTab /> },
+          { id: 'reading', label: '③ 閱讀資源', premium: true, content: <ReadingTab /> },
+          { id: 'tools', label: '④ 工具與練習', premium: true, content: <ToolsTab /> },
+        ]}
+      />
+      <div className="topic-container">
+        <RelatedTopics topics={relatedTopics} />
+      </div>
+    </>
+  );
+}

@@ -1,0 +1,162 @@
+[
+  {
+    "id": "url-shortener-challenge",
+    "title": "設計短網址系統",
+    "difficulty": "intermediate",
+    "description": "設計一個每日處理 1 億次請求嘅短網址服務",
+    "requiredTopics": ["url-shortener", "database-basics", "unique-id-generator", "redis"],
+    "problemStatement": "你嘅公司需要一個 URL 短縮服務，類似 bit.ly。用戶輸入一條長 URL，系統返回一條短 URL（例如 https://short.ly/abc123）。短 URL 被訪問時，自動重定向到原始長 URL。\n\n需求：\n- 每日新增 1000 萬條短網址\n- 每日讀取 1 億次（10:1 讀寫比）\n- 短碼長度盡量短\n- 支援自訂短碼（可選）\n- 需要數據分析（點擊數、來源）\n- 服務 SLA 99.99%\n\n請設計完整嘅系統架構，包括 API、資料庫、編碼策略、快取同擴展方案。",
+    "hints": [
+      "考慮用 Base62 編碼嚟生成短碼，6 位字符可以產生幾多個唯一值？",
+      "點樣確保短碼唔重複？自增 ID vs Hash vs 預生成？",
+      "如何處理高並發讀取？邊啲數據適合快取？"
+    ],
+    "evaluationCriteria": [
+      { "key": "api-design", "label": "API 設計", "keywords": ["POST", "GET", "redirect", "301", "302", "API", "endpoint", "REST", "接口"], "weight": 1 },
+      { "key": "database", "label": "資料庫設計", "keywords": ["schema", "table", "database", "SQL", "NoSQL", "index", "資料庫", "MongoDB", "MySQL"], "weight": 1 },
+      { "key": "encoding", "label": "編碼策略", "keywords": ["base62", "hash", "encode", "unique", "collision", "MD5", "SHA", "編碼", "短碼"], "weight": 1 },
+      { "key": "cache", "label": "快取層", "keywords": ["cache", "redis", "TTL", "LRU", "快取", "緩存", "memcached"], "weight": 1 },
+      { "key": "scalability", "label": "擴展性", "keywords": ["scale", "partition", "shard", "replication", "load balancer", "分區", "擴展", "負載均衡"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "chat-system-challenge",
+    "title": "設計即時通訊系統",
+    "difficulty": "advanced",
+    "description": "設計一個支援百萬用戶同時在線嘅即時聊天系統",
+    "requiredTopics": ["chat-system", "message-queue", "session-manager", "redis"],
+    "problemStatement": "你要設計一個類似 WhatsApp/WeChat 嘅即時通訊系統，支援 1-on-1 私聊同群組聊天。\n\n需求：\n- 支援 100 萬用戶同時在線\n- 消息延遲 < 200ms\n- 支援 1-on-1 同群組聊天（最多 500 人）\n- 消息持久化，離線用戶上線後收到未讀消息\n- 支援已讀回執\n- 消息順序保證\n\n請設計完整嘅系統架構，包括連接管理、消息路由、存儲方案同擴展策略。",
+    "hints": [
+      "WebSocket 同 HTTP Long Polling 各有咩優缺點？",
+      "消息投遞用 push 定 pull 模式？Fan-out 點做？",
+      "點樣保證消息順序同唔丟失？"
+    ],
+    "evaluationCriteria": [
+      { "key": "connection", "label": "連接管理", "keywords": ["WebSocket", "long polling", "連接", "connection", "socket", "TCP", "heartbeat"], "weight": 1 },
+      { "key": "message-routing", "label": "消息路由", "keywords": ["route", "fan-out", "push", "pull", "message queue", "投遞", "路由", "Kafka", "RabbitMQ"], "weight": 1 },
+      { "key": "storage", "label": "消息存儲", "keywords": ["database", "schema", "message", "store", "存儲", "持久化", "Cassandra", "HBase"], "weight": 1 },
+      { "key": "offline", "label": "離線處理", "keywords": ["offline", "push notification", "離線", "未讀", "unread", "queue", "佇列"], "weight": 1 },
+      { "key": "scalability", "label": "擴展性", "keywords": ["scale", "shard", "partition", "cluster", "load balancer", "擴展", "session", "分區"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "kv-store-challenge",
+    "title": "設計鍵值存儲系統",
+    "difficulty": "advanced",
+    "description": "設計一個分佈式 Key-Value Store，支援高可用同強一致性",
+    "requiredTopics": ["key-value-store", "distributed-cache", "database-basics"],
+    "problemStatement": "你要設計一個分佈式 Key-Value Store（類似 DynamoDB / etcd），支援 GET、PUT、DELETE 操作。\n\n需求：\n- 支援 10 億個 key-value pairs\n- 單個 value 最大 10KB\n- 讀寫延遲 < 10ms（p99）\n- 高可用：單節點故障唔影響服務\n- 可調一致性（strong / eventual）\n- 支援自動分區同擴容\n\n請設計完整嘅系統架構，包括數據分區、複製策略、一致性模型同故障處理。",
+    "hints": [
+      "Consistent Hashing 點樣解決數據分區問題？Virtual node 有咩作用？",
+      "Leader-Follower vs Leaderless replication 各有咩 trade-off？",
+      "CAP 定理下你會點揀？Strong consistency 定 eventual consistency？"
+    ],
+    "evaluationCriteria": [
+      { "key": "partition", "label": "數據分區", "keywords": ["consistent hashing", "partition", "shard", "分區", "hash ring", "virtual node", "分片"], "weight": 1 },
+      { "key": "replication", "label": "複製策略", "keywords": ["replication", "leader", "follower", "replica", "複製", "quorum", "WAL", "log"], "weight": 1 },
+      { "key": "consistency", "label": "一致性模型", "keywords": ["consistency", "CAP", "eventual", "strong", "vector clock", "一致性", "quorum", "consensus"], "weight": 1 },
+      { "key": "storage-engine", "label": "存儲引擎", "keywords": ["LSM", "SSTable", "B-tree", "WAL", "compaction", "memtable", "存儲", "持久化"], "weight": 1 },
+      { "key": "failure", "label": "故障處理", "keywords": ["failure", "failover", "heartbeat", "gossip", "故障", "恢復", "recovery", "health check"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "news-feed-challenge",
+    "title": "設計動態消息流系統",
+    "difficulty": "advanced",
+    "description": "設計 Facebook/Twitter 風格嘅 News Feed，處理大 V 同普通用戶嘅不同策略",
+    "requiredTopics": ["news-feed", "cache-invalidation", "message-queue", "redis"],
+    "problemStatement": "你要設計一個社交媒體嘅 News Feed 系統，類似 Facebook 或 Twitter 嘅動態消息流。\n\n需求：\n- 5 億活躍用戶\n- 每個用戶平均 follow 200 人\n- 部分大 V 有 1000 萬粉絲\n- Feed 要即時更新（新 post 幾秒內出現）\n- 支援圖片、視頻、文字\n- Feed 按時間 + 互動權重排序\n\n請設計完整嘅系統架構，包括 Feed 生成策略、排名算法、快取方案同擴展策略。",
+    "hints": [
+      "Fan-out on Write vs Fan-out on Read 各有咩優缺點？",
+      "大 V 發 post 點處理？1000 萬粉絲全部 push？",
+      "Feed 排名用咩算法？時間衰減 + 互動權重點計？"
+    ],
+    "evaluationCriteria": [
+      { "key": "fanout", "label": "Feed 生成策略", "keywords": ["fan-out", "fanout", "push", "pull", "write", "read", "hybrid", "混合"], "weight": 1 },
+      { "key": "data-model", "label": "數據模型", "keywords": ["schema", "table", "post", "follow", "timeline", "feed", "資料", "model"], "weight": 1 },
+      { "key": "ranking", "label": "排名算法", "keywords": ["rank", "sort", "score", "weight", "time", "engagement", "排名", "權重", "算法"], "weight": 1 },
+      { "key": "cache", "label": "快取策略", "keywords": ["cache", "redis", "TTL", "invalidation", "快取", "緩存", "預計算"], "weight": 1 },
+      { "key": "scalability", "label": "擴展性", "keywords": ["scale", "shard", "partition", "queue", "async", "擴展", "異步", "message queue"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "rate-limiter-challenge",
+    "title": "設計流量限制器",
+    "difficulty": "intermediate",
+    "description": "設計一個支援多種演算法嘅分佈式 Rate Limiter",
+    "requiredTopics": ["rate-limiter", "redis", "api-gateway"],
+    "problemStatement": "你要設計一個 Rate Limiter 系統，作為 API Gateway 嘅一部分，保護後端服務免受過量請求。\n\n需求：\n- 支援每秒 100 萬個 API 請求\n- 支援多種限流規則（per user / per IP / per API）\n- 分佈式環境下準確計數\n- 限流時返回 429 同 Retry-After header\n- 支援唔同嘅限流演算法\n- 低延遲（< 1ms overhead）\n\n請設計完整嘅系統架構，包括限流演算法、分佈式實現、規則配置同監控方案。",
+    "hints": [
+      "Token Bucket 同 Sliding Window 各適合咩場景？",
+      "分佈式限流用 Redis 點做？Race condition 點處理？",
+      "限流規則點樣配置？支唔支援動態調整？"
+    ],
+    "evaluationCriteria": [
+      { "key": "algorithm", "label": "限流演算法", "keywords": ["token bucket", "sliding window", "fixed window", "leaky bucket", "演算法", "算法", "counter"], "weight": 1 },
+      { "key": "distributed", "label": "分佈式實現", "keywords": ["redis", "distributed", "分佈式", "atomic", "Lua", "race condition", "集中式"], "weight": 1 },
+      { "key": "rules", "label": "規則設計", "keywords": ["rule", "config", "per user", "per IP", "per API", "規則", "配置", "threshold"], "weight": 1 },
+      { "key": "response", "label": "限流回應", "keywords": ["429", "retry-after", "header", "response", "回應", "throttle", "reject"], "weight": 1 },
+      { "key": "integration", "label": "系統集成", "keywords": ["gateway", "middleware", "proxy", "nginx", "集成", "API gateway", "攔截"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "web-crawler-challenge",
+    "title": "設計網頁爬蟲系統",
+    "difficulty": "advanced",
+    "description": "設計一個可擴展嘅分佈式 Web Crawler，每日爬取 10 億個網頁",
+    "requiredTopics": ["web-crawler", "task-queue", "database-basics", "scraping-vs-crawling"],
+    "problemStatement": "你要設計一個大規模嘅 Web Crawler 系統，用於搜索引擎嘅網頁索引。\n\n需求：\n- 每日爬取 10 億個網頁\n- 支援增量爬取（只爬新/更新嘅頁面）\n- 遵守 robots.txt 同 politeness 規則\n- URL 去重，避免重複爬取\n- 支援優先級（重要頁面優先爬）\n- 容錯：節點故障唔丟失進度\n\n請設計完整嘅系統架構，包括 URL 管理、爬取策略、內容處理同分佈式擴展。",
+    "hints": [
+      "URL Frontier 點設計？優先級佇列同 politeness 點平衡？",
+      "BFS vs DFS 爬取各有咩特點？點樣處理 URL 去重？",
+      "Bloom Filter 點樣幫助高效去重？False positive 有咩影響？"
+    ],
+    "evaluationCriteria": [
+      { "key": "url-frontier", "label": "URL 管理", "keywords": ["frontier", "queue", "priority", "URL", "佇列", "seed", "priority queue", "管理"], "weight": 1 },
+      { "key": "dedup", "label": "去重策略", "keywords": ["dedup", "bloom filter", "hash", "去重", "重複", "fingerprint", "checksum", "visited"], "weight": 1 },
+      { "key": "politeness", "label": "禮貌策略", "keywords": ["robots.txt", "politeness", "crawl delay", "rate limit", "禮貌", "respect", "延遲"], "weight": 1 },
+      { "key": "parsing", "label": "內容處理", "keywords": ["parse", "HTML", "extract", "link", "解析", "DOM", "content", "index"], "weight": 1 },
+      { "key": "distributed", "label": "分佈式架構", "keywords": ["distributed", "worker", "partition", "fault tolerance", "分佈式", "worker", "容錯", "parallel"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "payment-challenge",
+    "title": "設計支付系統",
+    "difficulty": "advanced",
+    "description": "設計一個安全可靠嘅支付系統，確保冪等性同資金安全",
+    "requiredTopics": ["payment-system", "message-queue", "database-basics"],
+    "problemStatement": "你要設計一個電商平台嘅支付系統，處理信用卡、電子錢包等多種支付方式。\n\n需求：\n- 每日處理 100 萬筆交易\n- 絕對唔可以重複扣款\n- 支援退款同部分退款\n- 多種支付方式（信用卡、PayPal、電子錢包）\n- 交易記錄可審計\n- 99.99% 可用性\n\n請設計完整嘅系統架構，包括支付流程、冪等性保證、記帳系統同異常處理。",
+    "hints": [
+      "Idempotency Key 點樣防止重複扣款？",
+      "Double-entry bookkeeping 點樣確保資金一致？",
+      "分佈式事務用 Saga 定 2PC？各有咩 trade-off？"
+    ],
+    "evaluationCriteria": [
+      { "key": "flow", "label": "支付流程", "keywords": ["flow", "checkout", "order", "payment", "流程", "下單", "扣款", "confirm", "authorize"], "weight": 1 },
+      { "key": "idempotency", "label": "冪等性", "keywords": ["idempotent", "idempotency key", "冪等", "重複", "duplicate", "exactly once", "唯一"], "weight": 1 },
+      { "key": "ledger", "label": "記帳系統", "keywords": ["ledger", "double entry", "bookkeeping", "記帳", "複式", "debit", "credit", "balance"], "weight": 1 },
+      { "key": "saga", "label": "分佈式事務", "keywords": ["saga", "2PC", "transaction", "compensate", "rollback", "事務", "補償", "回滾"], "weight": 1 },
+      { "key": "security", "label": "安全性", "keywords": ["PCI", "encrypt", "token", "安全", "加密", "fraud", "audit", "審計"], "weight": 1 }
+    ]
+  },
+  {
+    "id": "search-challenge",
+    "title": "設計搜尋自動補全",
+    "difficulty": "intermediate",
+    "description": "設計 Google 風格嘅搜尋建議功能，支援即時補全",
+    "requiredTopics": ["search-autocomplete", "redis", "cdn"],
+    "problemStatement": "你要設計一個搜尋自動補全系統（Search Autocomplete / Typeahead），類似 Google 搜尋框嘅即時建議。\n\n需求：\n- 用戶每打一個字即時顯示 top 10 建議\n- 延遲 < 100ms\n- 建議按搜尋熱度排序\n- 支援中英文\n- 每日 50 億次搜尋\n- 建議內容每日更新\n\n請設計完整嘅系統架構，包括數據結構、查詢優化、更新策略同前端交互。",
+    "hints": [
+      "Trie（前綴樹）點樣儲存同查詢前綴？空間點優化？",
+      "搜尋頻率排名點做？用咩數據結構高效排序？",
+      "前端 debounce 點實現？幾多 ms 適合？"
+    ],
+    "evaluationCriteria": [
+      { "key": "data-structure", "label": "數據結構", "keywords": ["trie", "prefix", "tree", "前綴", "hash", "index", "數據結構", "B-tree"], "weight": 1 },
+      { "key": "ranking", "label": "排名策略", "keywords": ["rank", "frequency", "sort", "top", "popular", "排名", "頻率", "熱度", "權重"], "weight": 1 },
+      { "key": "performance", "label": "查詢優化", "keywords": ["cache", "redis", "CDN", "快取", "debounce", "防抖", "latency", "延遲"], "weight": 1 },
+      { "key": "update", "label": "更新策略", "keywords": ["update", "rebuild", "offline", "batch", "更新", "重建", "離線", "MapReduce", "aggregat"], "weight": 1 },
+      { "key": "frontend", "label": "前端交互", "keywords": ["debounce", "throttle", "keypress", "input", "UX", "前端", "顯示", "dropdown", "suggest"], "weight": 1 }
+    ]
+  }
+]
