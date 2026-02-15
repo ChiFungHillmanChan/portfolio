@@ -25,6 +25,7 @@ portfolio/src/game/system-design/dist/
 firebase-debug.log
 firestore-debug.log
 ui-debug.log
+*-firebase-adminsdk-*.json
 
 # OS files
 .DS_Store
