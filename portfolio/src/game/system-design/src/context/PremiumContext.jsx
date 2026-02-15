@@ -8,29 +8,17 @@ const SUPERADMIN_EMAILS = (import.meta.env.VITE_SUPERADMIN_EMAILS || '').split('
 
 const PremiumContext = createContext(null);
 
-function loadPremiumCache() {
-  try {
-    const stored = localStorage.getItem(PREMIUM_KEY);
-    if (!stored) return false;
-    const data = JSON.parse(stored);
-    return data.active === true;
-  } catch {
-    return false;
-  }
-}
-
 export function PremiumProvider({ children }) {
   const { user } = useAuth();
-  const [isPremium, setIsPremium] = useState(() => import.meta.env.DEV || loadPremiumCache());
+  const [isPremium, setIsPremium] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   // Sync premium status from Firestore when user logs in
   useEffect(() => {
     if (!user) {
-      if (!import.meta.env.DEV) {
-        setIsPremium(loadPremiumCache());
-      }
+      setIsPremium(false);
       setIsSuperAdmin(false);
+      localStorage.removeItem(PREMIUM_KEY);
       return;
     }
 
@@ -38,7 +26,6 @@ export function PremiumProvider({ children }) {
     if (SUPERADMIN_EMAILS.includes(user.email)) {
       setIsSuperAdmin(true);
       setIsPremium(true);
-      localStorage.setItem(PREMIUM_KEY, JSON.stringify({ active: true }));
       return;
     }
     setIsSuperAdmin(false);
@@ -48,15 +35,14 @@ export function PremiumProvider({ children }) {
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists() && userDoc.data().premium === true) {
           setIsPremium(true);
-          localStorage.setItem(PREMIUM_KEY, JSON.stringify({ active: true }));
-        } else if (!import.meta.env.DEV) {
-          setIsPremium(loadPremiumCache());
+        } else {
+          setIsPremium(false);
+          localStorage.removeItem(PREMIUM_KEY);
         }
       } catch (err) {
         console.error('Failed to fetch premium status:', err);
-        if (!import.meta.env.DEV) {
-          setIsPremium(loadPremiumCache());
-        }
+        // On error, don't grant premium — fail closed
+        setIsPremium(false);
       }
     }
 
@@ -65,7 +51,6 @@ export function PremiumProvider({ children }) {
 
   // Only caches locally — the backend (Admin SDK) writes premium to Firestore.
   const activatePremium = useCallback(async () => {
-    localStorage.setItem(PREMIUM_KEY, JSON.stringify({ active: true }));
     setIsPremium(true);
     window.dispatchEvent(new CustomEvent('sd:premium-activated'));
   }, []);

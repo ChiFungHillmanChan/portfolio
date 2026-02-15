@@ -1,11 +1,182 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { usePremium } from '../context/PremiumContext';
 import { useProgress } from '../context/ProgressContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import topicData from '../data/topics.json';
-import { API_BASE, STRIPE_URL } from '../config/constants';
+import { API_BASE, STRIPE_URL, STRIPE_PRO_URL } from '../config/constants';
 
+// ─── Superadmin Panel ───
+function AdminPanel({ token }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [search, setSearch] = useState('');
+  const [updating, setUpdating] = useState(null);
+
+  const fetchUsers = useCallback(async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'admin-list-users' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || '無法取得用戶列表');
+        return;
+      }
+      setUsers(data.users || []);
+    } catch {
+      setError('網絡錯誤');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const togglePremium = async (uid, currentPremium) => {
+    const newPremium = !currentPremium;
+    const action = newPremium ? '啟動' : '停用';
+    if (!window.confirm(`確定要${action} Premium 畀呢個用戶？`)) return;
+
+    setUpdating(uid);
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          action: 'admin-update-user',
+          targetUid: uid,
+          premium: newPremium,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || '更新失敗');
+        return;
+      }
+      // Update local state
+      setUsers((prev) =>
+        prev.map((u) =>
+          u.uid === uid ? { ...u, premium: newPremium, activatedAt: newPremium ? new Date().toISOString() : u.activatedAt } : u
+        )
+      );
+    } catch {
+      alert('網絡錯誤');
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const filtered = users.filter((u) =>
+    !search || (u.email || '').toLowerCase().includes(search.toLowerCase())
+  );
+  const premiumCount = users.filter((u) => u.premium).length;
+
+  return (
+    <section className="mb-8 p-5 rounded-xl border border-amber-500/30 bg-bg-secondary">
+      <h2 className="text-sm font-semibold text-amber-400 uppercase tracking-wider mb-4">管理面板</h2>
+
+      {loading ? (
+        <div className="text-sm text-text-dim">載入中...</div>
+      ) : error ? (
+        <div className="text-sm text-accent-red">{error}</div>
+      ) : (
+        <>
+          {/* Stats */}
+          <div className="flex gap-4 mb-4">
+            <div className="px-3 py-2 rounded-lg bg-white/[0.04] text-center">
+              <div className="text-lg font-bold text-text-primary">{users.length}</div>
+              <div className="text-[0.65rem] text-text-dimmer">總用戶</div>
+            </div>
+            <div className="px-3 py-2 rounded-lg bg-white/[0.04] text-center">
+              <div className="text-lg font-bold text-[#a78bfa]">{premiumCount}</div>
+              <div className="text-[0.65rem] text-text-dimmer">Premium</div>
+            </div>
+          </div>
+
+          {/* Search */}
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="搜尋 email..."
+            className="w-full px-3 py-2 mb-3 rounded-lg border border-border bg-bg-primary text-text-secondary text-sm outline-none focus:border-accent-indigo placeholder:text-text-darkest"
+          />
+
+          {/* User table */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-text-dimmer text-xs border-b border-border">
+                  <th className="pb-2 pr-3">Email</th>
+                  <th className="pb-2 pr-3">Premium</th>
+                  <th className="pb-2 pr-3">啟動日期</th>
+                  <th className="pb-2">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((u) => (
+                  <tr key={u.uid} className="border-b border-white/[0.04]">
+                    <td className="py-2 pr-3 text-text-secondary truncate max-w-[200px]">{u.email || u.uid}</td>
+                    <td className="py-2 pr-3">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${u.premium ? 'bg-[rgba(167,139,250,0.2)] text-[#a78bfa]' : 'bg-white/[0.06] text-text-dim'}`}>
+                        {u.premium ? 'Premium' : 'Free'}
+                      </span>
+                    </td>
+                    <td className="py-2 pr-3 text-text-dim text-xs">
+                      {u.activatedAt ? new Date(u.activatedAt).toLocaleDateString('zh-HK') : '—'}
+                    </td>
+                    <td className="py-2">
+                      <button
+                        onClick={() => togglePremium(u.uid, u.premium)}
+                        disabled={updating === u.uid}
+                        className={`text-xs px-3 py-1 rounded-lg border cursor-pointer transition-colors ${
+                          u.premium
+                            ? 'border-accent-red/30 text-accent-red hover:bg-accent-red/10'
+                            : 'border-accent-green/30 text-accent-green hover:bg-accent-green/10'
+                        } bg-transparent disabled:opacity-40`}
+                      >
+                        {updating === u.uid ? '...' : u.premium ? '停用' : '啟動'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr>
+                    <td colSpan={4} className="py-4 text-center text-text-dimmer text-xs">無結果</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Refresh */}
+          <button
+            onClick={fetchUsers}
+            className="mt-3 text-xs text-text-dim hover:text-text-secondary transition-colors cursor-pointer bg-transparent border-none"
+          >
+            重新載入
+          </button>
+        </>
+      )}
+    </section>
+  );
+}
+
+// ─── Main Settings Page ───
 export default function Settings() {
   const { user, token, signOut } = useAuth();
   const { isPremium, isSuperAdmin, activatePremium } = usePremium();
@@ -80,6 +251,9 @@ export default function Settings() {
       <div className="max-w-2xl mx-auto px-6 py-10">
         <h1 className="text-2xl font-bold text-text-primary mb-8">設定</h1>
 
+        {/* Superadmin Panel */}
+        {isSuperAdmin && <AdminPanel token={token} />}
+
         {/* Profile */}
         <section className="mb-8 p-5 rounded-xl border border-border bg-bg-secondary">
           <h2 className="text-sm font-semibold text-text-dimmer uppercase tracking-wider mb-4">個人檔案</h2>
@@ -111,7 +285,7 @@ export default function Settings() {
           </div>
         </section>
 
-        {/* Plan Status */}
+        {/* Plan Status / Upgrade */}
         <section className="mb-8 p-5 rounded-xl border border-border bg-bg-secondary">
           <h2 className="text-sm font-semibold text-text-dimmer uppercase tracking-wider mb-4">訂閱狀態</h2>
           <div className="flex items-center gap-3 mb-4">
@@ -132,20 +306,75 @@ export default function Settings() {
 
           {!isPremium && (
             <>
-              <a
-                href={STRIPE_URL}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-4 hover:bg-accent-indigo/20 transition-colors"
-              >
-                <span className="text-xl">🔓</span>
-                <div className="flex-1">
-                  <div className="text-sm font-bold">HK$150 一次性解鎖</div>
-                  <div className="text-[0.7rem] text-text-dim">付款後即時解鎖所有 Premium 功能</div>
-                </div>
-                <span className="text-text-dim">&rarr;</span>
-              </a>
+              {/* Plan Cards */}
+              <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                {/* Standard */}
+                <a
+                  href={STRIPE_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 p-4 rounded-xl border border-accent-indigo/30 bg-accent-indigo/5 no-underline hover:bg-accent-indigo/10 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">🔓</span>
+                    <span className="text-xs font-semibold text-accent-indigo-light uppercase tracking-wider">Standard</span>
+                  </div>
+                  <div className="text-xl font-bold text-text-primary mb-1">HK$150</div>
+                  <div className="text-[0.65rem] text-text-dimmer mb-3">一次性付款 · 永久存取</div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-accent-green">✓</span> AI 助手 + 教練模式
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-accent-green">✓</span> 實戰項目 + Viber 模板
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-accent-green">✓</span> 小測驗 + 面試 Checklist
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-dimmer">
+                      <span>—</span> 每日 20 次 AI 對話
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center text-sm font-semibold text-accent-indigo">
+                    解鎖 Standard &rarr;
+                  </div>
+                </a>
 
+                {/* Pro */}
+                <a
+                  href={STRIPE_PRO_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 p-4 rounded-xl border border-amber-500/40 bg-amber-500/5 no-underline hover:bg-amber-500/10 transition-colors relative overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 bg-amber-500 text-black text-[0.55rem] font-bold px-2 py-0.5 rounded-bl-lg">推薦</div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-lg">⚡</span>
+                    <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Pro</span>
+                  </div>
+                  <div className="text-xl font-bold text-text-primary mb-1">HK$399</div>
+                  <div className="text-[0.65rem] text-text-dimmer mb-3">一次性付款 · 永久存取</div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-accent-green">✓</span> Standard 所有功能
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-amber-400">★</span> 每日 80 次 AI 對話
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-amber-400">★</span> 進階實戰 + AI 課題
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                      <span className="text-amber-400">★</span> 未來新功能優先存取
+                    </div>
+                  </div>
+                  <div className="mt-3 text-center text-sm font-semibold text-amber-400">
+                    解鎖 Pro &rarr;
+                  </div>
+                </a>
+              </div>
+
+              {/* Access Code Form */}
               {codeSuccess ? (
                 <div className="p-3 rounded-lg bg-accent-green/10 border border-accent-green/30 text-center">
                   <span className="text-sm text-accent-green font-medium">🎉 Premium 已解鎖！</span>

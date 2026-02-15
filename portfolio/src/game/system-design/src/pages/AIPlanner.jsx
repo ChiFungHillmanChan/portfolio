@@ -124,7 +124,7 @@ export default function AIPlanner() {
     }
 
     // If user is logged in, use their token; otherwise prompt sign-in
-    if (!token && !import.meta.env.DEV) {
+    if (!token) {
       setError('請先登入 Google 帳號以生成學習計劃。');
       return;
     }

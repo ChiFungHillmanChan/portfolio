@@ -63,7 +63,7 @@ export default function Coaching() {
   }, [messages]);
 
   const canAccessTopic = (topicSlug) => {
-    if (import.meta.env.DEV || isPremium) return true;
+    if (isPremium) return true;
     // First topic is free trial
     if (!trialTopic) return true; // no trial used yet
     return trialTopic === topicSlug;
@@ -71,7 +71,7 @@ export default function Coaching() {
 
   const startCoaching = (topicSlug) => {
     // Check login
-    if (!user && !import.meta.env.DEV) {
+    if (!user) {
       setShowAuthGate(true);
       return;
     }
@@ -83,7 +83,7 @@ export default function Coaching() {
     }
 
     // If this is first topic usage, store as trial
-    if (!trialTopic && !isPremium && !import.meta.env.DEV) {
+    if (!trialTopic && !isPremium) {
       localStorage.setItem(TRIAL_KEY, topicSlug);
     }
 
@@ -102,7 +102,7 @@ export default function Coaching() {
   };
 
   const handleSend = async () => {
-    if (!token && !import.meta.env.DEV) {
+    if (!token) {
       setMessages((prev) => [...prev, {
         role: 'coach',
         content: '請先登入 Google 帳號先可以使用教練模式。',

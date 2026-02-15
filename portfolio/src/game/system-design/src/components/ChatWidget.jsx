@@ -64,7 +64,7 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
   };
 
   const handleSend = async () => {
-    if (!token && !import.meta.env.DEV) {
+    if (!token) {
       addMsg('請先登入 Google 帳號。', 'error');
       return;
     }

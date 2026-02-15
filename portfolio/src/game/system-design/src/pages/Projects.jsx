@@ -160,7 +160,7 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
   const diff = difficultyLabels[challenge.difficulty];
 
   const handleChatSend = async () => {
-    if (!token && !import.meta.env.DEV) {
+    if (!token) {
       setChatMessages((prev) => [...prev, { role: 'assistant', content: '請先登入 Google 帳號先可以使用 AI 助手。', ts: Date.now() }]);
       return;
     }
@@ -242,7 +242,7 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
     onSubmitResult(result);
 
     // 4. AI judge (async)
-    if (token || import.meta.env.DEV) {
+    if (token) {
       const criteriaList = challenge.evaluationCriteria.map((c) => `- ${c.label}`).join('\n');
       const judgePrompt = `你係一個系統設計面試官。根據以下評估標準評分：
 ${criteriaList}
@@ -431,14 +431,14 @@ export default function Projects() {
   const selectedChallenge = challengesData.find((c) => c.id === selectedId);
 
   const canAccessChallenge = (challengeId) => {
-    if (import.meta.env.DEV || isPremium) return true;
+    if (isPremium) return true;
     if (!trialChallenge) return true; // no trial used yet
     return trialChallenge === challengeId;
   };
 
   const openChallenge = (id) => {
     // Check login
-    if (!user && !import.meta.env.DEV) {
+    if (!user) {
       setShowAuthGate(true);
       return;
     }
@@ -450,7 +450,7 @@ export default function Projects() {
     }
 
     // If this is first challenge, store as trial
-    if (!trialChallenge && !isPremium && !import.meta.env.DEV) {
+    if (!trialChallenge && !isPremium) {
       localStorage.setItem(TRIAL_KEY, id);
     }
 
