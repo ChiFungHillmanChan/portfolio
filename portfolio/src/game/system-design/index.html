@@ -1883,13 +1883,8 @@
 
     initFromHash();
 
-    // Auto-activate premium if user has a valid chat login token
-    (function() {
-      const token = localStorage.getItem('sa-chat-token');
-      if (token && window.SDPremium && !window.SDPremium.isPremium()) {
-        window.SDPremium.activatePremium(token);
-      }
-    })();
+    // NOTE: Premium is activated only via Stripe payment (session_id redirect above).
+    // Chat login (sa-chat-token) gives AI assistant access but does NOT unlock premium content.
 
     // Browser back/forward
     window.addEventListener('hashchange', () => {
@@ -1908,12 +1903,7 @@
       const topicUrl = hashToTopic(hash);
       const targetBtn = document.querySelector(`.nav-item[data-topic="${topicUrl}"]`);
       if (targetBtn && !targetBtn.classList.contains('coming-soon')) {
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        targetBtn.classList.add('active');
-        welcomeScreen.classList.add('hidden');
-        topicFrame.style.display = 'block';
-        topicFrame.src = topicUrl;
-        markTopicViewed(topicUrl);
+        loadTopic(topicUrl, targetBtn);
       }
     });
 
@@ -2135,10 +2125,6 @@
       // ---- UI state ----
       function showChat() {
         if (getToken()) {
-          // Ensure premium is activated for logged-in users
-          if (window.SDPremium && !window.SDPremium.isPremium()) {
-            window.SDPremium.activatePremium(getToken());
-          }
           welcomeView.style.display = 'none';
           mainView.classList.add('active');
           populateTopicSelect();
@@ -2191,11 +2177,6 @@
           }
 
           localStorage.setItem(TOKEN_KEY, data.token);
-
-          // Activate premium for logged-in users
-          if (window.SDPremium) {
-            window.SDPremium.activatePremium(data.token);
-          }
 
           welcomeView.style.display = 'none';
           mainView.classList.add('active');
