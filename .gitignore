@@ -8,3 +8,24 @@ portfolio/.claude/
 
 # Screenshots
 *.png
+
+# Dependencies
+node_modules/
+
+# Build outputs
+portfolio/src/game/system-design/dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Firebase
+.firebase/
+firebase-debug.log
+firestore-debug.log
+ui-debug.log
+*-firebase-adminsdk-*.json
+
+# OS files
+.DS_Store

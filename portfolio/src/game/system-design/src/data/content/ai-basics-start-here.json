@@ -1,0 +1,216 @@
+{
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "content": "AI 基礎入門指南"
+    },
+    {
+      "type": "text",
+      "content": "呢個頁面係你學 AI 嘅起點。無論你係前端、後端、定 Full Stack，AI 已經唔再係「可學可唔學」——而係「點樣學先最有效」。"
+    },
+    {
+      "type": "callout",
+      "variant": "info",
+      "title": "呢度適合邊個？",
+      "content": "想學 AI 嘅工程師、想用 AI 提升效率嘅開發者、想了解 AI 工具點揀嘅團隊 Lead。唔需要 ML 背景，用工程師嘅角度理解 AI。"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "content": "為咩要學 AI 基礎"
+    },
+    {
+      "type": "text",
+      "content": "AI 唔止係 ChatGPT 咁簡單。作為工程師，你需要理解：**點樣設計 Prompt**、**點樣評估 AI 輸出**、**點樣將 AI 融入開發流程**。識用 AI 嘅工程師，效率可以提升 3-10 倍——但前提係你要知道邊個工具做咩最強、點樣避免 AI 帶嚟嘅新風險。"
+    },
+    {
+      "type": "text",
+      "content": "呢個系列用**廣東話**，從工程師角度出發，覆蓋 13 個核心主題，由淺入深帶你建立完整嘅 AI 知識體系。"
+    },
+    {
+      "type": "horizontal-rule"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "content": "學習路徑（3 步）"
+    },
+    {
+      "type": "text",
+      "content": "我哋將 13 個主題分成 3 個階段，建議你按順序學習："
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "content": "Step 1：基礎概念"
+    },
+    {
+      "type": "text",
+      "content": "先理解 AI 喺工程中嘅核心觀念，為之後嘅實踐打好基礎。"
+    },
+    {
+      "type": "card-grid",
+      "cards": [
+        {
+          "icon": "🧭",
+          "title": "Skill vs Agent",
+          "content": "穩定任務用 Skill，探索任務用 Agent。學識分邊個場景用邊種模式。",
+          "link": "/topic/skill-vs-agent",
+          "linkText": "開始學習 →"
+        },
+        {
+          "icon": "🧠",
+          "title": "Context Rot 解法",
+          "content": "長對話語義衰退點算？學識 Checkpoint 同 State File 管理上下文。",
+          "link": "/topic/context-rot-solution",
+          "linkText": "開始學習 →"
+        },
+        {
+          "icon": "📋",
+          "title": "SDD 規格驅動開發",
+          "content": "先寫 Spec 再用 AI 實作。將模糊需求變成可執行嘅結構化指令。",
+          "link": "/topic/sdd-spec-driven-development",
+          "linkText": "開始學習 →"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "content": "Step 2：工具實踐"
+    },
+    {
+      "type": "text",
+      "content": "了解市面上嘅 AI 工具，學識點樣揀同點樣用。"
+    },
+    {
+      "type": "card-grid",
+      "cards": [
+        {
+          "icon": "🗺️",
+          "title": "AI 工具全景圖",
+          "content": "11 款主流工具對比，邊個做咩最強，點樣組合使用。",
+          "link": "/topic/ai-tools-landscape",
+          "linkText": "開始學習 →"
+        },
+        {
+          "icon": "⚔️",
+          "title": "AI 模型深入對比",
+          "content": "GPT-5 / Claude / Gemini 各有強弱，用數據同場景幫你揀。",
+          "link": "/topic/ai-model-comparison",
+          "linkText": "開始學習 →"
+        },
+        {
+          "icon": "✏️",
+          "title": "Prompt Engineering",
+          "content": "角色化指令、結構化模板、工程化思維——系統性設計你嘅 Prompt。",
+          "link": "/topic/prompt-engineering",
+          "linkText": "開始學習 →"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 3,
+      "content": "Step 3：進階應用"
+    },
+    {
+      "type": "text",
+      "content": "將 AI 深度融入你嘅開發工作流，掌握進階架構同協議。"
+    },
+    {
+      "type": "card-grid",
+      "cards": [
+        {
+          "icon": "🔗",
+          "title": "多 AI 協作工作流",
+          "content": "AI Pipeline 設計、工具定位、分工合作——唔止用一個 AI。",
+          "link": "/topic/multi-ai-workflow",
+          "linkText": "開始學習 →"
+        },
+        {
+          "icon": "🤖",
+          "title": "Coding Agent 設計",
+          "content": "ReAct Loop、Tool Use、Sandbox——設計一個可靠嘅 AI 編程助手。",
+          "link": "/topic/coding-agent-design",
+          "linkText": "開始學習 →"
+        },
+        {
+          "icon": "🔌",
+          "title": "MCP 模型上下文協議",
+          "content": "統一 AI 接口、Tool Integration、Plugin 生態系統。",
+          "link": "/topic/mcp-protocol",
+          "linkText": "開始學習 →"
+        }
+      ]
+    },
+    {
+      "type": "horizontal-rule"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "content": "工具對比表"
+    },
+    {
+      "type": "text",
+      "content": "快速了解四大 AI 工具嘅強項同適用場景："
+    },
+    {
+      "type": "table",
+      "headers": ["工具", "最強場景", "價格", "適合邊個"],
+      "rows": [
+        ["**ChatGPT (GPT-5)**", "通用對話 / 創意寫作 / 多模態", "免費 + $20/月 Pro", "日常使用者 / 內容創作者"],
+        ["**Claude (Sonnet 4.5)**", "長文分析 / 代碼審查 / 精確推理", "免費 + $20/月 Pro", "工程師 / 研究員"],
+        ["**Cursor**", "IDE 內 AI 輔助 / 代碼生成 / 重構", "$20/月 Pro", "全職開發者"],
+        ["**Gemini 2.5**", "Google 生態 / 多模態 / 大 Context", "免費 + $20/月", "Google 用戶 / 數據分析"]
+      ]
+    },
+    {
+      "type": "callout",
+      "variant": "warning",
+      "content": "呢個表格係簡化對比，詳細分析請睇 **AI 工具全景圖** 同 **AI 模型深入對比** 兩個專題。"
+    },
+    {
+      "type": "horizontal-rule"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "content": "13 個核心主題一覽"
+    },
+    {
+      "type": "text",
+      "content": "以下係 AI 基礎系列嘅所有主題，涵蓋概念、工具、實踐三大範疇："
+    },
+    {
+      "type": "card-grid",
+      "cards": [
+        { "icon": "🧭", "title": "Skill vs Agent", "content": "任務分類 / 模式選擇", "link": "/topic/skill-vs-agent" },
+        { "icon": "🧠", "title": "Context Rot 解法", "content": "語義衰退 / 上下文管理", "link": "/topic/context-rot-solution" },
+        { "icon": "📋", "title": "SDD 規格驅動開發", "content": "Spec First / AI 實作", "link": "/topic/sdd-spec-driven-development" },
+        { "icon": "🔄", "title": "AI 評估迴圈", "content": "量化輸出 / Golden Sample", "link": "/topic/ai-evaluation-loop" },
+        { "icon": "🗺️", "title": "AI 工具全景圖", "content": "11 款工具對比", "link": "/topic/ai-tools-landscape" },
+        { "icon": "⚔️", "title": "AI 模型深入對比", "content": "GPT / Claude / Gemini", "link": "/topic/ai-model-comparison" },
+        { "icon": "✏️", "title": "Prompt Engineering", "content": "系統化 Prompt 設計", "link": "/topic/prompt-engineering" },
+        { "icon": "📋", "title": "Prompt 速查表", "content": "20+ 即抄即用模板", "link": "/topic/prompt-cheat-sheet" },
+        { "icon": "🔗", "title": "多 AI 協作工作流", "content": "AI Pipeline / 分工", "link": "/topic/multi-ai-workflow" },
+        { "icon": "🔑", "title": "API Token 安全與成本", "content": "定價 / .env / Proxy", "link": "/topic/api-token-security" },
+        { "icon": "🔌", "title": "MCP 模型上下文協議", "content": "統一 AI 接口", "link": "/topic/mcp-protocol" },
+        { "icon": "💡", "title": "AI 輔助系統設計", "content": "創新思維框架", "link": "/topic/ai-idea-generation" },
+        { "icon": "⏱️", "title": "Mock Design 模擬面試", "content": "35 分鐘計時練習", "link": "/topic/mock-design" }
+      ]
+    },
+    {
+      "type": "horizontal-rule"
+    },
+    {
+      "type": "callout",
+      "variant": "success",
+      "icon": "🚀",
+      "title": "準備好開始？",
+      "content": "建議由 **Skill vs Agent** 開始，理解 AI 任務嘅基本分類。如果你已經有 AI 經驗，可以直接跳去 **Prompt Engineering** 或 **AI 工具全景圖**。"
+    }
+  ]
+}

@@ -1,0 +1,80 @@
+{
+  "groups": [
+    {
+      "id": "basics",
+      "label": "基礎概念",
+      "color": "#3B82F6",
+      "topics": ["database-basics", "authentication", "git-vs-github", "docker", "deployment", "port-forwarding", "localhost-hosting"]
+    },
+    {
+      "id": "network",
+      "label": "網絡與流量",
+      "color": "#F59E0B",
+      "topics": ["cdn", "load-balancer", "api-gateway", "rate-limiter", "large-api-response"]
+    },
+    {
+      "id": "storage",
+      "label": "資料庫與存儲",
+      "color": "#8B5CF6",
+      "topics": ["pick-database", "redis", "key-value-store", "object-storage", "unique-id-generator"]
+    },
+    {
+      "id": "cache",
+      "label": "快取優化",
+      "color": "#EF4444",
+      "topics": ["cache-invalidation", "scale-reads", "distributed-cache", "fix-slow-database"]
+    },
+    {
+      "id": "async",
+      "label": "異步處理",
+      "color": "#10B981",
+      "topics": ["task-queue", "message-queue", "notification-system"]
+    },
+    {
+      "id": "apps",
+      "label": "應用系統",
+      "color": "#EC4899",
+      "topics": ["session-manager", "url-shortener", "search-autocomplete", "web-crawler", "news-feed", "chat-system", "chess-game-design", "video-streaming", "payment-system"]
+    },
+    {
+      "id": "ops",
+      "label": "運維與安全",
+      "color": "#06B6D4",
+      "topics": ["metrics-logging", "monitoring", "cicd-pipeline", "self-host-vs-cloud", "server-vs-serverless", "secure-ai-agents", "ai-scraper-defense"]
+    },
+    {
+      "id": "patterns",
+      "label": "設計模式與面試",
+      "color": "#F97316",
+      "topics": ["system-design-patterns", "dependency-injection", "coding-agent-design", "backend-roadmap", "junior-vs-senior", "interview-process", "star-method", "coding-interview", "ai-vs-software-engineer", "print-vs-debugger", "scraping-vs-crawling"]
+    },
+    {
+      "id": "ai",
+      "label": "AI 專題",
+      "color": "#A78BFA",
+      "topics": ["skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "ai-evaluation-loop", "mock-design"]
+    }
+  ],
+  "edges": [
+    ["database-basics", "pick-database"],
+    ["database-basics", "redis"],
+    ["database-basics", "fix-slow-database"],
+    ["redis", "distributed-cache"],
+    ["redis", "cache-invalidation"],
+    ["cache-invalidation", "scale-reads"],
+    ["load-balancer", "api-gateway"],
+    ["api-gateway", "rate-limiter"],
+    ["cdn", "load-balancer"],
+    ["authentication", "session-manager"],
+    ["session-manager", "chat-system"],
+    ["task-queue", "message-queue"],
+    ["message-queue", "notification-system"],
+    ["docker", "cicd-pipeline"],
+    ["cicd-pipeline", "deployment"],
+    ["metrics-logging", "monitoring"],
+    ["key-value-store", "unique-id-generator"],
+    ["search-autocomplete", "web-crawler"],
+    ["url-shortener", "unique-id-generator"],
+    ["git-vs-github", "docker"]
+  ]
+}

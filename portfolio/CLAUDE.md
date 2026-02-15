@@ -1,15 +1,83 @@
-# Hillman Chan Portfolio - Casino Games Collection
-
-A comprehensive collection of casino game training tools and calculators built with vanilla JavaScript.
+# Hillman Chan Portfolio
 
 ## Project Structure
 
 ```
 portfolio/
-├── src/game/casino-game/calculator/    # Source files
-├── public/games/casino-game/           # Production build
+├── src/game/casino-game/calculator/    # Casino games (vanilla JS)
+├── src/game/system-design/             # System Design 教室 (React SPA)
+├── public/games/casino-game/           # Casino production build
 └── build/games/casino-game/            # Alternative build
 ```
+
+## System Design 教室
+
+**Location:** `src/game/system-design/`
+**Stack:** React 18 + Vite 6 + Tailwind 3 + Firebase Auth/Firestore
+**Deploy:** Vite SPA with HashRouter, served via iframe in portfolio wrapper
+
+### Architecture
+
+- **Frontend:** React SPA (`src/`) — topics, coaching, projects, AI chat
+- **Backend API:** `api.system-design.hillmanchan.com` — AI chat, auth, Stripe webhooks
+- **Auth:** Firebase Google Sign-In → ID token → backend Bearer auth
+- **Premium:** Stripe payment → webhook → backend Admin SDK → Firestore `users/{uid}.premium`
+- **State:** localStorage for progress/cache, Firestore for premium status (source of truth)
+
+### Key Files
+
+| File | Purpose |
+|------|---------|
+| `src/config/firebase.js` | Firebase init (env vars, no fallbacks) |
+| `src/config/constants.js` | API_BASE, STRIPE_URL |
+| `src/context/AuthContext.jsx` | Google auth + token refresh |
+| `src/context/PremiumContext.jsx` | Premium status (Firestore read + localStorage cache) |
+| `src/context/ProgressContext.jsx` | Topic view tracking (localStorage) |
+| `src/components/Layout.jsx` | Sidebar + main layout, desktop collapse |
+| `src/components/Sidebar.jsx` | Navigation, auto-expand on topic click |
+| `src/components/ChatWidget.jsx` | AI chat (search/viber/suggest) |
+| `src/topics/*.jsx` | 70+ topic pages |
+
+### Environment Variables (`.env`, gitignored)
+
+```
+VITE_FIREBASE_API_KEY
+VITE_FIREBASE_AUTH_DOMAIN
+VITE_FIREBASE_PROJECT_ID
+VITE_FIREBASE_STORAGE_BUCKET
+VITE_FIREBASE_MESSAGING_SENDER_ID
+VITE_FIREBASE_APP_ID
+VITE_SUPERADMIN_EMAILS          # comma-separated, no fallback
+```
+
+### Security Rules
+
+- Firestore rules block client-side writes to `premium`, `activatedAt`, `sessionId`, `superadmin`
+- Only backend Admin SDK (bypasses rules) can write premium status
+- `activatePremium()` only caches locally; Firestore write is server-side only
+- Superadmin emails loaded from env var, not hardcoded
+
+### Build & Deploy
+
+```bash
+cd portfolio/src/game/system-design
+npm run build          # outputs to dist/
+firebase deploy        # or deploy dist/ to Cloudflare Pages
+```
+
+### Scale Plans
+
+See `docs/plans/system-design/future-plan-1000users.md` for:
+- AI response caching (50-70% cost reduction)
+- Tiered AI models (GPT-4o-mini for search, GPT-4 for coaching)
+- Rate limiting (free: 5/day, premium: 50/day)
+- Cloudflare Pages migration (free bandwidth)
+
+---
+
+## Casino Games Collection
+
+A collection of casino game training tools and calculators built with vanilla JavaScript.
 
 ## Games
 
