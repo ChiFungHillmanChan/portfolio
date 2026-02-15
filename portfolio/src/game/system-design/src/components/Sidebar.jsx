@@ -154,17 +154,13 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
           </a>
         </div>
 
-        {/* Filters — horizontal scroll instead of wrap */}
-        <div className="border-b border-border">
-          <div
-            ref={filterScrollRef}
-            className="flex gap-1.5 px-2.5 py-2 overflow-x-auto scrollbar-none"
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
-          >
+        {/* Filters — wrap to show all */}
+        <div className="border-b border-border px-2.5 py-2">
+          <div className="flex flex-wrap gap-1.5">
             {topicData.filters.map((f) => (
               <button
                 key={f.id}
-                className={`px-2.5 py-1 rounded-full border text-[0.68rem] font-medium cursor-pointer transition-all whitespace-nowrap flex-shrink-0 ${
+                className={`px-2 py-1 rounded-full border text-[0.65rem] font-medium cursor-pointer transition-all whitespace-nowrap ${
                   filter === f.id
                     ? 'bg-accent-indigo/15 border-accent-indigo text-accent-indigo-light'
                     : 'bg-transparent border-border text-text-dimmer hover:border-border-hover hover:text-text-dim'
@@ -283,57 +279,62 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
           })}
         </nav>
 
-        {/* Fixed footer — settings & plan */}
+        {/* Fixed footer — login / user + settings */}
         <div className="border-t border-border bg-bg-primary flex-shrink-0">
-          {/* User info / settings row */}
           {user ? (
-            <button
-              className="flex items-center gap-3 w-full px-4 py-3 text-left hover:bg-white/[0.03] transition-colors cursor-pointer"
-              onClick={() => { navigate('/settings'); onClose?.(); }}
-            >
-              {user.photoURL ? (
-                <img
-                  src={user.photoURL}
-                  alt=""
-                  className="w-8 h-8 rounded-full flex-shrink-0"
-                  referrerPolicy="no-referrer"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-accent-indigo/20 flex items-center justify-center text-sm text-accent-indigo-light flex-shrink-0">
-                  {(user.displayName || user.email || '?')[0]}
+            <div className="px-3 py-3">
+              {/* User row */}
+              <div className="flex items-center gap-3 mb-2">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt=""
+                    className="w-9 h-9 rounded-full flex-shrink-0"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-9 h-9 rounded-full bg-accent-indigo/20 flex items-center justify-center text-sm text-accent-indigo-light flex-shrink-0">
+                    {(user.displayName || user.email || '?')[0]}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="text-[0.82rem] text-text-secondary truncate leading-tight">
+                    {user.displayName || '未設定名稱'}
+                  </div>
+                  <div className="text-[0.7rem] text-text-dimmer truncate">{user.email}</div>
                 </div>
-              )}
-              <div className="flex-1 min-w-0">
-                <div className="text-[0.82rem] text-text-secondary truncate">
-                  {user.displayName || user.email}
-                </div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className={`text-[0.6rem] px-1.5 py-0.5 rounded font-medium ${planBg}`}>
-                    {planLabel}
-                  </span>
-                </div>
+                <span className={`text-[0.6rem] px-1.5 py-0.5 rounded font-medium flex-shrink-0 ${planBg}`}>
+                  {planLabel}
+                </span>
               </div>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-text-dimmer flex-shrink-0">
-                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                <circle cx="12" cy="12" r="3" />
-              </svg>
-            </button>
+              {/* Settings button */}
+              <button
+                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg border border-border bg-transparent text-text-dim text-[0.78rem] font-medium cursor-pointer hover:bg-white/[0.04] hover:border-border-hover hover:text-text-secondary transition-colors"
+                onClick={() => { navigate('/settings'); onClose?.(); }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+                設定
+              </button>
+            </div>
           ) : (
-            <div className="px-4 py-3">
+            <div className="px-3 py-3">
               <button
                 onClick={(e) => {
                   e.stopPropagation();
                   signInWithGoogle().catch(() => {});
                 }}
-                className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg bg-white/[0.06] border border-border text-text-secondary text-[0.82rem] font-medium cursor-pointer hover:bg-white/[0.1] hover:border-border-hover transition-colors"
+                className="flex items-center justify-center gap-2.5 w-full px-3 py-2.5 rounded-lg bg-white/[0.06] border border-border text-text-secondary text-[0.84rem] font-medium cursor-pointer hover:bg-white/[0.1] hover:border-border-hover transition-colors"
               >
-                <svg width="16" height="16" viewBox="0 0 48 48" className="flex-shrink-0">
+                <svg width="18" height="18" viewBox="0 0 48 48" className="flex-shrink-0">
                   <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
                   <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
                   <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
                   <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
                 </svg>
-                登入
+                使用 Google 登入
               </button>
             </div>
           )}
