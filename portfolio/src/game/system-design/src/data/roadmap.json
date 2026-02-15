@@ -52,7 +52,7 @@
       "id": "ai",
       "label": "AI 專題",
       "color": "#A78BFA",
-      "topics": ["skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "ai-evaluation-loop", "mock-design"]
+      "topics": ["ai-basics-start-here", "ai-tools-landscape", "ai-model-comparison", "prompt-engineering", "prompt-cheat-sheet", "skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "api-token-security", "multi-ai-workflow", "ai-evaluation-loop", "mcp-protocol", "ai-idea-generation", "open-source-ai", "mock-design"]
     }
   ],
   "edges": [
@@ -75,6 +75,19 @@
     ["key-value-store", "unique-id-generator"],
     ["search-autocomplete", "web-crawler"],
     ["url-shortener", "unique-id-generator"],
-    ["git-vs-github", "docker"]
+    ["git-vs-github", "docker"],
+    ["ai-basics-start-here", "ai-tools-landscape"],
+    ["ai-basics-start-here", "ai-model-comparison"],
+    ["ai-tools-landscape", "prompt-engineering"],
+    ["prompt-engineering", "prompt-cheat-sheet"],
+    ["prompt-engineering", "skill-vs-agent"],
+    ["skill-vs-agent", "context-rot-solution"],
+    ["skill-vs-agent", "sdd-spec-driven-development"],
+    ["ai-model-comparison", "api-token-security"],
+    ["skill-vs-agent", "multi-ai-workflow"],
+    ["multi-ai-workflow", "ai-evaluation-loop"],
+    ["ai-tools-landscape", "mcp-protocol"],
+    ["prompt-engineering", "ai-idea-generation"],
+    ["ai-model-comparison", "open-source-ai"]
   ]
 }
