@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="tools">① 監控工具</button>
       <button class="tab-btn" data-tab="metrics">② 關鍵指標</button>
-      <button class="tab-btn" data-tab="alerting">③ 告警系統</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="alerting">③ 告警系統</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- Tab 1: 監控工具 -->
@@ -538,6 +538,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
   const tabs = document.querySelectorAll('.tab-btn');
   const contents = document.querySelectorAll('.tab-content');

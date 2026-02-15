@@ -188,10 +188,10 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="frontend">① Frontend</button>
       <button class="tab-btn" data-tab="backend">② Backend</button>
-      <button class="tab-btn" data-tab="python">③ Python</button>
-      <button class="tab-btn" data-tab="fullstack">④ Full Stack</button>
-      <button class="tab-btn" data-tab="database">⑤ Database</button>
-      <button class="tab-btn" data-tab="ai-viber">⑥ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="python">③ Python</button>
+      <button class="tab-btn" data-premium="true" data-tab="fullstack">④ Full Stack</button>
+      <button class="tab-btn" data-premium="true" data-tab="database">⑤ Database</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑥ AI Viber</button>
     </div>
 
     <!-- ==================== Tab 1: Frontend ==================== -->
@@ -740,6 +740,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     // Tab switching
     const tabBtns = document.querySelectorAll('.tab-btn');

@@ -80,8 +80,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="server">① Server 方案</button>
       <button class="tab-btn" data-tab="serverless">② Serverless 方案</button>
-      <button class="tab-btn" data-tab="decision">③ 點樣揀</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="decision">③ 點樣揀</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Server ===================== -->
@@ -609,6 +609,7 @@ Database：<span class="placeholder">[數據庫選擇，例如 DynamoDB / Supaba
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

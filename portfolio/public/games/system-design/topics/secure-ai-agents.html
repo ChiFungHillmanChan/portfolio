@@ -268,9 +268,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="lethal-trifecta">① 致命三角</button>
       <button class="tab-btn" data-tab="attack-flow">② 攻擊流程</button>
-      <button class="tab-btn" data-tab="guardrails">③ 防護措施</button>
-      <button class="tab-btn" data-tab="best-practices">④ 最佳實踐</button>
-      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="guardrails">③ 防護措施</button>
+      <button class="tab-btn" data-premium="true" data-tab="best-practices">④ 最佳實踐</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Lethal Trifecta ===================== -->
@@ -909,6 +909,7 @@ Agent 嘅能力範圍：
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

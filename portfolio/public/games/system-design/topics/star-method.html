@@ -317,9 +317,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="star-overview">① 咩係 STAR</button>
       <button class="tab-btn" data-tab="star-example">② 真實示範</button>
-      <button class="tab-btn" data-tab="star-tips">③ 答題技巧</button>
-      <button class="tab-btn" data-tab="star-takeaway">④ 重點總結</button>
-      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="star-tips">③ 答題技巧</button>
+      <button class="tab-btn" data-premium="true" data-tab="star-takeaway">④ 重點總結</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: STAR Overview ===================== -->
@@ -937,6 +937,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     // Tab switching
     const tabs = document.querySelectorAll('.tab-btn');

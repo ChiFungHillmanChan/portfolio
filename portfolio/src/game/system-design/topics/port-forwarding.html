@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="basics">① Port Forwarding 基礎</button>
       <button class="tab-btn" data-tab="nat">② NAT 網絡轉換</button>
-      <button class="tab-btn" data-tab="tunneling">③ Tunneling 穿透</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="tunneling">③ Tunneling 穿透</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1: Basics -->
@@ -479,6 +479,7 @@ Domain：<span class="placeholder">[domain 名，例如 myapp.example.com]</span
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

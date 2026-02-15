@@ -317,9 +317,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="core-debate">① 核心爭論</button>
       <button class="tab-btn" data-tab="real-job">② 真正嘅工作</button>
-      <button class="tab-btn" data-tab="market-demand">③ 市場需求</button>
-      <button class="tab-btn" data-tab="takeaway">④ 重點總結</button>
-      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="market-demand">③ 市場需求</button>
+      <button class="tab-btn" data-premium="true" data-tab="takeaway">④ 重點總結</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Core Debate ===================== -->
@@ -924,6 +924,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     // Tab switching
     const tabs = document.querySelectorAll('.tab-btn');

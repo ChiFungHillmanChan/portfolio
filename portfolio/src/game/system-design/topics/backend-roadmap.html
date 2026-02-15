@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="roadmap">① 學習路線</button>
       <button class="tab-btn" data-tab="skills">② 核心技能</button>
-      <button class="tab-btn" data-tab="advice">③ 實戰建議</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="advice">③ 實戰建議</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1: 學習路線 -->
@@ -310,6 +310,7 @@ Database：<span class="placeholder">[PostgreSQL / MySQL]</span> + Redis
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="framework">① 選擇框架</button>
       <button class="tab-btn" data-tab="cap">② CAP 定理</button>
-      <button class="tab-btn" data-tab="advice">③ 實戰建議</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="advice">③ 實戰建議</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="framework">
@@ -340,6 +340,7 @@ Project 背景：
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

@@ -62,8 +62,8 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="evolution">① 驗證方式演進</button>
             <button class="tab-btn" data-tab="jwt">② JWT 詳解</button>
-            <button class="tab-btn" data-tab="comparison">③ 實戰比較</button>
-            <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+            <button class="tab-btn" data-premium="true" data-tab="comparison">③ 實戰比較</button>
+            <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
         </div>
 
         <!-- Tab 1: 驗證方式演進 -->
@@ -297,6 +297,61 @@
     </div>
   </div>
 
+  <script type="application/json" id="pitfall-data">
+[
+  {
+    "title": "將 JWT 存喺 localStorage 被 XSS 偷走",
+    "story": "我哋將 JWT token 存喺 localStorage，結果有個第三方 script 有 XSS 漏洞，攻擊者可以讀取所有 localStorage 資料，包括 JWT。改用 httpOnly cookie 先安全。",
+    "lesson": "敏感 token 應該存喺 httpOnly cookie，唔好放喺 JavaScript 可以讀到嘅地方。"
+  }
+]
+</script>
+
+<script type="application/json" id="quiz-data">
+[
+  {
+    "question": "JWT 同 Session-based auth 最大嘅分別係咩？",
+    "options": [
+      {"text": "JWT 係 stateless，Server 唔需要儲存 session 資料", "correct": true, "explanation": "JWT 將用戶資訊編碼喺 token 入面，Server 只需要驗證簽名就得，唔使查 database 或 Redis。Session-based auth 需要 Server 儲存 session 資料。"},
+      {"text": "JWT 比 Session 更安全", "correct": false, "explanation": "兩者各有安全考量。JWT 一旦簽發就無法撤銷（除非用 blacklist），Session 可以即時撤銷。"},
+      {"text": "Session 唔支持 mobile app", "correct": false, "explanation": "Session 可以通過 cookie 或 header 支持 mobile app，只係實作上 JWT 更方便。"},
+      {"text": "JWT 唔需要 HTTPS", "correct": false, "explanation": "JWT 同 Session 都必須用 HTTPS。JWT 喺傳輸中被截取一樣危險。"}
+    ]
+  },
+  {
+    "question": "OAuth 2.0 嘅 Authorization Code Flow 中，點解需要用 code 換 token，而唔直接返回 token？",
+    "options": [
+      {"text": "為咗減少網絡請求", "correct": false, "explanation": "實際上用 code 換 token 反而多咗一步請求，但安全性大幅提升。"},
+      {"text": "因為 code 通過瀏覽器 redirect 傳輸，而 token 通過 server-to-server 安全通道傳輸", "correct": true, "explanation": "Authorization code 經過瀏覽器 URL 傳輸，可能被截取。用 code 換 token 係 server-to-server 嘅請求，配合 client secret，攻擊者即使截取 code 都無法換到 token。"},
+      {"text": "因為 token 太長放唔入 URL", "correct": false, "explanation": "雖然 token 可能較長，但主要原因係安全性，唔係長度限制。"},
+      {"text": "因為所有 OAuth provider 都要求咁做", "correct": false, "explanation": "呢個係 Authorization Code Flow 嘅設計選擇，Implicit Flow 就直接返回 token（但已經唔建議用）。"}
+    ]
+  },
+  {
+    "question": "點解密碼要用 bcrypt 而唔係 SHA-256 做 hashing？",
+    "options": [
+      {"text": "因為 SHA-256 唔安全", "correct": false, "explanation": "SHA-256 本身係安全嘅 hash function，但佢太快，唔適合做密碼 hashing。"},
+      {"text": "因為 bcrypt 有內建 salt 同 cost factor，設計上專門針對密碼 hashing", "correct": true, "explanation": "bcrypt 刻意設計成慢速運算（透過 cost factor 調整），令暴力破解成本極高。內建 salt 防止 rainbow table 攻擊。SHA-256 太快，GPU 每秒可以計算數十億次。"},
+      {"text": "因為 bcrypt 嘅輸出更短", "correct": false, "explanation": "輸出長度唔係選擇 hash 演算法嘅主要考量。"},
+      {"text": "因為 bcrypt 可以解密返原文", "correct": false, "explanation": "bcrypt 係 one-way hash，同 SHA-256 一樣無法解密。呢個係 hash function 嘅基本特性。"}
+    ]
+  }
+]
+</script>
+
+<script type="application/json" id="interview-checklist">
+{
+  "points": [
+    "比較 JWT 同 Session-based auth 嘅 trade-off",
+    "OAuth 2.0 嘅 Authorization Code Flow",
+    "Token refresh 策略同 sliding expiration",
+    "Password hashing（bcrypt / argon2）",
+    "CSRF / XSS 防護措施"
+  ]
+}
+</script>
+
+  <script src="../premium-gate.js"></script>
   <script>
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');

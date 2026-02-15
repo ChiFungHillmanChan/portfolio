@@ -62,8 +62,8 @@
         <div class="tabs">
             <button class="tab-btn active" data-tab="git-basics">① Git 基礎</button>
             <button class="tab-btn" data-tab="github-collab">② GitHub 協作</button>
-            <button class="tab-btn" data-tab="learning">③ 學習路線</button>
-            <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+            <button class="tab-btn" data-premium="true" data-tab="learning">③ 學習路線</button>
+            <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
         </div>
 
         <!-- Tab 1: Git 基礎 -->
@@ -364,6 +364,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');

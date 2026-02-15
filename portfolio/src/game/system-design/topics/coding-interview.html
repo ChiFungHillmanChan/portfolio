@@ -372,9 +372,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 全局概覽</button>
       <button class="tab-btn" data-tab="fail-vs-pass">② 肥佬 vs 過關</button>
-      <button class="tab-btn" data-tab="clarify">③ 釐清問題</button>
-      <button class="tab-btn" data-tab="communicate">④ 溝通同合作</button>
-      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="clarify">③ 釐清問題</button>
+      <button class="tab-btn" data-premium="true" data-tab="communicate">④ 溝通同合作</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Overview ===================== -->
@@ -975,6 +975,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

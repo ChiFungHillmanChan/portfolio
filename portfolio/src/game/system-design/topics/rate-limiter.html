@@ -64,8 +64,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="algorithms">② 限流演算法</button>
-      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- TAB 1: Overview -->
@@ -311,6 +311,61 @@
     </div>
   </div>
 
+  <script type="application/json" id="pitfall-data">
+[
+  {
+    "title": "只用 IP 做 rate limit，NAT 後面嘅用戶全部被 block",
+    "story": "公司有幾百個員工用同一個 public IP 上網，我哋用 IP-based rate limiting，結果成間公司被 block。改用 API key + IP 組合先解決。",
+    "lesson": "唔好只靠 IP 做 rate limiting，特別係 B2B 場景，要考慮 NAT 同 proxy 嘅情況。"
+  }
+]
+</script>
+
+<script type="application/json" id="quiz-data">
+[
+  {
+    "question": "Token Bucket 同 Sliding Window 最大嘅分別係咩？",
+    "options": [
+      {"text": "Token Bucket 可以處理突發流量，Sliding Window 唔得", "correct": true, "explanation": "Token Bucket 可以累積 token，短時間內處理 burst 流量。Sliding Window 嚴格限制窗口內嘅請求數量，唔容許超標。"},
+      {"text": "Sliding Window 比 Token Bucket 快", "correct": false, "explanation": "兩者嘅執行速度差唔多，主要分別係限流策略唔同，唔係速度。"},
+      {"text": "Token Bucket 唔需要 Redis", "correct": false, "explanation": "分佈式環境下，Token Bucket 一樣需要 Redis 做中央計數。"},
+      {"text": "Sliding Window 唔支持 per-user 限流", "correct": false, "explanation": "Sliding Window 完全支持 per-user 限流，只需要用唔同嘅 key 就得。"}
+    ]
+  },
+  {
+    "question": "分佈式環境下做 rate limiting，點解一定要用 Redis？",
+    "options": [
+      {"text": "因為 Redis 最便宜", "correct": false, "explanation": "成本唔係主要考量，重點係 Redis 嘅特性適合呢個場景。"},
+      {"text": "因為需要中央計數器，確保所有 server 共享同一個 count", "correct": true, "explanation": "如果每台 server 自己計自己，用戶換一台 server 就重置 count，限流形同虛設。Redis 做中央計數器可以確保全局一致。"},
+      {"text": "因為 Redis 支持 SQL", "correct": false, "explanation": "Redis 係 key-value store，唔支持 SQL。佢嘅優勢係極低延遲同原子操作。"},
+      {"text": "因為冇其他選擇", "correct": false, "explanation": "理論上可以用其他中央存儲，但 Redis 嘅速度同原子操作（INCR + EXPIRE）令佢成為最佳選擇。"}
+    ]
+  },
+  {
+    "question": "HTTP 429 response 應該包含咩重要資訊？",
+    "options": [
+      {"text": "只需要 status code 429 就夠", "correct": false, "explanation": "只有 status code 唔夠，client 唔知幾時可以重試。"},
+      {"text": "Retry-After header 同 X-RateLimit 相關 headers", "correct": true, "explanation": "Retry-After 話俾 client 知幾時可以重試。X-RateLimit-Limit、X-RateLimit-Remaining、X-RateLimit-Reset 幫助 client 了解自己嘅用量。"},
+      {"text": "Server 嘅 IP 地址", "correct": false, "explanation": "暴露 server IP 係安全風險，唔應該放喺 response 入面。"},
+      {"text": "所有被 block 嘅用戶列表", "correct": false, "explanation": "呢個係嚴重嘅隱私問題，絕對唔應該暴露其他用戶嘅資訊。"}
+    ]
+  }
+]
+</script>
+
+<script type="application/json" id="interview-checklist">
+{
+  "points": [
+    "比較 Token Bucket / Leaky Bucket / Sliding Window",
+    "分佈式環境下點樣做 rate limiting（Redis）",
+    "HTTP 429 response 應該包含咩資訊",
+    "Rate limit 嘅 key 設計（IP / User / API Key）",
+    "Graceful degradation 策略"
+  ]
+}
+</script>
+
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="matchmaking">① 配對系統</button>
       <button class="tab-btn" data-tab="game-service">② 遊戲服務</button>
-      <button class="tab-btn" data-tab="websocket">③ WebSocket vs UDP</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="websocket">③ WebSocket vs UDP</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="matchmaking">
@@ -438,6 +438,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

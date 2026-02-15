@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="cache">② 快取策略</button>
-      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -292,6 +292,66 @@
     </div>
   </div>
 
+  <script type="application/json" id="pitfall-data">
+[
+  {
+    "title": "Cache-Control 設錯導致用戶睇到舊版",
+    "story": "我哋將 HTML 檔案設咗 max-age=86400（1日），結果更新咗網站之後，用戶仲係睇到舊版本。要等成日先會自動更新。最後改用 no-cache + ETag 策略。",
+    "lesson": "HTML 檔案唔應該設長時間 cache，應該用 no-cache 配合 ETag。靜態資源（JS/CSS）用 content hash 做檔名先可以設長 cache。"
+  },
+  {
+    "title": "CDN 冇設 Origin Shield 導致源站過載",
+    "story": "全球用戶同時訪問，每個 CDN edge node 都直接 request 我哋嘅 origin server。高峰期 origin server CPU 去到 95%。加咗 Origin Shield 層之後回落到 20%。",
+    "lesson": "如果有多個 edge location，記得加 Origin Shield 做中間層，減少對 origin 嘅請求次數。"
+  }
+]
+</script>
+
+<script type="application/json" id="quiz-data">
+[
+  {
+    "question": "你嘅網站用 CDN，但 cache hit ratio 只有 40%。最可能嘅原因係咩？",
+    "options": [
+      {"text": "CDN 節點太少", "correct": false, "explanation": "節點數量通常唔係主因，大部分 CDN 供應商都有足夠嘅 PoP。"},
+      {"text": "Cache-Control TTL 設得太短，或者 URL 帶有動態 query string", "correct": true, "explanation": "TTL 太短會令 cache 經常過期，而每個唔同嘅 query string 都會被當成獨立資源，大幅降低 hit ratio。"},
+      {"text": "用戶太多", "correct": false, "explanation": "用戶越多反而應該令 hit ratio 越高，因為同一資源被更多人請求。"},
+      {"text": "Origin server 太慢", "correct": false, "explanation": "Origin 速度影響 cache miss 嘅回應時間，但唔會影響 hit ratio。"}
+    ]
+  },
+  {
+    "question": "部署新版本前端之後，點樣確保用戶即刻睇到新版？",
+    "options": [
+      {"text": "等 cache 自然過期", "correct": false, "explanation": "如果 TTL 設咗好長（例如 1 年），用戶可能好耐先睇到新版。"},
+      {"text": "用 versioned URL（例如 main.abc123.js）配合長 TTL", "correct": true, "explanation": "檔名包含 content hash，新版本自動用新 URL，舊 cache 唔影響。HTML 用 no-cache 確保每次都拉最新嘅 HTML，入面引用新嘅 JS/CSS URL。"},
+      {"text": "每次都 purge 全站 cache", "correct": false, "explanation": "全站 purge 會導致所有資源 cache miss，短時間內 origin 壓力大增，而且有 quota 限制。"},
+      {"text": "將所有資源設為 no-store", "correct": false, "explanation": "no-store 會令 CDN 完全唔 cache，失去 CDN 嘅意義，每個請求都要去 origin。"}
+    ]
+  },
+  {
+    "question": "GeoDNS 嘅主要作用係咩？",
+    "options": [
+      {"text": "加密 DNS 查詢", "correct": false, "explanation": "加密 DNS 係 DNS-over-HTTPS (DoH) 嘅功能，同 GeoDNS 無關。"},
+      {"text": "根據用戶地理位置返回最近嘅 CDN edge server IP", "correct": true, "explanation": "GeoDNS 會分析用戶嘅 IP 地理位置，返回距離最近嘅 PoP 節點 IP，減少網絡延遲。"},
+      {"text": "防止 DDoS 攻擊", "correct": false, "explanation": "DDoS 防護係 CDN 嘅另一個功能，唔係 GeoDNS 嘅主要職責。"},
+      {"text": "加速 DNS 解析速度", "correct": false, "explanation": "GeoDNS 嘅重點係地理位置路由，唔係加速 DNS 解析本身。"}
+    ]
+  }
+]
+</script>
+
+<script type="application/json" id="interview-checklist">
+{
+  "points": [
+    "解釋 CDN 嘅 Push vs Pull 模式",
+    "講 Cache-Control headers 嘅設計",
+    "GeoDNS 點樣將用戶引導到最近嘅 edge",
+    "Cache invalidation 嘅策略同 trade-off",
+    "估算 CDN cache hit ratio 同 bandwidth 節省"
+  ]
+}
+</script>
+
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

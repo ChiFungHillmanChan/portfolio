@@ -63,8 +63,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="tab-print">① Print Statement</button>
       <button class="tab-btn" data-tab="tab-debugger">② Debugger</button>
-      <button class="tab-btn" data-tab="tab-choose">③ 點樣揀</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="tab-choose">③ 點樣揀</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ==================== TAB 1: Print Statement ==================== -->
@@ -404,6 +404,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

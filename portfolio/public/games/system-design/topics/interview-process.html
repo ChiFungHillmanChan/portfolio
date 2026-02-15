@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 面試流程</button>
       <button class="tab-btn" data-tab="preparation">② 每輪準備</button>
-      <button class="tab-btn" data-tab="tips">③ 實戰要點</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="tips">③ 實戰要點</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -285,6 +285,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

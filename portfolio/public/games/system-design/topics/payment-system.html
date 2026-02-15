@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="idempotency">② 冪等性設計</button>
-      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -290,6 +290,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

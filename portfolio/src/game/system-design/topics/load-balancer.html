@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 整體架構</button>
       <button class="tab-btn" data-tab="algorithms">② 分配演算法</button>
-      <button class="tab-btn" data-tab="practice">③ L4 vs L7</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="practice">③ L4 vs L7</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div class="tab-content active" id="overview">
@@ -272,6 +272,66 @@
     </div>
   </div>
 
+  <script type="application/json" id="pitfall-data">
+[
+  {
+    "title": "用 Round Robin 但 Server 規格唔一樣",
+    "story": "我哋有 3 台 server，其中一台係舊機（2 core），另外兩台係新機（8 core）。用咗 Round Robin 之後，舊機經常 CPU 100%，新機得 30%。最後改用 Weighted Round Robin 先解決。",
+    "lesson": "LB 演算法要配合實際 server 規格，唔係全部 server 都一樣就唔使諗。"
+  },
+  {
+    "title": "Health Check 只 ping 但唔測功能",
+    "story": "我哋嘅 Health Check 只係 ping server 睇有冇 response，但有次 server 嘅 DB connection pool 爆咗，ping 仲係 200 OK。結果所有 request 都 500 error。",
+    "lesson": "Health Check 應該測完整嘅請求路徑（包括 DB），唔好淨係 ping。"
+  }
+]
+</script>
+
+<script type="application/json" id="quiz-data">
+[
+  {
+    "question": "你個 API 平時 50 req/s，間中飆到 500 req/s。邊種 LB 策略最適合？",
+    "options": [
+      {"text": "Round Robin", "correct": false, "explanation": "Round Robin 唔考慮 server 負載，高峰期容易打爆某幾台。"},
+      {"text": "Least Connections", "correct": true, "explanation": "Least Connections 會將新請求送去最空閒嘅 server，自動適應流量波動。"},
+      {"text": "IP Hash", "correct": false, "explanation": "IP Hash 保證同一 client 去同一 server，但唔能夠平衡突發流量。"},
+      {"text": "Random", "correct": false, "explanation": "Random 喺大流量下統計上趨向平均，但無法應對突發不均。"}
+    ]
+  },
+  {
+    "question": "Health Check 失敗後，LB 應該點做？",
+    "options": [
+      {"text": "即刻刪除 server", "correct": false, "explanation": "直接刪除太激進，可能只係短暫網絡問題。"},
+      {"text": "停止發送新請求，但保留 server", "correct": true, "explanation": "標記為 unhealthy，唔再發新請求，但定期重新檢查。恢復後自動加返。"},
+      {"text": "繼續發送請求等佢恢復", "correct": false, "explanation": "繼續發請求會導致用戶見到 error，影響體驗。"},
+      {"text": "重啟 server", "correct": false, "explanation": "LB 通常無權限重啟 server，呢個係 orchestration 層嘅責任。"}
+    ]
+  },
+  {
+    "question": "L4 同 L7 Load Balancer 最大分別係咩？",
+    "options": [
+      {"text": "L4 只睇 IP/Port，L7 可以睇 HTTP 內容", "correct": true, "explanation": "L4 工作喺 TCP/UDP 層，只根據 IP 同 Port 分流。L7 可以根據 URL path、headers、cookies 做更精準嘅路由。"},
+      {"text": "L4 比 L7 慢", "correct": false, "explanation": "恰好相反，L4 因為唔需要解析 HTTP 內容，所以通常更快。"},
+      {"text": "L7 唔支持 HTTPS", "correct": false, "explanation": "L7 完全支持 HTTPS，而且通常負責 SSL termination。"},
+      {"text": "L4 同 L7 效能一樣", "correct": false, "explanation": "L4 通常效能更高因為佢唔需要深層封包檢查。"}
+    ]
+  }
+]
+</script>
+
+<script type="application/json" id="interview-checklist">
+{
+  "points": [
+    "先講 DNS → LB → Server 嘅 high-level flow",
+    "提及 Health Check 同 failover",
+    "比較 L4 vs L7 並解釋揀邊個",
+    "講 session persistence 問題同解法",
+    "估算 throughput 同 latency"
+  ]
+}
+</script>
+
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

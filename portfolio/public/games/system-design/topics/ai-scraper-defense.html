@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="tab-robots">① robots.txt</button>
       <button class="tab-btn" data-tab="tab-detection">② Bot 偵測</button>
-      <button class="tab-btn" data-tab="tab-honeypot">③ Honeypot 陷阱</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="tab-honeypot">③ Honeypot 陷阱</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: robots.txt ===================== -->
@@ -717,6 +717,7 @@ Dungeon 頁面主題：<span class="placeholder">[電商產品頁 / 新聞文章
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

@@ -78,9 +78,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 總覽比較</button>
       <button class="tab-btn" data-tab="hosting">② 託管方式</button>
-      <button class="tab-btn" data-tab="scaling">③ 自動擴展</button>
-      <button class="tab-btn" data-tab="monitoring">④ 監控日誌</button>
-      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="scaling">③ 自動擴展</button>
+      <button class="tab-btn" data-premium="true" data-tab="monitoring">④ 監控日誌</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Overview ===================== -->
@@ -394,6 +394,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

@@ -68,8 +68,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="ngrok">① ngrok 快速分享</button>
       <button class="tab-btn" data-tab="debug">② Debug Dashboard</button>
-      <button class="tab-btn" data-tab="permanent">③ 永久自架方案</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="permanent">③ 永久自架方案</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: ngrok 快速分享 ===================== -->
@@ -641,6 +641,7 @@ Domain：<span class="placeholder">[例如：app.mydomain.com]</span>
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

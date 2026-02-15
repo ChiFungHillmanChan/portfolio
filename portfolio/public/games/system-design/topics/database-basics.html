@@ -62,8 +62,8 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="tab1">Database 係咩</button>
       <button class="tab-btn" data-tab="tab2">ACID 同 NoSQL</button>
-      <button class="tab-btn" data-tab="tab3">DBMS 管理系統</button>
-      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="tab3">DBMS 管理系統</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">④ AI Viber</button>
     </div>
 
     <div id="tab1" class="tab-content active">
@@ -441,6 +441,61 @@
     </div>
   </div>
 
+  <script type="application/json" id="pitfall-data">
+[
+  {
+    "title": "N+1 Query 問題拖慢成個 API",
+    "story": "我哋有個 API 要顯示 100 個訂單同埋每個訂單嘅用戶資料。結果代碼先 query 100 個訂單，然後 loop 每個訂單再 query 一次用戶，總共 101 個 query。用 JOIN 之後只需要 1 個 query，API 快咗 10 倍。",
+    "lesson": "ORM 好容易產生 N+1 問題，一定要用 eager loading 或者手動 JOIN。"
+  }
+]
+</script>
+
+<script type="application/json" id="quiz-data">
+[
+  {
+    "question": "咩情況下應該揀 NoSQL 而唔係 SQL？",
+    "options": [
+      {"text": "需要強一致性同複雜 JOIN 查詢", "correct": false, "explanation": "需要強一致性同複雜 JOIN 嘅場景係 SQL 嘅強項，例如銀行系統、交易平台。"},
+      {"text": "數據結構經常變化、需要高擴展性、讀寫量極大", "correct": true, "explanation": "NoSQL 嘅 schema-less 設計適合快速迭代，水平擴展容易，適合社交媒體 feed、IoT 數據等場景。"},
+      {"text": "數據量少但關係複雜", "correct": false, "explanation": "數據量少但關係複雜嘅場景，SQL 嘅 JOIN 同 foreign key 更加適合。"},
+      {"text": "所有情況都應該用 NoSQL", "correct": false, "explanation": "冇一個方案係萬能嘅。選擇 SQL 定 NoSQL 要根據具體嘅業務需求、數據模型同一致性要求。"}
+    ]
+  },
+  {
+    "question": "加 Index 可以加速 query，但有咩 trade-off？",
+    "options": [
+      {"text": "Index 完全冇壞處，應該每個 column 都加", "correct": false, "explanation": "過多嘅 index 會嚴重影響寫入性能，因為每次 INSERT/UPDATE/DELETE 都要更新所有相關 index。"},
+      {"text": "加快讀取速度，但會減慢寫入速度同增加存儲空間", "correct": true, "explanation": "Index 本質上係用額外嘅存儲空間同寫入開銷嚟換取更快嘅讀取速度。B-tree index 每次寫入都要維護樹結構。"},
+      {"text": "Index 只對 SELECT 有效，對 WHERE 無效", "correct": false, "explanation": "Index 主要就係加速 WHERE 條件嘅查詢，令 database 唔使做 full table scan。"},
+      {"text": "Index 會令 database 唔穩定", "correct": false, "explanation": "正確使用 index 唔會影響穩定性，只係需要合理設計，避免過多或無效嘅 index。"}
+    ]
+  },
+  {
+    "question": "ACID 入面嘅 Isolation 係咩意思？",
+    "options": [
+      {"text": "數據寫入後唔會遺失", "correct": false, "explanation": "呢個係 Durability（持久性）嘅定義，唔係 Isolation。"},
+      {"text": "多個 transaction 同時執行時，互相唔會影響對方嘅結果", "correct": true, "explanation": "Isolation 確保並發嘅 transaction 之間互相隔離。例如兩個人同時轉帳，唔會因為並發而導致金額計算錯誤。不同嘅 isolation level（Read Uncommitted → Serializable）提供唔同程度嘅保護。"},
+      {"text": "所有操作要麼全部成功，要麼全部失敗", "correct": false, "explanation": "呢個係 Atomicity（原子性）嘅定義。"},
+      {"text": "數據永遠保持有效狀態", "correct": false, "explanation": "呢個係 Consistency（一致性）嘅定義。"}
+    ]
+  }
+]
+</script>
+
+<script type="application/json" id="interview-checklist">
+{
+  "points": [
+    "比較 SQL 同 NoSQL 嘅適用場景",
+    "Index 嘅原理同 trade-off（B-tree vs Hash）",
+    "ACID properties 同 BASE model",
+    "Normalization vs Denormalization",
+    "估算 query 效能同 explain plan"
+  ]
+}
+</script>
+
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');

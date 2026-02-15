@@ -314,9 +314,9 @@
     <div class="tabs">
       <button class="tab-btn active" data-tab="overview">① 全局思路</button>
       <button class="tab-btn" data-tab="indexing">② 優化查詢 + 索引</button>
-      <button class="tab-btn" data-tab="caching">③ 三層 Cache</button>
-      <button class="tab-btn" data-tab="replicas">④ 讀取副本</button>
-      <button class="tab-btn" data-tab="ai-viber">⑤ AI Viber</button>
+      <button class="tab-btn" data-premium="true" data-tab="caching">③ 三層 Cache</button>
+      <button class="tab-btn" data-premium="true" data-tab="replicas">④ 讀取副本</button>
+      <button class="tab-btn" data-premium="true" data-tab="ai-viber">⑤ AI Viber</button>
     </div>
 
     <!-- ===================== TAB 1: Overview ===================== -->
@@ -1054,6 +1054,7 @@
     </div>
   </div>
 
+  <script src="../premium-gate.js"></script>
   <script>
     const tabs = document.querySelectorAll('.tab-btn');
     const contents = document.querySelectorAll('.tab-content');
