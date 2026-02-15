@@ -1,6 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-
-const STRIPE_URL = 'https://buy.stripe.com/6oU7sF6V20nA5Nhcip3Nm05';
+import { STRIPE_URL } from '../config/constants';
 
 export default function PremiumGate() {
   const navigate = useNavigate();

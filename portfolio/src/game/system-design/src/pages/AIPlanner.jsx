@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE = 'https://api.system-design.hillmanchan.com';
+import { useAuth } from '../context/AuthContext';
+import topicData from '../data/topics.json';
+import { API_BASE } from '../config/constants';
 const PLAN_KEY = 'sd_learning_plan';
-const TOKEN_KEY = 'sa-chat-token';
+const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
 const STEPS = [
   {
@@ -45,10 +46,41 @@ const STEPS = [
   },
 ];
 
+function getWeeklyLimit() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(PLAN_KEY));
+    if (saved?.lastGenerated) {
+      const elapsed = Date.now() - saved.lastGenerated;
+      if (elapsed < ONE_WEEK_MS) {
+        return {
+          limited: true,
+          nextDate: new Date(saved.lastGenerated + ONE_WEEK_MS),
+        };
+      }
+    }
+  } catch {}
+  return { limited: false, nextDate: null };
+}
+
+function formatDate(date) {
+  return date.toLocaleDateString('zh-HK', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+}
+
+const availableTopicsList = topicData.topics
+  .filter((t) => !t.disabled)
+  .map((t) => t.title)
+  .join('、');
+
 export default function AIPlanner() {
   const navigate = useNavigate();
+  const { user, token } = useAuth();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState({});
+  const [customText, setCustomText] = useState('');
   const [plan, setPlan] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -84,25 +116,40 @@ export default function AIPlanner() {
   };
 
   const handleGenerate = async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      setError('請先喺 AI 助手登入。');
+    // Check weekly limit
+    const limit = getWeeklyLimit();
+    if (limit.limited) {
+      setError(`你已經喺呢個星期生成咗計劃，下次可以喺 ${formatDate(limit.nextDate)} 再生成`);
+      return;
+    }
+
+    // If user is logged in, use their token; otherwise prompt sign-in
+    if (!token && !import.meta.env.DEV) {
+      setError('請先登入 Google 帳號以生成學習計劃。');
       return;
     }
 
     setLoading(true);
     setError('');
 
+    const customContext = customText.trim()
+      ? `\n額外想學嘅範疇：${customText.trim()}`
+      : '';
+
     const prompt = `你係一個系統設計學習顧問。根據以下學生資料，用廣東話制定一個個人化學習計劃：
 目標：${answers[0]}
 經驗：${answers[1]}
 每週時間：${answers[2]} 小時
-重點領域：${(answers[3] || []).join(', ')}
+重點領域：${(answers[3] || []).join(', ')}${customContext}
+
+現有課題列表：${availableTopicsList}
 
 請返回一個 4-8 週嘅學習計劃，每週列出：
-1. 主題名稱（用呢度有嘅課題）
+1. 主題名稱（盡量用現有課題列表入面嘅課題）
 2. 學習重點
 3. 預計時間
+
+重要：如果學生想學嘅範疇唔喺現有課題入面，請喺該範疇後面標記 [COMING_SOON]，並且建議最相似嘅現有課題。
 
 格式要清楚，每週用「第X週」開頭。`;
 
@@ -111,7 +158,7 @@ export default function AIPlanner() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({ mode: 'search', query: prompt }),
       });
@@ -127,7 +174,15 @@ export default function AIPlanner() {
       setPlan(planText);
       setStep(-1);
 
-      localStorage.setItem(PLAN_KEY, JSON.stringify({ plan: planText, completed: [], answers }));
+      localStorage.setItem(
+        PLAN_KEY,
+        JSON.stringify({
+          plan: planText,
+          completed: [],
+          answers,
+          lastGenerated: Date.now(),
+        })
+      );
     } catch {
       setError('網絡錯誤，請稍後再試。');
     } finally {
@@ -146,16 +201,48 @@ export default function AIPlanner() {
   };
 
   const resetPlan = () => {
+    // Keep lastGenerated to enforce weekly limit
+    const saved = JSON.parse(localStorage.getItem(PLAN_KEY) || '{}');
+    const lastGenerated = saved.lastGenerated;
+
     localStorage.removeItem(PLAN_KEY);
     setPlan(null);
     setCompletedItems([]);
     setAnswers({});
+    setCustomText('');
     setStep(0);
+
+    // Restore lastGenerated if within the week
+    if (lastGenerated && Date.now() - lastGenerated < ONE_WEEK_MS) {
+      localStorage.setItem(
+        PLAN_KEY,
+        JSON.stringify({ lastGenerated })
+      );
+    }
+  };
+
+  // Render "Coming Soon" markers in plan text
+  const renderPlanLine = (line) => {
+    if (line.includes('[COMING_SOON]')) {
+      const parts = line.split('[COMING_SOON]');
+      return (
+        <>
+          {parts[0]}
+          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[0.75rem] font-medium ml-1">
+            Coming Soon
+          </span>
+          {parts[1]}
+        </>
+      );
+    }
+    return line;
   };
 
   // Show saved plan
   if (step === -1 && plan) {
     const lines = plan.split('\n').filter((l) => l.trim());
+    const hasComingSoon = plan.includes('[COMING_SOON]');
+
     return (
       <div className="h-full overflow-auto">
         <div className="topic-container">
@@ -163,6 +250,17 @@ export default function AIPlanner() {
             <h1>📋 你嘅學習計劃</h1>
             <p>按照計劃逐步學習，完成後打勾</p>
           </header>
+
+          {hasComingSoon && (
+            <div className="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <div className="text-sm font-medium text-amber-400 mb-1">
+                部分範疇即將推出
+              </div>
+              <div className="text-xs text-text-dim">
+                標記為 "Coming Soon" 嘅範疇暫時未有對應課題，請留意更新！以下已建議最相似嘅現有課題。
+              </div>
+            </div>
+          )}
 
           <div className="card">
             {lines.map((line, i) => {
@@ -196,7 +294,7 @@ export default function AIPlanner() {
                           : 'text-text-muted'
                     }`}
                   >
-                    {line}
+                    {renderPlanLine(line)}
                   </span>
                 </div>
               );
@@ -227,6 +325,9 @@ export default function AIPlanner() {
   const canProceed = step === STEPS.length - 1
     ? (answers[step] || []).length > 0
     : answers[step] !== undefined;
+
+  // Check weekly limit for display
+  const weeklyLimit = getWeeklyLimit();
 
   return (
     <div className="h-full overflow-auto">
@@ -277,8 +378,29 @@ export default function AIPlanner() {
             })}
           </div>
 
+          {/* Custom text input on the last step */}
+          {step === STEPS.length - 1 && (
+            <div className="mt-4">
+              <textarea
+                className="w-full px-4 py-3 rounded-lg border border-border bg-bg-primary text-text-secondary text-[0.9rem] outline-none resize-none leading-relaxed focus:border-accent-indigo placeholder:text-text-darkest"
+                rows={3}
+                placeholder="其他想學嘅範疇（選填）"
+                value={customText}
+                onChange={(e) => setCustomText(e.target.value)}
+              />
+            </div>
+          )}
+
           {error && (
             <p className="mt-4 text-accent-red text-sm">{error}</p>
+          )}
+
+          {weeklyLimit.limited && step === STEPS.length - 1 && (
+            <div className="mt-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
+              <div className="text-sm text-amber-400">
+                你已經喺呢個星期生成咗計劃，下次可以喺 {formatDate(weeklyLimit.nextDate)} 再生成
+              </div>
+            </div>
           )}
 
           <div className="flex gap-3 mt-6">
@@ -294,7 +416,7 @@ export default function AIPlanner() {
             {step === STEPS.length - 1 ? (
               <button
                 onClick={handleGenerate}
-                disabled={!canProceed || loading}
+                disabled={!canProceed || loading || weeklyLimit.limited}
                 className="px-6 py-2 rounded-lg bg-accent-indigo text-white text-sm font-medium hover:bg-accent-indigo-hover transition-colors disabled:opacity-50"
               >
                 {loading ? '生成中...' : '生成學習計劃'}

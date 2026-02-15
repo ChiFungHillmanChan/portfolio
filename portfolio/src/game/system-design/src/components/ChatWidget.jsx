@@ -1,35 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import GoogleSignInButton from './GoogleSignInButton';
 import topicData from '../data/topics.json';
-
-const API_BASE = 'https://api.system-design.hillmanchan.com';
-const TOKEN_KEY = 'sa-chat-token';
-const STRIPE_URL = 'https://buy.stripe.com/6oU7sF6V20nA5Nhcip3Nm05';
-
-function decodePayload(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const body = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-    return JSON.parse(atob(body));
-  } catch {
-    return null;
-  }
-}
-
-function getToken() {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (!token) return null;
-  const p = decodePayload(token);
-  if (!p) {
-    localStorage.removeItem(TOKEN_KEY);
-    return null;
-  }
-  if (p.exp && p.exp < Date.now() / 1000) {
-    localStorage.removeItem(TOKEN_KEY);
-    return null;
-  }
-  return token;
-}
+import { API_BASE, STRIPE_URL } from '../config/constants';
 
 function escapeHtml(str) {
   const d = document.createElement('div');
@@ -45,19 +18,17 @@ function linkify(text) {
 }
 
 export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
+  const { user, token, signOut } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(!!getToken());
   const [mode, setMode] = useState('search');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [loginError, setLoginError] = useState('');
-  const [loginLoading, setLoginLoading] = useState(false);
   const [selectedTopic, setSelectedTopic] = useState('');
   const messagesRef = useRef(null);
   const textareaRef = useRef(null);
+
+  const isLoggedIn = !!user;
 
   // History keys per mode
   const historyKey = `sa-chat-history-${mode}`;
@@ -88,46 +59,13 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
     }
   }, [messages]);
 
-  const clearToken = useCallback(() => {
-    localStorage.removeItem(TOKEN_KEY);
-    setIsLoggedIn(false);
-  }, []);
-
-  const handleLogin = async () => {
-    if (!email.trim() || !code.trim()) {
-      setLoginError('請填寫電郵同存取碼');
-      return;
-    }
-    setLoginLoading(true);
-    setLoginError('');
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setLoginError(data.error || '登入失敗');
-        return;
-      }
-      localStorage.setItem(TOKEN_KEY, data.token);
-      setIsLoggedIn(true);
-    } catch {
-      setLoginError('網絡錯誤，請稍後再試');
-    } finally {
-      setLoginLoading(false);
-    }
-  };
-
   const addMsg = (content, type) => {
     setMessages((prev) => [...prev, { content, type, ts: Date.now() }]);
   };
 
   const handleSend = async () => {
-    const token = getToken();
-    if (!token) {
-      clearToken();
+    if (!token && !import.meta.env.DEV) {
+      addMsg('請先登入 Google 帳號。', 'error');
       return;
     }
     const value = input.trim();
@@ -161,13 +99,12 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(reqBody),
       });
 
       if (res.status === 401) {
-        clearToken();
         addMsg('登入已失效，請重新登入。', 'error');
         return;
       }
@@ -248,6 +185,15 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-bg-primary">
           <span className="text-sm font-medium text-text-primary">🤖 AI 助手</span>
           <div className="flex gap-1">
+            {isLoggedIn && (
+              <button
+                className="w-7 h-7 rounded-md border-none bg-transparent text-text-dimmer hover:text-text-primary hover:bg-white/5 cursor-pointer text-[0.6rem]"
+                onClick={signOut}
+                title="登出"
+              >
+                登出
+              </button>
+            )}
             <button
               className="w-7 h-7 rounded-md border-none bg-transparent text-text-dimmer hover:text-text-primary hover:bg-white/5 cursor-pointer text-xs"
               onClick={handleClearHistory}
@@ -300,46 +246,24 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
               <span>🔓</span>
               <div className="flex-1">
                 <div className="text-xs font-bold">HK$150 一次性解鎖 AI 功能</div>
-                <div className="text-[0.68rem] text-text-dim">付款後即時收到電郵同永久存取碼</div>
+                <div className="text-[0.68rem] text-text-dim">付款後即時解鎖所有 Premium 功能</div>
               </div>
-              <span className="text-text-dim">→</span>
+              <span className="text-text-dim">&rarr;</span>
             </a>
 
-            <div className="text-center text-[0.7rem] text-text-dimmer mb-3">
-              已有存取碼？登入
-            </div>
-
-            <div className="flex flex-col gap-2">
-              <input
-                type="email"
-                placeholder="電郵地址"
-                className="px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-secondary text-xs outline-none focus:border-accent-indigo placeholder:text-text-darkest"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
-              <input
-                type="text"
-                placeholder="存取碼（例如 SA2026-XXXX）"
-                className="px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-secondary text-xs outline-none focus:border-accent-indigo placeholder:text-text-darkest"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-              />
-              {loginError && (
-                <div className="text-accent-red text-[0.7rem]">{loginError}</div>
-              )}
-              <button
-                className="px-4 py-2 rounded-lg bg-accent-indigo text-white text-xs font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors disabled:opacity-50"
-                onClick={handleLogin}
-                disabled={loginLoading}
-              >
-                {loginLoading ? '登入中...' : '登入'}
-              </button>
-            </div>
+            <GoogleSignInButton />
           </div>
         ) : (
           /* Main chat view */
           <>
+            {/* User info */}
+            <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+              {user.photoURL && (
+                <img src={user.photoURL} alt="" className="w-6 h-6 rounded-full" referrerPolicy="no-referrer" />
+              )}
+              <span className="text-xs text-text-dim truncate flex-1">{user.displayName || user.email}</span>
+            </div>
+
             {/* Mode buttons */}
             <div className="flex gap-1 px-3 pt-3">
               {[
@@ -459,6 +383,7 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
                   <div
                     key={i}
                     className="self-start max-w-[85%] px-3 py-2 rounded-xl bg-bg-tertiary text-text-muted text-[0.84rem] leading-relaxed"
+                    // Safe: escapeHtml() sanitises content before linkify() inserts <a> tags
                     dangerouslySetInnerHTML={{ __html: linkify(msg.content) }}
                   />
                 );

@@ -1,13 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { usePremium } from '../context/PremiumContext';
 import { useProgress } from '../context/ProgressContext';
+import AuthGate from '../components/AuthGate';
 import challengesData from '../data/projects.json';
 import topicData from '../data/topics.json';
 
-const TOKEN_KEY = 'sa-chat-token';
+import { API_BASE } from '../config/constants';
+
 const STATUS_KEY = 'sd_challenge_status';
-const API_BASE = 'https://api.system-design.hillmanchan.com';
-const STRIPE_URL = 'https://buy.stripe.com/6oU7sF6V20nA5Nhcip3Nm05';
+const TRIAL_KEY = 'sd_challenge_trial_topic';
 
 const difficultyLabels = {
   beginner: { label: '初級', color: '#22c55e' },
@@ -27,66 +30,8 @@ function challengeDesignKey(id) { return `sd_challenge_design_${id}`; }
 function challengeChatKey(id) { return `sd_challenge_chat_${id}`; }
 function challengeResultKey(id) { return `sd_challenge_result_${id}`; }
 
-function LoginPrompt({ onDismiss, onLoggedIn }) {
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async () => {
-    if (!email.trim() || !code.trim()) { setError('請填寫電郵同存取碼'); return; }
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setError(data.error || '登入失敗'); return; }
-      localStorage.setItem(TOKEN_KEY, data.token);
-      onLoggedIn();
-    } catch { setError('網絡錯誤，請稍後再試'); }
-    finally { setLoading(false); }
-  };
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-bg-secondary border border-border rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-        <div className="text-center mb-6">
-          <div className="text-4xl mb-3">🔒</div>
-          <h3 className="text-lg font-bold text-text-primary mb-1">呢個功能需要登入</h3>
-          <p className="text-sm text-text-dim leading-relaxed">登入後即可使用實戰挑戰</p>
-        </div>
-        <a
-          href={STRIPE_URL} target="_blank" rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
-        >
-          <span className="text-xl">🔓</span>
-          <div className="flex-1">
-            <div className="text-sm font-bold">HK$150 一次性解鎖</div>
-            <div className="text-[0.7rem] text-text-dim">付款後即時收到電郵同永久存取碼</div>
-          </div>
-          <span className="text-text-dim">→</span>
-        </a>
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[0.7rem] text-text-dimmer">已有存取碼？登入</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-        <div className="flex flex-col gap-2.5 mb-4">
-          <input type="email" placeholder="電郵地址" className="px-3 py-2.5 rounded-lg border border-border bg-bg-primary text-text-secondary text-sm outline-none focus:border-accent-indigo placeholder:text-text-darkest" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <input type="text" placeholder="存取碼（例如 SA2026-XXXX）" className="px-3 py-2.5 rounded-lg border border-border bg-bg-primary text-text-secondary text-sm outline-none focus:border-accent-indigo placeholder:text-text-darkest" value={code} onChange={(e) => setCode(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleLogin()} />
-          {error && <div className="text-accent-red text-xs">{error}</div>}
-          <button className="px-4 py-2.5 rounded-lg bg-accent-indigo text-white text-sm font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors disabled:opacity-50" onClick={handleLogin} disabled={loading}>
-            {loading ? '登入中...' : '登入'}
-          </button>
-        </div>
-        <button onClick={onDismiss} className="w-full text-center text-xs text-text-dimmer hover:text-text-dim transition-colors cursor-pointer bg-transparent border-none py-1">先睇下 →</button>
-      </div>
-    </div>
-  );
+function getTrialChallenge() {
+  return localStorage.getItem(TRIAL_KEY) || null;
 }
 
 // ─── Evaluation Result View ───
@@ -165,6 +110,7 @@ function EvaluationResult({ challenge, result, onRetry, onBack }) {
 
 // ─── Challenge Session View ───
 function ChallengeSession({ challenge, onBack, onSubmitResult }) {
+  const { token } = useAuth();
   const [designText, setDesignText] = useState('');
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
@@ -214,9 +160,8 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
   const diff = difficultyLabels[challenge.difficulty];
 
   const handleChatSend = async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
     if (!token && !import.meta.env.DEV) {
-      setChatMessages((prev) => [...prev, { role: 'assistant', content: '請先登入先可以使用 AI 助手。', ts: Date.now() }]);
+      setChatMessages((prev) => [...prev, { role: 'assistant', content: '請先登入 Google 帳號先可以使用 AI 助手。', ts: Date.now() }]);
       return;
     }
     const value = chatInput.trim();
@@ -237,7 +182,7 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           mode: 'search',
@@ -297,7 +242,6 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
     onSubmitResult(result);
 
     // 4. AI judge (async)
-    const token = localStorage.getItem(TOKEN_KEY);
     if (token || import.meta.env.DEV) {
       const criteriaList = challenge.evaluationCriteria.map((c) => `- ${c.label}`).join('\n');
       const judgePrompt = `你係一個系統設計面試官。根據以下評估標準評分：
@@ -315,7 +259,7 @@ ${chatMessages.length > 0 ? `學生同 AI 嘅討論記錄：\n${chatMessages.map
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
             mode: 'search',
@@ -470,21 +414,46 @@ ${chatMessages.length > 0 ? `學生同 AI 嘅討論記錄：\n${chatMessages.map
 // ─── Main Projects Page ───
 export default function Projects() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { isPremium } = usePremium();
   const { isViewed } = useProgress();
   const [view, setView] = useState('list'); // list | session | result
   const [selectedId, setSelectedId] = useState(null);
   const [evalResult, setEvalResult] = useState(null);
   const [challengeStatus, setChallengeStatus] = useState(loadChallengeStatus);
-  const [showLoginPrompt, setShowLoginPrompt] = useState(
-    () => !import.meta.env.DEV && !localStorage.getItem(TOKEN_KEY)
-  );
+  const [showAuthGate, setShowAuthGate] = useState(false);
+
+  const trialChallenge = getTrialChallenge();
 
   const topicMap = {};
   topicData.topics.forEach((t) => { topicMap[t.slug] = t; });
 
   const selectedChallenge = challengesData.find((c) => c.id === selectedId);
 
+  const canAccessChallenge = (challengeId) => {
+    if (import.meta.env.DEV || isPremium) return true;
+    if (!trialChallenge) return true; // no trial used yet
+    return trialChallenge === challengeId;
+  };
+
   const openChallenge = (id) => {
+    // Check login
+    if (!user && !import.meta.env.DEV) {
+      setShowAuthGate(true);
+      return;
+    }
+
+    // Check free trial / premium
+    if (!canAccessChallenge(id)) {
+      setShowAuthGate(true);
+      return;
+    }
+
+    // If this is first challenge, store as trial
+    if (!trialChallenge && !isPremium && !import.meta.env.DEV) {
+      localStorage.setItem(TRIAL_KEY, id);
+    }
+
     setSelectedId(id);
     setView('session');
   };
@@ -541,7 +510,13 @@ export default function Projects() {
   // ── List View ──
   return (
     <div className="h-full overflow-auto">
-      {showLoginPrompt && <LoginPrompt onDismiss={() => setShowLoginPrompt(false)} onLoggedIn={() => setShowLoginPrompt(false)} />}
+      {showAuthGate && (
+        <AuthGate
+          onDismiss={() => setShowAuthGate(false)}
+          requirePremium={!!user && !isPremium}
+          featureName="實戰挑戰"
+        />
+      )}
       <div className="topic-container">
         <header className="topic-header">
           <h1>⚔️ 系統設計挑戰</h1>
@@ -552,6 +527,7 @@ export default function Projects() {
           {challengesData.map((challenge) => {
             const diff = difficultyLabels[challenge.difficulty];
             const status = challengeStatus[challenge.id];
+            const isTrial = trialChallenge === challenge.id;
             const statusConfig = {
               'passed': { label: '✅ 已通過', bg: 'bg-accent-green/10', text: 'text-accent-green-light', border: 'border-accent-green/20' },
               'in-progress': { label: '⏳ 進行中', bg: 'bg-accent-indigo/10', text: 'text-accent-indigo-light', border: 'border-accent-indigo/20' },
@@ -567,6 +543,11 @@ export default function Projects() {
                 <div className="flex items-start justify-between mb-2">
                   <h3 className="text-base font-bold text-text-primary">{challenge.title}</h3>
                   <div className="flex items-center gap-2 flex-shrink-0">
+                    {isTrial && !isPremium && (
+                      <span className="text-[0.68rem] px-2 py-0.5 rounded bg-accent-green/15 text-accent-green-light border border-accent-green/20">
+                        免費試用
+                      </span>
+                    )}
                     {sc && (
                       <span className={`text-[0.68rem] px-2 py-0.5 rounded ${sc.bg} ${sc.text} ${sc.border} border`}>
                         {sc.label}

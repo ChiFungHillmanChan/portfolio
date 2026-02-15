@@ -1,12 +1,25 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Outlet, useParams } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatWidget from './ChatWidget';
 import topicData from '../data/topics.json';
 
+const DESKTOP_COLLAPSED_KEY = 'sd-desktop-sidebar-collapsed';
+
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(() => {
+    try { return localStorage.getItem(DESKTOP_COLLAPSED_KEY) === 'true'; } catch { return false; }
+  });
   const params = useParams();
+
+  const toggleDesktopSidebar = useCallback(() => {
+    setDesktopCollapsed((prev) => {
+      const next = !prev;
+      localStorage.setItem(DESKTOP_COLLAPSED_KEY, String(next));
+      return next;
+    });
+  }, []);
 
   // Get current topic info for chat context
   const currentSlug = params.slug || null;
@@ -16,24 +29,39 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Mobile header */}
-      <div className="fixed top-0 left-0 right-0 h-[52px] bg-bg-primary border-b border-border flex items-center px-4 z-30 lg:hidden">
+      {/* Top header bar — always visible on mobile, visible on desktop only when sidebar collapsed */}
+      <div className={`fixed top-0 left-0 right-0 h-[52px] bg-bg-primary border-b border-border flex items-center px-4 z-30 ${desktopCollapsed ? '' : 'lg:hidden'}`}>
+        {/* Mobile hamburger */}
         <button
-          className="text-xl text-text-dim hover:text-text-primary transition-colors"
+          className="text-xl text-text-dim hover:text-text-primary transition-colors lg:hidden"
           onClick={() => setSidebarOpen(true)}
         >
           ☰
         </button>
+        {/* Desktop expand button — only when sidebar collapsed */}
+        {desktopCollapsed && (
+          <button
+            className="text-xl text-text-dim hover:text-text-primary transition-colors hidden lg:flex"
+            onClick={toggleDesktopSidebar}
+          >
+            ☰
+          </button>
+        )}
         <span className="ml-3 text-sm font-medium text-text-primary">
           系統架構圖解教室
         </span>
       </div>
 
       {/* Sidebar */}
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <Sidebar
+        isOpen={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        desktopCollapsed={desktopCollapsed}
+        onToggleDesktop={toggleDesktopSidebar}
+      />
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto pt-[52px] lg:pt-0">
+      <main className={`flex-1 overflow-y-auto pt-[52px] ${desktopCollapsed ? '' : 'lg:pt-0'}`}>
         <Outlet />
       </main>
 

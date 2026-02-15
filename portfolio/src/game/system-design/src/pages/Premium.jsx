@@ -1,9 +1,7 @@
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePremium } from '../context/PremiumContext';
-
-const STRIPE_STANDARD = 'https://buy.stripe.com/6oU7sF6V20nA5Nhcip3Nm05';
-const STRIPE_PRO = 'https://buy.stripe.com/aFaeV7djq7Q24Jdcip3Nm06';
+import { STRIPE_URL as STRIPE_STANDARD, STRIPE_PRO_URL as STRIPE_PRO } from '../config/constants';
 
 export default function Premium() {
   const { isPremium, activatePremium } = usePremium();

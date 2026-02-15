@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      // Anyone can read their own doc
+      allow read: if request.auth != null && request.auth.uid == userId;
+
+      // Users can write their own doc, but CANNOT set sensitive premium fields.
+      // Only the backend (Admin SDK, which bypasses rules) can write these.
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && !('premium' in request.resource.data)
+        && !('activatedAt' in request.resource.data)
+        && !('sessionId' in request.resource.data)
+        && !('superadmin' in request.resource.data);
+
+      allow update: if request.auth != null
+        && request.auth.uid == userId
+        // premium field must not change (or not exist in the write)
+        && (!('premium' in request.resource.data) || request.resource.data.premium == resource.data.premium)
+        && (!('activatedAt' in request.resource.data) || request.resource.data.activatedAt == resource.data.activatedAt)
+        && (!('sessionId' in request.resource.data) || request.resource.data.sessionId == resource.data.sessionId)
+        && (!('superadmin' in request.resource.data) || request.resource.data.superadmin == resource.data.superadmin);
+    }
+  }
+}

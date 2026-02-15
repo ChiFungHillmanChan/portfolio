@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { PremiumProvider, usePremium } from './context/PremiumContext';
 import { ProgressProvider } from './context/ProgressContext';
 import Layout from './components/Layout';
@@ -10,6 +11,7 @@ import Roadmap from './pages/Roadmap';
 import AIPlanner from './pages/AIPlanner';
 import Coaching from './pages/Coaching';
 import Projects from './pages/Projects';
+import Settings from './pages/Settings';
 
 // Stripe redirects with ?session_id= before the hash, so HashRouter's
 // useSearchParams won't see it. Handle it at the top level.
@@ -31,22 +33,25 @@ function StripeRedirectHandler() {
 
 export default function App() {
   return (
-    <PremiumProvider>
-      <ProgressProvider>
-        <StripeRedirectHandler />
-        <Routes>
-          <Route element={<Layout />}>
-            <Route index element={<Welcome />} />
-            <Route path="topic/:slug" element={<TopicPage />} />
-            <Route path="roadmap" element={<Roadmap />} />
-            <Route path="plan" element={<AIPlanner />} />
-            <Route path="coaching" element={<Coaching />} />
-            <Route path="coaching/:slug" element={<Coaching />} />
-            <Route path="projects" element={<Projects />} />
-            <Route path="premium" element={<Premium />} />
-          </Route>
-        </Routes>
-      </ProgressProvider>
-    </PremiumProvider>
+    <AuthProvider>
+      <PremiumProvider>
+        <ProgressProvider>
+          <StripeRedirectHandler />
+          <Routes>
+            <Route element={<Layout />}>
+              <Route index element={<Welcome />} />
+              <Route path="topic/:slug" element={<TopicPage />} />
+              <Route path="roadmap" element={<Roadmap />} />
+              <Route path="plan" element={<AIPlanner />} />
+              <Route path="coaching" element={<Coaching />} />
+              <Route path="coaching/:slug" element={<Coaching />} />
+              <Route path="projects" element={<Projects />} />
+              <Route path="premium" element={<Premium />} />
+              <Route path="settings" element={<Settings />} />
+            </Route>
+          </Routes>
+        </ProgressProvider>
+      </PremiumProvider>
+    </AuthProvider>
   );
 }

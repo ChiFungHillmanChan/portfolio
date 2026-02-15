@@ -1,135 +1,36 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { usePremium } from '../context/PremiumContext';
+import AuthGate from '../components/AuthGate';
 import topicData from '../data/topics.json';
 import coachingPrompts from '../data/coachingPrompts';
-
-const API_BASE = 'https://api.system-design.hillmanchan.com';
-const TOKEN_KEY = 'sa-chat-token';
+import { API_BASE } from '../config/constants';
+const TRIAL_KEY = 'sd_coaching_trial_topic';
 
 function coachingHistoryKey(slug) {
   return `sd_coaching_${slug}`;
 }
 
-const STRIPE_URL = 'https://buy.stripe.com/6oU7sF6V20nA5Nhcip3Nm05';
-
-function LoginPrompt({ onDismiss, onLoggedIn }) {
-  const [email, setEmail] = useState('');
-  const [code, setCode] = useState('');
-  const [error, setError] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  const handleLogin = async () => {
-    if (!email.trim() || !code.trim()) {
-      setError('請填寫電郵同存取碼');
-      return;
-    }
-    setLoading(true);
-    setError('');
-    try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.trim(), code: code.trim() }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || '登入失敗');
-        return;
-      }
-      localStorage.setItem(TOKEN_KEY, data.token);
-      onLoggedIn();
-    } catch {
-      setError('網絡錯誤，請稍後再試');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-bg-secondary border border-border rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
-        <div className="text-center mb-6">
-          <div className="text-4xl mb-3">🔒</div>
-          <h3 className="text-lg font-bold text-text-primary mb-1">呢個功能需要登入</h3>
-          <p className="text-sm text-text-dim leading-relaxed">
-            登入後即可使用 AI 教練模式
-          </p>
-        </div>
-
-        {/* Pay button */}
-        <a
-          href={STRIPE_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
-        >
-          <span className="text-xl">🔓</span>
-          <div className="flex-1">
-            <div className="text-sm font-bold">HK$150 一次性解鎖</div>
-            <div className="text-[0.7rem] text-text-dim">付款後即時收到電郵同永久存取碼</div>
-          </div>
-          <span className="text-text-dim">→</span>
-        </a>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex-1 h-px bg-border" />
-          <span className="text-[0.7rem] text-text-dimmer">已有存取碼？登入</span>
-          <div className="flex-1 h-px bg-border" />
-        </div>
-
-        {/* Login form */}
-        <div className="flex flex-col gap-2.5 mb-4">
-          <input
-            type="email"
-            placeholder="電郵地址"
-            className="px-3 py-2.5 rounded-lg border border-border bg-bg-primary text-text-secondary text-sm outline-none focus:border-accent-indigo placeholder:text-text-darkest"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="存取碼（例如 SA2026-XXXX）"
-            className="px-3 py-2.5 rounded-lg border border-border bg-bg-primary text-text-secondary text-sm outline-none focus:border-accent-indigo placeholder:text-text-darkest"
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
-          />
-          {error && <div className="text-accent-red text-xs">{error}</div>}
-          <button
-            className="px-4 py-2.5 rounded-lg bg-accent-indigo text-white text-sm font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors disabled:opacity-50"
-            onClick={handleLogin}
-            disabled={loading}
-          >
-            {loading ? '登入中...' : '登入'}
-          </button>
-        </div>
-
-        <button
-          onClick={onDismiss}
-          className="w-full text-center text-xs text-text-dimmer hover:text-text-dim transition-colors cursor-pointer bg-transparent border-none py-1"
-        >
-          先睇下 →
-        </button>
-      </div>
-    </div>
-  );
+function getTrialTopic() {
+  return localStorage.getItem(TRIAL_KEY) || null;
 }
 
 export default function Coaching() {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user, token } = useAuth();
+  const { isPremium } = usePremium();
   const [selectedSlug, setSelectedSlug] = useState(slug || '');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const [phase, setPhase] = useState('select'); // select | coaching
-  const [showLoginPrompt, setShowLoginPrompt] = useState(
-    () => !import.meta.env.DEV && !localStorage.getItem(TOKEN_KEY)
-  );
+  const [showAuthGate, setShowAuthGate] = useState(false);
   const messagesRef = useRef(null);
 
   const topic = topicData.topics.find((t) => t.slug === selectedSlug);
+  const trialTopic = getTrialTopic();
 
   // Load coaching history
   useEffect(() => {
@@ -161,7 +62,31 @@ export default function Coaching() {
     }
   }, [messages]);
 
+  const canAccessTopic = (topicSlug) => {
+    if (import.meta.env.DEV || isPremium) return true;
+    // First topic is free trial
+    if (!trialTopic) return true; // no trial used yet
+    return trialTopic === topicSlug;
+  };
+
   const startCoaching = (topicSlug) => {
+    // Check login
+    if (!user && !import.meta.env.DEV) {
+      setShowAuthGate(true);
+      return;
+    }
+
+    // Check free trial / premium
+    if (!canAccessTopic(topicSlug)) {
+      setShowAuthGate(true);
+      return;
+    }
+
+    // If this is first topic usage, store as trial
+    if (!trialTopic && !isPremium && !import.meta.env.DEV) {
+      localStorage.setItem(TRIAL_KEY, topicSlug);
+    }
+
     setSelectedSlug(topicSlug);
     navigate(`/coaching/${topicSlug}`, { replace: true });
 
@@ -177,11 +102,10 @@ export default function Coaching() {
   };
 
   const handleSend = async () => {
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
+    if (!token && !import.meta.env.DEV) {
       setMessages((prev) => [...prev, {
         role: 'coach',
-        content: '請先喺 AI 助手登入先可以使用教練模式。',
+        content: '請先登入 Google 帳號先可以使用教練模式。',
         ts: Date.now(),
       }]);
       return;
@@ -207,7 +131,7 @@ export default function Coaching() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
           mode: 'search',
@@ -256,7 +180,13 @@ export default function Coaching() {
     const categories = topicData.categories.filter((c) => c.id !== 'resource');
     return (
       <div className="h-full overflow-auto">
-        {showLoginPrompt && <LoginPrompt onDismiss={() => setShowLoginPrompt(false)} onLoggedIn={() => setShowLoginPrompt(false)} />}
+        {showAuthGate && (
+          <AuthGate
+            onDismiss={() => setShowAuthGate(false)}
+            requirePremium={!!user && !isPremium}
+            featureName="AI 教練模式"
+          />
+        )}
         <div className="topic-container">
           <header className="topic-header">
             <h1>🎓 AI 教練模式</h1>
@@ -277,16 +207,24 @@ export default function Coaching() {
                   {cat.label}
                 </h3>
                 <div className="flex flex-wrap gap-2">
-                  {catTopics.map((t) => (
-                    <button
-                      key={t.slug}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-dim hover:text-text-primary hover:border-accent-indigo/50 transition-all text-sm"
-                      onClick={() => startCoaching(t.slug)}
-                    >
-                      <span>{t.icon}</span>
-                      <span>{t.title}</span>
-                    </button>
-                  ))}
+                  {catTopics.map((t) => {
+                    const isTrial = trialTopic === t.slug;
+                    return (
+                      <button
+                        key={t.slug}
+                        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-bg-secondary border border-border text-text-dim hover:text-text-primary hover:border-accent-indigo/50 transition-all text-sm relative"
+                        onClick={() => startCoaching(t.slug)}
+                      >
+                        <span>{t.icon}</span>
+                        <span>{t.title}</span>
+                        {isTrial && (
+                          <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-accent-green/15 text-accent-green-light">
+                            免費試用
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -312,6 +250,11 @@ export default function Coaching() {
             🎓 {topic?.title}
           </span>
           <span className="text-xs text-text-dimmer ml-2">教練模式</span>
+          {trialTopic === selectedSlug && !isPremium && (
+            <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-accent-green/15 text-accent-green-light ml-2">
+              免費試用
+            </span>
+          )}
         </div>
         <button
           onClick={clearHistory}
