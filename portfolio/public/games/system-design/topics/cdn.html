@@ -44,6 +44,12 @@
     .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
     .copy-btn:hover { background: #4f46e5; }
     .copy-btn.copied { background: #10B981; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -269,6 +275,18 @@
 
 請提供 CI/CD Pipeline 配置範例、Invalidation API 調用嘅 code、同監控 Alert 規則。</div>
           <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="load-balancer.html" class="related-link">Load Balancer 負載均衡器</a>
+        <a href="cache-invalidation.html" class="related-link">Cache 失效策略</a>
+        <a href="object-storage.html" class="related-link">Object Storage 物件存儲</a>
+        <a href="large-api-response.html" class="related-link">Large API Response 處理</a>
         </div>
       </div>
     </div>

@@ -48,6 +48,12 @@
     .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
     .copy-btn:hover { background: #4f46e5; }
     .copy-btn.copied { background: #10B981; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -262,6 +268,18 @@
 - 寫埋錯誤處理同安全性檢查（例如偵測 Token 重用攻擊）
 - 目標場景：<span class="placeholder">[Web App / Mobile App / 微服務架構]</span></div>
           <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="authentication.html" class="related-link">Authentication 驗證</a>
+        <a href="redis.html" class="related-link">Redis</a>
+        <a href="distributed-cache.html" class="related-link">Distributed Cache 分佈式快取</a>
+        <a href="api-gateway.html" class="related-link">API Gateway 網關</a>
         </div>
       </div>
     </div>

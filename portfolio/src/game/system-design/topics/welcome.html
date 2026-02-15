@@ -286,6 +286,12 @@
         grid-template-columns: 1fr;
       }
     }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -830,6 +836,16 @@
       </p>
     </div>
 
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="system-design-patterns.html" class="related-link">系統設計模式總覽</a>
+        <a href="backend-roadmap.html" class="related-link">Backend 學習路線</a>
+        <a href="references.html" class="related-link">學習資源參考</a>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>

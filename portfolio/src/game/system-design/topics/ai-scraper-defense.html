@@ -44,6 +44,12 @@
     .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
     .copy-btn:hover { background: #4f46e5; }
     .copy-btn.copied { background: #10B981; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -694,6 +700,18 @@ Dungeon 頁面主題：<span class="placeholder">[電商產品頁 / 新聞文章
 
 請提供完整嘅架構設計、核心 code、同 CAPTCHA 整合步驟。</div>
           <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="scraping-vs-crawling.html" class="related-link">Web Scraping vs Crawling</a>
+        <a href="rate-limiter.html" class="related-link">Rate Limiter 限流器</a>
+        <a href="secure-ai-agents.html" class="related-link">保護 AI Agent</a>
+        <a href="web-crawler.html" class="related-link">Web Crawler 網頁爬蟲</a>
         </div>
       </div>
     </div>

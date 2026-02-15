@@ -75,6 +75,12 @@
     .accordion.open .accordion-body { max-height: 2000px; }
     .accordion-inner { padding: 0 22px 22px; }
     .accordion-inner p { font-size: 0.92rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -721,6 +727,17 @@
       </div>
     </div>
 
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="docker.html" class="related-link">Docker 容器化</a>
+        <a href="cicd-pipeline.html" class="related-link">CI/CD 自動化部署</a>
+        <a href="self-host-vs-cloud.html" class="related-link">Self-host vs Cloud</a>
+        <a href="localhost-hosting.html" class="related-link">Localhost 分享到互聯網</a>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>

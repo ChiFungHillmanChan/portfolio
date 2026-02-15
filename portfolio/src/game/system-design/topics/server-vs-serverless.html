@@ -62,6 +62,12 @@
     .tag-serverless { color: #f59e0b; font-weight: 600; }
     .highlight-box { background: rgba(99, 102, 241, 0.08); border: 1px solid #6366f1; border-radius: 10px; padding: 16px; margin-top: 16px; }
     .highlight-box strong { color: #a5b4fc; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -586,6 +592,18 @@ Database：<span class="placeholder">[數據庫選擇，例如 DynamoDB / Supaba
 
 輸出格式：架構設計文檔 + 核心 code snippet + 部署指南。</div>
           <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="deployment.html" class="related-link">免費部署平台</a>
+        <a href="self-host-vs-cloud.html" class="related-link">Self-host vs Cloud</a>
+        <a href="load-balancer.html" class="related-link">Load Balancer 負載均衡器</a>
+        <a href="docker.html" class="related-link">Docker 容器化</a>
         </div>
       </div>
     </div>

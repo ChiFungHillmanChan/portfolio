@@ -44,6 +44,12 @@
     .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
     .copy-btn:hover { background: #4f46e5; }
     .copy-btn.copied { background: #10B981; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -270,6 +276,18 @@ Throttling 規則：
 應用場景係 <span class="placeholder">[例如：電商平台 / 金融 App]</span>。
 請提供 Database Schema、API 設計、同前端管理介面嘅關鍵頁面設計。</div>
           <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="message-queue.html" class="related-link">Message Queue 消息隊列</a>
+        <a href="task-queue.html" class="related-link">Task Queue 任務隊列</a>
+        <a href="chat-system.html" class="related-link">Chat System 即時通訊</a>
+        <a href="system-design-patterns.html" class="related-link">系統設計模式總覽</a>
         </div>
       </div>
     </div>

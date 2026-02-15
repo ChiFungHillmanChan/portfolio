@@ -285,6 +285,12 @@
     .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
     .copy-btn:hover { background: #4f46e5; }
     .copy-btn.copied { background: #10B981; }
+  
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
   </style>
 </head>
 <body>
@@ -812,6 +818,18 @@ Agent 需要以下工具：
 - 結果合併：Main Agent 收集所有 sub-agent 嘅輸出，整合成最終結果
 - 用 <span class="placeholder">[Python / TypeScript]</span> 寫出完整嘅 framework code</div>
           <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="secure-ai-agents.html" class="related-link">保護 AI Agent</a>
+        <a href="ai-vs-software-engineer.html" class="related-link">AI 時代做 Software Engineer</a>
+        <a href="system-design-patterns.html" class="related-link">系統設計模式總覽</a>
+        <a href="task-queue.html" class="related-link">Task Queue 任務隊列</a>
         </div>
       </div>
     </div>

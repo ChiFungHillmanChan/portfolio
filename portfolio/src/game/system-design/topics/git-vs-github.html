@@ -44,7 +44,13 @@
         .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
         .copy-btn:hover { background: #4f46e5; }
         .copy-btn.copied { background: #10B981; }
-    </style>
+    
+    .related-topics { margin-top: 32px; }
+    .related-topics h3 { color: #ffffff; font-size: 1.1rem; margin-bottom: 14px; }
+    .related-links { display: flex; flex-wrap: wrap; gap: 10px; }
+    .related-link { display: inline-block; padding: 8px 16px; background: #13151c; border: 1px solid #2a2d3a; border-radius: 20px; color: #a5b4fc; font-size: 0.85rem; text-decoration: none; transition: all 0.2s ease; }
+    .related-link:hover { background: #6366f1; color: #ffffff; border-color: #6366f1; }
+  </style>
 </head>
 <body>
     <div class="container">
@@ -345,9 +351,20 @@
                 </div>
             </div>
         </div>
-    </div>
 
-    <script>
+    <div class="related-topics">
+      <div class="card">
+        <h3>相關課題</h3>
+        <div class="related-links">
+        <a href="cicd-pipeline.html" class="related-link">CI/CD 自動化部署</a>
+        <a href="deployment.html" class="related-link">免費部署平台</a>
+        <a href="backend-roadmap.html" class="related-link">Backend 學習路線</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
         const tabs = document.querySelectorAll('.tab-btn');
         const contents = document.querySelectorAll('.tab-content');
         tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
