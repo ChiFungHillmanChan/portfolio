@@ -160,7 +160,7 @@ export default function AIPlanner() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ mode: 'search', query: prompt }),
+        body: JSON.stringify({ mode: 'guide', query: prompt }),
       });
 
       if (!res.ok) {
