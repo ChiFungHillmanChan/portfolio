@@ -155,8 +155,8 @@ function AdminPanel({ token }) {
                   </div>
                 </td>
                 <td className="py-2.5 pr-2">
-                  <span className={`text-[0.65rem] px-2 py-0.5 rounded-full ${u.premium ? 'bg-[rgba(167,139,250,0.2)] text-[#a78bfa]' : 'bg-white/[0.06] text-text-dim'}`}>
-                    {u.premium ? (u.tier === 'pro' ? 'Pro' : 'Standard') : 'Free'}
+                  <span className={`text-[0.65rem] px-2 py-0.5 rounded-full ${u.superadmin ? 'bg-[rgba(251,191,36,0.2)] text-[#fbbf24]' : u.premium ? 'bg-[rgba(167,139,250,0.2)] text-[#a78bfa]' : 'bg-white/[0.06] text-text-dim'}`}>
+                    {u.superadmin ? 'Superadmin' : u.premium ? (u.tier === 'pro' ? 'Pro' : 'Standard') : 'Free'}
                   </span>
                 </td>
                 <td className="py-2.5 pr-2 text-text-dimmer text-[0.65rem] hidden sm:table-cell">
