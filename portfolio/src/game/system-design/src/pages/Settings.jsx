@@ -46,10 +46,10 @@ function AdminPanel({ token }) {
     fetchUsers();
   }, [fetchUsers]);
 
-  const togglePremium = async (uid, currentPremium) => {
-    const newPremium = !currentPremium;
-    const action = newPremium ? '啟動' : '停用';
-    if (!window.confirm(`確定要${action} Premium 畀呢個用戶？`)) return;
+  const updateUserTier = async (uid, tier) => {
+    const premium = tier !== 'free';
+    const label = tier === 'pro' ? 'Pro (HK$399)' : tier === 'standard' ? 'Standard (HK$150)' : 'Free';
+    if (!window.confirm(`確定要將呢個用戶設為 ${label}？`)) return;
 
     setUpdating(uid);
     try {
@@ -62,7 +62,8 @@ function AdminPanel({ token }) {
         body: JSON.stringify({
           action: 'admin-update-user',
           targetUid: uid,
-          premium: newPremium,
+          premium,
+          tier,
         }),
       });
       const data = await res.json();
@@ -72,7 +73,7 @@ function AdminPanel({ token }) {
       }
       setUsers((prev) =>
         prev.map((u) =>
-          u.uid === uid ? { ...u, premium: newPremium, activatedAt: newPremium ? new Date().toISOString() : u.activatedAt } : u
+          u.uid === uid ? { ...u, premium, tier: premium ? tier : null, activatedAt: premium ? new Date().toISOString() : u.activatedAt } : u
         )
       );
     } catch {
@@ -163,17 +164,25 @@ function AdminPanel({ token }) {
                   {u.lastSignIn ? new Date(u.lastSignIn).toLocaleDateString('zh-HK', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'}
                 </td>
                 <td className="py-2.5">
-                  <button
-                    onClick={() => togglePremium(u.uid, u.premium)}
-                    disabled={updating === u.uid}
-                    className={`text-[0.65rem] px-2.5 py-1 rounded-lg border cursor-pointer transition-colors ${
-                      u.premium
-                        ? 'border-accent-red/30 text-accent-red hover:bg-accent-red/10'
-                        : 'border-accent-green/30 text-accent-green hover:bg-accent-green/10'
-                    } bg-transparent disabled:opacity-40`}
-                  >
-                    {updating === u.uid ? '...' : u.premium ? '停用' : '啟動'}
-                  </button>
+                  {updating === u.uid ? (
+                    <span className="text-[0.65rem] text-text-dimmer">...</span>
+                  ) : (
+                    <select
+                      value={u.superadmin ? 'superadmin' : u.premium ? (u.tier === 'pro' ? 'pro' : 'standard') : 'free'}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === 'superadmin') return;
+                        updateUserTier(u.uid, val);
+                      }}
+                      disabled={u.superadmin}
+                      className="text-[0.65rem] px-2 py-1 rounded-lg border border-border bg-bg-primary text-text-secondary cursor-pointer outline-none disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {u.superadmin && <option value="superadmin">Superadmin</option>}
+                      <option value="free">Free</option>
+                      <option value="standard">Standard (HK$150)</option>
+                      <option value="pro">Pro (HK$399)</option>
+                    </select>
+                  )}
                 </td>
               </tr>
             ))}

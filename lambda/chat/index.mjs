@@ -277,7 +277,6 @@ export async function handler(event) {
           body: JSON.stringify({
             model: 'gpt-5-mini',
             max_completion_tokens: 1024,
-            temperature: 0.3,
             messages: [
               { role: 'system', content: systemMsg },
               { role: 'user', content: goal },

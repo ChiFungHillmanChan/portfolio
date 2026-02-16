@@ -127,7 +127,7 @@ async function handleAdminUpdateUser(firebaseUser, body) {
     return respond(403, { error: '無管理員權限' });
   }
 
-  const { targetUid, premium } = body;
+  const { targetUid, premium, tier } = body;
   if (!targetUid || typeof premium !== 'boolean') {
     return respond(400, { error: '需要提供 targetUid 同 premium (boolean)' });
   }
@@ -135,11 +135,14 @@ async function handleAdminUpdateUser(firebaseUser, body) {
   const updateData = { premium };
   if (premium) {
     updateData.activatedAt = new Date().toISOString();
+    updateData.tier = tier === 'pro' ? 'pro' : 'standard';
+  } else {
+    updateData.tier = null;
   }
 
   await firestore.doc(`users/${targetUid}`).set(updateData, { merge: true });
 
-  return respond(200, { success: true, targetUid, premium });
+  return respond(200, { success: true, targetUid, premium, tier: updateData.tier });
 }
 
 // ==================== Handler ====================
