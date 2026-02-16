@@ -20,7 +20,7 @@ portfolio/
 
 - **Frontend:** React SPA (`src/`) — topics, coaching, projects, AI chat
 - **Backend API:** `api.system-design.hillmanchan.com` — AI chat, auth, Stripe webhooks
-- **Auth:** Firebase Google Sign-In → ID token → backend Bearer auth
+- **Auth:** Firebase Google Sign-In → ID token → backend Bearer auth (both sa-auth and sa-chat verify Firebase ID tokens via Admin SDK)
 - **Premium:** Stripe payment → webhook → backend Admin SDK → Firestore `users/{uid}.premium` + `users/{uid}.tier`
 - **Tiers:** free (5 AI/day) | standard HK$150 (20 AI/day) | pro HK$399 (80 AI/day)
 - **State:** localStorage for progress/cache + daily AI usage, Firestore for premium status (source of truth)
