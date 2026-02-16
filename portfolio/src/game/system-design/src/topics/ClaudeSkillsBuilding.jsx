@@ -584,6 +584,200 @@ function DistributionTab() {
   );
 }
 
+function LatestFeaturesTab() {
+  return (
+    <div className="card">
+      <h2>Claude 最新生態（2025 Q1）</h2>
+      <div className="subtitle">Agent Teams / 24-7 自動化 / Self-Iterating Loop — 你而家就可以用</div>
+
+      <p>
+        Claude 生態喺 2025 年初爆發式進化。Skills 只係基礎層——加上以下三個最新功能，
+        你可以建構一個<strong style={{ color: '#a78bfa' }}>真正自主嘅 AI 開發團隊</strong>，甚至瞓緊覺都有嘢做。
+      </p>
+
+      <div className="diagram-container">
+        <svg viewBox="0 0 750 340" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <filter id="shadowL" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.3" /></filter>
+            <filter id="glowPurpleL" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur" /><feFlood floodColor="#a78bfa" floodOpacity="0.25" result="color" /><feComposite in="color" in2="blur" operator="in" result="glow" /><feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <filter id="glowAmberL" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur" /><feFlood floodColor="#F59E0B" floodOpacity="0.25" result="color" /><feComposite in="color" in2="blur" operator="in" result="glow" /><feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <filter id="glowGreenL" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur" /><feFlood floodColor="#10B981" floodOpacity="0.25" result="color" /><feComposite in="color" in2="blur" operator="in" result="glow" /><feMerge><feMergeNode in="glow" /><feMergeNode in="SourceGraphic" /></feMerge></filter>
+            <linearGradient id="gradLead" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#2d1f4e" /><stop offset="100%" stopColor="#1e293b" /></linearGradient>
+            <linearGradient id="gradTeam" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stopColor="#1a1a2e" /><stop offset="100%" stopColor="#1e293b" /></linearGradient>
+            <marker id="arrPurpleL" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#a78bfa" /></marker>
+            <marker id="arrAmberL" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#F59E0B" /></marker>
+          </defs>
+
+          {/* You (top) */}
+          <g transform="translate(300,10)">
+            <rect width="150" height="50" rx="12" fill="url(#gradLead)" stroke="#a78bfa" strokeWidth="2.5" filter="url(#glowPurpleL)" />
+            <text x="75" y="22" textAnchor="middle" fill="#a78bfa" fontSize="13" fontWeight="700">You (Lead)</text>
+            <text x="75" y="40" textAnchor="middle" fill="#9ca3af" fontSize="9">寫 Spec → Delegate → 瞓覺</text>
+          </g>
+
+          {/* Lead Agent */}
+          <g transform="translate(300,100)">
+            <rect width="150" height="55" rx="12" fill="url(#gradLead)" stroke="#F59E0B" strokeWidth="2.5" filter="url(#glowAmberL)" />
+            <text x="75" y="22" textAnchor="middle" fill="#F59E0B" fontSize="12" fontWeight="700">Lead Agent</text>
+            <text x="75" y="38" textAnchor="middle" fill="#9ca3af" fontSize="9">Opus 4.6 Orchestrator</text>
+            <text x="75" y="50" textAnchor="middle" fill="#9ca3af" fontSize="8">分配 + 協調 + Review</text>
+          </g>
+
+          {/* Arrow You -> Lead */}
+          <path d="M375,62 L375,98" fill="none" stroke="#a78bfa" strokeWidth="2" markerEnd="url(#arrPurpleL)" />
+
+          {/* 4 Team Agents */}
+          <g transform="translate(20,210)">
+            <rect width="155" height="55" rx="10" fill="url(#gradTeam)" stroke="#34d399" strokeWidth="1.5" filter="url(#shadowL)" />
+            <text x="78" y="20" textAnchor="middle" fill="#34d399" fontSize="10" fontWeight="600">Backend Agent</text>
+            <text x="78" y="36" textAnchor="middle" fill="#9ca3af" fontSize="9">改 API / DB migration</text>
+            <text x="78" y="48" textAnchor="middle" fill="#6b7280" fontSize="8">平行運作</text>
+          </g>
+          <g transform="translate(200,210)">
+            <rect width="155" height="55" rx="10" fill="url(#gradTeam)" stroke="#3B82F6" strokeWidth="1.5" filter="url(#shadowL)" />
+            <text x="78" y="20" textAnchor="middle" fill="#3B82F6" fontSize="10" fontWeight="600">Frontend Agent</text>
+            <text x="78" y="36" textAnchor="middle" fill="#9ca3af" fontSize="9">砌 React component</text>
+            <text x="78" y="48" textAnchor="middle" fill="#6b7280" fontSize="8">平行運作</text>
+          </g>
+          <g transform="translate(380,210)">
+            <rect width="155" height="55" rx="10" fill="url(#gradTeam)" stroke="#F59E0B" strokeWidth="1.5" filter="url(#shadowL)" />
+            <text x="78" y="20" textAnchor="middle" fill="#F59E0B" fontSize="10" fontWeight="600">Test Agent</text>
+            <text x="78" y="36" textAnchor="middle" fill="#9ca3af" fontSize="9">寫 unit + e2e test</text>
+            <text x="78" y="48" textAnchor="middle" fill="#6b7280" fontSize="8">平行運作</text>
+          </g>
+          <g transform="translate(560,210)">
+            <rect width="155" height="55" rx="10" fill="url(#gradTeam)" stroke="#ef4444" strokeWidth="1.5" filter="url(#shadowL)" />
+            <text x="78" y="20" textAnchor="middle" fill="#ef4444" fontSize="10" fontWeight="600">Review Agent</text>
+            <text x="78" y="36" textAnchor="middle" fill="#9ca3af" fontSize="9">Code review / Security</text>
+            <text x="78" y="48" textAnchor="middle" fill="#6b7280" fontSize="8">平行運作</text>
+          </g>
+
+          {/* Arrows Lead -> Teams */}
+          <path d="M330,157 C250,180 150,195 98,208" fill="none" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrAmberL)" />
+          <path d="M355,157 L278,208" fill="none" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrAmberL)" />
+          <path d="M395,157 L458,208" fill="none" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrAmberL)" />
+          <path d="M420,157 C500,180 580,195 638,208" fill="none" stroke="#F59E0B" strokeWidth="1.5" markerEnd="url(#arrAmberL)" />
+
+          {/* Loop indicator */}
+          <g transform="translate(250,290)">
+            <rect width="250" height="35" rx="8" fill="url(#gradTeam)" stroke="#818cf8" strokeWidth="1.2" strokeDasharray="4,4" />
+            <text x="125" y="22" textAnchor="middle" fill="#818cf8" fontSize="10" fontWeight="600">Ralph Wiggum Loop: 自動迭代至完成</text>
+          </g>
+        </svg>
+      </div>
+
+      <div className="key-points">
+        <div className="key-point">
+          <h4 style={{ color: '#F59E0B' }}>1. Agent Teams（2025年2月5號 Release）</h4>
+          <p>
+            Anthropic 用 Opus 4.6 推出 <strong>Agent Teams</strong> 功能。之前嘅 Claude Code 係一個 agent 順序做嘢，
+            而家一個 <strong style={{ color: '#F59E0B' }}>Lead Agent</strong> 可以分配工作俾多個 <strong>Teammate Agents</strong>，
+            佢哋<strong style={{ color: '#34d399' }}>平行 research、debug、build</strong>，仲互相 coordinate。
+          </p>
+          <p>
+            <strong>具體用法</strong>：<br />
+            - 一個 agent 改 backend API<br />
+            - 一個砌 React component<br />
+            - 一個寫 test<br />
+            - 一個做 code review<br />
+            全部同時跑。你做 Lead 指揮，或者 delegate 埋俾 Lead Agent 自己分配。
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+            <strong>同 Skills 嘅關係</strong>：每個 Teammate Agent 可以 load 唔同嘅 Skills——Backend Agent 用 DB migration skill，
+            Frontend Agent 用 component-builder skill，Review Agent 用 security-review skill。Skills 變成每個 agent 嘅專業知識包。
+          </p>
+        </div>
+
+        <div className="key-point">
+          <h4 style={{ color: '#34d399' }}>2. 訓覺都有人做嘢（24/7 Autonomous Coding）</h4>
+          <p>
+            有人設定 Claude Code <strong>24/7 run</strong>，朝早起身發現 AI 已經：
+          </p>
+          <p>
+            - 整晚修 bug<br />
+            - Implement 新 feature<br />
+            - Respond GitHub issues<br />
+            - Review 埋 PR
+          </p>
+          <p>
+            <strong>Setup pattern</strong>：用 Telegram bot 觸發 Claude Code，加埋 GitHub webhook 自動偵測新 issue 同 PR。
+            你瞓覺嗰 <strong style={{ color: '#34d399' }}>8 個鐘頭變成 productive time</strong>。
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+            <strong>同 Skills 嘅關係</strong>：你寫好 Skills 定義 coding standards、review criteria、testing patterns，
+            Claude 半夜做嘢時就會自動跟從你嘅 best practices，唔使你在場監督。
+          </p>
+        </div>
+
+        <div className="key-point">
+          <h4 style={{ color: '#818cf8' }}>3. Ralph Wiggum Loop（Self-Iterating Agent）</h4>
+          <p>
+            呢個 Claude Code plugin 將 Claude 變成一個<strong style={{ color: '#818cf8' }}>自我迭代嘅 autonomous agent</strong>——
+            loop 住同一個 prompt，每次睇返上次做嘅嘢然後改善。
+          </p>
+          <p>
+            <strong>工作流程</strong>：<br />
+            ① 你寫好 <strong>Spec + Completion Criteria</strong><br />
+            ② 開著 loop 然後瞓覺<br />
+            ③ Claude 每個 iteration 都 review 上次嘅輸出，搵到可以改善嘅地方就改<br />
+            ④ 朝早起身 review 最終結果
+          </p>
+          <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
+            <strong>同 Skills 嘅關係</strong>：Ralph Wiggum Loop 本質上就係 <strong>Iterative Refinement Pattern</strong> 嘅自動化版本。
+            你嘅 Skill 定義質量標準同 completion criteria，loop 負責反覆執行直到達標。
+          </p>
+        </div>
+      </div>
+
+      <div className="use-case">
+        <h4>三大功能 + Skills 整合矩陣</h4>
+        <div style={{ overflowX: 'auto' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.9rem' }}>
+            <thead>
+              <tr style={{ borderBottom: '2px solid #334155' }}>
+                <th style={{ padding: '10px', textAlign: 'left', color: '#e2e8f0' }}>功能</th>
+                <th style={{ padding: '10px', textAlign: 'left', color: '#e2e8f0' }}>定位</th>
+                <th style={{ padding: '10px', textAlign: 'left', color: '#e2e8f0' }}>+ Skills 效果</th>
+                <th style={{ padding: '10px', textAlign: 'left', color: '#e2e8f0' }}>適合場景</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                <td style={{ padding: '10px', color: '#F59E0B', fontWeight: 600 }}>Agent Teams</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>平行分工</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>每個 agent 有專屬 Skill 知識</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>大型 feature 開發</td>
+              </tr>
+              <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                <td style={{ padding: '10px', color: '#34d399', fontWeight: 600 }}>24/7 Autonomous</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>時間延伸</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>Skills 保證無人監督時嘅品質</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>Bug fix / PR review / Issue triage</td>
+              </tr>
+              <tr>
+                <td style={{ padding: '10px', color: '#818cf8', fontWeight: 600 }}>Wiggum Loop</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>品質迭代</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>Skills 定義 completion criteria</td>
+                <td style={{ padding: '10px', color: '#9ca3af' }}>報告生成 / 代碼重構 / 文件撰寫</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="use-case" style={{ marginTop: '1rem' }}>
+        <h4>實戰：點樣結合三者？</h4>
+        <ol className="steps">
+          <li><span className="step-num">1</span><span><strong>寫好 Skills</strong>：為每個角色（Backend / Frontend / Test / Review）各寫一個 Skill，定義工作流程同品質標準。</span></li>
+          <li><span className="step-num">2</span><span><strong>設定 Agent Teams</strong>：Lead Agent 負責拆解任務，每個 Teammate 載入對應嘅 Skill，平行開工。</span></li>
+          <li><span className="step-num">3</span><span><strong>開 Ralph Wiggum Loop</strong>：每個 agent 喺自己嘅 scope 入面 loop，直到 Skill 定義嘅 completion criteria 達標。</span></li>
+          <li><span className="step-num">4</span><span><strong>瞓覺</strong>：Telegram bot 有問題先 notify 你，否則朝早起身 review 就得。</span></li>
+        </ol>
+      </div>
+    </div>
+  );
+}
+
 function QuizTab() {
   const [selected, setSelected] = useState({});
   const [showResult, setShowResult] = useState({});
@@ -636,6 +830,18 @@ function QuizTab() {
       ],
       answer: 1,
       explanation: 'YAML frontmatter 係 Level 1，永遠載入喺 Claude 嘅 system prompt 入面。佢提供剛剛好嘅資訊令 Claude 知道幾時應該用呢個 Skill，而唔使載入整個 SKILL.md 嘅內容。呢個設計慳 token 同時保持 Skill 嘅可發現性。',
+    },
+    {
+      id: 5,
+      question: 'Agent Teams 同之前嘅 Claude Code 最大分別係咩？',
+      options: [
+        'A. 用咗更新嘅 model',
+        'B. Lead Agent 可以分配工作俾多個 Teammate Agent 平行做',
+        'C. 只支援 Python',
+        'D. 唔需要 MCP 連接',
+      ],
+      answer: 1,
+      explanation: 'Agent Teams 嘅核心突破係平行分工——之前係一個 agent 順序做嘢，而家 Lead Agent（Opus 4.6）可以將大 task 拆開分配俾多個 Teammate Agents，佢哋同時 research、debug、build、review，互相 coordinate。配合 Skills，每個 agent 可以有自己嘅專業知識包。',
     },
   ];
 
@@ -817,8 +1023,9 @@ export default function ClaudeSkillsBuilding() {
           { id: 'patterns', label: '④ 五大 Pattern', premium: true, content: <PatternsTab /> },
           { id: 'testing', label: '⑤ 測試同迭代', premium: true, content: <TestingTab /> },
           { id: 'distribution', label: '⑥ 分發策略', premium: true, content: <DistributionTab /> },
-          { id: 'ai-viber', label: '⑦ AI Viber', premium: true, content: <AIViberTab /> },
-          { id: 'quiz', label: '⑧ Quiz', premium: true, content: <QuizTab /> },
+          { id: 'latest', label: '⑦ 最新生態', premium: true, content: <LatestFeaturesTab /> },
+          { id: 'ai-viber', label: '⑧ AI Viber', premium: true, content: <AIViberTab /> },
+          { id: 'quiz', label: '⑨ Quiz', premium: true, content: <QuizTab /> },
         ]}
       />
       <div className="topic-container">
