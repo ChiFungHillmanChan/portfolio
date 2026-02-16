@@ -1,0 +1,2052 @@
+{
+  "summary": {
+    "generatedAt": "2026-02-16T16:25:28.143Z",
+    "asOfDate": "2026-02-16",
+    "scope": "portfolio/src/game/system-design/src",
+    "totals": {
+      "topics": 67,
+      "pages": 8,
+      "components": 15,
+      "dataFiles": 7,
+      "missingTopicFiles": 0,
+      "premiumTopics": 12
+    },
+    "quizStats": {
+      "hasQuizRenderer": 43,
+      "withQuizData": 43,
+      "withQuizQuestions": 5,
+      "emptyQuizData": 38,
+      "propMismatch": []
+    },
+    "timeSensitive": {
+      "highRiskTopics": 8,
+      "mediumRiskTopics": 4,
+      "lowRiskTopics": 55,
+      "totalClaimLines": 584,
+      "highSeverityClaims": 337,
+      "mediumSeverityClaims": 102
+    },
+    "teachingQuality": {
+      "avgScore": 1.37,
+      "scoreDistribution": {
+        "score0": 1,
+        "score1": 43,
+        "score2": 20,
+        "score3": 3,
+        "score4": 0
+      }
+    }
+  },
+  "topicMatrix": [
+    {
+      "slug": "ai-basics-start-here",
+      "title": "AI 基礎入門指南",
+      "category": "ai-core",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/AIBasicsStartHere.jsx",
+      "exists": true,
+      "lineCount": 20,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": false,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 0,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "ai-tools-landscape",
+      "title": "AI 工具全景圖",
+      "category": "ai-core",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/AIToolsLandscape.jsx",
+      "exists": true,
+      "lineCount": 324,
+      "timeSensitiveHits": 67,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "ai-model-comparison",
+      "title": "AI 模型深入對比",
+      "category": "ai-core",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "exists": true,
+      "lineCount": 413,
+      "timeSensitiveHits": 140,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "prompt-engineering",
+      "title": "Prompt Engineering 系統設計",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/PromptEngineering.jsx",
+      "exists": true,
+      "lineCount": 538,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "prompt-cheat-sheet",
+      "title": "Prompt 速查表",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/PromptCheatSheet.jsx",
+      "exists": true,
+      "lineCount": 532,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "skill-vs-agent",
+      "title": "Skill vs Agent",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/SkillVsAgent.jsx",
+      "exists": true,
+      "lineCount": 206,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": true,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "context-rot-solution",
+      "title": "Context Rot 解法",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/ContextRotSolution.jsx",
+      "exists": true,
+      "lineCount": 197,
+      "timeSensitiveHits": 9,
+      "riskLevel": "medium",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": true,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "sdd-spec-driven-development",
+      "title": "SDD 規格驅動開發",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/SDDSpecDrivenDevelopment.jsx",
+      "exists": true,
+      "lineCount": 219,
+      "timeSensitiveHits": 1,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "api-token-security",
+      "title": "API Token 安全與成本",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/APITokenSecurity.jsx",
+      "exists": true,
+      "lineCount": 436,
+      "timeSensitiveHits": 124,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "multi-ai-workflow",
+      "title": "多 AI 協作工作流",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/MultiAIWorkflow.jsx",
+      "exists": true,
+      "lineCount": 299,
+      "timeSensitiveHits": 31,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": true,
+        "score": 3,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "ai-evaluation-loop",
+      "title": "AI 評估迴圈",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/AIEvaluationLoop.jsx",
+      "exists": true,
+      "lineCount": 191,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "mcp-protocol",
+      "title": "MCP 模型上下文協議",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/MCPProtocol.jsx",
+      "exists": true,
+      "lineCount": 479,
+      "timeSensitiveHits": 58,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "ai-idea-generation",
+      "title": "AI 輔助系統設計",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/AIIdeaGeneration.jsx",
+      "exists": true,
+      "lineCount": 421,
+      "timeSensitiveHits": 2,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "open-source-ai",
+      "title": "開源 AI 生態圈",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/OpenSourceAI.jsx",
+      "exists": true,
+      "lineCount": 347,
+      "timeSensitiveHits": 65,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "mock-design",
+      "title": "Mock Design 模擬面試",
+      "category": "ai-core",
+      "premium": true,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/MockDesign.jsx",
+      "exists": true,
+      "lineCount": 335,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "backend-roadmap",
+      "title": "Backend 學習路線",
+      "category": "career",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/BackendRoadmap.jsx",
+      "exists": true,
+      "lineCount": 242,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": true,
+        "score": 3,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "junior-vs-senior",
+      "title": "Junior 定 Senior",
+      "category": "career",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/JuniorVsSenior.jsx",
+      "exists": true,
+      "lineCount": 305,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": true,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "ai-vs-software-engineer",
+      "title": "AI 會取代工程師？",
+      "category": "career",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/AIVsSoftwareEngineer.jsx",
+      "exists": true,
+      "lineCount": 445,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": true,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "interview-process",
+      "title": "Big Tech 面試流程",
+      "category": "career",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/InterviewProcess.jsx",
+      "exists": true,
+      "lineCount": 187,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "star-method",
+      "title": "STAR 面試法",
+      "category": "career",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/StarMethod.jsx",
+      "exists": true,
+      "lineCount": 520,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "coding-interview",
+      "title": "程式面試攻略",
+      "category": "career",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/CodingInterview.jsx",
+      "exists": true,
+      "lineCount": 575,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "git-vs-github",
+      "title": "Git vs GitHub",
+      "category": "engineering",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/GitVsGithub.jsx",
+      "exists": true,
+      "lineCount": 245,
+      "timeSensitiveHits": 5,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "print-vs-debugger",
+      "title": "Print 定 Debugger",
+      "category": "engineering",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/PrintVsDebugger.jsx",
+      "exists": true,
+      "lineCount": 328,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "docker",
+      "title": "Docker 容器化",
+      "category": "engineering",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/Docker.jsx",
+      "exists": true,
+      "lineCount": 252,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "dependency-injection",
+      "title": "依賴注入",
+      "category": "engineering",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/DependencyInjection.jsx",
+      "exists": true,
+      "lineCount": 453,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "system-design-patterns",
+      "title": "系統設計模式總覽",
+      "category": "engineering",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/SystemDesignPatterns.jsx",
+      "exists": true,
+      "lineCount": 337,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "coding-agent-design",
+      "title": "Coding Agent 設計",
+      "category": "engineering",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/CodingAgentDesign.jsx",
+      "exists": true,
+      "lineCount": 383,
+      "timeSensitiveHits": 24,
+      "riskLevel": "medium",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "port-forwarding",
+      "title": "Port Forwarding",
+      "category": "network",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/PortForwarding.jsx",
+      "exists": true,
+      "lineCount": 411,
+      "timeSensitiveHits": 21,
+      "riskLevel": "medium",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "localhost-hosting",
+      "title": "本地開發分享",
+      "category": "network",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/LocalhostHosting.jsx",
+      "exists": true,
+      "lineCount": 556,
+      "timeSensitiveHits": 69,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "cdn",
+      "title": "CDN 內容分發",
+      "category": "network",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/CDN.jsx",
+      "exists": true,
+      "lineCount": 250,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 3
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "load-balancer",
+      "title": "負載均衡器",
+      "category": "network",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/LoadBalancer.jsx",
+      "exists": true,
+      "lineCount": 198,
+      "timeSensitiveHits": 4,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 2
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "api-gateway",
+      "title": "API 閘道",
+      "category": "network",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/APIGateway.jsx",
+      "exists": true,
+      "lineCount": 249,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "large-api-response",
+      "title": "大型 API 回應",
+      "category": "network",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/LargeAPIResponse.jsx",
+      "exists": true,
+      "lineCount": 499,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "rate-limiter",
+      "title": "流量限制器",
+      "category": "network",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/RateLimiter.jsx",
+      "exists": true,
+      "lineCount": 262,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 3
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "scraping-vs-crawling",
+      "title": "Scraping vs Crawling",
+      "category": "network",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/ScrapingVsCrawling.jsx",
+      "exists": true,
+      "lineCount": 534,
+      "timeSensitiveHits": 17,
+      "riskLevel": "medium",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "database-basics",
+      "title": "Database 基礎",
+      "category": "storage",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/DatabaseBasics.jsx",
+      "exists": true,
+      "lineCount": 407,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 3
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "object-storage",
+      "title": "物件存儲",
+      "category": "storage",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/ObjectStorage.jsx",
+      "exists": true,
+      "lineCount": 220,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "redis",
+      "title": "Redis",
+      "category": "storage",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/Redis.jsx",
+      "exists": true,
+      "lineCount": 356,
+      "timeSensitiveHits": 6,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "key-value-store",
+      "title": "鍵值存儲",
+      "category": "storage",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/KeyValueStore.jsx",
+      "exists": true,
+      "lineCount": 215,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "unique-id-generator",
+      "title": "唯一 ID 生成器",
+      "category": "storage",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/UniqueIDGenerator.jsx",
+      "exists": true,
+      "lineCount": 236,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "pick-database",
+      "title": "點揀 Database",
+      "category": "storage",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/PickDatabase.jsx",
+      "exists": true,
+      "lineCount": 282,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "cache-invalidation",
+      "title": "Cache 失效策略",
+      "category": "cache",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/CacheInvalidation.jsx",
+      "exists": true,
+      "lineCount": 591,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "scale-reads",
+      "title": "讀取擴展",
+      "category": "cache",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/ScaleReads.jsx",
+      "exists": true,
+      "lineCount": 701,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "distributed-cache",
+      "title": "分散式快取",
+      "category": "cache",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/DistributedCache.jsx",
+      "exists": true,
+      "lineCount": 214,
+      "timeSensitiveHits": 4,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "fix-slow-database",
+      "title": "Debug 慢 Database",
+      "category": "cache",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/FixSlowDatabase.jsx",
+      "exists": true,
+      "lineCount": 303,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "task-queue",
+      "title": "任務佇列",
+      "category": "async",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/TaskQueue.jsx",
+      "exists": true,
+      "lineCount": 210,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "notification-system",
+      "title": "通知系統",
+      "category": "async",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/NotificationSystem.jsx",
+      "exists": true,
+      "lineCount": 240,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "message-queue",
+      "title": "消息佇列",
+      "category": "async",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/MessageQueue.jsx",
+      "exists": true,
+      "lineCount": 225,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "session-manager",
+      "title": "Session 管理器",
+      "category": "app",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/SessionManager.jsx",
+      "exists": true,
+      "lineCount": 223,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "url-shortener",
+      "title": "短網址系統",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/URLShortener.jsx",
+      "exists": true,
+      "lineCount": 221,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "search-autocomplete",
+      "title": "搜尋自動補全",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/SearchAutocomplete.jsx",
+      "exists": true,
+      "lineCount": 220,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "web-crawler",
+      "title": "網頁爬蟲",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/WebCrawler.jsx",
+      "exists": true,
+      "lineCount": 194,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "news-feed",
+      "title": "動態消息流",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/NewsFeed.jsx",
+      "exists": true,
+      "lineCount": 234,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "chat-system",
+      "title": "即時通訊系統",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/ChatSystem.jsx",
+      "exists": true,
+      "lineCount": 207,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "chess-game-design",
+      "title": "線上棋類遊戲",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/ChessGameDesign.jsx",
+      "exists": true,
+      "lineCount": 354,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": true,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "video-streaming",
+      "title": "影片串流",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/VideoStreaming.jsx",
+      "exists": true,
+      "lineCount": 225,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "payment-system",
+      "title": "支付系統",
+      "category": "app",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/PaymentSystem.jsx",
+      "exists": true,
+      "lineCount": 239,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "authentication",
+      "title": "Authentication 驗證",
+      "category": "security",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/Authentication.jsx",
+      "exists": true,
+      "lineCount": 263,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 3
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": false,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "self-host-vs-cloud",
+      "title": "自架 vs 雲端",
+      "category": "security",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/SelfHostVsCloud.jsx",
+      "exists": true,
+      "lineCount": 329,
+      "timeSensitiveHits": 6,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "metrics-logging",
+      "title": "監控與日誌",
+      "category": "security",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/MetricsLogging.jsx",
+      "exists": true,
+      "lineCount": 284,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "monitoring",
+      "title": "應用程式監控",
+      "category": "security",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/Monitoring.jsx",
+      "exists": true,
+      "lineCount": 447,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": true,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "cicd-pipeline",
+      "title": "CI/CD 自動化部署",
+      "category": "security",
+      "premium": false,
+      "difficulty": "intermediate",
+      "file": "portfolio/src/game/system-design/src/topics/CICDPipeline.jsx",
+      "exists": true,
+      "lineCount": 335,
+      "timeSensitiveHits": 4,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": true,
+        "score": 2,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "server-vs-serverless",
+      "title": "Server vs Serverless",
+      "category": "security",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/ServerVsServerless.jsx",
+      "exists": true,
+      "lineCount": 443,
+      "timeSensitiveHits": 7,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "secure-ai-agents",
+      "title": "AI Agent 安全",
+      "category": "security",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/SecureAIAgents.jsx",
+      "exists": true,
+      "lineCount": 612,
+      "timeSensitiveHits": 1,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "ai-scraper-defense",
+      "title": "防禦 AI 爬蟲",
+      "category": "security",
+      "premium": false,
+      "difficulty": "advanced",
+      "file": "portfolio/src/game/system-design/src/topics/AIScraperDefense.jsx",
+      "exists": true,
+      "lineCount": 515,
+      "timeSensitiveHits": 3,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": true,
+        "nextSteps": true,
+        "score": 3,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "deployment",
+      "title": "免費部署平台",
+      "category": "deploy",
+      "premium": false,
+      "difficulty": "beginner",
+      "file": "portfolio/src/game/system-design/src/topics/Deployment.jsx",
+      "exists": true,
+      "lineCount": 544,
+      "timeSensitiveHits": 55,
+      "riskLevel": "high",
+      "quiz": {
+        "hasQuizRenderer": true,
+        "usesDataProp": true,
+        "usesQuizDataProp": false,
+        "quizDataDefined": true,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    },
+    {
+      "slug": "references",
+      "title": "學習資源參考",
+      "category": "resource",
+      "premium": false,
+      "difficulty": null,
+      "file": "portfolio/src/game/system-design/src/topics/References.jsx",
+      "exists": true,
+      "lineCount": 344,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low",
+      "quiz": {
+        "hasQuizRenderer": false,
+        "usesDataProp": false,
+        "usesQuizDataProp": false,
+        "quizDataDefined": false,
+        "quizQuestionCount": 0
+      },
+      "teaching": {
+        "learningOutcome": false,
+        "workflow": true,
+        "pitfalls": false,
+        "nextSteps": false,
+        "score": 1,
+        "maxScore": 4
+      }
+    }
+  ],
+  "pageMatrix": [
+    {
+      "file": "portfolio/src/game/system-design/src/pages/AIPlanner.jsx",
+      "lineCount": 499,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/Coaching.jsx",
+      "lineCount": 327,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/Premium.jsx",
+      "lineCount": 151,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/Projects.jsx",
+      "lineCount": 593,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/Roadmap.jsx",
+      "lineCount": 245,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/Settings.jsx",
+      "lineCount": 553,
+      "timeSensitiveHits": 1,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/TopicPage.jsx",
+      "lineCount": 59,
+      "timeSensitiveHits": 1,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/pages/Welcome.jsx",
+      "lineCount": 84,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    }
+  ],
+  "componentMatrix": [
+    {
+      "file": "portfolio/src/game/system-design/src/components/AuthGate.jsx",
+      "lineCount": 144,
+      "hasPremiumLogic": true,
+      "hasQuizLogic": false,
+      "hasAuthLogic": true
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/ChatWidget.jsx",
+      "lineCount": 515,
+      "hasPremiumLogic": true,
+      "hasQuizLogic": false,
+      "hasAuthLogic": true
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/CodePopup.jsx",
+      "lineCount": 64,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/ContentRenderer.jsx",
+      "lineCount": 355,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/DiagramSVG.jsx",
+      "lineCount": 10,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/GoogleSignInButton.jsx",
+      "lineCount": 35,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": true
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/InterviewChecklist.jsx",
+      "lineCount": 32,
+      "hasPremiumLogic": true,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/Layout.jsx",
+      "lineCount": 78,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/PitfallStories.jsx",
+      "lineCount": 28,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/PremiumGate.jsx",
+      "lineCount": 40,
+      "hasPremiumLogic": true,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/QuizRenderer.jsx",
+      "lineCount": 84,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": true,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/RelatedTopics.jsx",
+      "lineCount": 25,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/Sidebar.jsx",
+      "lineCount": 358,
+      "hasPremiumLogic": true,
+      "hasQuizLogic": false,
+      "hasAuthLogic": true
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/TableOfContents.jsx",
+      "lineCount": 62,
+      "hasPremiumLogic": false,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/components/TopicTabs.jsx",
+      "lineCount": 66,
+      "hasPremiumLogic": true,
+      "hasQuizLogic": false,
+      "hasAuthLogic": false
+    }
+  ],
+  "dataMatrix": [
+    {
+      "file": "portfolio/src/game/system-design/src/data/coachingPrompts.js",
+      "lineCount": 171,
+      "timeSensitiveHits": 30,
+      "riskLevel": "high"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/data/content/ai-basics-start-here.json",
+      "lineCount": 263,
+      "timeSensitiveHits": 22,
+      "riskLevel": "medium"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/data/premiumPlans.js",
+      "lineCount": 45,
+      "timeSensitiveHits": 2,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/data/projects.json",
+      "lineCount": 163,
+      "timeSensitiveHits": 0,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/data/roadmap.json",
+      "lineCount": 94,
+      "timeSensitiveHits": 2,
+      "riskLevel": "low"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/data/topics.json",
+      "lineCount": 109,
+      "timeSensitiveHits": 14,
+      "riskLevel": "medium"
+    },
+    {
+      "file": "portfolio/src/game/system-design/src/data/topicVerification.json",
+      "lineCount": 543,
+      "timeSensitiveHits": 1,
+      "riskLevel": "low"
+    }
+  ]
+}

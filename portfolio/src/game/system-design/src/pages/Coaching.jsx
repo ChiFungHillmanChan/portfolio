@@ -124,7 +124,11 @@ export default function Coaching() {
 教學流程：先解釋 → 測試理解 → 深入探討 → 實踐練習。
 保持互動，每次回應後問一個跟進問題。
 回應要簡潔但有深度，用實際例子說明。`;
-    const systemPrompt = coachingPrompts[selectedSlug] || defaultPrompt;
+    const coachingSpec = coachingPrompts[selectedSlug];
+    const systemPrompt =
+      typeof coachingSpec === 'string'
+        ? coachingSpec
+        : coachingSpec?.systemPrompt || defaultPrompt;
 
     try {
       const res = await fetch(`${API_BASE}/ai/chat`, {
@@ -137,6 +141,7 @@ export default function Coaching() {
           mode: 'coaching',
           query: value,
           systemPrompt,
+          coachingSpec: typeof coachingSpec === 'object' ? coachingSpec : undefined,
           topicTitle: topic?.title,
         }),
       });

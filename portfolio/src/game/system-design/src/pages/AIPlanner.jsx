@@ -81,8 +81,9 @@ export default function AIPlanner() {
   const [error, setError] = useState('');
   const [completedItems, setCompletedItems] = useState([]);
 
-  // Load saved plan
+  // Load saved plan from localStorage first, then try server
   useEffect(() => {
+    let loaded = false;
     try {
       const saved = JSON.parse(localStorage.getItem(PLAN_KEY));
       if (saved?.pathDetails) {
@@ -90,9 +91,42 @@ export default function AIPlanner() {
         setExplanation(saved.explanation || '');
         setCompletedItems(saved.completed || []);
         setStep(-1);
+        loaded = true;
       }
     } catch {}
-  }, []);
+
+    // Try loading from server if not in localStorage and user is logged in
+    if (!loaded && token) {
+      fetch(`${API_BASE}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ mode: 'load-progress' }),
+      })
+        .then((res) => res.ok ? res.json() : null)
+        .then((data) => {
+          if (data?.planDetails?.length) {
+            setPlan(data.planDetails);
+            setExplanation(data.planExplanation || '');
+            setCompletedItems(data.planCompleted || []);
+            setStep(-1);
+            // Sync to localStorage
+            localStorage.setItem(
+              PLAN_KEY,
+              JSON.stringify({
+                pathDetails: data.planDetails,
+                explanation: data.planExplanation || '',
+                completed: data.planCompleted || [],
+                lastGenerated: Date.now(),
+              })
+            );
+          }
+        })
+        .catch(() => {});
+    }
+  }, [token]);
 
   const handleSelect = (stepIdx, value) => {
     const current = STEPS[stepIdx];
@@ -153,7 +187,13 @@ export default function AIPlanner() {
       });
 
       if (!res.ok) {
-        const data = await res.json();
+        let data;
+        try {
+          data = await res.json();
+        } catch {
+          setError(`伺服器錯誤 (${res.status})，請稍後再試。`);
+          return;
+        }
         setError(data.error || '生成失敗，請稍後再試。');
         return;
       }
@@ -180,7 +220,26 @@ export default function AIPlanner() {
           lastGenerated: Date.now(),
         })
       );
-    } catch {
+
+      // Save learning plan to user account
+      if (token && data.path) {
+        fetch(`${API_BASE}/ai/chat`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            mode: 'save-progress',
+            learningPath: data.path,
+            currentStep: 0,
+            planDetails: pathDetails,
+            planExplanation: data.explanation || '',
+            planCompleted: [],
+          }),
+        }).catch(() => {});
+      }
+    } catch (err) {
       setError('網絡錯誤，請稍後再試。');
     } finally {
       setLoading(false);
@@ -195,6 +254,22 @@ export default function AIPlanner() {
     const saved = JSON.parse(localStorage.getItem(PLAN_KEY) || '{}');
     saved.completed = next;
     localStorage.setItem(PLAN_KEY, JSON.stringify(saved));
+
+    // Sync completion state to server
+    if (token) {
+      fetch(`${API_BASE}/ai/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          mode: 'save-progress',
+          planCompleted: next,
+          currentStep: Math.max(...next, 0),
+        }),
+      }).catch(() => {});
+    }
   };
 
   const resetPlan = () => {

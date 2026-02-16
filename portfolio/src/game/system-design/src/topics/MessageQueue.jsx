@@ -217,7 +217,7 @@ export default function MessageQueue() {
         subtitle="事件驅動架構（Kafka），pub/sub 模式"
         tabs={tabs}
       />
-      <QuizRenderer quizData={quizData} />
+      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

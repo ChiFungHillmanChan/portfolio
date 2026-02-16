@@ -1,8 +1,9 @@
 import { useNavigate } from 'react-router-dom';
-import { STRIPE_URL } from '../config/constants';
+import { PREMIUM_PLANS, formatHKD } from '../data/premiumPlans';
 
 export default function PremiumGate() {
   const navigate = useNavigate();
+  const standard = PREMIUM_PLANS.standard;
 
   return (
     <div className="card flex flex-col items-center text-center py-16">
@@ -12,19 +13,19 @@ export default function PremiumGate() {
         呢個部分包含實戰練習同 AI 提示模板。
       </p>
       <div className="flex items-baseline justify-center gap-2 mb-1">
-        <span className="text-sm text-text-dimmer line-through">HK$750</span>
-        <span className="text-lg font-bold text-text-primary">HK$150</span>
+        <span className="text-sm text-text-dimmer line-through">{formatHKD(standard.listPrice)}</span>
+        <span className="text-lg font-bold text-text-primary">{formatHKD(standard.salePrice)}</span>
       </div>
-      <div className="inline-block px-2 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.65rem] font-semibold mb-1">早鳥價 · 慳 HK$600</div>
+      <div className="inline-block px-2 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.65rem] font-semibold mb-1">早鳥價 · 慳 {formatHKD(standard.savings)}</div>
       <p className="text-[0.65rem] text-text-darkest mb-6">一次性付款 · 永久存取 · 未來將轉月費制</p>
       <div className="flex gap-3">
         <a
-          href={STRIPE_URL}
+          href={standard.stripeUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-lg font-medium text-sm transition-colors"
         >
-          立即鎖定早鳥價 — HK$150
+          立即鎖定早鳥價 — {formatHKD(standard.salePrice)}
         </a>
         <button
           onClick={() => navigate('/premium')}

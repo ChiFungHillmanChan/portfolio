@@ -1,6 +1,7 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
 const s3 = new S3Client();
 const BUCKET = process.env.DATA_BUCKET;
@@ -15,6 +16,7 @@ if (!getApps().length) {
   initializeApp({ credential: cert(sa) });
 }
 const firebaseAuth = getAuth();
+const db = getFirestore();
 
 // ==================== In-memory cache for topic-index ====================
 
@@ -287,20 +289,48 @@ export async function handler(event) {
 
         if (!res.ok) {
           const err = await res.text();
-          console.error('OpenAI guide error:', err);
+          console.error('OpenAI guide error:', res.status, err.substring(0, 200));
           throw new Error('OpenAI API 呼叫失敗');
         }
 
         const aiData = await res.json();
-        const content = aiData.choices[0].message.content.trim();
+        const rawContent = aiData.choices?.[0]?.message?.content;
+        if (!rawContent) {
+          throw new Error('OpenAI returned empty content');
+        }
 
-        // Parse JSON from response (handle markdown code blocks)
+        const content = rawContent.trim();
+
+        // Robust JSON extraction: try multiple strategies
         let parsed;
+        // Strategy 1: Direct parse
         try {
-          const jsonStr = content.replace(/^```json?\s*/, '').replace(/\s*```$/, '');
-          parsed = JSON.parse(jsonStr);
+          parsed = JSON.parse(content);
         } catch {
-          console.error('Failed to parse guide JSON:', content);
+          // Strategy 2: Strip markdown code blocks (various formats)
+          const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+          if (codeBlockMatch) {
+            try {
+              parsed = JSON.parse(codeBlockMatch[1]);
+            } catch {
+              // continue to strategy 3
+            }
+          }
+          // Strategy 3: Extract first JSON object from text
+          if (!parsed) {
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+              try {
+                parsed = JSON.parse(jsonMatch[0]);
+              } catch {
+                // all strategies failed
+              }
+            }
+          }
+        }
+
+        if (!parsed) {
+          console.error('Failed to parse guide JSON:', content.substring(0, 500));
           return respond(500, { error: 'AI 回應格式錯誤，請再試一次' });
         }
 
@@ -383,73 +413,39 @@ export async function handler(event) {
 
     // ---- Save progress mode ----
     if (mode === 'save-progress') {
-      const userEmail = payload.email;
-      const { viewedTopics, learningPath, currentStep } = body;
+      const { viewedTopics, learningPath, currentStep, planDetails, planExplanation, planCompleted } = body;
 
-      // Read users.json
-      let users = [];
-      try {
-        const obj = await s3.send(
-          new GetObjectCommand({ Bucket: BUCKET, Key: 'users.json' })
-        );
-        users = JSON.parse(await obj.Body.transformToString());
-      } catch (e) {
-        if (e.name !== 'NoSuchKey') throw e;
+      const update = {};
+      if (Array.isArray(viewedTopics) && viewedTopics.length) {
+        const docSnap = await db.collection('users').doc(payload.uid).get();
+        const existing = docSnap.exists ? (docSnap.data().viewedTopics || []) : [];
+        update.viewedTopics = [...new Set([...existing, ...viewedTopics])];
       }
+      if (Array.isArray(learningPath)) update.learningPath = learningPath;
+      if (typeof currentStep === 'number') update.currentStep = currentStep;
+      if (Array.isArray(planDetails)) update.planDetails = planDetails;
+      if (typeof planExplanation === 'string') update.planExplanation = planExplanation;
+      if (Array.isArray(planCompleted)) update.planCompleted = planCompleted;
 
-      const user = users.find(u => u.email === userEmail);
-      if (!user) {
-        return respond(404, { error: '用戶唔存在' });
+      if (Object.keys(update).length) {
+        await db.collection('users').doc(payload.uid).set(update, { merge: true });
       }
-
-      // Update progress fields
-      if (Array.isArray(viewedTopics)) {
-        const existing = user.viewedTopics || [];
-        user.viewedTopics = [...new Set([...existing, ...viewedTopics])];
-      }
-      if (Array.isArray(learningPath)) {
-        user.learningPath = learningPath;
-      }
-      if (typeof currentStep === 'number') {
-        user.currentStep = currentStep;
-      }
-
-      await s3.send(
-        new PutObjectCommand({
-          Bucket: BUCKET,
-          Key: 'users.json',
-          Body: JSON.stringify(users, null, 2),
-          ContentType: 'application/json',
-        })
-      );
 
       return respond(200, { success: true });
     }
 
     // ---- Load progress mode ----
     if (mode === 'load-progress') {
-      const userEmail = payload.email;
-
-      let users = [];
-      try {
-        const obj = await s3.send(
-          new GetObjectCommand({ Bucket: BUCKET, Key: 'users.json' })
-        );
-        users = JSON.parse(await obj.Body.transformToString());
-      } catch (e) {
-        if (e.name !== 'NoSuchKey') throw e;
-      }
-
-      const user = users.find(u => u.email === userEmail);
-      if (!user) {
-        return respond(404, { error: '用戶唔存在' });
-      }
+      const docSnap = await db.collection('users').doc(payload.uid).get();
+      const data = docSnap.exists ? docSnap.data() : {};
 
       return respond(200, {
-        viewedTopics: user.viewedTopics || [],
-        learningPath: user.learningPath || [],
-        currentStep: user.currentStep || 0,
-        aiGuideCount: user.aiGuideCount || 0,
+        viewedTopics: data.viewedTopics || [],
+        learningPath: data.learningPath || [],
+        currentStep: data.currentStep || 0,
+        planDetails: data.planDetails || null,
+        planExplanation: data.planExplanation || '',
+        planCompleted: data.planCompleted || [],
       });
     }
 

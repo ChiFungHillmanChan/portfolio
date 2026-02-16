@@ -548,7 +548,7 @@ export default function LocalhostHosting() {
         subtitle="用 ngrok 將本地開發環境即時分享畀全世界"
         tabs={tabs}
       />
-      <QuizRenderer quizData={quizData} />
+      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

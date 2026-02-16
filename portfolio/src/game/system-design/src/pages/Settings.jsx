@@ -5,6 +5,7 @@ import { useProgress } from '../context/ProgressContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import topicData from '../data/topics.json';
 import { API_BASE, STRIPE_URL, STRIPE_PRO_URL } from '../config/constants';
+import { PREMIUM_PLANS, PREMIUM_COPY, formatHKD, tierDisplayName } from '../data/premiumPlans';
 
 // ─── Superadmin Panel (cached — only fetches once) ───
 function AdminPanel({ token }) {
@@ -48,7 +49,7 @@ function AdminPanel({ token }) {
 
   const updateUserTier = async (uid, tier) => {
     const premium = tier !== 'free';
-    const label = tier === 'pro' ? 'Pro (HK$399)' : tier === 'standard' ? 'Standard (HK$150)' : 'Free';
+    const label = tierDisplayName(tier);
     if (!window.confirm(`確定要將呢個用戶設為 ${label}？`)) return;
 
     setUpdating(uid);
@@ -179,8 +180,8 @@ function AdminPanel({ token }) {
                     >
                       {u.superadmin && <option value="superadmin">Superadmin</option>}
                       <option value="free">Free</option>
-                      <option value="standard">Standard (HK$150)</option>
-                      <option value="pro">Pro (HK$399)</option>
+                      <option value="standard">Standard ({formatHKD(PREMIUM_PLANS.standard.salePrice)})</option>
+                      <option value="pro">Pro ({formatHKD(PREMIUM_PLANS.pro.salePrice)})</option>
                     </select>
                   )}
                 </td>
@@ -250,6 +251,8 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
   const [codeError, setCodeError] = useState('');
   const [codeLoading, setCodeLoading] = useState(false);
   const [codeSuccess, setCodeSuccess] = useState(false);
+  const standard = PREMIUM_PLANS.standard;
+  const pro = PREMIUM_PLANS.pro;
 
   const handleCodeSubmit = async (e) => {
     e.preventDefault();
@@ -307,9 +310,9 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
         <>
           {/* Urgency note */}
           <div className="mb-4 px-3 py-2.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-center">
-            <div className="text-xs font-semibold text-amber-400 mb-0.5">早鳥價 · 限時 80% OFF</div>
+            <div className="text-xs font-semibold text-amber-400 mb-0.5">{PREMIUM_COPY.urgencyTitle}</div>
             <div className="text-[0.65rem] text-text-dimmer leading-relaxed">
-              未來計劃轉為月費訂閱制，而家一次性付款即鎖定永久存取權。
+              {PREMIUM_COPY.urgencyBody}
             </div>
           </div>
 
@@ -327,10 +330,10 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
                 <span className="text-xs font-semibold text-accent-indigo-light uppercase tracking-wider">Standard</span>
               </div>
               <div className="flex items-baseline gap-1.5 mb-0.5">
-                <span className="text-xs text-text-dimmer line-through">HK$750</span>
-                <span className="text-xl font-bold text-text-primary">HK$150</span>
+                <span className="text-xs text-text-dimmer line-through">{formatHKD(standard.listPrice)}</span>
+                <span className="text-xl font-bold text-text-primary">{formatHKD(standard.salePrice)}</span>
               </div>
-              <div className="inline-block px-1.5 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.6rem] font-semibold mb-1">慳 HK$600</div>
+              <div className="inline-block px-1.5 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.6rem] font-semibold mb-1">慳 {formatHKD(standard.savings)}</div>
               <div className="text-[0.65rem] text-text-dimmer mb-3">一次性付款 · 永久存取</div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-xs text-text-muted">
@@ -343,7 +346,7 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
                   <span className="text-accent-green">✓</span> 小測驗 + 面試 Checklist
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-text-dimmer">
-                  <span>—</span> 每日 20 次 AI 對話
+                  <span>—</span> 每日 {standard.dailyAiLimit} 次 AI 對話
                 </div>
               </div>
               <div className="mt-3 text-center text-sm font-semibold text-accent-indigo">
@@ -364,17 +367,17 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
                 <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Pro</span>
               </div>
               <div className="flex items-baseline gap-1.5 mb-0.5">
-                <span className="text-xs text-text-dimmer line-through">HK$1,999</span>
-                <span className="text-xl font-bold text-text-primary">HK$399</span>
+                <span className="text-xs text-text-dimmer line-through">{formatHKD(pro.listPrice)}</span>
+                <span className="text-xl font-bold text-text-primary">{formatHKD(pro.salePrice)}</span>
               </div>
-              <div className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[0.6rem] font-semibold mb-1">慳 HK$1,600</div>
+              <div className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[0.6rem] font-semibold mb-1">慳 {formatHKD(pro.savings)}</div>
               <div className="text-[0.65rem] text-text-dimmer mb-3">一次性付款 · 永久存取</div>
               <div className="space-y-1">
                 <div className="flex items-center gap-1.5 text-xs text-text-muted">
                   <span className="text-accent-green">✓</span> Standard 所有功能
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-amber-400">★</span> 每日 80 次 AI 對話
+                  <span className="text-amber-400">★</span> 每日 {pro.dailyAiLimit} 次 AI 對話
                 </div>
                 <div className="flex items-center gap-1.5 text-xs text-text-muted">
                   <span className="text-amber-400">★</span> 進階實戰 + AI 課題

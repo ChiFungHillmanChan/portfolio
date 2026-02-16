@@ -491,7 +491,7 @@ export default function LargeAPIResponse() {
         subtitle="當 API 需要回傳大量數據，點樣有效咁處理同優化回應"
         tabs={tabs}
       />
-      <QuizRenderer quizData={quizData} />
+      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

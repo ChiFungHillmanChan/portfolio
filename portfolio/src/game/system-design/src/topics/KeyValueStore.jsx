@@ -207,7 +207,7 @@ export default function KeyValueStore() {
         subtitle="深入了解分佈式 KV 存儲，partition 同 replication 點樣設計"
         tabs={tabs}
       />
-      <QuizRenderer quizData={quizData} />
+      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

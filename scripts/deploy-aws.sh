@@ -175,7 +175,8 @@ echo ""
 echo "--- Step 4: Chat Lambda ---"
 
 cd "$ROOT_DIR/lambda/chat"
-zip -j /tmp/sa-chat.zip index.mjs
+npm install --omit=dev --silent
+zip -r /tmp/sa-chat.zip index.mjs package.json node_modules/
 cd "$ROOT_DIR"
 
 if aws lambda get-function --function-name "$CHAT_FN" --region "$REGION" 2>/dev/null; then
@@ -189,7 +190,7 @@ if aws lambda get-function --function-name "$CHAT_FN" --region "$REGION" 2>/dev/
 
   aws lambda update-function-configuration \
     --function-name "$CHAT_FN" \
-    --environment "Variables={DATA_BUCKET=$BUCKET,JWT_SECRET=$JWT_SECRET,OPENAI_API_KEY=$OPENAI_API_KEY}" \
+    --environment "Variables={DATA_BUCKET=$BUCKET,JWT_SECRET=$JWT_SECRET,OPENAI_API_KEY=$OPENAI_API_KEY,FIREBASE_SERVICE_ACCOUNT=$FIREBASE_SERVICE_ACCOUNT}" \
     --region "$REGION" > /dev/null
 else
   aws lambda create-function \
@@ -198,7 +199,7 @@ else
     --handler index.handler \
     --role "$ROLE_ARN" \
     --zip-file "fileb:///tmp/sa-chat.zip" \
-    --environment "Variables={DATA_BUCKET=$BUCKET,JWT_SECRET=$JWT_SECRET,OPENAI_API_KEY=$OPENAI_API_KEY}" \
+    --environment "Variables={DATA_BUCKET=$BUCKET,JWT_SECRET=$JWT_SECRET,OPENAI_API_KEY=$OPENAI_API_KEY,FIREBASE_SERVICE_ACCOUNT=$FIREBASE_SERVICE_ACCOUNT}" \
     --region "$REGION" \
     --timeout 30 \
     --memory-size 256 > /dev/null

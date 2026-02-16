@@ -1,0 +1,514 @@
+{
+  "schemaVersion": "2026-02",
+  "asOfDate": "2026-02-16",
+  "scope": "portfolio/src/game/system-design/src",
+  "method": "Official-source verification first. Verdict options: Verified / Needs Update / Unverifiable.",
+  "claims": [
+    {
+      "id": "cr-001",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 15,
+      "claim": "主流模型係 GPT-5.3 Codex / Opus 4.6 / Gemini 3 / DeepSeek",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/pricing",
+        "https://docs.anthropic.com/en/docs/about-claude/models/overview",
+        "https://ai.google.dev/gemini-api/docs/models"
+      ],
+      "notes": "官方頁面主線已轉為 GPT-5.2/5.1、Claude Opus 4.1/Sonnet 4.5、Gemini 2.5。"
+    },
+    {
+      "id": "cr-002",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 42,
+      "claim": "GPT-5.3 Codex context = 400K",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/models/gpt-5.2"
+      ],
+      "notes": "官方有 GPT-5.2-preview 400K context；內容需更新到現行型號命名。"
+    },
+    {
+      "id": "cr-003",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 50,
+      "claim": "Claude Opus 4.6",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://docs.anthropic.com/en/docs/about-claude/models/overview"
+      ],
+      "notes": "官方目前重點為 Opus 4.1、Sonnet 4.5。"
+    },
+    {
+      "id": "cr-004",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 52,
+      "claim": "Opus 4.6 提供 1M beta context",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://docs.anthropic.com/en/docs/about-claude/models/overview"
+      ],
+      "notes": "1M token context beta 係針對 Sonnet 4/4.5，唔係 Opus 4.1。"
+    },
+    {
+      "id": "cr-005",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 60,
+      "claim": "Gemini 3 Pro / Flash 命名",
+      "claimType": "capability",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://ai.google.dev/gemini-api/docs/models"
+      ],
+      "notes": "官方 Gemini API 目前主線為 2.5 系列。"
+    },
+    {
+      "id": "cr-006",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 86,
+      "claim": "DeepSeek V3.2 API 價格 $0.28/$0.42",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://api-docs.deepseek.com/quick_start/pricing/",
+        "https://api-docs.deepseek.com/"
+      ],
+      "notes": "官方頁面之間對 V3.2-Exp 價格/上下文存在差異，應按指定模型版本標註。"
+    },
+    {
+      "id": "cr-007",
+      "file": "portfolio/src/game/system-design/src/topics/AIModelComparison.jsx",
+      "line": 95,
+      "claim": "Cursor Pro $20/月",
+      "claimType": "numeric",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://cursor.com/pricing"
+      ],
+      "notes": "可保留，但建議加 asOf 日期。"
+    },
+    {
+      "id": "cr-008",
+      "file": "portfolio/src/game/system-design/src/topics/AIToolsLandscape.jsx",
+      "line": 46,
+      "claim": "OpenClaw 183K GitHub stars",
+      "claimType": "numeric",
+      "verdict": "Unverifiable",
+      "confidence": "low",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [],
+      "notes": "目前冇對應官方一手來源，建議刪除或改為可追溯來源。"
+    },
+    {
+      "id": "cr-009",
+      "file": "portfolio/src/game/system-design/src/topics/AIToolsLandscape.jsx",
+      "line": 160,
+      "claim": "Gemini Flash API $0.075/1M tokens",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://ai.google.dev/gemini-api/docs/pricing"
+      ],
+      "notes": "現行 2.5 Flash pricing 結構與舊數值不同。"
+    },
+    {
+      "id": "cr-010",
+      "file": "portfolio/src/game/system-design/src/topics/APITokenSecurity.jsx",
+      "line": 38,
+      "claim": "Claude Opus 4.6 $15/$75",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://docs.anthropic.com/en/docs/about-claude/pricing",
+        "https://docs.anthropic.com/en/docs/about-claude/models/overview"
+      ],
+      "notes": "型號命名需對齊 Opus 4.1；價錢可保留但要對應正確模型名稱。"
+    },
+    {
+      "id": "cr-011",
+      "file": "portfolio/src/game/system-design/src/topics/APITokenSecurity.jsx",
+      "line": 45,
+      "claim": "Claude Sonnet 4.5 $3/$15",
+      "claimType": "numeric",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://docs.anthropic.com/en/docs/about-claude/pricing"
+      ],
+      "notes": "建議補 asOf 日期同來源。"
+    },
+    {
+      "id": "cr-012",
+      "file": "portfolio/src/game/system-design/src/topics/APITokenSecurity.jsx",
+      "line": 52,
+      "claim": "GPT-5.3 Codex $2/$10",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/pricing"
+      ],
+      "notes": "OpenAI pricing 頁面列出現行型號與價格，命名與數值需要重對。"
+    },
+    {
+      "id": "cr-013",
+      "file": "portfolio/src/game/system-design/src/topics/APITokenSecurity.jsx",
+      "line": 59,
+      "claim": "Gemini 3 Pro $2-4 / $12-18",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://ai.google.dev/gemini-api/docs/pricing"
+      ],
+      "notes": "應改為 Gemini 2.5 Pro/Flash 當前 pricing。"
+    },
+    {
+      "id": "cr-014",
+      "file": "portfolio/src/game/system-design/src/topics/APITokenSecurity.jsx",
+      "line": 66,
+      "claim": "Gemini 3 Flash $0.10/$0.40",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://ai.google.dev/gemini-api/docs/pricing"
+      ],
+      "notes": "應按 2.5 Flash 當前表格更新。"
+    },
+    {
+      "id": "cr-015",
+      "file": "portfolio/src/game/system-design/src/topics/OpenSourceAI.jsx",
+      "line": 18,
+      "claim": "Llama 4 Scout 10M context、OpenClaw 183K stars",
+      "claimType": "numeric",
+      "verdict": "Unverifiable",
+      "confidence": "low",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [],
+      "notes": "缺官方一手來源鏈接，屬高風險市場宣稱。"
+    },
+    {
+      "id": "cr-016",
+      "file": "portfolio/src/game/system-design/src/topics/OpenSourceAI.jsx",
+      "line": 38,
+      "claim": "開源 AI API 定價 $0.28-0.42/1M",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://api-docs.deepseek.com/quick_start/pricing/",
+        "https://api-docs.deepseek.com/"
+      ],
+      "notes": "DeepSeek 不同頁面數值差異，需綁定具體模型版本。"
+    },
+    {
+      "id": "cr-017",
+      "file": "portfolio/src/game/system-design/src/topics/MCPProtocol.jsx",
+      "line": 20,
+      "claim": "MCP + Sub-agent + OpenAI Plugin 係三大模式",
+      "claimType": "capability",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://openai.com/index/introducing-gpts/",
+        "https://modelcontextprotocol.io/introduction",
+        "https://platform.openai.com/docs/guides/function-calling"
+      ],
+      "notes": "OpenAI plugin 已過渡到 GPTs/Actions，內容需重寫。"
+    },
+    {
+      "id": "cr-018",
+      "file": "portfolio/src/game/system-design/src/topics/MCPProtocol.jsx",
+      "line": 117,
+      "claim": "MCP 採用 JSON-RPC 協議",
+      "claimType": "capability",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://modelcontextprotocol.io/specification/2025-11-05"
+      ],
+      "notes": "屬官方規格，可保留。"
+    },
+    {
+      "id": "cr-019",
+      "file": "portfolio/src/game/system-design/src/topics/MCPProtocol.jsx",
+      "line": 198,
+      "claim": "Plugin 只限 OpenAI 生態",
+      "claimType": "capability",
+      "verdict": "Needs Update",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://openai.com/index/introducing-gpts/"
+      ],
+      "notes": "需改為 GPTs/Actions 能力描述，避免沿用舊 plugin 詞彙。"
+    },
+    {
+      "id": "cr-020",
+      "file": "portfolio/src/game/system-design/src/topics/Deployment.jsx",
+      "line": 81,
+      "claim": "Vercel Hobby 100GB/月，Pro $20/月/成員",
+      "claimType": "numeric",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://vercel.com/pricing"
+      ],
+      "notes": "需加 asOf 日期，並避免寫死細項配額。"
+    },
+    {
+      "id": "cr-021",
+      "file": "portfolio/src/game/system-design/src/topics/Deployment.jsx",
+      "line": 114,
+      "claim": "Render Free instance + 750 小時 + 100GB + Starter $7/月",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://render.com/pricing"
+      ],
+      "notes": "Render 方案近年改動頻繁，建議改為『以官方 pricing 為準』動態欄位。"
+    },
+    {
+      "id": "cr-022",
+      "file": "portfolio/src/game/system-design/src/topics/Deployment.jsx",
+      "line": 143,
+      "claim": "Railway Trial $5 credit / 500 小時",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://railway.com/pricing"
+      ],
+      "notes": "官方現行重點係 Hobby $5 minimum usage，需改版位文案。"
+    },
+    {
+      "id": "cr-023",
+      "file": "portfolio/src/game/system-design/src/topics/Deployment.jsx",
+      "line": 233,
+      "claim": "Supabase Free/Pro 配額（含 egress / DB 上限）",
+      "claimType": "numeric",
+      "verdict": "Verified",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://supabase.com/pricing",
+        "https://supabase.com/docs/guides/platform/manage-your-usage"
+      ],
+      "notes": "大方向正確，但細項配額需每月巡檢。"
+    },
+    {
+      "id": "cr-024",
+      "file": "portfolio/src/game/system-design/src/topics/Deployment.jsx",
+      "line": 272,
+      "claim": "Firebase App Hosting 可免費層直接用",
+      "claimType": "capability",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://firebase.google.com/docs/app-hosting/costs"
+      ],
+      "notes": "官方指出 App Hosting 需啟用 Blaze plan。"
+    },
+    {
+      "id": "cr-025",
+      "file": "portfolio/src/game/system-design/src/topics/LocalhostHosting.jsx",
+      "line": 87,
+      "claim": "Cloudflare Tunnel / Quick Tunnel 免費可用",
+      "claimType": "capability",
+      "verdict": "Verified",
+      "confidence": "medium",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/create-remote-tunnel/",
+        "https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/do-more-with-tunnels/trycloudflare/"
+      ],
+      "notes": "可用但能力與安全限制要補充。"
+    },
+    {
+      "id": "cr-026",
+      "file": "portfolio/src/game/system-design/src/topics/LocalhostHosting.jsx",
+      "line": 103,
+      "claim": "ngrok 免費方案可用",
+      "claimType": "capability",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://ngrok.com/pricing"
+      ],
+      "notes": "可用，但配額與限制需標注。"
+    },
+    {
+      "id": "cr-027",
+      "file": "portfolio/src/game/system-design/src/data/content/ai-basics-start-here.json",
+      "line": 65,
+      "claim": "GPT-5.3 Codex / Opus 4.6 / Gemini 3",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/pricing",
+        "https://docs.anthropic.com/en/docs/about-claude/models/overview",
+        "https://ai.google.dev/gemini-api/docs/models"
+      ],
+      "notes": "首頁課程入口屬高流量，需優先修正。"
+    },
+    {
+      "id": "cr-028",
+      "file": "portfolio/src/game/system-design/src/data/content/ai-basics-start-here.json",
+      "line": 209,
+      "claim": "工具對比表價格與型號（ChatGPT/Claude/Gemini/Cursor）",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/pricing",
+        "https://docs.anthropic.com/en/docs/about-claude/pricing",
+        "https://ai.google.dev/gemini-api/docs/pricing",
+        "https://cursor.com/pricing"
+      ],
+      "notes": "建議拆成動態價格卡 + asOf 日期。"
+    },
+    {
+      "id": "cr-029",
+      "file": "portfolio/src/game/system-design/src/data/topics.json",
+      "line": 32,
+      "claim": "topic subtitle 寫死型號版本（GPT-5.3 / Opus 4.6 / Gemini 3）",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/pricing",
+        "https://docs.anthropic.com/en/docs/about-claude/models/overview",
+        "https://ai.google.dev/gemini-api/docs/models"
+      ],
+      "notes": "導航與列表文案應改成非版本綁死語句。"
+    },
+    {
+      "id": "cr-030",
+      "file": "portfolio/src/game/system-design/src/data/coachingPrompts.js",
+      "line": 72,
+      "claim": "教練 prompt 聲稱 11 款工具與其 context/pricing 均精準掌握",
+      "claimType": "strategy",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://platform.openai.com/docs/pricing",
+        "https://docs.anthropic.com/en/docs/about-claude/pricing",
+        "https://ai.google.dev/gemini-api/docs/pricing"
+      ],
+      "notes": "需加入『以 asOf 日期+來源為準』約束，避免教練胡亂報價。"
+    },
+    {
+      "id": "cr-031",
+      "file": "portfolio/src/game/system-design/src/data/coachingPrompts.js",
+      "line": 134,
+      "claim": "Claude Opus/GPT-5/Gemini Flash 價格區間",
+      "claimType": "numeric",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://docs.anthropic.com/en/docs/about-claude/pricing",
+        "https://platform.openai.com/docs/pricing",
+        "https://ai.google.dev/gemini-api/docs/pricing"
+      ],
+      "notes": "需改為動態引用而非靜態硬編。"
+    },
+    {
+      "id": "cr-032",
+      "file": "portfolio/src/game/system-design/src/data/coachingPrompts.js",
+      "line": 146,
+      "claim": "MCP vs OpenAI Plugins vs function calling（三者並行現況）",
+      "claimType": "capability",
+      "verdict": "Needs Update",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "https://modelcontextprotocol.io/introduction",
+        "https://platform.openai.com/docs/guides/function-calling",
+        "https://openai.com/index/introducing-gpts/"
+      ],
+      "notes": "Plugin 詞彙應收斂到歷史背景，主線改為 GPTs/Actions + function calling + MCP。"
+    },
+    {
+      "id": "cr-033",
+      "file": "portfolio/src/game/system-design/src/pages/Premium.jsx",
+      "line": 40,
+      "claim": "未來會轉月費制",
+      "claimType": "strategy",
+      "verdict": "Unverifiable",
+      "confidence": "low",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [],
+      "notes": "屬內部商業策略，應在後台可配置而非寫死前端文案。"
+    },
+    {
+      "id": "cr-034",
+      "file": "portfolio/src/game/system-design/src/pages/Premium.jsx",
+      "line": 50,
+      "claim": "Standard 售價 HK$150（原價 HK$750）",
+      "claimType": "numeric",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "internal:premiumPlans"
+      ],
+      "notes": "已抽離為 `premiumPlans.js` 配置。"
+    },
+    {
+      "id": "cr-035",
+      "file": "portfolio/src/game/system-design/src/pages/Premium.jsx",
+      "line": 99,
+      "claim": "Pro 售價 HK$399（原價 HK$1,999）",
+      "claimType": "numeric",
+      "verdict": "Verified",
+      "confidence": "high",
+      "checkDate": "2026-02-16",
+      "sourceUrls": [
+        "internal:premiumPlans"
+      ],
+      "notes": "已抽離為 `premiumPlans.js` 配置。"
+    }
+  ]
+}

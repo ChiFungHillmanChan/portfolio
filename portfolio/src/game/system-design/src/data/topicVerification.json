@@ -1,0 +1,542 @@
+{
+  "schemaVersion": "2026-02",
+  "asOfDate": "2026-02-16",
+  "topics": [
+    {
+      "slug": "ai-basics-start-here",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "ai-tools-landscape",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "ai-model-comparison",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "prompt-engineering",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
+    },
+    {
+      "slug": "prompt-cheat-sheet",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "skill-vs-agent",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
+    },
+    {
+      "slug": "context-rot-solution",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
+    },
+    {
+      "slug": "sdd-spec-driven-development",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "api-token-security",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "multi-ai-workflow",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 4
+    },
+    {
+      "slug": "ai-evaluation-loop",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
+    },
+    {
+      "slug": "mcp-protocol",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "ai-idea-generation",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "open-source-ai",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "mock-design",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 2
+    },
+    {
+      "slug": "backend-roadmap",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "junior-vs-senior",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "ai-vs-software-engineer",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "interview-process",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "star-method",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "coding-interview",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "git-vs-github",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "print-vs-debugger",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "docker",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "dependency-injection",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "system-design-patterns",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "coding-agent-design",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "port-forwarding",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "localhost-hosting",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "cdn",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "load-balancer",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "api-gateway",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "large-api-response",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "rate-limiter",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "scraping-vs-crawling",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "database-basics",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "object-storage",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "redis",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "key-value-store",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "unique-id-generator",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "pick-database",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "cache-invalidation",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "scale-reads",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "distributed-cache",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "fix-slow-database",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "task-queue",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "notification-system",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "message-queue",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "session-manager",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "url-shortener",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "search-autocomplete",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "web-crawler",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "news-feed",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "chat-system",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "chess-game-design",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "video-streaming",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "payment-system",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "authentication",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "self-host-vs-cloud",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "metrics-logging",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "monitoring",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "cicd-pipeline",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "server-vs-serverless",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "secure-ai-agents",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "ai-scraper-defense",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "deployment",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    },
+    {
+      "slug": "references",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": null
+    }
+  ]
+}

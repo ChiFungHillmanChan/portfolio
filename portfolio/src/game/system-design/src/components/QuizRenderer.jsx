@@ -1,16 +1,18 @@
 import { useState } from 'react';
 
-export default function QuizRenderer({ data }) {
+export default function QuizRenderer({ data, quizData }) {
   const [answers, setAnswers] = useState({});
   const [showScore, setShowScore] = useState(false);
 
-  if (!data || data.length === 0) return null;
+  // Backward-compatible input: new prop is `data`, legacy prop is `quizData`.
+  const quizItems = data ?? quizData ?? [];
+  if (quizItems.length === 0) return null;
 
   const handleAnswer = (qIndex, optIndex, correct) => {
-    if (answers[qIndex] !== undefined) return; // already answered
+    if (answers[qIndex] !== undefined) return;
     const next = { ...answers, [qIndex]: { optIndex, correct } };
     setAnswers(next);
-    if (Object.keys(next).length === data.length) {
+    if (Object.keys(next).length === quizItems.length) {
       setShowScore(true);
     }
   };
@@ -21,7 +23,7 @@ export default function QuizRenderer({ data }) {
     <div className="card mt-6">
       <h2 className="text-lg font-bold text-text-primary mb-4">📝 小測驗</h2>
 
-      {data.map((q, qi) => (
+      {quizItems.map((q, qi) => (
         <div key={qi} className="mb-6 last:mb-0">
           <p className="text-text-secondary text-[0.95rem] mb-3 font-medium">
             {qi + 1}. {q.question}
@@ -72,7 +74,7 @@ export default function QuizRenderer({ data }) {
       {showScore && (
         <div className="mt-4 p-4 rounded-lg bg-bg-tertiary border border-border text-center">
           <span className="text-lg font-bold text-text-primary">
-            得分：{score} / {data.length}
+            得分：{score} / {quizItems.length}
           </span>
         </div>
       )}
