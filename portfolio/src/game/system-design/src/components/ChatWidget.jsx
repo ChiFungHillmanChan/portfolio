@@ -302,10 +302,10 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
                   <span>🆓 Free</span><span className="text-text-muted">{TIER_LIMITS.free} 次/日</span>
                 </div>
                 <div className="flex justify-between text-text-dim">
-                  <span>🔓 Standard (HK$150)</span><span className="text-accent-indigo-light">{TIER_LIMITS.standard} 次/日</span>
+                  <span>🔓 Standard (<span className="line-through text-text-dimmer">$750</span> HK$150)</span><span className="text-accent-indigo-light">{TIER_LIMITS.standard} 次/日</span>
                 </div>
                 <div className="flex justify-between text-text-dim">
-                  <span>⚡ Pro (HK$399)</span><span className="text-amber-400">{TIER_LIMITS.pro} 次/日</span>
+                  <span>⚡ Pro (<span className="line-through text-text-dimmer">$1,999</span> HK$399)</span><span className="text-amber-400">{TIER_LIMITS.pro} 次/日</span>
                 </div>
               </div>
             </div>
@@ -318,8 +318,8 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
             >
               <span>🔓</span>
               <div className="flex-1">
-                <div className="text-sm font-bold">解鎖更多 AI 用量</div>
-                <div className="text-xs text-text-dim">Standard HK$150 · Pro HK$399</div>
+                <div className="text-sm font-bold">早鳥價 80% OFF · 鎖定永久存取</div>
+                <div className="text-xs text-text-dim"><span className="line-through">$750</span> HK$150 · <span className="line-through">$1,999</span> HK$399</div>
               </div>
               <span className="text-text-dim">&rarr;</span>
             </a>

@@ -91,8 +91,8 @@ export default function AuthGate({ onDismiss, requirePremium, featureName }) {
           >
             <span className="text-xl">🔓</span>
             <div className="flex-1">
-              <div className="text-sm font-bold">HK$150 一次性解鎖</div>
-              <div className="text-[0.7rem] text-text-dim">付款後即時解鎖所有 Premium 功能</div>
+              <div className="text-sm font-bold"><span className="line-through text-text-dimmer font-normal">HK$750</span> HK$150 一次性解鎖</div>
+              <div className="text-[0.7rem] text-text-dim">早鳥價 80% OFF · 永久存取 · 未來將轉月費制</div>
             </div>
             <span className="text-text-dim">&rarr;</span>
           </a>

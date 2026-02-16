@@ -8,11 +8,15 @@ export default function PremiumGate() {
     <div className="card flex flex-col items-center text-center py-16">
       <div className="text-5xl mb-4">🔒</div>
       <h3 className="text-xl font-bold text-text-primary mb-2">Premium 內容</h3>
-      <p className="text-text-muted text-sm leading-relaxed max-w-md mb-6">
+      <p className="text-text-muted text-sm leading-relaxed max-w-md mb-2">
         呢個部分包含實戰練習同 AI 提示模板。
-        <br />
-        付款 HK$150 即時解鎖全部 Premium 內容。
       </p>
+      <div className="flex items-baseline justify-center gap-2 mb-1">
+        <span className="text-sm text-text-dimmer line-through">HK$750</span>
+        <span className="text-lg font-bold text-text-primary">HK$150</span>
+      </div>
+      <div className="inline-block px-2 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.65rem] font-semibold mb-1">早鳥價 · 慳 HK$600</div>
+      <p className="text-[0.65rem] text-text-darkest mb-6">一次性付款 · 永久存取 · 未來將轉月費制</p>
       <div className="flex gap-3">
         <a
           href={STRIPE_URL}
@@ -20,7 +24,7 @@ export default function PremiumGate() {
           rel="noopener noreferrer"
           className="px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-lg font-medium text-sm transition-colors"
         >
-          解鎖 Premium — HK$150
+          立即鎖定早鳥價 — HK$150
         </a>
         <button
           onClick={() => navigate('/premium')}

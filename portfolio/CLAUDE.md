@@ -14,15 +14,17 @@ portfolio/
 
 **Location:** `src/game/system-design/`
 **Stack:** React 18 + Vite 6 + Tailwind 3 + Firebase Auth/Firestore
-**Deploy:** Vite SPA with HashRouter, served via iframe in portfolio wrapper
+**Deploy:** Dual build — Firebase Hosting (standalone) + portfolio iframe embed
 
 ### Architecture
 
 - **Frontend:** React SPA (`src/`) — topics, coaching, projects, AI chat
 - **Backend API:** `api.system-design.hillmanchan.com` — AI chat, auth, Stripe webhooks
 - **Auth:** Firebase Google Sign-In → ID token → backend Bearer auth
-- **Premium:** Stripe payment → webhook → backend Admin SDK → Firestore `users/{uid}.premium`
-- **State:** localStorage for progress/cache, Firestore for premium status (source of truth)
+- **Premium:** Stripe payment → webhook → backend Admin SDK → Firestore `users/{uid}.premium` + `users/{uid}.tier`
+- **Tiers:** free (5 AI/day) | standard HK$150 (20 AI/day) | pro HK$399 (80 AI/day)
+- **State:** localStorage for progress/cache + daily AI usage, Firestore for premium status (source of truth)
+- **Content Security:** Premium AI-core topics use `React.lazy()` code-splitting — JS chunks only fetched when component renders, page-level gate prevents rendering for non-premium users
 
 ### Key Files
 
@@ -31,12 +33,19 @@ portfolio/
 | `src/config/firebase.js` | Firebase init (env vars, no fallbacks) |
 | `src/config/constants.js` | API_BASE, STRIPE_URL |
 | `src/context/AuthContext.jsx` | Google auth + token refresh |
-| `src/context/PremiumContext.jsx` | Premium status (Firestore read + localStorage cache) |
+| `src/context/PremiumContext.jsx` | Premium status + tier (free/standard/pro), TIER_LIMITS |
 | `src/context/ProgressContext.jsx` | Topic view tracking (localStorage) |
 | `src/components/Layout.jsx` | Sidebar + main layout, desktop collapse |
-| `src/components/Sidebar.jsx` | Navigation, auto-expand on topic click |
-| `src/components/ChatWidget.jsx` | AI chat (search/viber/suggest) |
-| `src/topics/*.jsx` | 70+ topic pages |
+| `src/components/Sidebar.jsx` | Nav, horizontal-scroll filters, fixed footer with plan badge |
+| `src/components/ChatWidget.jsx` | AI chat (search/viber/suggest), daily usage tracking, full-screen mobile |
+| `src/components/PremiumGate.jsx` | Lock screen with discount pricing for premium content |
+| `src/components/AuthGate.jsx` | Login/premium gate modal with pricing |
+| `src/pages/Premium.jsx` | Two-tier pricing page (Standard/Pro) with early-bird discount |
+| `src/pages/Settings.jsx` | Profile, plan status, upgrade cards, admin panel, progress |
+| `src/pages/AIPlanner.jsx` | AI learning plan generator (mode: guide) |
+| `src/topics/index.js` | Topic registry — React.lazy() for premium, static for free |
+| `src/pages/TopicPage.jsx` | Topic renderer with page-level premium gate + Suspense |
+| `src/data/topics.json` | Master topic registry (order, categories, free/premium flags) |
 
 ### Environment Variables (`.env`, gitignored)
 
@@ -52,26 +61,45 @@ VITE_SUPERADMIN_EMAILS          # comma-separated, no fallback
 
 ### Security Rules
 
-- Firestore rules block client-side writes to `premium`, `activatedAt`, `sessionId`, `superadmin`
-- Only backend Admin SDK (bypasses rules) can write premium status
+- Firestore rules block client-side writes to `premium`, `tier`, `activatedAt`, `sessionId`, `superadmin`
+- Only backend Admin SDK (bypasses rules) can write premium status + tier
 - `activatePremium()` only caches locally; Firestore write is server-side only
 - Superadmin emails loaded from env var, not hardcoded
+- Premium AI-core topics lazy-loaded — non-premium users never download the JS chunks
 
 ### Build & Deploy
 
 ```bash
 cd portfolio/src/game/system-design
-npm run build          # outputs to dist/
-firebase deploy        # or deploy dist/ to Cloudflare Pages
+
+# Standalone (system-design.hillmanchan.com via Firebase Hosting)
+STANDALONE_BUILD=1 npm run build    # → dist/
+firebase deploy --only hosting
+
+# Portfolio embed (hillmanchan.com/games/system-design/)
+npm run build                       # → dist-portfolio/
+rm -rf ../../public/games/system-design/assets
+cp -r dist-portfolio/* ../../public/games/system-design/
 ```
+
+### Pricing (Early-Bird)
+
+| Plan | Price | Original | Discount | Daily AI |
+|------|-------|----------|----------|----------|
+| Free | $0 | — | — | 5 |
+| Standard | HK$150 | HK$750 | 80% OFF | 20 |
+| Pro | HK$399 | HK$1,999 | 80% OFF | 80 |
+
+Pricing shown across: Premium.jsx, Settings.jsx, PremiumGate.jsx, ChatWidget.jsx, AuthGate.jsx.
+All display strikethrough original price + urgency about future monthly subscription switch.
 
 ### Scale Plans
 
 See `docs/plans/system-design/future-plan-1000users.md` for:
 - AI response caching (50-70% cost reduction)
 - Tiered AI models (GPT-4o-mini for search, GPT-4 for coaching)
-- Rate limiting (free: 5/day, premium: 50/day)
-- Cloudflare Pages migration (free bandwidth)
+- Rate limiting (implemented: free 5/day, standard 20/day, pro 80/day)
+- Firebase Hosting (migrated from Cloudflare Pages)
 
 ---
 
