@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Port Forwarding 端口轉發 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Port Forwarding 端口轉發</h1>
+      <p>點樣穿過 NAT 網絡將外部請求導向內網設備</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="basics">① Port Forwarding 基礎</button>
+      <button class="tab-btn" data-tab="nat">② NAT 網絡轉換</button>
+      <button class="tab-btn" data-tab="tunneling">③ Tunneling 穿透</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+    </div>
+
+    <!-- TAB 1: Basics -->
+    <div class="tab-content active" id="basics">
+      <div class="card">
+        <h2>Port Forwarding 係咩</h2>
+        <div class="subtitle">Router 裡面嘅一條規則</div>
+        <p>
+          重點係一個好常見嘅情景：想喺屋企部電腦整個 Minecraft Server，然後俾朋友喺外面 connect 入嚟。但係問題嚟喇——對方應該 connect 去邊度？本地電腦得個內網 IP（例如 192.168.1.100），Internet 上面根本睇唔到呢個地址。
+        </p>
+        <p>
+          呢個時候就需要 Port Forwarding。簡單嚟講，就係喺 Router 裡面設定一條規則：「如果有請求打上嚟 public IP 嘅 port 80，就將佢轉發去內網 192.168.1.100 嘅 port 3000」。呢樣嘢就叫做 Port Forwarding（端口轉發）。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 720 400" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#34d399" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradFriend" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradRouter" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradLaptop" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPhone" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+            </defs>
+
+            <!-- Internet Friend -->
+            <g transform="translate(30,150)">
+              <rect width="110" height="75" rx="14" fill="url(#gradFriend)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="55" y="30" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">朋友</text>
+              <text x="55" y="50" text-anchor="middle" fill="#9ca3af" font-size="10">Internet 外面</text>
+            </g>
+
+            <!-- Router with Port Forwarding -->
+            <g transform="translate(280,110)">
+              <rect width="180" height="160" rx="16" fill="url(#gradRouter)" stroke="#34d399" stroke-width="2.5" filter="url(#glowGreen)"/>
+              <text x="90" y="30" text-anchor="middle" fill="#34d399" font-size="15" font-weight="700">Router</text>
+              <text x="90" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">路由器</text>
+              <line x1="20" y1="66" x2="160" y2="66" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="90" y="84" text-anchor="middle" fill="#34d399" font-size="10">Public IP:</text>
+              <text x="90" y="100" text-anchor="middle" fill="#fbbf24" font-size="10.5" font-weight="600">203.0.113.5</text>
+              <line x1="20" y1="112" x2="160" y2="112" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="90" y="130" text-anchor="middle" fill="#a5b4fc" font-size="9.5">Port Forwarding 規則:</text>
+              <text x="90" y="146" text-anchor="middle" fill="#fbbf24" font-size="9.5">:80 → 192.168.1.100:3000</text>
+            </g>
+
+            <!-- Laptop (Minecraft Server) -->
+            <g transform="translate(555,85)">
+              <rect width="140" height="85" rx="14" fill="url(#gradLaptop)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="26" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="700">Laptop</text>
+              <text x="70" y="44" text-anchor="middle" fill="#9ca3af" font-size="9.5">192.168.1.100</text>
+              <text x="70" y="60" text-anchor="middle" fill="#fbbf24" font-size="9.5">Minecraft Server</text>
+              <text x="70" y="75" text-anchor="middle" fill="#34d399" font-size="9.5">Port 3000</text>
+            </g>
+
+            <!-- Phone (Home Device) -->
+            <g transform="translate(555,210)">
+              <rect width="140" height="75" rx="14" fill="url(#gradPhone)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="26" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Phone</text>
+              <text x="70" y="44" text-anchor="middle" fill="#9ca3af" font-size="9.5">192.168.1.50</text>
+              <text x="70" y="60" text-anchor="middle" fill="#9ca3af" font-size="9.5">內網其他設備</text>
+            </g>
+
+            <!-- Arrow: Friend to Router -->
+            <path d="M142,187 C200,187 220,180 278,180" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="180" y="175" text-anchor="middle" fill="#6366f1" font-size="10">203.0.113.5:80</text>
+
+            <!-- Arrow: Router to Laptop (curved) -->
+            <path d="M462,165 C500,155 520,130 553,127" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrGreen)"/>
+            <text x="500" y="145" text-anchor="middle" fill="#34d399" font-size="10">轉發到</text>
+            <text x="500" y="160" text-anchor="middle" fill="#fbbf24" font-size="9.5">192.168.1.100:3000</text>
+
+            <!-- Cloud label -->
+            <text x="85" y="320" text-anchor="middle" fill="#9ca3af" font-size="11">Internet</text>
+            <text x="360" y="330" text-anchor="middle" fill="#9ca3af" font-size="11">屋企內網</text>
+            <line x1="240" y1="310" x2="240" y2="360" stroke="#2a2d3a" stroke-width="2" stroke-dasharray="4"/>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">運作流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>對方喺 Internet 上面發請求到 Public IP（203.0.113.5）嘅 port 80。</span></li>
+          <li><span class="step-num">2</span><span>Router 收到呢個請求，檢查 Port Forwarding 規則表：「喔，port 80 嘅請求要轉發去 192.168.1.100 嘅 port 3000」。</span></li>
+          <li><span class="step-num">3</span><span>Router 將請求轉發到 Laptop 嘅 port 3000（Minecraft Server 喺度聽緊）。</span></li>
+          <li><span class="step-num">4</span><span>Minecraft Server 處理完請求，將 response 返俾 Router，Router 再返俾對方。全程對方只知道 Public IP，唔知道內網結構。</span></li>
+        </ol>
+
+        <div class="use-case">
+          <h4>實際用途</h4>
+          <p>Port Forwarding 最常見嘅用途：架設遊戲 Server（Minecraft、CS:GO）、自建網站放喺屋企 Server、遠程桌面（RDP）、家用 NAS 外部存取、安全監控系統遠程查看。只要想俾外界 access 內網嘅某個 service，就需要 Port Forwarding。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 2: NAT -->
+    <div class="tab-content" id="nat">
+      <div class="card">
+        <h2>NAT 網絡轉換</h2>
+        <div class="subtitle">點解屋企只有一個 Public IP，但係成十部裝置都上到網？</div>
+
+        <p>
+          以下探討一個好核心嘅問題：點解屋企咁多部 Phone、Laptop、電視、Switch 都可以同時上網，但係 ISP（網絡供應商）只俾咗一個 Public IP？答案就係 NAT（Network Address Translation，網絡地址轉換）。
+        </p>
+        <p>
+          NAT 係 Router 做嘅一個超重要功能。簡單講，Router 將所有內網設備嘅 Private IP（例如 192.168.x.x）「翻譯」成佢自己嘅 Public IP，然後發出去 Internet。當 response 返嚟嗰陣，Router 再根據 port number 將 response 送返俾啱嘅內網設備。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <linearGradient id="gradDevice1" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradDevice2" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradDevice3" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradRouterNAT" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradInternet" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d1515"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrOrange" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#F59E0B"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+            </defs>
+
+            <!-- Phone -->
+            <g transform="translate(30,60)">
+              <rect width="130" height="65" rx="14" fill="url(#gradDevice1)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Phone</text>
+              <text x="65" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">192.168.1.50</text>
+            </g>
+
+            <!-- Laptop -->
+            <g transform="translate(30,165)">
+              <rect width="130" height="65" rx="14" fill="url(#gradDevice2)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="700">Laptop</text>
+              <text x="65" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">192.168.1.100</text>
+            </g>
+
+            <!-- TV -->
+            <g transform="translate(30,270)">
+              <rect width="130" height="65" rx="14" fill="url(#gradDevice3)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Smart TV</text>
+              <text x="65" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">192.168.1.70</text>
+            </g>
+
+            <!-- Router NAT -->
+            <g transform="translate(270,125)">
+              <rect width="180" height="160" rx="16" fill="url(#gradRouterNAT)" stroke="#3B82F6" stroke-width="2.5" filter="url(#shadow)"/>
+              <text x="90" y="30" text-anchor="middle" fill="#3B82F6" font-size="15" font-weight="700">Router (NAT)</text>
+              <line x1="20" y1="45" x2="160" y2="45" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="90" y="64" text-anchor="middle" fill="#34d399" font-size="10">Public IP:</text>
+              <text x="90" y="80" text-anchor="middle" fill="#fbbf24" font-size="10.5" font-weight="600">203.0.113.5</text>
+              <line x1="20" y1="92" x2="160" y2="92" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="90" y="110" text-anchor="middle" fill="#a5b4fc" font-size="9.5">NAT 轉換表:</text>
+              <text x="90" y="126" text-anchor="middle" fill="#34d399" font-size="8.5">192.168.1.50 → :5001</text>
+              <text x="90" y="140" text-anchor="middle" fill="#F59E0B" font-size="8.5">192.168.1.100 → :5002</text>
+              <text x="90" y="154" text-anchor="middle" fill="#8B5CF6" font-size="8.5">192.168.1.70 → :5003</text>
+            </g>
+
+            <!-- Internet -->
+            <g transform="translate(560,140)">
+              <rect width="130" height="100" rx="14" fill="url(#gradInternet)" stroke="#EF4444" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="30" text-anchor="middle" fill="#EF4444" font-size="13" font-weight="700">Internet</text>
+              <text x="65" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">Google Server</text>
+              <text x="65" y="68" text-anchor="middle" fill="#9ca3af" font-size="10">Facebook Server</text>
+              <text x="65" y="84" text-anchor="middle" fill="#9ca3af" font-size="10">...</text>
+            </g>
+
+            <!-- Arrows: Devices to Router -->
+            <path d="M162,92 C200,92 220,150 268,165" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+            <path d="M162,197 C200,197 230,200 268,200" fill="none" stroke="#F59E0B" stroke-width="1.5" marker-end="url(#arrOrange)"/>
+            <path d="M162,302 C200,302 220,240 268,225" fill="none" stroke="#8B5CF6" stroke-width="1.5" marker-end="url(#arrPurple)"/>
+
+            <!-- Arrow: Router to Internet -->
+            <path d="M452,205 C490,205 520,195 558,195" fill="none" stroke="#3B82F6" stroke-width="2" marker-end="url(#arrGreen)"/>
+            <text x="505" y="195" text-anchor="middle" fill="#3B82F6" font-size="10">統一用</text>
+            <text x="505" y="210" text-anchor="middle" fill="#fbbf24" font-size="9.5">203.0.113.5</text>
+
+            <!-- Labels -->
+            <text x="95" y="380" text-anchor="middle" fill="#9ca3af" font-size="11">Private IP (內網)</text>
+            <text x="360" y="380" text-anchor="middle" fill="#9ca3af" font-size="11">NAT 轉換</text>
+            <text x="625" y="380" text-anchor="middle" fill="#9ca3af" font-size="11">Public IP (外網)</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">NAT 運作原理</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>Phone（192.168.1.50）發請求去 Google。請求去到 Router，Router 記低：「呢個請求係由 192.168.1.50 發出，分配 port 5001 俾佢」。</span></li>
+          <li><span class="step-num">2</span><span>Router 將 source IP 改成自己嘅 Public IP（203.0.113.5），source port 改成 5001，然後發出去 Internet。</span></li>
+          <li><span class="step-num">3</span><span>Google 收到請求，睇到 source 係 203.0.113.5:5001。Google 返 response 返去呢個地址。</span></li>
+          <li><span class="step-num">4</span><span>Router 收到 response，睇返 NAT 表：「port 5001 對應 192.168.1.50」，將 response 轉發俾 Phone。Phone 就收到 Google 嘅 response 喇。</span></li>
+        </ol>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Private IP 地址範圍</h4>
+            <p>192.168.0.0 – 192.168.255.255、10.0.0.0 – 10.255.255.255、172.16.0.0 – 172.31.255.255。呢啲地址只喺內網用，Internet 路由器唔會轉發呢啲地址。</p>
+          </div>
+          <div class="key-point">
+            <h4>Public IP 短缺問題</h4>
+            <p>IPv4 得 43 億個地址，全世界人口加埋都唔夠分。NAT 解決咗呢個問題——一個 Public IP 可以俾成千部內網設備共用。但係呢個方案有個代價，就係唔能夠直接 host service 俾外界 access（需要 Port Forwarding）。</p>
+          </div>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin: 24px 0 12px;">Carrier-Grade NAT（CGNAT）問題</h3>
+        <p>
+          重點係一個好多人會遇到嘅問題：有時喺 Router 設定好晒 Port Forwarding，但係外面嘅人仍然 connect 唔到 Server。點解？答案可能係 ISP 用緊 Carrier-Grade NAT（電信級 NAT，簡稱 CGNAT）。
+        </p>
+        <p>
+          CGNAT 即係話，ISP 將成百上千間屋企嘅網絡共用同一個 Public IP。表面上 Router 好似有個 Public IP，其實唔係——Router 得到嘅都係一個 Private IP（例如 100.64.x.x），ISP 嘅大 Router 先至有真正嘅 Public IP。呢個情況下，根本冇辦法做 Port Forwarding，因為控制唔到 ISP 嗰個大 Router 嘅設定。
+        </p>
+
+        <div class="use-case">
+          <h4>點樣知道自己係咪 CGNAT？</h4>
+          <p>去 Router 管理頁面睇 WAN IP。如果個 IP 係 100.64.x.x、10.x.x.x、172.16.x.x，但係用網站（例如 whatismyip.com）查到嘅 Public IP 唔同，咁就係 CGNAT 嘞。解決方法：要求 ISP 俾一個真正嘅 Public IP（可能要加錢），或者用 Tunneling 方案。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 3: Tunneling -->
+    <div class="tab-content" id="tunneling">
+      <div class="card">
+        <h2>Tunneling 穿透技術</h2>
+        <div class="subtitle">點樣喺 CGNAT 環境下都 host 到 service</div>
+
+        <p>
+          如果遇到 CGNAT 問題，或者根本冇權限去 Router 設定 Port Forwarding（例如喺公司、學校網絡），咁 Tunneling 就係最佳方案。Tunneling 嘅原理好簡單：唔係直接 listen 喺本地 port，而係將 local server「隧道」出去一個有 Public IP 嘅中介服務器，外界訪問嗰個中介服務器，中介服務器再轉發到本地。
+        </p>
+        <p>
+          最出名嘅 Tunneling 方案係 ngrok 同 Cloudflare Tunnel。呢啲服務提供一個 Public URL（例如 https://abc123.ngrok.io），外界訪問呢個 URL，請求就會經過中介服務器隧道到本地 machine。全程唔需要改 Router 設定，亦唔需要有 Public IP。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 720 420" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowPurple" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#8B5CF6" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradUser" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradTunnel" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradLocal" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+              <marker id="arrOrange" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#F59E0B"/></marker>
+            </defs>
+
+            <!-- User -->
+            <g transform="translate(30,160)">
+              <rect width="120" height="75" rx="14" fill="url(#gradUser)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="60" y="28" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">外部用戶</text>
+              <text x="60" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">Internet</text>
+            </g>
+
+            <!-- Tunnel Service (ngrok / Cloudflare) -->
+            <g transform="translate(260,100)">
+              <rect width="200" height="190" rx="16" fill="url(#gradTunnel)" stroke="#8B5CF6" stroke-width="2.5" filter="url(#glowPurple)"/>
+              <text x="100" y="30" text-anchor="middle" fill="#8B5CF6" font-size="15" font-weight="700">Tunnel Service</text>
+              <text x="100" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">ngrok / Cloudflare Tunnel</text>
+              <line x1="20" y1="66" x2="180" y2="66" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="100" y="84" text-anchor="middle" fill="#34d399" font-size="10">Public URL:</text>
+              <text x="100" y="100" text-anchor="middle" fill="#fbbf24" font-size="10" font-weight="600">abc123.ngrok.io</text>
+              <line x1="20" y1="112" x2="180" y2="112" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="100" y="130" text-anchor="middle" fill="#a5b4fc" font-size="9.5">中介服務器</text>
+              <text x="100" y="146" text-anchor="middle" fill="#9ca3af" font-size="9.5">有 Public IP</text>
+              <text x="100" y="162" text-anchor="middle" fill="#9ca3af" font-size="9.5">建立隧道到</text>
+              <text x="100" y="178" text-anchor="middle" fill="#9ca3af" font-size="9.5">Local Server</text>
+            </g>
+
+            <!-- Local Server (Behind CGNAT) -->
+            <g transform="translate(555,125)">
+              <rect width="140" height="145" rx="14" fill="url(#gradLocal)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#F59E0B" font-size="13" font-weight="700">Local Server</text>
+              <text x="70" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">本地電腦</text>
+              <line x1="15" y1="60" x2="125" y2="60" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="70" y="78" text-anchor="middle" fill="#9ca3af" font-size="9.5">localhost:3000</text>
+              <text x="70" y="94" text-anchor="middle" fill="#9ca3af" font-size="9.5">冇 Public IP</text>
+              <text x="70" y="110" text-anchor="middle" fill="#9ca3af" font-size="9.5">可能係 CGNAT</text>
+              <line x1="15" y1="122" x2="125" y2="122" stroke="#2a2d3a" stroke-width="1"/>
+              <text x="70" y="137" text-anchor="middle" fill="#34d399" font-size="9.5">主動連接到 Tunnel</text>
+            </g>
+
+            <!-- Arrow: User to Tunnel Service -->
+            <path d="M152,197 C190,197 220,195 258,195" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="205" y="188" text-anchor="middle" fill="#6366f1" font-size="10">訪問</text>
+            <text x="205" y="215" text-anchor="middle" fill="#fbbf24" font-size="9.5">abc123.ngrok.io</text>
+
+            <!-- Arrow: Tunnel Service to Local Server (bidirectional curve) -->
+            <path d="M462,180 C500,170 520,160 553,165" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrPurple)"/>
+            <text x="507" y="160" text-anchor="middle" fill="#8B5CF6" font-size="10">隧道轉發</text>
+
+            <path d="M553,215 C520,220 500,230 462,220" fill="none" stroke="#F59E0B" stroke-width="2" marker-end="url(#arrOrange)"/>
+            <text x="507" y="240" text-anchor="middle" fill="#F59E0B" font-size="10">Response</text>
+
+            <!-- Step labels -->
+            <text x="90" y="360" text-anchor="middle" fill="#6366f1" font-size="11" font-weight="600">1. 訪問 Public URL</text>
+            <text x="360" y="360" text-anchor="middle" fill="#8B5CF6" font-size="11" font-weight="600">2. 中介轉發</text>
+            <text x="625" y="360" text-anchor="middle" fill="#F59E0B" font-size="11" font-weight="600">3. Local 處理</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">Tunneling 運作流程</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>喺 local machine 運行 ngrok 或 Cloudflare Tunnel client，佢會主動連接到中介服務器，建立一條加密嘅隧道（Tunnel）。</span></li>
+          <li><span class="step-num">2</span><span>中介服務器分配一個 Public URL（例如 https://abc123.ngrok.io），外界可以訪問呢個 URL。</span></li>
+          <li><span class="step-num">3</span><span>當有用戶訪問 abc123.ngrok.io，中介服務器將請求經過隧道轉發俾 local server（例如 localhost:3000）。</span></li>
+          <li><span class="step-num">4</span><span>Local server 處理請求，將 response 返俾中介服務器，中介服務器再返俾外部用戶。全程 local server 冇暴露任何 Public IP。</span></li>
+        </ol>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>ngrok</h4>
+            <p>最出名嘅 Tunneling 服務。免費版會產生一個隨機 URL，付費版可以用 custom domain。超方便做 webhook testing、demo 俾 client 睇、暫時 share local dev server。</p>
+          </div>
+          <div class="key-point">
+            <h4>Cloudflare Tunnel</h4>
+            <p>Cloudflare 提供嘅 Tunnel 服務，免費版已經好夠用。可以用自己嘅 domain，仲有 DDoS protection。適合長期用嚟 host home server。</p>
+          </div>
+          <div class="key-point">
+            <h4>安全考量</h4>
+            <p>Tunneling 雖然方便，但係請求會經過第三方服務器，要注意：唔好傳敏感資料、記得加 authentication、定期 rotate tunnel URL。如果係公司項目，check 清楚公司政策准唔准用第三方 tunnel。</p>
+          </div>
+          <div class="key-point">
+            <h4>效能影響</h4>
+            <p>因為多咗一層中介服務器，latency 會比直接 Port Forwarding 高少少（通常多 20-50ms）。但係呢個代價對於大部分應用嚟講係可以接受嘅，特別係冇其他選擇嘅時候。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>結論</h4>
+          <p>如果控制到 Router，又有真正嘅 Public IP，用 Port Forwarding 係最直接嘅方法。但係如果遇到 CGNAT、公司網絡限制、或者想快速 share local dev server，Tunneling 絕對係最佳方案。兩種方法都要識，睇情況揀啱嘅工具。最重要係明白背後嘅原理——NAT 點解會阻止外界連入嚟，以及點樣用技術手段穿過呢個障礙。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TAB 4: AI Viber -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設定 Local Dev Server Port Forwarding</h4>
+          <div class="prompt-text" id="prompt1">幫手寫一份完整嘅 Port Forwarding 設定教學，目標係將本地 <span class="placeholder">[開發框架，例如 Next.js / Express / Flask]</span> 跑緊嘅 dev server（port <span class="placeholder">[本地 port，例如 3000]</span>）透過 Router Port Forwarding 俾外部裝置 access。
+
+包含以下內容：
+1. 點樣搵到本機內網 IP（macOS + Windows 指令）
+2. Router 管理頁面入面 Port Forwarding 規則應該點填（External Port、Internal IP、Internal Port）
+3. 用 whatismyip.com 驗證 Public IP，再用外部裝置測試連線
+4. 檢查係咪 CGNAT 嘅方法（對比 Router WAN IP 同 Public IP）
+5. 如果係 CGNAT，建議用 ngrok 或 Cloudflare Tunnel 作為替代方案
+
+輸出格式：Step-by-step 教學，每步附帶實際指令或截圖提示。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 用 Nginx Reverse Proxy 做 Port Mapping</h4>
+          <div class="prompt-text" id="prompt2">幫手寫一份 Nginx reverse proxy 配置，實現以下 port mapping：
+
+目標環境：<span class="placeholder">[部署環境，例如 Ubuntu VPS / Docker]</span>
+Domain：<span class="placeholder">[domain 名，例如 myapp.example.com]</span>
+
+需要 mapping 嘅 service：
+- 主應用跑喺 localhost:<span class="placeholder">[port，例如 3000]</span> → 對外 port 80/443
+- API service 跑喺 localhost:<span class="placeholder">[port，例如 8080]</span> → 對外路徑 /api
+
+包含以下內容：
+1. 完整嘅 nginx.conf 或 sites-available 配置檔
+2. SSL 設定（用 Let's Encrypt / Certbot）
+3. WebSocket proxy 支持（如果適用）
+4. 常見錯誤排查（502 Bad Gateway、connection refused）
+5. 用 curl 測試每個 route 嘅指令
+
+輸出格式：可以直接複製貼上嘅配置檔 + 部署步驟。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — Cloudflare Tunnel 快速部署 Local Service</h4>
+          <div class="prompt-text" id="prompt3">幫手寫一份 Cloudflare Tunnel（cloudflared）嘅完整設定指南，將本地 <span class="placeholder">[service 類型，例如 Web App / Minecraft Server / NAS]</span> 安全咁暴露到 Internet。
+
+本地 service 跑緊嘅 port：<span class="placeholder">[port，例如 3000]</span>
+想用嘅 domain：<span class="placeholder">[domain，例如 app.mydomain.com]</span>
+
+包含以下內容：
+1. 安裝 cloudflared（macOS / Linux / Windows）
+2. 登入 Cloudflare 帳戶同埋授權
+3. 建立 Tunnel 同埋配置 config.yml
+4. DNS record 自動設定
+5. 設定為 system service（開機自動啟動）
+6. 加 Access Policy 做認證保護（可選）
+7. 同 ngrok 嘅比較（免費版功能、速度、穩定性）
+
+輸出格式：從零開始嘅 Step-by-step 指南，每步附帶終端指令。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

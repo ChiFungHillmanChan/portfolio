@@ -28,5 +28,10 @@ firestore-debug.log
 ui-debug.log
 *-firebase-adminsdk-*.json
 
+# Lambda dependencies
+lambda/*/node_modules/
+lambda/data/users.json
+*.zip
+
 # OS files
 .DS_Store

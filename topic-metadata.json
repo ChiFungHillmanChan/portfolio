@@ -1,0 +1,418 @@
+[
+  {
+    "id": "backend-roadmap",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["junior-vs-senior", "git-vs-github", "database-basics"],
+    "related": ["ai-vs-software-engineer", "interview-process"],
+    "tags": ["career", "beginner"]
+  },
+  {
+    "id": "junior-vs-senior",
+    "difficulty": 1,
+    "prerequisites": ["backend-roadmap"],
+    "leads_to": ["system-design-patterns", "interview-process"],
+    "related": ["ai-vs-software-engineer", "star-method"],
+    "tags": ["career", "beginner"]
+  },
+  {
+    "id": "ai-vs-software-engineer",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["coding-agent-design", "secure-ai-agents"],
+    "related": ["backend-roadmap", "junior-vs-senior"],
+    "tags": ["career", "ai"]
+  },
+  {
+    "id": "interview-process",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["star-method", "coding-interview"],
+    "related": ["backend-roadmap", "junior-vs-senior"],
+    "tags": ["career", "interview-hot"]
+  },
+  {
+    "id": "star-method",
+    "difficulty": 1,
+    "prerequisites": ["interview-process"],
+    "leads_to": ["coding-interview"],
+    "related": ["junior-vs-senior"],
+    "tags": ["career", "interview-hot"]
+  },
+  {
+    "id": "coding-interview",
+    "difficulty": 1,
+    "prerequisites": ["interview-process"],
+    "leads_to": [],
+    "related": ["star-method", "system-design-patterns"],
+    "tags": ["career", "interview-hot"]
+  },
+  {
+    "id": "git-vs-github",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["cicd-pipeline", "docker"],
+    "related": ["print-vs-debugger", "deployment"],
+    "tags": ["engineering", "beginner"]
+  },
+  {
+    "id": "print-vs-debugger",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["metrics-logging", "monitoring"],
+    "related": ["git-vs-github"],
+    "tags": ["engineering", "beginner"]
+  },
+  {
+    "id": "docker",
+    "difficulty": 2,
+    "prerequisites": ["git-vs-github"],
+    "leads_to": ["deployment", "cicd-pipeline", "server-vs-serverless"],
+    "related": ["self-host-vs-cloud"],
+    "tags": ["engineering", "interview-hot"]
+  },
+  {
+    "id": "dependency-injection",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": ["system-design-patterns"],
+    "related": ["coding-agent-design"],
+    "tags": ["engineering", "design-pattern"]
+  },
+  {
+    "id": "system-design-patterns",
+    "difficulty": 2,
+    "prerequisites": ["dependency-injection"],
+    "leads_to": ["load-balancer", "api-gateway", "message-queue"],
+    "related": ["junior-vs-senior", "coding-agent-design"],
+    "tags": ["engineering", "interview-hot"]
+  },
+  {
+    "id": "coding-agent-design",
+    "difficulty": 3,
+    "prerequisites": ["system-design-patterns"],
+    "leads_to": ["secure-ai-agents"],
+    "related": ["ai-vs-software-engineer", "dependency-injection"],
+    "tags": ["engineering", "ai"]
+  },
+  {
+    "id": "port-forwarding",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["localhost-hosting"],
+    "related": ["cdn", "load-balancer"],
+    "tags": ["network", "beginner"]
+  },
+  {
+    "id": "localhost-hosting",
+    "difficulty": 1,
+    "prerequisites": ["port-forwarding"],
+    "leads_to": ["cdn", "deployment"],
+    "related": ["self-host-vs-cloud", "server-vs-serverless"],
+    "tags": ["network", "beginner"]
+  },
+  {
+    "id": "cdn",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": ["cache-invalidation", "load-balancer"],
+    "related": ["object-storage", "scale-reads"],
+    "tags": ["network", "performance", "interview-hot"]
+  },
+  {
+    "id": "load-balancer",
+    "difficulty": 2,
+    "prerequisites": ["cdn"],
+    "leads_to": ["api-gateway", "scale-reads"],
+    "related": ["rate-limiter", "distributed-cache"],
+    "tags": ["network", "performance", "interview-hot"]
+  },
+  {
+    "id": "api-gateway",
+    "difficulty": 2,
+    "prerequisites": ["load-balancer"],
+    "leads_to": ["rate-limiter", "authentication"],
+    "related": ["large-api-response", "session-manager"],
+    "tags": ["network", "interview-hot"]
+  },
+  {
+    "id": "large-api-response",
+    "difficulty": 2,
+    "prerequisites": ["api-gateway"],
+    "leads_to": [],
+    "related": ["cdn", "cache-invalidation", "scale-reads"],
+    "tags": ["network", "performance"]
+  },
+  {
+    "id": "rate-limiter",
+    "difficulty": 2,
+    "prerequisites": ["api-gateway"],
+    "leads_to": ["distributed-cache"],
+    "related": ["redis", "ai-scraper-defense"],
+    "tags": ["network", "interview-hot"]
+  },
+  {
+    "id": "scraping-vs-crawling",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": ["web-crawler", "ai-scraper-defense"],
+    "related": ["search-autocomplete"],
+    "tags": ["network"]
+  },
+  {
+    "id": "database-basics",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": ["pick-database", "key-value-store", "fix-slow-database"],
+    "related": ["redis", "object-storage"],
+    "tags": ["storage", "beginner", "interview-hot"]
+  },
+  {
+    "id": "pick-database",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": ["fix-slow-database", "scale-reads"],
+    "related": ["key-value-store", "redis"],
+    "tags": ["storage", "interview-hot"]
+  },
+  {
+    "id": "redis",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": ["distributed-cache", "session-manager"],
+    "related": ["key-value-store", "cache-invalidation"],
+    "tags": ["storage", "cache", "interview-hot"]
+  },
+  {
+    "id": "key-value-store",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": ["redis", "distributed-cache"],
+    "related": ["pick-database", "session-manager"],
+    "tags": ["storage", "interview-hot"]
+  },
+  {
+    "id": "object-storage",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": ["cdn", "video-streaming"],
+    "related": ["pick-database"],
+    "tags": ["storage"]
+  },
+  {
+    "id": "unique-id-generator",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": ["url-shortener"],
+    "related": ["distributed-cache", "pick-database"],
+    "tags": ["storage", "interview-hot"]
+  },
+  {
+    "id": "cache-invalidation",
+    "difficulty": 2,
+    "prerequisites": ["cdn"],
+    "leads_to": ["distributed-cache", "fix-slow-database"],
+    "related": ["redis", "scale-reads"],
+    "tags": ["cache", "performance", "interview-hot"]
+  },
+  {
+    "id": "fix-slow-database",
+    "difficulty": 2,
+    "prerequisites": ["database-basics", "pick-database"],
+    "leads_to": ["scale-reads", "distributed-cache"],
+    "related": ["cache-invalidation", "redis"],
+    "tags": ["cache", "performance", "interview-hot"]
+  },
+  {
+    "id": "scale-reads",
+    "difficulty": 3,
+    "prerequisites": ["fix-slow-database"],
+    "leads_to": ["distributed-cache"],
+    "related": ["load-balancer", "cdn", "cache-invalidation"],
+    "tags": ["cache", "performance", "interview-hot"]
+  },
+  {
+    "id": "distributed-cache",
+    "difficulty": 3,
+    "prerequisites": ["redis", "cache-invalidation"],
+    "leads_to": [],
+    "related": ["scale-reads", "load-balancer", "rate-limiter"],
+    "tags": ["cache", "performance", "interview-hot"]
+  },
+  {
+    "id": "task-queue",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": ["message-queue", "notification-system"],
+    "related": ["redis"],
+    "tags": ["async", "interview-hot"]
+  },
+  {
+    "id": "notification-system",
+    "difficulty": 2,
+    "prerequisites": ["task-queue"],
+    "leads_to": ["message-queue"],
+    "related": ["chat-system", "news-feed"],
+    "tags": ["async", "interview-hot"]
+  },
+  {
+    "id": "message-queue",
+    "difficulty": 3,
+    "prerequisites": ["task-queue"],
+    "leads_to": [],
+    "related": ["notification-system", "distributed-cache", "system-design-patterns"],
+    "tags": ["async", "interview-hot"]
+  },
+  {
+    "id": "url-shortener",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": [],
+    "related": ["key-value-store", "redis", "unique-id-generator"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "session-manager",
+    "difficulty": 2,
+    "prerequisites": ["authentication"],
+    "leads_to": [],
+    "related": ["redis", "api-gateway", "key-value-store"],
+    "tags": ["app", "security"]
+  },
+  {
+    "id": "search-autocomplete",
+    "difficulty": 2,
+    "prerequisites": ["database-basics"],
+    "leads_to": [],
+    "related": ["key-value-store", "redis", "web-crawler"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "web-crawler",
+    "difficulty": 2,
+    "prerequisites": ["scraping-vs-crawling"],
+    "leads_to": ["search-autocomplete"],
+    "related": ["task-queue", "message-queue"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "news-feed",
+    "difficulty": 3,
+    "prerequisites": ["database-basics", "cache-invalidation"],
+    "leads_to": [],
+    "related": ["notification-system", "message-queue", "chat-system"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "chat-system",
+    "difficulty": 3,
+    "prerequisites": ["message-queue"],
+    "leads_to": [],
+    "related": ["notification-system", "news-feed", "session-manager"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "chess-game-design",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [],
+    "related": ["session-manager", "system-design-patterns"],
+    "tags": ["app"]
+  },
+  {
+    "id": "video-streaming",
+    "difficulty": 3,
+    "prerequisites": ["cdn", "object-storage"],
+    "leads_to": [],
+    "related": ["load-balancer", "large-api-response"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "payment-system",
+    "difficulty": 3,
+    "prerequisites": ["authentication", "api-gateway"],
+    "leads_to": [],
+    "related": ["notification-system", "message-queue", "session-manager"],
+    "tags": ["app", "interview-hot"]
+  },
+  {
+    "id": "authentication",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": ["session-manager", "secure-ai-agents"],
+    "related": ["payment-system", "api-gateway"],
+    "tags": ["security", "interview-hot"]
+  },
+  {
+    "id": "server-vs-serverless",
+    "difficulty": 2,
+    "prerequisites": ["docker"],
+    "leads_to": ["deployment", "self-host-vs-cloud"],
+    "related": ["cicd-pipeline"],
+    "tags": ["security", "deploy"]
+  },
+  {
+    "id": "self-host-vs-cloud",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": ["deployment"],
+    "related": ["docker", "localhost-hosting", "server-vs-serverless"],
+    "tags": ["security", "deploy"]
+  },
+  {
+    "id": "metrics-logging",
+    "difficulty": 2,
+    "prerequisites": ["print-vs-debugger"],
+    "leads_to": ["monitoring"],
+    "related": ["cicd-pipeline"],
+    "tags": ["security", "observability"]
+  },
+  {
+    "id": "monitoring",
+    "difficulty": 2,
+    "prerequisites": ["metrics-logging"],
+    "leads_to": [],
+    "related": ["cicd-pipeline", "deployment"],
+    "tags": ["security", "observability"]
+  },
+  {
+    "id": "cicd-pipeline",
+    "difficulty": 2,
+    "prerequisites": ["git-vs-github", "docker"],
+    "leads_to": ["deployment"],
+    "related": ["monitoring", "server-vs-serverless"],
+    "tags": ["security", "deploy", "interview-hot"]
+  },
+  {
+    "id": "secure-ai-agents",
+    "difficulty": 3,
+    "prerequisites": ["authentication", "coding-agent-design"],
+    "leads_to": [],
+    "related": ["ai-scraper-defense", "ai-vs-software-engineer"],
+    "tags": ["security", "ai"]
+  },
+  {
+    "id": "ai-scraper-defense",
+    "difficulty": 2,
+    "prerequisites": ["scraping-vs-crawling"],
+    "leads_to": [],
+    "related": ["rate-limiter", "secure-ai-agents", "web-crawler"],
+    "tags": ["security", "ai"]
+  },
+  {
+    "id": "deployment",
+    "difficulty": 2,
+    "prerequisites": ["docker"],
+    "leads_to": [],
+    "related": ["cicd-pipeline", "server-vs-serverless", "self-host-vs-cloud"],
+    "tags": ["deploy"]
+  },
+  {
+    "id": "references",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [],
+    "related": [],
+    "tags": ["resource"]
+  }
+]

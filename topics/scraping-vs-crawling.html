@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Scraping vs Crawling — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card h3 { color: #ffffff; font-size: 1.1rem; margin: 20px 0 12px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } .tab-btn { font-size: 0.8rem; padding: 10px 12px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    .compare-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 0.88rem; }
+    .compare-table th { text-align: left; padding: 12px 14px; background: #13151c; color: #a5b4fc; font-weight: 600; border-bottom: 2px solid #2a2d3a; }
+    .compare-table td { padding: 10px 14px; border-bottom: 1px solid #2a2d3a; color: #c0c4cc; vertical-align: top; line-height: 1.6; }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table .label { color: #9ca3af; font-weight: 500; white-space: nowrap; width: 120px; }
+    .tag-scraping { color: #f59e0b; font-weight: 600; }
+    .tag-crawling { color: #34d399; font-weight: 600; }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Web Scraping vs Crawling</h1>
+      <p>提取數據定探索地圖？兩種技術嘅目的、做法同法律考量</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="scraping">① Web Scraping</button>
+      <button class="tab-btn" data-tab="crawling">② Web Crawling</button>
+      <button class="tab-btn" data-tab="comparison">③ 分別同應用</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+    </div>
+
+    <!-- ===================== TAB 1: Web Scraping ===================== -->
+    <div class="tab-content active" id="scraping">
+      <div class="card">
+        <h2>Web Scraping 網頁抓取</h2>
+        <div class="subtitle">已經知道網址，只想提取特定資料</div>
+        <p>
+          以下介紹 Web Scraping 呢個技術。簡單講，Scraping 就係當<strong>已經知道網址</strong>嘅時候，去嗰個網頁度<strong>提取想要嘅特定資料</strong>。
+        </p>
+        <p>
+          舉個例——假設需要每日追蹤 Amazon 上面廁紙嘅價錢。已經有個 product URL，唔需要喺成個 Amazon 度搵，只係想攞嗰個價錢。呢個就係 Scraping 嘅典型應用。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 850 320" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowAmber" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur"/>
+                <feFlood flood-color="#f59e0b" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradAmber" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#1f1a10"/>
+              </linearGradient>
+              <linearGradient id="gradBlue" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#172033"/>
+              </linearGradient>
+              <linearGradient id="gradPurple" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#1c1530"/>
+              </linearGradient>
+              <linearGradient id="gradPink" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#25132a"/>
+              </linearGradient>
+              <marker id="arrAmber" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#f59e0b"/>
+              </marker>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/>
+              </marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/>
+              </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="425" y="25" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="700">Web Scraping 流程</text>
+
+            <!-- Known URL -->
+            <g transform="translate(40,80)">
+              <rect width="140" height="70" rx="14" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">Known URL</text>
+              <text x="70" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">已知網址</text>
+              <text x="70" y="62" text-anchor="middle" fill="#6366f1" font-size="9">amazon.com/toilet-paper</text>
+            </g>
+
+            <!-- Scraper -->
+            <g transform="translate(240,80)">
+              <rect width="150" height="70" rx="14" fill="url(#gradAmber)" stroke="#f59e0b" stroke-width="2" filter="url(#glowAmber)"/>
+              <text x="75" y="28" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="700">Scraper</text>
+              <text x="75" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">解析網頁</text>
+              <text x="75" y="62" text-anchor="middle" fill="#fbbf24" font-size="9">BeautifulSoup / Scrapy</text>
+            </g>
+
+            <!-- Extract Data -->
+            <g transform="translate(450,80)">
+              <rect width="150" height="70" rx="14" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="75" y="28" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Extract Data</text>
+              <text x="75" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">提取目標資料</text>
+              <text x="75" y="62" text-anchor="middle" fill="#a78bfa" font-size="9">價格 / 評論 / 庫存</text>
+            </g>
+
+            <!-- Storage -->
+            <g transform="translate(660,80)">
+              <rect width="140" height="70" rx="14" fill="url(#gradPink)" stroke="#EC4899" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#EC4899" font-size="12" font-weight="700">Storage</text>
+              <text x="70" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">儲存數據</text>
+              <text x="70" y="62" text-anchor="middle" fill="#f9a8d4" font-size="9">Database / CSV</text>
+            </g>
+
+            <!-- Arrows -->
+            <path d="M 180 115 Q 210 115 238 115" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="210" y="105" text-anchor="middle" fill="#a5b4fc" font-size="9">Visit</text>
+
+            <path d="M 390 115 Q 420 115 448 115" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrAmber)"/>
+            <text x="420" y="105" text-anchor="middle" fill="#fbbf24" font-size="9">Parse</text>
+
+            <path d="M 600 115 Q 630 115 658 115" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrPurple)"/>
+            <text x="630" y="105" text-anchor="middle" fill="#a78bfa" font-size="9">Save</text>
+
+            <!-- Daily schedule loop -->
+            <path d="M 730 150 Q 730 230 110 230 Q 110 180 110 152" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrBlue)"/>
+            <text x="425" y="252" text-anchor="middle" fill="#34d399" font-size="10">每日定時執行（例：每朝 8 點）</text>
+
+            <!-- Example box -->
+            <g transform="translate(180,190)">
+              <rect width="490" height="32" rx="8" fill="rgba(245,158,11,0.08)" stroke="#f59e0b" stroke-width="1"/>
+              <text x="245" y="21" text-anchor="middle" fill="#c0c4cc" font-size="10">
+                用例：追蹤競爭對手價格、監控庫存、收集產品評論
+              </text>
+            </g>
+          </svg>
+        </div>
+
+        <h3>Scraping 嘅步驟</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>已經有目標 URL——例如某個產品頁、某個新聞網站嘅文章頁。</span></li>
+          <li><span class="step-num">2</span><span>用 Scraper 工具（例如 Python 嘅 BeautifulSoup、Scrapy）去攞呢個網頁嘅 HTML。</span></li>
+          <li><span class="step-num">3</span><span>解析 HTML，提取需要嘅特定資料——可能係價錢、標題、日期、評論等等。</span></li>
+          <li><span class="step-num">4</span><span>將數據儲存落 Database、CSV 或者其他格式，方便之後分析。</span></li>
+          <li><span class="step-num">5</span><span>設定定時執行（例如每日跑一次），持續收集數據。</span></li>
+        </ol>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>目標明確</h4>
+            <p>Scraping 嘅重點係已經知道去邊度攞資料，目標非常清晰——唔係亂爬，係針對性提取。</p>
+          </div>
+          <div class="key-point">
+            <h4>常見用例</h4>
+            <p>價格監控、競爭對手分析、新聞聚合、房地產資料收集、股票資訊追蹤等等。</p>
+          </div>
+          <div class="key-point">
+            <h4>工具選擇</h4>
+            <p>Python 生態系統最豐富：BeautifulSoup（簡單）、Scrapy（專業）、Selenium（處理 JavaScript）。</p>
+          </div>
+          <div class="key-point">
+            <h4>法律風險</h4>
+            <p>Scraping 通常係合法嘅，但要小心：唔好賣人哋嘅數據、唔好打爆人哋 Server、留意 Terms of Service。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>真實案例：價格追蹤</h4>
+          <p>好多電商比價網站（例如 CamelCamelCamel 追蹤 Amazon 價格）就係用 Scraping 技術。佢哋每日去指定嘅產品頁面，提取價錢，然後記錄低嚟畫圖。用戶就可以睇到價格變化歷史，知道幾時買最抵。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 2: Web Crawling ===================== -->
+    <div class="tab-content" id="crawling">
+      <div class="card">
+        <h2>Web Crawling 網頁爬行</h2>
+        <div class="subtitle">唔知有咩網址，要探索同建立網站地圖</div>
+        <p>
+          Web Crawling 就完全唔同。Crawling 係關於<strong>可發現性（Discoverability）</strong>——去到一個網站，唔知入面有咩，於是四圍戳、搵連結、跟住連結去新頁面、再搵更多連結。最後就可以建立出<strong>成個網站嘅地圖</strong>。
+        </p>
+        <p>
+          Google 做嘅就係呢樣嘢。Google 嘅 Crawler（叫 Googlebot）會從一組種子 URL 開始，不斷爬、不斷發現新網頁，建立一個包含幾千億個頁面嘅索引。呢個索引就係用 Google Search 嘅時候搵到結果嘅基礎。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 850 360" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadowCrawl" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur"/>
+                <feFlood flood-color="#34d399" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#13251e"/>
+              </linearGradient>
+              <linearGradient id="gradBlueCrawl" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#172033"/>
+              </linearGradient>
+              <linearGradient id="gradRedCrawl" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#251318"/>
+              </linearGradient>
+              <linearGradient id="gradYellow" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#1f1e10"/>
+              </linearGradient>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/>
+              </marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/>
+              </marker>
+              <marker id="arrRed" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#ef4444"/>
+              </marker>
+            </defs>
+
+            <!-- Title -->
+            <text x="425" y="25" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">Web Crawling 流程 — 探索同建立地圖</text>
+
+            <!-- Seed URL -->
+            <g transform="translate(350,70)">
+              <rect width="150" height="70" rx="14" fill="url(#gradBlueCrawl)" stroke="#3B82F6" stroke-width="2" filter="url(#shadowCrawl)"/>
+              <text x="75" y="28" text-anchor="middle" fill="#3B82F6" font-size="12" font-weight="700">Seed URL</text>
+              <text x="75" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">起始點</text>
+              <text x="75" y="62" text-anchor="middle" fill="#6366f1" font-size="9">example.com</text>
+            </g>
+
+            <!-- Crawler -->
+            <g transform="translate(350,180)">
+              <rect width="150" height="70" rx="14" fill="url(#gradGreen)" stroke="#34d399" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="75" y="28" text-anchor="middle" fill="#34d399" font-size="12" font-weight="700">Crawler</text>
+              <text x="75" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">探索網頁</text>
+              <text x="75" y="62" text-anchor="middle" fill="#6ee7b7" font-size="9">Follow Links</text>
+            </g>
+
+            <!-- Discovered URLs -->
+            <g transform="translate(60,280)">
+              <rect width="120" height="60" rx="14" fill="url(#gradYellow)" stroke="#fbbf24" stroke-width="2" filter="url(#shadowCrawl)"/>
+              <text x="60" y="25" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">URL A</text>
+              <text x="60" y="44" text-anchor="middle" fill="#9ca3af" font-size="9">/about</text>
+            </g>
+
+            <g transform="translate(220,280)">
+              <rect width="120" height="60" rx="14" fill="url(#gradYellow)" stroke="#fbbf24" stroke-width="2" filter="url(#shadowCrawl)"/>
+              <text x="60" y="25" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">URL B</text>
+              <text x="60" y="44" text-anchor="middle" fill="#9ca3af" font-size="9">/products</text>
+            </g>
+
+            <g transform="translate(380,280)">
+              <rect width="120" height="60" rx="14" fill="url(#gradYellow)" stroke="#fbbf24" stroke-width="2" filter="url(#shadowCrawl)"/>
+              <text x="60" y="25" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">URL C</text>
+              <text x="60" y="44" text-anchor="middle" fill="#9ca3af" font-size="9">/blog</text>
+            </g>
+
+            <g transform="translate(540,280)">
+              <rect width="120" height="60" rx="14" fill="url(#gradYellow)" stroke="#fbbf24" stroke-width="2" filter="url(#shadowCrawl)"/>
+              <text x="60" y="25" text-anchor="middle" fill="#fbbf24" font-size="11" font-weight="700">URL D</text>
+              <text x="60" y="44" text-anchor="middle" fill="#9ca3af" font-size="9">/contact</text>
+            </g>
+
+            <!-- Index -->
+            <g transform="translate(670,180)">
+              <rect width="130" height="70" rx="14" fill="url(#gradRedCrawl)" stroke="#ef4444" stroke-width="2" filter="url(#shadowCrawl)"/>
+              <text x="65" y="28" text-anchor="middle" fill="#ef4444" font-size="12" font-weight="700">Search Index</text>
+              <text x="65" y="46" text-anchor="middle" fill="#9ca3af" font-size="10">建立索引</text>
+              <text x="65" y="62" text-anchor="middle" fill="#fca5a5" font-size="9">Google Search</text>
+            </g>
+
+            <!-- Arrows -->
+            <path d="M 425 140 Q 425 160 425 178" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrGreen)"/>
+            <text x="445" y="162" text-anchor="start" fill="#a5b4fc" font-size="9">Start</text>
+
+            <path d="M 425 250 Q 200 270 120 288" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrYellow)"/>
+            <path d="M 410 250 Q 280 268 280 278" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrYellow)"/>
+            <path d="M 440 250 Q 440 268 440 278" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrYellow)"/>
+            <path d="M 450 250 Q 600 270 600 278" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrYellow)"/>
+            <text x="425" y="267" text-anchor="middle" fill="#6ee7b7" font-size="9">Discover Links</text>
+
+            <path d="M 500 215 Q 600 215 668 215" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arrRed)"/>
+            <text x="585" y="207" text-anchor="middle" fill="#fca5a5" font-size="9">Build Index</text>
+
+            <!-- Loop back -->
+            <path d="M 180 308 Q 180 210 348 210" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrGreen)"/>
+            <path d="M 600 308 Q 600 210 502 210" fill="none" stroke="#34d399" stroke-width="1.5" stroke-dasharray="5,3" marker-end="url(#arrGreen)"/>
+            <text x="120" y="248" text-anchor="middle" fill="#6ee7b7" font-size="9">繼續爬</text>
+            <text x="660" y="248" text-anchor="middle" fill="#6ee7b7" font-size="9">繼續爬</text>
+          </svg>
+        </div>
+
+        <h3>Crawling 嘅步驟</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>由一組 Seed URLs 開始——通常係高質量嘅起點，例如熱門網站首頁。</span></li>
+          <li><span class="step-num">2</span><span>Crawler 打開第一個網頁，下載 HTML 內容。</span></li>
+          <li><span class="step-num">3</span><span>解析 HTML，提取入面所有嘅連結（&lt;a href="..."&gt;）。</span></li>
+          <li><span class="step-num">4</span><span>將新發現嘅 URL 加入待爬隊列（通常用 BFS 策略——廣度優先搜索）。</span></li>
+          <li><span class="step-num">5</span><span>重複步驟 2-4，不斷發現新頁面，建立網站地圖同索引。</span></li>
+        </ol>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>探索性質</h4>
+            <p>Crawling 唔係針對特定資料，而係關於<strong>發現</strong>——去探索一個網站或者成個互聯網有咩內容。</p>
+          </div>
+          <div class="key-point">
+            <h4>SEO 友好</h4>
+            <p>網站擁有者通常會主動方便 Crawler——因為畀 Google 爬到就代表有機會出現喺搜尋結果度，帶來流量。所以會提供 sitemap.xml、優化 robots.txt。</p>
+          </div>
+          <div class="key-point">
+            <h4>規模龐大</h4>
+            <p>Google 嘅 Crawler 每日爬幾十億個網頁。呢種規模需要分佈式系統、去重機制（Bloom Filter）、禮貌策略（Politeness Policy）防止打爆人哋 Server。</p>
+          </div>
+          <div class="key-point">
+            <h4>應用場景</h4>
+            <p>搜尋引擎索引（Google、Bing）、檔案管理器（發現網站結構）、SEO 分析工具、監測網站變化等等。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>真實案例：Google Search</h4>
+          <p>當喺 Google Search 打「廣東話教學」，Google 點知有邊啲網頁包含呢個關鍵字？就係因為 Googlebot 爬過成個互聯網，建立咗一個包含幾千億個頁面嘅索引。每次搜尋其實係喺呢個索引度搵，唔係即時去爬網站——咁樣先可以做到毫秒級嘅回應速度。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 3: Comparison ===================== -->
+    <div class="tab-content" id="comparison">
+      <div class="card">
+        <h2>分別同應用場景</h2>
+        <div class="subtitle">兩者目的完全唔同，但都好有用</div>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 420" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadowComp" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+            </defs>
+
+            <!-- Title -->
+            <text x="400" y="30" text-anchor="middle" fill="#9ca3af" font-size="13" font-weight="500">核心分別</text>
+
+            <!-- Scraping side header -->
+            <g transform="translate(50,60)">
+              <rect width="320" height="40" rx="8" fill="rgba(245,158,11,0.12)" stroke="#f59e0b" stroke-width="1.5"/>
+              <text x="160" y="26" text-anchor="middle" fill="#f59e0b" font-size="14" font-weight="700">Web Scraping</text>
+            </g>
+
+            <!-- Crawling side header -->
+            <g transform="translate(430,60)">
+              <rect width="320" height="40" rx="8" fill="rgba(52,211,153,0.12)" stroke="#34d399" stroke-width="1.5"/>
+              <text x="160" y="26" text-anchor="middle" fill="#34d399" font-size="14" font-weight="700">Web Crawling</text>
+            </g>
+
+            <!-- Row 1: Goal -->
+            <g transform="translate(50,120)">
+              <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1" filter="url(#shadowComp)"/>
+              <text x="160" y="22" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="600">目標</text>
+              <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">提取特定資料</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">已經知道去邊度攞咩</text>
+            </g>
+            <g transform="translate(430,120)">
+              <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1" filter="url(#shadowComp)"/>
+              <text x="160" y="22" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600">目標</text>
+              <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">探索同建立地圖</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">唔知有咩，要去發現</text>
+            </g>
+
+            <!-- Label -->
+            <text x="400" y="160" text-anchor="middle" fill="#4b5563" font-size="11">vs</text>
+
+            <!-- Row 2: Scope -->
+            <g transform="translate(50,210)">
+              <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1" filter="url(#shadowComp)"/>
+              <text x="160" y="22" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="600">範圍</text>
+              <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">單一或少量已知 URL</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">精準打擊，針對性強</text>
+            </g>
+            <g transform="translate(430,210)">
+              <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1" filter="url(#shadowComp)"/>
+              <text x="160" y="22" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600">範圍</text>
+              <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">整個網站或互聯網</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">廣泛探索，建立索引</text>
+            </g>
+
+            <text x="400" y="250" text-anchor="middle" fill="#4b5563" font-size="11">vs</text>
+
+            <!-- Row 3: Use Case -->
+            <g transform="translate(50,300)">
+              <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#f59e0b" stroke-width="1" filter="url(#shadowComp)"/>
+              <text x="160" y="22" text-anchor="middle" fill="#f59e0b" font-size="12" font-weight="600">用例</text>
+              <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">價格監控 / 數據分析</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">競爭對手研究、新聞聚合</text>
+            </g>
+            <g transform="translate(430,300)">
+              <rect width="320" height="70" rx="10" fill="#1e293b" stroke="#34d399" stroke-width="1" filter="url(#shadowComp)"/>
+              <text x="160" y="22" text-anchor="middle" fill="#34d399" font-size="12" font-weight="600">用例</text>
+              <text x="160" y="42" text-anchor="middle" fill="#c0c4cc" font-size="11">搜尋引擎索引 / SEO</text>
+              <text x="160" y="60" text-anchor="middle" fill="#9ca3af" font-size="10">網站地圖、內容發現</text>
+            </g>
+
+            <text x="400" y="340" text-anchor="middle" fill="#4b5563" font-size="11">vs</text>
+
+            <!-- Bottom labels -->
+            <text x="210" y="400" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="500">🎯 針對性提取</text>
+            <text x="590" y="400" text-anchor="middle" fill="#34d399" font-size="11" font-weight="500">🗺 探索性建圖</text>
+          </svg>
+        </div>
+
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th></th>
+              <th>Web Scraping</th>
+              <th>Web Crawling</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="label">🎯 目標</td>
+              <td>提取特定資料（價錢、標題、評論等）</td>
+              <td>發現同建立網站地圖</td>
+            </tr>
+            <tr>
+              <td class="label">🔗 URL 來源</td>
+              <td>已知 URL</td>
+              <td>從 Seed URL 開始探索</td>
+            </tr>
+            <tr>
+              <td class="label">📊 資料範圍</td>
+              <td>精準提取指定欄位</td>
+              <td>收集所有可發現頁面</td>
+            </tr>
+            <tr>
+              <td class="label">🔄 執行頻率</td>
+              <td>定期執行（例：每日一次）</td>
+              <td>持續運行、不斷探索</td>
+            </tr>
+            <tr>
+              <td class="label">⚙️ 技術複雜度</td>
+              <td>相對簡單（HTML 解析）</td>
+              <td>複雜（分佈式系統、去重、禮貌策略）</td>
+            </tr>
+            <tr>
+              <td class="label">⚖️ 法律考量</td>
+              <td>通常合法，但唔好賣數據</td>
+              <td>網站擁有者通常歡迎（有助 SEO）</td>
+            </tr>
+            <tr>
+              <td class="label">🛠 常用工具</td>
+              <td>BeautifulSoup, Scrapy, Selenium</td>
+              <td>Scrapy（爬蟲模式）、自訂 Crawler</td>
+            </tr>
+            <tr>
+              <td class="label">💡 典型應用</td>
+              <td>比價網站、數據分析、監控系統</td>
+              <td>Google Search、SEO 工具、檔案管理器</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <h3>法律同道德考量</h3>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Scraping 嘅灰色地帶</h4>
+            <p>提取公開資料通常冇問題，但賣人哋嘅數據可能會有法律風險。要留意 Terms of Service（服務條款）——有啲網站明確禁止 Scraping。</p>
+          </div>
+          <div class="key-point">
+            <h4>Crawling 同 SEO</h4>
+            <p>網站擁有者通常<strong>歡迎</strong> Crawling——因為畀 Google 爬到就代表可以出現喺搜尋結果度。所以會提供 sitemap.xml、優化網站結構、遵守 robots.txt 標準。</p>
+          </div>
+          <div class="key-point">
+            <h4>禮貌爬取</h4>
+            <p>無論 Scraping 定 Crawling，都要<strong>控制請求速率</strong>——唔好每秒打幾十次人哋 Server，咁會被當成 DDoS 攻擊。建議每個 domain 每秒最多 1-2 次請求。</p>
+          </div>
+          <div class="key-point">
+            <h4>遵守 robots.txt</h4>
+            <p>每個網站嘅 /robots.txt 檔案會指明邊啲路徑可以爬、邊啲唔可以。呢個係行業標準，一定要遵守——唔係會被 ban IP。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>實戰建議</h4>
+          <p>好多時候，一個項目會<strong>同時用到</strong>兩種技術。例如：先用 Crawling 去發現一個電商網站有邊啲產品頁面（建立 URL 列表），然後用 Scraping 去針對性提取每個產品嘅價錢同評論。兩者結合先係最強。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 建立 Web Scraper 提取特定數據</h4>
+          <div class="prompt-text" id="prompt1">幫我用 Python 寫一個 web scraper，從 <span class="placeholder">[目標網站，例如：某個電商網站 / 新聞網站 / 房地產平台]</span> 提取以下數據：
+
+目標數據：<span class="placeholder">[例如：產品名稱、價格、評論數、評分 / 文章標題、日期、內容摘要]</span>
+
+要求：
+- 用 requests + BeautifulSoup 做基本 scraping
+- 如果網頁有 JavaScript rendering，用 Playwright 處理
+- 加入 rate limiting（每次請求之間等 2-3 秒）
+- 處理 pagination（自動翻頁抓取所有結果）
+- 加入 error handling 同 retry 機制
+- 將結果儲存到 CSV 同 SQLite database
+- 加入 User-Agent rotation 避免被 block
+- 遵守 robots.txt 規則</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計合規嘅 Web Crawling 系統</h4>
+          <div class="prompt-text" id="prompt2">幫我設計一個合規嘅 web crawling 系統，用嚟探索 <span class="placeholder">[目標範圍，例如：某個特定 domain 嘅所有頁面 / 某個行業嘅相關網站]</span>。
+
+要求：
+- 用 Python + Scrapy framework
+- 實作 BFS（廣度優先搜索）爬取策略
+- 自動解析頁面中嘅所有連結，加入待爬隊列
+- 用 Bloom Filter 或 Set 做 URL 去重
+- 實作 Politeness Policy：遵守 robots.txt、每個 domain 每秒最多 1 次請求
+- 設定最大爬取深度同頁面數量上限
+- 儲存爬取結果（URL、標題、meta description）到 database
+- 加入 logging 同進度追蹤
+- 輸出 sitemap（XML 格式）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 定時價格監控 Scraper</h4>
+          <div class="prompt-text" id="prompt3">幫我建立一個定時執行嘅價格監控 scraper。
+
+監控目標：<span class="placeholder">[例如：Amazon 上面某幾個產品 / 機票價格 / 加密貨幣交易所價格]</span>
+
+要求：
+- 用 Python 寫 scraper，提取產品名同價格
+- 設定 cron job 每日定時執行（例如每朝 9 點）
+- 將每次抓取嘅價格記錄到 SQLite database（包括 timestamp）
+- 當價格跌破指定閾值，發送通知（用 <span class="placeholder">[Email / Telegram Bot / Discord Webhook]</span>）
+- 用 matplotlib 生成價格走勢圖
+- 加入 Docker 部署方案，方便喺 server 上面長期跑</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

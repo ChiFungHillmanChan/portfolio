@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>點樣 Debug 慢嘅 Database — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card h3 { color: #ffffff; font-size: 1.1rem; margin: 20px 0 12px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } .tabs { flex-wrap: nowrap; } .tab-btn { font-size: 0.8rem; padding: 10px 12px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+    .flow-step { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; position: relative; }
+    .flow-step .flow-number { position: absolute; top: -12px; left: 20px; background: #6366f1; color: #fff; width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 700; }
+    .flow-step h4 { color: #ffffff; font-size: 1rem; margin-bottom: 8px; padding-left: 4px; }
+    .flow-step p { font-size: 0.9rem; color: #c0c4cc; line-height: 1.7; margin-bottom: 0; }
+    .flow-step .tag { display: inline-block; background: rgba(99, 102, 241, 0.15); color: #a5b4fc; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; margin-right: 6px; margin-bottom: 6px; }
+    .flow-step .tag.green { background: rgba(34, 197, 94, 0.15); color: #34d399; }
+    .flow-step .tag.yellow { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+    .flow-step .tag.red { background: rgba(239, 68, 68, 0.15); color: #f87171; }
+    .flow-connector { text-align: center; color: #4b5563; font-size: 1.2rem; margin: -4px 0; }
+    .code-block { background: #0d0f14; border: 1px solid #2a2d3a; border-radius: 8px; padding: 14px 16px; margin: 12px 0; font-family: 'SF Mono', 'Fira Code', monospace; font-size: 0.82rem; color: #a5b4fc; line-height: 1.7; overflow-x: auto; white-space: pre; }
+    .code-comment { color: #4b5563; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🐌 點樣 Debug 慢嘅 Database</h1>
+      <p>面試必問嘅經典題：一步步排查資料庫效能問題</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 排查流程</button>
+      <button class="tab-btn" data-tab="detail">② 逐步拆解</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰技巧</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+    </div>
+
+    <!-- ===================== TAB 1: Overview ===================== -->
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>面試經典：「Database 好慢，會點做？」</h2>
+        <div class="subtitle">重點係系統性思維——唔係亂試，而係有步驟咁排查</div>
+        <p>
+          好多新手一聽到「Database 慢」就即刻話「加 Cache！加 Index！」——但呢個係錯嘅。正確做法係由淺入深，一步步排查，搵到真正嘅樽頸位先至出手。以下係一個完整嘅 Debug 流程，跟住呢個框架嚟答，面試官一定會俾高分。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 520" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.4"/>
+              </filter>
+              <filter id="glowIndigo">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#6366f1" flood-opacity="0.25"/>
+                <feComposite in2="blur" operator="in"/>
+                <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <filter id="glowPurple">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#8B5CF6" flood-opacity="0.25"/>
+                <feComposite in2="blur" operator="in"/>
+                <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradS1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#252040"/>
+              </linearGradient>
+              <linearGradient id="gradS2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#2a2520"/>
+              </linearGradient>
+              <linearGradient id="gradS3" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#1e2e25"/>
+              </linearGradient>
+              <linearGradient id="gradS4" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#2a1e22"/>
+              </linearGradient>
+              <linearGradient id="gradS5" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/>
+                <stop offset="100%" stop-color="#251e35"/>
+              </linearGradient>
+              <marker id="arrDown" markerWidth="8" markerHeight="8" refX="4" refY="7" orient="auto">
+                <path d="M0,0 L4,8 L8,0 Z" fill="#6366f1"/>
+              </marker>
+              <marker id="arrDownGreen" markerWidth="8" markerHeight="8" refX="4" refY="7" orient="auto">
+                <path d="M0,0 L4,8 L8,0 Z" fill="#34d399"/>
+              </marker>
+              <marker id="arrRight" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                <path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <!-- Step 1: Collect Data -->
+            <g transform="translate(250,20)" filter="url(#glowIndigo)">
+              <rect width="300" height="60" rx="14" fill="url(#gradS1)" stroke="#6366f1" stroke-width="2" filter="url(#shadow)"/>
+              <text x="150" y="24" text-anchor="middle" fill="#6366f1" font-size="13" font-weight="700">① 收集數據</text>
+              <text x="150" y="44" text-anchor="middle" fill="#9ca3af" font-size="11">邊啲 Query 慢？幾慢？負載高先慢定一直慢？</text>
+            </g>
+            <line x1="400" y1="82" x2="400" y2="108" stroke="#6366f1" stroke-width="2" marker-end="url(#arrDown)"/>
+
+            <!-- Step 2: Inspect Queries -->
+            <g transform="translate(250,110)">
+              <rect width="300" height="60" rx="14" fill="url(#gradS2)" stroke="#f59e0b" stroke-width="2" filter="url(#shadow)"/>
+              <text x="150" y="24" text-anchor="middle" fill="#f59e0b" font-size="13" font-weight="700">② 檢查具體 Query</text>
+              <text x="150" y="44" text-anchor="middle" fill="#9ca3af" font-size="11">佢有冇做多餘嘅嘢？有冇更好嘅寫法？</text>
+            </g>
+            <line x1="400" y1="172" x2="400" y2="198" stroke="#6366f1" stroke-width="2" marker-end="url(#arrDown)"/>
+
+            <!-- Step 3: Indexes / Schema -->
+            <g transform="translate(250,200)">
+              <rect width="300" height="60" rx="14" fill="url(#gradS3)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="150" y="24" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">③ 加 Index / 調整 Schema</text>
+              <text x="150" y="44" text-anchor="middle" fill="#9ca3af" font-size="11">資料庫結構有冇配合常見嘅查詢模式？</text>
+            </g>
+            <line x1="400" y1="262" x2="400" y2="288" stroke="#6366f1" stroke-width="2" marker-end="url(#arrDown)"/>
+
+            <!-- Step 4: Cache -->
+            <g transform="translate(250,290)">
+              <rect width="300" height="60" rx="14" fill="url(#gradS4)" stroke="#EF4444" stroke-width="2" filter="url(#shadow)"/>
+              <text x="150" y="24" text-anchor="middle" fill="#EF4444" font-size="13" font-weight="700">④ 引入 Cache</text>
+              <text x="150" y="44" text-anchor="middle" fill="#9ca3af" font-size="11">重複又計算量大嘅 Query？Cache 返個結果</text>
+            </g>
+            <line x1="400" y1="352" x2="400" y2="378" stroke="#6366f1" stroke-width="2" marker-end="url(#arrDown)"/>
+
+            <!-- Step 5: Change DB -->
+            <g transform="translate(250,380)" filter="url(#glowPurple)">
+              <rect width="300" height="60" rx="14" fill="url(#gradS5)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="150" y="24" text-anchor="middle" fill="#8B5CF6" font-size="13" font-weight="700">⑤ 考慮換 Database</text>
+              <text x="150" y="44" text-anchor="middle" fill="#9ca3af" font-size="11">係咪用錯咗 DB 類型？有冇更適合嘅方案？</text>
+            </g>
+
+            <!-- "問題解決" arrows on the right — curved -->
+            <g transform="translate(570,45)">
+              <rect width="140" height="36" rx="10" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="1"/>
+              <text x="70" y="23" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">搵到問題？修好收工！</text>
+            </g>
+            <path d="M 552 50 Q 560 55 568 60" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrRight)"/>
+
+            <g transform="translate(570,135)">
+              <rect width="140" height="36" rx="10" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="1"/>
+              <text x="70" y="23" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">搵到問題？修好收工！</text>
+            </g>
+            <path d="M 552 140 Q 560 145 568 150" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrRight)"/>
+
+            <g transform="translate(570,225)">
+              <rect width="140" height="36" rx="10" fill="rgba(52,211,153,0.1)" stroke="#34d399" stroke-width="1"/>
+              <text x="70" y="23" text-anchor="middle" fill="#34d399" font-size="11" font-weight="600">搵到問題？修好收工！</text>
+            </g>
+            <path d="M 552 230 Q 560 235 568 240" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrRight)"/>
+
+            <!-- Left labels -->
+            <text x="230" y="55" text-anchor="end" fill="#4b5563" font-size="10">最常見</text>
+            <text x="230" y="415" text-anchor="end" fill="#4b5563" font-size="10">最極端</text>
+            <line x1="235" y1="65" x2="235" y2="400" stroke="#2a2d3a" stroke-width="1" stroke-dasharray="4,4"/>
+          </svg>
+        </div>
+
+        <div class="use-case">
+          <h4>💡 面試核心要點</h4>
+          <p>面試官想睇嘅係<strong>系統性思維</strong>——唔係一上嚟就講「加 Cache」或者「換 DB」。呢個流程由上到下，成本越嚟越高，改動越嚟越大。關鍵在於展示會由最簡單、最常見嘅原因開始排查，一步步深入到更複雜嘅解決方案。咁樣面試官就知道呢個係有經驗嘅工程師思維。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 2: Detail ===================== -->
+    <div class="tab-content" id="detail">
+      <div class="card">
+        <h2>逐步拆解</h2>
+        <div class="subtitle">逐步拆解每一步具體要做啲咩、點樣做</div>
+
+        <div class="flow-step" style="margin-top:20px;">
+          <div class="flow-number">1</div>
+          <h4>📊 收集數據 — 先搞清楚問題</h4>
+          <p>
+            唔好一嚟就改嘢！先搞清楚：<strong style="color:#fbbf24">邊啲 query 慢</strong>、<strong style="color:#fbbf24">幾慢</strong>（500ms？5 秒？）、<strong style="color:#fbbf24">幾時慢</strong>（高峰期定一直都慢）。唔收集數據就去改嘢，就好似醫生唔做檢查就開藥咁危險。
+          </p>
+          <div style="margin-top:10px;">
+            <span class="tag">Slow Query Log</span>
+            <span class="tag">Query Profiler</span>
+            <span class="tag">APM 監控工具</span>
+          </div>
+          <div class="code-block"><span class="code-comment">-- MySQL: 開啟慢查詢日誌</span>
+SET GLOBAL slow_query_log = 'ON';
+SET GLOBAL long_query_time = 1;  <span class="code-comment">-- 超過 1 秒嘅 query 會被記錄</span>
+
+<span class="code-comment">-- PostgreSQL: 查睇最慢嘅 query</span>
+SELECT query, mean_exec_time, calls
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;</div>
+          <p style="margin-top:8px;">
+            要留意：如果只係喺高負載時先慢，問題可能係資源不足（CPU、記憶體、連接數），而唔係 query 本身嘅問題。必須分清楚呢兩種情況。
+          </p>
+        </div>
+
+        <div class="flow-connector">↓</div>
+
+        <div class="flow-step">
+          <div class="flow-number">2</div>
+          <h4>🔍 檢查具體 Query — 佢做緊啲咩？</h4>
+          <p>
+            用 <strong style="color:#fbbf24">EXPLAIN</strong> 睇一下 query 嘅執行計劃。佢有冇做 full table scan（成個表掃一次）？有冇做啲唔必要嘅 JOIN？有冇 SELECT * 攞晒所有 column，但其實只需要兩三個？必須學識用 EXPLAIN，呢個係 debug 嘅最強武器。
+          </p>
+          <div class="code-block"><span class="code-comment">-- 用 EXPLAIN 分析 query 點樣跑</span>
+EXPLAIN ANALYZE
+SELECT u.name, o.total
+FROM users u
+JOIN orders o ON u.id = o.user_id
+WHERE u.created_at > '2024-01-01';
+
+<span class="code-comment">-- 留意：Seq Scan = 冇用 Index，可能好慢！</span>
+<span class="code-comment">-- 留意：Nested Loop = 可能有 N+1 問題</span></div>
+          <div style="margin-top:10px;">
+            <span class="tag red">SELECT *（攞太多嘢）</span>
+            <span class="tag red">N+1 Query 問題</span>
+            <span class="tag red">Full Table Scan</span>
+          </div>
+          <p style="margin-top:8px;">
+            好多時候，問題就係 query 寫得唔好。例如用 ORM 嘅時候，唔知不覺做咗 N+1 query（一條 query 攞 100 個 user，然後逐個 user 再發一條 query 攞 order——即係 101 條 query，但其實一條 JOIN 就搞掂）。要特別留意呢個陷阱。
+          </p>
+        </div>
+
+        <div class="flow-connector">↓</div>
+
+        <div class="flow-step">
+          <div class="flow-number">3</div>
+          <h4>🗂 加 Index / 調整 Schema</h4>
+          <p>
+            如果 query 本身寫得冇問題，但仍然慢，就要睇下 Database 嘅結構有冇配合常見嘅查詢模式。最常見嘅做法就係<strong style="color:#34d399">加 Index</strong>。重點係：Index 就係資料庫嘅「目錄」。
+          </p>
+          <div class="code-block"><span class="code-comment">-- 幫經常被 WHERE 同 JOIN 用到嘅 column 加 Index</span>
+CREATE INDEX idx_users_created_at ON users(created_at);
+CREATE INDEX idx_orders_user_id ON orders(user_id);
+
+<span class="code-comment">-- Composite Index：如果成日一齊查</span>
+CREATE INDEX idx_orders_user_date ON orders(user_id, created_at);</div>
+          <div style="margin-top:10px;">
+            <span class="tag green">加 Index</span>
+            <span class="tag green">Composite Index</span>
+            <span class="tag yellow">Denormalization</span>
+            <span class="tag yellow">Partitioning</span>
+          </div>
+          <p style="margin-top:8px;">
+            再進一步：可以考慮 <strong>Denormalization</strong>（故意加冗餘欄位，減少 JOIN）或者 <strong>Table Partitioning</strong>（將一個超大嘅 table 拆成幾個細嘅）。但要留意，呢啲都係 trade-off——加速讀取嘅同時，寫入可能會慢啲。
+          </p>
+        </div>
+
+        <div class="flow-connector">↓</div>
+
+        <div class="flow-step">
+          <div class="flow-number">4</div>
+          <h4>⚡ 引入 Cache</h4>
+          <p>
+            如果有啲 query 好重複又好耗資源（例如每個用戶都會觸發嘅 dashboard 統計 query），建議喺 Database 同 Server 之間加一層 <strong style="color:#EF4444">Cache（例如 Redis）</strong>。第一次查完就存落 Cache，之後直接從 Cache 返回，唔使再打 Database。
+          </p>
+          <p>
+            但要注意：如果每次 query 都唔同（唔重複），Cache 就冇用。Cache 只適合<strong>讀多寫少、結果可以重用</strong>嘅場景。唔好乜都用 Cache 嚟解決。
+          </p>
+        </div>
+
+        <div class="flow-connector">↓</div>
+
+        <div class="flow-step">
+          <div class="flow-number">5</div>
+          <h4>🔄 考慮換 Database</h4>
+          <p>
+            如果以上全部都試過仲係慢，可能根本用錯咗 Database 類型。唔同嘅 Database 擅長做唔同嘅嘢，要揀啱工具：
+          </p>
+          <div style="margin-top:10px;">
+            <span class="tag">PostgreSQL — 複雜 query、事務</span>
+            <span class="tag">Elasticsearch — 全文搜索、模糊搜索</span>
+            <span class="tag">Redis — Key-Value 快速讀寫</span>
+            <span class="tag">ClickHouse — 大數據分析</span>
+            <span class="tag">MongoDB — 靈活嘅 document 結構</span>
+          </div>
+          <p style="margin-top:8px;">
+            舉個例子：用 PostgreSQL 做 fuzzy search（模糊搜索），技術上行得通，但換成 <strong style="color:#34d399">Elasticsearch</strong> 可以快幾十倍。核心原則就係：選啱工具比硬優化重要好多。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===================== TAB 3: Practice ===================== -->
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰技巧</h2>
+        <div class="subtitle">面試同真實開發都用得著嘅 tips</div>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>📋 EXPLAIN 係最好嘅朋友</h4>
+            <p>任何時候覺得 query 慢，第一步就係 EXPLAIN。佢會告訴 Database 用咗咩 Index、做咗幾多次掃描、預計處理幾多行。呢啲資訊係 debug 嘅基礎，一定要熟練。</p>
+          </div>
+          <div class="key-point">
+            <h4>🚫 避免 SELECT *</h4>
+            <p>唔好習慣性寫 SELECT *。如果只需要 name 同 email，就寫 SELECT name, email。少攞嘅 data 少咗 I/O，自然就快啲。呢個係最簡單但最有效嘅習慣。</p>
+          </div>
+          <div class="key-point">
+            <h4>⚠️ N+1 Query 問題</h4>
+            <p>用 ORM（例如 Prisma、Sequelize）嘅時候特別容易中招。一個 loop 入面每次都發一條 query——應該用 JOIN 或者 batch query 取代。呢個係最常見嘅效能殺手。</p>
+          </div>
+          <div class="key-point">
+            <h4>📊 慢 Query 監控</h4>
+            <p>生產環境一定要開 slow query log。設定 threshold（例如 500ms），定期 review 最慢嘅 query。唔好等用戶投訴先至去查，主動監控先係專業嘅做法。</p>
+          </div>
+          <div class="key-point">
+            <h4>🔢 Index 唔係萬能</h4>
+            <p>要注意，加太多 Index 會拖慢寫入速度（每次 INSERT / UPDATE 都要更新 Index）。只喺經常被查詢嘅 column 加 Index，唔好亂加。必須有取捨嘅思維。</p>
+          </div>
+          <div class="key-point">
+            <h4>🔌 連接池（Connection Pool）</h4>
+            <p>如果問題係「好多 query 等緊連接」而唔係「query 本身慢」，就要睇下 connection pool 係咪太細。調大 pool size 或者用 PgBouncer 呢類 pooler，好多時候就搞掂。</p>
+          </div>
+        </div>
+
+        <div class="use-case" style="margin-top:24px;">
+          <h4>💡 面試答題框架</h4>
+          <p>
+            面試嘅時候，跟住呢個順序答就唔會錯：<br>
+            <strong style="color:#6366f1">① 收集數據</strong> → <strong style="color:#f59e0b">② 檢查 Query</strong> → <strong style="color:#10B981">③ 加 Index / 調 Schema</strong> → <strong style="color:#EF4444">④ 加 Cache</strong> → <strong style="color:#8B5CF6">⑤ 換 Database</strong><br><br>
+            由成本最低、最常見嘅原因開始，逐步深入到成本最高、最極端嘅方案。跟住呢個框架答，展示咗系統性思維，面試官一定會欣賞。
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 診斷同修復慢 Query</h4>
+          <div class="prompt-text" id="prompt1">幫手分析同優化以下慢 Query 嘅效能問題。
+
+Database：<span class="placeholder">[PostgreSQL / MySQL]</span>
+Table 結構：
+- users 表：id, name, email, created_at（<span class="placeholder">[100 萬 / 1000 萬]</span> 行）
+- orders 表：id, user_id, total, status, created_at（<span class="placeholder">[500 萬 / 5000 萬]</span> 行）
+
+慢 Query：
+<span class="placeholder">[貼上需要優化嘅 SQL Query]</span>
+
+請做以下分析：
+1. 用 EXPLAIN ANALYZE 解讀執行計劃，指出樽頸位
+2. 檢查有冇 Full Table Scan、N+1 問題、不必要嘅 JOIN
+3. 建議需要加嘅 Index（包括 Composite Index）
+4. 提供優化後嘅 Query 寫法
+5. 如果適用，建議 Denormalization 或 Partitioning 策略
+6. 估算優化前後嘅執行時間差異</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Database Indexing 策略</h4>
+          <div class="prompt-text" id="prompt2">幫手為一個 <span class="placeholder">[電商平台 / SaaS 應用 / 社交平台]</span> 設計完整嘅 Database Indexing 策略。
+
+Database：<span class="placeholder">[PostgreSQL / MySQL]</span>
+
+主要 Table 同常見 Query Pattern：
+<span class="placeholder">[描述主要嘅 table 結構同最常用嘅查詢模式]</span>
+
+要求：
+1. 分析每個常用 Query，建議最適合嘅 Index 類型（B-Tree、Hash、GIN、GiST）
+2. 設計 Composite Index，考慮 column 順序對效能嘅影響
+3. 識別唔需要嘅 Index（避免 over-indexing 拖慢寫入）
+4. 建議 Partial Index 同 Covering Index 嘅使用場景
+5. 提供 Index 維護計劃（REINDEX、VACUUM 頻率）
+6. 估算加 Index 後對讀寫效能嘅影響
+7. 寫出所有 CREATE INDEX 語句，附帶解釋</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立 Database 效能監控系統</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[Node.js / Python]</span> 建立一個 Database 效能監控同自動告警系統。
+
+監控目標：<span class="placeholder">[PostgreSQL / MySQL]</span>
+
+功能需求：
+- 自動收集 Slow Query Log（threshold: <span class="placeholder">[500ms / 1s]</span>）
+- 定期分析 pg_stat_statements / performance_schema 嘅數據
+- 識別 Top 10 最慢嘅 Query 同最頻繁嘅 Query
+- 監控 Connection Pool 使用率
+- 檢測 Missing Index（分析 sequential scan 嘅頻率）
+- 當出現異常時發送告警（Slack / Email）
+- 提供一個簡單嘅 Dashboard UI 顯示監控數據
+- 包含自動建議功能（例如：「呢個 Query 建議加 Index」）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        contents.forEach(c => c.classList.remove('active'));
+        tab.classList.add('active');
+        const target = document.getElementById(tab.dataset.tab);
+        if (target) target.classList.add('active');
+      });
+    });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

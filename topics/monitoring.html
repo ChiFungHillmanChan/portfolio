@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>應用程式監控 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>應用程式監控</h1>
+      <p>由 console.log 進化到專業監控工具同告警系統</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="tools">① 監控工具</button>
+      <button class="tab-btn" data-tab="metrics">② 關鍵指標</button>
+      <button class="tab-btn" data-tab="alerting">③ 告警系統</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+    </div>
+
+    <!-- Tab 1: 監控工具 -->
+    <div class="tab-content active" id="tools">
+      <div class="card">
+        <h2>點解需要監控工具？</h2>
+        <div class="subtitle">console.log 嘅局限性</div>
+        <p>
+          好多時候 service 不停 crash，但排查方法得返 <strong style="color:#f87171">console.log</strong> 或者 <strong style="color:#f87171">print</strong>。呢種做法喺 production 環境完全唔夠用 — 無法追蹤歷史數據、無法設置告警、更加無法做到實時可視化。
+        </p>
+        <p>
+          正確嘅做法係引入專業監控工具。核心組合：<strong style="color:#6366f1">Prometheus</strong> 負責收集 metrics，<strong style="color:#34d399">Grafana</strong> 負責可視化，<strong style="color:#f59e0b">ELK Stack</strong>（Elasticsearch + Logstash + Kibana）負責日誌管理。呢三樣工具組合起嚟，就可以全面掌握系統健康狀態。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 780 380" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowProm" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="6" result="blur"/>
+                <feFlood flood-color="#6366f1" flood-opacity="0.3" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradApp" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#334155"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradProm" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4338ca"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradGrafana" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#065f46"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradLogstash" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#92400e"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradES" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#854d0e"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradKibana" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#9a3412"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowIndigo" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+              </marker>
+              <marker id="arrowGreen" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/>
+              </marker>
+              <marker id="arrowAmber" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b"/>
+              </marker>
+            </defs>
+
+            <!-- Metrics Path Label -->
+            <text x="390" y="30" fill="#6366f1" font-size="13" font-weight="600" text-anchor="middle">Metrics Path</text>
+
+            <!-- Application Node -->
+            <rect x="20" y="140" width="150" height="60" rx="14" fill="url(#gradApp)" filter="url(#shadow)" stroke="#475569" stroke-width="1"/>
+            <text x="95" y="167" fill="#e2e8f0" font-size="13" font-weight="600" text-anchor="middle">Application</text>
+            <text x="95" y="185" fill="#94a3b8" font-size="10" text-anchor="middle">Emit metrics + logs</text>
+
+            <!-- Prometheus Node (glow) -->
+            <rect x="260" y="60" width="160" height="60" rx="14" fill="url(#gradProm)" filter="url(#glowProm)" stroke="#6366f1" stroke-width="1.5"/>
+            <text x="340" y="87" fill="#a5b4fc" font-size="13" font-weight="600" text-anchor="middle">Prometheus</text>
+            <text x="340" y="105" fill="#94a3b8" font-size="10" text-anchor="middle">Metrics Collection</text>
+
+            <!-- Grafana Node -->
+            <rect x="520" y="60" width="160" height="60" rx="14" fill="url(#gradGrafana)" filter="url(#shadow)" stroke="#34d399" stroke-width="1"/>
+            <text x="600" y="87" fill="#6ee7b7" font-size="13" font-weight="600" text-anchor="middle">Grafana</text>
+            <text x="600" y="105" fill="#94a3b8" font-size="10" text-anchor="middle">Dashboards</text>
+
+            <!-- Arrow: App → Prometheus -->
+            <path d="M170,155 C215,155 215,90 260,90" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowIndigo)"/>
+            <text x="210" y="110" fill="#818cf8" font-size="9" text-anchor="middle">metrics</text>
+
+            <!-- Arrow: Prometheus → Grafana -->
+            <path d="M420,90 C470,90 470,90 520,90" fill="none" stroke="#34d399" stroke-width="2" marker-end="url(#arrowGreen)"/>
+            <text x="470" y="80" fill="#6ee7b7" font-size="9" text-anchor="middle">query</text>
+
+            <!-- Logs Path Label -->
+            <text x="390" y="210" fill="#f59e0b" font-size="13" font-weight="600" text-anchor="middle">Logs Path (ELK Stack)</text>
+
+            <!-- Logstash Node -->
+            <rect x="260" y="240" width="160" height="60" rx="14" fill="url(#gradLogstash)" filter="url(#shadow)" stroke="#f59e0b" stroke-width="1"/>
+            <text x="340" y="267" fill="#fbbf24" font-size="13" font-weight="600" text-anchor="middle">Logstash</text>
+            <text x="340" y="285" fill="#94a3b8" font-size="10" text-anchor="middle">Log Ingestion</text>
+
+            <!-- Elasticsearch Node -->
+            <rect x="520" y="240" width="160" height="60" rx="14" fill="url(#gradES)" filter="url(#shadow)" stroke="#f59e0b" stroke-width="1"/>
+            <text x="600" y="267" fill="#fbbf24" font-size="13" font-weight="600" text-anchor="middle">Elasticsearch</text>
+            <text x="600" y="285" fill="#94a3b8" font-size="10" text-anchor="middle">Log Storage + Search</text>
+
+            <!-- Kibana Node -->
+            <rect x="520" y="330" width="160" height="40" rx="14" fill="url(#gradKibana)" filter="url(#shadow)" stroke="#fb923c" stroke-width="1"/>
+            <text x="600" y="355" fill="#fdba74" font-size="13" font-weight="600" text-anchor="middle">Kibana</text>
+
+            <!-- Arrow: App → Logstash -->
+            <path d="M170,185 C215,185 215,270 260,270" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
+            <text x="210" y="240" fill="#fbbf24" font-size="9" text-anchor="middle">logs</text>
+
+            <!-- Arrow: Logstash → Elasticsearch -->
+            <path d="M420,270 C470,270 470,270 520,270" fill="none" stroke="#f59e0b" stroke-width="2" marker-end="url(#arrowAmber)"/>
+            <text x="470" y="260" fill="#fbbf24" font-size="9" text-anchor="middle">index</text>
+
+            <!-- Arrow: Elasticsearch → Kibana -->
+            <path d="M600,300 C600,310 600,320 600,330" fill="none" stroke="#fb923c" stroke-width="1.5" marker-end="url(#arrowAmber)"/>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>工具分工</h2>
+        <div class="subtitle">每個工具嘅角色同職責</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Prometheus</h4>
+            <p>以 pull model 主動拉取 metrics，支援時序數據儲存。適合追蹤 CPU、memory、request count 等數值型指標。</p>
+          </div>
+          <div class="key-point">
+            <h4>Grafana</h4>
+            <p>連接 Prometheus 做數據源，將 metrics 變成圖表同 dashboard。一眼就睇到系統健康狀態。</p>
+          </div>
+          <div class="key-point">
+            <h4>Elasticsearch</h4>
+            <p>全文搜索引擎，用嚟儲存同搜索大量 log 數據。支援複雜嘅 query 去搵特定錯誤。</p>
+          </div>
+          <div class="key-point">
+            <h4>Logstash + Kibana</h4>
+            <p>Logstash 負責收集同轉換 log 格式；Kibana 提供 UI 去查詢同可視化 log 數據。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 關鍵指標 -->
+    <div class="tab-content" id="metrics">
+      <div class="card">
+        <h2>必須追蹤嘅關鍵指標</h2>
+        <div class="subtitle">5 個最重要嘅 production metrics</div>
+        <p>
+          監控嘅核心唔係收集越多數據越好，而係識得揀 <strong style="color:#6366f1">最關鍵嘅指標</strong>。以下呢五個指標覆蓋咗系統健康嘅各個維度 — 資源、流量、質量同速度。
+        </p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>CPU Utilization</h4>
+            <p>CPU 使用率反映計算資源嘅壓力。持續超過 80% 就要考慮 scale up 或者優化 code。</p>
+          </div>
+          <div class="key-point">
+            <h4>Memory Utilization</h4>
+            <p>記憶體使用率過高可能係 memory leak。需要持續監控走勢，唔係淨係睇當前值。</p>
+          </div>
+          <div class="key-point">
+            <h4>Traffic Volume</h4>
+            <p>每秒請求數（RPS）反映流量負載。異常飆升可能係 DDoS，突然下跌可能係 service 故障。</p>
+          </div>
+          <div class="key-point">
+            <h4>Error Rate</h4>
+            <p>錯誤率係 5xx 回應佔總請求嘅百分比。正常情況應該低過 0.1%，超過就要立即排查。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>Latency（平均延遲）</h4>
+          <p>每個 request 嘅平均回應時間。建議同時追蹤 p50、p95、p99 — 平均值有時會掩蓋長尾問題。p99 latency 先至真正反映用戶體驗。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Dashboard 概覽</h2>
+        <div class="subtitle">典型嘅 Grafana Dashboard 佈局</div>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 780 360" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadowD" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <linearGradient id="gradPanel" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#1e293b"/><stop offset="100%" stop-color="#0f172a"/>
+              </linearGradient>
+              <linearGradient id="gradCPU" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#6366f1" stop-opacity="0.1"/><stop offset="100%" stop-color="#6366f1" stop-opacity="0.6"/>
+              </linearGradient>
+              <linearGradient id="gradMem" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#34d399" stop-opacity="0.1"/><stop offset="100%" stop-color="#34d399" stop-opacity="0.6"/>
+              </linearGradient>
+              <linearGradient id="gradErr" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#f87171" stop-opacity="0.1"/><stop offset="100%" stop-color="#f87171" stop-opacity="0.6"/>
+              </linearGradient>
+              <linearGradient id="gradLat" x1="0%" y1="100%" x2="0%" y2="0%">
+                <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.1"/><stop offset="100%" stop-color="#f59e0b" stop-opacity="0.6"/>
+              </linearGradient>
+            </defs>
+
+            <!-- Dashboard Title -->
+            <text x="390" y="28" fill="#e2e8f0" font-size="14" font-weight="700" text-anchor="middle">Production Monitoring Dashboard</text>
+
+            <!-- CPU Panel -->
+            <rect x="20" y="50" width="175" height="130" rx="14" fill="url(#gradPanel)" filter="url(#shadowD)" stroke="#2a2d3a" stroke-width="1"/>
+            <text x="107" y="75" fill="#a5b4fc" font-size="11" font-weight="600" text-anchor="middle">CPU Utilization</text>
+            <text x="107" y="100" fill="#6366f1" font-size="22" font-weight="700" text-anchor="middle">42%</text>
+            <!-- Mini chart line -->
+            <path d="M40,145 C55,140 70,148 85,135 C100,125 115,138 130,130 C145,125 160,132 175,128" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round"/>
+            <path d="M40,145 C55,140 70,148 85,135 C100,125 115,138 130,130 C145,125 160,132 175,128 L175,165 L40,165 Z" fill="url(#gradCPU)"/>
+
+            <!-- Memory Panel -->
+            <rect x="210" y="50" width="175" height="130" rx="14" fill="url(#gradPanel)" filter="url(#shadowD)" stroke="#2a2d3a" stroke-width="1"/>
+            <text x="297" y="75" fill="#6ee7b7" font-size="11" font-weight="600" text-anchor="middle">Memory Usage</text>
+            <text x="297" y="100" fill="#34d399" font-size="22" font-weight="700" text-anchor="middle">67%</text>
+            <path d="M230,145 C245,138 260,142 275,136 C290,142 305,132 320,140 C335,135 350,142 365,138" fill="none" stroke="#34d399" stroke-width="2" stroke-linecap="round"/>
+            <path d="M230,145 C245,138 260,142 275,136 C290,142 305,132 320,140 C335,135 350,142 365,138 L365,165 L230,165 Z" fill="url(#gradMem)"/>
+
+            <!-- Error Rate Panel -->
+            <rect x="400" y="50" width="175" height="130" rx="14" fill="url(#gradPanel)" filter="url(#shadowD)" stroke="#2a2d3a" stroke-width="1"/>
+            <text x="487" y="75" fill="#fca5a5" font-size="11" font-weight="600" text-anchor="middle">Error Rate</text>
+            <text x="487" y="100" fill="#f87171" font-size="22" font-weight="700" text-anchor="middle">0.03%</text>
+            <path d="M420,155 C435,155 450,152 465,155 C480,153 495,155 510,150 C525,155 540,153 555,155" fill="none" stroke="#f87171" stroke-width="2" stroke-linecap="round"/>
+            <path d="M420,155 C435,155 450,152 465,155 C480,153 495,155 510,150 C525,155 540,153 555,155 L555,165 L420,165 Z" fill="url(#gradErr)"/>
+
+            <!-- Latency Panel -->
+            <rect x="590" y="50" width="175" height="130" rx="14" fill="url(#gradPanel)" filter="url(#shadowD)" stroke="#2a2d3a" stroke-width="1"/>
+            <text x="677" y="75" fill="#fbbf24" font-size="11" font-weight="600" text-anchor="middle">Avg Latency</text>
+            <text x="677" y="100" fill="#f59e0b" font-size="22" font-weight="700" text-anchor="middle">128ms</text>
+            <path d="M610,142 C625,145 640,138 655,145 C670,140 685,148 700,135 C715,140 730,138 745,142" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
+            <path d="M610,142 C625,145 640,138 655,145 C670,140 685,148 700,135 C715,140 730,138 745,142 L745,165 L610,165 Z" fill="url(#gradLat)"/>
+
+            <!-- Traffic Panel (wide) -->
+            <rect x="20" y="200" width="365" height="140" rx="14" fill="url(#gradPanel)" filter="url(#shadowD)" stroke="#2a2d3a" stroke-width="1"/>
+            <text x="202" y="225" fill="#c4b5fd" font-size="11" font-weight="600" text-anchor="middle">Traffic Volume (RPS)</text>
+            <text x="202" y="250" fill="#a78bfa" font-size="18" font-weight="700" text-anchor="middle">1,247 req/s</text>
+            <path d="M40,290 C70,285 100,295 130,280 C160,275 190,290 220,270 C250,280 280,265 310,275 C340,268 360,272 365,270" fill="none" stroke="#a78bfa" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M40,290 C70,285 100,295 130,280 C160,275 190,290 220,270 C250,280 280,265 310,275 C340,268 360,272 365,270 L365,325 L40,325 Z" fill="url(#gradCPU)" opacity="0.5"/>
+
+            <!-- p95/p99 Panel -->
+            <rect x="400" y="200" width="365" height="140" rx="14" fill="url(#gradPanel)" filter="url(#shadowD)" stroke="#2a2d3a" stroke-width="1"/>
+            <text x="582" y="225" fill="#fbbf24" font-size="11" font-weight="600" text-anchor="middle">Latency Percentiles</text>
+            <text x="500" y="265" fill="#94a3b8" font-size="10" text-anchor="middle">p50</text>
+            <text x="500" y="282" fill="#34d399" font-size="16" font-weight="700" text-anchor="middle">85ms</text>
+            <text x="582" y="265" fill="#94a3b8" font-size="10" text-anchor="middle">p95</text>
+            <text x="582" y="282" fill="#f59e0b" font-size="16" font-weight="700" text-anchor="middle">240ms</text>
+            <text x="664" y="265" fill="#94a3b8" font-size="10" text-anchor="middle">p99</text>
+            <text x="664" y="282" fill="#f87171" font-size="16" font-weight="700" text-anchor="middle">520ms</text>
+            <!-- Bar chart -->
+            <rect x="485" y="298" width="30" height="30" rx="4" fill="#34d399" opacity="0.6"/>
+            <rect x="567" y="288" width="30" height="40" rx="4" fill="#f59e0b" opacity="0.6"/>
+            <rect x="649" y="272" width="30" height="56" rx="4" fill="#f87171" opacity="0.6"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: 告警系統 -->
+    <div class="tab-content" id="alerting">
+      <div class="card">
+        <h2>告警系統架構</h2>
+        <div class="subtitle">Alerting Pipeline 點樣運作</div>
+        <p>
+          有咗監控數據之後，下一步就係設定 <strong style="color:#6366f1">告警規則</strong>。重點係唔好等到用戶投訴先知出事 — 系統應該主動通知相關人員。
+        </p>
+        <p>
+          常見嘅告警條件包括：平均 latency 超過某個 threshold、error rate 突破 0.1%、CPU 持續超過 90% 等。告警觸發之後，透過 Alert Manager 統一管理，再分發到 Email、Slack 或者 PagerDuty。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 780 260" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadowA" x="-4%" y="-4%" width="108%" height="108%">
+                <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+              </filter>
+              <filter id="glowAlert" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="5" result="blur"/>
+                <feFlood flood-color="#f87171" flood-opacity="0.25" result="color"/>
+                <feComposite in="color" in2="blur" operator="in" result="glow"/>
+                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
+              </filter>
+              <linearGradient id="gradMetric" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#4338ca"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradThresh" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#92400e"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradAlertMgr" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#991b1b"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <linearGradient id="gradChannel" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#065f46"/><stop offset="100%" stop-color="#1e293b"/>
+              </linearGradient>
+              <marker id="arrowRed" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#f87171"/>
+              </marker>
+              <marker id="arrowIndigoA" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#6366f1"/>
+              </marker>
+              <marker id="arrowGreenA" viewBox="0 0 10 7" refX="10" refY="3.5" markerWidth="8" markerHeight="6" orient="auto-start-reverse">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#34d399"/>
+              </marker>
+            </defs>
+
+            <!-- Metrics Source -->
+            <rect x="20" y="90" width="140" height="60" rx="14" fill="url(#gradMetric)" filter="url(#shadowA)" stroke="#6366f1" stroke-width="1"/>
+            <text x="90" y="117" fill="#a5b4fc" font-size="13" font-weight="600" text-anchor="middle">Metrics</text>
+            <text x="90" y="135" fill="#94a3b8" font-size="10" text-anchor="middle">Prometheus Data</text>
+
+            <!-- Threshold Check -->
+            <rect x="220" y="90" width="150" height="60" rx="14" fill="url(#gradThresh)" filter="url(#shadowA)" stroke="#f59e0b" stroke-width="1"/>
+            <text x="295" y="117" fill="#fbbf24" font-size="13" font-weight="600" text-anchor="middle">Threshold Check</text>
+            <text x="295" y="135" fill="#94a3b8" font-size="10" text-anchor="middle">Rule Evaluation</text>
+
+            <!-- Alert Manager -->
+            <rect x="430" y="90" width="150" height="60" rx="14" fill="url(#gradAlertMgr)" filter="url(#glowAlert)" stroke="#f87171" stroke-width="1.5"/>
+            <text x="505" y="117" fill="#fca5a5" font-size="13" font-weight="600" text-anchor="middle">Alert Manager</text>
+            <text x="505" y="135" fill="#94a3b8" font-size="10" text-anchor="middle">Route + Deduplicate</text>
+
+            <!-- Notification Channels -->
+            <rect x="640" y="30" width="120" height="44" rx="14" fill="url(#gradChannel)" filter="url(#shadowA)" stroke="#34d399" stroke-width="1"/>
+            <text x="700" y="57" fill="#6ee7b7" font-size="12" font-weight="600" text-anchor="middle">Email</text>
+
+            <rect x="640" y="98" width="120" height="44" rx="14" fill="url(#gradChannel)" filter="url(#shadowA)" stroke="#34d399" stroke-width="1"/>
+            <text x="700" y="125" fill="#6ee7b7" font-size="12" font-weight="600" text-anchor="middle">Slack</text>
+
+            <rect x="640" y="166" width="120" height="44" rx="14" fill="url(#gradChannel)" filter="url(#shadowA)" stroke="#34d399" stroke-width="1"/>
+            <text x="700" y="193" fill="#6ee7b7" font-size="12" font-weight="600" text-anchor="middle">PagerDuty</text>
+
+            <!-- Arrows -->
+            <path d="M160,120 C190,120 190,120 220,120" fill="none" stroke="#6366f1" stroke-width="2" marker-end="url(#arrowIndigoA)"/>
+            <path d="M370,120 C400,120 400,120 430,120" fill="none" stroke="#f87171" stroke-width="2" marker-end="url(#arrowRed)"/>
+            <path d="M580,110 C610,110 610,52 640,52" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowGreenA)"/>
+            <path d="M580,120 C610,120 610,120 640,120" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowGreenA)"/>
+            <path d="M580,130 C610,130 610,188 640,188" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrowGreenA)"/>
+
+            <!-- Labels -->
+            <text x="190" y="108" fill="#818cf8" font-size="9" text-anchor="middle">evaluate</text>
+            <text x="400" y="108" fill="#fca5a5" font-size="9" text-anchor="middle">trigger</text>
+            <text x="618" y="72" fill="#6ee7b7" font-size="9" text-anchor="middle">notify</text>
+          </svg>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>建立告警嘅步驟</h2>
+        <div class="subtitle">由零開始設定 Alerting Pipeline</div>
+
+        <ul class="steps">
+          <li>
+            <span class="step-num">1</span>
+            <span><strong style="color:#a5b4fc">定義告警規則</strong> — 喺 Prometheus 設定 alerting rules，例如 <code style="color:#f59e0b">error_rate &gt; 0.001</code>（即 0.1%）或者 <code style="color:#f59e0b">avg_latency &gt; 500ms</code>。</span>
+          </li>
+          <li>
+            <span class="step-num">2</span>
+            <span><strong style="color:#a5b4fc">配置 Alert Manager</strong> — 設定告警嘅路由規則、分組策略同靜默時間。避免同一個問題重複發送大量通知。</span>
+          </li>
+          <li>
+            <span class="step-num">3</span>
+            <span><strong style="color:#a5b4fc">接入通知渠道</strong> — 將 Alert Manager 連接到 Email、Slack channel 或者 PagerDuty。唔同嚴重程度嘅告警發送到唔同渠道。</span>
+          </li>
+          <li>
+            <span class="step-num">4</span>
+            <span><strong style="color:#a5b4fc">建立 Runbook</strong> — 每條告警都應該附帶處理指引。收到告警之後，on-call 工程師可以即刻跟住步驟排查。</span>
+          </li>
+          <li>
+            <span class="step-num">5</span>
+            <span><strong style="color:#a5b4fc">持續調整 Threshold</strong> — 告警唔係設定完就算。需要根據實際數據不斷調整，避免 alert fatigue（告警疲勞）。</span>
+          </li>
+        </ul>
+
+        <div class="use-case">
+          <h4>實戰場景</h4>
+          <p>假設 production 嘅 error rate 突然由 0.02% 飆升到 0.15%，超過咗 0.1% 嘅 threshold。Alert Manager 即時觸發告警，Slack channel 收到通知，on-call 工程師打開 Grafana dashboard 查看 error 分佈，再用 Kibana 搜索相關嘅 error log，快速定位到係某個 API endpoint 嘅 database connection pool 耗盡。整個排查過程由收到告警到定位問題只需幾分鐘。</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>監控成熟度模型</h2>
+        <div class="subtitle">由初級到專業嘅進化路徑</div>
+        <p>
+          監控系統嘅建設唔係一步到位，而係逐步進化嘅過程。以下係三個階段嘅典型特徵：
+        </p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Level 1：Console Logs</h4>
+            <p>只靠 console.log / print 輸出。出事之後先去翻 log，無法即時發現問題，無歷史數據可追溯。</p>
+          </div>
+          <div class="key-point">
+            <h4>Level 2：監控工具</h4>
+            <p>引入 Prometheus + Grafana + ELK。有 dashboard 可以實時睇到系統狀態，有搜索功能去 debug。</p>
+          </div>
+          <div class="key-point">
+            <h4>Level 3：告警系統</h4>
+            <p>基於 metrics 設定自動告警。問題發生時主動通知，大幅縮短 MTTR（Mean Time To Recovery）。</p>
+          </div>
+          <div class="key-point">
+            <h4>最佳做法</h4>
+            <p>建議盡早由 Level 1 過渡到 Level 2，production 環境必須達到 Level 3。關鍵在於唔好等出事先補救。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計監控 + 告警系統架構</h4>
+          <div class="prompt-text" id="prompt1">為 <span class="placeholder">[系統名稱，例如：線上教育平台]</span> 設計一套完整嘅監控同告警系統。
+
+系統架構：<span class="placeholder">[簡述，例如：React 前端 + Node.js API + PostgreSQL + Redis，部署喺 Kubernetes]</span>
+
+請輸出以下內容：
+1. 監控架構圖（文字描述），包含：
+   - Metrics 收集路徑：Application → Prometheus → Grafana
+   - Logs 收集路徑：Application → Fluentd → Elasticsearch → Kibana
+   - Tracing 路徑（如適用）：Application → Jaeger
+
+2. 必須追蹤嘅 5 大關鍵指標：
+   - 每個指標嘅 PromQL 查詢語句
+   - 正常範圍同異常 Threshold
+   - 對應嘅 Grafana Panel 類型（Gauge / Graph / Table）
+
+3. 告警規則設計（至少 6 條）：
+   - Warning 同 Critical 兩個級別
+   - 每條規則嘅通知渠道同靜默策略
+
+4. Dashboard 佈局建議（Overview Dashboard + Service-level Dashboard）
+
+5. 由零開始嘅部署步驟（用 Docker Compose 或 Helm Chart）</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — Build Health Check Dashboard</h4>
+          <div class="prompt-text" id="prompt2">用 <span class="placeholder">[技術棧，例如：Node.js + Express]</span> 建立一個 Health Check Dashboard 系統。
+
+需要監控嘅服務：<span class="placeholder">[列出服務，例如：API Server、Database、Redis、Message Queue、Third-party Payment API]</span>
+
+功能要求：
+1. Health Check Endpoint（/health）：
+   - 檢查每個依賴服務嘅連接狀態
+   - 返回 JSON 格式嘅健康報告（每個服務嘅狀態、延遲、最後檢查時間）
+   - 整體狀態判斷邏輯（全部 healthy = 200，部分 degraded = 200 + warning，核心服務 down = 503）
+
+2. Dashboard 前端頁面：
+   - 實時顯示所有服務嘅健康狀態（綠 / 黃 / 紅）
+   - 歷史 Uptime 百分比（過去 24 小時 / 7 日 / 30 日）
+   - 自動刷新（每 30 秒）
+
+3. 告警整合：
+   - 服務狀態變化時發送 <span class="placeholder">[通知渠道，例如：Slack Webhook]</span> 通知
+   - 避免重複告警（同一個問題只通知一次，恢復時再通知）
+
+請直接輸出可以運行嘅完整 Code。</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const contents = document.querySelectorAll('.tab-content');
+  tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+  function copyPrompt(id, btn) {
+    const text = document.getElementById(id).innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✅ 已複製';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+    });
+  }
+</script>
+</body>
+</html>

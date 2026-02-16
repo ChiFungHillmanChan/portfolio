@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>News Feed 動態消息流 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📰 News Feed 動態消息流</h1>
+      <p>社交媒體動態設計，掌握 Fan-out on write vs fan-out on read</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 整體架構</button>
+      <button class="tab-btn" data-tab="fanout">② Fan-out 策略</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰要點</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+    </div>
+
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>News Feed 係咩</h2>
+        <div class="subtitle">打開 Facebook / Instagram 睇到嗰堆動態，就係 News Feed</div>
+        <p>
+          想像一下：follow 咗 500 個人，每個人都有新 post，系統點樣決定首頁要顯示邊啲 post、用咩順序排列？呢個就係 News Feed 系統要解決嘅問題，亦係面試超高頻題目。
+        </p>
+        <p>核心挑戰係：follow 嘅人同時發 post，系統要喺毫秒級將呢啲 post 收集、排序、展示出嚟。以下睇成個架構。</p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 800 320" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#3B82F6" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.3" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradBlue" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1a3a2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradYellow" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a351a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a1a1a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPurple" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradPink" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#3a1a2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+              <marker id="arrYellow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#fbbf24"/></marker>
+              <marker id="arrPink" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#EC4899"/></marker>
+              <marker id="arrPurple" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#8B5CF6"/></marker>
+            </defs>
+
+            <!-- User Post -->
+            <g transform="translate(30,120)">
+              <rect width="120" height="70" rx="12" fill="url(#gradBlue)" stroke="#3B82F6" stroke-width="2" filter="url(#glowBlue)"/>
+              <text x="60" y="28" text-anchor="middle" fill="#3B82F6" font-size="13" font-weight="700">User Post</text>
+              <text x="60" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">用戶發 post</text>
+            </g>
+
+            <!-- Feed Service -->
+            <g transform="translate(220,120)">
+              <rect width="140" height="70" rx="12" fill="url(#gradGreen)" stroke="#10B981" stroke-width="2" filter="url(#glowGreen)"/>
+              <text x="70" y="28" text-anchor="middle" fill="#10B981" font-size="13" font-weight="700">Feed Service</text>
+              <text x="70" y="48" text-anchor="middle" fill="#9ca3af" font-size="10">動態消息服務</text>
+            </g>
+
+            <!-- Fan-out Service -->
+            <g transform="translate(430,50)">
+              <rect width="130" height="60" rx="12" fill="url(#gradYellow)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="25" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="700">Fan-out</text>
+              <text x="65" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">推送服務</text>
+            </g>
+
+            <!-- Feed Cache -->
+            <g transform="translate(620,50)">
+              <rect width="140" height="60" rx="12" fill="url(#gradRed)" stroke="#EF4444" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="25" text-anchor="middle" fill="#EF4444" font-size="12" font-weight="700">Feed Cache</text>
+              <text x="70" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">每個用戶嘅 Feed</text>
+            </g>
+
+            <!-- Posts DB -->
+            <g transform="translate(430,190)">
+              <rect width="130" height="60" rx="12" fill="url(#gradPurple)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="65" y="25" text-anchor="middle" fill="#8B5CF6" font-size="12" font-weight="700">Posts DB</text>
+              <text x="65" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">帖子資料庫</text>
+            </g>
+
+            <!-- Ranking -->
+            <g transform="translate(620,190)">
+              <rect width="140" height="60" rx="12" fill="url(#gradPink)" stroke="#EC4899" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="25" text-anchor="middle" fill="#EC4899" font-size="12" font-weight="700">Ranking</text>
+              <text x="70" y="45" text-anchor="middle" fill="#9ca3af" font-size="10">排序演算法</text>
+            </g>
+
+            <!-- Arrows: curved paths -->
+            <path d="M152,155 C185,155 185,155 218,155" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arrBlue)"/>
+            <text x="185" y="145" text-anchor="middle" fill="#a5b4fc" font-size="10">New post</text>
+
+            <path d="M362,140 C390,120 410,100 428,85" stroke="#fbbf24" stroke-width="2" fill="none" marker-end="url(#arrYellow)"/>
+            <text x="405" y="105" fill="#fbbf24" font-size="10">Fan-out</text>
+
+            <path d="M562,80 C585,80 600,80 618,80" stroke="#34d399" stroke-width="1.5" fill="none" marker-end="url(#arrGreen)"/>
+            <text x="590" y="70" text-anchor="middle" fill="#34d399" font-size="10">Write feeds</text>
+
+            <path d="M362,170 C390,185 410,200 428,210" stroke="#8B5CF6" stroke-width="1.5" fill="none" marker-end="url(#arrPurple)"/>
+            <text x="405" y="200" fill="#a5b4fc" font-size="10">Store</text>
+
+            <path d="M562,220 C585,220 600,220 618,220" stroke="#EC4899" stroke-width="1.5" fill="none" marker-end="url(#arrPink)"/>
+            <text x="590" y="210" text-anchor="middle" fill="#EC4899" font-size="10">Rank & sort</text>
+          </svg>
+        </div>
+
+        <h3 style="color:#fff; font-size:1.1rem; margin-bottom:12px;">成個流程一覽</h3>
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>首先，用戶發一條新 post，Feed Service 收到。呢個係成個 pipeline 嘅起點。</span></li>
+          <li><span class="step-num">2</span><span>跟住 Fan-out Service 會將呢條 post 推送到所有 follower 嘅 Feed Cache 入面。Fan-out 嘅兩種策略會喺下一節詳細解說。</span></li>
+          <li><span class="step-num">3</span><span>同時，原始 post 存入 Posts DB 做永久保存。重點係，Cache 同 DB 係兩個唔同嘅存儲層。</span></li>
+          <li><span class="step-num">4</span><span>最後，Ranking Algorithm 決定 post 喺每個用戶 Feed 入面嘅顯示順序。呢個排序邏輯係整個系統最有商業價值嘅部分。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <div class="tab-content" id="fanout">
+      <div class="card">
+        <h2>Fan-out 策略比較</h2>
+        <div class="subtitle">呢個係 News Feed 最核心嘅設計決定，必須要識</div>
+
+        <h3 style="color:#34d399; font-size:1.1rem; margin: 20px 0 12px;">Fan-out on Write（推模式）</h3>
+        <p>先講推模式。用戶一發 post，系統即刻將 post 寫入所有 follower 嘅 Feed Cache。Follower 打開 App 嘅時候，Feed 已經準備好晒，即刻顯示。</p>
+        <p><strong style="color:#34d399">好處：</strong>讀取超快，因為 Feed 已經 pre-computed。<br><strong style="color:#f87171">壞處：</strong>注意呢個陷阱——如果一個名人有 1000 萬 follower，發一條 post 要寫 1000 萬次，呢個叫做 hotkey problem，超慢！</p>
+
+        <h3 style="color:#fbbf24; font-size:1.1rem; margin: 24px 0 12px;">Fan-out on Read（拉模式）</h3>
+        <p>拉模式就唔同。用戶打開 App 嘅時候，系統即時去資料庫拉取所 follow 嘅人嘅最新 post，然後排序顯示。</p>
+        <p><strong style="color:#34d399">好處：</strong>寫入簡單，發 post 只需要存一次。<br><strong style="color:#f87171">壞處：</strong>讀取慢，因為每次都要即時計算 Feed。需要衡量邊個 trade-off 更適合實際場景。</p>
+
+        <h3 style="color:#a5b4fc; font-size:1.1rem; margin: 24px 0 12px;">混合模式（最推薦嘅方案）</h3>
+        <p>結論係：名人（follower 超多）用 <strong>pull 模式</strong>；普通用戶用 <strong>push 模式</strong>。呢個就係最佳平衡，Facebook 同 Twitter 都係咁做。面試嘅時候主動提呢個混合策略，面試官一定會加分。</p>
+
+        <div class="use-case">
+          <h4>真實做法參考</h4>
+          <p>大型社交平台用混合模式：普通用戶 post 會 fan-out 到 follower，但名人 post 係讀取時先拉取。再配合 Ranking Algorithm（例如 EdgeRank），根據用戶同發帖人嘅互動程度嚟決定顯示順序。設計嘅時候要將呢啲因素全部考慮進去。</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>實戰要點</h2>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Ranking Algorithm</h4>
+            <p>重點係：News Feed 唔係按時間排序咁簡單！大型平台用 machine learning 根據互動率、用戶興趣、post 類型等因素排序。設計嘅時候要預留呢個 ranking layer。</p>
+          </div>
+          <div class="key-point">
+            <h4>Pagination 分頁</h4>
+            <p>重點係，Feed 唔可以一次 load 晒。建議用 cursor-based pagination，唔好用 offset-based。每次 load 20 條，往下滑再 load 20 條，咁先能承受大流量。</p>
+          </div>
+          <div class="key-point">
+            <h4>Cache 策略</h4>
+            <p>實戰技巧：每個用戶嘅 Feed 存喺 Redis 入面，用 sorted set 按 score（時間或 rank）排列。新 post 加入時插入對應位置，呢個操作係 O(log N)，超快。</p>
+          </div>
+          <div class="key-point">
+            <h4>Real-time Updates</h4>
+            <p>建議用 WebSocket 或 Server-Sent Events 推送新 post 通知，用戶唔使 refresh 就可以睇到最新動態。呢個會大幅提升用戶體驗。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 設計 News Feed 系統（Fan-out 策略）</h4>
+          <div class="prompt-text" id="prompt1">幫手設計一個 News Feed 系統嘅後端架構。
+
+要求：
+- 支援 Fan-out on Write 同 Fan-out on Read 兩種模式
+- 普通用戶（follower 少於 <span class="placeholder">[5000]</span>）用 push 模式，名人用戶用 pull 模式
+- 用 Redis Sorted Set 做每個用戶嘅 Feed Cache
+- 用 <span class="placeholder">[Node.js / Python / Go]</span> 寫核心邏輯
+- 包含 Feed Service、Fan-out Service、Ranking Service 三個主要組件
+- 支援 cursor-based pagination，每頁載入 20 條 post
+- 畫出完整嘅系統架構圖，標明每個組件之間嘅數據流向</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 實現 Feed Ranking Algorithm</h4>
+          <div class="prompt-text" id="prompt2">用 <span class="placeholder">[Python / TypeScript]</span> 實現一個 News Feed Ranking Algorithm。
+
+需求：
+- 輸入：一組候選 post（包含 post_id、author_id、created_at、likes、comments、shares）
+- 輸出：按 relevance score 排序嘅 post 列表
+- Ranking 因素包括：
+  1. 時間衰減（越新嘅 post 分數越高，用 exponential decay）
+  2. 互動率（likes + comments * 2 + shares * 3）
+  3. 用戶同作者嘅親密度（基於歷史互動次數）
+  4. Post 類型加權（<span class="placeholder">[圖片 1.2x / 影片 1.5x / 文字 1.0x]</span>）
+- 寫埋單元測試，驗證排序結果係咪合理
+- 附帶解釋每個因素嘅權重點樣調整</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 3 — 建立 Real-time Feed 推送</h4>
+          <div class="prompt-text" id="prompt3">用 <span class="placeholder">[Node.js + Socket.io / Go + WebSocket]</span> 建立一個 Real-time News Feed 推送系統。
+
+功能要求：
+- 當有新 post 發佈時，即時推送通知俾相關 follower
+- 用 Redis Pub/Sub 做消息廣播
+- 前端收到通知後顯示「有 X 條新動態」嘅提示
+- 支援多台 Server 嘅分佈式場景
+- 包含 connection 管理（心跳檢測、自動重連）
+- 預計用戶量：<span class="placeholder">[10,000 / 100,000]</span> 同時在線
+- 寫出完整嘅前後端代碼同部署建議</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt3', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

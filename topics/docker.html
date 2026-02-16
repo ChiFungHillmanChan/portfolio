@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Docker 容器化 — 系統架構圖解</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang HK", "Microsoft JhengHei", sans-serif; background: #0f1117; color: #e0e0e0; min-height: 100vh; }
+    .container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+    header { text-align: center; margin-bottom: 40px; }
+    header h1 { font-size: 2rem; font-weight: 700; color: #ffffff; margin-bottom: 8px; }
+    header p { font-size: 1rem; color: #9ca3af; line-height: 1.6; }
+    .card { background: #1a1d27; border-radius: 16px; padding: 32px; margin-bottom: 24px; border: 1px solid #2a2d3a; }
+    .card h2 { font-size: 1.5rem; color: #ffffff; margin-bottom: 8px; }
+    .card .subtitle { font-size: 0.95rem; color: #6366f1; font-weight: 500; margin-bottom: 16px; }
+    .card p { font-size: 0.95rem; color: #c0c4cc; line-height: 1.8; margin-bottom: 12px; }
+    .diagram-container { background: #13151c; border-radius: 12px; padding: 24px; margin: 24px 0; overflow-x: auto; border: 1px solid #2a2d3a; }
+    .diagram-container svg { display: block; margin: 0 auto; max-width: 100%; height: auto; }
+    .steps { list-style: none; padding: 0; margin: 16px 0; }
+    .steps li { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; border-bottom: 1px solid #2a2d3a; font-size: 0.95rem; color: #c0c4cc; line-height: 1.6; }
+    .steps li:last-child { border-bottom: none; }
+    .step-num { flex-shrink: 0; width: 28px; height: 28px; border-radius: 50%; background: #6366f1; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: 700; }
+    .key-points { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    @media (max-width: 600px) { .key-points { grid-template-columns: 1fr; } .container { padding: 24px 16px; } header h1 { font-size: 1.5rem; } .card { padding: 20px; } }
+    .key-point { background: #13151c; border-radius: 10px; padding: 16px; border-left: 3px solid #6366f1; }
+    .key-point h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .key-point p { font-size: 0.85rem; color: #c0c4cc; margin-bottom: 0; line-height: 1.6; }
+    .use-case { background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(99, 102, 241, 0.05)); border-left: 3px solid #6366f1; border-radius: 0 10px 10px 0; padding: 16px 20px; margin-top: 16px; }
+    .use-case h4 { color: #a5b4fc; font-size: 0.9rem; margin-bottom: 6px; }
+    .use-case p { font-size: 0.9rem; color: #c0c4cc; margin-bottom: 0; }
+    .tabs { display: flex; gap: 4px; background: #1a1d27; border-radius: 12px; padding: 4px; margin-bottom: 24px; overflow-x: auto; }
+    .tab-btn { flex: 1; padding: 12px 16px; border: none; background: transparent; color: #9ca3af; font-size: 0.9rem; font-weight: 500; border-radius: 8px; cursor: pointer; transition: all 0.25s ease; white-space: nowrap; font-family: inherit; }
+    .tab-btn:hover { color: #e0e0e0; background: rgba(255, 255, 255, 0.05); }
+    .tab-btn.active { background: #6366f1; color: #ffffff; font-weight: 600; }
+    .tab-content { display: none; animation: fadeIn 0.3s ease; }
+    .tab-content.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    /* AI Viber */
+    .prompt-card { background: #13151c; border-radius: 12px; padding: 20px; margin-bottom: 16px; border: 1px solid #2a2d3a; }
+    .prompt-card h4 { color: #a5b4fc; font-size: 0.95rem; margin-bottom: 12px; }
+    .prompt-text { background: #0a0b10; border-radius: 8px; padding: 16px; font-size: 0.85rem; color: #c0c4cc; line-height: 1.8; white-space: pre-wrap; word-break: break-word; border: 1px solid #2a2d3a; position: relative; }
+    .prompt-text .placeholder { color: #fbbf24; font-weight: 600; }
+    .copy-btn { margin-top: 10px; padding: 8px 16px; background: #6366f1; color: #fff; border: none; border-radius: 8px; font-size: 0.8rem; cursor: pointer; font-family: inherit; transition: all 0.2s ease; }
+    .copy-btn:hover { background: #4f46e5; }
+    .copy-btn.copied { background: #10B981; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🐳 Docker 容器化</h1>
+      <p>解決「喺我機行到」嘅問題，令應用喺任何環境都能一致運行</p>
+    </header>
+
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="overview">① 點解用 Docker</button>
+      <button class="tab-btn" data-tab="optimize">② Image 優化</button>
+      <button class="tab-btn" data-tab="practice">③ 實戰建議</button>
+      <button class="tab-btn" data-tab="ai-viber">④ AI Viber</button>
+    </div>
+
+    <!-- ==================== Tab 1: 點解用 Docker ==================== -->
+    <div class="tab-content active" id="overview">
+      <div class="card">
+        <h2>Docker 解決咩問題</h2>
+        <div class="subtitle">「It works on my machine」——呢句話從此消失</div>
+        <p>
+          開發環境同生產環境唔一致，係軟件開發最經典嘅痛點之一。一個開發者寫好嘅 code，另一個開發者 download 返嚟卻跑唔到——因為缺少依賴、版本唔同、系統配置差異等等。Docker 就係為咗解決呢個問題而誕生嘅。
+        </p>
+        <p>
+          Docker 嘅核心概念係<strong style="color:#3B82F6">容器化（Containerization）</strong>：將應用程式連同所有依賴（runtime、libraries、config）打包成一個獨立嘅 container。無論喺開發機、測試環境、定生產 server，container 入面嘅運行環境都係完全一樣嘅。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 760 320" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowBlue" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#3B82F6" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradCode" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#2d1f5e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradDocker" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#1e3a5f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradDev" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradProd" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrBlue" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#3B82F6"/></marker>
+              <marker id="arrGreen" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#34d399"/></marker>
+            </defs>
+
+            <!-- Application Code -->
+            <g transform="translate(30,110)">
+              <rect width="140" height="80" rx="14" fill="url(#gradCode)" stroke="#8B5CF6" stroke-width="2" filter="url(#shadow)"/>
+              <text x="70" y="32" text-anchor="middle" fill="#8B5CF6" font-size="13" font-weight="700">Application</text>
+              <text x="70" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">Code + Dependencies</text>
+              <text x="70" y="66" text-anchor="middle" fill="#9ca3af" font-size="10">+ Config</text>
+            </g>
+
+            <!-- Docker Image -->
+            <g transform="translate(280,95)">
+              <rect width="170" height="110" rx="14" fill="url(#gradDocker)" stroke="#3B82F6" stroke-width="2.5" filter="url(#glowBlue)"/>
+              <text x="85" y="30" text-anchor="middle" fill="#3B82F6" font-size="15" font-weight="700">Docker Image</text>
+              <text x="85" y="52" text-anchor="middle" fill="#9ca3af" font-size="10">App + Runtime</text>
+              <text x="85" y="66" text-anchor="middle" fill="#9ca3af" font-size="10">+ Libraries + OS</text>
+              <text x="85" y="90" text-anchor="middle" fill="#60a5fa" font-size="10">docker build</text>
+            </g>
+
+            <!-- Dev Environment -->
+            <g transform="translate(570,40)">
+              <rect width="155" height="70" rx="14" fill="url(#gradDev)" stroke="#10B981" stroke-width="2" filter="url(#shadow)"/>
+              <text x="78" y="28" text-anchor="middle" fill="#10B981" font-size="12" font-weight="700">Dev Machine</text>
+              <text x="78" y="48" text-anchor="middle" fill="#34d399" font-size="10">docker run</text>
+            </g>
+
+            <!-- Prod Environment -->
+            <g transform="translate(570,140)">
+              <rect width="155" height="70" rx="14" fill="url(#gradProd)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow)"/>
+              <text x="78" y="28" text-anchor="middle" fill="#F59E0B" font-size="12" font-weight="700">Production Server</text>
+              <text x="78" y="48" text-anchor="middle" fill="#fbbf24" font-size="10">docker run</text>
+            </g>
+
+            <!-- More Containers -->
+            <g transform="translate(570,240)">
+              <rect width="155" height="55" rx="14" fill="url(#gradDev)" stroke="#10B981" stroke-width="1.5" filter="url(#shadow)" stroke-dasharray="4,3"/>
+              <text x="78" y="22" text-anchor="middle" fill="#10B981" font-size="11" font-weight="600">Scale Up</text>
+              <text x="78" y="40" text-anchor="middle" fill="#9ca3af" font-size="10">More Containers...</text>
+            </g>
+
+            <!-- Arrow: Code to Docker Image -->
+            <path d="M172,150 C215,150 230,150 278,150" fill="none" stroke="#8B5CF6" stroke-width="2" marker-end="url(#arrBlue)"/>
+            <text x="225" y="140" text-anchor="middle" fill="#a5b4fc" font-size="10">Build</text>
+
+            <!-- Arrow: Docker to Dev -->
+            <path d="M452,130 C500,110 530,90 568,78" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+
+            <!-- Arrow: Docker to Prod -->
+            <path d="M452,155 C500,160 530,168 568,173" fill="none" stroke="#34d399" stroke-width="1.5" marker-end="url(#arrGreen)"/>
+
+            <!-- Arrow: Prod to Scale -->
+            <path d="M648,212 C648,225 648,232 648,238" fill="none" stroke="#10B981" stroke-width="1.5" stroke-dasharray="4,3" marker-end="url(#arrGreen)"/>
+
+            <!-- Label -->
+            <text x="510" y="135" text-anchor="middle" fill="#9ca3af" font-size="10">Deploy</text>
+          </svg>
+        </div>
+
+        <ol class="steps">
+          <li><span class="step-num">1</span><span>將應用程式嘅 code、runtime、libraries、同系統依賴寫入 Dockerfile，用 <code style="color:#60a5fa">docker build</code> 打包成 Docker Image。</span></li>
+          <li><span class="step-num">2</span><span>Docker Image 就好似一個「快照」——包含運行應用需要嘅一切。Image 可以推送到 Docker Hub 或私有 registry 俾任何人使用。</span></li>
+          <li><span class="step-num">3</span><span>無論喺 dev machine 定 production server，用 <code style="color:#60a5fa">docker run</code> 就可以啟動一個 container。需要處理更多流量？啟動更多 container 就得。</span></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- ==================== Tab 2: Image 優化 ==================== -->
+    <div class="tab-content" id="optimize">
+      <div class="card">
+        <h2>Docker Image 瘦身術</h2>
+        <div class="subtitle">Image 越大，build 越慢、啟動越慢、傳輸越慢</div>
+        <p>
+          好多人習慣用 Ubuntu 做 base image——大概 200MB。聽落唔算大，但呢 200MB 入面有大量根本用唔到嘅工具同 library。每次 build 同 deploy 都要搬運呢啲「垃圾」，嚴重拖慢整個 CI/CD pipeline。
+        </p>
+
+        <div class="diagram-container">
+          <svg viewBox="0 0 700 220" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <filter id="shadow2" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/></filter>
+              <filter id="glowGreen" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6" result="blur"/><feFlood flood-color="#10B981" flood-opacity="0.25" result="color"/><feComposite in="color" in2="blur" operator="in" result="glow"/><feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+              <linearGradient id="gradUbuntu" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3a1f1f"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradSlim" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#3d2e0a"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <linearGradient id="gradAlpine" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#0f3d2e"/><stop offset="100%" stop-color="#1e293b"/></linearGradient>
+              <marker id="arrRight" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill="#6366f1"/></marker>
+            </defs>
+
+            <!-- Ubuntu -->
+            <g transform="translate(30,50)">
+              <rect width="180" height="110" rx="14" fill="url(#gradUbuntu)" stroke="#EF4444" stroke-width="2" filter="url(#shadow2)"/>
+              <text x="90" y="30" text-anchor="middle" fill="#EF4444" font-size="14" font-weight="700">Ubuntu</text>
+              <text x="90" y="52" text-anchor="middle" fill="#f87171" font-size="20" font-weight="800">~200 MB</text>
+              <text x="90" y="74" text-anchor="middle" fill="#9ca3af" font-size="10">Bash, Curl, apt, systemd...</text>
+              <text x="90" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">大量用唔到嘅工具</text>
+            </g>
+
+            <!-- Slim variant -->
+            <g transform="translate(270,50)">
+              <rect width="160" height="110" rx="14" fill="url(#gradSlim)" stroke="#F59E0B" stroke-width="2" filter="url(#shadow2)"/>
+              <text x="80" y="30" text-anchor="middle" fill="#F59E0B" font-size="14" font-weight="700">Slim Variant</text>
+              <text x="80" y="52" text-anchor="middle" fill="#fbbf24" font-size="20" font-weight="800">~80 MB</text>
+              <text x="80" y="74" text-anchor="middle" fill="#9ca3af" font-size="10">移除文檔同非必要工具</text>
+              <text x="80" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">例如 python:slim</text>
+            </g>
+
+            <!-- Alpine -->
+            <g transform="translate(490,50)">
+              <rect width="170" height="110" rx="14" fill="url(#gradAlpine)" stroke="#10B981" stroke-width="2.5" filter="url(#glowGreen)"/>
+              <text x="85" y="30" text-anchor="middle" fill="#10B981" font-size="14" font-weight="700">Alpine</text>
+              <text x="85" y="52" text-anchor="middle" fill="#34d399" font-size="20" font-weight="800">~5 MB</text>
+              <text x="85" y="74" text-anchor="middle" fill="#9ca3af" font-size="10">極輕量 Linux 發行版</text>
+              <text x="85" y="90" text-anchor="middle" fill="#9ca3af" font-size="10">只裝需要嘅嘢</text>
+            </g>
+
+            <!-- Arrows -->
+            <path d="M212,105 C230,105 248,105 268,105" fill="none" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrRight)"/>
+            <text x="240" y="95" text-anchor="middle" fill="#a5b4fc" font-size="9">-60%</text>
+
+            <path d="M432,105 C450,105 468,105 488,105" fill="none" stroke="#6366f1" stroke-width="1.5" marker-end="url(#arrRight)"/>
+            <text x="460" y="95" text-anchor="middle" fill="#a5b4fc" font-size="9">-94%</text>
+          </svg>
+        </div>
+
+        <ol class="steps">
+          <li><span class="step-num">1</span><span><strong style="color:#10B981">用 Alpine 做 base image</strong>——Alpine 係一個超輕量嘅 Linux 發行版，只有大約 5MB。同 Ubuntu 嘅 200MB 比較，差距係 40 倍。Boot time 極快，image size 極小。</span></li>
+          <li><span class="step-num">2</span><span><strong style="color:#F59E0B">Alpine 嘅取捨</strong>——因為極度精簡，Bash 同 Curl 等常用工具並唔係預裝嘅。需要嘅話要用 <code style="color:#60a5fa">apk add</code> 手動安裝。核心理念係「只裝需要嘅」，而唔係「咩都預裝」。</span></li>
+          <li><span class="step-num">3</span><span><strong style="color:#3B82F6">用 .dockerignore 排除無用檔案</strong>——就好似 .gitignore 咁，.dockerignore 可以排除 IDE 配置檔、OS 特定檔案、.git 目錄、node_modules 等。減少 build context 大小，加速 build 過程。</span></li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h2>進階優化技巧</h2>
+        <div class="subtitle">除咗換 base image，仲有其他方法縮小 image</div>
+        <div class="key-points">
+          <div class="key-point">
+            <h4>Multi-stage Build</h4>
+            <p>用一個 stage 做 build（安裝 compiler、build 工具），再用另一個乾淨嘅 stage 只複製 build 產物。最終 image 唔會包含任何 build 工具，大幅減少體積。</p>
+          </div>
+          <div class="key-point">
+            <h4>合併 RUN 指令</h4>
+            <p>每條 RUN 指令都會產生一個新嘅 image layer。將多條 RUN 合併成一條（用 && 連接），可以減少 layer 數量同 image 大小。記住喺同一條 RUN 入面清理暫存檔案。</p>
+          </div>
+          <div class="key-point">
+            <h4>善用 Layer Cache</h4>
+            <p>Docker 會 cache 每個 layer。將唔常變嘅指令（例如安裝系統依賴）放前面，常變嘅指令（例如 COPY 應用 code）放後面。咁樣大部分 layer 都可以用 cache，大幅加速 build。</p>
+          </div>
+          <div class="key-point">
+            <h4>.dockerignore 必備項目</h4>
+            <p><code style="color:#60a5fa">.git</code>、<code style="color:#60a5fa">node_modules</code>、<code style="color:#60a5fa">.env</code>、<code style="color:#60a5fa">*.log</code>、IDE 配置（<code style="color:#60a5fa">.vscode</code>、<code style="color:#60a5fa">.idea</code>）、OS 檔案（<code style="color:#60a5fa">.DS_Store</code>）。呢啲檔案完全唔應該出現喺 Docker image 入面。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Tab 3: 實戰建議 ==================== -->
+    <div class="tab-content" id="practice">
+      <div class="card">
+        <h2>Docker 實戰建議</h2>
+        <div class="subtitle">由開發到生產，Docker 嘅最佳實踐</div>
+        <p>
+          Docker 唔止係開發工具——好多團隊主要係為咗生產部署先用 Docker。應用一旦容器化，擴展就變得極其簡單：需要處理更多流量？啟動更多 container 就得。配合 Kubernetes 或 Docker Swarm，可以實現自動擴縮容。
+        </p>
+
+        <div class="key-points">
+          <div class="key-point">
+            <h4>開發環境一致性</h4>
+            <p>用 docker-compose 定義整個開發環境（app + database + cache），新加入嘅開發者只需要一條 <code style="color:#60a5fa">docker compose up</code> 就可以啟動完整環境。徹底解決「喺我機行到」嘅問題。</p>
+          </div>
+          <div class="key-point">
+            <h4>生產部署擴展</h4>
+            <p>容器化嘅應用天生適合水平擴展。每個 container 都係獨立嘅，啟動新 container 嘅速度以秒計算。配合 Load Balancer，可以輕鬆應對流量高峰。</p>
+          </div>
+          <div class="key-point">
+            <h4>Base Image 選擇策略</h4>
+            <p>大部分情況建議用 Alpine 版本（例如 <code style="color:#60a5fa">node:20-alpine</code>、<code style="color:#60a5fa">python:3.12-alpine</code>）。如果有 C extension 編譯問題，退而求其次用 slim 版本。只有極少數情況需要完整嘅 Ubuntu/Debian。</p>
+          </div>
+          <div class="key-point">
+            <h4>安全注意事項</h4>
+            <p>永遠唔好用 root 用戶運行 container——用 USER 指令指定非特權用戶。定期更新 base image 修補安全漏洞。絕對唔好將 secrets（密碼、API key）寫入 Dockerfile 或 image。</p>
+          </div>
+        </div>
+
+        <div class="use-case">
+          <h4>建議嘅 Dockerfile 結構</h4>
+          <p>FROM alpine-based image → WORKDIR → COPY package files → RUN install dependencies → COPY app code → USER non-root → CMD start。呢個順序可以最大化利用 layer cache，因為依賴唔會經常變，但 app code 會頻繁更新。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== Tab 4: AI Viber ==================== -->
+    <div class="tab-content" id="ai-viber">
+      <div class="card">
+        <h2>AI Viber</h2>
+        <div class="subtitle">複製 Prompt，貼去 AI 工具，即刻開始 Build</div>
+
+        <div class="prompt-card">
+          <h4>Prompt 1 — 將應用容器化（Dockerfile + 優化）</h4>
+          <div class="prompt-text" id="prompt1">幫手將一個 <span class="placeholder">[框架，例如 Next.js / Express / FastAPI / Spring Boot]</span> 應用完全容器化。
+
+要求：
+1. 寫一個 production-ready Dockerfile，用 multi-stage build
+2. Base image 用 Alpine 版本（例如 node:20-alpine / python:3.12-alpine）
+3. 第一個 stage 做 build（安裝依賴 + 編譯），第二個 stage 只複製 build 產物
+4. 善用 layer cache——將 package.json / requirements.txt COPY 同 install 放喺 COPY app code 之前
+5. 用非 root USER 運行 container
+6. 生成 .dockerignore 排除 .git / node_modules / .env / *.log / .vscode
+7. 最終 image size 目標：<span class="placeholder">[目標，例如 < 200MB / < 100MB]</span></div>
+          <button class="copy-btn" onclick="copyPrompt('prompt1', this)">📋 複製</button>
+        </div>
+
+        <div class="prompt-card">
+          <h4>Prompt 2 — 設計 Docker Compose 多容器開發環境</h4>
+          <div class="prompt-text" id="prompt2">幫手設計一個完整嘅 Docker Compose 開發環境，包含以下服務：
+- App：<span class="placeholder">[框架，例如 Next.js / Express / Django]</span>
+- Database：<span class="placeholder">[數據庫，例如 PostgreSQL / MySQL / MongoDB]</span>
+- Cache：Redis
+- <span class="placeholder">[其他服務，例如 Nginx reverse proxy / Elasticsearch / RabbitMQ]</span>
+
+要求：
+1. 生成 docker-compose.yml，定義所有 services、networks、volumes
+2. App service 要支援 hot reload（mount source code 做 volume）
+3. Database 要用 named volume 持久化數據，唔好用 bind mount
+4. 設定 healthcheck 確保 database ready 先啟動 app（depends_on + condition）
+5. 用 .env file 管理環境變數（database password、API keys）
+6. 加入 docker-compose.override.yml 分開 dev 同 production 配置
+7. 新開發者只需要 docker compose up 就可以啟動完整環境</div>
+          <button class="copy-btn" onclick="copyPrompt('prompt2', this)">📋 複製</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab-btn');
+    const contents = document.querySelectorAll('.tab-content');
+    tabs.forEach(tab => { tab.addEventListener('click', () => { tabs.forEach(t => t.classList.remove('active')); contents.forEach(c => c.classList.remove('active')); tab.classList.add('active'); document.getElementById(tab.dataset.tab)?.classList.add('active'); }); });
+
+    function copyPrompt(id, btn) {
+      const text = document.getElementById(id).innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        btn.textContent = '✅ 已複製';
+        btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = '📋 複製'; btn.classList.remove('copied'); }, 2000);
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,909 @@
+[
+  {
+    "id": "ai-scraper-defense",
+    "title": "防禦 AI 爬蟲",
+    "titleZh": "防禦 AI 爬蟲",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [
+      "scraping-vs-crawling"
+    ],
+    "leads_to": [],
+    "related": [
+      "rate-limiter",
+      "secure-ai-agents",
+      "web-crawler"
+    ],
+    "url": "topics/ai-scraper-defense.html"
+  },
+  {
+    "id": "ai-vs-software-engineer",
+    "title": "AI 時代做 Software Engineer 仲有冇前途？",
+    "titleZh": "AI 時代做 Software Engineer 仲有冇前途？",
+    "category": "career",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "coding-agent-design",
+      "secure-ai-agents"
+    ],
+    "related": [
+      "backend-roadmap",
+      "junior-vs-senior"
+    ],
+    "url": "topics/ai-vs-software-engineer.html"
+  },
+  {
+    "id": "api-gateway",
+    "title": "API Gateway 網關",
+    "titleZh": "API Gateway 網關",
+    "category": "network",
+    "difficulty": 2,
+    "prerequisites": [
+      "load-balancer"
+    ],
+    "leads_to": [
+      "rate-limiter",
+      "authentication"
+    ],
+    "related": [
+      "large-api-response",
+      "session-manager"
+    ],
+    "url": "topics/api-gateway.html"
+  },
+  {
+    "id": "authentication",
+    "title": "Authentication 驗證",
+    "titleZh": "🔑 Authentication 驗證",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [
+      "session-manager",
+      "secure-ai-agents"
+    ],
+    "related": [
+      "payment-system",
+      "api-gateway"
+    ],
+    "url": "topics/authentication.html"
+  },
+  {
+    "id": "backend-roadmap",
+    "title": "Backend 學習路線",
+    "titleZh": "🗺 Backend 學習路線",
+    "category": "career",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "junior-vs-senior",
+      "git-vs-github",
+      "database-basics"
+    ],
+    "related": [
+      "ai-vs-software-engineer",
+      "interview-process"
+    ],
+    "url": "topics/backend-roadmap.html"
+  },
+  {
+    "id": "cache-invalidation",
+    "title": "Cache 失效策略",
+    "titleZh": "Cache 失效策略",
+    "category": "cache",
+    "difficulty": 2,
+    "prerequisites": [
+      "cdn"
+    ],
+    "leads_to": [
+      "distributed-cache",
+      "fix-slow-database"
+    ],
+    "related": [
+      "redis",
+      "scale-reads"
+    ],
+    "url": "topics/cache-invalidation.html"
+  },
+  {
+    "id": "cdn",
+    "title": "CDN 內容分發網絡",
+    "titleZh": "CDN 內容分發網絡",
+    "category": "network",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [
+      "cache-invalidation",
+      "load-balancer"
+    ],
+    "related": [
+      "object-storage",
+      "scale-reads"
+    ],
+    "url": "topics/cdn.html"
+  },
+  {
+    "id": "chat-system",
+    "title": "Chat System 即時通訊系統",
+    "titleZh": "💬 Chat System 即時通訊系統",
+    "category": "app",
+    "difficulty": 3,
+    "prerequisites": [
+      "message-queue"
+    ],
+    "leads_to": [],
+    "related": [
+      "notification-system",
+      "news-feed",
+      "session-manager"
+    ],
+    "url": "topics/chat-system.html"
+  },
+  {
+    "id": "chess-game-design",
+    "title": "國際象棋遊戲架構",
+    "titleZh": "國際象棋遊戲架構",
+    "category": "app",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [],
+    "related": [
+      "session-manager",
+      "system-design-patterns"
+    ],
+    "url": "topics/chess-game-design.html"
+  },
+  {
+    "id": "cicd-pipeline",
+    "title": "CI/CD 自動化部署",
+    "titleZh": "CI/CD 自動化部署",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [
+      "git-vs-github",
+      "docker"
+    ],
+    "leads_to": [
+      "deployment"
+    ],
+    "related": [
+      "monitoring",
+      "server-vs-serverless"
+    ],
+    "url": "topics/cicd-pipeline.html"
+  },
+  {
+    "id": "coding-agent-design",
+    "title": "Coding Agent 設計",
+    "titleZh": "Coding Agent 設計",
+    "category": "engineering",
+    "difficulty": 3,
+    "prerequisites": [
+      "system-design-patterns"
+    ],
+    "leads_to": [
+      "secure-ai-agents"
+    ],
+    "related": [
+      "ai-vs-software-engineer",
+      "dependency-injection"
+    ],
+    "url": "topics/coding-agent-design.html"
+  },
+  {
+    "id": "coding-interview",
+    "title": "點樣通過 Coding Interview",
+    "titleZh": "點樣通過 Coding Interview",
+    "category": "career",
+    "difficulty": 1,
+    "prerequisites": [
+      "interview-process"
+    ],
+    "leads_to": [],
+    "related": [
+      "star-method",
+      "system-design-patterns"
+    ],
+    "url": "topics/coding-interview.html"
+  },
+  {
+    "id": "database-basics",
+    "title": "Database 基礎",
+    "titleZh": "Database 基礎",
+    "category": "storage",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "pick-database",
+      "key-value-store",
+      "fix-slow-database"
+    ],
+    "related": [
+      "redis",
+      "object-storage"
+    ],
+    "url": "topics/database-basics.html"
+  },
+  {
+    "id": "dependency-injection",
+    "title": "Dependency Injection 依賴注入",
+    "titleZh": "Dependency Injection",
+    "category": "engineering",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [
+      "system-design-patterns"
+    ],
+    "related": [
+      "coding-agent-design"
+    ],
+    "url": "topics/dependency-injection.html"
+  },
+  {
+    "id": "deployment",
+    "title": "免費部署平台",
+    "titleZh": "免費部署平台",
+    "category": "deploy",
+    "difficulty": 2,
+    "prerequisites": [
+      "docker"
+    ],
+    "leads_to": [],
+    "related": [
+      "cicd-pipeline",
+      "server-vs-serverless",
+      "self-host-vs-cloud"
+    ],
+    "url": "topics/deployment.html"
+  },
+  {
+    "id": "distributed-cache",
+    "title": "Distributed Cache 分佈式快取",
+    "titleZh": "⚡ Distributed Cache 分佈式快取",
+    "category": "cache",
+    "difficulty": 3,
+    "prerequisites": [
+      "redis",
+      "cache-invalidation"
+    ],
+    "leads_to": [],
+    "related": [
+      "scale-reads",
+      "load-balancer",
+      "rate-limiter"
+    ],
+    "url": "topics/distributed-cache.html"
+  },
+  {
+    "id": "docker",
+    "title": "Docker 容器化",
+    "titleZh": "🐳 Docker 容器化",
+    "category": "engineering",
+    "difficulty": 2,
+    "prerequisites": [
+      "git-vs-github"
+    ],
+    "leads_to": [
+      "deployment",
+      "cicd-pipeline",
+      "server-vs-serverless"
+    ],
+    "related": [
+      "self-host-vs-cloud"
+    ],
+    "url": "topics/docker.html"
+  },
+  {
+    "id": "fix-slow-database",
+    "title": "點樣 Debug 慢嘅 Database",
+    "titleZh": "🐌 點樣 Debug 慢嘅 Database",
+    "category": "cache",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics",
+      "pick-database"
+    ],
+    "leads_to": [
+      "scale-reads",
+      "distributed-cache"
+    ],
+    "related": [
+      "cache-invalidation",
+      "redis"
+    ],
+    "url": "topics/fix-slow-database.html"
+  },
+  {
+    "id": "git-vs-github",
+    "title": "Git vs GitHub",
+    "titleZh": "🔀 Git vs GitHub",
+    "category": "engineering",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "cicd-pipeline",
+      "docker"
+    ],
+    "related": [
+      "print-vs-debugger",
+      "deployment"
+    ],
+    "url": "topics/git-vs-github.html"
+  },
+  {
+    "id": "interview-process",
+    "title": "Big Tech 面試流程",
+    "titleZh": "🏢 Big Tech 面試流程",
+    "category": "career",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "star-method",
+      "coding-interview"
+    ],
+    "related": [
+      "backend-roadmap",
+      "junior-vs-senior"
+    ],
+    "url": "topics/interview-process.html"
+  },
+  {
+    "id": "junior-vs-senior",
+    "title": "Junior vs Senior Engineer：Task 定 Goal？",
+    "titleZh": "Junior vs Senior Engineer：Task 定 Goal？",
+    "category": "career",
+    "difficulty": 1,
+    "prerequisites": [
+      "backend-roadmap"
+    ],
+    "leads_to": [
+      "system-design-patterns",
+      "interview-process"
+    ],
+    "related": [
+      "ai-vs-software-engineer",
+      "star-method"
+    ],
+    "url": "topics/junior-vs-senior.html"
+  },
+  {
+    "id": "key-value-store",
+    "title": "Key-Value Store 鍵值存儲",
+    "titleZh": "Key-Value Store 鍵值存儲",
+    "category": "storage",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [
+      "redis",
+      "distributed-cache"
+    ],
+    "related": [
+      "pick-database",
+      "session-manager"
+    ],
+    "url": "topics/key-value-store.html"
+  },
+  {
+    "id": "large-api-response",
+    "title": "Large API Response 處理策略",
+    "titleZh": "Large API Response 處理策略",
+    "category": "network",
+    "difficulty": 2,
+    "prerequisites": [
+      "api-gateway"
+    ],
+    "leads_to": [],
+    "related": [
+      "cdn",
+      "cache-invalidation",
+      "scale-reads"
+    ],
+    "url": "topics/large-api-response.html"
+  },
+  {
+    "id": "load-balancer",
+    "title": "Load Balancer 負載均衡器",
+    "titleZh": "Load Balancer 負載均衡器",
+    "category": "network",
+    "difficulty": 2,
+    "prerequisites": [
+      "cdn"
+    ],
+    "leads_to": [
+      "api-gateway",
+      "scale-reads"
+    ],
+    "related": [
+      "rate-limiter",
+      "distributed-cache"
+    ],
+    "url": "topics/load-balancer.html"
+  },
+  {
+    "id": "localhost-hosting",
+    "title": "Localhost 分享到互聯網",
+    "titleZh": "Localhost 分享到互聯網",
+    "category": "network",
+    "difficulty": 1,
+    "prerequisites": [
+      "port-forwarding"
+    ],
+    "leads_to": [
+      "cdn",
+      "deployment"
+    ],
+    "related": [
+      "self-host-vs-cloud",
+      "server-vs-serverless"
+    ],
+    "url": "topics/localhost-hosting.html"
+  },
+  {
+    "id": "message-queue",
+    "title": "Message Queue 分佈式消息隊列",
+    "titleZh": "Message Queue 分佈式消息隊列",
+    "category": "async",
+    "difficulty": 3,
+    "prerequisites": [
+      "task-queue"
+    ],
+    "leads_to": [],
+    "related": [
+      "notification-system",
+      "distributed-cache",
+      "system-design-patterns"
+    ],
+    "url": "topics/message-queue.html"
+  },
+  {
+    "id": "metrics-logging",
+    "title": "Metrics & Logging 監控日誌",
+    "titleZh": "Metrics & Logging 監控日誌系統",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [
+      "print-vs-debugger"
+    ],
+    "leads_to": [
+      "monitoring"
+    ],
+    "related": [
+      "cicd-pipeline"
+    ],
+    "url": "topics/metrics-logging.html"
+  },
+  {
+    "id": "monitoring",
+    "title": "應用程式監控",
+    "titleZh": "應用程式監控",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [
+      "metrics-logging"
+    ],
+    "leads_to": [],
+    "related": [
+      "cicd-pipeline",
+      "deployment"
+    ],
+    "url": "topics/monitoring.html"
+  },
+  {
+    "id": "news-feed",
+    "title": "News Feed 動態消息流",
+    "titleZh": "📰 News Feed 動態消息流",
+    "category": "app",
+    "difficulty": 3,
+    "prerequisites": [
+      "database-basics",
+      "cache-invalidation"
+    ],
+    "leads_to": [],
+    "related": [
+      "notification-system",
+      "message-queue",
+      "chat-system"
+    ],
+    "url": "topics/news-feed.html"
+  },
+  {
+    "id": "notification-system",
+    "title": "Notification System 通知系統",
+    "titleZh": "Notification System 通知系統",
+    "category": "async",
+    "difficulty": 2,
+    "prerequisites": [
+      "task-queue"
+    ],
+    "leads_to": [
+      "message-queue"
+    ],
+    "related": [
+      "chat-system",
+      "news-feed"
+    ],
+    "url": "topics/notification-system.html"
+  },
+  {
+    "id": "object-storage",
+    "title": "Object Storage 物件存儲系統",
+    "titleZh": "Object Storage 物件存儲系統",
+    "category": "storage",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [
+      "cdn",
+      "video-streaming"
+    ],
+    "related": [
+      "pick-database"
+    ],
+    "url": "topics/object-storage.html"
+  },
+  {
+    "id": "payment-system",
+    "title": "Payment System 支付系統",
+    "titleZh": "Payment System 支付系統",
+    "category": "app",
+    "difficulty": 3,
+    "prerequisites": [
+      "authentication",
+      "api-gateway"
+    ],
+    "leads_to": [],
+    "related": [
+      "notification-system",
+      "message-queue",
+      "session-manager"
+    ],
+    "url": "topics/payment-system.html"
+  },
+  {
+    "id": "pick-database",
+    "title": "點揀 Database",
+    "titleZh": "🎯 點揀 Database",
+    "category": "storage",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [
+      "fix-slow-database",
+      "scale-reads"
+    ],
+    "related": [
+      "key-value-store",
+      "redis"
+    ],
+    "url": "topics/pick-database.html"
+  },
+  {
+    "id": "port-forwarding",
+    "title": "Port Forwarding 端口轉發",
+    "titleZh": "Port Forwarding 端口轉發",
+    "category": "network",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "localhost-hosting"
+    ],
+    "related": [
+      "cdn",
+      "load-balancer"
+    ],
+    "url": "topics/port-forwarding.html"
+  },
+  {
+    "id": "print-vs-debugger",
+    "title": "Print 定 Debugger",
+    "titleZh": "Print 定 Debugger",
+    "category": "engineering",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [
+      "metrics-logging",
+      "monitoring"
+    ],
+    "related": [
+      "git-vs-github"
+    ],
+    "url": "topics/print-vs-debugger.html"
+  },
+  {
+    "id": "rate-limiter",
+    "title": "Rate Limiter 限流器",
+    "titleZh": "Rate Limiter 限流器",
+    "category": "network",
+    "difficulty": 2,
+    "prerequisites": [
+      "api-gateway"
+    ],
+    "leads_to": [
+      "distributed-cache"
+    ],
+    "related": [
+      "redis",
+      "ai-scraper-defense"
+    ],
+    "url": "topics/rate-limiter.html"
+  },
+  {
+    "id": "redis",
+    "title": "Redis",
+    "titleZh": "Redis",
+    "category": "storage",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [
+      "distributed-cache",
+      "session-manager"
+    ],
+    "related": [
+      "key-value-store",
+      "cache-invalidation"
+    ],
+    "url": "topics/redis.html"
+  },
+  {
+    "id": "references",
+    "title": "學習資源參考",
+    "titleZh": "學習資源參考",
+    "category": "resource",
+    "difficulty": 1,
+    "prerequisites": [],
+    "leads_to": [],
+    "related": [],
+    "url": "topics/references.html"
+  },
+  {
+    "id": "scale-reads",
+    "title": "擴展讀取能力",
+    "titleZh": "Scale Reads — 擴展讀取能力",
+    "category": "cache",
+    "difficulty": 3,
+    "prerequisites": [
+      "fix-slow-database"
+    ],
+    "leads_to": [
+      "distributed-cache"
+    ],
+    "related": [
+      "load-balancer",
+      "cdn",
+      "cache-invalidation"
+    ],
+    "url": "topics/scale-reads.html"
+  },
+  {
+    "id": "scraping-vs-crawling",
+    "title": "Web Scraping vs Crawling",
+    "titleZh": "Web Scraping vs Crawling",
+    "category": "network",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [
+      "web-crawler",
+      "ai-scraper-defense"
+    ],
+    "related": [
+      "search-autocomplete"
+    ],
+    "url": "topics/scraping-vs-crawling.html"
+  },
+  {
+    "id": "search-autocomplete",
+    "title": "Search Autocomplete 搜尋自動補全",
+    "titleZh": "🔍 Search Autocomplete 搜尋自動補全",
+    "category": "app",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [],
+    "related": [
+      "key-value-store",
+      "redis",
+      "web-crawler"
+    ],
+    "url": "topics/search-autocomplete.html"
+  },
+  {
+    "id": "secure-ai-agents",
+    "title": "保護 AI Agent",
+    "titleZh": "保護 AI Agent",
+    "category": "security",
+    "difficulty": 3,
+    "prerequisites": [
+      "authentication",
+      "coding-agent-design"
+    ],
+    "leads_to": [],
+    "related": [
+      "ai-scraper-defense",
+      "ai-vs-software-engineer"
+    ],
+    "url": "topics/secure-ai-agents.html"
+  },
+  {
+    "id": "self-host-vs-cloud",
+    "title": "Self-host vs Cloud",
+    "titleZh": "☁️ Self-host vs Cloud（AWS）",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [
+      "deployment"
+    ],
+    "related": [
+      "docker",
+      "localhost-hosting",
+      "server-vs-serverless"
+    ],
+    "url": "topics/self-host-vs-cloud.html"
+  },
+  {
+    "id": "server-vs-serverless",
+    "title": "Server vs Serverless",
+    "titleZh": "Server vs Serverless",
+    "category": "security",
+    "difficulty": 2,
+    "prerequisites": [
+      "docker"
+    ],
+    "leads_to": [
+      "deployment",
+      "self-host-vs-cloud"
+    ],
+    "related": [
+      "cicd-pipeline"
+    ],
+    "url": "topics/server-vs-serverless.html"
+  },
+  {
+    "id": "session-manager",
+    "title": "Session Manager 管理器",
+    "titleZh": "Session Manager 管理器",
+    "category": "app",
+    "difficulty": 2,
+    "prerequisites": [
+      "authentication"
+    ],
+    "leads_to": [],
+    "related": [
+      "redis",
+      "api-gateway",
+      "key-value-store"
+    ],
+    "url": "topics/session-manager.html"
+  },
+  {
+    "id": "star-method",
+    "title": "STAR 面試法",
+    "titleZh": "STAR 面試法 — 用故事征服 Behavioral Interview",
+    "category": "career",
+    "difficulty": 1,
+    "prerequisites": [
+      "interview-process"
+    ],
+    "leads_to": [
+      "coding-interview"
+    ],
+    "related": [
+      "junior-vs-senior"
+    ],
+    "url": "topics/star-method.html"
+  },
+  {
+    "id": "system-design-patterns",
+    "title": "系統設計模式總覽",
+    "titleZh": "系統設計模式總覽",
+    "category": "engineering",
+    "difficulty": 2,
+    "prerequisites": [
+      "dependency-injection"
+    ],
+    "leads_to": [
+      "load-balancer",
+      "api-gateway",
+      "message-queue"
+    ],
+    "related": [
+      "junior-vs-senior",
+      "coding-agent-design"
+    ],
+    "url": "topics/system-design-patterns.html"
+  },
+  {
+    "id": "task-queue",
+    "title": "Task Queue 任務隊列",
+    "titleZh": "Task Queue 任務隊列系統",
+    "category": "async",
+    "difficulty": 2,
+    "prerequisites": [],
+    "leads_to": [
+      "message-queue",
+      "notification-system"
+    ],
+    "related": [
+      "redis"
+    ],
+    "url": "topics/task-queue.html"
+  },
+  {
+    "id": "unique-id-generator",
+    "title": "Unique ID Generator 全局唯一 ID 生成器",
+    "titleZh": "Unique ID Generator 全局唯一 ID 生成器",
+    "category": "storage",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [
+      "url-shortener"
+    ],
+    "related": [
+      "distributed-cache",
+      "pick-database"
+    ],
+    "url": "topics/unique-id-generator.html"
+  },
+  {
+    "id": "url-shortener",
+    "title": "URL Shortener 短網址服務",
+    "titleZh": "🔗 URL Shortener 短網址服務",
+    "category": "app",
+    "difficulty": 2,
+    "prerequisites": [
+      "database-basics"
+    ],
+    "leads_to": [],
+    "related": [
+      "key-value-store",
+      "redis",
+      "unique-id-generator"
+    ],
+    "url": "topics/url-shortener.html"
+  },
+  {
+    "id": "video-streaming",
+    "title": "Video Streaming 影片串流系統",
+    "titleZh": "Video Streaming 影片串流系統",
+    "category": "app",
+    "difficulty": 3,
+    "prerequisites": [
+      "cdn",
+      "object-storage"
+    ],
+    "leads_to": [],
+    "related": [
+      "load-balancer",
+      "large-api-response"
+    ],
+    "url": "topics/video-streaming.html"
+  },
+  {
+    "id": "web-crawler",
+    "title": "Web Crawler 網頁爬蟲系統",
+    "titleZh": "Web Crawler 網頁爬蟲系統",
+    "category": "app",
+    "difficulty": 2,
+    "prerequisites": [
+      "scraping-vs-crawling"
+    ],
+    "leads_to": [
+      "search-autocomplete"
+    ],
+    "related": [
+      "task-queue",
+      "message-queue"
+    ],
+    "url": "topics/web-crawler.html"
+  }
+]
