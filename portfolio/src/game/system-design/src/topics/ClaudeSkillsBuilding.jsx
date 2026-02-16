@@ -13,15 +13,13 @@ function OverviewTab() {
   return (
     <div className="card">
       <h2>Claude Skills 係咩</h2>
-      <div className="subtitle">一套包裝好嘅指令，教 Claude 自動處理特定任務同工作流程</div>
+      <div className="subtitle">教一次 Claude，之後每次都唔使重複</div>
       <p>
-        每次同 Claude 傾計都要重新解釋你嘅偏好、流程、專業知識？
-        <strong style={{ color: '#a78bfa' }}> Skill</strong> 就係解決呢個問題——教一次，之後每次都受益。
-        Skill 本質上係一個 folder，入面有 Markdown 格式嘅指令，令 Claude 識得自動觸發同執行你定義嘅工作流。
+        你有冇試過每次開新 chat 都要重新講一次自己嘅 coding style、公司 convention、review 標準？講到口都臭。
+        <strong style={{ color: '#a78bfa' }}> Skill</strong> 就係搞掂呢個問題——你寫一次指令，打包做一個 folder，之後 Claude 自動識得幾時觸發、點樣做。
       </p>
       <p>
-        配合 <strong style={{ color: '#34d399' }}>MCP (Model Context Protocol)</strong> 使用就更強大——MCP 提供工具連接能力，Skill 提供工作流知識。
-        兩者合作就好似一個專業廚房（MCP）配上食譜（Skill），令用戶唔使自己搵出每一步。
+        再配埋 <strong style={{ color: '#34d399' }}>MCP</strong> 就更癲——MCP 等於俾 Claude 一個專業廚房（DB、Calendar、Slack 咩都連到），Skill 等於俾佢食譜（點樣用啲工具做嘢）。冇食譜嘅廚房，得個擺設。
       </p>
 
       <div className="diagram-container">
@@ -115,10 +113,10 @@ function OverviewTab() {
       </div>
 
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong style={{ color: '#a78bfa' }}>Skill = 一個 Folder</strong>，入面最少有一個 <code>SKILL.md</code> 檔案。YAML frontmatter 定義「幾時觸發」，Markdown body 定義「點樣執行」。仲可以有 <code>scripts/</code>、<code>references/</code>、<code>assets/</code> 子目錄。</span></li>
-        <li><span className="step-num">2</span><span><strong style={{ color: '#34d399' }}>Progressive Disclosure</strong> 三層系統：Level 1（YAML frontmatter）永遠喺 system prompt 入面，佔最少 token。Level 2（SKILL.md body）只有 Claude 覺得相關時先載入。Level 3（references/ 檔案）按需導航。</span></li>
-        <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>MCP + Skill = 廚房 + 食譜</strong>。MCP 提供工具連接（What Claude can do），Skill 提供工作流知識（How Claude should do it）。冇 Skill 嘅 MCP 就好似有廚房但冇食譜——用戶唔知做乜。</span></li>
-        <li><span className="step-num">4</span><span><strong>三個使用場景</strong>：① Document/Asset Creation（例如 frontend-design skill）② Workflow Automation（例如 skill-creator skill）③ MCP Enhancement（例如 Sentry code-review skill）。</span></li>
+        <li><span className="step-num">1</span><span><strong style={{ color: '#a78bfa' }}>Skill 就係一個 folder</strong>，入面擺一個 <code>SKILL.md</code>。頭幾行 YAML 定義「幾時觸發」，下面 Markdown 寫「點樣做」。簡單到唔使解釋。</span></li>
+        <li><span className="step-num">2</span><span><strong style={{ color: '#34d399' }}>三層慳 token 設計</strong>：第一層（YAML）永遠載入但好短，第二層（SKILL.md body）Claude 覺得相關先讀，第三層（references/ 入面嘅文件）要用先去搵。唔使一次過塞晒入 context。</span></li>
+        <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>MCP 係工具，Skill 係腦</strong>。MCP 話 Claude 「可以」做咩，Skill 話佢「應該」點做。兩樣唔係互斥，係互補。</span></li>
+        <li><span className="step-num">4</span><span><strong>三種常見用法</strong>：生成一致嘅文件（frontend-design skill）、自動化多步流程（skill-creator skill）、為 MCP 加上專業知識（Sentry code-review skill）。</span></li>
       </ol>
 
       <div className="use-case">
@@ -170,11 +168,10 @@ function StructureTab() {
   return (
     <div className="card">
       <h2>SKILL.md 結構同 Frontmatter 規則</h2>
-      <div className="subtitle">寫好 YAML frontmatter 係成功嘅一半</div>
+      <div className="subtitle">寫好 description 就已經贏咗一半</div>
 
       <p>
-        YAML frontmatter 係 Claude 決定要唔要載入你個 Skill 嘅<strong>唯一依據</strong>。
-        佢永遠喺 system prompt 入面，所以 description 寫得好唔好直接決定 Skill 會唔會被觸發。
+        好多人以為最難嘅部分係寫 instructions，其實唔係。最關鍵嘅係頭幾行 YAML——因為 Claude 就係靠呢幾行嚟決定要唔要載入你個 Skill。description 寫得唔清楚，你個 Skill 寫得再靚都冇人用到。
       </p>
 
       <div className="key-points">
@@ -216,11 +213,9 @@ function StructureTab() {
         </div>
 
         <div className="key-point">
-          <h4>安全限制</h4>
+          <h4>幾個死穴要避開</h4>
           <p>
-            <strong style={{ color: '#ef4444' }}>禁止</strong>：YAML frontmatter 入面唔可以有 XML angle brackets（&lt; &gt;），因為 frontmatter 會出現喺 system prompt，有注入風險。<br />
-            <strong style={{ color: '#ef4444' }}>禁止</strong>：Skill 名唔可以含 &quot;claude&quot; 或 &quot;anthropic&quot;（保留詞）。<br />
-            <strong style={{ color: '#ef4444' }}>禁止</strong>：唔好喺 Skill folder 入面放 README.md（所有文件放 SKILL.md 或 references/）。
+            YAML 入面唔可以擺 XML angle brackets（&lt; &gt;），因為 frontmatter 直接入 system prompt，有注入風險。Skill 名唔可以用 &quot;claude&quot; 或 &quot;anthropic&quot;，呢啲係保留詞。仲有一個好多人中伏嘅：唔好喺 Skill folder 入面放 README.md，所有文件應該放喺 SKILL.md 或者 references/ 入面。
           </p>
         </div>
       </div>
@@ -282,30 +277,24 @@ function MCPSkillsTab() {
   return (
     <div className="card">
       <h2>MCP + Skills 協作模式</h2>
-      <div className="subtitle">廚房比喻：MCP = 專業廚房，Skill = 食譜</div>
+      <div className="subtitle">有廚房冇食譜，得個擺設</div>
 
       <p>
-        如果你已經有一個 working MCP server，你已經做咗最難嘅部分。
-        Skill 係上面嘅知識層——capture 你已經知嘅工作流同最佳實踐，令 Claude 可以一致咁應用。
+        如果你已經搞掂咗 MCP server，恭喜——最難嘅部分做完。但用戶接咗你個 MCP 之後呢？佢哋唔知有咩 workflow 可以做，每次都要自己 prompt 一輪，結果仲唔一致。
+        加個 Skill 上去，等於將你腦入面嘅 best practice 包裝好，Claude 自動跟住做。
       </p>
 
       <div className="key-points">
         <div className="key-point">
           <h4>冇 Skill 嘅 MCP</h4>
           <p>
-            用戶接咗 MCP 但唔知下一步做咩<br />
-            每次對話從零開始<br />
-            結果唔一致（唔同人 prompt 唔同）<br />
-            用戶怪你嘅 connector 唔好用（其實係缺工作流指引）
+            用戶接完 MCP 之後一臉茫然，唔知下一步做咩。每次對話都由零開始。唔同人 prompt 唔同，結果當然唔一致。最慘係用戶怪你個 connector 唔好用——其實係少咗 workflow 指引。
           </p>
         </div>
         <div className="key-point">
           <h4>有 Skill 嘅 MCP</h4>
           <p>
-            <strong style={{ color: '#34d399' }}>預建工作流自動觸發</strong><br />
-            <strong style={{ color: '#34d399' }}>一致可靠嘅 tool 使用方式</strong><br />
-            <strong style={{ color: '#34d399' }}>最佳實踐內建每次互動</strong><br />
-            <strong style={{ color: '#34d399' }}>學習曲線大幅降低</strong>
+            完全唔同世界。預建好嘅 workflow 自動觸發，唔使教。每次 tool 使用方式一致，best practice 直接內建。新用戶上手速度快好多，因為 Claude 已經知道點做。
           </p>
         </div>
       </div>
@@ -336,27 +325,24 @@ function MCPSkillsTab() {
       </div>
 
       <div className="use-case" style={{ marginTop: '1.5rem' }}>
-        <h4>三大使用場景</h4>
+        <h4>三種典型用法</h4>
         <ol className="steps">
           <li>
             <span className="step-num">1</span>
             <span>
-              <strong style={{ color: '#a78bfa' }}>Document &amp; Asset Creation</strong>：生成一致嘅高品質輸出。用 embedded style guide + quality checklist。唔需要外部工具，用 Claude 內建能力就得。<br />
-              <em style={{ color: '#6b7280' }}>例：frontend-design skill、docx/pptx skill</em>
+              <strong style={{ color: '#a78bfa' }}>出文件 / 出 asset</strong>——你嘅 style guide 同 quality checklist 寫入 Skill，Claude 每次出嘅嘢風格都一樣。唔使 MCP，Claude 內建能力就搞掂。好似 frontend-design skill 咁。
             </span>
           </li>
           <li>
             <span className="step-num">2</span>
             <span>
-              <strong style={{ color: '#F59E0B' }}>Workflow Automation</strong>：多步驟流程 + validation gates + iterative refinement loops。可以跨多個 MCP server 協調。<br />
-              <em style={{ color: '#6b7280' }}>例：skill-creator skill</em>
+              <strong style={{ color: '#F59E0B' }}>自動化流程</strong>——多步嘅嘢用 Skill 定義每步做咩、點驗收、幾時 loop 返去改善。可以跨幾個 MCP server 一齊 coordinate。好似 skill-creator skill 咁帶住你一步步寫 Skill。
             </span>
           </li>
           <li>
             <span className="step-num">3</span>
             <span>
-              <strong style={{ color: '#34d399' }}>MCP Enhancement</strong>：為 MCP tool access 加上工作流指引。協調多個 MCP 呼叫、嵌入領域專業知識、提供用戶本來要自己指定嘅 context。<br />
-              <em style={{ color: '#6b7280' }}>例：Sentry code-review skill</em>
+              <strong style={{ color: '#34d399' }}>為 MCP 加上專業知識</strong>——MCP 俾咗 tool access，但 Claude 唔知你公司嘅 workflow 係點。Skill 將你嘅 domain knowledge 包埋入去，Sentry code-review skill 就係呢種。
             </span>
           </li>
         </ol>
@@ -376,45 +362,35 @@ function PatternsTab() {
         <div className="key-point">
           <h4>Pattern 1：Sequential Workflow Orchestration</h4>
           <p>
-            <strong>適用場景</strong>：多步驟流程，必須按特定順序執行。<br />
-            <strong>關鍵技術</strong>：明確步驟排序、步驟間依賴關係、每步驗證、失敗回滾指令。<br />
-            <strong style={{ color: '#a78bfa' }}>例子</strong>：客戶 Onboarding — ① Create Account → ② Setup Payment → ③ Create Subscription → ④ Send Welcome Email。每步有 MCP tool call 同 validation。
+            最直覺嘅一個——固定步驟，按順序做。好似客戶 onboarding：先開 account、再 setup payment、加 subscription、最後 send welcome email。每步都有 MCP tool call 同驗證，任何一步 fail 都有回滾指令。你啲 SOP 夠清晰嘅話，呢個 pattern 最容易寫。
           </p>
         </div>
 
         <div className="key-point">
           <h4>Pattern 2：Multi-MCP Coordination</h4>
           <p>
-            <strong>適用場景</strong>：工作流跨越多個服務。<br />
-            <strong>關鍵技術</strong>：清晰嘅 phase 分離、MCP 之間嘅數據傳遞、每 phase 前驗證、集中錯誤處理。<br />
-            <strong style={{ color: '#34d399' }}>例子</strong>：Design-to-Dev Handoff — Phase 1 Figma MCP（export assets）→ Phase 2 Drive MCP（upload）→ Phase 3 Linear MCP（create tasks）→ Phase 4 Slack MCP（notify team）。
+            當一件事要跨幾個服務先做得完，就用呢個。例如 design handoff：先用 Figma MCP export assets，再用 Drive MCP upload，然後 Linear MCP 開 task，最後 Slack MCP 通知 team。關鍵係每個 phase 之間點傳數據、點驗證上一步做完未。
           </p>
         </div>
 
         <div className="key-point">
           <h4>Pattern 3：Iterative Refinement</h4>
           <p>
-            <strong>適用場景</strong>：輸出質量可以透過迭代提升。<br />
-            <strong>關鍵技術</strong>：明確質量標準、迭代改進循環、validation scripts、知道幾時停止迭代。<br />
-            <strong style={{ color: '#F59E0B' }}>例子</strong>：Report Generation — Initial Draft → Quality Check（run validation script）→ Refinement Loop → Finalization。
+            出一個 draft 之後 loop 住改——寫報告、refactor 代碼、改文案都係呢類。你定義好質量標準同 validation script，Claude 自己跑 loop 直到達標或者到上限為止。重點係要明確講幾時應該停，唔係就會 loop 到天荒地老。
           </p>
         </div>
 
         <div className="key-point">
           <h4>Pattern 4：Context-Aware Tool Selection</h4>
           <p>
-            <strong>適用場景</strong>：相同目標，根據情境用唔同工具。<br />
-            <strong>關鍵技術</strong>：清晰 decision criteria、fallback 選項、透明解釋選擇原因。<br />
-            <strong style={{ color: '#3B82F6' }}>例子</strong>：Smart File Storage — 大檔案用 Cloud Storage MCP、協作文件用 Notion MCP、代碼用 GitHub MCP、臨時文件用 local storage。
+            同一個目標，但要根據情況揀唔同嘅工具。好似 smart file storage：大檔案放 Cloud Storage、協作文件放 Notion、代碼放 GitHub、臨時嘢放 local。你喺 Skill 入面寫清楚判斷條件同 fallback，Claude 自己揀。
           </p>
         </div>
 
         <div className="key-point">
           <h4>Pattern 5：Domain-Specific Intelligence</h4>
           <p>
-            <strong>適用場景</strong>：Skill 需要嵌入專業知識（超越工具使用）。<br />
-            <strong>關鍵技術</strong>：領域專業邏輯嵌入、合規先於行動、全面文件記錄、清晰治理。<br />
-            <strong style={{ color: '#ef4444' }}>例子</strong>：Payment Compliance — 先做 compliance check（制裁名單、管轄區、風險評估）→ 通過先處理支付 → Audit trail 記錄所有決策。
+            呢個最深——唔止係用工具，而係將你嘅專業知識嵌入 Skill。例如 payment compliance：Claude 唔止識得 call payment API，仲識得先 check 制裁名單、判斷管轄區、做風險評估，合格先處理，仲自動留 audit trail。專業知識變成可重複使用嘅資產。
           </p>
         </div>
       </div>
@@ -462,61 +438,51 @@ function TestingTab() {
   return (
     <div className="card">
       <h2>測試同迭代</h2>
-      <div className="subtitle">Triggering / Functional / Performance 三層測試</div>
+      <div className="subtitle">寫完 Skill 唔係完，測過先算</div>
 
       <p>
-        Anthropic 建議嘅最佳策略：<strong>先專注一個困難任務反覆迭代，直到 Claude 成功</strong>，然後先提取成 Skill。
-        利用 Claude 嘅 in-context learning，比廣泛測試更快見到效果。
+        Anthropic 自己都講：唔好一開始就寫 Skill。先搵一個最難搞嘅 task，同 Claude 反覆傾，直到佢識做為止，然後先將成功嘅 pattern 提取成 Skill。呢個方法比你坐喺度空想快好多。
       </p>
 
       <div className="key-points">
         <div className="key-point">
-          <h4>1. Triggering Tests（觸發測試）</h4>
+          <h4>觸發測試</h4>
           <p>
-            <strong>目標</strong>：確保 Skill 喺正確時機載入。<br />
-            <strong style={{ color: '#34d399' }}>Should trigger</strong>：「Help me set up a new ProjectHub workspace」「I need to create a project」<br />
-            <strong style={{ color: '#ef4444' }}>Should NOT trigger</strong>：「What's the weather?」「Help me write Python code」<br />
-            <strong>Debug 方法</strong>：問 Claude「When would you use the [skill name] skill?」——佢會引用 description 返嚟。
+            首先要確認 Skill 係咪喺啱嘅時候載入。你試幾個相關 prompt（「Help me set up a ProjectHub workspace」）佢應該觸發，試幾個無關嘅（「What's the weather」）佢唔應該觸發。如果唔對勁，直接問 Claude「你幾時會用 [skill name] 呢個 skill？」——佢會引用你嘅 description 答你，一睇就知問題喺邊。
           </p>
         </div>
 
         <div className="key-point">
-          <h4>2. Functional Tests（功能測試）</h4>
+          <h4>功能測試</h4>
           <p>
-            <strong>目標</strong>：驗證 Skill 產出正確結果。<br />
-            測試案例要覆蓋：valid outputs、API calls 成功、error handling、edge cases。<br />
-            <strong>例子</strong>：Given: project name + 5 tasks → Then: project created + 5 tasks linked + no API errors。
+            觸發冇問題之後，就要測實際結果。你俾一堆 input，睇 output 有冇中。記得覆蓋正常 case、error case、同 edge case。例如：俾 project name + 5 個 task，Claude 應該 create 到 project、link 晒 5 個 task、冇 API error。
           </p>
         </div>
 
         <div className="key-point">
-          <h4>3. Performance Comparison（效能比較）</h4>
+          <h4>效能比較</h4>
           <p>
-            <strong>目標</strong>：證明 Skill 比 baseline 好。<br />
-            <strong style={{ color: '#ef4444' }}>冇 Skill</strong>：15 次來回、3 次 API 失敗重試、12,000 tokens<br />
-            <strong style={{ color: '#34d399' }}>有 Skill</strong>：2 條澄清問題、0 次 API 失敗、6,000 tokens
+            最後你要量化 Skill 到底幫唔幫到手。例如冇 Skill 嘅時候：15 次來回、3 次 API fail、燒 12,000 tokens。有 Skill 之後：2 條澄清問題、0 次 API fail、6,000 tokens。數據講嘢。最重要嘅指標係「用戶要唔要出手糾正」——如果 Claude 自己搞得掂，呢個 Skill 就成功。
           </p>
         </div>
 
         <div className="key-point">
-          <h4>迭代信號</h4>
+          <h4>撞到問題點搞</h4>
           <p>
-            <strong style={{ color: '#F59E0B' }}>Under-triggering</strong>：Skill 應該載入但冇 → 加更多 trigger phrases 同 keywords 到 description<br />
-            <strong style={{ color: '#F59E0B' }}>Over-triggering</strong>：Skill 唔應該載入但載入咗 → 加 negative triggers（「Do NOT use for...」）、收窄 scope<br />
-            <strong style={{ color: '#F59E0B' }}>Execution issues</strong>：結果唔一致 → 改善 instructions、加 error handling、用更具體嘅指令
+            Skill 應該觸發但冇觸發？多數係 description 寫得太模糊，加啲具體嘅 trigger 詞就搞掂。反過嚟，唔應該觸發但亂入？加 negative trigger（「唔好用喺 X 場景」）或者收窄 scope。如果觸發冇問題但結果唔一致，就要改善 instructions——越具體越好，唔好留太多空間俾 Claude 自由發揮。
           </p>
         </div>
       </div>
 
       <div className="use-case">
-        <h4>Success Criteria 框架</h4>
-        <p>定義 Skill 成功嘅指標（可以 vibes-based，但盡量量化）：</p>
+        <h4>點先算「成功」</h4>
+        <p>你可以 vibes-based，但最好有啲數字撐住：</p>
         <ol className="steps">
-          <li><span className="step-num">1</span><span><strong>Triggering rate</strong>：90%+ 嘅相關查詢觸發 Skill（跑 10-20 個測試 query）</span></li>
-          <li><span className="step-num">2</span><span><strong>Tool call efficiency</strong>：有 Skill vs 冇 Skill 嘅 tool call 數量同 token 消耗比較</span></li>
-          <li><span className="step-num">3</span><span><strong>Zero failed API calls</strong>：監控 MCP server logs，追蹤 retry rates 同 error codes</span></li>
-          <li><span className="step-num">4</span><span><strong>User autonomy</strong>：用戶唔使 redirect 或 clarify（觀察測試過程）</span></li>
-          <li><span className="step-num">5</span><span><strong>Consistency</strong>：同一個 request 跑 3-5 次，結果結構一致</span></li>
+          <li><span className="step-num">1</span><span>跑 10-20 個相關 query，觸發率要有 90% 以上</span></li>
+          <li><span className="step-num">2</span><span>同冇 Skill 比，tool call 數量同 token 消耗應該有明顯改善</span></li>
+          <li><span className="step-num">3</span><span>MCP server logs 入面唔應該有 failed API call</span></li>
+          <li><span className="step-num">4</span><span>測試過程中用戶唔使 redirect 或者再解釋</span></li>
+          <li><span className="step-num">5</span><span>同一個 request 跑 3-5 次，輸出結構一致</span></li>
         </ol>
       </div>
     </div>
@@ -527,47 +493,38 @@ function DistributionTab() {
   return (
     <div className="card">
       <h2>分發同部署策略</h2>
-      <div className="subtitle">GitHub → Claude.ai / Code / API → 組織級部署</div>
+      <div className="subtitle">寫完 Skill 之後，點樣俾人用</div>
 
       <p>
-        有 Skill 嘅 MCP 整合比淨 MCP 更完整。當用戶比較唔同嘅 connector 時，
-        有 Skill 嘅嗰個提供更快嘅價值路徑——呢個就係你嘅競爭優勢。
+        你寫好個 Skill 之後，下一步就係諗點分發。如果你有 MCP server，加埋 Skill 等於即刻同對手拉開距離——用戶對比兩個 connector 時，有 workflow 指引嗰個一定贏。
       </p>
 
       <div className="key-points">
         <div className="key-point">
           <h4>個人安裝</h4>
           <p>
-            <strong>Claude.ai</strong>：Settings → Capabilities → Skills → Upload skill（zip 個 folder）<br />
-            <strong>Claude Code</strong>：放入 skills directory<br />
-            <strong>API</strong>：<code>/v1/skills</code> endpoint 管理，<code>container.skills</code> parameter 加入 Messages API request
+            Claude.ai 入面去 Settings {'>'} Capabilities {'>'} Skills，zip 個 folder upload 就得。Claude Code 就直接放入 skills directory。API 玩家就用 <code>/v1/skills</code> endpoint 管理，喺 Messages API request 加 <code>container.skills</code> parameter。
           </p>
         </div>
 
         <div className="key-point">
           <h4>組織級部署</h4>
           <p>
-            Admin 可以 workspace-wide 部署 Skill（2025年12月 shipped）。自動更新 + 集中管理。
+            Admin 可以一次過幫成個 workspace 裝 Skill，2025 年 12 月已經出咗。自動更新加集中管理，唔使逐個人裝。
           </p>
         </div>
 
         <div className="key-point">
-          <h4>GitHub 托管最佳實踐</h4>
+          <h4>放 GitHub 嘅做法</h4>
           <p>
-            ① Public repo，清晰 README（README 係比人睇，唔好放入 Skill folder 入面）<br />
-            ② Example usage + screenshots<br />
-            ③ 從 MCP 文件 link 去 Skill repo<br />
-            ④ 解釋兩者合作嘅價值<br />
-            ⑤ Quick-start guide
+            開個 public repo，寫好 README（記住 README 係俾人睇嘅，唔好擺入 Skill folder）。放啲 example usage 同 screenshot，從你嘅 MCP 文件 link 過去 Skill repo，寫清楚兩樣合作有咩好。搞個 quick-start guide 俾人三分鐘上手。
           </p>
         </div>
 
         <div className="key-point">
-          <h4>定位策略</h4>
+          <h4>點樣 sell 你個 Skill</h4>
           <p>
-            <strong style={{ color: '#34d399' }}>Focus on outcomes</strong>：「teams set up complete project workspaces in seconds instead of 30 minutes」<br />
-            <strong style={{ color: '#ef4444' }}>唔好講</strong>：「a folder containing YAML frontmatter and Markdown instructions」<br /><br />
-            <strong>MCP + Skills story</strong>：「Our MCP server gives Claude access to your Linear projects. Our skills teach Claude your team&apos;s sprint planning workflow. Together, they enable AI-powered project management.」
+            講 outcome，唔好講 implementation。<strong style={{ color: '#34d399' }}>講</strong>：「team 幾秒就 setup 到成個 workspace，以前要 30 分鐘」。<strong style={{ color: '#ef4444' }}>唔好講</strong>：「一個有 YAML frontmatter 同 Markdown 嘅 folder」。冇人 care 你點寫，只 care 佢哋點受惠。
           </p>
         </div>
       </div>
@@ -575,9 +532,7 @@ function DistributionTab() {
       <div className="use-case">
         <h4>Open Standard</h4>
         <p>
-          Anthropic 已經將 Agent Skills 發佈為 <strong>open standard</strong>。
-          好似 MCP 一樣，Skills 設計為跨平台可移植——同一個 Skill 理論上可以喺 Claude 或其他 AI 平台使用。
-          不過某啲 Skill 可能專為特定平台優化，作者可以喺 <code>compatibility</code> 欄位標明。
+          Anthropic 已經將 Skills 發佈做 open standard，同 MCP 一樣。即係話同一個 Skill 理論上唔止 Claude 用到，其他 AI 平台都可以 adopt。如果你個 Skill 有平台限制，喺 <code>compatibility</code> 欄位標明就得。
         </p>
       </div>
     </div>
@@ -588,11 +543,10 @@ function LatestFeaturesTab() {
   return (
     <div className="card">
       <h2>Claude 最新生態（2025 Q1）</h2>
-      <div className="subtitle">Agent Teams / 24-7 自動化 / Self-Iterating Loop — 你而家就可以用</div>
+      <div className="subtitle">識 Skill 之後，呢三樣嘢會改變你做嘢嘅方式</div>
 
       <p>
-        Claude 生態喺 2025 年初爆發式進化。Skills 只係基礎層——加上以下三個最新功能，
-        你可以建構一個<strong style={{ color: '#a78bfa' }}>真正自主嘅 AI 開發團隊</strong>，甚至瞓緊覺都有嘢做。
+        Skills 係基礎，但唔止於此。2025 年初 Claude 出咗幾個新嘢，夾埋 Skills 用嘅話，你真係可以做到<strong style={{ color: '#a78bfa' }}>瞓住覺都有 AI 幫你做嘢</strong>。唔係吹水，有人已經咁做緊。
       </p>
 
       <div className="diagram-container">
@@ -670,61 +624,30 @@ function LatestFeaturesTab() {
         <div className="key-point">
           <h4 style={{ color: '#F59E0B' }}>1. Agent Teams（2025年2月5號 Release）</h4>
           <p>
-            Anthropic 用 Opus 4.6 推出 <strong>Agent Teams</strong> 功能。之前嘅 Claude Code 係一個 agent 順序做嘢，
-            而家一個 <strong style={{ color: '#F59E0B' }}>Lead Agent</strong> 可以分配工作俾多個 <strong>Teammate Agents</strong>，
-            佢哋<strong style={{ color: '#34d399' }}>平行 research、debug、build</strong>，仲互相 coordinate。
-          </p>
-          <p>
-            <strong>具體用法</strong>：<br />
-            - 一個 agent 改 backend API<br />
-            - 一個砌 React component<br />
-            - 一個寫 test<br />
-            - 一個做 code review<br />
-            全部同時跑。你做 Lead 指揮，或者 delegate 埋俾 Lead Agent 自己分配。
+            之前 Claude Code 係一個 agent 順序做嘢。而家用 Opus 4.6，一個 Lead Agent 可以分配工作俾幾個 Teammate Agent，佢哋平行 research、debug、build，仲互相 coordinate。即係話你可以一個 agent 改 backend API、一個砌 React component、一個寫 test、一個做 code review——全部同時跑。你坐喺度做 lead，或者 delegate 埋俾 Lead Agent 自己分配。
           </p>
           <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
-            <strong>同 Skills 嘅關係</strong>：每個 Teammate Agent 可以 load 唔同嘅 Skills——Backend Agent 用 DB migration skill，
-            Frontend Agent 用 component-builder skill，Review Agent 用 security-review skill。Skills 變成每個 agent 嘅專業知識包。
+            同 Skills 嘅關係好直接：每個 Teammate 可以 load 唔同嘅 Skill。Backend Agent 用 DB migration skill，Frontend Agent 用 component-builder skill，Review Agent 用 security-review skill。Skills 變成每個 agent 嘅專業知識包。
           </p>
         </div>
 
         <div className="key-point">
           <h4 style={{ color: '#34d399' }}>2. 訓覺都有人做嘢（24/7 Autonomous Coding）</h4>
           <p>
-            有人設定 Claude Code <strong>24/7 run</strong>，朝早起身發現 AI 已經：
-          </p>
-          <p>
-            - 整晚修 bug<br />
-            - Implement 新 feature<br />
-            - Respond GitHub issues<br />
-            - Review 埋 PR
-          </p>
-          <p>
-            <strong>Setup pattern</strong>：用 Telegram bot 觸發 Claude Code，加埋 GitHub webhook 自動偵測新 issue 同 PR。
-            你瞓覺嗰 <strong style={{ color: '#34d399' }}>8 個鐘頭變成 productive time</strong>。
+            有人設定 Claude Code 24/7 run，朝早起身發現 AI 整晚修咗 bug、implement 咗新 feature、respond 咗 GitHub issues、仲 review 埋 PR。點做到？用 Telegram bot 觸發 Claude Code，加 GitHub webhook 自動偵測新 issue 同 PR。你瞓覺嗰 8 個鐘頭變成 productive time。
           </p>
           <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
-            <strong>同 Skills 嘅關係</strong>：你寫好 Skills 定義 coding standards、review criteria、testing patterns，
-            Claude 半夜做嘢時就會自動跟從你嘅 best practices，唔使你在場監督。
+            同 Skills 嘅關係：你寫好 Skills 定義 coding standards、review criteria、testing patterns，Claude 半夜做嘢時就會自動跟你嘅 best practices。冇 Skill 嘅話，半夜嘅 Claude 隨時亂嚟。
           </p>
         </div>
 
         <div className="key-point">
           <h4 style={{ color: '#818cf8' }}>3. Ralph Wiggum Loop（Self-Iterating Agent）</h4>
           <p>
-            呢個 Claude Code plugin 將 Claude 變成一個<strong style={{ color: '#818cf8' }}>自我迭代嘅 autonomous agent</strong>——
-            loop 住同一個 prompt，每次睇返上次做嘅嘢然後改善。
-          </p>
-          <p>
-            <strong>工作流程</strong>：<br />
-            ① 你寫好 <strong>Spec + Completion Criteria</strong><br />
-            ② 開著 loop 然後瞓覺<br />
-            ③ Claude 每個 iteration 都 review 上次嘅輸出，搵到可以改善嘅地方就改<br />
-            ④ 朝早起身 review 最終結果
+            呢個 Claude Code plugin 將 Claude 變成一個自我迭代嘅 agent——loop 住同一個 prompt，每次睇返上次做嘅嘢然後改善。你寫好 spec 同 completion criteria，開住 loop 就瞓覺。Claude 每次 iteration 都 review 上一輪，搵到可以改嘅就改，直到達標為止。朝早起身 review 最終結果就得。
           </p>
           <p style={{ color: '#9ca3af', fontSize: '0.85rem' }}>
-            <strong>同 Skills 嘅關係</strong>：Ralph Wiggum Loop 本質上就係 <strong>Iterative Refinement Pattern</strong> 嘅自動化版本。
-            你嘅 Skill 定義質量標準同 completion criteria，loop 負責反覆執行直到達標。
+            本質上就係之前講嘅 Iterative Refinement Pattern 嘅全自動版本。你嘅 Skill 定義質量標準，loop 負責執行。兩者分開就係「人手迭代」，合埋就係「自動迭代」。
           </p>
         </div>
       </div>
@@ -766,12 +689,12 @@ function LatestFeaturesTab() {
       </div>
 
       <div className="use-case" style={{ marginTop: '1rem' }}>
-        <h4>實戰：點樣結合三者？</h4>
+        <h4>實戰：點樣三樣夾埋用</h4>
         <ol className="steps">
-          <li><span className="step-num">1</span><span><strong>寫好 Skills</strong>：為每個角色（Backend / Frontend / Test / Review）各寫一個 Skill，定義工作流程同品質標準。</span></li>
-          <li><span className="step-num">2</span><span><strong>設定 Agent Teams</strong>：Lead Agent 負責拆解任務，每個 Teammate 載入對應嘅 Skill，平行開工。</span></li>
-          <li><span className="step-num">3</span><span><strong>開 Ralph Wiggum Loop</strong>：每個 agent 喺自己嘅 scope 入面 loop，直到 Skill 定義嘅 completion criteria 達標。</span></li>
-          <li><span className="step-num">4</span><span><strong>瞓覺</strong>：Telegram bot 有問題先 notify 你，否則朝早起身 review 就得。</span></li>
+          <li><span className="step-num">1</span><span>先為每個角色各寫一個 Skill——Backend 一個、Frontend 一個、Test 一個、Review 一個。入面定義好工作流同品質標準。</span></li>
+          <li><span className="step-num">2</span><span>設定 Agent Teams。Lead Agent 拆任務，每個 Teammate 載入對應 Skill，平行開工。</span></li>
+          <li><span className="step-num">3</span><span>開 Ralph Wiggum Loop。每個 agent 喺自己嘅 scope 入面 loop，直到 Skill 定義嘅 completion criteria 達標。</span></li>
+          <li><span className="step-num">4</span><span>瞓覺。Telegram bot 有問題先 notify 你，冇事嘅話朝早起身 review 就得。</span></li>
         </ol>
       </div>
     </div>
@@ -793,7 +716,7 @@ function QuizTab() {
         'D. 作者聯絡資料',
       ],
       answer: 1,
-      explanation: 'Description 必須包含三樣嘢：做乜（what it does）、幾時觸發（trigger conditions，例如「Use when user says...」）、同關鍵能力。呢個係 Progressive Disclosure Level 1，永遠喺 system prompt 入面，Claude 靠佢決定要唔要載入 Skill。',
+      explanation: 'Description 要講齊三樣：做乜、幾時觸發（例如「Use when user says...」）、同關鍵能力。呢幾行 YAML 永遠喺 system prompt 入面，Claude 就係靠佢嚟決定要唔要載入你個 Skill。寫得唔清楚就冇人用到。',
     },
     {
       id: 2,
@@ -805,7 +728,7 @@ function QuizTab() {
         'D. 支付合規檢查',
       ],
       answer: 1,
-      explanation: 'Multi-MCP Coordination 適用於工作流跨越多個服務。Design-to-dev handoff 需要 Figma MCP → Drive MCP → Linear MCP → Slack MCP 逐步協調，每個 phase 有清晰嘅數據傳遞。Report 改進用 Iterative Refinement，檔案 storage 用 Context-Aware Selection，合規用 Domain-Specific Intelligence。',
+      explanation: 'Design handoff 要跨 Figma、Drive、Linear、Slack 四個服務逐步協調，每步之間有數據要傳。呢個就係 Multi-MCP Coordination 嘅典型場景。Report 改進係 Iterative Refinement，揀 storage 係 Context-Aware Selection，合規檢查係 Domain-Specific Intelligence。',
     },
     {
       id: 3,
@@ -817,7 +740,7 @@ function QuizTab() {
         'D. 加長 SKILL.md body',
       ],
       answer: 1,
-      explanation: 'Over-triggering 嘅解決方法係喺 description 加 negative triggers（例如「Do NOT use for simple data exploration」）同收窄 scope（例如將「Processes documents」改成「Processes PDF legal documents for contract review」）。加更多 trigger phrases 會令 over-triggering 更嚴重。',
+      explanation: '加 negative trigger 同收窄 scope 係正解。例如將「Processes documents」改做「Processes PDF legal documents for contract review」，或者加句「Do NOT use for simple data exploration」。如果你加更多 trigger phrases，只會令 over-triggering 更嚴重。',
     },
     {
       id: 4,
@@ -829,7 +752,7 @@ function QuizTab() {
         'D. 每次對話後自動刪除',
       ],
       answer: 1,
-      explanation: 'YAML frontmatter 係 Level 1，永遠載入喺 Claude 嘅 system prompt 入面。佢提供剛剛好嘅資訊令 Claude 知道幾時應該用呢個 Skill，而唔使載入整個 SKILL.md 嘅內容。呢個設計慳 token 同時保持 Skill 嘅可發現性。',
+      explanation: 'YAML frontmatter 永遠喺 system prompt 入面，所以 Claude 每次都睇到。佢提供啱啱好嘅資訊令 Claude 知幾時該用呢個 Skill，但又唔使載入成個 SKILL.md。呢個就係 Progressive Disclosure 嘅精髓：慳 token 但唔犧牲可發現性。',
     },
     {
       id: 5,
@@ -841,7 +764,7 @@ function QuizTab() {
         'D. 唔需要 MCP 連接',
       ],
       answer: 1,
-      explanation: 'Agent Teams 嘅核心突破係平行分工——之前係一個 agent 順序做嘢，而家 Lead Agent（Opus 4.6）可以將大 task 拆開分配俾多個 Teammate Agents，佢哋同時 research、debug、build、review，互相 coordinate。配合 Skills，每個 agent 可以有自己嘅專業知識包。',
+      explanation: '核心分別係「平行分工」。以前一個 agent 順序做，而家 Lead Agent 可以將 task 拆開俾幾個 Teammate 同時做——research、debug、build、review 一齊跑。配合 Skills，每個 agent 仲可以有自己嘅專業知識包。',
     },
   ];
 
@@ -857,7 +780,7 @@ function QuizTab() {
   return (
     <div className="card">
       <h2>Quiz：Claude Skills 建構</h2>
-      <div className="subtitle">測試你對 Skill 架構同 Pattern 嘅理解</div>
+      <div className="subtitle">睇吓你記唔記得</div>
 
       {quizzes.map((quiz) => (
         <div key={quiz.id} className="prompt-card" style={{ marginBottom: '1.5rem' }}>
@@ -1015,7 +938,7 @@ export default function ClaudeSkillsBuilding() {
     <>
       <TopicTabs
         title="Claude Skills 建構"
-        subtitle="學識設計、測試、分發 Claude Skills — 由 SKILL.md 結構到五大 Pattern 到 MCP 協作"
+        subtitle="由零開始寫一個 Claude Skill，識得揀 Pattern、測試、分發"
         tabs={[
           { id: 'overview', label: '① 基本概念', content: <OverviewTab /> },
           { id: 'structure', label: '② SKILL.md 結構', content: <StructureTab /> },

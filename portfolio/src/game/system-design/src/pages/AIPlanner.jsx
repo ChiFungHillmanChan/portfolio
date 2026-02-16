@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { API_BASE } from '../config/constants';
+import topicData from '../data/topics.json';
 const PLAN_KEY = 'sd_learning_plan';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -294,70 +295,122 @@ export default function AIPlanner() {
     }
   };
 
-  // Show saved plan
+  // Show saved plan — Duolingo-style winding path
   if (step === -1 && plan) {
-    const difficultyLabels = { 1: '初級', 2: '中級', 3: '高級', beginner: '初級', intermediate: '中級', advanced: '高級' };
-    const difficultyColors = {
-      1: 'bg-[rgba(34,197,94,0.15)] text-[#22c55e]',
-      2: 'bg-[rgba(245,158,11,0.15)] text-[#f59e0b]',
-      3: 'bg-[rgba(239,68,68,0.15)] text-[#ef4444]',
-      beginner: 'bg-[rgba(34,197,94,0.15)] text-[#22c55e]',
-      intermediate: 'bg-[rgba(245,158,11,0.15)] text-[#f59e0b]',
-      advanced: 'bg-[rgba(239,68,68,0.15)] text-[#ef4444]',
+    const iconMap = Object.fromEntries(topicData.topics.map(t => [t.slug, t.icon]));
+    const catColors = {
+      'ai-core': '#A78BFA', career: '#F59E0B', engineering: '#3B82F6',
+      network: '#F59E0B', storage: '#8B5CF6', cache: '#EF4444',
+      async: '#10B981', app: '#EC4899', security: '#06B6D4',
+      deploy: '#F97316', resource: '#9CA3AF',
     };
+    const offsets = [0, 60, 0, -60];
+    const containerCenter = 160; // half of max-w-xs (320px)
+    const completedCount = completedItems.length;
+    const firstUncompleted = plan.findIndex((_, i) => !completedItems.includes(i));
 
     return (
       <div className="h-full overflow-auto">
         <div className="topic-container">
           <header className="topic-header">
             <h1>📋 你嘅學習計劃</h1>
-            <p>{explanation || '按照計劃逐步學習，完成後打勾'}</p>
+            <p>{explanation || '按照計劃逐步學習，點擊節點開始'}</p>
+            <div className="mt-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(99,102,241,0.12)] text-[#818cf8] text-sm">
+              <span className="font-semibold">{completedCount}/{plan.length}</span> 已完成
+            </div>
           </header>
 
-          <div className="card">
+          {/* Snake path */}
+          <div className="relative mx-auto" style={{ maxWidth: 320 }}>
             {plan.map((topic, i) => {
               const done = completedItems.includes(i);
-              const diff = topic.difficulty;
+              const isCurrent = i === firstUncompleted;
+              const icon = iconMap[topic.id] || '📖';
+              const offset = offsets[i % 4];
+              const catColor = catColors[topic.category] || '#6366f1';
+
+              // Connector SVG between nodes
+              const prevOffset = i > 0 ? offsets[(i - 1) % 4] : 0;
+              const prevDone = i > 0 && completedItems.includes(i - 1);
+              const prevX = containerCenter + prevOffset;
+              const currX = containerCenter + offset;
+              const midX = (prevX + currX) / 2;
+
+              const ringColor = done ? '#10B981' : isCurrent ? '#6366f1' : '#2a2d3a';
+              const bgColor = done ? 'rgba(16,185,129,0.1)' : isCurrent ? 'rgba(99,102,241,0.15)' : 'rgba(42,45,58,0.5)';
+
               return (
-                <div
-                  key={topic.id}
-                  className={`flex items-center gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`}
-                >
-                  <button
-                    className={`w-6 h-6 rounded border flex-shrink-0 flex items-center justify-center text-xs transition-colors ${
-                      done
-                        ? 'bg-accent-green border-accent-green text-white'
-                        : 'border-border hover:border-accent-indigo'
-                    }`}
-                    onClick={() => toggleComplete(i)}
-                  >
-                    {done ? '✓' : ''}
-                  </button>
-                  <span className="text-text-dimmer text-sm font-mono w-6 text-center flex-shrink-0">
-                    {i + 1}
-                  </span>
-                  <button
-                    className={`flex-1 min-w-0 text-left ${done ? 'opacity-50' : ''}`}
-                    onClick={() => navigate(`/topic/${topic.id}`)}
-                  >
-                    <div className={`text-[0.9rem] font-medium ${done ? 'line-through text-text-dimmer' : 'text-text-primary hover:text-accent-indigo-light'} transition-colors`}>
-                      {topic.titleZh || topic.title}
-                    </div>
-                    {topic.titleZh && topic.title && topic.titleZh !== topic.title && (
-                      <div className="text-[0.75rem] text-text-dimmer">{topic.title}</div>
-                    )}
-                  </button>
-                  {diff && (
-                    <span className={`text-[0.6rem] px-1.5 py-0.5 rounded flex-shrink-0 ${difficultyColors[diff] || ''}`}>
-                      {difficultyLabels[diff] || ''}
-                    </span>
+                <div key={topic.id}>
+                  {/* SVG connector */}
+                  {i > 0 && (
+                    <svg width="100%" height="32" className="overflow-visible" style={{ display: 'block' }}>
+                      <path
+                        d={`M ${prevX} 0 Q ${midX} 16 ${currX} 32`}
+                        stroke={prevDone ? '#10B981' : '#2a2d3a'}
+                        strokeWidth={prevDone ? 3 : 2}
+                        strokeDasharray={prevDone ? '' : '6 4'}
+                        fill="none"
+                      />
+                    </svg>
                   )}
+
+                  {/* Node */}
+                  <div
+                    className="flex flex-col items-center"
+                    style={{ transform: `translateX(${offset}px)` }}
+                  >
+                    <button
+                      onClick={() => navigate(`/topic/${topic.id}`)}
+                      className="group relative flex flex-col items-center"
+                    >
+                      {/* Pulse ring for current node */}
+                      {isCurrent && (
+                        <span
+                          className="absolute inset-0 w-14 h-14 rounded-full animate-ping"
+                          style={{ backgroundColor: 'rgba(99,102,241,0.2)', animationDuration: '2s' }}
+                        />
+                      )}
+                      <div
+                        className="w-14 h-14 rounded-full flex items-center justify-center text-xl transition-transform group-hover:scale-110"
+                        style={{
+                          border: `3px solid ${ringColor}`,
+                          backgroundColor: bgColor,
+                          boxShadow: isCurrent ? '0 0 16px rgba(99,102,241,0.35)' : 'none',
+                        }}
+                      >
+                        {done ? <span className="text-[#10B981] text-lg font-bold">✓</span> : icon}
+                      </div>
+                    </button>
+                    <span
+                      className={`text-xs mt-1.5 text-center max-w-[140px] truncate ${
+                        done ? 'line-through text-text-dimmer' : isCurrent ? 'text-text-primary font-medium' : 'text-text-dim'
+                      }`}
+                    >
+                      {topic.titleZh || topic.title}
+                    </span>
+                    {/* Category dot */}
+                    <span
+                      className="w-1.5 h-1.5 rounded-full mt-1"
+                      style={{ backgroundColor: catColor }}
+                    />
+                    {/* Toggle complete button */}
+                    <button
+                      onClick={() => toggleComplete(i)}
+                      className={`mt-1 text-[0.65rem] px-2 py-0.5 rounded-full transition-colors ${
+                        done
+                          ? 'bg-[rgba(16,185,129,0.15)] text-[#10B981] hover:bg-[rgba(16,185,129,0.25)]'
+                          : 'bg-bg-tertiary text-text-dimmer border border-border hover:border-accent-indigo hover:text-accent-indigo-light'
+                      }`}
+                    >
+                      {done ? '已完成 ✓' : '完成'}
+                    </button>
+                  </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="flex gap-3 mt-4">
+          <div className="flex gap-3 mt-8 justify-center">
             <button
               onClick={resetPlan}
               className="px-4 py-2 rounded-lg bg-bg-secondary border border-border text-text-dim hover:text-text-primary text-sm transition-all"

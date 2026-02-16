@@ -9,132 +9,115 @@ const relatedTopics = [
   { slug: 'prompt-engineering', label: 'Prompt Engineering' },
 ];
 
+/* ── Category Card ── */
+function CategoryCard({ color, icon, title, items }) {
+  return (
+    <div style={{ background: '#1a1d27', borderRadius: 12, padding: '20px', border: `1.5px solid ${color}`, flex: '1 1 280px', minWidth: 0 }}>
+      <div style={{ color, fontWeight: 700, fontSize: '0.95rem', marginBottom: 12, textAlign: 'center' }}>{icon} {title}</div>
+      {items.map((item, i) => (
+        <div key={i} style={{ fontSize: '0.85rem', color: item.dim ? '#9ca3af' : '#e2e8f0', lineHeight: 1.7 }}>
+          {item.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ── Comparison Table ── */
+function ComparisonTable() {
+  const headers = ['工具', 'Coding', '推理', '搜尋', '多模態', 'Context', '月費 (個人)'];
+  const rows = [
+    { tool: 'GPT-5.3 Codex', coding: '⭐⭐', reasoning: '⭐⭐⭐', search: '⭐⭐', multimodal: '⭐⭐⭐', context: '400K', cost: '$20 (需 VPN)', costColor: '#F59E0B' },
+    { tool: 'Claude Opus 4.6', coding: '⭐⭐⭐', reasoning: '⭐⭐⭐', search: '❌', multimodal: '⭐', context: '1M', cost: '$20 (需 VPN)', costColor: '#F59E0B' },
+    { tool: 'Gemini 3', coding: '⭐⭐', reasoning: '⭐⭐', search: '⭐⭐', multimodal: '⭐⭐⭐', context: '1M', cost: '免費 (需 VPN)', costColor: '#34d399' },
+    { tool: 'Cursor', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '❌', context: '多模型', cost: '$20 (用量制)', costColor: '#F59E0B' },
+    { tool: 'Antigravity', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '⭐⭐', context: 'Gemini 3', cost: '免費預覽', costColor: '#34d399' },
+    { tool: 'Copilot', coding: '⭐⭐', reasoning: '⭐', search: '❌', multimodal: '❌', context: '—', cost: '$10', costColor: '#34d399' },
+    { tool: 'DeepSeek', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '⭐', context: '128K', cost: '免費 / API 極平', costColor: '#34d399' },
+  ];
+
+  return (
+    <div style={{ marginTop: 24 }}>
+      <h3 style={{ textAlign: 'center', color: '#e2e8f0', fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>能力對比（工程師視角）</h3>
+      <div className="content-table-wrapper">
+        <table className="content-table">
+          <thead>
+            <tr>{headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => (
+              <tr key={i}>
+                <td style={{ fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>{row.tool}</td>
+                <td>{row.coding}</td>
+                <td>{row.reasoning}</td>
+                <td>{row.search}</td>
+                <td>{row.multimodal}</td>
+                <td style={{ color: '#34d399' }}>{row.context}</td>
+                <td style={{ color: row.costColor, whiteSpace: 'nowrap' }}>{row.cost}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 function OverviewTab() {
   return (
     <div className="card">
       <h2>AI 工具全景圖</h2>
-      <div className="subtitle">13 款主流 AI 工具，邊個做咩最強</div>
+      <div className="subtitle">而家最強嘅 AI 工具，工程師點揀</div>
       <p>
         而家市面上有太多 AI 工具，唔同工具嘅定位完全唔同。<strong style={{ color: '#a78bfa' }}>識揀工具</strong> 同 <strong style={{ color: '#34d399' }}>識用工具</strong> 係兩回事——好多人淨係用 ChatGPT，但其實唔同場景用唔同工具，效率可以差 5-10 倍。
       </p>
 
-      <div className="diagram-container">
-        <svg viewBox="0 0 750 456" xmlns="http://www.w3.org/2000/svg">
-          <defs>
-            <filter id="shadow-tl" x="-4%" y="-4%" width="108%" height="108%"><feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000" floodOpacity="0.3" /></filter>
-          </defs>
-          {/* Category Headers */}
-          <text x="375" y="30" textAnchor="middle" fill="#e2e8f0" fontSize="15" fontWeight="700">AI 工具分類矩陣</text>
-
-          {/* Text AI */}
-          <rect x="20" y="50" width="220" height="178" rx="12" fill="#1a1d27" stroke="#a78bfa" strokeWidth="1.5" filter="url(#shadow-tl)" />
-          <text x="130" y="75" textAnchor="middle" fill="#a78bfa" fontSize="12" fontWeight="700">💬 文字 AI</text>
-          <text x="40" y="100" fill="#e2e8f0" fontSize="10">GPT-5.3 Codex — Agentic 編程 + 推理</text>
-          <text x="40" y="118" fill="#e2e8f0" fontSize="10">Claude Opus 4.6 — 1M context + Agent Teams</text>
-          <text x="40" y="136" fill="#e2e8f0" fontSize="10">Gemini 3 — 多模態 + Deep Think</text>
-          <text x="40" y="154" fill="#9ca3af" fontSize="10">Grok — X 平台整合 + 即時資訊</text>
-          <text x="40" y="172" fill="#9ca3af" fontSize="10">Perplexity — 搜尋引擎 + 引用來源</text>
-          <text x="40" y="190" fill="#9ca3af" fontSize="10">DeepSeek — 開源 + 超低成本 API</text>
-
-          {/* Dev AI */}
-          <rect x="260" y="50" width="220" height="178" rx="12" fill="#1a1d27" stroke="#34d399" strokeWidth="1.5" filter="url(#shadow-tl)" />
-          <text x="370" y="75" textAnchor="middle" fill="#34d399" fontSize="12" fontWeight="700">🛠 開發 AI</text>
-          <text x="280" y="100" fill="#e2e8f0" fontSize="10">Cursor — IDE 整合 + 重構 + Debug</text>
-          <text x="280" y="118" fill="#e2e8f0" fontSize="10">Claude Code — 長 Context + CLI</text>
-          <text x="280" y="136" fill="#e2e8f0" fontSize="10">GitHub Copilot — 自動補全 + 測試</text>
-          <text x="280" y="154" fill="#9ca3af" fontSize="10">Lovable — 快速 Prototype + UI</text>
-          <text x="280" y="172" fill="#9ca3af" fontSize="10">OpenClaw — 開源 AI Agent + 183K ⭐</text>
-
-          {/* Design/Media AI */}
-          <rect x="500" y="50" width="230" height="160" rx="12" fill="#1a1d27" stroke="#F59E0B" strokeWidth="1.5" filter="url(#shadow-tl)" />
-          <text x="615" y="75" textAnchor="middle" fill="#F59E0B" fontSize="12" fontWeight="700">🎨 設計 / 自動化</text>
-          <text x="520" y="100" fill="#e2e8f0" fontSize="10">Canva — 海報 + 社交媒體設計</text>
-          <text x="520" y="118" fill="#e2e8f0" fontSize="10">Figma AI — Wireframe + UI 設計</text>
-          <text x="520" y="136" fill="#e2e8f0" fontSize="10">Notion AI — 知識管理 + 文件</text>
-          <text x="520" y="154" fill="#9ca3af" fontSize="10">Zapier / Make — 自動化工作流</text>
-
-          {/* Comparison table */}
-          <rect x="20" y="248" width="710" height="193" rx="12" fill="#1a1d27" stroke="#475569" strokeWidth="1" filter="url(#shadow-tl)" />
-          <text x="375" y="273" textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="700">能力對比（工程師視角）</text>
-
-          {/* Headers */}
-          <text x="40" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">工具</text>
-          <text x="180" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">Coding</text>
-          <text x="280" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">推理</text>
-          <text x="370" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">搜尋</text>
-          <text x="460" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">多模態</text>
-          <text x="560" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">Context</text>
-          <text x="660" y="298" fill="#9ca3af" fontSize="9" fontWeight="600">成本</text>
-
-          {/* Row 1: ChatGPT */}
-          <text x="40" y="318" fill="#e2e8f0" fontSize="9">GPT-5.3 Codex</text>
-          <text x="180" y="318" fill="#34d399" fontSize="9">⭐⭐</text>
-          <text x="280" y="318" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="370" y="318" fill="#34d399" fontSize="9">⭐⭐</text>
-          <text x="460" y="318" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="560" y="318" fill="#F59E0B" fontSize="9">400K</text>
-          <text x="660" y="318" fill="#F59E0B" fontSize="9">$$$</text>
-
-          {/* Row 2: Claude */}
-          <text x="40" y="336" fill="#e2e8f0" fontSize="9">Opus 4.6</text>
-          <text x="180" y="336" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="280" y="336" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="370" y="336" fill="#F59E0B" fontSize="9">❌</text>
-          <text x="460" y="336" fill="#F59E0B" fontSize="9">⭐</text>
-          <text x="560" y="336" fill="#34d399" fontSize="9">1M</text>
-          <text x="660" y="336" fill="#ef4444" fontSize="9">$$$$</text>
-
-          {/* Row 3: Cursor */}
-          <text x="40" y="354" fill="#e2e8f0" fontSize="9">Cursor</text>
-          <text x="180" y="354" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="280" y="354" fill="#F59E0B" fontSize="9">⭐⭐</text>
-          <text x="370" y="354" fill="#F59E0B" fontSize="9">❌</text>
-          <text x="460" y="354" fill="#F59E0B" fontSize="9">❌</text>
-          <text x="560" y="354" fill="#34d399" fontSize="9">多模型</text>
-          <text x="660" y="354" fill="#34d399" fontSize="9">$$</text>
-
-          {/* Row 4: Gemini */}
-          <text x="40" y="372" fill="#e2e8f0" fontSize="9">Gemini 3</text>
-          <text x="180" y="372" fill="#F59E0B" fontSize="9">⭐⭐</text>
-          <text x="280" y="372" fill="#34d399" fontSize="9">⭐⭐</text>
-          <text x="370" y="372" fill="#34d399" fontSize="9">⭐⭐</text>
-          <text x="460" y="372" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="560" y="372" fill="#34d399" fontSize="9">1M</text>
-          <text x="660" y="372" fill="#34d399" fontSize="9">$</text>
-
-          {/* Row 5: Perplexity */}
-          <text x="40" y="390" fill="#e2e8f0" fontSize="9">Perplexity</text>
-          <text x="180" y="390" fill="#F59E0B" fontSize="9">⭐</text>
-          <text x="280" y="390" fill="#F59E0B" fontSize="9">⭐⭐</text>
-          <text x="370" y="390" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="460" y="390" fill="#F59E0B" fontSize="9">⭐</text>
-          <text x="560" y="390" fill="#F59E0B" fontSize="9">—</text>
-          <text x="660" y="390" fill="#34d399" fontSize="9">$$</text>
-
-          {/* Row 6: Copilot */}
-          <text x="40" y="408" fill="#e2e8f0" fontSize="9">Copilot</text>
-          <text x="180" y="408" fill="#34d399" fontSize="9">⭐⭐</text>
-          <text x="280" y="408" fill="#F59E0B" fontSize="9">⭐</text>
-          <text x="370" y="408" fill="#F59E0B" fontSize="9">❌</text>
-          <text x="460" y="408" fill="#F59E0B" fontSize="9">❌</text>
-          <text x="560" y="408" fill="#F59E0B" fontSize="9">—</text>
-          <text x="660" y="408" fill="#34d399" fontSize="9">$$</text>
-
-          {/* Row 7: DeepSeek */}
-          <text x="40" y="426" fill="#e2e8f0" fontSize="9">DeepSeek</text>
-          <text x="180" y="426" fill="#34d399" fontSize="9">⭐⭐⭐</text>
-          <text x="280" y="426" fill="#34d399" fontSize="9">⭐⭐</text>
-          <text x="370" y="426" fill="#F59E0B" fontSize="9">❌</text>
-          <text x="460" y="426" fill="#F59E0B" fontSize="9">⭐</text>
-          <text x="560" y="426" fill="#F59E0B" fontSize="9">128K</text>
-          <text x="660" y="426" fill="#34d399" fontSize="9">$</text>
-        </svg>
+      {/* Category Cards — HTML grid, wraps on mobile */}
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 24 }}>
+        <CategoryCard
+          color="#a78bfa"
+          icon="💬"
+          title="文字 AI"
+          items={[
+            { text: 'GPT-5.3 Codex — Agentic 編程 + 推理' },
+            { text: 'Claude Opus 4.6 — 1M context + Agent Teams' },
+            { text: 'Gemini 3 — 多模態 + Deep Think（免費但需 VPN）' },
+            { text: 'Perplexity — 搜尋引擎 + 引用來源', dim: true },
+            { text: 'DeepSeek — 開源 + 超低成本 API', dim: true },
+          ]}
+        />
+        <CategoryCard
+          color="#34d399"
+          icon="🛠"
+          title="開發 AI / IDE"
+          items={[
+            { text: 'Cursor — 多模型 IDE + Agent（$20/月用量制）' },
+            { text: 'Antigravity — Google Agent-first IDE（免費預覽）' },
+            { text: 'VS Code + Copilot — 自動補全 + 擴充豐富' },
+            { text: 'Claude Code — 長 Context CLI Agent', dim: true },
+            { text: 'OpenClaw — 開源 AI Agent + 183K ⭐', dim: true },
+          ]}
+        />
+        <CategoryCard
+          color="#F59E0B"
+          icon="🎨"
+          title="設計 / 自動化"
+          items={[
+            { text: 'Canva — 海報 + 社交媒體設計' },
+            { text: 'Figma AI — Wireframe + UI 設計' },
+            { text: 'Notion AI — 知識管理 + 文件' },
+            { text: 'Zapier / Make — 自動化工作流', dim: true },
+          ]}
+        />
       </div>
 
-      <ol className="steps">
-        <li><span className="step-num">1</span><span><strong>文字 AI</strong>：GPT-5.3 Codex 同 Claude 係兩大王者。GPT-5.3 Codex 推理同多模態最強（400K context），Claude 嘅 1M (beta) context window 適合處理大型 codebase。Gemini 贏在免費 API 同超長 1M context。DeepSeek 係開源界王者，API 成本極低，適合預算有限嘅開發者。</span></li>
-        <li><span className="step-num">2</span><span><strong>開發 AI</strong>：Cursor 做 IDE 整合最成熟，支援多模型切換。Claude Code 係 CLI-first，適合 terminal 重度使用者。Copilot 最適合 inline 自動補全。OpenClaw 係開源 AI Agent，適合需要自建同自訂嘅團隊。</span></li>
-        <li><span className="step-num">3</span><span><strong>搜尋 AI</strong>：Perplexity 係 AI 搜尋引擎，每個答案都有引用來源。做 research 或者需要最新資訊嘅時候首選。</span></li>
+      {/* Comparison Table — HTML, scrollable on mobile */}
+      <ComparisonTable />
+
+      <ol className="steps" style={{ marginTop: 24 }}>
+        <li><span className="step-num">1</span><span><strong>文字 AI</strong>：GPT-5.3 Codex 同 Claude Opus 4.6 係兩大王者。Codex 推理同多模態最強（400K context），Opus 嘅 1M context window 適合處理大型 codebase。Gemini 3 有免費 token 額度同 1M context，但香港要 VPN 先用到（ChatGPT 同 Claude 都係，三個都需要 VPN）。DeepSeek 係開源界王者，API 成本極低。</span></li>
+        <li><span className="step-num">2</span><span><strong>開發 IDE</strong>：Cursor 做 IDE 整合最成熟，支援多模型切換，$20/月但係用量制（用得多可能未到月尾就用曬）。Antigravity 係 Google 新出嘅 Agent-first IDE，免費預覽中，支援多個 AI agent 平行工作。VS Code 配 Copilot 最普及，加上 extension 可以用 Codex 同 Claude。</span></li>
+        <li><span className="step-num">3</span><span><strong>搜尋 AI</strong>：Perplexity 係 AI 搜尋引擎，每個答案都有引用來源。做 research 嘅時候用，但唔適合寫 code。</span></li>
         <li><span className="step-num">4</span><span><strong>設計 / 自動化</strong>：Canva 同 Figma AI 處理視覺設計，Notion AI 管理知識庫，Zapier/Make 串接唔同服務做自動化。</span></li>
       </ol>
     </div>
@@ -151,21 +134,21 @@ function FrameworkTab() {
       <div className="key-points">
         <div className="key-point">
           <h4>① 任務類型 → 工具定位</h4>
-          <p><strong style={{ color: '#a78bfa' }}>純寫 Code</strong> → Cursor / Claude Code / Copilot<br />
+          <p><strong style={{ color: '#a78bfa' }}>純寫 Code</strong> → Cursor / Antigravity / Claude Code<br />
           <strong style={{ color: '#34d399' }}>Research + 分析</strong> → Perplexity / ChatGPT<br />
           <strong style={{ color: '#F59E0B' }}>System Design</strong> → Claude（長 context）/ ChatGPT（推理）</p>
         </div>
         <div className="key-point">
           <h4>② 預算考量</h4>
-          <p><strong style={{ color: '#34d399' }}>免費 / 低成本</strong>：Gemini Flash API（$0.075/1M tokens）、DeepSeek V3.2 API（$0.28-0.42/1M tokens）、Copilot 免費版<br />
-          <strong style={{ color: '#F59E0B' }}>中等</strong>：ChatGPT Plus $20/月、Cursor Pro $20/月<br />
-          <strong style={{ color: '#ef4444' }}>高預算</strong>：Claude Opus API（$15-75/1M tokens）、GPT-5 API</p>
+          <p><strong style={{ color: '#34d399' }}>免費</strong>：Gemini 3 API 有免費額度（需 VPN）、Antigravity 免費預覽中、DeepSeek API 極平、Copilot 免費版<br />
+          <strong style={{ color: '#F59E0B' }}>$10-20/月</strong>：ChatGPT Plus $20/月（需 VPN）、Claude Pro $20/月（需 VPN）、Cursor Pro $20/月（用量制，用完即止）、Copilot Pro $10/月<br />
+          <strong style={{ color: '#ef4444' }}>API 高用量</strong>：Claude Opus API（$15-75/1M tokens）、GPT-5 API（按用量計）</p>
         </div>
         <div className="key-point">
           <h4>③ Context Window 需求</h4>
           <p><strong>小型任務（&lt;10K tokens）</strong>：任何工具都得<br />
           <strong>中型專案（10-100K）</strong>：ChatGPT / Claude Sonnet，GPT-5.3 Codex 400K 亦好適合<br />
-          <strong>大型 Codebase（100K+）</strong>：Claude Opus 4.6（1M beta）/ Gemini Pro（1M）</p>
+          <strong>大型 Codebase（100K+）</strong>：Claude Opus 4.6（1M）/ Gemini Pro（1M）</p>
         </div>
         <div className="key-point">
           <h4>④ 隱私同安全</h4>
@@ -175,16 +158,57 @@ function FrameworkTab() {
         </div>
         <div className="key-point">
           <h4>⑤ 團隊協作</h4>
-          <p><strong>個人開發</strong>：Cursor + ChatGPT 已經夠用<br />
+          <p><strong>個人開發</strong>：Cursor + Claude 已經夠用<br />
           <strong>團隊</strong>：GitHub Copilot Business + Notion AI<br />
-          <strong>企業</strong>：Claude Enterprise / Azure OpenAI + 自建 Proxy，OpenClaw + self-hosted 模型適合企業隱私需求</p>
+          <strong>企業</strong>：Claude Enterprise / Azure OpenAI + 自建 Proxy</p>
         </div>
       </div>
 
-      <div className="use-case">
+      {/* IDE Comparison */}
+      <div style={{ marginTop: 24, padding: '20px', background: '#13151c', borderRadius: 12, border: '1px solid #2a2d3a' }}>
+        <h3 style={{ color: '#34d399', fontSize: '1.1rem', marginBottom: 16 }}>🖥️ AI IDE 三強對比</h3>
+        <div className="content-table-wrapper">
+          <table className="content-table">
+            <thead>
+              <tr>
+                <th>IDE</th>
+                <th>核心優勢</th>
+                <th>弱點</th>
+                <th>月費</th>
+                <th>適合邊個</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style={{ fontWeight: 600, color: '#e2e8f0' }}>VS Code + Copilot</td>
+                <td>最多 extension、支援 Codex / Claude 擴充、生態最大、免費版夠用</td>
+                <td>AI 功能要靠 extension 拼湊，原生 agent 能力弱過 Cursor</td>
+                <td style={{ color: '#34d399', whiteSpace: 'nowrap' }}>免費 / $10</td>
+                <td>鍾意自己配工具、已經用開 VS Code 嘅人</td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 600, color: '#e2e8f0' }}>Cursor</td>
+                <td>原生 AI Agent 最成熟、多模型切換（Claude / GPT / Gemini）、multi-file editing 最強</td>
+                <td>$20/月用量制，重度使用可能未到月尾就用曬額度</td>
+                <td style={{ color: '#F59E0B', whiteSpace: 'nowrap' }}>$20 (用量制)</td>
+                <td>全職開發者、需要 AI 深度整合嘅人</td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 600, color: '#e2e8f0' }}>Antigravity (Google)</td>
+                <td>Agent-first 設計、多個 agent 平行工作、內建瀏覽器驗證、Gemini 3 原生支援</td>
+                <td>新產品穩定性未知、model 選擇暫時限 Gemini 同 Claude Sonnet</td>
+                <td style={{ color: '#34d399', whiteSpace: 'nowrap' }}>免費預覽</td>
+                <td>想試多 agent 工作流、Google 生態嘅用家</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div className="use-case" style={{ marginTop: 16 }}>
         <h4>快速決策法則</h4>
         <p>唔知揀咩？用呢個順序：<br />
-        ① 先試 ChatGPT（最全能）→ ② 如果要寫 Code 就加 Cursor → ③ 大 codebase 用 Claude → ④ 要搜尋用 Perplexity → ⑤ 要平就用 Gemini Flash → ⑥ 開源自建就用 DeepSeek / OpenClaw。</p>
+        ① 先試 Cursor（AI coding 最成熟）→ ② 大 codebase 用 Claude Opus → ③ 想免費試多 agent 就用 Antigravity → ④ 已有 VS Code 習慣就加 Copilot + Claude extension → ⑤ 要平嘅 API 就用 DeepSeek / Gemini Flash。</p>
       </div>
     </div>
   );
@@ -194,38 +218,38 @@ function PracticeTab() {
   return (
     <div className="card">
       <h2>實戰場景：3 個工具鏈 Walkthrough</h2>
-      <div className="subtitle">真實開發場景，逐步拆解用邊啲工具</div>
+      <div className="subtitle">而家最強嘅 coding 工具鏈——以 Codex 5.3 + Opus 4.6 為核心</div>
 
       <ol className="steps">
         <li>
           <span className="step-num">1</span>
           <span>
             <strong style={{ color: '#ef4444' }}>場景：Debug Production Issue</strong><br />
-            <strong>工具鏈：</strong>Perplexity → ChatGPT → Cursor<br />
-            <strong>流程：</strong>① Perplexity 搜尋 error message 同 stack trace，搵到相關 GitHub issues 同 StackOverflow → ② ChatGPT 分析 log pattern，推理 root cause，提出 3 個假設 → ③ Cursor 打開 codebase，用 Agent 模式搵到問題代碼，生成修復 patch → ④ Copilot 補全 unit test 驗證修復
+            <strong>工具鏈：</strong>Claude Opus → Cursor Agent<br />
+            <strong>流程：</strong>① 將 error log + stack trace 貼入 Claude Opus 4.6（用佢 1M context 讀曬相關 source code），分析 root cause，提出修復方案 → ② 用 Cursor Agent 模式打開 codebase，按 Claude 嘅分析搵到問題代碼，生成修復 patch → ③ Cursor 自動生成 unit test 驗證修復 → ④ Claude review 整個 diff 確保冇 side effect
           </span>
         </li>
         <li>
           <span className="step-num">2</span>
           <span>
             <strong style={{ color: '#34d399' }}>場景：Build Feature from Spec</strong><br />
-            <strong>工具鏈：</strong>Claude → Cursor → Copilot<br />
-            <strong>流程：</strong>① Claude（200K context）讀曬成個 spec + 現有 codebase，生成 implementation plan → ② Cursor 按 plan 逐步實作，用 multi-file editing → ③ Copilot 自動補全 boilerplate + 生成 test cases → ④ ChatGPT review 整個 PR，提出改善建議
+            <strong>工具鏈：</strong>Claude Opus → Cursor / Antigravity<br />
+            <strong>流程：</strong>① Claude Opus 讀曬 spec + 現有 codebase（1M context 裝得落），生成 implementation plan 同 file structure → ② Cursor 按 plan 逐步實作，用 multi-file editing 同時改多個檔案 → ③ 或者用 Antigravity 開多個 agent 平行處理唔同模組 → ④ 最後用 Claude review 成個 PR
           </span>
         </li>
         <li>
           <span className="step-num">3</span>
           <span>
-            <strong style={{ color: '#F59E0B' }}>場景：Write Technical Documentation</strong><br />
-            <strong>工具鏈：</strong>Cursor → ChatGPT → Notion AI<br />
-            <strong>流程：</strong>① Cursor 讀 codebase 自動生成 API endpoint 列表同 type definitions → ② ChatGPT 將技術細節轉成清晰嘅文檔結構，加入使用例子 → ③ Notion AI 整理成團隊 wiki 格式，自動生成目錄同 cross-reference
+            <strong style={{ color: '#F59E0B' }}>場景：Greenfield 新項目</strong><br />
+            <strong>工具鏈：</strong>GPT-5.3 Codex → Antigravity / Cursor<br />
+            <strong>流程：</strong>① 用 GPT-5.3 Codex（Agentic 模式）做 system design——定義 architecture、API contract、database schema → ② Antigravity 用多 agent 同時 scaffold 前後端 + infra config → ③ Cursor 做細節實作同 debug → ④ Claude Opus review 整體架構同 security
           </span>
         </li>
       </ol>
 
       <div className="use-case">
         <h4>工具鏈組合原則</h4>
-        <p>最有效嘅做法係 <strong>Research → Think → Code → Review</strong> 四步。每步用最適合嘅工具：Research 用搜尋型（Perplexity），Think 用推理型（ChatGPT/Claude），Code 用 IDE 型（Cursor），Review 用長 context 型（Claude）。</p>
+        <p>而家最有效嘅做法係 <strong>Think → Code → Review</strong> 三步。Think 用推理型（Claude Opus / GPT-5.3 Codex），Code 用 IDE 型（Cursor / Antigravity），Review 用長 context 型（Claude Opus）。Perplexity 適合做 research 搵資料，但唔適合用嚟寫 code。</p>
       </div>
     </div>
   );
@@ -240,7 +264,7 @@ function AIViberTab() {
       <div className="prompt-card">
         <h4>Prompt — 工具選擇顧問</h4>
         <div className="prompt-text">
-          {`你係一個 AI 工具專家顧問。你熟悉 ChatGPT 5、Cursor、Claude Code、GitHub Copilot、Gemini、Perplexity、Grok、Canva、Notion AI 等 11 款主流 AI 工具嘅強弱。
+          {`你係一個 AI 工具專家顧問。你熟悉 ChatGPT 5（GPT-5.3 Codex）、Claude（Opus 4.6）、Cursor、Google Antigravity、GitHub Copilot、Gemini 3、Perplexity、DeepSeek 等主流 AI 工具嘅強弱。
 
 我嘅情況：
 - 任務類型：[例如：debug production issue / build new feature / write docs / system design]
@@ -267,9 +291,9 @@ function QuizTab() {
 
   const questions = [
     { id: 1, q: '如果你需要處理一個 150K tokens 嘅大型 codebase，以下邊個工具最適合？', options: ['ChatGPT 5', 'Cursor', 'Claude Opus 4.6', 'GitHub Copilot'], correct: 2 },
-    { id: 2, q: 'Perplexity 相比 ChatGPT 嘅最大優勢係咩？', options: ['寫 Code 更好', '每個答案都有引用來源', 'Context window 更大', '免費使用'], correct: 1 },
-    { id: 3, q: '以下邊個組合最適合「Research → Code → Test」workflow？', options: ['ChatGPT → ChatGPT → ChatGPT', 'Perplexity → Cursor → Copilot', 'Claude → Claude → Claude', 'Gemini → Gemini → Gemini'], correct: 1 },
-    { id: 4, q: 'Gemini 3 Flash 嘅最大賣點係咩？', options: ['推理能力最強', '超低成本 + 1M context（DeepSeek 更平但冇 1M context）', 'IDE 整合最好', '搜尋能力最強'], correct: 1 },
+    { id: 2, q: 'Cursor Pro $20/月嘅計費模式係點？', options: ['無限使用', '用量制，用完即止', '按 token 計', '每日有上限'], correct: 1 },
+    { id: 3, q: '以下邊個 IDE 支援多個 AI Agent 平行工作？', options: ['VS Code', 'Cursor', 'Google Antigravity', 'Sublime Text'], correct: 2 },
+    { id: 4, q: 'Gemini 3 嘅最大賣點係咩？', options: ['推理能力最強', '免費 token 額度 + 1M context（但需要 VPN）', 'IDE 整合最好', '搜尋能力最強'], correct: 1 },
     { id: 5, q: '處理敏感數據時，以下邊個 AI 服務最適合？', options: ['ChatGPT（OpenAI）', 'Claude（Anthropic）', 'Gemini（Google）', 'Copilot（GitHub）'], correct: 1 },
   ];
 
@@ -306,7 +330,7 @@ export default function AIToolsLandscape() {
     <>
       <TopicTabs
         title="AI 工具全景圖"
-        subtitle="13 款主流 AI 工具對比 — 邊個做咩最強，工程師點揀"
+        subtitle="主流 AI 工具對比 — 邊個做咩最強，工程師點揀"
         tabs={[
           { id: 'overview', label: '① 概念', content: <OverviewTab /> },
           { id: 'framework', label: '② 框架', content: <FrameworkTab /> },
