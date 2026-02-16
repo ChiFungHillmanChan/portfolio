@@ -467,7 +467,7 @@ export async function handler(event) {
         );
         suggestions = JSON.parse(await obj.Body.transformToString());
       } catch (e) {
-        if (e.name !== 'NoSuchKey') throw e;
+        if (e.name !== 'NoSuchKey' && e.name !== 'AccessDenied') throw e;
       }
 
       // Rate limit: 1/day, 20/month per user
