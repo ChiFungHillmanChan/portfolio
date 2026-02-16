@@ -71,6 +71,7 @@ const MultiAIWorkflow = lazy(() => import('./MultiAIWorkflow'));
 const AIEvaluationLoop = lazy(() => import('./AIEvaluationLoop'));
 const MCPProtocol = lazy(() => import('./MCPProtocol'));
 const AIIdeaGeneration = lazy(() => import('./AIIdeaGeneration'));
+const ClaudeSkillsBuilding = lazy(() => import('./ClaudeSkillsBuilding'));
 const MockDesign = lazy(() => import('./MockDesign'));
 const OpenSourceAI = lazy(() => import('./OpenSourceAI'));
 
@@ -89,6 +90,7 @@ const topicComponents = {
   'ai-evaluation-loop': AIEvaluationLoop,
   'mcp-protocol': MCPProtocol,
   'ai-idea-generation': AIIdeaGeneration,
+  'claude-skills-building': ClaudeSkillsBuilding,
   'mock-design': MockDesign,
   'open-source-ai': OpenSourceAI,
   'ai-scraper-defense': AIScraperDefense,

@@ -40,6 +40,7 @@
     { "slug": "ai-evaluation-loop", "title": "AI 評估迴圈", "sub": "量化 AI 輸出 / Golden Sample / A/B Test", "icon": "🔄", "category": "ai-core", "premium": true },
     { "slug": "mcp-protocol", "title": "MCP 模型上下文協議", "sub": "統一 AI 接口 / Tool Integration / Plugin 生態", "icon": "🔌", "category": "ai-core", "premium": true },
     { "slug": "ai-idea-generation", "title": "AI 輔助系統設計", "sub": "創新思維框架 / 需求分析 / 方案生成", "icon": "💡", "category": "ai-core", "premium": true },
+    { "slug": "claude-skills-building", "title": "Claude Skills 建構", "sub": "SKILL.md / Progressive Disclosure / 五大 Pattern", "icon": "🧩", "category": "ai-core", "premium": true },
     { "slug": "open-source-ai", "title": "開源 AI 生態圈", "sub": "DeepSeek / Llama 4 / OpenClaw / 自建部署", "icon": "🦞", "category": "ai-core", "premium": true },
     { "slug": "mock-design", "title": "Mock Design 模擬面試", "sub": "35 分鐘計時 / 提示 / 參考答案", "icon": "⏱️", "category": "ai-core", "premium": true, "highlight": true },
 
