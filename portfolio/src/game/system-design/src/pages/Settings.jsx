@@ -8,6 +8,81 @@ import { API_BASE, STRIPE_URL, STRIPE_PRO_URL } from '../config/constants';
 import { PREMIUM_PLANS, PREMIUM_COPY, formatHKD, tierDisplayName } from '../data/premiumPlans';
 
 // ─── Superadmin Panel (cached — only fetches once) ───
+function SuggestionsSection({ token }) {
+  const [suggestions, setSuggestions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const fetched = useRef(false);
+
+  const fetchSuggestions = useCallback(async (force = false) => {
+    if (fetched.current && !force) return;
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action: 'admin-list-suggestions' }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || '無法取得建議列表');
+        return;
+      }
+      setSuggestions(data.suggestions || []);
+      fetched.current = true;
+    } catch {
+      setError('網絡錯誤');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
+
+  useEffect(() => {
+    fetchSuggestions();
+  }, [fetchSuggestions]);
+
+  if (loading) return <div className="text-sm text-text-dim py-4 text-center">載入建議中...</div>;
+  if (error) return <div className="text-sm text-accent-red py-4 text-center">{error}</div>;
+
+  return (
+    <div className="mt-6 p-4 rounded-xl border border-border bg-bg-secondary">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <span className="text-base">💡</span>
+          <span className="text-sm font-semibold text-text-primary">用戶建議</span>
+          <span className="text-[0.65rem] px-2 py-0.5 rounded-full bg-white/[0.06] text-text-dim">{suggestions.length}</span>
+        </div>
+        <button
+          onClick={() => fetchSuggestions(true)}
+          className="px-2 py-1 rounded-lg border border-border bg-transparent text-text-dim text-xs cursor-pointer hover:bg-white/[0.04] hover:border-border-hover transition-colors"
+        >
+          重新載入
+        </button>
+      </div>
+      {suggestions.length === 0 ? (
+        <div className="text-xs text-text-dimmer text-center py-4">暫無建議</div>
+      ) : (
+        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          {suggestions.map((s, i) => (
+            <div key={i} className="px-3 py-2.5 rounded-lg bg-white/[0.03] border border-white/[0.04]">
+              <div className="text-sm text-text-secondary mb-1">{s.suggestion || s.text || JSON.stringify(s)}</div>
+              <div className="flex items-center gap-3 text-[0.65rem] text-text-dimmer">
+                {s.email && <span>{s.email}</span>}
+                {s.createdAt && <span>{new Date(s.createdAt).toLocaleDateString('zh-HK', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Superadmin Panel (cached — only fetches once) ───
 function AdminPanel({ token }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -195,6 +270,9 @@ function AdminPanel({ token }) {
           </tbody>
         </table>
       </div>
+
+      {/* Suggestions section */}
+      <SuggestionsSection token={token} />
     </div>
   );
 }

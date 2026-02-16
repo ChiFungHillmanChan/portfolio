@@ -185,9 +185,9 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          mode: 'search',
-          query: `${systemPrompt}\n\n學生問題：${value}`,
-          topicTitle: challenge.title,
+          mode: 'coaching',
+          systemPrompt: systemPrompt,
+          query: value,
         }),
       });
       if (!res.ok) {
@@ -196,7 +196,7 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
         return;
       }
       const data = await res.json();
-      const response = data.results?.[0]?.description || data.answer || '未能回應，請重試。';
+      const response = data.answer || '未能回應，請重試。';
       setChatMessages((prev) => [...prev, { role: 'assistant', content: response, ts: Date.now() }]);
     } catch {
       setChatMessages((prev) => [...prev, { role: 'assistant', content: '網絡錯誤，請稍後再試。', ts: Date.now() }]);
@@ -262,14 +262,14 @@ ${chatMessages.length > 0 ? `學生同 AI 嘅討論記錄：\n${chatMessages.map
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
           body: JSON.stringify({
-            mode: 'search',
+            mode: 'coaching',
+            systemPrompt: `你係一個系統設計面試官，正在評估「${challenge.title}」嘅設計方案。`,
             query: judgePrompt,
-            topicTitle: challenge.title,
           }),
         });
         if (res.ok) {
           const data = await res.json();
-          const aiComment = data.results?.[0]?.description || data.answer || '';
+          const aiComment = data.answer || '';
           const finalResult = { keywordResults, aiComment, loading: false };
           localStorage.setItem(challengeResultKey(challenge.id), JSON.stringify(finalResult));
           onSubmitResult(finalResult);
