@@ -41,7 +41,7 @@ portfolio/
 | `src/components/PremiumGate.jsx` | Lock screen with discount pricing for premium content |
 | `src/components/AuthGate.jsx` | Login/premium gate modal with pricing |
 | `src/pages/Premium.jsx` | Two-tier pricing page (Standard/Pro) with early-bird discount |
-| `src/pages/Settings.jsx` | Profile, plan status, upgrade cards, admin panel, progress |
+| `src/pages/Settings.jsx` | Profile, plan status, upgrade cards, admin panel (superadmin user list with tier/superadmin badges), progress |
 | `src/pages/AIPlanner.jsx` | AI learning plan generator (mode: guide) |
 | `src/topics/index.js` | Topic registry — React.lazy() for premium, static for free |
 | `src/pages/TopicPage.jsx` | Topic renderer with page-level premium gate + Suspense |
