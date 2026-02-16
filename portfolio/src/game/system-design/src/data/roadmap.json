@@ -1,6 +1,12 @@
 {
   "groups": [
     {
+      "id": "ai",
+      "label": "AI 專題",
+      "color": "#A78BFA",
+      "topics": ["ai-basics-start-here", "ai-tools-landscape", "ai-model-comparison", "prompt-engineering", "prompt-cheat-sheet", "skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "api-token-security", "multi-ai-workflow", "ai-evaluation-loop", "mcp-protocol", "ai-idea-generation", "open-source-ai", "mock-design"]
+    },
+    {
       "id": "basics",
       "label": "基礎概念",
       "color": "#3B82F6",
@@ -47,12 +53,6 @@
       "label": "設計模式與面試",
       "color": "#F97316",
       "topics": ["system-design-patterns", "dependency-injection", "coding-agent-design", "backend-roadmap", "junior-vs-senior", "interview-process", "star-method", "coding-interview", "ai-vs-software-engineer", "print-vs-debugger", "scraping-vs-crawling"]
-    },
-    {
-      "id": "ai",
-      "label": "AI 專題",
-      "color": "#A78BFA",
-      "topics": ["ai-basics-start-here", "ai-tools-landscape", "ai-model-comparison", "prompt-engineering", "prompt-cheat-sheet", "skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "api-token-security", "multi-ai-workflow", "ai-evaluation-loop", "mcp-protocol", "ai-idea-generation", "open-source-ai", "mock-design"]
     }
   ],
   "edges": [

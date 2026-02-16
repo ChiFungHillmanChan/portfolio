@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '喺 AI 時代，Software Engineer 最唔容易被取代嘅能力係咩？',
+    options: [
+      { text: '打字速度同背語法', correct: false, explanation: '打字同背語法係 AI 最容易取代嘅部分' },
+      { text: '理解模糊需求、做 trade-off 決策、同 stakeholder 溝通嘅能力', correct: true, explanation: '啱！AI 擅長寫 code，但理解商業需求、喺唔確定情況下做決策、同非技術人員溝通，呢啲軟技能係 AI 短期內取代唔到嘅' },
+      { text: '識幾多種 programming language', correct: false, explanation: 'AI 可以寫幾乎任何語言嘅 code，識多種語言唔再係核心優勢' },
+      { text: '寫 boilerplate code 嘅能力', correct: false, explanation: 'Boilerplate code 正正係 AI 最擅長生成嘅' },
+    ],
+  },
+  {
+    question: '「AI 會取代 Software Engineer」呢個論點最大嘅問題係咩？',
+    options: [
+      { text: 'AI 嘅計算速度唔夠快', correct: false, explanation: 'AI 速度唔係問題，問題喺於理解力同判斷力' },
+      { text: '叫人轉行嘅人通常唔係真正嘅工程師，佢哋唔了解 Software Engineering 嘅真正工作範圍', correct: true, explanation: '啱！Software Engineering 唔止係寫 code，仲包括需求分析、架構設計、debugging、維護、團隊協作等。唔做呢行嘅人容易低估呢啲工作嘅複雜性' },
+      { text: '因為 AI 太貴', correct: false, explanation: 'AI 工具嘅成本持續下降，呢個唔係核心問題' },
+      { text: '因為法律唔允許 AI 寫 code', correct: false, explanation: '冇呢條法律，AI 寫 code 係合法嘅' },
+    ],
+  },
+  {
+    question: 'AI 時代嘅 Software Engineer 應該點樣適應？',
+    options: [
+      { text: '完全唔用 AI 工具，證明自己唔靠 AI', correct: false, explanation: '拒絕用 AI 工具反而會令自己生產力落後' },
+      { text: '善用 AI 工具提升生產力，同時專注發展 AI 取代唔到嘅能力（系統設計、架構決策、溝通協作）', correct: true, explanation: '啱！最聰明嘅做法係將 AI 當做強大嘅工具，用佢嚟加速 routine 工作，自己專注喺更高層次嘅設計同決策' },
+      { text: '轉行做 AI 研究員', correct: false, explanation: '唔係所有人都適合做 AI 研究，而且 Software Engineering 本身仍然有巨大需求' },
+      { text: '只學 Prompt Engineering 就夠', correct: false, explanation: 'Prompt Engineering 只係其中一個技能，唔可以取代紮實嘅工程能力' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'coding-agent-design', label: 'Coding Agent 設計' },
@@ -433,10 +461,11 @@ export default function AIVsSoftwareEngineer() {
           { id: 'market-demand', label: '③ 市場需求', premium: true, content: <MarketDemandTab /> },
           { id: 'takeaway', label: '④ 重點總結', premium: true, content: <TakeawayTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

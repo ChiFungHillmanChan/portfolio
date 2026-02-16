@@ -1,5 +1,36 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: '短網址服務做 redirect 嘅時候，用 301 定 302 HTTP status code？如果要追蹤點擊數據應該點揀？',
+    options: [
+      { text: '用 301（永久重定向），因為速度最快', correct: false, explanation: '301 確實快，因為瀏覽器會 cache redirect 結果，下次直接去長 URL。但問題係：之後嘅訪問都繞過咗 Server，完全追蹤唔到點擊數據。如果需要 analytics，301 唔適合。' },
+      { text: '用 302（暫時重定向），確保每次都經過 Server，可以追蹤點擊', correct: true, explanation: '302 暫時重定向令每次訪問都經過 Server。雖然多咗一步，但系統可以記錄每次點擊嘅時間、地區、裝置等數據。呢啲 analytics 數據對業務超有價值。所以如果需要追蹤點擊，一定要用 302。' },
+      { text: '用 200 OK，直接返回長 URL 嘅內容', correct: false, explanation: '返回 200 唔係 redirect，用戶瀏覽器嘅地址欄會停留喺短 URL。正確嘅做法係用 3xx redirect，令瀏覽器自動跳轉到長 URL。' },
+      { text: '用 404 Not Found，然後喺 body 入面放長 URL', correct: false, explanation: '404 表示資源唔存在，完全唔啱。短網址服務嘅核心功能就係 redirect，應該用 3xx 系列嘅 status code。' },
+    ],
+  },
+  {
+    question: 'Base62 編碼用 7 位字元（a-z, A-Z, 0-9）可以表示幾多個唯一短碼？',
+    options: [
+      { text: '大約 700 萬個（7 x 100 萬）', correct: false, explanation: '唔係簡單嘅乘法。Base62 嘅 7 位係 62 嘅 7 次方，唔係 62 x 7。每一位有 62 個可能嘅字元，7 位就係指數增長。' },
+      { text: '大約 3.5 萬億個（62^7 ≈ 3.5 trillion）', correct: true, explanation: '62^7 = 62 x 62 x 62 x 62 x 62 x 62 x 62 ≈ 3,521,614,606,208。大約 3.5 萬億個唯一短碼，對於絕大部分場景都綽綽有餘。呢個計算面試一定會問。' },
+      { text: '大約 620 萬個（62 x 10 萬）', correct: false, explanation: '呢個計算方式唔啱。Base62 嘅 7 位唔係 62 x 10^5。正確嘅計算係 62 嘅 7 次方（指數），結果大好多。' },
+      { text: '大約 100 億個', correct: false, explanation: '100 億（10^10）比實際數字細好多。62^7 ≈ 3.5 x 10^12，即係大約 3.5 萬億，比 100 億大 350 倍。' },
+    ],
+  },
+  {
+    question: '兩條唔同嘅長 URL 經過 hash 之後產生咗同一個短碼（Hash Collision），應該點處理？',
+    options: [
+      { text: '直接覆蓋舊嘅 mapping，新嘅取代舊嘅', correct: false, explanation: '覆蓋會令之前嘅短網址指向錯誤嘅長 URL。所有分享過舊短網址嘅人都會被導去錯誤嘅頁面，呢個係嚴重嘅 bug。' },
+      { text: '先查 Database，如果短碼已存在就重新生成或者加 salt 再 hash', correct: true, explanation: '呢個係標準處理方法。生成短碼後先查 DB，如果已經被佔用就：1) 用另一個 hash function 重新生成，或者 2) 喺原始 URL 加 salt 再 hash，直到搵到一個未被使用嘅短碼。呢個 collision resolution 策略面試必須主動提。' },
+      { text: '唔使處理，collision 發生嘅概率極低', correct: false, explanation: '雖然概率低，但喺大規模系統入面（例如 bit.ly 每月 10 億次 redirect）總會遇到。生日悖論（Birthday Paradox）話俾我哋聽，collision 概率比直覺中高好多。一定要處理。' },
+      { text: '將兩條長 URL 都指向同一個短碼', correct: false, explanation: '一個短碼只能對應一條長 URL。如果一個短碼指向兩條 URL，系統唔知應該 redirect 去邊個。呢個會破壞短網址服務嘅基本功能。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'key-value-store', label: 'Key-Value Store 鍵值存儲' },
@@ -210,6 +241,8 @@ export default function URLShortener() {
           { id: 'encoding', label: '② Base62 編碼', content: <EncodingTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

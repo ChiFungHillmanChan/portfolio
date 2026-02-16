@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '點解「靠感覺」評估 AI 輸出係唔可靠嘅？',
+    options: [
+      { text: '因為 AI 輸出每次都一模一樣，唔使評估', correct: false, explanation: 'AI 輸出有隨機性，同一個 prompt 可能產生唔同質素嘅結果，所以更加需要評估' },
+      { text: '因為人嘅判斷會受心情同時間壓力影響，冇客觀標準', correct: true, explanation: '啱！今日趕 deadline 覺得「OK 夠用」嘅 output，聽日有空再睇可能覺得質素好差。冇固定嘅 Rubric 同 Golden Sample，你嘅評估標準會隨環境飄移' },
+      { text: '因為 AI 公司唔俾你評估', correct: false, explanation: 'AI 公司冇限制你評估輸出質素，呢個係用戶自己嘅責任' },
+      { text: '因為評估需要太多時間同成本', correct: false, explanation: '評估確實要投入時間，但呢個唔係「靠感覺」唔可靠嘅原因——原因係人嘅主觀判斷本身唔穩定' },
+    ],
+  },
+  {
+    question: 'Golden Sample 喺 AI 評估迴圈入面嘅作用係咩？',
+    options: [
+      { text: '用嚟訓練 AI 模型提升性能', correct: false, explanation: 'Golden Sample 唔係用嚟訓練模型，而係用嚟做評估基準' },
+      { text: '提供已知好嘅 input/output pairs 作為評分基準', correct: true, explanation: '正確！Golden Sample 就係你嘅「標準答案」——人手寫好嘅理想 output，用嚟同 AI 嘅實際 output 做對比。好似 unit test 嘅 expected value 咁' },
+      { text: '用嚟減少 AI 嘅 token 用量', correct: false, explanation: 'Golden Sample 同 token 用量冇關係，佢嘅目的係建立評估基準' },
+      { text: '用嚟加密 AI 嘅輸入數據', correct: false, explanation: 'Golden Sample 同加密完全冇關係' },
+    ],
+  },
+  {
+    question: 'A/B Testing 喺 Prompt 改進嘅過程中解決咩問題？',
+    options: [
+      { text: '防止改 prompt 越改越差，因為有數據對比兩個版本', correct: true, explanation: '正確！A/B Testing 同時跑兩個版本嘅 prompt，用同一套 Golden Samples 評分。邊個平均分高就用邊個，避免咗「憑感覺改 prompt」嘅盲目性' },
+      { text: '令 AI 自動選擇最好嘅 prompt', correct: false, explanation: 'A/B Testing 唔會自動選擇——係你根據評分數據做決策' },
+      { text: '減少 AI API 嘅費用', correct: false, explanation: 'A/B Testing 反而需要跑兩組測試，短期成本可能更高，但長期改善質素' },
+      { text: '加快 AI 嘅回應速度', correct: false, explanation: 'A/B Testing 嘅目的係比較質素，唔係優化速度' },
+    ],
+  },
+  {
+    question: 'LLM-as-Judge（用 AI 做評分員）嘅主要目的係咩？',
+    options: [
+      { text: '完全取代人手評估，AI 自己評自己', correct: false, explanation: 'LLM-as-Judge 係減少人手成本，但唔係完全取代——你仍然需要設計 Rubric 同驗證 Judge 嘅準確性' },
+      { text: '減少人手評估嘅成本，自動化 Rubric 打分過程', correct: true, explanation: '啱！用另一個 AI 根據你設計好嘅 Rubric 幫你打分，可以快速評估大量 output。但你要定期驗證 Judge 嘅準確性，確保佢同人手評分一致' },
+      { text: '令 AI 模型自己改進自己嘅參數', correct: false, explanation: 'LLM-as-Judge 唔會改模型參數，佢只係幫你評估 output 質素' },
+      { text: '生成更多 Golden Samples', correct: false, explanation: 'LLM-as-Judge 嘅工作係評分，唔係生成 samples' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'skill-vs-agent', label: 'Skill vs Agent' },
@@ -179,10 +216,11 @@ export default function AIEvaluationLoop() {
           { id: 'framework', label: '② 評估框架', content: <FrameworkTab /> },
           { id: 'practice', label: '③ 實戰流程', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

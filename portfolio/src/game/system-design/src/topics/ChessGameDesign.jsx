@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '國際象棋配對系統點樣確保公平性？',
+    options: [
+      { text: '隨機配對任何兩個玩家', correct: false, explanation: '隨機配對會令新手對上高手，完全唔公平' },
+      { text: '按玩家嘅技術等級分成唔同隊列，優先配對同等級嘅對手', correct: true, explanation: '啱！將玩家分成低/中/高技術隊列，優先將同一隊列嘅玩家配對，確保比賽公平同有意義' },
+      { text: '畀玩家自己揀對手', correct: false, explanation: '自己揀容易被濫用，例如專門揀弱嘅對手' },
+      { text: '按登記時間排序配對', correct: false, explanation: '按時間排序冇考慮技術水平，可能配對出完全唔對等嘅比賽' },
+    ],
+  },
+  {
+    question: '線上國際象棋用 WebSocket 而唔係 HTTP Polling 嘅原因係咩？',
+    options: [
+      { text: '因為 WebSocket 比較新', correct: false, explanation: '新唔代表適合，關鍵係 WebSocket 嘅特性符合需求' },
+      { text: 'WebSocket 支援雙向即時通訊，server 可以主動 push 對手嘅棋步，唔使 client 不斷輪詢', correct: true, explanation: '啱！象棋需要即時顯示對手嘅每一步棋。WebSocket 保持持久連接，server 可以即刻 push 更新，比 HTTP polling 更高效更即時' },
+      { text: '因為 HTTP 唔安全', correct: false, explanation: 'HTTP 加上 TLS（即 HTTPS）都係安全嘅，安全性唔係揀 WebSocket 嘅原因' },
+      { text: '因為 HTTP 唔支援 JSON 格式', correct: false, explanation: 'HTTP 完全支援 JSON，呢個唔係問題' },
+    ],
+  },
+  {
+    question: '國際象棋系統點樣防止玩家作弊（例如用 AI engine 幫手出棋）？',
+    options: [
+      { text: '完全冇辦法防', correct: false, explanation: '雖然好難完全杜絕，但有多種偵測方法' },
+      { text: '分析玩家嘅棋步同 engine 嘅建議棋步嘅吻合度，配合時間分析同行為模式偵測', correct: true, explanation: '啱！如果玩家嘅棋步同頂級 engine 嘅建議長期高度吻合，而且每步嘅思考時間異常一致，就好大機會係作弊' },
+      { text: '要求玩家開 webcam', correct: false, explanation: '開 webcam 唔一定有效，因為可以用另一部裝置跑 engine' },
+      { text: '限制每局只可以用 10 分鐘', correct: false, explanation: '限時只係遊戲模式之一，唔係防作弊嘅方法' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'system-design-patterns', label: '系統設計模式總覽' },
@@ -342,10 +370,11 @@ export default function ChessGameDesign() {
           { id: 'game-service', label: '② 遊戲服務', content: <GameServiceTab /> },
           { id: 'websocket', label: '③ WebSocket vs UDP', premium: true, content: <WebSocketTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

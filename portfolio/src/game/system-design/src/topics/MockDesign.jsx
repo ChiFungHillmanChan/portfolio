@@ -3,7 +3,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '系統設計面試嘅第一步應該做咩？',
+    options: [
+      { text: '立即開始畫架構圖', correct: false, explanation: '未搞清楚需求就畫圖，好大機會設計錯方向，浪費寶貴嘅面試時間' },
+      { text: '先做需求分析同容量估算，搞清楚 scope 同 scale', correct: true, explanation: '正確！先問清楚 Functional Requirements（系統要做咩）同 Non-functional Requirements（QPS、latency、availability），再做容量估算（Storage、Bandwidth），呢啲數字會直接影響你嘅架構選擇' },
+      { text: '直接講你之前做過嘅類似項目', correct: false, explanation: '面試官想睇你嘅設計思維過程，唔係聽你講故事' },
+      { text: '問面試官想聽咩答案', correct: false, explanation: '面試官期望你主動 drive 個設計過程，呢個本身就係考核嘅一部分' },
+    ],
+  },
+  {
+    question: '設計 URL Shortener 嘅時候，點解要考慮 301 vs 302 redirect？',
+    options: [
+      { text: '因為 301 同 302 嘅 response size 唔同', correct: false, explanation: 'Response size 差異唔大，關鍵在於瀏覽器 caching 行為嘅分別' },
+      { text: '301 係永久 redirect（瀏覽器會 cache），302 係臨時 redirect（每次都打 server），影響 analytics 同 server load', correct: true, explanation: '完全正確！301 永久 redirect 會被瀏覽器 cache，之後唔再打你嘅 server——好處係減少 load，壞處係你追蹤唔到 click 數據。302 臨時 redirect 每次都打 server，可以追蹤 analytics 但 server load 更高。呢個係典型嘅 trade-off 題' },
+      { text: '只係 HTTP status code 嘅編號唔同，功能一模一樣', correct: false, explanation: '301 同 302 嘅瀏覽器行為完全唔同，特別係 caching 方面' },
+      { text: '因為面試官鍾意聽你講 HTTP 知識', correct: false, explanation: '呢個唔止係知識展示——301 vs 302 嘅選擇會直接影響你嘅系統架構設計' },
+    ],
+  },
+  {
+    question: '設計 Chat System 嘅時候，點解 WebSocket 通常好過 HTTP Long Polling？',
+    options: [
+      { text: '因為 WebSocket 更安全', correct: false, explanation: '安全性取決於你嘅實現（TLS/WSS），唔係 protocol 本身嘅優勢' },
+      { text: '因為 WebSocket 係全雙工、持久連接，延遲更低、server 資源使用更有效率', correct: true, explanation: '啱！WebSocket 建立一次連接後可以雙向即時傳輸，唔使重複建立 HTTP 連接。Long Polling 每次都要新開 HTTP request，overhead 更大。但面試嘅時候要提埋 WebSocket 嘅缺點——需要處理 reconnection、load balancer 要支援 sticky session' },
+      { text: '因為所有瀏覽器都支援 WebSocket 但唔支援 Long Polling', correct: false, explanation: '其實兩者嘅瀏覽器支援度都好高，WebSocket 嘅優勢在於性能同效率' },
+      { text: '因為 WebSocket 唔使 server', correct: false, explanation: 'WebSocket 一樣需要 server 處理連接同消息' },
+    ],
+  },
+  {
+    question: '面試設計 Payment System 嘅時候，Idempotency Key 解決咩問題？',
+    options: [
+      { text: '防止用戶密碼被竊取', correct: false, explanation: 'Idempotency Key 同密碼安全無關，佢解決嘅係重複操作問題' },
+      { text: '確保同一個支付請求即使重複發送都只會扣款一次', correct: true, explanation: '完全正確！網絡唔穩定嘅時候，client 可能會 retry 同一個 payment request。冇 Idempotency Key 嘅話，可能會扣兩次錢。每個 request 帶一個唯一嘅 key，server 收到重複 key 就直接返回之前嘅結果，唔會再執行一次。呢個喺支付系統係 must-have' },
+      { text: '加快支付處理速度', correct: false, explanation: 'Idempotency Key 唔會加快速度，佢嘅目的係保證正確性' },
+      { text: '將支付數據加密傳輸', correct: false, explanation: '數據加密係 TLS/HTTPS 嘅工作，唔係 Idempotency Key 嘅職責' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'url-shortener', label: 'URL Shortener 短網址' },
@@ -323,10 +360,11 @@ export default function MockDesign() {
         subtitle="限時 35 分鐘，挑戰真實系統設計面試場景"
         tabs={[
           { id: 'mock', label: '① 模擬面試', content: <OverviewTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Backend Engineer 學習路線入面，應該最先學咩？',
+    options: [
+      { text: 'Docker 同 Kubernetes', correct: false, explanation: 'Docker/K8s 係 Stage 5（Cloud & DevOps），應該最後先學' },
+      { text: '一門 Programming Language（例如 Java/Python/Go）', correct: true, explanation: '啱！Programming Language 係所有嘢嘅基礎，冇語言能力就冇辦法寫任何 backend 邏輯' },
+      { text: 'AWS 雲端服務', correct: false, explanation: 'AWS 屬於進階階段，要先有語言、Linux、Database 基礎先' },
+      { text: 'React 前端框架', correct: false, explanation: 'React 係前端技術，Backend Engineer 學習路線唔包括前端框架' },
+    ],
+  },
+  {
+    question: '學習 Backend 開發最常見嘅陷阱係咩？',
+    options: [
+      { text: '用太貴嘅電腦', correct: false, explanation: '電腦配置唔係學習嘅主要障礙' },
+      { text: 'Tutorial Hell — 不斷睇教學但從來唔自己動手做 project', correct: true, explanation: '啱！只睇教學唔動手係最大陷阱。每學完一個階段都應該做一個小 project 鞏固知識' },
+      { text: '太早開始寫 production code', correct: false, explanation: '反而應該早啲嘗試寫真正嘅 code，唔好永遠停留喺理論' },
+      { text: '學太少語言', correct: false, explanation: '初學應該揀一個技術棧深入學，而唔係學太多語言。「學太少」反而唔係問題' },
+    ],
+  },
+  {
+    question: '點解 Backend 開發一定要識 Linux？',
+    options: [
+      { text: '因為 Linux 比 Windows 便宜', correct: false, explanation: '價錢唔係主要原因，Linux 同 Windows 都有免費版本' },
+      { text: '因為幾乎所有 Backend server 都跑喺 Linux 環境上', correct: true, explanation: '啱！絕大部分 production server 都係 Linux（包括 AWS EC2、Docker container），所以必須熟悉 Linux 命令同操作' },
+      { text: '因為 Linux 嘅 GUI 比較靚', correct: false, explanation: 'Linux server 通常連 GUI 都冇，全部用 CLI 操作' },
+      { text: '因為面試一定會考 Linux', correct: false, explanation: '面試可能會考，但真正原因係實際工作中 Backend 幾乎離不開 Linux' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -230,10 +258,11 @@ export default function BackendRoadmap() {
           { id: 'skills', label: '② 核心技能', content: <SkillsTab /> },
           { id: 'advice', label: '③ 實戰建議', premium: true, content: <AdviceTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

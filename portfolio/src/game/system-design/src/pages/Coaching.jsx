@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import { usePremium } from '../context/PremiumContext';
 import AuthGate from '../components/AuthGate';
 import topicData from '../data/topics.json';
-import coachingPrompts from '../data/coachingPrompts';
 import { API_BASE } from '../config/constants';
 const TRIAL_KEY = 'sd_coaching_trial_topic';
 
@@ -120,16 +119,6 @@ export default function Coaching() {
     const userMsg = { role: 'user', content: value, ts: Date.now() };
     setMessages((prev) => [...prev, userMsg]);
 
-    const defaultPrompt = `你係一個系統設計教練，專門教「${topic?.title}」。用廣東話教學。
-教學流程：先解釋 → 測試理解 → 深入探討 → 實踐練習。
-保持互動，每次回應後問一個跟進問題。
-回應要簡潔但有深度，用實際例子說明。`;
-    const coachingSpec = coachingPrompts[selectedSlug];
-    const systemPrompt =
-      typeof coachingSpec === 'string'
-        ? coachingSpec
-        : coachingSpec?.systemPrompt || defaultPrompt;
-
     try {
       const res = await fetch(`${API_BASE}/ai/chat`, {
         method: 'POST',
@@ -140,8 +129,7 @@ export default function Coaching() {
         body: JSON.stringify({
           mode: 'coaching',
           query: value,
-          systemPrompt,
-          coachingSpec: typeof coachingSpec === 'object' ? coachingSpec : undefined,
+          topicSlug: selectedSlug,
           topicTitle: topic?.title,
         }),
       });

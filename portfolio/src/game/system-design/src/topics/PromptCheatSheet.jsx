@@ -2,6 +2,36 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: '點解話 Prompt 係 AI 嘅 interface 而唔係「傾偈」？',
+    options: [
+      { text: '因為 AI 聽唔明人類語言', correct: false, explanation: 'AI 聽得明人類語言，但 prompt 嘅質素直接決定 output 質素，所以要當 interface 咁設計' },
+      { text: '因為 prompt 質素直接決定 output 質素，同 function signature 一樣要明確、有結構、可測試', correct: true, explanation: '正確！GIGO（Garbage In, Garbage Out）原則永遠適用。Prompt 同 API contract 一樣——要有明確嘅 role、constraints、output format，唔係隨便寫幾句就算' },
+      { text: '因為 AI 只接受 JSON 格式嘅 input', correct: false, explanation: 'AI 可以接受自然語言，但結構化嘅 prompt 效果遠好過隨意嘅對話' },
+      { text: '因為 prompt 要用程式語言寫', correct: false, explanation: 'Prompt 用自然語言寫，但要有工程化嘅結構同思維' },
+    ],
+  },
+  {
+    question: '參數化 Prompt（用 {variables}）嘅最大好處係咩？',
+    options: [
+      { text: '令 prompt 睇落更專業', correct: false, explanation: '外觀唔係重點，實際嘅工程價值先係關鍵' },
+      { text: '一個 template 配唔同參數可以應對多種場景，唔使每次重寫', correct: true, explanation: '啱！好似 function 咁——定義一次，配唔同參數就可以重用。例如 "Review this {language} code for {review_focus}" 一個 template 搞掂十幾種場景' },
+      { text: '減少 AI 嘅 token 用量', correct: false, explanation: 'Token 用量取決於最終展開後嘅 prompt 長度，參數化唔會減少 token' },
+      { text: '防止 AI 產生 hallucination', correct: false, explanation: '參數化嘅目的係重用性，減少 hallucination 要靠 constraints 同 golden samples' },
+    ],
+  },
+  {
+    question: 'Few-shot examples（input/output 範例）點解可以有效提升 AI output 質素？',
+    options: [
+      { text: '因為 AI 會將 examples 儲存到記憶體做永久參考', correct: false, explanation: 'AI 冇永久記憶，examples 只喺當前 context window 有效' },
+      { text: '因為 AI 可以從範例中學到你期望嘅 pattern，唔使靠文字描述就明白你要咩', correct: true, explanation: '正確！「Show, don\'t tell」——俾 AI 睇一個 input/output pair 比寫十句描述更有效。AI 會 pattern match 你嘅範例，生成格式同風格一致嘅 output' },
+      { text: '因為 examples 會改變 AI 模型嘅訓練權重', correct: false, explanation: 'Prompt 唔會改變模型權重，佢只係提供 context 俾模型參考' },
+      { text: '因為 AI 規定一定要有 examples 先會運行', correct: false, explanation: 'AI 冇 examples 都可以運行，但有 examples 效果通常更好' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'prompt-engineering', label: 'Prompt Engineering 系統設計' },
   { slug: 'ai-tools-landscape', label: 'AI 工具全景圖' },

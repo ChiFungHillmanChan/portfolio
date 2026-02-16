@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'ngrok 嘅主要用途係咩？',
+    options: [
+      { text: '永久部署 production 應用', correct: false, explanation: 'ngrok 係臨時方案，一停 process 網址就失效，唔適合 production' },
+      { text: '將 localhost 透過公開網址暴露畀外部 access', correct: true, explanation: '啱！ngrok 建立一條加密隧道，將本地 server 暴露到一個公開 URL，方便 demo 同測試 webhook' },
+      { text: '取代 DNS 設定', correct: false, explanation: 'ngrok 唔係取代 DNS，佢係提供一個臨時嘅公開網址嚟轉發 request 到 localhost' },
+      { text: '加速本地開發 server 嘅效能', correct: false, explanation: 'ngrok 唔會加速效能，反而因為多咗一層中介，latency 會稍為增加' },
+    ],
+  },
+  {
+    question: 'Cloudflare Tunnel 相比 ngrok 最大嘅優勢係咩？',
+    options: [
+      { text: '設定更簡單，一個指令搞掂', correct: false, explanation: 'ngrok 先至係一個指令搞掂，Cloudflare Tunnel 需要 login、create tunnel、設定 DNS' },
+      { text: '可以用自訂 domain、免費 DDoS protection，適合長期使用', correct: true, explanation: '啱！Cloudflare Tunnel 支援自訂 domain，仲包埋 DDoS protection、WAF 同 SSL，適合 production 長期用' },
+      { text: '速度比 ngrok 快十倍', correct: false, explanation: '兩者速度差唔多，主要分別係功能同穩定性，唔係速度' },
+      { text: '唔需要安裝任何軟件', correct: false, explanation: 'Cloudflare Tunnel 需要安裝 cloudflared client 先至可以用' },
+    ],
+  },
+  {
+    question: 'ngrok 嘅 debug dashboard（localhost:4040）可以做到咩？',
+    options: [
+      { text: '修改本地 server 嘅 source code', correct: false, explanation: 'Dashboard 只係用嚟檢視 HTTP traffic，唔可以改 code' },
+      { text: '即時睇到所有經過 ngrok 嘅 request/response，仲可以 replay', correct: true, explanation: '啱！localhost:4040 可以睇到所有 HTTP traffic 嘅詳情（headers、body），仲可以 replay request，debug webhook 超方便' },
+      { text: '遠程控制 ngrok server 嘅設定', correct: false, explanation: 'Dashboard 係本地介面，唔係用嚟控制 ngrok cloud server' },
+      { text: '自動修復 API 錯誤', correct: false, explanation: 'Dashboard 只係顯示 traffic 資訊，唔會自動修復任何嘢' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'port-forwarding', label: 'Port Forwarding 端口轉發' },
@@ -534,10 +562,11 @@ function AiViberTab() {
 }
 
 const tabs = [
-  { key: 'ngrok', label: '① ngrok 快速分享', content: <NgrokTab /> },
-  { key: 'debug', label: '② Debug Dashboard', content: <DebugTab /> },
-  { key: 'permanent', label: '③ 永久自架方案', content: <PermanentTab />, premium: true },
-  { key: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'ngrok', label: '① ngrok 快速分享', content: <NgrokTab /> },
+  { id: 'debug', label: '② Debug Dashboard', content: <DebugTab /> },
+  { id: 'permanent', label: '③ 永久自架方案', content: <PermanentTab />, premium: true },
+  { id: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
 ];
 
 export default function LocalhostHosting() {
@@ -548,7 +577,6 @@ export default function LocalhostHosting() {
         subtitle="用 ngrok 將本地開發環境即時分享畀全世界"
         tabs={tabs}
       />
-      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '你嘅應用需要處理用戶之間嘅複雜關聯（例如朋友關係、訂單同產品嘅關係），而且需要 ACID transaction。以下邊個 Database 最適合？',
+    options: [
+      { text: 'Redis', correct: false, explanation: 'Redis 係 Key-Value Store，適合做快取同簡單數據存取，但唔支持複雜嘅關聯查詢同 ACID transaction。' },
+      { text: 'PostgreSQL', correct: true, explanation: '結構化數據加上複雜關聯同 ACID 需求，SQL Database 係最佳選擇。PostgreSQL 支持 JOIN、Foreign Key、Transaction，完美匹配呢個場景。' },
+      { text: 'MongoDB', correct: false, explanation: 'MongoDB 係 Document Store，適合非結構化數據。雖然支持 transaction，但處理複雜關聯唔係佢嘅強項。' },
+      { text: 'Cassandra', correct: false, explanation: 'Cassandra 係 AP 系統，擅長高寫入量同最終一致性場景，但唔支持複雜 JOIN 同強一致性 transaction。' },
+    ],
+  },
+  {
+    question: '根據 CAP 定理，當網絡分區（Partition）發生嘅時候，一個分散式系統可以點做？',
+    options: [
+      { text: '同時保證 Consistency、Availability 同 Partition Tolerance', correct: false, explanation: 'CAP 定理話明三者只能揀兩個。網絡分區係無可避免嘅，所以實際上只能喺 C 同 A 之間揀。' },
+      { text: '保證 Consistency 但犧牲 Availability（CP），或者保證 Availability 但犧牲 Consistency（AP）', correct: true, explanation: '因為 Partition 係無可避免嘅，實際上只能喺 CP 同 AP 之間揀。CP 適合金融場景，AP 適合社交媒體等場景。' },
+      { text: '完全避免 Partition 發生，咁就可以同時有 C 同 A', correct: false, explanation: '喺分散式系統入面，網絡分區係無可避免嘅。冇辦法完全消除 Partition，所以必須要做取捨。' },
+      { text: '只需要保證 Partition Tolerance 就夠', correct: false, explanation: 'Partition Tolerance 係前提，唔係目標。真正嘅決策係喺 Consistency 同 Availability 之間揀。' },
+    ],
+  },
+  {
+    question: '你嘅團隊要開始一個新 Project，唔確定用咩 Database。以下邊個建議最合理？',
+    options: [
+      { text: '用最新最潮嘅 NoSQL Database，因為佢一定比 SQL 快', correct: false, explanation: 'NoSQL 唔一定比 SQL 快，關鍵在於 workload 類型。盲目追新技術係常見嘅錯誤。' },
+      { text: '每種數據用唔同嘅 Database，咁就可以發揮每個 DB 嘅優勢', correct: false, explanation: '每多一種 Database 就多一套運維負擔。除非有好明確嘅技術理由，否則應該控制喺 2-3 種以內。' },
+      { text: '由 PostgreSQL 開始，因為佢幾乎可以覆蓋大部分場景，之後有需要再加其他 DB', correct: true, explanation: 'PostgreSQL 支持 JSON、全文搜索、GIS，生態成熟。唔確定嘅時候，佢幾乎永遠係最安全嘅選擇。之後有明確需求先加 Redis 做快取或者其他專門 DB。' },
+      { text: '用 MongoDB 因為佢唔使 define schema，開發最快', correct: false, explanation: 'Schema-less 喺初期確實快，但隨著系統成熟，缺少 schema 會帶嚟維護困難。揀 Database 要考慮長遠，唔好只睇開發速度。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -270,10 +298,11 @@ export default function PickDatabase() {
           { id: 'cap', label: '② CAP 定理', content: <CAPTab /> },
           { id: 'advice', label: '③ 實戰建議', premium: true, content: <AdviceTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

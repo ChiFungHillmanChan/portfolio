@@ -23,7 +23,8 @@ portfolio/
 - **Auth:** Firebase Google Sign-In → ID token → backend Bearer auth (both sa-auth and sa-chat verify Firebase ID tokens via Admin SDK)
 - **Premium:** Stripe payment → webhook → backend Admin SDK → Firestore `users/{uid}.premium` + `users/{uid}.tier`
 - **Tiers:** free (5 AI/day) | standard HK$150 (20 AI/day) | pro HK$399 (80 AI/day)
-- **State:** localStorage for progress/cache + daily AI usage, Firestore for premium status (source of truth)
+- **Rate Limiting:** Backend-authoritative via Firestore `aiUsage/{uid}_{date}` counters (tier-aware: free=5, standard=20, pro=80 daily AI calls)
+- **State:** localStorage for progress/cache, Firestore for premium status + rate limits (source of truth)
 - **Content Security:** Premium AI-core topics use `React.lazy()` code-splitting — JS chunks only fetched when component renders, page-level gate prevents rendering for non-premium users
 
 ### Key Files
@@ -33,7 +34,7 @@ portfolio/
 | `src/config/firebase.js` | Firebase init (env vars, no fallbacks) |
 | `src/config/constants.js` | API_BASE, STRIPE_URL |
 | `src/context/AuthContext.jsx` | Google auth + token refresh |
-| `src/context/PremiumContext.jsx` | Premium status + tier (free/standard/pro), TIER_LIMITS |
+| `src/context/PremiumContext.jsx` | Premium status + tier, TIER_LIMITS, `confirmStripeSession()` for Stripe redirect flow |
 | `src/context/ProgressContext.jsx` | Topic view tracking (localStorage) |
 | `src/components/Layout.jsx` | Sidebar + main layout, desktop collapse |
 | `src/components/Sidebar.jsx` | Nav, horizontal-scroll filters, fixed footer with plan badge |
@@ -63,7 +64,8 @@ VITE_SUPERADMIN_EMAILS          # comma-separated, no fallback
 
 - Firestore rules block client-side writes to `premium`, `tier`, `activatedAt`, `sessionId`, `superadmin`
 - Only backend Admin SDK (bypasses rules) can write premium status + tier
-- `activatePremium()` only caches locally; Firestore write is server-side only
+- `activatePremium()` refreshes from Firestore; actual write is server-side only
+- `confirmStripeSession(sessionId)` calls backend `confirm-session` action — never trusts URL params directly
 - Superadmin emails loaded from env var, not hardcoded
 - Premium AI-core topics lazy-loaded — non-premium users never download the JS chunks
 
@@ -98,7 +100,7 @@ All display strikethrough original price + urgency about future monthly subscrip
 See `docs/plans/system-design/future-plan-1000users.md` for:
 - AI response caching (50-70% cost reduction)
 - Tiered AI models (GPT-4o-mini for search, GPT-4 for coaching)
-- Rate limiting (implemented: free 5/day, standard 20/day, pro 80/day)
+- Rate limiting (implemented: free 5/day, standard 20/day, pro 80/day — backend Firestore counters)
 - Firebase Hosting (migrated from Cloudflare Pages)
 
 ---

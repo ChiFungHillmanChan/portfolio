@@ -12,21 +12,29 @@ import AIPlanner from './pages/AIPlanner';
 import Coaching from './pages/Coaching';
 import Projects from './pages/Projects';
 import Settings from './pages/Settings';
+import Changelog from './pages/Changelog';
+import { useAuth } from './context/AuthContext';
 
-// Stripe redirects with ?session_id= before the hash, so HashRouter's
-// useSearchParams won't see it. Handle it at the top level.
+// Stripe returns session_id in query string before hash.
+// We never trust query params directly for unlock:
+// this only calls backend confirmation and refreshes Firestore-backed state.
 function StripeRedirectHandler() {
-  const { isPremium, activatePremium } = usePremium();
+  const { user } = useAuth();
+  const { confirmStripeSession } = usePremium();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const sessionId = params.get('session_id');
-    if (sessionId && !isPremium) {
-      activatePremium(sessionId);
-      // Clean the URL
-      window.history.replaceState(null, '', window.location.pathname + window.location.hash);
-    }
-  }, [isPremium, activatePremium]);
+    const sessionId = new URLSearchParams(window.location.search).get('session_id');
+    if (!sessionId || !user) return;
+    confirmStripeSession(sessionId)
+      .then(() => {
+        const params = new URLSearchParams(window.location.search);
+        params.delete('session_id');
+        const nextQuery = params.toString();
+        const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+        window.history.replaceState(null, '', nextUrl);
+      })
+      .catch(() => {});
+  }, [user, confirmStripeSession]);
 
   return null;
 }
@@ -48,6 +56,7 @@ export default function App() {
               <Route path="projects" element={<Projects />} />
               <Route path="premium" element={<Premium />} />
               <Route path="settings" element={<Settings />} />
+              <Route path="changelog" element={<Changelog />} />
             </Route>
           </Routes>
         </ProgressProvider>

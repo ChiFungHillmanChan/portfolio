@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Git 同 GitHub 嘅關係係咩？',
+    options: [
+      { text: 'GitHub 係 Git 嘅升級版', correct: false, explanation: 'GitHub 唔係 Git 嘅升級版，佢係一個建基於 Git 嘅雲端協作平台' },
+      { text: 'Git 係本地版本控制系統，GitHub 係基於 Git 嘅雲端協作平台', correct: true, explanation: '啱！Git 係分散式版本控制工具，可以完全離線用。GitHub 係微軟旗下嘅雲端平台，提供 remote repo、PR、CI/CD 等功能' },
+      { text: '冇 GitHub 就用唔到 Git', correct: false, explanation: 'Git 完全可以獨立使用，唔需要 GitHub。GitHub 只係眾多 remote hosting 平台之一' },
+      { text: 'Git 同 GitHub 係同一間公司出嘅產品', correct: false, explanation: 'Git 係 Linus Torvalds 開發嘅開源工具，GitHub 係微軟嘅產品，兩者完全唔同' },
+    ],
+  },
+  {
+    question: 'Git 嘅三個工作區域（Working Directory → Staging Area → Repository）入面，git add 做咗咩？',
+    options: [
+      { text: '將修改永久保存到 Repository', correct: false, explanation: '永久保存係 git commit 做嘅事，唔係 git add' },
+      { text: '將修改從 Working Directory 放入 Staging Area 準備提交', correct: true, explanation: '啱！git add 將選定嘅修改放入 Staging Area，呢個係「準備提交」嘅中間狀態，之後再用 git commit 永久記錄' },
+      { text: '將 code 推送到 GitHub', correct: false, explanation: '推送到 GitHub 係 git push 做嘅事' },
+      { text: '自動偵測所有修改過嘅檔案', correct: false, explanation: 'git status 先至係偵測修改，git add 係手動選擇要加入 staging 嘅檔案' },
+    ],
+  },
+  {
+    question: 'Pull Request（PR）嘅主要目的係咩？',
+    options: [
+      { text: '自動合併所有 branch 到 main', correct: false, explanation: 'PR 唔係自動合併，而係請求 review 之後先至合併' },
+      { text: '下載最新嘅 code 到本地', correct: false, explanation: '下載最新 code 係 git pull，唔係 Pull Request' },
+      { text: '請求將自己 branch 嘅改動合併到主分支，經過 code review 確保質量', correct: true, explanation: '啱！PR 係 GitHub 嘅核心協作功能，開發者完成功能後發起 PR，經過 review 同討論先至 merge，確保 code 質量' },
+      { text: '備份 code 到雲端', correct: false, explanation: '備份 code 係 git push 嘅作用，PR 係用嚟做 code review 同合併' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'cicd-pipeline', label: 'CI/CD 自動化部署' },
@@ -233,10 +261,11 @@ export default function GitVsGithub() {
           { id: 'github-collab', label: '② GitHub 協作', content: <GithubCollabTab /> },
           { id: 'learning', label: '③ 學習路線', premium: true, content: <LearningTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

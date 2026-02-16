@@ -1,5 +1,36 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: '你嘅 App 突然爆紅，資料庫 CPU 去到 90%。以下邊個係最應該先做嘅一步？',
+    options: [
+      { text: '即刻加 3 個 Read Replicas 分擔壓力', correct: false, explanation: 'Read Replicas 係最後嘅大招，成本高又複雜。應該先搵出瓶頸，可能只係一條慢 Query 冇加 Index，加咗就搞掂。' },
+      { text: '搵出邊啲 Query 最慢，優化 Query 同加 Index', correct: true, explanation: '呢個係成本最低、效果最快嘅第一步。好多時候，加一個 Index 就可以令一條 Query 快幾十倍，根本唔使加機器。面試嘅時候，展示識得「由最低成本開始」嘅思路最加分。' },
+      { text: '直接換用 NoSQL Database', correct: false, explanation: '換 Database 係最極端嘅方案，成本同風險都係最高。喺未搞清楚瓶頸之前就換 DB，好大機會解決唔到問題之餘仲引入新問題。' },
+      { text: '全部數據放入 Redis Cache', correct: false, explanation: '唔係所有數據都適合 Cache。Cache 適合「讀多寫少、結果可以重用」嘅場景。如果大部分查詢都係獨特嘅，Cache 嘅 hit rate 會好低。應該先優化 Query。' },
+    ],
+  },
+  {
+    question: '三層 Cache 入面，邊一層最接近用戶，攔截速度最快？',
+    options: [
+      { text: '伺服器 Cache（Redis / Memcached）', correct: false, explanation: '伺服器 Cache 喺 Server 同 DB 之間，雖然快過直接讀 DB，但用戶嘅請求仍然要經過網絡去到 Server。唔係最接近用戶嘅一層。' },
+      { text: 'CDN 邊緣快取', correct: false, explanation: 'CDN 喺全球各地嘅邊緣節點，比伺服器 Cache 更近用戶。但仲有一層更快——就係用戶裝置本身。' },
+      { text: '裝置 Cache（Client-side Cache）', correct: true, explanation: '裝置 Cache 存喺用戶嘅手機或者 Browser 入面，根本唔使發任何網絡請求。例如翻睇啱啱睇過嘅內容，直接從本地攞，係最快嘅一層。' },
+      { text: 'Database 嘅 Query Cache', correct: false, explanation: 'Database Query Cache 係 DB 內部嘅快取，唔算係三層 Cache 嘅一部分。而且佢嘅位置最遠離用戶，請求要經過 Client → CDN → Server → DB 先去到。' },
+    ],
+  },
+  {
+    question: 'Read Replicas 嘅最大限制係咩？',
+    options: [
+      { text: '唔支持任何查詢操作', correct: false, explanation: 'Read Replicas 完全支持讀取查詢（SELECT）。佢嘅限制唔係唔能讀，而係唔能寫。' },
+      { text: '只能解決讀取問題，寫入仲係去主 DB，而且同步有短暫延遲', correct: true, explanation: '所有寫入操作（INSERT/UPDATE/DELETE）仍然要去 Primary DB。Replica 從 Primary 同步數據會有短暫延遲（Replication Lag），所以剛寫入嘅數據可能喺 Replica 讀唔到。呢個係設計 Read Replica 架構時必須考慮嘅 trade-off。' },
+      { text: '最多只能有 2 個 Replica', correct: false, explanation: '大部分 Database（PostgreSQL、MySQL、Aurora 等）都支持多個 Read Replica，唔限於 2 個。可以根據需要加到幾十個。' },
+      { text: '每個 Replica 只能處理一種類型嘅 Query', correct: false, explanation: 'Read Replica 係主 DB 嘅完整複製品，可以處理任何 SELECT 查詢，冇類型限制。佢嘅限制係唔能做寫入操作。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -690,6 +721,8 @@ export default function ScaleReads() {
           { id: 'caching', label: '③ 三層 Cache', premium: true, content: <CachingTab /> },
           { id: 'replicas', label: '④ 讀取副本', premium: true, content: <ReplicasTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

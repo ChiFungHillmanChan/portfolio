@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '喺 Kafka 入面，一個 Consumer Group 訂閱咗一個 Topic（有 6 個 Partition），而 Group 入面有 3 個 Consumer。每個 Consumer 會處理幾多個 Partition？',
+    options: [
+      { text: '每個 Consumer 處理全部 6 個 Partition', correct: false, explanation: '如果每個 Consumer 都處理全部 Partition，就失去咗 Consumer Group 嘅意義——同一 Group 入面嘅 Consumer 係瓜分 Partition 嚟並行處理嘅。' },
+      { text: '每個 Consumer 處理 2 個 Partition', correct: true, explanation: '同一 Consumer Group 入面，Partition 會被均勻分配俾各個 Consumer。6 個 Partition ÷ 3 個 Consumer = 每個處理 2 個，呢個就係 Kafka 並行消費嘅核心機制。' },
+      { text: '只有 1 個 Consumer 處理全部，其他做 standby', correct: false, explanation: 'Kafka 唔係用 active-standby 模式嚟消費 Partition 嘅。同一 Group 嘅所有 Consumer 會同時工作，各自負責唔同嘅 Partition。' },
+      { text: '每個 Consumer 隨機搶 Partition 處理', correct: false, explanation: 'Partition 分配唔係隨機搶嘅，而係由 Kafka 嘅 Group Coordinator 統一分配，確保每個 Partition 只有一個 Consumer 負責。' },
+    ],
+  },
+  {
+    question: '支付系統用 Message Queue 處理交易。如果同一條「扣款」消息被消費咗兩次，最穩陣嘅處理方式係咩？',
+    options: [
+      { text: '用 At-most-once 語義，確保消息最多處理一次', correct: false, explanation: 'At-most-once 雖然唔會重複，但可能會丟消息。喺支付場景丟咗扣款消息就大件事，用戶付咗錢但系統冇記錄。' },
+      { text: '用 At-least-once 語義，加上冪等性（Idempotency）處理', correct: true, explanation: '呢個係業界最常見嘅做法。At-least-once 確保消息唔會丟，而冪等性設計（例如用 transaction ID 做 dedup）確保就算重複處理都唔會重複扣錢。' },
+      { text: '直接用 Exactly-once 語義就解決晒', correct: false, explanation: 'Exactly-once 理論上最完美，但喺分佈式系統實現極難，性能開銷大。實際上業界多數用 At-least-once + 冪等性嚟達到同等效果，更加實用。' },
+      { text: '加大 Consumer 數量，處理快啲就唔會重複', correct: false, explanation: '加 Consumer 只係提高吞吐量，同消息重複完全冇關係。重複消費係因為 offset commit 失敗等原因，唔係因為處理速度慢。' },
+    ],
+  },
+  {
+    question: '用 Kafka 做 Event-Driven 架構，Order Service 發「訂單已建立」事件。如果之後要加一個新嘅 Analytics Service 嚟追蹤訂單數據，需要改 Order Service 嘅 code 嗎？',
+    options: [
+      { text: '需要，要喺 Order Service 加 Analytics API 嘅調用', correct: false, explanation: '如果每加一個下游服務就要改 Order Service，就變返直接耦合，失去咗用 Message Queue 嘅意義。' },
+      { text: '唔需要，只要 Analytics Service 訂閱同一個 Topic 就得', correct: true, explanation: '呢個就係 Message Queue 解耦嘅精髓！Analytics Service 只需要建立一個新嘅 Consumer Group 訂閱 order-events Topic，完全唔使改 Order Service 嘅任何 code。' },
+      { text: '需要，要喺 Order Service 加多一個 Topic 俾 Analytics', correct: false, explanation: '唔使另開 Topic。Analytics Service 用自己嘅 Consumer Group 訂閱同一個 Topic 就可以獨立消費，呢個係 pub/sub 模式嘅核心能力。' },
+      { text: '需要，要將 Kafka 換成 RabbitMQ 先至支援多個消費者', correct: false, explanation: 'Kafka 天生支援多個 Consumer Group 訂閱同一個 Topic，每個 Group 獨立消費。唔使換技術，只需要加 Consumer Group。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'task-queue', label: 'Task Queue 任務隊列' },
@@ -203,10 +231,11 @@ function AiViberTab() {
 }
 
 const tabs = [
-  { key: 'overview', label: '① 整體架構', content: <OverviewTab /> },
-  { key: 'semantics', label: '② 消息語義', content: <SemanticsTab /> },
-  { key: 'practice', label: '③ 實戰要點', content: <PracticeTab />, premium: true },
-  { key: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'overview', label: '① 整體架構', content: <OverviewTab /> },
+  { id: 'semantics', label: '② 消息語義', content: <SemanticsTab /> },
+  { id: 'practice', label: '③ 實戰要點', content: <PracticeTab />, premium: true },
+  { id: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
 ];
 
 export default function MessageQueue() {
@@ -217,7 +246,6 @@ export default function MessageQueue() {
         subtitle="事件驅動架構（Kafka），pub/sub 模式"
         tabs={tabs}
       />
-      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

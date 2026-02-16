@@ -395,10 +395,11 @@ export default function DatabaseBasics() {
           { id: 'tab2', label: 'ACID 同 NoSQL', content: <Tab2 /> },
           { id: 'tab3', label: 'DBMS 管理系統', premium: true, content: <Tab3 /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

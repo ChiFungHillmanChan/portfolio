@@ -1,5 +1,54 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'Adaptive Bitrate Streaming 嘅核心原理係咩？',
+    options: [
+      { text: '用戶手動揀想睇嘅畫質', correct: false, explanation: 'Adaptive Bitrate 嘅重點係「自動」——播放器根據網速自動切換，唔需要用戶手動操作' },
+      { text: '播放器根據用戶網速自動揀唔同清晰度嘅串流', correct: true, explanation: '播放器會持續偵測 bandwidth，自動切換最合適嘅 quality level，確保流暢播放同最佳畫質嘅平衡' },
+      { text: '伺服器固定推送最高畫質嘅影片', correct: false, explanation: '固定推送最高畫質會導致網速慢嘅用戶不斷 buffer，體驗極差' },
+      { text: '將影片壓縮到最細嘅檔案大小', correct: false, explanation: '壓縮到最細會犧牲畫質。Adaptive Bitrate 係提供多種畫質讓播放器動態選擇' },
+    ],
+  },
+  {
+    question: 'HLS 格式入面，.m3u8 檔案嘅作用係咩？',
+    options: [
+      { text: '儲存實際嘅影片畫面數據', correct: false, explanation: '.m3u8 係 playlist 文件，唔係影片數據。實際影片數據儲存喺 .ts segment 檔案入面' },
+      { text: '做為 playlist，列出所有 video segment 嘅 URL 同 metadata', correct: true, explanation: '.m3u8 係一個文本格式嘅 playlist，列出每個 .ts segment 嘅 URL、時長同 quality 資訊，播放器靠佢嚟知道去邊度攞影片數據' },
+      { text: '儲存影片嘅字幕資料', correct: false, explanation: '字幕通常用獨立嘅 .vtt 或 .srt 檔案，唔係 .m3u8 嘅主要用途' },
+      { text: '做為 DRM 加密嘅密鑰檔案', correct: false, explanation: 'DRM 密鑰通常獨立管理，.m3u8 嘅核心功能係做 playlist' },
+    ],
+  },
+  {
+    question: '影片上傳後點解唔可以直接俾用戶睇？',
+    options: [
+      { text: '因為法律規定要審核先可以播放', correct: false, explanation: '雖然審核好重要，但技術上嘅原因係原始影片唔適合直接串流' },
+      { text: '因為要等 CDN 全球同步完畢', correct: false, explanation: 'CDN 同步係分發階段嘅考量，真正嘅原因係影片需要先做 transcoding' },
+      { text: '需要先做 Transcoding 轉成多種解像度同格式，先可以做 Adaptive Bitrate Streaming', correct: true, explanation: '原始影片可能係 4K 單一碼率，直接播放會令網速慢嘅用戶不斷 buffer。必須先轉碼成多種清晰度，再用 HLS/DASH 格式分片，先可以做到自適應串流' },
+      { text: '因為原始影片太大，要壓縮先可以存儲', correct: false, explanation: '存儲成本係一個考量，但核心原因係需要 transcoding 支持 adaptive streaming' },
+    ],
+  },
+  {
+    question: 'HLS segment 長度建議設為幾多秒？',
+    options: [
+      { text: '0.5 秒——切換畫質反應最快', correct: false, explanation: 'Segment 太短會產生大量 HTTP 請求 overhead，增加延遲同伺服器壓力' },
+      { text: '6 秒——平衡切換反應同 overhead', correct: true, explanation: '6 秒係業界推薦嘅平衡點。太短 overhead 多，太長切換 quality 嘅反應就唔夠快。呢個係 latency 同 efficiency 嘅 trade-off' },
+      { text: '60 秒——減少 HTTP 請求數量', correct: false, explanation: '60 秒 segment 會導致切換畫質時要等好耐，用戶體驗好差' },
+      { text: '300 秒——一條片一個 segment 最簡單', correct: false, explanation: '單一大 segment 完全冇辦法做 adaptive bitrate，失去咗 HLS 嘅核心優勢' },
+    ],
+  },
+  {
+    question: '點樣優化冷門影片嘅存儲成本？',
+    options: [
+      { text: '刪除所有冷門影片', correct: false, explanation: '刪除影片會影響用戶體驗，萬一有人想睇就冇咗' },
+      { text: '只保留低解像度版本，或者用分層存儲（hot/cold tier）', correct: true, explanation: '冷門片只留 360p 或者將高解像度版本搬去 cold storage（例如 S3 Glacier），需要時再取出。呢樣可以慳大量存儲成本之餘唔完全失去內容' },
+      { text: '將冷門片全部轉成 4K 提升質量', correct: false, explanation: '冇人睇嘅片轉 4K 只會增加存儲成本，完全唔合理' },
+      { text: '所有影片都保留全部解像度版本', correct: false, explanation: '多解像度 = 多倍存儲成本。對冷門片嚟講呢個成本效益比好低' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'cdn', label: 'CDN 內容分發網絡' },
@@ -214,6 +263,7 @@ export default function VideoStreaming() {
           { id: 'transcoding', label: '② Transcoding 流程', content: <TranscodingTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+          { id: 'quiz', label: '⑤ Quiz', premium: true, content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

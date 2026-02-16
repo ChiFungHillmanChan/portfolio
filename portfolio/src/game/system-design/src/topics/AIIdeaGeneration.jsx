@@ -2,6 +2,36 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: '用 AI 做 Idea Generation 嘅時候，最重要嘅第一步係咩？',
+    options: [
+      { text: '直接問 AI 生成 5 個方案', correct: false, explanation: '冇搞清楚問題就 brainstorm，生成嘅方案可能全部偏離目標。' },
+      { text: '用「5 Whys」搵到真正嘅問題', correct: true, explanation: '如果連問題都搞錯，AI 生成幾多方案都冇用。5 Whys 幫你由表面症狀追到 root cause。' },
+      { text: '列出所有技術選型', correct: false, explanation: '技術選型係 solution 層面嘅決策，應該喺搞清楚問題之後先做。' },
+      { text: '直接寫 prototype code', correct: false, explanation: 'Prototype 係驗證方案嘅步驟，唔係第一步。' },
+    ],
+  },
+  {
+    question: 'Idea Score Matrix 入面嘅 Solution Feasibility 維度係評估咩？',
+    options: [
+      { text: '技術上有幾難實現', correct: false, explanation: '技術難度係一部分，但 Feasibility 更關注嘅係「2-4 週內做唔做到 MVP」。' },
+      { text: 'MVP 可唔可以喺 2-4 週內做出嚟驗證', correct: true, explanation: 'Solution Feasibility 直接決定你可唔可以快速驗證。如果要 6 個月先出 MVP，風險太高。核心功能 ≤3 個、技術風險可控先值得做。' },
+      { text: '市場上有冇類似產品', correct: false, explanation: '市場競爭分析屬於 Differentiation 維度。' },
+      { text: '團隊有冇相關經驗', correct: false, explanation: '團隊能力係 Constraints 嘅一部分，唔係 Feasibility 嘅核心指標。' },
+    ],
+  },
+  {
+    question: '用 AI brainstorm 嘅時候，點解要強調「唔同方向」而唔係「唔同版本」？',
+    options: [
+      { text: '因為 AI 生成多版本太浪費 token', correct: false, explanation: 'Token 成本唔係重點，重點係方案嘅多樣性。' },
+      { text: '因為唔同方向嘅架構 trade-off 完全唔同，可以發現更多可能性', correct: true, explanation: 'Push vs Pull vs Event-driven 係唔同方向，每種架構嘅 trade-off 完全唔同。「用 Redis」vs「用 Memcached」只係同一方向嘅版本差異，唔會擴闊設計視野。' },
+      { text: '因為老闆想睇多啲選擇', correct: false, explanation: '重點唔係數量多，而係方向多樣性帶來真正嘅架構洞察。' },
+      { text: '因為 AI 淨係識生成相似嘅方案', correct: false, explanation: 'AI 可以生成好唔同嘅方案，但你要明確要求「唔同方向」先會得到。' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'prompt-engineering', label: 'Prompt Engineering 系統設計' },
   { slug: 'multi-ai-workflow', label: '多 AI 協作工作流' },

@@ -1,5 +1,36 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'Snowflake ID 用 64-bit 結構，其中 41 bits 係 timestamp。呢個設計最大嘅好處係咩？',
+    options: [
+      { text: 'ID 嘅長度比 UUID 短好多，慳存儲空間', correct: false, explanation: '雖然 64-bit 確實比 UUID 嘅 128-bit 短，但呢個唔係 timestamp 放喺高位嘅主要好處。核心優勢係 time-sortable。' },
+      { text: 'ID 自然按時間遞增，唔使查 Database 就可以排序，而且對 B-tree Index 好友好', correct: true, explanation: '因為 timestamp 喺最高位，生成嘅 ID 自然按時間遞增。呢個對 B-tree Index 極之友好——新 ID 永遠 append 喺最後，唔會觸發 page split，insert 性能好高。UUID 嘅 random 特性反而會令 B-tree 效率低。' },
+      { text: '可以令每台機器每秒生成無限個 ID', correct: false, explanation: '唔係無限。12 bits sequence = 4096，即係每毫秒每台機最多生成 4096 個 ID。超過就要等下一毫秒。不過對 99% 嘅場景已經足夠。' },
+      { text: '可以防止 ID 被猜到', correct: false, explanation: '恰恰相反，Snowflake ID 因為包含 timestamp，理論上可以被推測出大概嘅生成時間。如果需要 ID 唔可預測，UUID v4 嘅 random 特性更適合。' },
+    ],
+  },
+  {
+    question: '點解分佈式系統唔建議用 Database 自增 ID（AUTO_INCREMENT）作為全局唯一 ID？',
+    options: [
+      { text: '因為自增 ID 太短，容易用完', correct: false, explanation: '64-bit 自增 ID 可以去到 9.2 x 10^18，用完嘅可能性極低。問題唔係容量，而係架構上嘅樽頸。' },
+      { text: '因為每次生成 ID 都要問 Database，Database 會變成 bottleneck，而且唔支持多個 node 同時生成', correct: true, explanation: '自增 ID 需要 Database 保證唯一性，所有 node 都要去同一個 DB 攞 ID，呢個 DB 就變成單點樽頸（single point of failure）。而 Snowflake 每台機本地生成，唔使 coordination，可以水平擴展。' },
+      { text: '因為自增 ID 唔係數字，唔方便排序', correct: false, explanation: '自增 ID 就係數字，而且天然遞增。問題唔係排序，而係生成 ID 需要中心化嘅 Database，限制咗系統嘅 scalability。' },
+      { text: '因為自增 ID 容易被攻擊者猜到', correct: false, explanation: '安全性確實係一個考量，但唔係主要原因。核心問題係 Database 變成 bottleneck，限制咗分佈式系統嘅 throughput 同 availability。' },
+    ],
+  },
+  {
+    question: 'Snowflake ID Generator 遇到時鐘回撥（Clock Drift，NTP 同步令時間倒退）會點？如果唔處理會有咩後果？',
+    options: [
+      { text: '冇影響，因為 Sequence Number 可以補償時間差', correct: false, explanation: 'Sequence Number 係喺同一毫秒內遞增用嘅。如果時鐘回撥，timestamp 變細，可能同之前生成嘅 ID 嘅 timestamp 重疊，導致生成重複 ID。' },
+      { text: '可能生成重複 ID，因為回撥後嘅 timestamp 同之前嘅重疊。必須 detect 同處理（拒絕生成或者等時鐘追返）', correct: true, explanation: '時鐘回撥會令 timestamp 回到之前嘅值，如果 sequence 又從 0 開始，就會同之前同一毫秒生成嘅 ID 撞。正確做法係 detect 回撥後拒絕生成（throw error），或者等時鐘追返先繼續。呢個係 Snowflake 設計嘅一個經典坑。' },
+      { text: '系統會自動 shutdown，需要手動重啟', correct: false, explanation: '唔應該自動 shutdown 整個系統。正確做法係喺 ID Generator 層面處理——暫時拒絕生成新 ID 或者等時鐘追返，但系統其他部分應該繼續運作。' },
+      { text: '生成嘅 ID 會變成負數', correct: false, explanation: '64-bit 嘅第一個 bit 係 sign bit（通常固定為 0）。時鐘回撥唔會令 ID 變負數，但會令 timestamp 部分重複，導致生成重複嘅 ID。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -225,6 +256,8 @@ export default function UniqueIDGenerator() {
           { id: 'structure', label: '② ID 結構解析', content: <StructureTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

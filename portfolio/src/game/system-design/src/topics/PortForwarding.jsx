@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Port Forwarding 嘅主要作用係咩？',
+    options: [
+      { text: '加密所有網絡 traffic', correct: false, explanation: 'Port Forwarding 只係轉發 request，唔負責加密' },
+      { text: '將外部 request 從 Router 嘅 Public IP 轉發到內網指定設備嘅指定 port', correct: true, explanation: '啱！Port Forwarding 就係喺 Router 設定規則，將打上 Public IP 某個 port 嘅 request 轉發去內網設備' },
+      { text: '將所有內網設備嘅 IP 改做 Public IP', correct: false, explanation: '呢個係 NAT 做嘅嘢，唔係 Port Forwarding' },
+      { text: '自動偵測網絡攻擊並阻擋', correct: false, explanation: 'Port Forwarding 唔係防火牆，佢只負責轉發 traffic' },
+    ],
+  },
+  {
+    question: 'NAT（Network Address Translation）解決咗咩問題？',
+    options: [
+      { text: '令內網設備可以直接被外界 access', correct: false, explanation: '正好相反，NAT 會阻止外界直接 access 內網設備，需要 Port Forwarding 先至得' },
+      { text: '令多部內網設備可以共用一個 Public IP 上網', correct: true, explanation: '啱！NAT 將內網設備嘅 Private IP 翻譯成 Router 嘅 Public IP，令多部設備可以透過同一個 Public IP 上網' },
+      { text: '加快網絡速度', correct: false, explanation: 'NAT 唔會加快速度，佢嘅作用係地址轉換' },
+      { text: '自動分配 domain name 畀每部設備', correct: false, explanation: '分配 domain name 係 DNS 嘅工作，唔係 NAT' },
+    ],
+  },
+  {
+    question: '點樣知道自己嘅網絡有冇 CGNAT（Carrier-Grade NAT）？',
+    options: [
+      { text: '睇 Router 嘅 brand 同 model', correct: false, explanation: 'CGNAT 係 ISP 層面嘅設定，同 Router 型號無關' },
+      { text: '對比 Router WAN IP 同 whatismyip.com 顯示嘅 Public IP，如果唔同就係 CGNAT', correct: true, explanation: '啱！如果 Router 嘅 WAN IP 係 100.64.x.x 或其他 Private IP range，但 whatismyip.com 顯示另一個 IP，就代表 ISP 用緊 CGNAT' },
+      { text: '試下 ping Google，如果 latency 高就係 CGNAT', correct: false, explanation: 'Latency 高唔代表 CGNAT，可能係其他網絡問題' },
+      { text: '打電話問 ISP 就一定知', correct: false, explanation: '雖然可以問 ISP，但自己對比 WAN IP 同 Public IP 係最快最準嘅方法' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'localhost-hosting', label: 'Localhost 分享到互聯網' },
@@ -399,10 +427,11 @@ export default function PortForwarding() {
           { id: 'nat', label: '② NAT 網絡轉換', content: <NATTab /> },
           { id: 'tunneling', label: '③ Tunneling 穿透', premium: true, content: <TunnelingTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

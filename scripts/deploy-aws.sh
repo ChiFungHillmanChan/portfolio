@@ -18,7 +18,7 @@ set -euo pipefail
 #
 # Usage:
 #   export JWT_SECRET="$(openssl rand -base64 32)"
-#   export OPENAI_API_KEY="sk-..."
+#   export GEMINI_API_KEY="AIza..."
 #   bash scripts/deploy-aws.sh
 # ============================================================
 
@@ -45,9 +45,9 @@ if [ -z "${JWT_SECRET:-}" ]; then
   exit 1
 fi
 
-if [ -z "${OPENAI_API_KEY:-}" ]; then
-  echo "ERROR: OPENAI_API_KEY not set."
-  echo "Run: export OPENAI_API_KEY=\"sk-...\""
+if [ -z "${GEMINI_API_KEY:-}" ]; then
+  echo "ERROR: GEMINI_API_KEY not set."
+  echo "Run: export GEMINI_API_KEY=\"AIza...\""
   exit 1
 fi
 
@@ -190,7 +190,7 @@ if aws lambda get-function --function-name "$CHAT_FN" --region "$REGION" 2>/dev/
 
   aws lambda update-function-configuration \
     --function-name "$CHAT_FN" \
-    --environment "Variables={DATA_BUCKET=$BUCKET,JWT_SECRET=$JWT_SECRET,OPENAI_API_KEY=$OPENAI_API_KEY,FIREBASE_SERVICE_ACCOUNT=$FIREBASE_SERVICE_ACCOUNT}" \
+    --environment "Variables={DATA_BUCKET=$BUCKET,GEMINI_API_KEY=$GEMINI_API_KEY,FIREBASE_SERVICE_ACCOUNT=$FIREBASE_SERVICE_ACCOUNT}" \
     --region "$REGION" > /dev/null
 else
   aws lambda create-function \
@@ -199,7 +199,7 @@ else
     --handler index.handler \
     --role "$ROLE_ARN" \
     --zip-file "fileb:///tmp/sa-chat.zip" \
-    --environment "Variables={DATA_BUCKET=$BUCKET,JWT_SECRET=$JWT_SECRET,OPENAI_API_KEY=$OPENAI_API_KEY,FIREBASE_SERVICE_ACCOUNT=$FIREBASE_SERVICE_ACCOUNT}" \
+    --environment "Variables={DATA_BUCKET=$BUCKET,GEMINI_API_KEY=$GEMINI_API_KEY,FIREBASE_SERVICE_ACCOUNT=$FIREBASE_SERVICE_ACCOUNT}" \
     --region "$REGION" \
     --timeout 30 \
     --memory-size 256 > /dev/null

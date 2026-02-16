@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '手動部署最大嘅問題係咩？',
+    options: [
+      { text: '部署速度太快，容易出錯', correct: false, explanation: '手動部署唔會太快，反而係太慢、太容易出人為錯誤' },
+      { text: '本地環境同 Production 環境不一致，加上人為操作容易出錯', correct: true, explanation: '手動部署嘅兩大痛點：環境差異（Node 版本唔同、依賴缺失等）同人為錯誤（漏設環境變數、打錯指令）。每次 deploy 都可能導致服務中斷' },
+      { text: '手動部署唔使錢，所以質量差', correct: false, explanation: '問題唔在於成本，而在於流程本身嘅風險' },
+      { text: '手動部署只支援 JavaScript 項目', correct: false, explanation: '手動部署適用於任何語言嘅項目，問題唔在於語言限制' },
+    ],
+  },
+  {
+    question: 'Infrastructure as Code（IaC）嘅核心好處係咩？',
+    options: [
+      { text: '可以自動寫 Application code', correct: false, explanation: 'IaC 管嘅係環境設定（OS、Runtime、Network），唔係 Application 嘅業務邏輯 code' },
+      { text: '用設定檔定義環境，確保 Staging 同 Production 完全一致', correct: true, explanation: '同一份 Config 可以生成一模一樣嘅環境。先喺 Staging 測試通過，再部署到 Production，攔截 90% 以上嘅環境相關 Bug' },
+      { text: '令 Server 運行速度加快 10 倍', correct: false, explanation: 'IaC 嘅目的係環境一致性同可重複性，唔係提升運行速度' },
+      { text: '取代所有 testing，唔使再跑 Unit Test', correct: false, explanation: 'IaC 解決環境問題，但測試仍然係必須嘅。兩者互補，缺一不可' },
+    ],
+  },
+  {
+    question: 'CI/CD Pipeline 入面，如果 Staging 測試 Fail 咗，應該點做？',
+    options: [
+      { text: '直接部署到 Production，因為 Staging 環境可能有 Bug', correct: false, explanation: '絕對唔可以跳過失敗嘅測試直接部署！Staging 測試失敗代表 code 有問題，硬上 Production 會造成更大嘅事故' },
+      { text: 'Pipeline 即刻停止並通知團隊修正', correct: true, explanation: 'CI/CD 嘅核心原則係：任何一步 Fail 都要即刻停止。Pipeline 會通知團隊，開發者修正問題後重新 Push code 觸發新嘅 Pipeline' },
+      { text: '等 24 小時後自動重試', correct: false, explanation: '等待唔會解決問題，需要人為修正 code 先至可以通過測試' },
+      { text: '刪除 Staging 環境，直接喺 Production 測試', correct: false, explanation: '喺 Production 測試係極其危險嘅做法，會直接影響真實用戶' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'docker', label: 'Docker 容器化' },
@@ -323,10 +351,11 @@ export default function CICDPipeline() {
           { id: 'iac', label: '② Infrastructure as Code', content: <IaCTab /> },
           { id: 'cicd', label: '③ CI/CD Pipeline', premium: true, content: <CICDTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

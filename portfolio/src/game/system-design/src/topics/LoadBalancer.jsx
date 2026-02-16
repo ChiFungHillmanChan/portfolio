@@ -186,10 +186,11 @@ export default function LoadBalancer() {
           { id: 'algorithms', label: '② 分配演算法', content: <AlgorithmsTab /> },
           { id: 'practice', label: '③ L4 vs L7', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

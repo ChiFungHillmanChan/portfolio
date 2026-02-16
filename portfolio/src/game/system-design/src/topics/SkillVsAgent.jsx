@@ -1,5 +1,36 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'Skill 模式同 Agent 模式嘅最核心分別係咩？',
+    options: [
+      { text: 'Skill 用平啲嘅 AI 模型，Agent 用貴嘅', correct: false, explanation: '價錢唔係核心分別，兩者都可以用同一個模型。關鍵在於任務執行方式嘅唔同' },
+      { text: 'Skill 係 deterministic（結果穩定可預測），Agent 係 non-deterministic（AI 自主決策）', correct: true, explanation: '完全正確！Skill 好似 function call——固定 input 產生穩定 output。Agent 就好似自主探索——AI 自己決定下一步做咩，結果唔可預測。揀錯模式會浪費成本或者出錯' },
+      { text: 'Skill 只可以處理文字，Agent 可以處理圖片', correct: false, explanation: '兩者都可以處理多種 input 類型，分別在於任務執行嘅確定性' },
+      { text: 'Agent 一定好過 Skill，因為更靈活', correct: false, explanation: '唔係！用 Agent 做 Skill 嘅嘢會浪費 token 成本，用 Skill 做 Agent 嘅嘢會出錯。各有最適合嘅場景' },
+    ],
+  },
+  {
+    question: '以下邊個任務最適合用 Skill 模式？',
+    options: [
+      { text: 'Debug 一個未知嘅 production bug', correct: false, explanation: 'Debug 需要探索、推理、嘗試唔同假設，屬於 Agent 模式嘅場景' },
+      { text: '設計一個新嘅 microservice 架構', correct: false, explanation: '架構設計需要考慮 tradeoff、探索唔同方案，係 Agent 場景' },
+      { text: '用固定 template 對每個 PR diff 做 code review', correct: true, explanation: '啱！Code Review 有明確嘅 input（diff）同 output（review comments），規則固定（檢查 style、security、performance），每次做法一樣。完美符合 Skill 嘅定義：結構化、可重複、input/output 明確' },
+      { text: '分析公司嘅 tech debt 並提出重構方案', correct: false, explanation: '呢個需要深度分析同創意思考，每個公司情況唔同，屬於 Agent 場景' },
+    ],
+  },
+  {
+    question: 'Hybrid 模式（Agent + Skill 混合）嘅最佳實踐係點樣嘅？',
+    options: [
+      { text: '先用 Skill 做所有嘢，搞唔掂再用 Agent', correct: false, explanation: '唔係按「搞唔搞得掂」嚟揀，而係按任務性質分工' },
+      { text: '先用 Agent 做規劃同決策，再用 Skill 做執行同重複性工作', correct: true, explanation: '正確！Agent 擅長規劃（分析 schema 差異、設計遷移策略），Skill 擅長執行（按 plan 逐步跑 migration script）。呢樣可以同時攞到 Agent 嘅靈活性同 Skill 嘅穩定性' },
+      { text: '同一個任務交替用 Agent 同 Skill', correct: false, explanation: '唔係交替用，而係按任務嘅唔同階段（規劃 vs 執行）分配最適合嘅模式' },
+      { text: 'Hybrid 就係將 Agent 同 Skill 嘅結果取平均', correct: false, explanation: 'Hybrid 唔係取平均，而係唔同階段用唔同模式' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'context-rot-solution', label: 'Context Rot 解法' },
@@ -195,6 +226,8 @@ export default function SkillVsAgent() {
           { id: 'framework', label: '② 選型框架', content: <FrameworkTab /> },
           { id: 'practice', label: '③ 實戰例子', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

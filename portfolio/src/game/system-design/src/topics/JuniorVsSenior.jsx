@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Junior Engineer 同 Senior Engineer 最核心嘅分別係咩？',
+    options: [
+      { text: 'Senior 寫 code 快好多', correct: false, explanation: '寫 code 速度唔係核心分別，Senior 嘅價值在於解決模糊問題同做決策' },
+      { text: 'Junior 執行清晰嘅 task，Senior 處理模糊嘅問題同做技術決策', correct: true, explanation: '啱！Junior 收到有明確 Acceptance Criteria 嘅 task 去執行，Senior 要面對模糊嘅需求、做 trade-off 決策、影響整個團隊' },
+      { text: 'Senior 唔使寫 code，只做管理', correct: false, explanation: 'Senior Engineer 仍然要寫 code，但同時要做設計決策同 mentor 其他人' },
+      { text: 'Senior 識嘅語言比 Junior 多', correct: false, explanation: '識幾多語言唔係 Junior/Senior 嘅分別，重點係解決問題嘅能力同 impact' },
+    ],
+  },
+  {
+    question: 'Junior Engineer 嘅典型工作係咩？',
+    options: [
+      { text: '設計整個系統架構', correct: false, explanation: '系統架構設計通常係 Senior 或 Staff Engineer 嘅工作' },
+      { text: '接收有明確 Acceptance Criteria 嘅 task 並完成', correct: true, explanation: '啱！例如「Build 一個 REST API endpoint 去 return user profile」，起點終點清楚，execute 就完' },
+      { text: '面試同招聘新人', correct: false, explanation: '招聘通常係 Senior 以上嘅責任' },
+      { text: '決定團隊用咩技術棧', correct: false, explanation: '技術決策通常由 Senior/Staff Engineer 主導' },
+    ],
+  },
+  {
+    question: '由 Junior 升上 Senior 最重要嘅能力轉變係咩？',
+    options: [
+      { text: '學識所有 design pattern', correct: false, explanation: 'Design pattern 只係工具，識晒都唔代表係 Senior' },
+      { text: '由「完成被分配嘅 task」轉變為「識別問題、提出方案、做 trade-off 決策」', correct: true, explanation: '啱！Senior 嘅核心能力係喺模糊情況下識別問題、評估 trade-off、做出合理決策，而唔止係執行' },
+      { text: '寫更多行 code', correct: false, explanation: '寫 code 量唔係衡量標準，Senior 反而可能寫少啲 code 但做更大 impact 嘅決策' },
+      { text: '取得更多 certification', correct: false, explanation: 'Certification 唔係升 Senior 嘅關鍵，實際解決問題嘅能力先至係' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'ai-vs-software-engineer', label: 'AI 時代做 Software Engineer' },
@@ -293,10 +321,11 @@ export default function JuniorVsSenior() {
           { id: 'senior-goal', label: '② Senior 做 Goal', content: <SeniorGoalTab /> },
           { id: 'upgrade-path', label: '③ 點樣升級', premium: true, content: <UpgradePathTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

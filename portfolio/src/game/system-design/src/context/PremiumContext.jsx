@@ -2,9 +2,12 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from './AuthContext';
+import { API_BASE } from '../config/constants';
 
-const PREMIUM_KEY = 'sd_premium';
-const SUPERADMIN_EMAILS = (import.meta.env.VITE_SUPERADMIN_EMAILS || '').split(',').filter(Boolean);
+const SUPERADMIN_EMAILS = (import.meta.env.VITE_SUPERADMIN_EMAILS || '')
+  .split(',')
+  .map((e) => e.trim().toLowerCase())
+  .filter(Boolean);
 
 const PremiumContext = createContext(null);
 
@@ -13,67 +16,115 @@ const PremiumContext = createContext(null);
 export const TIER_LIMITS = { free: 5, standard: 20, pro: 80 };
 
 export function PremiumProvider({ children }) {
-  const { user } = useAuth();
+  const { user, token, loading: authLoading } = useAuth();
   const [isPremium, setIsPremium] = useState(false);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [tier, setTier] = useState('free');
+  const [loadingEntitlement, setLoadingEntitlement] = useState(true);
 
-  // Sync premium status from Firestore when user logs in
-  useEffect(() => {
+  const refreshPremiumStatus = useCallback(async () => {
     if (!user) {
       setIsPremium(false);
       setIsSuperAdmin(false);
       setTier('free');
-      localStorage.removeItem(PREMIUM_KEY);
+      setLoadingEntitlement(false);
       return;
     }
 
-    // Check superadmin
-    if (SUPERADMIN_EMAILS.includes(user.email)) {
+    const email = String(user.email || '').toLowerCase();
+    if (email && SUPERADMIN_EMAILS.includes(email)) {
       setIsSuperAdmin(true);
       setIsPremium(true);
       setTier('pro');
+      setLoadingEntitlement(false);
       return;
     }
+
+    setLoadingEntitlement(true);
     setIsSuperAdmin(false);
 
-    async function fetchPremiumStatus() {
-      try {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const data = userDoc.data();
-          if (data.premium === true) {
-            setIsPremium(true);
-            // Read tier from Firestore; default to 'standard' for legacy premium users
-            setTier(data.tier || 'standard');
-          } else {
-            setIsPremium(false);
-            setTier('free');
-            localStorage.removeItem(PREMIUM_KEY);
-          }
+    try {
+      const userDoc = await getDoc(doc(db, 'users', user.uid));
+      if (userDoc.exists()) {
+        const data = userDoc.data();
+        const active = data.premium === true;
+        if (active) {
+          setIsPremium(true);
+          setTier(data.tier === 'pro' ? 'pro' : 'standard');
         } else {
           setIsPremium(false);
           setTier('free');
-          localStorage.removeItem(PREMIUM_KEY);
         }
-      } catch (err) {
-        console.error('Failed to fetch premium status:', err);
+      } else {
         setIsPremium(false);
         setTier('free');
       }
+    } catch (err) {
+      console.error('Failed to fetch premium status:', err);
+      setIsPremium(false);
+      setTier('free');
+    } finally {
+      setLoadingEntitlement(false);
     }
-
-    fetchPremiumStatus();
   }, [user]);
 
-  // Only caches locally — the backend (Admin SDK) writes premium to Firestore.
+  useEffect(() => {
+    if (authLoading) return;
+    refreshPremiumStatus();
+  }, [authLoading, refreshPremiumStatus]);
+
   const activatePremium = useCallback(async () => {
-    setIsPremium(true);
-    window.dispatchEvent(new CustomEvent('sd:premium-activated'));
-  }, []);
+    await refreshPremiumStatus();
+  }, [refreshPremiumStatus]);
+
+  const confirmStripeSession = useCallback(async (sessionId) => {
+    if (!token) {
+      throw new Error('請先登入 Google 帳號再確認付款。');
+    }
+    const trimmed = String(sessionId || '').trim();
+    if (!trimmed) {
+      throw new Error('缺少 session_id，無法確認付款。');
+    }
+
+    const res = await fetch(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ action: 'confirm-session', sessionId: trimmed }),
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      data = {};
+    }
+
+    if (!res.ok) {
+      const err = new Error(data.error || '付款確認失敗');
+      err.status = res.status;
+      err.payload = data;
+      throw err;
+    }
+
+    await refreshPremiumStatus();
+    return data;
+  }, [token, refreshPremiumStatus]);
 
   return (
-    <PremiumContext.Provider value={{ isPremium, isSuperAdmin, tier, activatePremium }}>
+    <PremiumContext.Provider
+      value={{
+        isPremium,
+        isSuperAdmin,
+        tier,
+        loadingEntitlement,
+        activatePremium,
+        confirmStripeSession,
+        refreshPremiumStatus,
+      }}
+    >
       {children}
     </PremiumContext.Provider>
   );

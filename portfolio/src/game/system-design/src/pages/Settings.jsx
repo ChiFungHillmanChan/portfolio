@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { usePremium } from '../context/PremiumContext';
 import { useProgress } from '../context/ProgressContext';
@@ -319,6 +320,15 @@ function ProfileTab({ user, planLabel, planColor, isSuperAdmin, signOut }) {
           登出
         </button>
       </section>
+
+      <section className="mt-4 text-center">
+        <Link
+          to="/changelog"
+          className="text-xs text-text-dimmer hover:text-text-dim transition-colors"
+        >
+          📋 更新日誌
+        </Link>
+      </section>
     </>
   );
 }
@@ -357,7 +367,7 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
         return;
       }
 
-      await activatePremium(trimmed);
+      await activatePremium();
       setCodeSuccess(true);
     } catch {
       setCodeError('網絡錯誤，請稍後再試');

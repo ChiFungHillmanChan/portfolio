@@ -8,6 +8,10 @@ const GRID_CLASSES = {
   4: 'grid grid-cols-2 sm:grid-cols-4',
   5: 'grid grid-cols-3 sm:grid-cols-5',
   6: 'grid grid-cols-3 sm:grid-cols-6',
+  7: 'grid grid-cols-3 sm:grid-cols-7',
+  8: 'grid grid-cols-3 sm:grid-cols-8',
+  9: 'grid grid-cols-3 sm:grid-cols-9',
+  10: 'grid grid-cols-4 sm:grid-cols-10',
 };
 
 export default function TopicTabs({ title, subtitle, tabs }) {
@@ -33,7 +37,7 @@ export default function TopicTabs({ title, subtitle, tabs }) {
           return (
             <button
               key={tab.id}
-              className={`min-w-0 px-1.5 sm:px-3 py-2 sm:py-2.5 border-none rounded-lg text-[0.7rem] sm:text-[0.82rem] font-medium cursor-pointer transition-all font-[inherit] text-center leading-snug ${
+              className={`min-w-0 min-h-[44px] px-2 sm:px-3 py-2.5 sm:py-2.5 border-none rounded-lg text-[0.74rem] sm:text-[0.82rem] font-medium cursor-pointer transition-all font-[inherit] text-center leading-snug touch-manipulation ${
                 isActive
                   ? 'bg-accent-indigo text-text-primary font-semibold'
                   : 'bg-transparent text-text-dim hover:text-text-secondary hover:bg-white/5'

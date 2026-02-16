@@ -1,5 +1,45 @@
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
+import QuizRenderer from '../components/QuizRenderer';
+
+const quizData = [
+  {
+    question: '「致命三角」（Lethal Trifecta）嘅三個元素係咩？',
+    options: [
+      { text: 'CPU、Memory、Disk', correct: false, explanation: '呢啲係硬件資源，同 AI Agent 安全無關。' },
+      { text: '私人資料存取 + 不受信任嘅內容 + 對外通訊能力', correct: true, explanation: '當 AI Agent 同時有呢三樣嘢，黑客可以透過惡意內容（例如電郵）指使 Agent 讀取私人資料再傳出去。打破任何一個角就可以降低風險。' },
+      { text: 'Authentication + Authorization + Encryption', correct: false, explanation: '呢啲係一般安全概念，唔係致命三角嘅定義。' },
+      { text: 'Input + Processing + Output', correct: false, explanation: '呢個係一般 data flow，唔係致命三角嘅三個元素。' },
+    ],
+  },
+  {
+    question: '間接提示注入（Indirect Prompt Injection）嘅攻擊方式係點樣？',
+    options: [
+      { text: '黑客直接 hack 入 Agent 嘅 server', correct: false, explanation: '間接注入唔需要 hack server，只需要透過 Agent 會讀取嘅渠道（例如電郵）植入指令。' },
+      { text: '黑客透過外來內容（例如電郵）夾帶隱藏指令，Agent 讀到後誤以為係正常任務', correct: true, explanation: '呢個係間接注入嘅核心：黑客唔直接接觸 Agent，而係透過 Agent 會讀取嘅內容植入惡意指令。Agent 分唔到正常任務同惡意指令。' },
+      { text: '黑客偷到 API Key 然後直接 call Agent', correct: false, explanation: '偷 API Key 係另一種攻擊，唔係 Prompt Injection。' },
+      { text: '黑客用 DDoS 攻擊令 Agent 癱瘓', correct: false, explanation: 'DDoS 係拒絕服務攻擊，同 Prompt Injection 完全唔同。' },
+    ],
+  },
+  {
+    question: '以下邊個係打破致命三角最簡單有效嘅方法？',
+    options: [
+      { text: '用更強嘅 AI 模型', correct: false, explanation: '更強嘅模型都可能被 Prompt Injection 欺騙，呢個唔係模型能力嘅問題。' },
+      { text: '移除 Agent 唔必要嘅工具權限（例如拎走「發送電郵」功能）', correct: true, explanation: '最少權限原則——如果 Agent 冇「發送電郵」嘅能力，就算中咗 Prompt Injection 都傳唔到資料出去。直接打破致命三角嘅第三個角。' },
+      { text: '加更多 firewall 規則', correct: false, explanation: 'Firewall 保護 network layer，但 Prompt Injection 係 application layer 嘅問題。' },
+      { text: '將所有電郵加密', correct: false, explanation: '加密防止外人讀取，但 Agent 本身有解密權限嘅話，Prompt Injection 仍然有效。' },
+    ],
+  },
+  {
+    question: '建立 AI Agent 安全架構嘅正確順序係咩？',
+    options: [
+      { text: '先俾所有權限，再慢慢收返', correct: false, explanation: '呢個係最危險嘅做法——一開始就俾太多權限，出事嘅時候已經太遲。' },
+      { text: '先最少權限 → 加強護欄 → 護欄成熟後逐步開放', correct: true, explanation: '漸進式開放：第一階段只俾最基本工具，第二階段完善 input/output guardrails，第三階段護欄穩定後先逐步開返更多權限。' },
+      { text: '先寫好所有測試，再一次過開放', correct: false, explanation: '測試好重要但唔可以取代漸進式開放。安全需要持續觀察 Agent 行為。' },
+      { text: '唔使特別設計，AI 模型本身有安全機制', correct: false, explanation: 'AI 模型嘅內建安全機制可以被 bypass，唔可以單靠模型本身嘅安全性。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'authentication', label: 'Authentication 驗證' },
@@ -601,6 +641,8 @@ export default function SecureAIAgents() {
           { id: 'guardrails', label: '③ 防護措施', premium: true, content: <GuardrailsTab /> },
           { id: 'best-practices', label: '④ 最佳實踐', premium: true, content: <BestPracticesTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

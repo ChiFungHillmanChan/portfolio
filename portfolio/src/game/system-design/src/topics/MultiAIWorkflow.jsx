@@ -2,6 +2,36 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: 'Multi-AI Pipeline 入面，邊個階段最容易出問題？',
+    options: [
+      { text: '每個 AI 工具本身嘅推理能力', correct: false, explanation: '個別工具通常都夠強，問題唔係工具本身。' },
+      { text: 'Handoff——工具之間嘅資料傳遞同格式對接', correct: true, explanation: 'Pipeline 最易出事嘅地方係 handoff：上一步嘅 output 要配合下一步嘅 input format。例如 Perplexity 嘅 research output 要 structured 到 Claude 可以直接用。' },
+      { text: 'AI 模型嘅訓練數據唔夠新', correct: false, explanation: '數據新舊唔係 pipeline 設計嘅主要問題。' },
+      { text: '訂閱費用太貴', correct: false, explanation: '成本係考量因素但唔係最易出事嘅地方。' },
+    ],
+  },
+  {
+    question: '點解唔建議用一個 AI 工具做晒所有嘢？',
+    options: [
+      { text: '因為每個工具都有佢最擅長嘅領域，專門工具嘅質量遠高過通用工具', correct: true, explanation: 'Perplexity 嘅搜尋能力、Cursor 嘅 IDE 整合、Copilot 嘅 inline 補全——每個工具都有獨特強項。用一個工具做曬只會得到 mediocre 結果。' },
+      { text: '因為用多個工具比較平', correct: false, explanation: '多工具唔一定平啲，重點係質量而唔係價錢。' },
+      { text: '因為一個工具處理唔到大量 tokens', correct: false, explanation: 'Context window 限制可以透過 chunking 解決，唔係用多工具嘅主要原因。' },
+      { text: '因為公司政策要求用多個供應商', correct: false, explanation: '呢個係 vendor diversification，唔係 Multi-AI Pipeline 嘅核心理念。' },
+    ],
+  },
+  {
+    question: '以下邊個組合最適合「Research → Spec → Code → Test」嘅 pipeline？',
+    options: [
+      { text: 'ChatGPT → ChatGPT → ChatGPT → ChatGPT', correct: false, explanation: '全部用 ChatGPT 就係「用一個工具做曬所有嘢」，冇利用各工具嘅專長。' },
+      { text: 'Perplexity → Claude → Cursor → Copilot', correct: true, explanation: 'Perplexity 嘅搜尋引用最強，Claude 嘅長 context 適合寫 spec，Cursor 嘅 IDE 整合最好寫 code，Copilot 擅長生成 test cases。' },
+      { text: 'Figma AI → Canva → Zapier → Make', correct: false, explanation: '呢啲係設計同自動化工具，唔適合 code-focused 嘅 pipeline。' },
+      { text: 'Claude → Perplexity → Canva → Figma', correct: false, explanation: '順序同工具定位都唔啱，Canva/Figma 係設計工具唔係 coding 工具。' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'ai-tools-landscape', label: 'AI 工具全景圖' },
   { slug: 'ai-model-comparison', label: 'AI 模型深入對比' },
@@ -47,7 +77,7 @@ function OverviewTab() {
           <g transform="translate(170,60)">
             <rect width="130" height="95" rx="14" fill="#1a1d27" stroke="#10B981" strokeWidth="2" filter="url(#glowGreen)" />
             <text x="65" y="25" textAnchor="middle" fill="#10B981" fontSize="13" fontWeight="700">Architecture</text>
-            <text x="65" y="48" textAnchor="middle" fill="#6ee7b7" fontSize="10">GPT-5.3 / Claude</text>
+            <text x="65" y="48" textAnchor="middle" fill="#6ee7b7" fontSize="10">GPT-5.2 / Claude</text>
             <text x="65" y="64" textAnchor="middle" fill="#9ca3af" fontSize="9">推理 + 長 context</text>
             <text x="65" y="80" textAnchor="middle" fill="#9ca3af" fontSize="9">設計 spec + 架構</text>
           </g>
@@ -101,7 +131,7 @@ function OverviewTab() {
 
       <h3 style={{ color: '#e2e8f0', marginTop: 24 }}>工具定位矩陣</h3>
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>文字 AI</strong>：GPT-5.3 Codex（框架設計、brainstorm）、Claude Opus 4.6（長文件分析、1M context beta）、DeepSeek V3.2（預算友好嘅開源替代）、Gemini（多模態、圖片+文字混合輸入）</span></li>
+        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>文字 AI</strong>：GPT-5.2 Codex（框架設計、brainstorm）、Claude Opus 4.6（長文件分析、1M context API only）、DeepSeek V3.2（預算友好嘅開源替代）、Gemini（多模態、圖片+文字混合輸入）</span></li>
         <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>搜尋 AI</strong>：Perplexity（即時搜尋 + 引用來源）、Notion AI（團隊知識庫搜尋同整理）</span></li>
         <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>開發 AI</strong>：Cursor（IDE 內 AI 編碼、整個 codebase context）、Copilot（行內補全 + 測試生成）、OpenClaw（開源 AI agent、適合自建部署）</span></li>
         <li><span className="step-num">4</span><span><strong style={{ color: '#8B5CF6' }}>設計 AI</strong>：Figma AI（wireframe 同 UI 設計）、Canva（海報、社交媒體、文檔排版）</span></li>
@@ -154,7 +184,7 @@ function PracticeTab() {
       <h3 style={{ color: '#e2e8f0', marginTop: 8 }}>場景一：建一個新嘅 REST API</h3>
       <ol className="steps">
         <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>Perplexity Research</strong>：搵 3-5 個類似 API 嘅設計模式同 best practices。例如要做 payment API，Perplexity 會搵到 Stripe、PayPal 嘅 API 設計文檔，附帶引用來源。Output：一份 structured research summary。如果預算有限，DeepSeek V3.2 API 亦可以做 research summarization，成本只需 Perplexity 嘅 1/10。</span></li>
-        <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>Claude Spec 設計</strong>：用 1M context (beta) 讀曬 existing codebase + research summary，生成完整嘅 API spec。包括 endpoints、request/response schema、error codes、rate limiting 策略。Claude 嘅長 context 能力喺呢度至關重要。</span></li>
+        <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>Claude Spec 設計</strong>：用 Claude API 1M context 路徑讀曬 existing codebase + research summary，生成完整嘅 API spec。包括 endpoints、request/response schema、error codes、rate limiting 策略。Claude 嘅長 context 能力喺呢度至關重要。</span></li>
         <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>Cursor Code 實作</strong>：喺 IDE 入面用 Cursor，按 spec 逐步實作 endpoints。Cursor 可以 reference 成個 codebase，所以佢生成嘅 code 會 follow 你 existing 嘅 patterns 同 conventions。</span></li>
         <li><span className="step-num">4</span><span><strong style={{ color: '#8B5CF6' }}>Copilot Tests</strong>：自動生成 unit tests + integration tests。Copilot 擅長從 implementation 推斷 test cases，包括 happy path、edge cases 同 error scenarios。</span></li>
         <li><span className="step-num">5</span><span><strong style={{ color: '#EF4444' }}>ChatGPT Docs</strong>：生成 OpenAPI spec + README + usage examples。ChatGPT 嘅文字生成能力喺寫文檔方面好強，可以產出 developer-friendly 嘅文檔。</span></li>
@@ -204,7 +234,7 @@ function AIViberTab() {
    - 期望 output format
 
 2. **Architecture 階段**
-   - 用邊個 AI 做系統設計（GPT-5.3 Codex / Claude Opus 4.6 / DeepSeek V3.2 (budget)）
+   - 用邊個 AI 做系統設計（GPT-5.2 Codex / Claude Opus 4.6 / DeepSeek V3.2 (budget)）
    - 需要 feed 咩 context 入去
    - 期望產出：API spec / system diagram / data model
 

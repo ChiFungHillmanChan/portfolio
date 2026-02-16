@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Coding Agent 嘅核心 loop 係咩？',
+    options: [
+      { text: 'Input → Output → Done', correct: false, explanation: '一次過 Input → Output 太簡單，Coding Agent 需要反覆驗證' },
+      { text: 'Plan → Execute → Verify，如果驗證唔通過就再 loop', correct: true, explanation: '啱！Agent 先 Plan（準備 context、搵相關 code），再 Execute（寫 code），最後 Verify（跑 test/lint），唔 pass 就再循環' },
+      { text: 'Download → Install → Run', correct: false, explanation: '呢個係安裝軟件嘅流程，唔係 Coding Agent 嘅設計' },
+      { text: 'Ask User → Wait → Reply', correct: false, explanation: 'Agent 嘅重點係自主執行，唔係每步都問用戶' },
+    ],
+  },
+  {
+    question: 'Plan 階段嘅 Context Compacting 係做咩？',
+    options: [
+      { text: '刪除 project 入面冇用嘅檔案', correct: false, explanation: 'Compacting 唔係刪除檔案，而係壓縮 context 資訊' },
+      { text: '用另一個 LLM 將之前嘅對話同 context 壓縮成更短嘅摘要，避免 context window 溢出', correct: true, explanation: '啱！隨住對話越嚟越長，context 會超出 LLM 嘅 window。用另一個快速 LLM 將之前嘅內容壓縮成精簡摘要，保留重要資訊' },
+      { text: '將所有 code 壓縮成 zip 檔', correct: false, explanation: 'Compacting 係壓縮 context 文字，唔係壓縮檔案' },
+      { text: '減少 API call 嘅次數', correct: false, explanation: 'Compacting 嘅目的係管理 context window，唔係減少 API call' },
+    ],
+  },
+  {
+    question: 'Verify 階段通常用咩方法確認 Agent 寫嘅 code 正確？',
+    options: [
+      { text: '問用戶「啱唔啱」', correct: false, explanation: '雖然用戶確認係最後一步，但 Verify 階段應該有自動化檢查' },
+      { text: '跑 automated test、lint check 同 type check 嚟自動驗證', correct: true, explanation: '啱！Verify 階段會跑 unit test、lint、type check 等自動化工具，如果 fail 就將錯誤資訊回饋到下一輪 Plan' },
+      { text: '直接 deploy 到 production 睇有冇 error', correct: false, explanation: '直接 deploy 到 production 係非常危險嘅做法，應該先本地驗證' },
+      { text: '讀一次 code 就知啱唔啱', correct: false, explanation: 'LLM 讀 code 唔一定準確，需要靠自動化工具驗證' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'secure-ai-agents', label: '保護 AI Agent' },
@@ -371,10 +399,11 @@ export default function CodingAgentDesign() {
           { id: 'execute', label: '② Execute 階段', content: <ExecuteTab /> },
           { id: 'verify', label: '③ Verify 階段', premium: true, content: <VerifyTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

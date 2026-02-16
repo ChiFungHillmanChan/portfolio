@@ -48,7 +48,7 @@ export default function QuizRenderer({ data, quizData }) {
               return (
                 <button
                   key={oi}
-                  className="text-left px-4 py-3 rounded-lg border text-[0.9rem] text-text-muted transition-all"
+                  className="text-left px-4 py-3.5 min-h-[48px] rounded-lg border text-[0.92rem] text-text-muted transition-all touch-manipulation"
                   style={{ borderColor, background: bgColor }}
                   onClick={() => handleAnswer(qi, oi, opt.correct)}
                   disabled={answered}

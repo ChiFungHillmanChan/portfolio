@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Big Tech 面試流程通常嘅第一輪係咩？',
+    options: [
+      { text: 'On-site 面對面技術面試', correct: false, explanation: 'On-site 通常係第三輪，唔係第一輪' },
+      { text: 'HR Screen — 了解背景、動機同薪資期望', correct: true, explanation: '啱！HR Screen 係第一輪，大約 30 分鐘，主要了解候選人嘅背景、轉工動機同薪資範圍' },
+      { text: 'System Design 面試', correct: false, explanation: 'System Design 通常係 On-site 其中一環，唔係第一輪' },
+      { text: 'Take-home coding assignment', correct: false, explanation: 'Take-home 唔係 Big Tech 嘅標準流程，佢哋通常用 live coding' },
+    ],
+  },
+  {
+    question: '面試準備策略入面，邊個做法最有效？',
+    options: [
+      { text: '背晒所有 LeetCode 題目嘅答案', correct: false, explanation: '背答案唔夠，面試官會變題，重點係理解解題嘅思路同 pattern' },
+      { text: '分 pattern 練習 coding 題（例如 Two Pointers、BFS/DFS），同時練習 mock interview 訓練溝通能力', correct: true, explanation: '啱！按 pattern 歸類練習可以建立解題直覺，配合 mock interview 練溝通，雙管齊下最有效' },
+      { text: '只做 Easy 題就夠', correct: false, explanation: 'Big Tech 面試通常考 Medium 到 Hard 難度，只做 Easy 準備唔夠' },
+      { text: '直接去面試，邊做邊學', correct: false, explanation: '冇準備就面試會浪費機會，而且 Big Tech 通常有 cooldown period，fail 咗要等半年先至可以再申請' },
+    ],
+  },
+  {
+    question: 'On-site 面試通常包含邊啲環節？',
+    options: [
+      { text: '只有 coding interview', correct: false, explanation: 'On-site 唔止 coding，通常仲有 System Design 同 Behavioral' },
+      { text: 'Coding + System Design + Behavioral，全面考核技術同軟技能', correct: true, explanation: '啱！On-site 通常 4-5 輪，包括 2 輪 coding、1 輪 System Design、1 輪 Behavioral，全面評估候選人' },
+      { text: '只做一個 take-home project', correct: false, explanation: 'Big Tech 嘅 On-site 係即場面試，唔係 take-home' },
+      { text: '只問理論知識同背書', correct: false, explanation: 'Big Tech 重視實戰能力同解決問題嘅過程，唔會純粹問理論' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'coding-interview', label: 'Coding Interview 攻略' },
@@ -175,10 +203,11 @@ export default function InterviewProcess() {
           { id: 'preparation', label: '② 每輪準備', content: <PreparationTab /> },
           { id: 'tips', label: '③ 實戰要點', premium: true, content: <TipsTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '點解上傳大檔案去 Object Storage（例如 S3）嘅時候，建議用 Presigned URL 而唔係直接經 Backend Server？',
+    options: [
+      { text: '因為 Presigned URL 可以令上傳速度快 10 倍', correct: false, explanation: '速度主要取決於網絡帶寬，唔係 URL 類型。Presigned URL 嘅核心優勢唔係速度，而係減輕 Backend 負擔。' },
+      { text: '因為 Client 直接上傳去 S3，唔使經 Backend，大幅減輕 Server 負擔同帶寬消耗', correct: true, explanation: '如果所有檔案都經 Backend 轉發，Server 嘅 CPU、記憶體同帶寬會成為樽頸。Presigned URL 令 Client 直接同 S3 溝通，Backend 只需要生成一個 signed URL，幾乎零負擔。' },
+      { text: '因為 Presigned URL 唔需要任何驗證，更方便', correct: false, explanation: 'Presigned URL 本身就包含驗證資訊（簽名）。佢有時間限制（例如 15 分鐘），過期就無效。唔係「冇驗證」，而係「驗證方式唔同」。' },
+      { text: '因為 S3 唔支持直接接收 Backend 發送嘅檔案', correct: false, explanation: 'S3 完全支持 Backend 直接上傳。但咁做會令 Backend 承受所有檔案流量，效率好低。Presigned URL 係更好嘅架構設計。' },
+    ],
+  },
+  {
+    question: '一個 500MB 嘅影片檔案上傳到一半（250MB）時斷線咗。如果用咗 Multipart Upload，要點做？',
+    options: [
+      { text: '由頭再上傳成個 500MB 檔案', correct: false, explanation: '呢個就係冇用 Multipart Upload 嘅做法。Multipart Upload 嘅核心優勢就係支持斷點續傳，唔使由頭嚟。' },
+      { text: '只需要重新上傳未完成嘅 part，已完成嘅 part 唔使再傳', correct: true, explanation: 'Multipart Upload 將大檔案分做多個 part（例如每個 5MB）。已成功上傳嘅 part 會被記錄，斷線後只需要重傳失敗嘅 part。呢個就係斷點續傳嘅原理。' },
+      { text: '自動重新上傳整個檔案，因為 S3 會偵測到斷線', correct: false, explanation: 'S3 唔會自動重傳。需要 Client 端記錄已完成嘅 part（upload_id + completed parts），然後 resume 時跳過已完成嘅。' },
+      { text: '已上傳嘅部分會自動合併成半個檔案', correct: false, explanation: 'Multipart Upload 必須所有 part 都上傳完先可以 call Complete 操作合併。未完成嘅 upload 應該 resume 或者 abort（abort 好重要，因為 orphan parts 會佔空間收錢）。' },
+    ],
+  },
+  {
+    question: '設計 Object Storage 系統時，點解要將 Metadata 同 Blob（實際檔案內容）分開存儲？',
+    options: [
+      { text: '因為 Blob 太大，Database 存唔落', correct: false, explanation: '雖然 Database 確實唔適合存大檔案，但分開存嘅主要原因唔係容量問題，而係查詢效率同架構設計嘅考量。' },
+      { text: '因為 Metadata 放 Database 方便搜尋同查詢，Blob 放 Object Store 低成本存儲，各司其職', correct: true, explanation: 'Metadata（檔名、大小、content-type、上傳時間等）需要被搜尋同查詢，放 Database 最合適。Blob 只需要按 key 存取，放 Object Store 成本低又 scalable。兩者職責唔同，分開先係正確設計。' },
+      { text: '因為 CDN 只能分發 Blob，唔能分發 Metadata', correct: false, explanation: 'CDN 可以分發任何 HTTP response，包括 JSON metadata。分開存嘅原因係架構設計同查詢效率，唔係 CDN 嘅限制。' },
+      { text: '因為分開存可以令上傳速度快好多', correct: false, explanation: '上傳速度主要取決於網絡帶寬同 Multipart Upload 策略。分開存嘅核心原因係令查詢更高效、架構更清晰、各組件可以獨立 scale。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'cdn', label: 'CDN 內容分發網絡' },
@@ -208,10 +236,11 @@ export default function ObjectStorage() {
           { id: 'upload', label: '② 上傳策略', content: <UploadTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

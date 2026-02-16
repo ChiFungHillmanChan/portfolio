@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'API 回傳大量數據時，最常用嘅處理方式係咩？',
+    options: [
+      { text: '一次過回傳所有數據', correct: false, explanation: '一次過回傳會導致 response 過大，增加 latency 同消耗記憶體' },
+      { text: 'Pagination — 將數據拆成細份，每次只回傳一頁', correct: true, explanation: '啱！好似 Google 搜尋結果咁，每頁只顯示固定數量嘅 item，client 需要更多就 request 下一頁，大幅減少每次 response 嘅 payload' },
+      { text: '將數據壓縮成圖片回傳', correct: false, explanation: '將結構化數據壓縮成圖片唔合理，應該用標準嘅分頁或串流方式' },
+      { text: '叫 client 自己去 database 攞', correct: false, explanation: '直接暴露 database 畀 client 係極大嘅安全風險' },
+    ],
+  },
+  {
+    question: 'Cursor-based Pagination 相比 Offset-based Pagination 嘅優勢係咩？',
+    options: [
+      { text: '實作更簡單', correct: false, explanation: 'Cursor-based 實作其實更複雜，但效能更好' },
+      { text: '喺數據頻繁變動時唔會出現重複或遺漏，而且 query 效能唔會隨頁數增加而變差', correct: true, explanation: '啱！Offset-based 用 OFFSET 跳過 row，數據插入/刪除會導致重複或遺漏。Cursor-based 用上一頁最後一個 item 嘅 ID 做定位，穩定得多' },
+      { text: '支援直接跳到任意頁數', correct: false, explanation: '反過嚟，Cursor-based 唔支援跳頁，呢個係佢嘅缺點。Offset-based 先至支援跳頁' },
+      { text: '唔使 database index', correct: false, explanation: 'Cursor-based 同樣需要 index 先至有好嘅效能' },
+    ],
+  },
+  {
+    question: '處理大型 API Response 時，Streaming（串流）適合邊種場景？',
+    options: [
+      { text: '只有 video streaming 先至適合', correct: false, explanation: 'Streaming 唔止用喺 video，任何大量數據都可以用' },
+      { text: '需要即時顯示部分結果（例如 AI 打字效果），或者 response 太大唔適合一次過 buffer 入記憶體', correct: true, explanation: '啱！Streaming 令 client 可以邊收邊處理，適合 ChatGPT 風格嘅逐字輸出、大型 CSV export、或者即時 log tail 等場景' },
+      { text: '所有 API 都應該用 Streaming', correct: false, explanation: '唔係所有 API 都需要 streaming，普通小型 response 直接回傳就得' },
+      { text: '只有 GET request 先至可以用 Streaming', correct: false, explanation: 'POST 等其他 method 都可以用 streaming response' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'cdn', label: 'CDN 內容分發網絡' },
@@ -477,10 +505,11 @@ function AiViberTab() {
 }
 
 const tabs = [
-  { key: 'pagination', label: '① 分頁處理', content: <PaginationTab /> },
-  { key: 'compression', label: '② 數據壓縮', content: <CompressionTab /> },
-  { key: 'offload', label: '③ S3 卸載', content: <OffloadTab />, premium: true },
-  { key: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'pagination', label: '① 分頁處理', content: <PaginationTab /> },
+  { id: 'compression', label: '② 數據壓縮', content: <CompressionTab /> },
+  { id: 'offload', label: '③ S3 卸載', content: <OffloadTab />, premium: true },
+  { id: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
 ];
 
 export default function LargeAPIResponse() {
@@ -491,7 +520,6 @@ export default function LargeAPIResponse() {
         subtitle="當 API 需要回傳大量數據，點樣有效咁處理同優化回應"
         tabs={tabs}
       />
-      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

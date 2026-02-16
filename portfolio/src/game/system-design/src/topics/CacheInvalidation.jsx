@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '你嘅系統用緊第三方天氣 API，控制唔到對方幾時更新數據。以下邊個 Cache 策略最適合？',
+    options: [
+      { text: 'Write Through — 寫入時同時更新 Cache 同資料庫', correct: false, explanation: '你控制唔到第三方 API 嘅寫入操作，所以冇辦法用 Write Through。呢個策略適用於自己嘅系統可以控制寫入嘅場景。' },
+      { text: 'TTL — 設個時限，到期自動刪除 Cache，下次重新攞', correct: true, explanation: '因為控制唔到第三方幾時改數據，TTL 係最簡單有效嘅方法。設一個合理嘅 TTL（例如 5 分鐘），到期後自動去 API 攞最新數據。簡單又實用。' },
+      { text: 'Write Back — 先寫 Cache，背景異步同步', correct: false, explanation: 'Write Back 適用於自己嘅寫入場景，而且有資料丟失風險。對於第三方 API 嘅數據快取，TTL 先係最合適嘅選擇。' },
+      { text: 'Write Around — 寫入時只寫資料庫，刪除 Cache', correct: false, explanation: '你唔係寫入方，係讀取第三方數據嘅消費者。Write Around 適合自己控制寫入嘅場景，唔適合第三方 API 快取。' },
+    ],
+  },
+  {
+    question: '用戶經常讀取自己嘅個人資料（Profile），而且改完資料後希望即刻睇到最新版本。邊個策略最適合？',
+    options: [
+      { text: 'TTL = 1 秒', correct: false, explanation: '雖然 1 秒 TTL 可以減少延遲，但仍然有可能喺寫入後嘅 1 秒內讀到舊資料。而且每秒都去資料庫攞數據，效率好低。' },
+      { text: 'Write Through — 寫入時同時更新 Cache 同資料庫', correct: true, explanation: '用戶改完 Profile 後，Write Through 會同時更新 Cache 同資料庫，之後讀取時 Cache 一定有最新版本。雖然寫入會慢少少，但對於個人資料呢種「經常讀、偶爾改」嘅場景，係最適合嘅策略。' },
+      { text: 'Write Back — 先寫 Cache，背景同步', correct: false, explanation: 'Write Back 寫入最快，但如果 Cache 掛咗，用戶改嘅資料可能會唔見。對於個人資料呢種重要數據，唔應該冒呢個風險。' },
+      { text: '唔用 Cache，每次都直接讀資料庫', correct: false, explanation: '如果 Profile 被大量讀取，每次都讀資料庫會造成不必要嘅負擔。Write Through 可以同時保證數據最新同減輕資料庫壓力。' },
+    ],
+  },
+  {
+    question: 'Write Back 策略最大嘅風險係咩？',
+    options: [
+      { text: '寫入速度太慢', correct: false, explanation: '恰恰相反！Write Back 嘅寫入速度係所有策略入面最快嘅，因為只寫 Cache，唔直接寫資料庫。' },
+      { text: 'Cache 入面嘅資料永遠唔會更新', correct: false, explanation: 'Write Back 係先寫 Cache，Cache 入面嘅資料反而係最新嘅。問題唔係 Cache 唔更新，而係資料庫可能未同步。' },
+      { text: '如果 Cache 掛咗（例如斷電），未同步去資料庫嘅資料可能會永久丟失', correct: true, explanation: 'Write Back 先寫 Cache，之後背景異步同步去資料庫。如果喺同步之前 Cache 掛咗，嗰啲未同步嘅資料就冇咗。所以用呢個策略一定要做好容錯機制。' },
+      { text: '唔支持讀取操作', correct: false, explanation: 'Write Back 完全支持讀取，而且讀取速度好快，因為 Cache 入面已經有最新嘅資料。佢嘅問題係寫入嘅持久性風險。' },
+    ],
+  },
+  {
+    question: 'Write Around 策略入面，寫入資料之後第一次讀取會點？',
+    options: [
+      { text: '直接從 Cache 攞到最新資料', correct: false, explanation: 'Write Around 寫入時只寫資料庫，同時刪除 Cache 嘅舊記錄。所以寫入之後 Cache 入面係冇嘢嘅。' },
+      { text: 'Cache Miss — 要去資料庫攞最新版本，然後存入 Cache', correct: true, explanation: '因為 Write Around 寫入時刪除咗 Cache 嘅舊記錄，下次讀取時會 Cache Miss，需要去資料庫攞最新版本，然後重新存入 Cache。呢個就係「懶加載」嘅概念。' },
+      { text: '讀取會失敗，因為 Cache 同資料庫都冇資料', correct: false, explanation: '資料庫有最新嘅資料（Write Around 直接寫入咗資料庫）。Cache Miss 後系統會去資料庫攞，唔會失敗。' },
+      { text: '系統會自動從資料庫同步到 Cache，唔使等讀取', correct: false, explanation: 'Write Around 唔會主動同步。佢嘅設計就係「懶加載」——只有真正被讀取嘅時候先會重新快取。呢個適合「寫完唔會即刻被讀」嘅場景。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'cdn', label: 'CDN 內容分發網絡' },
@@ -579,10 +616,11 @@ export default function CacheInvalidation() {
           { id: 'write-around', label: '③ Write Around 繞過快取', premium: true, content: <WriteAroundTab /> },
           { id: 'write-back', label: '④ Write Back 延遲寫入', premium: true, content: <WriteBackTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

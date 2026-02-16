@@ -1,5 +1,54 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'Web Crawler 用 Bloom Filter 做去重嘅核心優勢係咩？',
+    options: [
+      { text: '100% 準確，永遠唔會有判斷錯誤', correct: false, explanation: 'Bloom Filter 可能有 false positive（誤判為「見過」），但唔會有 false negative。呢個 trade-off 係可接受嘅' },
+      { text: '用極少記憶體就可以快速判斷 URL 有冇爬過', correct: true, explanation: 'Bloom Filter 只用幾個 bit 就可以記錄一個 URL 嘅存在性，喺要處理幾十億 URL 嘅場景下，記憶體節省非常巨大' },
+      { text: '可以儲存每個 URL 嘅完整內容', correct: false, explanation: 'Bloom Filter 只記錄「有冇見過」，唔會儲存任何內容。需要額外嘅 Storage 系統儲存爬取結果' },
+      { text: '自動刪除過期嘅 URL 記錄', correct: false, explanation: 'Bloom Filter 係 append-only 嘅數據結構，唔支持刪除操作。想要刪除就需要用 Counting Bloom Filter' },
+    ],
+  },
+  {
+    question: 'Politeness Policy 嘅核心原則係咩？',
+    options: [
+      { text: '每秒盡量發最多請求，爬得越快越好', correct: false, explanation: '大量請求會被目標網站當成 DDoS 攻擊，直接 ban IP。呢個係最唔禮貌嘅做法' },
+      { text: '控制同一 domain 嘅請求速率，遵守 robots.txt 規則', correct: true, explanation: '例如每個 domain 每秒最多 1 次請求、遵守 robots.txt 指定嘅爬取規則同 Crawl-delay。呢個確保唔會打爆人哋 Server，同時維護良好嘅爬蟲聲譽' },
+      { text: '只喺凌晨時段爬取，避開高峰期', correct: false, explanation: '時段控制可能有幫助，但核心係控制請求速率。唔同時區嘅網站「高峰期」都唔同' },
+      { text: '每次爬取前先發 email 通知網站管理員', correct: false, explanation: '唔需要逐次通知。遵守 robots.txt 規則同控制速率已經足夠展示禮貌' },
+    ],
+  },
+  {
+    question: '點解 Web Crawler 建議用 BFS（廣度優先搜索）而唔係 DFS？',
+    options: [
+      { text: 'BFS 嘅代碼實現比 DFS 更簡單', correct: false, explanation: '兩者嘅代碼複雜度差唔多。選擇 BFS 嘅原因係策略性嘅' },
+      { text: 'BFS 可以先爬到重要嘅頁面，唔會一頭扎得太深', correct: true, explanation: 'BFS 一層一層咁爬，確保離起點最近嘅（通常最重要嘅）頁面先被處理。DFS 可能會跟住一條路爬到好深嘅冷門頁面，而忽略咗表層嘅重要內容' },
+      { text: 'DFS 需要更多記憶體', correct: false, explanation: '啱啱相反，BFS 需要維護一個隊列儲存待爬 URL，通常比 DFS 嘅 stack 用更多記憶體' },
+      { text: 'BFS 可以避免重複爬取', correct: false, explanation: '去重係靠 Bloom Filter 或 HashSet 實現，同 BFS/DFS 策略冇直接關係' },
+    ],
+  },
+  {
+    question: 'URL Frontier 嘅主要作用係咩？',
+    options: [
+      { text: '儲存已經爬過嘅 URL 記錄', correct: false, explanation: '已爬 URL 嘅記錄由 Dedup 模組（Bloom Filter）管理，唔係 URL Frontier' },
+      { text: '管理待爬 URL 嘅優先級排序隊列', correct: true, explanation: 'URL Frontier 係一個帶優先級嘅隊列，決定下一個要爬嘅 URL 係邊個。高優先級嘅 URL（例如重要網站首頁）會先被處理' },
+      { text: '解析 HTML 提取新連結', correct: false, explanation: '解析 HTML 係 Parser 嘅工作，唔係 URL Frontier 嘅責任' },
+      { text: '儲存爬取到嘅網頁內容', correct: false, explanation: '網頁內容嘅儲存由 Storage 模組負責' },
+    ],
+  },
+  {
+    question: '一個大規模 Web Crawler 每日要爬幾十億頁面，最大嘅工程挑戰係咩？',
+    options: [
+      { text: '網速唔夠快', correct: false, explanation: '網速可以透過增加 Worker 數量同使用分佈式架構解決，唔係核心挑戰' },
+      { text: '同時做到快速爬取、唔重複爬、同唔被網站 ban', correct: true, explanation: '呢三個目標互相矛盾：要快就容易重複或被 ban；要唔重複就要花時間去重；要唔被 ban 就要限速。平衡呢三者需要精細嘅分佈式系統設計' },
+      { text: 'HTML 格式太多種類', correct: false, explanation: 'HTML 解析確實有挑戰，但對比起分佈式爬取嘅工程複雜度，呢個唔算核心難點' },
+      { text: '存儲空間唔夠', correct: false, explanation: '存儲可以透過 Object Storage（例如 S3）輕鬆擴展，成本相對低' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'scraping-vs-crawling', label: 'Web Scraping vs Crawling' },
@@ -183,6 +232,7 @@ export default function WebCrawler() {
         tabs={[
           { id: 'overview', label: '① 整體架構', content: <OverviewTab /> },
           { id: 'ai-viber', label: '② AI Viber', content: <AIViberTab /> },
+          { id: 'quiz', label: '③ Quiz', premium: true, content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

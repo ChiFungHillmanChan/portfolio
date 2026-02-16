@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '一個服務大部分時間冇流量，但每日下午 6-8 點會有大量 request。應該揀 Server 定 Serverless？',
+    options: [
+      { text: 'Server，因為 Server 處理速度更快', correct: false, explanation: 'Server 係 always-on，大部分時間冇流量但照收錢，對呢種 spiky 流量模式好唔划算' },
+      { text: 'Serverless，因為大部分時間免費，有流量先收錢', correct: true, explanation: 'Serverless 按 request 收費，大部分時間冇流量就唔使畀錢。繁忙時間自動 scale up 處理大量 request，完美配合 spiky 流量模式' },
+      { text: 'Server，因為 Serverless 唔支援高流量', correct: false, explanation: 'Serverless 天生支援自動擴展，高流量時自動加 instance，呢個反而係佢嘅強項' },
+      { text: '兩個都唔適合，需要用 CDN', correct: false, explanation: 'CDN 係用嚟加速靜態資源分發，唔係用嚟處理 API 請求嘅替代方案' },
+    ],
+  },
+  {
+    question: 'Serverless 嘅 Cold Start 係咩意思？',
+    options: [
+      { text: 'Server 喺冬天跑得比較慢', correct: false, explanation: 'Cold Start 同溫度完全冇關係，係 Serverless 架構嘅技術特性' },
+      { text: '第一次 request 嚟嘅時候，function 要「開機」load code 同建立連接，造成額外延遲', correct: true, explanation: 'Serverless function 閒置時會被完全關閉。第一次 request 觸發「開機」過程——load code、初始化 runtime、建立 DB 連接等，可能要幾百 ms 甚至幾秒。之後嘅 request 就唔會有呢個延遲' },
+      { text: '用戶第一次註冊時嘅等待時間', correct: false, explanation: 'Cold Start 係服務層面嘅概念，同用戶註冊流程無關' },
+      { text: 'Serverless function 每次 request 都要重新 deploy', correct: false, explanation: 'Function deploy 咗一次就得，Cold Start 只係 runtime 初始化，唔係重新 deploy' },
+    ],
+  },
+  {
+    question: '以下邊個講法最準確描述 Server 同 Serverless 嘅成本差異？',
+    options: [
+      { text: 'Serverless 永遠比 Server 平', correct: false, explanation: '唔一定！大流量時 Serverless 按 request 收費可能好貴，反而 Server 固定成本更划算' },
+      { text: 'Server 永遠比 Serverless 平', correct: false, explanation: '流量少嘅時候 Server always-on 嘅固定成本反而浪費，Serverless 冇 request 就免費' },
+      { text: '流量穩定揀 Server 成本可預測；流量 spiky 揀 Serverless 按用量付費', correct: true, explanation: '呢個係最核心嘅決策原則。穩定流量下 Server 嘅固定成本可預測且長遠平啲；spiky 流量下 Serverless 大部分時間免費，只喺有流量時收費' },
+      { text: '兩者成本完全一樣，只係收費方式唔同', correct: false, explanation: '收費方式唔同會直接影響總成本，喺唔同場景下差異可以好大' },
+    ],
+  },
+  {
+    question: '一間 Startup 剛起步，用戶量好少，應該點揀？',
+    options: [
+      { text: '一定要用 Server，因為 Startup 要完全控制所有嘢', correct: false, explanation: 'Startup 初期資源有限，管 Server 需要人手同時間，未必係最好選擇' },
+      { text: '先用 Serverless 快速上線，之後 scale 到一定規模先考慮搬去 Server', correct: true, explanation: 'Startup 初期流量少，Serverless 幾乎免費。唔使管 Server、快速部署、專注寫 code。等到流量穩定增長後，再評估搬去 Server 慳成本' },
+      { text: '唔好部署，等有足夠用戶先上線', correct: false, explanation: '唔上線就永遠唔會有用戶，Startup 要快速上線驗證產品' },
+      { text: 'Server 同 Serverless 各買一套，同時運行', correct: false, explanation: '初期同時維護兩套架構會浪費資源，應該揀一個最適合當前階段嘅方案' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'deployment', label: '免費部署平台' },
@@ -431,10 +468,11 @@ export default function ServerVsServerless() {
           { id: 'serverless', label: '② Serverless 方案', content: <ServerlessTab /> },
           { id: 'decision', label: '③ 點樣揀', premium: true, content: <DecisionTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

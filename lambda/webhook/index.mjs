@@ -1,17 +1,35 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
-import { createHmac } from 'node:crypto';
-import { randomBytes } from 'node:crypto';
+import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getAuth } from 'firebase-admin/auth';
+import { getFirestore } from 'firebase-admin/firestore';
 
 const s3 = new S3Client();
 const ses = new SESClient();
 const BUCKET = process.env.DATA_BUCKET;
 const STRIPE_WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
 const SENDER_EMAIL = process.env.SENDER_EMAIL || 'noreply@hillmanchan.com';
+const STRIPE_STANDARD_PRICE_ID = (process.env.STRIPE_STANDARD_PRICE_ID || '').trim();
+const STRIPE_PRO_PRICE_ID = (process.env.STRIPE_PRO_PRICE_ID || '').trim();
+const STRIPE_STANDARD_PRODUCT_ID = (process.env.STRIPE_STANDARD_PRODUCT_ID || '').trim();
+const STRIPE_PRO_PRODUCT_ID = (process.env.STRIPE_PRO_PRODUCT_ID || '').trim();
+
+// ==================== Firebase Admin ====================
+
+if (!getApps().length) {
+  const sa = JSON.parse(
+    Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT, 'base64').toString()
+  );
+  initializeApp({ credential: cert(sa) });
+}
+const firebaseAuth = getAuth();
+const db = getFirestore();
 
 // ==================== Stripe Signature Verification ====================
 
 function verifyStripeSignature(payload, sigHeader) {
+  if (!STRIPE_WEBHOOK_SECRET || !sigHeader) return false;
   const elements = sigHeader.split(',');
   const timestamp = elements.find((e) => e.startsWith('t='))?.split('=')[1];
   const signature = elements.find((e) => e.startsWith('v1='))?.split('=')[1];
@@ -19,15 +37,92 @@ function verifyStripeSignature(payload, sigHeader) {
   if (!timestamp || !signature) return false;
 
   // Reject if timestamp is more than 5 minutes old
+  const parsedTimestamp = Number.parseInt(timestamp, 10);
+  if (!Number.isFinite(parsedTimestamp)) return false;
   const now = Math.floor(Date.now() / 1000);
-  if (Math.abs(now - parseInt(timestamp)) > 300) return false;
+  if (Math.abs(now - parsedTimestamp) > 300) return false;
 
   const signedPayload = `${timestamp}.${payload}`;
   const expected = createHmac('sha256', STRIPE_WEBHOOK_SECRET)
     .update(signedPayload)
     .digest('hex');
+  try {
+    const expectedBuf = Buffer.from(expected, 'hex');
+    const signatureBuf = Buffer.from(signature, 'hex');
+    if (expectedBuf.length !== signatureBuf.length) return false;
+    return timingSafeEqual(expectedBuf, signatureBuf);
+  } catch {
+    return false;
+  }
+}
 
-  return expected === signature;
+function normalizeEmail(email) {
+  return String(email || '').trim().toLowerCase();
+}
+
+function normalizeTier(tier, fallback = 'standard') {
+  if (tier === 'pro') return 'pro';
+  if (tier === 'standard') return 'standard';
+  return fallback;
+}
+
+function getTierFromStripeIds(priceId, productId) {
+  const priceMap = new Map([
+    [STRIPE_STANDARD_PRICE_ID, 'standard'],
+    [STRIPE_PRO_PRICE_ID, 'pro'],
+  ].filter(([k]) => k));
+
+  const productMap = new Map([
+    [STRIPE_STANDARD_PRODUCT_ID, 'standard'],
+    [STRIPE_PRO_PRODUCT_ID, 'pro'],
+  ].filter(([k]) => k));
+
+  if (priceId && priceMap.has(priceId)) return priceMap.get(priceId);
+  if (productId && productMap.has(productId)) return productMap.get(productId);
+  return null;
+}
+
+function extractStripeIdentifiers(session) {
+  const metadata = session?.metadata || {};
+  const lineItem = session?.line_items?.data?.[0];
+  const linePrice = lineItem?.price?.id || null;
+  const lineProduct = lineItem?.price?.product || null;
+
+  const priceId = (
+    metadata.price_id ||
+    metadata.priceId ||
+    metadata.stripe_price_id ||
+    metadata.stripePriceId ||
+    linePrice ||
+    null
+  );
+  const productId = (
+    metadata.product_id ||
+    metadata.productId ||
+    metadata.stripe_product_id ||
+    metadata.stripeProductId ||
+    lineProduct ||
+    null
+  );
+  const tierHint = metadata.tier || metadata.plan || null;
+
+  return {
+    priceId: priceId ? String(priceId).trim() : null,
+    productId: productId ? String(productId).trim() : null,
+    tierHint: tierHint ? String(tierHint).trim().toLowerCase() : null,
+  };
+}
+
+function resolveTier(session) {
+  const { priceId, productId, tierHint } = extractStripeIdentifiers(session);
+  const mapped = getTierFromStripeIds(priceId, productId);
+  if (mapped) {
+    return { tier: mapped, priceId, productId, source: 'stripe_id_map' };
+  }
+  if (tierHint === 'standard' || tierHint === 'pro') {
+    return { tier: tierHint, priceId, productId, source: 'metadata_tier' };
+  }
+  return { tier: null, priceId, productId, source: null };
 }
 
 // ==================== Access Code Generator ====================
@@ -45,10 +140,15 @@ function generateCode() {
 // ==================== S3 Users Management ====================
 
 async function getUsers() {
-  const obj = await s3.send(
-    new GetObjectCommand({ Bucket: BUCKET, Key: 'users.json' })
-  );
-  return JSON.parse(await obj.Body.transformToString());
+  try {
+    const obj = await s3.send(
+      new GetObjectCommand({ Bucket: BUCKET, Key: 'users.json' })
+    );
+    return JSON.parse(await obj.Body.transformToString());
+  } catch (err) {
+    if (err?.name === 'NoSuchKey') return [];
+    throw err;
+  }
 }
 
 async function saveUsers(users) {
@@ -121,6 +221,103 @@ async function sendAccessEmail(email, code) {
   await ses.send(new SendEmailCommand(params));
 }
 
+async function upsertEntitlement({
+  entitlementId,
+  emailNormalized,
+  tier,
+  stripeEventId,
+  stripeSessionId,
+  stripeCustomerId,
+  stripePriceId,
+  stripeProductId,
+}) {
+  const now = new Date().toISOString();
+  await db.doc(`entitlements/${entitlementId}`).set(
+    {
+      source: 'stripe',
+      status: 'active',
+      tier,
+      emailNormalized,
+      stripeEventId,
+      stripeSessionId,
+      stripeCustomerId: stripeCustomerId || null,
+      stripePriceId: stripePriceId || null,
+      stripeProductId: stripeProductId || null,
+      updatedAt: now,
+      createdAt: now,
+    },
+    { merge: true }
+  );
+}
+
+async function activateUserEntitlement({ uid, email, tier, entitlementId, stripeSessionId }) {
+  const now = new Date().toISOString();
+  await db.doc(`users/${uid}`).set(
+    {
+      premium: true,
+      tier: normalizeTier(tier),
+      entitlementSource: 'stripe',
+      entitlementStatus: 'active',
+      entitlementId,
+      customerEmailNormalized: email,
+      premiumActivatedAt: now,
+      premiumUpdatedAt: now,
+      activatedAt: now, // legacy compatibility
+      email, // legacy compatibility
+      latestStripeSessionId: stripeSessionId,
+    },
+    { merge: true }
+  );
+}
+
+async function linkEntitlementToFirebaseUser({ emailNormalized, tier, entitlementId, stripeSessionId }) {
+  try {
+    const user = await firebaseAuth.getUserByEmail(emailNormalized);
+    await activateUserEntitlement({
+      uid: user.uid,
+      email: emailNormalized,
+      tier,
+      entitlementId,
+      stripeSessionId,
+    });
+    await db.doc(`entitlements/${entitlementId}`).set(
+      {
+        userUid: user.uid,
+        linkedAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+    return user.uid;
+  } catch (err) {
+    if (err?.code === 'auth/user-not-found') return null;
+    throw err;
+  }
+}
+
+async function getProcessedStripeEvent(eventId) {
+  const ref = db.doc(`stripeEvents/${eventId}`);
+  const snap = await ref.get();
+  if (!snap.exists) return null;
+  return snap.data() || null;
+}
+
+async function markStripeEvent(eventId, payload, options = {}) {
+  const now = new Date().toISOString();
+  const { markProcessed = true } = options;
+  const data = {
+    ...payload,
+    lastAttemptAt: now,
+  };
+  if (markProcessed) {
+    data.processedAt = now;
+  }
+
+  await db.doc(`stripeEvents/${eventId}`).set(
+    data,
+    { merge: true }
+  );
+}
+
 // ==================== Response Helpers ====================
 
 const headers = {
@@ -135,8 +332,13 @@ function respond(statusCode, body) {
 
 export async function handler(event) {
   try {
-    const sigHeader = event.headers?.['stripe-signature'] || '';
-    const rawBody = event.body || '';
+    const sigHeader =
+      event.headers?.['stripe-signature'] ||
+      event.headers?.['Stripe-Signature'] ||
+      '';
+    const rawBody = event.isBase64Encoded
+      ? Buffer.from(event.body || '', 'base64').toString('utf8')
+      : (event.body || '');
 
     // Verify Stripe signature
     if (!verifyStripeSignature(rawBody, sigHeader)) {
@@ -151,47 +353,108 @@ export async function handler(event) {
       return respond(200, { received: true, skipped: true });
     }
 
+    const eventId = String(stripeEvent.id || '').trim();
+    if (!eventId) {
+      return respond(400, { error: 'missing_event_id' });
+    }
+
+    const alreadyProcessed = await getProcessedStripeEvent(eventId);
+    if (alreadyProcessed?.processedAt) {
+      return respond(200, { received: true, action: 'duplicate' });
+    }
+
     const session = stripeEvent.data.object;
-    const email = session.customer_details?.email || session.customer_email;
+    const email = normalizeEmail(session.customer_details?.email || session.customer_email);
 
     if (!email) {
       console.error('No email in checkout session:', session.id);
+      await markStripeEvent(eventId, {
+        type: stripeEvent.type,
+        sessionId: session.id || null,
+        result: 'no_email',
+      });
       return respond(200, { received: true, error: 'no_email' });
     }
 
-    // Check if user already exists
-    const users = await getUsers();
-    const existing = users.find(
-      (u) => u.email.toLowerCase() === email.toLowerCase()
-    );
-
-    if (existing) {
-      // Resend existing code
-      console.log(`User ${email} already exists, resending code`);
-      await sendAccessEmail(email, existing.code);
-      return respond(200, { received: true, action: 'resent' });
+    const tierResult = resolveTier(session);
+    if (!tierResult.tier) {
+      console.error('Unknown Stripe price/product mapping', {
+        sessionId: session.id,
+        priceId: tierResult.priceId,
+        productId: tierResult.productId,
+      });
+      await markStripeEvent(eventId, {
+        type: stripeEvent.type,
+        sessionId: session.id || null,
+        result: 'unknown_price_or_product',
+        priceId: tierResult.priceId || null,
+        productId: tierResult.productId || null,
+      }, { markProcessed: false });
+      return respond(500, { error: 'unknown_price_or_product' });
     }
 
-    // Generate new access code
-    const code = generateCode();
-    users.push({
-      email: email.toLowerCase(),
-      code,
-      createdAt: new Date().toISOString(),
-      stripeSessionId: session.id,
-      amount: session.amount_total,
-      currency: session.currency,
+    const tier = normalizeTier(tierResult.tier);
+    const entitlementId = `stripe_${String(session.id || '').replace(/[^A-Za-z0-9_-]/g, '_')}`;
+
+    await upsertEntitlement({
+      entitlementId,
+      emailNormalized: email,
+      tier,
+      stripeEventId: eventId,
+      stripeSessionId: session.id || null,
+      stripeCustomerId: session.customer || null,
+      stripePriceId: tierResult.priceId,
+      stripeProductId: tierResult.productId,
     });
 
-    // Save to S3 and send email
-    await saveUsers(users);
+    const linkedUid = await linkEntitlementToFirebaseUser({
+      emailNormalized: email,
+      tier,
+      entitlementId,
+      stripeSessionId: session.id || null,
+    });
+
+    // Keep legacy access-code email flow for backward compatibility.
+    const users = await getUsers();
+    const existing = users.find((u) => normalizeEmail(u.email) === email);
+
+    let code;
+    let action;
+    if (existing) {
+      code = existing.code;
+      action = 'resent';
+    } else {
+      code = generateCode();
+      action = 'created';
+      users.push({
+        email,
+        code,
+        tier,
+        createdAt: new Date().toISOString(),
+        stripeSessionId: session.id,
+        amount: session.amount_total,
+        currency: session.currency,
+      });
+      await saveUsers(users);
+    }
+
     await sendAccessEmail(email, code);
 
-    console.log(`New user: ${email}, code: ${code}, session: ${session.id}`);
-    return respond(200, { received: true, action: 'created' });
+    await markStripeEvent(eventId, {
+      type: stripeEvent.type,
+      sessionId: session.id || null,
+      result: action,
+      entitlementId,
+      linkedUid,
+      tier,
+      priceId: tierResult.priceId || null,
+      productId: tierResult.productId || null,
+    });
+
+    console.log(`Stripe processed: ${email}, tier=${tier}, code=${code}, session=${session.id}`);
+    return respond(200, { received: true, action, entitlementId, linked: Boolean(linkedUid) });
   } catch (err) {
     console.error('Webhook error:', err);
-    // Always return 200 to Stripe to prevent retries on our errors
-    return respond(200, { received: true, error: 'internal' });
+    return respond(500, { error: 'internal' });
   }
 }

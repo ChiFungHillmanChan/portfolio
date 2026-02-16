@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '面試官問：「Database 好慢，你會點做？」以下邊個回答最能展示系統性思維？',
+    options: [
+      { text: '即刻加 Redis Cache，因為 Cache 可以解決大部分效能問題', correct: false, explanation: '一上嚟就講加 Cache 係新手嘅常見錯誤。正確做法係先收集數據、搵出樽頸位，再決定用咩方案。Cache 可能有效，但唔一定係第一步。' },
+      { text: '先收集數據（邊啲 Query 慢、幾慢、幾時慢），再根據原因逐步排查同解決', correct: true, explanation: '呢個展示咗系統性思維：先診斷再治療。由成本最低嘅方案開始（收集數據 → 檢查 Query → 加 Index → 加 Cache → 換 DB），面試官會欣賞呢種由淺入深嘅思路。' },
+      { text: '直接換用 NoSQL Database，因為 NoSQL 比 SQL 快', correct: false, explanation: '換 DB 係成本最高、改動最大嘅方案，應該係最後先考慮。而且 NoSQL 唔一定比 SQL 快，關鍵在於 workload 類型。一上嚟就講換 DB 只會令面試官覺得唔識判斷輕重。' },
+      { text: '加多幾台 Database Server 做 Sharding', correct: false, explanation: 'Sharding 係最複雜嘅方案，喺排查完所有簡單方案之後先應該考慮。好多時候問題只係缺少一個 Index，根本唔使到 Sharding。' },
+    ],
+  },
+  {
+    question: '你用 EXPLAIN 分析一條 Query，發現佢做緊 Full Table Scan（Seq Scan），掃描咗 100 萬行。最可能嘅原因同解法係咩？',
+    options: [
+      { text: '資料庫太舊，要升級到最新版本', correct: false, explanation: '版本通常唔係 Full Table Scan 嘅原因。問題幾乎一定係 WHERE 條件用到嘅 column 冇 Index，令資料庫只能逐行掃描。' },
+      { text: 'WHERE 條件用到嘅 column 冇加 Index，要加 Index 令資料庫可以快速定位', correct: true, explanation: '冇 Index 嘅 column 做 WHERE 過濾，資料庫唯一選擇就係 Full Table Scan。加咗 Index 之後，資料庫可以直接跳去符合條件嘅行，從掃描 100 萬行變成只讀幾行，速度可以快幾十倍。' },
+      { text: 'Query 用咗 SELECT *，要改成 SELECT 特定 column', correct: false, explanation: 'SELECT * 確實唔好（攞多咗冇用嘅 column），但佢唔會引起 Full Table Scan。Full Table Scan 嘅原因係 WHERE 條件冇用到 Index。' },
+      { text: '需要加 Cache 避免重複查詢', correct: false, explanation: 'Cache 可以減少查詢次數，但唔能解決查詢本身慢嘅問題。應該先加 Index 解決 Full Table Scan，根本上提升 Query 效能。' },
+    ],
+  },
+  {
+    question: '你嘅 ORM 代碼攞 100 個用戶，每個用戶要攞佢嘅訂單。結果產生咗 101 條 SQL Query。呢個問題叫咩？點解決？',
+    options: [
+      { text: '呢個叫 Cache Miss 問題，用 Redis 快取所有訂單數據', correct: false, explanation: '呢個唔係 Cache 問題，而係 Query 模式嘅問題。101 條 Query 係因為 1 條攞用戶 + 100 條逐個攞訂單，呢個叫 N+1 問題。' },
+      { text: '呢個叫 N+1 Query 問題，應該用 JOIN 或者 batch query 一次攞晒', correct: true, explanation: '1 條 Query 攞 100 個用戶 + 100 條 Query 逐個攞訂單 = 101 條。正確做法係用 JOIN（一條 Query 攞晒）或者 batch query（WHERE user_id IN (...)），減到只需 1-2 條 Query。' },
+      { text: '呢個叫 Full Table Scan 問題，要加 Index', correct: false, explanation: 'Full Table Scan 係一條 Query 掃描太多行嘅問題。N+1 係 Query 數量太多嘅問題——101 條 Query 就算每條都用咗 Index，總時間仍然好長。' },
+      { text: '呢個係正常嘅，ORM 本來就係咁運作', correct: false, explanation: '雖然好多 ORM 預設會產生 N+1 問題，但呢個係需要被修復嘅效能問題。大部分 ORM 都有 eager loading 或者 batch loading 嘅功能嚟解決呢個問題。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -291,10 +319,11 @@ export default function FixSlowDatabase() {
           { id: 'detail', label: '② 逐步拆解', content: <DetailTab /> },
           { id: 'practice', label: '③ 實戰技巧', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

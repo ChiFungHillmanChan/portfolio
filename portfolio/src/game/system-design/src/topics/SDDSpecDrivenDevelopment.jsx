@@ -1,5 +1,45 @@
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
+import QuizRenderer from '../components/QuizRenderer';
+
+const quizData = [
+  {
+    question: 'SDD 嘅第一步係做咩？',
+    options: [
+      { text: '直接叫 AI 寫 code', correct: false, explanation: '冇 Spec 就叫 AI 寫 code，AI 會自己假設需求，結果往往偏離你嘅期望。' },
+      { text: '寫清楚 Spec（需求、限制、驗收標準）', correct: true, explanation: 'SDD 嘅核心就係「先寫 Spec 再實作」，Spec 包括 Requirements、Constraints、Tradeoffs、Acceptance Criteria。' },
+      { text: '先寫 unit test', correct: false, explanation: 'TDD 先寫 test，但 SDD 係先寫 Spec。Spec 比 test 更高層次，涵蓋需求同限制。' },
+      { text: '搵 reference project 抄', correct: false, explanation: 'Reference 可以幫助寫 Spec，但唔係 SDD 嘅第一步。' },
+    ],
+  },
+  {
+    question: 'Spec 入面嘅 Acceptance Criteria 有咩作用？',
+    options: [
+      { text: '俾老闆睇嘅文件', correct: false, explanation: 'Acceptance Criteria 唔係行政文件，而係技術上判斷 pass/fail 嘅依據。' },
+      { text: '可量化嘅驗收條件，用嚟判斷 AI 輸出 pass 定 fail', correct: true, explanation: '例如「所有 unit test 通過」「P95 延遲 < 5 秒」，呢啲具體條件令你可以客觀評估 AI 嘅 output。' },
+      { text: '描述用戶故事嘅地方', correct: false, explanation: '用戶故事屬於 Functional Requirements，唔係 Acceptance Criteria。' },
+      { text: '記錄技術棧嘅限制', correct: false, explanation: '技術棧限制屬於 Constraints 部分。' },
+    ],
+  },
+  {
+    question: 'Review 階段發現 AI 輸出未通過驗收，SDD 建議點做？',
+    options: [
+      { text: '直接改 AI 生成嘅 code', correct: false, explanation: 'SDD 唔鼓勵直接改 code，因為根本問題可能係 Spec 唔夠清楚。' },
+      { text: '換一個更強嘅 AI 模型重試', correct: false, explanation: '模型唔係問題所在，Spec 先係。換模型唔會解決 Spec 不足嘅問題。' },
+      { text: '回去修正 Spec，再重新俾 AI 實作', correct: true, explanation: 'SDD 嘅 feedback loop 係修正 Spec 而唔係直接改 code。Spec 改好後 AI 自然會生成更準確嘅結果。' },
+      { text: '放棄呢個功能', correct: false, explanation: '未通過驗收唔代表要放棄，只係需要改善 Spec。' },
+    ],
+  },
+  {
+    question: '點解 SDD 要明確寫 Tradeoffs？',
+    options: [
+      { text: '因為老闆要求', correct: false, explanation: 'Tradeoffs 唔係行政要求，而係技術設計嘅核心部分。' },
+      { text: '因為 AI 需要知道你嘅優先級先可以做出啱嘅設計決策', correct: true, explanation: '例如「優先 latency 而唔係 throughput」，AI 就知道要揀 low-latency 方案而唔係 high-throughput 方案。冇 tradeoff 嘅話 AI 會自己猜。' },
+      { text: '因為面試需要講', correct: false, explanation: '面試的確會問 tradeoff，但 SDD 入面寫 tradeoff 嘅目的係俾 AI 清晰嘅設計方向。' },
+      { text: '因為要對比唔同方案', correct: false, explanation: '對比方案係 evaluation 嘅步驟，Tradeoffs 係 Spec 入面明確你嘅優先級。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'skill-vs-agent', label: 'Skill vs Agent' },
@@ -208,6 +248,8 @@ export default function SDDSpecDrivenDevelopment() {
           { id: 'template', label: '② Spec 模板', content: <TemplateTab /> },
           { id: 'practice', label: '③ 實戰案例', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

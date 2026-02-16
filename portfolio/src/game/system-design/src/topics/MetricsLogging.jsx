@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Metrics 同 Logs 嘅分別係咩？',
+    options: [
+      { text: '兩者完全一樣，只係叫法唔同', correct: false, explanation: 'Metrics 同 Logs 係完全唔同嘅概念，收集方式同用途都唔同' },
+      { text: 'Metrics 係數字指標（如 CPU%、QPS），Logs 係文字記錄（如邊個 API 幾時出錯）', correct: true, explanation: '啱！Metrics 係可量化嘅數字，用嚟做 dashboard 同 alerting。Logs 係事件嘅文字記錄，用嚟排查具體問題' },
+      { text: 'Metrics 係 frontend 用嘅，Logs 係 backend 用嘅', correct: false, explanation: 'Frontend 同 Backend 都可以產生 Metrics 同 Logs' },
+      { text: 'Metrics 唔使存儲，Logs 先至要', correct: false, explanation: '兩者都需要存儲，Metrics 通常存入 Time Series DB，Logs 存入 Elasticsearch' },
+    ],
+  },
+  {
+    question: '完整嘅 observability pipeline 流程係點？',
+    options: [
+      { text: '直接睇 console.log', correct: false, explanation: 'console.log 只係最基本嘅做法，唔夠 production 使用' },
+      { text: 'App 產生數據 → Log Agent 收集 → Kafka buffer → Time Series DB / Elasticsearch → Grafana 視覺化', correct: true, explanation: '啱！數據由 App 產生，經 Agent（如 Filebeat）收集，Kafka 做 buffer 避免數據丟失，最後存入 DB 再用 Grafana 畫圖表' },
+      { text: '手動 SSH 入去 server 睇 log file', correct: false, explanation: '手動 SSH 唔 scale，有多部 server 就冇辦法逐部去睇' },
+      { text: '只要裝 Grafana 就夠', correct: false, explanation: 'Grafana 只係視覺化工具，仲需要 data source（如 Prometheus、Elasticsearch）同 data collection pipeline' },
+    ],
+  },
+  {
+    question: '點解需要 Kafka 做 buffer layer？',
+    options: [
+      { text: '因為 Kafka 可以加密數據', correct: false, explanation: 'Kafka 嘅主要作用唔係加密，而係做 buffer' },
+      { text: '防止 log 數據量突然暴增時壓垮存儲層，做到削峰填谷', correct: true, explanation: '啱！當 traffic spike 產生大量 log 時，Kafka 可以暫存數據，下游 consumer 按自己嘅速度慢慢處理，避免 Elasticsearch 被壓垮' },
+      { text: '因為冇 Kafka 就冇辦法產生 log', correct: false, explanation: 'App 自己就可以產生 log，Kafka 係中間嘅 transport layer' },
+      { text: '因為 Grafana 只支援 Kafka 做 data source', correct: false, explanation: 'Grafana 支援好多 data source（Prometheus、Elasticsearch 等），唔係只支援 Kafka' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'monitoring', label: '應用程式監控' },
@@ -272,10 +300,11 @@ export default function MetricsLogging() {
           { id: 'collect', label: '② 收集模式', content: <CollectTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

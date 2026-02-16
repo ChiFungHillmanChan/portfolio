@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '點解 console.log 唔適合用嚟做 Production 環境嘅監控？',
+    options: [
+      { text: '因為 console.log 會令程式跑慢 100 倍', correct: false, explanation: 'console.log 對性能影響好小，呢個唔係主要問題' },
+      { text: '因為 JavaScript 唔支援 console.log', correct: false, explanation: 'console.log 係 JavaScript 嘅基本功能，當然支援' },
+      { text: '無法追蹤歷史數據、無法設置告警、無法做實時可視化', correct: true, explanation: 'console.log 只係即時輸出，無法儲存歷史趨勢、無法自動告警、更加無法做 dashboard。出事之後先翻 log 已經太遲，專業監控工具可以主動發現問題' },
+      { text: '因為 Production 環境禁止使用 console.log', correct: false, explanation: 'Production 唔會禁止 console.log，但淨靠佢嚟監控係唔夠嘅' },
+    ],
+  },
+  {
+    question: '喺監控系統入面，Prometheus 同 Grafana 各自負責咩？',
+    options: [
+      { text: 'Prometheus 負責可視化，Grafana 負責收集 metrics', correct: false, explanation: '啱啱調轉咗！Prometheus 係負責收集同儲存 metrics，Grafana 係負責可視化' },
+      { text: 'Prometheus 負責收集 metrics，Grafana 負責將 metrics 變成圖表同 dashboard', correct: true, explanation: 'Prometheus 以 pull model 主動拉取 metrics 並儲存時序數據；Grafana 連接 Prometheus 做數據源，將 metrics 變成直觀嘅圖表，一眼就睇到系統健康狀態' },
+      { text: '兩個都係做 log 收集嘅工具，功能完全一樣', correct: false, explanation: 'Prometheus + Grafana 係處理 metrics（數值型指標），唔係 logs。Log 收集係 ELK Stack 嘅工作' },
+      { text: 'Prometheus 負責發送告警 email，Grafana 負責寫 log 到硬碟', correct: false, explanation: '告警係 Alert Manager 嘅工作，寫 log 係 Logstash/Elasticsearch 嘅工作' },
+    ],
+  },
+  {
+    question: '追蹤 Latency 嘅時候，點解建議同時睇 p50、p95、p99 而唔係淨睇平均值？',
+    options: [
+      { text: '因為平均值計算起來太複雜，唔方便', correct: false, explanation: '平均值計算好簡單，問題唔在於複雜度' },
+      { text: '因為平均值會掩蓋長尾問題，p99 先至真正反映用戶體驗', correct: true, explanation: '假設 99% 嘅 request 係 100ms，但 1% 係 5000ms。平均值可能只有 150ms 睇落好正常，但其實有 1% 用戶等緊 5 秒。p99 = 5000ms 就揭示咗呢個問題' },
+      { text: '因為 p50 同 p95 加埋等於平均值', correct: false, explanation: 'Percentile 同平均值係唔同嘅統計概念，唔存在加埋等於平均值嘅關係' },
+      { text: '因為 Prometheus 唔支援計算平均值', correct: false, explanation: 'Prometheus 完全支援計算平均值，呢個唔係技術限制問題' },
+    ],
+  },
+  {
+    question: 'Error rate 突然由 0.02% 飆升到 0.15%，超過 0.1% 嘅 threshold。正確嘅處理流程係咩？',
+    options: [
+      { text: '等用戶投訴先處理，因為 0.15% 唔算高', correct: false, explanation: '0.15% 已經超出 threshold，唔應該等投訴。主動發現問題係監控系統嘅核心價值' },
+      { text: 'Alert Manager 觸發告警 → 工程師查 Grafana dashboard → 用 Kibana 搜索 error log → 定位問題', correct: true, explanation: '呢個係完整嘅排查流程：告警系統主動通知 → Grafana 睇 error 分佈同趨勢 → Kibana 搜索具體嘅 error log → 快速定位根因。成個過程可以喺幾分鐘內完成' },
+      { text: '直接重啟所有 Server，因為重啟可以解決大部分問題', correct: false, explanation: '盲目重啟唔係正確做法，應該先排查根因。而且重啟可能導致更大嘅服務中斷' },
+      { text: '將 threshold 調高到 0.2%，咁就唔會再觸發告警', correct: false, explanation: '調高 threshold 只係掩耳盜鈴，問題仍然存在。應該解決根因，唔係忽略告警' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'metrics-logging', label: 'Metrics & Logging 監控日誌' },
@@ -435,10 +472,11 @@ export default function Monitoring() {
           { id: 'metrics', label: '② 關鍵指標', content: <MetricsTab /> },
           { id: 'alerting', label: '③ 告警系統', premium: true, content: <AlertingTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

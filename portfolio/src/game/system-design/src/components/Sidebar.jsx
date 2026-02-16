@@ -307,17 +307,26 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
                   {planLabel}
                 </span>
               </div>
-              {/* Settings button */}
-              <button
-                className="flex items-center justify-center gap-1.5 w-full px-3 py-2 rounded-lg border border-border bg-transparent text-text-dim text-[0.78rem] font-medium cursor-pointer hover:bg-white/[0.04] hover:border-border-hover hover:text-text-secondary transition-colors"
-                onClick={() => { navigate('/settings'); onClose?.(); }}
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
-                  <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
-                  <circle cx="12" cy="12" r="3" />
-                </svg>
-                設定
-              </button>
+              {/* Settings + Changelog buttons */}
+              <div className="flex gap-2">
+                <button
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-transparent text-text-dim text-[0.78rem] font-medium cursor-pointer hover:bg-white/[0.04] hover:border-border-hover hover:text-text-secondary transition-colors"
+                  onClick={() => { navigate('/settings'); onClose?.(); }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+                    <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                  設定
+                </button>
+                <button
+                  className="flex items-center justify-center gap-1 px-2.5 py-2 rounded-lg border border-border bg-transparent text-text-dimmer text-[0.72rem] cursor-pointer hover:bg-white/[0.04] hover:border-border-hover hover:text-text-dim transition-colors"
+                  onClick={() => { navigate('/changelog'); onClose?.(); }}
+                  title="更新日誌"
+                >
+                  📋
+                </button>
+              </div>
             </div>
           ) : (
             <div className="px-3 py-3">

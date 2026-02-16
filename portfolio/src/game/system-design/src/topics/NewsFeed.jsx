@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '一個名人有 1000 萬 follower，佢發一條 post。用 Fan-out on Write（推模式）會有咩問題？',
+    options: [
+      { text: '冇問題，推模式係最好嘅方案', correct: false, explanation: 'Fan-out on Write 對普通用戶好用，但對名人就會出大問題。要向 1000 萬個 follower 嘅 Feed Cache 各寫一份，呢個操作量極大。' },
+      { text: '需要寫 1000 萬次去 follower 嘅 Feed Cache，造成嚴重嘅寫入延遲（Hotkey Problem）', correct: true, explanation: '呢個就係 Fan-out on Write 最大嘅弱點。名人發一條 post，系統要寫 1000 萬次。呢個叫 Hotkey Problem——單一事件觸發海量寫入。解決方法係名人用 Fan-out on Read（拉模式），普通用戶用推模式，呢個就係混合策略。' },
+      { text: '會超出 Database 嘅 storage 容量', correct: false, explanation: 'Storage 唔係主要問題，每條 Feed 記錄好細（只係一個 post ID + timestamp）。真正嘅問題係寫入嘅速度同量——1000 萬次寫入嘅延遲同資源消耗。' },
+      { text: '名人嘅 post 質素通常唔高，唔值得推送', correct: false, explanation: '呢個唔係技術問題。Fan-out 策略嘅選擇係基於 follower 數量同系統負載嘅考量，同 post 質素冇關係。' },
+    ],
+  },
+  {
+    question: 'News Feed 用 cursor-based pagination 而唔係 offset-based pagination，最主要嘅原因係咩？',
+    options: [
+      { text: '因為 cursor-based 嘅 code 更加簡單', correct: false, explanation: 'Cursor-based 嘅實現其實比 offset-based 更複雜少少。選擇佢係因為功能上嘅優勢，唔係因為簡單。' },
+      { text: '因為 Feed 數據會不斷更新，offset 會導致重複或遺漏 post', correct: true, explanation: '呢個係核心原因。News Feed 不斷有新 post 插入，如果用 offset（例如 OFFSET 20），喺你翻下一頁嘅時間入面可能插入咗新 post，導致你睇到重複嘅 post。Cursor-based 用最後一條 post 嘅 ID 做定位點，唔受新數據影響。' },
+      { text: '因為 cursor-based 嘅查詢速度更快', correct: false, explanation: '雖然 cursor-based 避免咗 offset 大嘅時候 DB 要 scan 好多行嘅問題，但速度唔係選擇嘅最主要原因。最重要係數據一致性——避免重複或遺漏。' },
+      { text: '因為 cursor-based 可以支援更多用戶同時訪問', correct: false, explanation: '兩種 pagination 方式對併發用戶數嘅支援冇明顯分別。Cursor-based 嘅優勢係喺數據頻繁更新嘅場景下保持分頁嘅一致性。' },
+    ],
+  },
+  {
+    question: 'Facebook 嘅 News Feed 唔係純粹按時間排序。決定 post 顯示順序嘅係咩？',
+    options: [
+      { text: '隨機排序，確保每個 post 都有機會被睇到', correct: false, explanation: '隨機排序會令用戶體驗好差。用戶期望睇到佢哋最有興趣嘅內容，唔係隨機嘅內容。' },
+      { text: 'Ranking Algorithm（排序演算法），根據互動率、用戶興趣等因素計算 relevance score', correct: true, explanation: 'Facebook 用類似 EdgeRank 嘅演算法，考慮多個因素：用戶同發帖人嘅互動頻率、post 類型（圖片/影片/文字）、互動數（likes/comments/shares）、時間衰減等。每條 post 會計算一個 relevance score，按分數高低排序。呢個排序邏輯係平台最有商業價值嘅部分。' },
+      { text: '按 follower 數量排序，follower 越多嘅人 post 排越前', correct: false, explanation: 'Follower 數量唔係排序嘅唯一因素。一個 follower 好多嘅名人發嘅 post，如果你從來唔互動，Ranking Algorithm 會降低佢嘅優先級。' },
+      { text: '按 post 嘅字數排序，長 post 排越前', correct: false, explanation: '字數長短唔係排序嘅主要因素。Ranking Algorithm 考慮嘅係互動率、用戶偏好、時間等多維度因素。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'message-queue', label: 'Message Queue 消息隊列' },
@@ -222,10 +250,11 @@ export default function NewsFeed() {
           { id: 'fanout', label: '② Fan-out 策略', content: <FanoutTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

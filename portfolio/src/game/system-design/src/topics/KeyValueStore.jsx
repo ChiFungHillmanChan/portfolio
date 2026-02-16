@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '喺一個 Key-Value Store 入面，Consistent Hashing 嘅最大好處係咩？',
+    options: [
+      { text: '令所有 key 平均分佈喺每個 node', correct: false, explanation: 'Consistent Hashing 本身唔保證完全平均分佈，需要 Virtual Nodes 先可以做到更均勻嘅分佈。' },
+      { text: '加減 node 嘅時候只需要搬移少量 key，唔會影響成個集群', correct: true, explanation: '呢個就係 Consistent Hashing 嘅核心優勢。傳統 hash（key % N）加減 node 會令幾乎所有 key 重新分佈，但 Consistent Hashing 只影響相鄰 node 嘅 key。' },
+      { text: '保證每次讀取都攞到最新嘅數據', correct: false, explanation: '數據一致性係由 Quorum 機制（W+R>N）保證嘅，唔係 Consistent Hashing 嘅職責。' },
+      { text: '令 Client 可以直接知道 key 喺邊個 node', correct: false, explanation: '雖然 Client 可以計算 hash，但通常係 Coordinator 負責路由。Consistent Hashing 嘅核心價值係減少 node 變動時嘅 key 搬移量。' },
+    ],
+  },
+  {
+    question: '喺 Quorum 機制入面，假設 N=3（3 個 replica），W=2，R=2。點解可以保證讀到最新嘅數據？',
+    options: [
+      { text: '因為 W+R=4 > N=3，讀同寫一定有至少一個 node overlap', correct: true, explanation: 'W+R>N 保證讀取嘅 node 同寫入嘅 node 至少有一個重疊。即係讀 2 個 node，其中至少 1 個係寫過最新數據嘅，所以一定讀到最新版本。' },
+      { text: '因為 3 個 replica 都會即時同步', correct: false, explanation: 'Replica 之間唔一定即時同步，呢個係 eventual consistency 嘅特點。正正因為唔即時同步，先需要 Quorum 機制嚟保證讀到最新數據。' },
+      { text: '因為 Coordinator 會等所有 3 個 node 都寫完先回覆', correct: false, explanation: '如果 W=2，只需要 2 個 node 確認就算寫入成功，唔使等全部 3 個。呢個就係 Quorum 嘅靈活性所在。' },
+      { text: '因為 Vector Clock 會自動 resolve 所有衝突', correct: false, explanation: 'Vector Clock 係用嚟 detect 同 resolve 並發衝突嘅，唔係保證讀到最新數據嘅機制。保證讀取一致性嘅係 W+R>N 呢個公式。' },
+    ],
+  },
+  {
+    question: '一個 Replica node 暫時 down 咗，其他 node 會點處理寫入請求？',
+    options: [
+      { text: '直接拒絕所有寫入請求，等佢恢復', correct: false, explanation: '如果拒絕寫入，系統嘅 availability 就會受影響。Dynamo 系嘅 KV Store 設計上會盡量保持可用性。' },
+      { text: '其他 node 幫手暫時 hold 住數據，等 down 咗嘅 node 恢復再送返去（Hinted Handoff）', correct: true, explanation: 'Hinted Handoff 機制令其他 node 暫時代收數據，等目標 node 恢復後再同步過去。呢個大幅提升 availability，避免因為單一 node failure 而影響寫入。' },
+      { text: '即刻從集群中移除呢個 node，重新分配佢嘅 key', correct: false, explanation: '暫時 down 唔代表永久離開。即刻移除會觸發大量 key 搬移，成本好高。正確做法係先用 Hinted Handoff 頂住，等佢恢復。' },
+      { text: '只寫入去其餘嘅 node，永遠唔再同步返去 down 咗嘅 node', correct: false, explanation: '唔同步返去會令數據唔一致。正確做法係暫時代收（Hinted Handoff），恢復後再同步，確保最終一致性。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'redis', label: 'Redis' },
@@ -193,10 +221,11 @@ function AiViberTab() {
 }
 
 const tabs = [
-  { key: 'overview', label: '① 整體架構', content: <OverviewTab /> },
-  { key: 'quorum', label: '② Quorum 機制', content: <QuorumTab /> },
-  { key: 'practice', label: '③ 實戰要點', content: <PracticeTab />, premium: true },
-  { key: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'overview', label: '① 整體架構', content: <OverviewTab /> },
+  { id: 'quorum', label: '② Quorum 機制', content: <QuorumTab /> },
+  { id: 'practice', label: '③ 實戰要點', content: <PracticeTab />, premium: true },
+  { id: 'ai-viber', label: '④ AI Viber', content: <AiViberTab />, premium: true },
+  { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
 ];
 
 export default function KeyValueStore() {
@@ -207,7 +236,6 @@ export default function KeyValueStore() {
         subtitle="深入了解分佈式 KV 存儲，partition 同 replication 點樣設計"
         tabs={tabs}
       />
-      <QuizRenderer data={quizData} />
       <RelatedTopics topics={relatedTopics} />
     </>
   );

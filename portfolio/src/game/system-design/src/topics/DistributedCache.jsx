@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '大量 Cache key 同時過期，所有請求一齊衝去資料庫。呢個問題叫咩？應該點防？',
+    options: [
+      { text: 'Cache Penetration — 用 Bloom Filter 過濾', correct: false, explanation: 'Cache Penetration 係查一個 DB 都冇嘅 key，每次都穿透到 DB。同時過期嘅問題唔係 Penetration。' },
+      { text: 'Cache Avalanche（雪崩）— TTL 加隨機偏移，避免同時過期', correct: true, explanation: '大量 key 同時過期就係 Cache Avalanche。解法係設 TTL 嘅時候加一個隨機偏移（例如 TTL = 300 + random(0,60) 秒），令唔同 key 喺唔同時間過期，分散對 DB 嘅壓力。' },
+      { text: 'Cache Stampede — 用分佈式鎖解決', correct: false, explanation: 'Cache Stampede 係一個熱門 key 過期後，大量請求同時去 DB 攞。同「大量 key 同時過期」唔同——Stampede 係單個 key 嘅問題，Avalanche 係大量 key 嘅問題。' },
+      { text: 'Cache Invalidation — 用 Event-Driven 自動更新', correct: false, explanation: 'Cache Invalidation 係指確保 Cache 同 DB 數據一致嘅問題。同時過期嘅問題係 Avalanche，需要用 TTL 隨機偏移嚟防範。' },
+    ],
+  },
+  {
+    question: '一個熱門商品嘅 Cache key 過期咗，瞬間有 10 萬個請求同時去 DB 攞同一份資料。點樣最有效解決？',
+    options: [
+      { text: '將 TTL 設到好長（例如 24 小時）', correct: false, explanation: '長 TTL 可以減少過期頻率，但唔能完全避免。而且 TTL 太長會令 Cache 數據好耐先更新，用戶可能睇到過時資料。' },
+      { text: '用分佈式鎖（Mutex），只有一個請求去 DB，其他等結果', correct: true, explanation: '呢個就係 Cache Stampede 嘅標準解法。用 Redis SETNX 做分佈式鎖，第一個請求攞到鎖後去 DB 攞數據並更新 Cache，其他請求等 Cache 更新後直接攞。有效避免 DB 被壓爆。' },
+      { text: '直接移除呢個 Cache key，唔再快取', correct: false, explanation: '呢個會令所有請求都直接打去 DB，情況只會更差。熱門商品正正係最需要 Cache 嘅。' },
+      { text: '加多幾台 DB Server 分擔壓力', correct: false, explanation: '加 DB Server 成本高、時間長，而且唔能解決根本問題。用 Mutex 鎖係更優雅、更低成本嘅解法。' },
+    ],
+  },
+  {
+    question: '分佈式 Cache 入面，App Server 用咩方法決定一個 key 應該去邊個 Cache Node？',
+    options: [
+      { text: '隨機分配去任何一個 Cache Node', correct: false, explanation: '隨機分配會令同一個 key 可能被存喺唔同嘅 Node，浪費空間又降低 hit rate。每次攞同一個 key 都要查所有 Node，效率好低。' },
+      { text: '用 key % N（N 係 Node 數量）計算', correct: false, explanation: '簡單取模（key % N）喺加減 Node 時會令幾乎所有 key 重新分佈，引發大量 Cache Miss。呢個就係 Consistent Hashing 要解決嘅問題。' },
+      { text: '用 Consistent Hashing 將 key 映射到 Hash Ring，搵到對應嘅 Node', correct: true, explanation: 'Consistent Hashing 將 key 同 Node 都映射到同一個 Hash Ring 上。key 順時針搵到嘅第一個 Node 就係佢嘅歸屬。加減 Node 只影響相鄰 Node 嘅 key，唔會影響成個集群。' },
+      { text: '所有 key 都廣播去全部 Cache Node', correct: false, explanation: '廣播會浪費大量記憶體（每個 Node 都存全部數據），同時寫入成本好高。分佈式 Cache 嘅重點就係分散存儲，唔係全量複製。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'redis', label: 'Redis' },
@@ -202,10 +230,11 @@ export default function DistributedCache() {
           { id: 'strategies', label: '② 快取策略', content: <StrategiesTab /> },
           { id: 'problems', label: '③ 常見問題', premium: true, content: <ProblemsTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

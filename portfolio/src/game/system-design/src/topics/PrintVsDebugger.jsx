@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Print Statement debugging 最大嘅優勢係咩？',
+    options: [
+      { text: '比 Debugger 更加準確', correct: false, explanation: '準確度取決於用法，兩者都可以好準確' },
+      { text: '跨環境兼容——VM、Container、任何 OS，只要有 stdout 就用得', correct: true, explanation: '啱！Print Statement 唔需要特別嘅 IDE 或工具支援，喺任何環境都可以用，呢個係佢最大嘅優勢' },
+      { text: '可以自動修 bug', correct: false, explanation: 'Print Statement 只係幫你搵到問題，唔會自動修復' },
+      { text: '完全唔會影響程式效能', correct: false, explanation: 'Print Statement 會有少量 I/O overhead，大量 print 會影響效能' },
+    ],
+  },
+  {
+    question: '邊種情況最適合用 Debugger 而唔係 Print Statement？',
+    options: [
+      { text: '喺 production server 上 debug', correct: false, explanation: 'Production 通常冇辦法 attach debugger，print/logging 更實際' },
+      { text: '需要逐行執行、檢查複雜嘅 object 結構同 call stack 嘅時候', correct: true, explanation: '啱！Debugger 嘅 breakpoint + step-through + variable inspector 喺理解複雜邏輯同 call stack 時非常有用' },
+      { text: '喺 Docker container 入面 debug', correct: false, explanation: 'Container 環境用 print/logging 通常更方便，attach debugger 比較麻煩' },
+      { text: '所有情況都應該用 Debugger', correct: false, explanation: '唔係所有情況都適合，要視乎環境同問題類型揀合適嘅工具' },
+    ],
+  },
+  {
+    question: '點解好多 Senior Engineer 偏好 Print Statement 多過 Debugger？',
+    options: [
+      { text: '因為佢哋唔識用 Debugger', correct: false, explanation: 'Senior 通常兩種都識，偏好 print 係基於實際經驗' },
+      { text: '因為 print 更快、更靈活，可以留低 log 記錄，而且喺分散式系統中 debugger 幾乎無法使用', correct: true, explanation: '啱！加一行 print 比設定 breakpoint 快，print 可以永久留喺 code 做 logging，而且 microservices 環境中跨 service debug 用 Debugger 非常困難' },
+      { text: '因為 Debugger 要收費', correct: false, explanation: '大部分 IDE 嘅 Debugger 都係免費嘅' },
+      { text: '因為 print 嘅效能比 Debugger 好', correct: false, explanation: '效能唔係主要考量，Debugger 反而唔會喺 production 產生 I/O' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'fix-slow-database', label: 'Debug 慢嘅 Database' },
@@ -316,10 +344,11 @@ export default function PrintVsDebugger() {
           { id: 'tab-debugger', label: '② Debugger', content: <DebuggerTab /> },
           { id: 'tab-choose', label: '③ 點樣揀', premium: true, content: <ChooseTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

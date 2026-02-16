@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '點解 AI 對話越嚟越長之後，輸出質素會下降？',
+    options: [
+      { text: '因為 AI 嘅 GPU 過熱需要休息', correct: false, explanation: 'GPU 溫度同輸出質素冇直接關係，真正原因係 context window 有限' },
+      { text: '因為 context window 有限，早期指令嘅 attention 權重會被稀釋', correct: true, explanation: '冇錯！AI 嘅 context window 有上限，對話越長，早期嘅 system prompt 同指示會被新 message 推走或者 attention 被分散，導致輸出走樣' },
+      { text: '因為 AI 會自動降低回應質素嚟慳錢', correct: false, explanation: 'AI API 唔會主動降低質素，問題出喺 context window 嘅物理限制' },
+      { text: '因為 AI 嘅記憶體會自動清除舊訊息', correct: false, explanation: 'AI 冇「記憶體清除」機制，但 context window 填滿後最早嘅內容會被截斷' },
+    ],
+  },
+  {
+    question: 'Checkpoint Summary 策略嘅核心概念係咩？',
+    options: [
+      { text: '每隔一段時間重新訓練 AI 模型', correct: false, explanation: '重新訓練模型唔係用戶層面可以做嘅嘢，Checkpoint 係指喺對話層面做總結' },
+      { text: '定期叫 AI 總結目前進度，然後用 summary 開新對話', correct: true, explanation: '啱！Checkpoint Summary 就好似「存檔再讀檔」——將所有重要決策同進度濃縮成簡短 summary，用喺新對話嘅 context 入面，令 AI 重新獲得乾淨嘅 attention' },
+      { text: '每次對話結束後刪除所有歷史記錄', correct: false, explanation: '刪除歷史會失去所有 context，Checkpoint 嘅重點係保留關鍵資訊' },
+      { text: '將對話內容壓縮成 ZIP 檔案', correct: false, explanation: 'ZIP 壓縮係檔案層面嘅操作，同 AI context 管理冇關' },
+    ],
+  },
+  {
+    question: 'State File（例如 CONTEXT.md）同 Checkpoint Summary 嘅最大分別係咩？',
+    options: [
+      { text: 'State File 保存喺對話之外（持久化），Checkpoint 係對話內嘅臨時總結', correct: true, explanation: '正確！State File 係一個獨立嘅檔案，跨越多次對話都存在，唔會因為開新對話而消失。Checkpoint 係對話內做嘅即時總結，用嚟開新對話。兩者配合使用效果最好' },
+      { text: '兩者完全一樣，只係叫法唔同', correct: false, explanation: '佢哋嘅持久性完全唔同——State File 存喺檔案系統，Checkpoint 存喺對話 context 入面' },
+      { text: 'State File 只可以俾 AI 讀，Checkpoint 只可以俾人讀', correct: false, explanation: '兩者都可以俾 AI 同人讀寫，分別在於存儲位置同持久性' },
+      { text: 'State File 用嚟管 token，Checkpoint 用嚟管質素', correct: false, explanation: '兩者都係為咗對抗 Context Rot，但透過唔同嘅持久化方式實現' },
+    ],
+  },
+  {
+    question: '當你感覺 AI 開始重複或者矛盾嘅時候，最正確嘅做法係咩？',
+    options: [
+      { text: '繼續對話，用更強硬嘅語氣提醒 AI', correct: false, explanation: '繼續硬撐只會令 context 更加膨脹，質素只會更差' },
+      { text: '立即做 Checkpoint Summary，然後開新對話載入 State File + Summary', correct: true, explanation: '完全正確！一旦發現質素下降，最有效嘅做法係停低、總結、重開。新對話有乾淨嘅 context，AI 可以重新聚焦喺你嘅需求上' },
+      { text: '換一個 AI 模型繼續', correct: false, explanation: '換模型唔會解決 context rot 問題，因為新模型一樣冇之前嘅 context' },
+      { text: '刪除所有對話記錄重頭嚟', correct: false, explanation: '完全重頭嚟會失去所有進度，正確做法係先做 Checkpoint 保存關鍵資訊' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'skill-vs-agent', label: 'Skill vs Agent' },
@@ -185,10 +222,11 @@ export default function ContextRotSolution() {
           { id: 'solutions', label: '② 三大解法', content: <SolutionsTab /> },
           { id: 'practice', label: '③ 實戰流程', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

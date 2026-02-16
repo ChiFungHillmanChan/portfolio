@@ -1,5 +1,54 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'CQRS 模式嘅核心概念係咩？',
+    options: [
+      { text: '將前端同後端完全分離', correct: false, explanation: 'CQRS 唔係前後端分離。係關於將讀取同寫入嘅數據模型分開' },
+      { text: '將讀取（Query）同寫入（Command）嘅數據模型完全分開，各自優化', correct: true, explanation: '寫入端用針對寫入優化嘅模型，讀取端用針對查詢優化嘅模型。兩者之間保持 Eventual Consistency。特別適合讀寫比例差異極大嘅系統' },
+      { text: '所有操作都用同一個 API 處理', correct: false, explanation: '呢個係 CQRS 嘅反面。CQRS 嘅重點就係將讀寫分開處理' },
+      { text: '將數據庫分成多個 region', correct: false, explanation: '跨 region 部署係另一個話題。CQRS 關注嘅係讀寫模型嘅分離' },
+    ],
+  },
+  {
+    question: 'Retry with Exponential Backoff 點解要加 Jitter（隨機偏移）？',
+    options: [
+      { text: '令代碼更加複雜，顯示技術水平', correct: false, explanation: 'Jitter 有好實際嘅工程原因，唔係為咗顯示技術' },
+      { text: '防止大量客戶端同時 retry 造成「重試風暴」壓垮服務', correct: true, explanation: '如果 1000 個客戶端都喺完全相同嘅時間 retry，效果同 DDoS 冇分別。加 Jitter 令每個客戶端嘅 retry 時間有少少偏差，分散負載' },
+      { text: '令每次 retry 嘅結果更加隨機', correct: false, explanation: 'Jitter 影響嘅係 retry 嘅時機，唔係結果' },
+      { text: '減少 retry 嘅總次數', correct: false, explanation: 'Jitter 唔會改變 retry 次數，只係改變每次 retry 之間嘅等待時間' },
+    ],
+  },
+  {
+    question: '以下邊個場景最適合用 WebSocket？',
+    options: [
+      { text: '每日發一次嘅報表數據', correct: false, explanation: '低頻率嘅數據推送用 SSE 或者 HTTP polling 就夠，唔需要 WebSocket 嘅複雜性' },
+      { text: '多人協作編輯文件（例如 Google Docs）', correct: true, explanation: 'WebSocket 提供全雙工連接，客戶端同服務端可以隨時互相發送數據。多人協作需要實時雙向通訊，WebSocket 係最佳選擇' },
+      { text: '靜態網站嘅內容載入', correct: false, explanation: '靜態內容用普通 HTTP 請求就得，完全唔需要持久連接' },
+      { text: '用戶登入驗證', correct: false, explanation: '登入驗證係一次性嘅請求-回應操作，用普通 HTTP API 就夠' },
+    ],
+  },
+  {
+    question: 'Circuit Breaker（熔斷器）嘅 Half-Open 狀態係做咩用？',
+    options: [
+      { text: '允許一半嘅請求通過', correct: false, explanation: 'Half-Open 唔係字面上嘅「一半開」。係指嘗試恢復嘅狀態' },
+      { text: '經過冷卻期後，嘗試發送少量請求測試下游服務有冇恢復', correct: true, explanation: 'Circuit Breaker 斷路後會等一段冷卻期，然後進入 Half-Open 狀態。呢個時候會放少量請求去測試。如果成功就恢復 Closed 狀態；如果仍然失敗就返回 Open 狀態繼續等' },
+      { text: '永久斷開同下游服務嘅連接', correct: false, explanation: '永久斷開唔係 Circuit Breaker 嘅設計目的。佢嘅目標係自動恢復' },
+      { text: '將錯誤信息返回畀用戶', correct: false, explanation: '返回錯誤信息可能係 Open 狀態嘅行為之一，但 Half-Open 嘅重點係嘗試恢復' },
+    ],
+  },
+  {
+    question: '擴展讀取嘅三大核心策略中，Cache Invalidation 係屬於邊個策略？',
+    options: [
+      { text: 'Sharding', correct: false, explanation: 'Sharding 係擴展寫入嘅策略，將數據分佈到多個分片上' },
+      { text: 'Caching', correct: true, explanation: 'Cache Invalidation 係 Caching 策略嘅核心難題——點樣確保 cache 入面嘅數據同數據庫保持一致。常見策略有 TTL、Write-through、Cache-aside 等' },
+      { text: 'Read Replicas', correct: false, explanation: 'Read Replicas 係建立只讀副本分擔讀取壓力，同 Cache Invalidation 冇直接關係' },
+      { text: 'Batching', correct: false, explanation: 'Batching 係擴展寫入嘅策略，將多個小寫入合併成批量操作' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -326,6 +375,7 @@ export default function SystemDesignPatterns() {
           { id: 'tab-realtime', label: '實時與異步', content: <RealtimeTab /> },
           { id: 'tab-reliability', label: '可靠性模式', premium: true, content: <ReliabilityTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+          { id: 'quiz', label: '⑤ Quiz', premium: true, content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

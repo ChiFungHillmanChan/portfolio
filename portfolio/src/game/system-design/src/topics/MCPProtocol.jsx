@@ -2,6 +2,36 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: 'MCP (Model Context Protocol) 嘅核心定位係咩？',
+    options: [
+      { text: '一個新嘅 AI 模型', correct: false, explanation: 'MCP 唔係模型，而係模型同外部工具之間嘅通訊協議。' },
+      { text: '一個統一嘅 tool 連接協議——AI 世界嘅 USB', correct: true, explanation: 'MCP 提供標準化嘅 JSON-RPC 協議，令任何 AI model 都可以透過統一接口連接任何外部工具，就好似 USB 令任何裝置都可以連接電腦。' },
+      { text: '一個 database 管理系統', correct: false, explanation: 'MCP 可以連接 database，但佢本身係通訊協議唔係 database。' },
+      { text: '一個 frontend framework', correct: false, explanation: 'MCP 係 backend 通訊協議，同 frontend framework 完全唔同。' },
+    ],
+  },
+  {
+    question: 'MCP、Sub-agent、Plugin 三者嘅關係係咩？',
+    options: [
+      { text: '三者互斥，只可以揀一個用', correct: false, explanation: '三者係互補而唔係互斥，最強大嘅 AI 系統三者兼用。' },
+      { text: 'MCP 管連接標準、Sub-agent 管分工協作、Plugin 管即時數據——互補關係', correct: true, explanation: 'MCP 定義點樣 connect，Sub-agent 定義點樣 delegate 任務，Plugin 定義點樣 access 外部數據。三者解決唔同層面嘅問題。' },
+      { text: 'Plugin 係 MCP 嘅舊版本', correct: false, explanation: 'Plugin 係 OpenAI 嘅生態，MCP 係 Anthropic 主導嘅跨平台協議，兩者唔係新舊版本關係。' },
+      { text: 'Sub-agent 係 MCP 嘅一部分', correct: false, explanation: 'Sub-agent 係獨立嘅任務分解架構，唔係 MCP 嘅一部分。' },
+    ],
+  },
+  {
+    question: '咩場景最適合用 MCP 而唔係傳統 REST API？',
+    options: [
+      { text: '一個固定嘅 CRUD API', correct: false, explanation: '固定 CRUD 用 REST 就夠簡單直接。' },
+      { text: 'AI model 需要動態發現同使用多個工具', correct: true, explanation: 'MCP 嘅獨特優勢係 tool discovery 同 capability negotiation——AI model 可以動態發現有咩 tool 可以用。傳統 REST 要 hardcode 每個 endpoint。' },
+      { text: '簡單嘅 webhook 通知', correct: false, explanation: 'Webhook 係固定嘅 event-driven 通訊，唔需要 MCP 嘅 discovery 能力。' },
+      { text: '靜態文件下載', correct: false, explanation: '靜態文件用 CDN 或者簡單 HTTP 就夠。' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'coding-agent-design', label: 'Coding Agent 設計' },
   { slug: 'multi-ai-workflow', label: '多 AI 協作工作流' },

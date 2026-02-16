@@ -1,0 +1,145 @@
+{
+  "asOf": "2026-02-16",
+  "verifiedAt": "2026-02-16",
+  "source": [
+    "https://platform.openai.com/docs/pricing",
+    "https://docs.anthropic.com/en/docs/about-claude/pricing",
+    "https://ai.google.dev/gemini-api/docs/pricing",
+    "https://api-docs.deepseek.com/quick_start/pricing",
+    "https://docs.x.ai/docs/models"
+  ],
+  "models": [
+    {
+      "id": "gpt-5.2",
+      "name": "GPT-5.2",
+      "provider": "OpenAI",
+      "inputPer1M": 1.75,
+      "outputPer1M": 14.0,
+      "context": "400K",
+      "strengths": ["multimodal", "reasoning", "coding"],
+      "notes": "OpenAI pricing page lists GPT-5.2 with 400,000 context."
+    },
+    {
+      "id": "gpt-5.2-codex",
+      "name": "GPT-5.2 Codex",
+      "provider": "OpenAI",
+      "inputPer1M": 1.75,
+      "outputPer1M": 14.0,
+      "context": "400K",
+      "strengths": ["coding", "agentic", "tool use"],
+      "notes": "Uses the same unit pricing as GPT-5.2 in current docs."
+    },
+    {
+      "id": "gpt-5.3",
+      "name": "GPT-5.3",
+      "provider": "OpenAI",
+      "inputPer1M": 2.0,
+      "outputPer1M": 10.0,
+      "context": "400K",
+      "status": "legacy_unverified",
+      "deprecated": true,
+      "strengths": ["reasoning", "coding", "multimodal"],
+      "notes": "Compatibility entry for legacy content. Not currently listed on official OpenAI pricing/models pages as of 2026-02-16."
+    },
+    {
+      "id": "gpt-5.3-codex",
+      "name": "GPT-5.3 Codex",
+      "provider": "OpenAI",
+      "inputPer1M": 2.0,
+      "outputPer1M": 10.0,
+      "context": "400K",
+      "status": "legacy_unverified",
+      "deprecated": true,
+      "strengths": ["coding", "agentic", "tool use"],
+      "notes": "Compatibility entry for legacy Codex naming. Not currently listed on official OpenAI pricing/models pages as of 2026-02-16."
+    },
+    {
+      "id": "codex-spark",
+      "name": "Codex Spark",
+      "provider": "OpenAI",
+      "inputPer1M": 2.0,
+      "outputPer1M": 10.0,
+      "context": "400K",
+      "throughputTokensPerSecond": "1000+ (reported, unverified)",
+      "status": "legacy_unverified",
+      "deprecated": true,
+      "strengths": ["coding", "high-throughput", "agentic"],
+      "notes": "Compatibility entry for historical Spark references. Throughput and pricing are legacy claims and not currently listed on official OpenAI pricing/models pages as of 2026-02-16."
+    },
+    {
+      "id": "claude-opus-4.6",
+      "name": "Claude Opus 4.x",
+      "provider": "Anthropic",
+      "aliases": ["Claude Opus 4.6"],
+      "inputPer1M": 5.0,
+      "outputPer1M": 25.0,
+      "cacheWrite5mPer1M": 6.25,
+      "cacheWrite1hPer1M": 10.0,
+      "cacheHitOrRefreshPer1M": 0.5,
+      "context": "1M (API only)",
+      "strengths": ["coding", "analysis", "agentic"],
+      "notes": "Opus 4.6 pricing: $5/$25 base tokens; 1M context routed via API path."
+    },
+    {
+      "id": "claude-sonnet-4.5",
+      "name": "Claude Sonnet 4.x",
+      "provider": "Anthropic",
+      "aliases": ["Claude Sonnet 4.5"],
+      "inputPer1M": 3.0,
+      "outputPer1M": 15.0,
+      "context": "200K (1M beta available)",
+      "strengths": ["balanced", "coding", "analysis"],
+      "notes": "Mapped to official Sonnet 4 tier pricing."
+    },
+    {
+      "id": "claude-haiku",
+      "name": "Claude Haiku",
+      "provider": "Anthropic",
+      "inputPer1M": 0.8,
+      "outputPer1M": 4.0,
+      "context": "200K",
+      "strengths": ["fast", "budget", "real-time"],
+      "notes": "Official Haiku tier pricing."
+    },
+    {
+      "id": "gemini-3-pro",
+      "name": "Gemini 3 Pro",
+      "provider": "Google",
+      "inputPer1M": 2.0,
+      "outputPer1M": 12.0,
+      "context": "1M",
+      "strengths": ["large context", "multimodal", "reasoning"],
+      "notes": "Tiered pricing: >200K prompt tokens uses $4/$18 per 1M."
+    },
+    {
+      "id": "gemini-3-flash",
+      "name": "Gemini 3 Flash",
+      "provider": "Google",
+      "inputPer1M": 0.5,
+      "outputPer1M": 3.0,
+      "context": "1M",
+      "strengths": ["fast", "budget", "large context"],
+      "notes": "Google pricing page base tier values."
+    },
+    {
+      "id": "deepseek-v3.2",
+      "name": "DeepSeek V3.2",
+      "provider": "DeepSeek",
+      "inputPer1M": 0.28,
+      "outputPer1M": 0.42,
+      "context": "128K",
+      "strengths": ["open-source", "budget", "MIT license", "reasoning"],
+      "notes": "DeepSeek official API pricing table values."
+    },
+    {
+      "id": "grok-4.1",
+      "name": "Grok 4.1",
+      "provider": "xAI",
+      "inputPer1M": null,
+      "outputPer1M": null,
+      "context": null,
+      "strengths": ["real-time web", "conversational"],
+      "notes": "See xAI model docs; pricing/context data is not normalized in this registry yet."
+    }
+  ]
+}

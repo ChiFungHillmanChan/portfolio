@@ -2,6 +2,36 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: '喺 Prompt 四層架構入面，Developer Prompt 嘅主要職責係咩？',
+    options: [
+      { text: '定義 AI 嘅角色同行為邊界', correct: false, explanation: '呢個係 System Prompt 嘅職責，負責設定 AI 嘅「人格」同底線' },
+      { text: '約束輸出格式同結構化輸出（例如 JSON schema、token 限制）', correct: true, explanation: '正確！Developer Prompt 負責指定 output format，例如要求 JSON、限制 token 數量、禁止 markdown 等。呢層令 AI 嘅輸出可以被程式直接解析' },
+      { text: '提供具體嘅任務輸入', correct: false, explanation: '呢個係 User Prompt 嘅職責——每次唔同嘅任務就好似 function 嘅 argument' },
+      { text: '生成最終輸出結果', correct: false, explanation: 'Output 層係 AI 嘅回覆，唔係由 Developer Prompt 直接生成' },
+    ],
+  },
+  {
+    question: 'Constraint Injection 入面加「If you don\'t know, say I don\'t know」呢句有咩作用？',
+    options: [
+      { text: '令 AI 嘅回應更加禮貌', correct: false, explanation: '呢句唔係為咗禮貌，而係為咗減少 AI 亂作答案嘅情況' },
+      { text: '減少 hallucination——逼 AI 承認唔知而唔係亂作答案', correct: true, explanation: '完全正確！冇呢個 constraint，AI 為咗「有嘢講」會生成睇落合理但實際錯誤嘅答案。明確允許佢講「唔知」，可以大幅減少 hallucination' },
+      { text: '減少 API token 用量', correct: false, explanation: 'AI 講「I don\'t know」同講一段長回應嘅 token 差異唔大，呢個 constraint 嘅目的係提升準確性' },
+      { text: '加快 AI 嘅回應速度', correct: false, explanation: '回應速度取決於模型同 token 數量，唔係 constraint 內容' },
+    ],
+  },
+  {
+    question: 'Prompt Debugging 同 Code Debugging 嘅共同方法論係咩？',
+    options: [
+      { text: '一次過改曬所有嘢，睇下效果', correct: false, explanation: '一次改曬所有嘢係最差嘅做法——你唔知道邊個改動有效、邊個無效' },
+      { text: 'Isolate → Reproduce → Fix → Verify，逐層隔離測試', correct: true, explanation: '啱！同 code debugging 一樣，prompt debugging 要逐層隔離（System / Developer / User），搵出問題出喺邊層，修改後再驗證。每次只改一個變數，記錄每次修改嘅結果' },
+      { text: '不停重新生成直到出到好嘅結果', correct: false, explanation: '呢個係碰運氣，唔係 debugging。就算出到好結果你都唔知點解，下次一樣會出問題' },
+      { text: '換一個更貴嘅 AI 模型', correct: false, explanation: '好多時候問題出喺 prompt 而唔係模型能力。換模型唔解決 prompt 層面嘅歧義問題' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'skill-vs-agent', label: 'Skill vs Agent' },
   { slug: 'prompt-cheat-sheet', label: 'Prompt 速查表' },

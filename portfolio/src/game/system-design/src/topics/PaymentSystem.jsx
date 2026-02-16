@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '支付系統設計入面，Idempotency（冪等性）係咩意思？',
+    options: [
+      { text: '每次請求都會扣一次錢', correct: false, explanation: '呢個正正係冇冪等性嘅問題，會導致重複扣款' },
+      { text: '同一個請求無論發多少次，只會被處理一次', correct: true, explanation: '啱！用 Idempotency Key 確保同一筆交易只處理一次，防止網絡重試導致重複扣款' },
+      { text: '系統自動退款', correct: false, explanation: '自動退款係另一個功能，唔係冪等性嘅定義' },
+      { text: '用戶需要輸入密碼確認', correct: false, explanation: '密碼確認係 authentication，同冪等性無關' },
+    ],
+  },
+  {
+    question: '點解支付系統要用 Webhook 而唔係只靠 API response？',
+    options: [
+      { text: '因為 Webhook 比 API 快', correct: false, explanation: '速度唔係主要原因，Webhook 可能仲慢過直接 API response' },
+      { text: '因為支付結果可能係異步嘅，Webhook 確保即使用戶關閉瀏覽器，系統都能收到支付結果', correct: true, explanation: '啱！支付過程中可能有延遲、用戶可能關閉頁面、網絡可能中斷。Webhook 由 payment provider 主動通知，確保唔會漏單' },
+      { text: '因為 API 唔安全', correct: false, explanation: 'API 同 Webhook 都可以做到安全，關鍵唔係安全性' },
+      { text: '因為 Webhook 唔使寫 code', correct: false, explanation: 'Webhook 同樣需要寫 code 嚟接收同處理' },
+    ],
+  },
+  {
+    question: 'Double-entry Bookkeeping（雙向記帳）喺支付系統嘅作用係咩？',
+    options: [
+      { text: '記錄用戶嘅密碼', correct: false, explanation: '雙向記帳同密碼完全無關，係會計原則' },
+      { text: '確保每筆交易 debit = credit，方便對帳同偵測異常', correct: true, explanation: '啱！雙向記帳令每筆錢嘅流入同流出都有記錄。如果 debit ≠ credit，代表出咗問題，可以即刻偵測到' },
+      { text: '加快交易處理速度', correct: false, explanation: '雙向記帳唔係為咗加速，而係為咗準確性同可追溯性' },
+      { text: '令用戶可以自行修改交易記錄', correct: false, explanation: '交易記錄應該係 immutable，唔應該俾用戶修改' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'authentication', label: 'Authentication 驗證' },
@@ -227,10 +255,11 @@ export default function PaymentSystem() {
           { id: 'idempotency', label: '② 冪等性設計', content: <IdempotencyTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -37,7 +37,7 @@ export default function AuthGate({ onDismiss, requirePremium, featureName }) {
         return;
       }
 
-      await activatePremium(trimmed);
+      await activatePremium();
       setCodeSuccess(true);
     } catch {
       setCodeError('網絡錯誤，請稍後再試');

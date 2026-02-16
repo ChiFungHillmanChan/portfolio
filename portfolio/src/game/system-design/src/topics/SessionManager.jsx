@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '系統有 10 台 Server 用 Load Balancer 分流，用戶登入後 Session 存喺 Server 1 嘅 memory 入面。如果下一個 Request 被分配到 Server 2，會發生咩事？',
+    options: [
+      { text: 'Server 2 會自動同 Server 1 同步 Session 資料', correct: false, explanation: 'Server 之間唔會自動同步 memory 入面嘅資料。除非特別設計咗 Session Replication，但呢個方案嘅開銷好大，唔係最佳做法。' },
+      { text: '用戶會被踢出登入狀態，因為 Server 2 搵唔到 Session', correct: true, explanation: '因為 Session 只存喺 Server 1 嘅 memory，Server 2 完全唔知道呢個用戶登入咗。呢個就係點解需要中央 Session Store（例如 Redis）——所有 Server 共享同一個 Store，去邊台都搵到 Session。' },
+      { text: 'Load Balancer 會自動將用戶重新導向返 Server 1', correct: false, explanation: '呢個描述嘅係 Sticky Session。雖然可以做到，但如果 Server 1 掛咗，用戶 Session 就冇晒。唔夠可靠，唔係最佳實踐。' },
+      { text: '用戶嘅 Cookie 會帶晒所有 Session 資料，所以唔使查 Server', correct: false, explanation: '將所有 Session 資料放喺 Cookie 係一個好差嘅做法。Cookie 有 4KB 容量限制，而且 Client 可以篡改 Cookie 內容，有安全風險。' },
+    ],
+  },
+  {
+    question: 'JWT 同 Cookie-based Session 比較，JWT 最大嘅缺點係咩？',
+    options: [
+      { text: 'JWT 嘅安全性比 Cookie 差', correct: false, explanation: 'JWT 嘅安全性唔一定差過 Cookie。兩者各有安全考量——JWT 要保護 secret key，Cookie 要設定 HttpOnly + Secure。安全性取決於實現方式。' },
+      { text: 'JWT Token 發出去之後無法主動撤銷（revoke）', correct: true, explanation: '呢個係 JWT 最核心嘅 trade-off。因為 JWT 係 stateless 嘅，Server 驗證簽名就信任。一旦發出去，喺過期之前冇辦法主動廢除。如果用戶 logout 或者被 ban，舊嘅 JWT 仍然有效。Cookie-based Session 就可以即時刪除 Redis 入面嘅 Session 嚟踢人。' },
+      { text: 'JWT 唔可以存放用戶資料', correct: false, explanation: 'JWT 嘅 payload 可以存放用戶資料（claims），例如 user_id、role、email 等。呢個正正係 JWT 嘅特點——Token 本身帶有用戶資訊。' },
+      { text: 'JWT 唔支援 HTTPS 傳輸', correct: false, explanation: 'JWT 可以透過任何方式傳輸，包括 HTTPS。通常放喺 Authorization header 入面，完全支援安全傳輸。' },
+    ],
+  },
+  {
+    question: '設計 Session 系統嘅時候，點解建議 Session 要設定 TTL（過期時間）？',
+    options: [
+      { text: '因為 Redis 嘅記憶體有限，要定期清理', correct: false, explanation: '記憶體管理只係其中一個原因，但唔係最重要嘅原因。即使記憶體充足，TTL 仍然係必須嘅安全措施。' },
+      { text: '為咗安全同資源管理——長期有效嘅 Session 增加被盜用嘅風險', correct: true, explanation: '呢個係最重要嘅原因。如果 Session 永遠唔過期，一旦 Session ID 被竊取（例如透過 XSS），攻擊者就可以永遠假扮呢個用戶。設定 TTL（例如 30 分鐘）限制咗攻擊窗口。同時亦都自動清理唔再使用嘅 Session，釋放資源。' },
+      { text: '因為 Browser Cookie 有時間限制，一定要配合', correct: false, explanation: 'Cookie 嘅過期時間同 Server 端 Session 嘅 TTL 係獨立嘅。就算 Cookie 冇過期，Server 端 Session 過期咗一樣要重新登入。TTL 係 Server 端嘅安全決策。' },
+      { text: '因為 Load Balancer 要求 Session 有過期時間', correct: false, explanation: 'Load Balancer 唔會管 Session 有冇 TTL。TTL 係 Session Store 同應用層面嘅設計，同 Load Balancer 冇直接關係。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'authentication', label: 'Authentication 驗證' },
@@ -211,10 +239,11 @@ export default function SessionManager() {
           { id: 'compare', label: '② Cookie vs JWT', content: <CompareTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -1,5 +1,36 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'Trie（前綴樹）做 Search Autocomplete 嘅查詢時間複雜度係幾多？',
+    options: [
+      { text: 'O(n)，n 係所有儲存嘅詞語數量', correct: false, explanation: '唔需要掃描所有詞語。Trie 嘅結構係按字元逐層向下搜索，只需要走前綴嘅長度咁多步就可以搵到所有匹配嘅詞。' },
+      { text: 'O(m)，m 係前綴嘅長度', correct: true, explanation: 'Trie 嘅查詢只需要沿住前綴嘅每個字元向下走，所以時間複雜度係 O(m)，m 係你打咗幾多個字。例如打 "how"，只需要走 3 步就搵到所有以 "how" 開頭嘅詞。呢個速度同儲存嘅總詞語數量無關，所以超快。' },
+      { text: 'O(n log n)，需要排序所有結果', correct: false, explanation: '查詢 Trie 本身唔需要排序。排序係喺搵到匹配結果之後先做嘅事（按頻率排序返回 Top K）。Trie 嘅前綴查找本身係 O(m)。' },
+      { text: 'O(1)，因為用咗 hash table', correct: false, explanation: 'Trie 唔係 hash table。Hash table 只能做 exact match（精確匹配），做唔到 prefix match（前綴匹配）。Trie 嘅優勢正正係支援前綴搜索。' },
+    ],
+  },
+  {
+    question: '用戶喺搜尋框每打一個字就發一個 API Request，咩優化可以大幅減少請求次數？',
+    options: [
+      { text: '用更快嘅 Server 處理請求', correct: false, explanation: '更快嘅 Server 只係處理得快啲，但請求總數冇減少。問題嘅根源係 Client 發太多請求，要從 Client 端優化。' },
+      { text: '用 Debounce（防抖），等用戶停止打字 200-300ms 後先發 Request', correct: true, explanation: '呢個係前端最重要嘅優化技巧之一。Debounce 會等用戶停止打字一段時間後先發 Request。例如用戶快速打 "how to"，唔會發 6 個 Request（h, ho, how, how , how t, how to），而係只發 1 個 "how to" 嘅 Request。可以減少 80-90% 嘅請求量。' },
+      { text: '將所有詞語下載到 Client 端做本地搜索', correct: false, explanation: '如果詞庫有幾百萬個詞語，全部下載到 Client 係唔現實嘅。會消耗大量頻寬同記憶體。Debounce + Server 端 Trie 係更好嘅方案。' },
+      { text: '限制用戶每分鐘只能搜索 5 次', correct: false, explanation: '硬性限制搜索次數會嚴重影響用戶體驗。Autocomplete 嘅意義就係即時提供建議，限制次數會令功能失去意義。Debounce 係更聰明嘅做法。' },
+    ],
+  },
+  {
+    question: 'Search Autocomplete 系統嘅 Trie 入面嘅搜索頻率數據，應該幾時更新？',
+    options: [
+      { text: '每次用戶搜索都即時更新 Trie', correct: false, explanation: '即時更新會嚴重影響查詢性能。每次搜索都要寫入 Trie 會造成 read-write 衝突，而且 Trie 係 in-memory 結構，頻繁修改可能影響穩定性。' },
+      { text: '定期（例如每隔幾小時）從 Query Logs 收集數據，批量更新 Trie', correct: true, explanation: '呢個係最合理嘅做法。將搜索日誌收集到 Query Logs，每隔幾小時用 batch job 分析詞頻，然後建立新嘅 Trie 替換舊嘅。呢樣做可以保持查詢性能唔受影響，同時確保建議詞嘅頻率數據足夠新鮮。' },
+      { text: '永遠唔更新，用初始嘅固定數據就夠', correct: false, explanation: '搜索趨勢不斷變化（例如節日、突發新聞），唔更新嘅話建議詞會越嚟越唔相關。定期更新係必須嘅。' },
+      { text: '每日凌晨 3 點重建一次就夠', correct: false, explanation: '每日一次可能太少。如果有突發事件（例如大新聞），搜索趨勢會急劇變化。建議每隔幾小時更新一次，平衡實時性同性能開銷。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'database-basics', label: 'Database 基礎' },
@@ -209,6 +240,8 @@ export default function SearchAutocomplete() {
           { id: 'trie', label: '② Trie 數據結構', content: <TrieTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

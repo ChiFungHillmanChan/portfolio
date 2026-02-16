@@ -648,5 +648,4 @@ body {
 
 @media (min-width: 1280px) {
   .toc-container { display: block; }
-  .topic-container { padding-right: 260px; }
 }
