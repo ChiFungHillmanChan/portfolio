@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { Outlet, useParams } from 'react-router-dom';
+import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatWidget from './ChatWidget';
 import topicData from '../data/topics.json';
@@ -12,6 +12,7 @@ export default function Layout() {
     try { return localStorage.getItem(DESKTOP_COLLAPSED_KEY) === 'true'; } catch { return false; }
   });
   const params = useParams();
+  const location = useLocation();
 
   const toggleDesktopSidebar = useCallback(() => {
     setDesktopCollapsed((prev) => {
@@ -65,10 +66,11 @@ export default function Layout() {
         <Outlet />
       </main>
 
-      {/* Chat Widget */}
+      {/* Chat Widget — hidden on coaching page which has its own chat */}
       <ChatWidget
         currentTopicSlug={currentSlug}
         currentTopicTitle={currentTopic?.title}
+        hidden={location.pathname.startsWith('/coaching')}
       />
     </div>
   );

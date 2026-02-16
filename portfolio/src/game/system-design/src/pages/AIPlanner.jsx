@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import topicData from '../data/topics.json';
 import { API_BASE } from '../config/constants';
 const PLAN_KEY = 'sd_learning_plan';
 const ONE_WEEK_MS = 7 * 24 * 60 * 60 * 1000;
@@ -70,11 +69,6 @@ function formatDate(date) {
   });
 }
 
-const availableTopicsList = topicData.topics
-  .filter((t) => !t.disabled)
-  .map((t) => t.title)
-  .join('、');
-
 export default function AIPlanner() {
   const navigate = useNavigate();
   const { user, token } = useAuth();
@@ -82,6 +76,7 @@ export default function AIPlanner() {
   const [answers, setAnswers] = useState({});
   const [customText, setCustomText] = useState('');
   const [plan, setPlan] = useState(null);
+  const [explanation, setExplanation] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [completedItems, setCompletedItems] = useState([]);
@@ -90,10 +85,11 @@ export default function AIPlanner() {
   useEffect(() => {
     try {
       const saved = JSON.parse(localStorage.getItem(PLAN_KEY));
-      if (saved?.plan) {
-        setPlan(saved.plan);
+      if (saved?.pathDetails) {
+        setPlan(saved.pathDetails);
+        setExplanation(saved.explanation || '');
         setCompletedItems(saved.completed || []);
-        setStep(-1); // show plan view
+        setStep(-1);
       }
     } catch {}
   }, []);
@@ -132,26 +128,19 @@ export default function AIPlanner() {
     setLoading(true);
     setError('');
 
-    const customContext = customText.trim()
-      ? `\n額外想學嘅範疇：${customText.trim()}`
-      : '';
-
-    const prompt = `你係一個系統設計學習顧問。根據以下學生資料，用廣東話制定一個個人化學習計劃：
-目標：${answers[0]}
-經驗：${answers[1]}
-每週時間：${answers[2]} 小時
-重點領域：${(answers[3] || []).join(', ')}${customContext}
-
-現有課題列表：${availableTopicsList}
-
-請返回一個 4-8 週嘅學習計劃，每週列出：
-1. 主題名稱（盡量用現有課題列表入面嘅課題）
-2. 學習重點
-3. 預計時間
-
-重要：如果學生想學嘅範疇唔喺現有課題入面，請喺該範疇後面標記 [COMING_SOON]，並且建議最相似嘅現有課題。
-
-格式要清楚，每週用「第X週」開頭。`;
+    const goalParts = [];
+    STEPS.forEach((s, i) => {
+      const val = answers[i];
+      if (s.multi) {
+        const labels = (val || []).map(v => s.options.find(o => o.value === v)?.label).filter(Boolean);
+        if (labels.length) goalParts.push(labels.join('、'));
+      } else {
+        const opt = s.options.find(o => o.value === val);
+        if (opt) goalParts.push(opt.label);
+      }
+    });
+    if (customText.trim()) goalParts.push(`額外想學：${customText.trim()}`);
+    const goal = goalParts.join('，');
 
     try {
       const res = await fetch(`${API_BASE}/ai/chat`, {
@@ -160,7 +149,7 @@ export default function AIPlanner() {
           'Content-Type': 'application/json',
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ mode: 'guide', query: prompt }),
+        body: JSON.stringify({ mode: 'guide', goal }),
       });
 
       if (!res.ok) {
@@ -170,14 +159,22 @@ export default function AIPlanner() {
       }
 
       const data = await res.json();
-      const planText = data.results?.[0]?.description || data.answer || '未能生成計劃，請重試。';
-      setPlan(planText);
+      const pathDetails = data.pathDetails;
+
+      if (!pathDetails || !pathDetails.length) {
+        setError('未能生成學習路徑，請重試。');
+        return;
+      }
+
+      setPlan(pathDetails);
+      setExplanation(data.explanation || '');
       setStep(-1);
 
       localStorage.setItem(
         PLAN_KEY,
         JSON.stringify({
-          plan: planText,
+          pathDetails,
+          explanation: data.explanation || '',
           completed: [],
           answers,
           lastGenerated: Date.now(),
@@ -207,6 +204,7 @@ export default function AIPlanner() {
 
     localStorage.removeItem(PLAN_KEY);
     setPlan(null);
+    setExplanation('');
     setCompletedItems([]);
     setAnswers({});
     setCustomText('');
@@ -221,81 +219,64 @@ export default function AIPlanner() {
     }
   };
 
-  // Render "Coming Soon" markers in plan text
-  const renderPlanLine = (line) => {
-    if (line.includes('[COMING_SOON]')) {
-      const parts = line.split('[COMING_SOON]');
-      return (
-        <>
-          {parts[0]}
-          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[0.75rem] font-medium ml-1">
-            Coming Soon
-          </span>
-          {parts[1]}
-        </>
-      );
-    }
-    return line;
-  };
-
   // Show saved plan
   if (step === -1 && plan) {
-    const lines = plan.split('\n').filter((l) => l.trim());
-    const hasComingSoon = plan.includes('[COMING_SOON]');
+    const difficultyLabels = { 1: '初級', 2: '中級', 3: '高級', beginner: '初級', intermediate: '中級', advanced: '高級' };
+    const difficultyColors = {
+      1: 'bg-[rgba(34,197,94,0.15)] text-[#22c55e]',
+      2: 'bg-[rgba(245,158,11,0.15)] text-[#f59e0b]',
+      3: 'bg-[rgba(239,68,68,0.15)] text-[#ef4444]',
+      beginner: 'bg-[rgba(34,197,94,0.15)] text-[#22c55e]',
+      intermediate: 'bg-[rgba(245,158,11,0.15)] text-[#f59e0b]',
+      advanced: 'bg-[rgba(239,68,68,0.15)] text-[#ef4444]',
+    };
 
     return (
       <div className="h-full overflow-auto">
         <div className="topic-container">
           <header className="topic-header">
             <h1>📋 你嘅學習計劃</h1>
-            <p>按照計劃逐步學習，完成後打勾</p>
+            <p>{explanation || '按照計劃逐步學習，完成後打勾'}</p>
           </header>
 
-          {hasComingSoon && (
-            <div className="mb-4 px-4 py-3 rounded-lg bg-amber-500/10 border border-amber-500/20">
-              <div className="text-sm font-medium text-amber-400 mb-1">
-                部分範疇即將推出
-              </div>
-              <div className="text-xs text-text-dim">
-                標記為 "Coming Soon" 嘅範疇暫時未有對應課題，請留意更新！以下已建議最相似嘅現有課題。
-              </div>
-            </div>
-          )}
-
           <div className="card">
-            {lines.map((line, i) => {
-              const isWeekHeader = /第\d+週|Week \d+/i.test(line);
+            {plan.map((topic, i) => {
               const done = completedItems.includes(i);
+              const diff = topic.difficulty;
               return (
                 <div
-                  key={i}
-                  className={`flex items-start gap-3 py-2 ${
-                    isWeekHeader ? 'mt-4 first:mt-0' : ''
-                  }`}
+                  key={topic.id}
+                  className={`flex items-center gap-3 py-3 ${i > 0 ? 'border-t border-border' : ''}`}
                 >
-                  {!isWeekHeader && (
-                    <button
-                      className={`mt-0.5 w-5 h-5 rounded border flex-shrink-0 flex items-center justify-center text-xs transition-colors ${
-                        done
-                          ? 'bg-accent-green border-accent-green text-white'
-                          : 'border-border hover:border-accent-indigo'
-                      }`}
-                      onClick={() => toggleComplete(i)}
-                    >
-                      {done ? '✓' : ''}
-                    </button>
-                  )}
-                  <span
-                    className={`text-[0.9rem] leading-relaxed ${
-                      isWeekHeader
-                        ? 'text-accent-indigo-light font-bold text-base'
-                        : done
-                          ? 'text-text-dimmer line-through'
-                          : 'text-text-muted'
+                  <button
+                    className={`w-6 h-6 rounded border flex-shrink-0 flex items-center justify-center text-xs transition-colors ${
+                      done
+                        ? 'bg-accent-green border-accent-green text-white'
+                        : 'border-border hover:border-accent-indigo'
                     }`}
+                    onClick={() => toggleComplete(i)}
                   >
-                    {renderPlanLine(line)}
+                    {done ? '✓' : ''}
+                  </button>
+                  <span className="text-text-dimmer text-sm font-mono w-6 text-center flex-shrink-0">
+                    {i + 1}
                   </span>
+                  <button
+                    className={`flex-1 min-w-0 text-left ${done ? 'opacity-50' : ''}`}
+                    onClick={() => navigate(`/topic/${topic.id}`)}
+                  >
+                    <div className={`text-[0.9rem] font-medium ${done ? 'line-through text-text-dimmer' : 'text-text-primary hover:text-accent-indigo-light'} transition-colors`}>
+                      {topic.titleZh || topic.title}
+                    </div>
+                    {topic.titleZh && topic.title && topic.titleZh !== topic.title && (
+                      <div className="text-[0.75rem] text-text-dimmer">{topic.title}</div>
+                    )}
+                  </button>
+                  {diff && (
+                    <span className={`text-[0.6rem] px-1.5 py-0.5 rounded flex-shrink-0 ${difficultyColors[diff] || ''}`}>
+                      {difficultyLabels[diff] || ''}
+                    </span>
+                  )}
                 </div>
               );
             })}

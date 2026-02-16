@@ -39,7 +39,7 @@ function incrementUsage(mode) {
   return usage;
 }
 
-export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
+export default function ChatWidget({ currentTopicSlug, currentTopicTitle, hidden }) {
   const { user, token, signOut } = useAuth();
   const { tier } = usePremium();
   const [isOpen, setIsOpen] = useState(false);
@@ -88,6 +88,11 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
   useEffect(() => {
     if (isOpen) setUsage(getDailyUsage());
   }, [isOpen]);
+
+  // Close panel when hidden (e.g. navigating to coaching page)
+  useEffect(() => {
+    if (hidden) setIsOpen(false);
+  }, [hidden]);
 
   const addMsg = (content, type) => {
     setMessages((prev) => [...prev, { content, type, ts: Date.now() }]);
@@ -207,6 +212,8 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle }) {
     { id: 'viber', icon: '✍️', label: 'Prompt 生成器' },
     { id: 'suggest', icon: '💡', label: '建議課題' },
   ];
+
+  if (hidden) return null;
 
   return (
     <>

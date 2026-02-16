@@ -134,9 +134,9 @@ export default function Coaching() {
           ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
-          mode: 'search',
-          query: `${systemPrompt}\n\n學生問題：${value}`,
-          topicContext: `topics/${selectedSlug}.html`,
+          mode: 'coaching',
+          query: value,
+          systemPrompt,
           topicTitle: topic?.title,
         }),
       });
@@ -152,7 +152,7 @@ export default function Coaching() {
       }
 
       const data = await res.json();
-      const response = data.results?.[0]?.description || data.answer || '未能回應，請重試。';
+      const response = data.answer || '未能回應，請重試。';
       setMessages((prev) => [...prev, {
         role: 'coach',
         content: response,
