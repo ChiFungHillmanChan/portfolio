@@ -15,6 +15,7 @@ node_modules/
 # Build outputs
 portfolio/src/game/system-design/dist/
 portfolio/src/game/system-design/dist-portfolio/
+portfolio/public/games/system-design/assets/
 
 # Environment files
 .env
