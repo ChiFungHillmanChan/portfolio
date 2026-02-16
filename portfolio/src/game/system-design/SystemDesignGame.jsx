@@ -23,7 +23,7 @@ const SystemDesignGame = () => {
     <div className="system-design-container">
       <iframe
         title="System Design"
-        src="/games/system-design/index.html"
+        src="https://system-design.hillmanchan.com"
         className="system-design-iframe"
         allow="fullscreen"
         ref={iframeRef}
