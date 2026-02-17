@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'robots.txt 作為防禦 AI scraper 嘅第一道防線，最大嘅局限係咩？',
+    options: [
+      { text: '佢嘅檔案大小有限制', correct: false, explanation: '檔案大小唔係問題，robots.txt 通常好細' },
+      { text: '佢只係一個「禮貌嘅請求」，冇強制力，惡意 scraper 可以完全無視', correct: true, explanation: '啱！robots.txt 只係一個約定，正規 crawler（如 Googlebot）會遵守，但惡意 AI scraper 可以直接忽略佢' },
+      { text: '只有 Google 嘅 crawler 會讀', correct: false, explanation: '大部分正規 crawler 都會讀 robots.txt，唔止 Google' },
+      { text: '需要付費先至可以用', correct: false, explanation: 'robots.txt 係免費嘅純文字檔案，任何人都可以建立' },
+    ],
+  },
+  {
+    question: '防禦 AI scraper 最有效嘅多層策略係咩？',
+    options: [
+      { text: '只靠 robots.txt 就夠', correct: false, explanation: 'robots.txt 冇強制力，必須配合其他技術手段' },
+      { text: 'robots.txt + Rate Limiting + User Agent 偵測 + 行為分析 + CAPTCHA 嘅多層防禦', correct: true, explanation: '啱！有效嘅防禦需要多層：robots.txt 做第一層、Rate Limiting 限制頻率、UA 偵測已知 bot、行為分析搵出異常模式、CAPTCHA 做最後防線' },
+      { text: '將整個網站關閉', correct: false, explanation: '關閉網站雖然有效但係最極端嘅做法，正常用戶都冇得用' },
+      { text: '只允許登入用戶 access', correct: false, explanation: '對於需要 SEO 嘅公開內容，強制登入會影響搜尋引擎收錄' },
+    ],
+  },
+  {
+    question: '點樣分辨正常用戶同 AI scraper 嘅行為？',
+    options: [
+      { text: '睇佢哋用咩瀏覽器', correct: false, explanation: '瀏覽器可以偽造，User Agent 唔係可靠嘅唯一指標' },
+      { text: '分析請求模式 — scraper 通常請求頻率極高、時間間隔固定、唔載入 CSS/JS/圖片', correct: true, explanation: '啱！正常用戶嘅瀏覽行為有隨機性，會載入完整頁面。Scraper 通常高頻率、時間規律、只攞 HTML 唔載入其他資源' },
+      { text: '問佢係唔係 bot', correct: false, explanation: '任何 bot 都可以假裝自己係人類' },
+      { text: '睇 IP 地址係邊個國家', correct: false, explanation: 'IP 地址位置唔能夠準確判斷係咪 scraper，因為 scraper 可以用任何地方嘅 proxy' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'scraping-vs-crawling', label: 'Web Scraping vs Crawling' },
@@ -503,10 +531,11 @@ export default function AIScraperDefense() {
           { id: 'tab-detection', label: '② Bot 偵測', content: <DetectionTab /> },
           { id: 'tab-honeypot', label: '③ Honeypot 陷阱', premium: true, content: <HoneypotTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -250,10 +250,11 @@ export default function RateLimiter() {
           { id: 'algorithms', label: '② 限流演算法', content: <AlgorithmsTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -3,7 +3,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '如果你嘅項目係純靜態網站（HTML/CSS/JS），以下邊個平台最適合？',
+    options: [
+      { text: 'Railway，因為有 $5 credit 可以用', correct: false, explanation: 'Railway 主要用嚟部署後端服務同 Database，用嚟放靜態網站係大材小用，浪費 credit' },
+      { text: 'GitHub Pages，零設定、100 GB/月頻寬、直接從 Git 部署', correct: true, explanation: 'GitHub Pages 專門為靜態網站設計——零成本、零設定、直接從 Git repo 部署。100 GB/月頻寬對大部分靜態網站綽綽有餘' },
+      { text: 'PythonAnywhere，因為佢完全免費', correct: false, explanation: 'PythonAnywhere 係 Python 專用平台，唔適合純靜態網站，而且有好多限制（100 CPU 秒/日、無自訂域名）' },
+      { text: 'MongoDB Atlas，因為可以儲存網頁數據', correct: false, explanation: 'MongoDB Atlas 係數據庫服務，唔係網站託管平台' },
+    ],
+  },
+  {
+    question: 'Render 免費方案最大嘅問題係咩？點樣解決？',
+    options: [
+      { text: '唔支援 Node.js，要用其他語言', correct: false, explanation: 'Render 支援 Node.js、Python、Go、Rust 等多種語言' },
+      { text: '15 分鐘無流量會休眠，cold start 要 30-60 秒。可以用 UptimeRobot 每 5 分鐘 ping 一次', correct: true, explanation: 'Render 免費方案 15 分鐘無流量就休眠，重新啟動要等 30-60 秒。用 UptimeRobot 等免費監控工具定期 ping health endpoint 可以避免休眠，但要留意 750 hrs/月嘅上限' },
+      { text: '每月只可以部署一次', correct: false, explanation: 'Render 冇部署次數限制，可以隨時 deploy' },
+      { text: '唔支援自訂域名', correct: false, explanation: 'Render 免費方案支援自訂域名加自動 SSL' },
+    ],
+  },
+  {
+    question: '你需要一個持續運行（無休眠）嘅免費後端 API，同時需要一個 Database。以下邊個組合最適合？',
+    options: [
+      { text: 'GitHub Pages + MongoDB Atlas', correct: false, explanation: 'GitHub Pages 只能放靜態網站，無法運行後端 API code' },
+      { text: 'Railway（$5 credit/月、無休眠、一鍵部署 Database）', correct: true, explanation: 'Railway 最大優勢係 free tier 無休眠機制，服務持續運行。而且可以一鍵部署 PostgreSQL、MySQL、Redis 等 Database。$5 credit/月對低流量項目夠用' },
+      { text: 'Vercel + PythonAnywhere', correct: false, explanation: 'Vercel 主要做前端，PythonAnywhere 只支援 Python 且有嚴重嘅外部網絡限制' },
+      { text: 'Cloudflare Pages + GitHub Pages', correct: false, explanation: '兩個都係靜態網站託管，都無法運行傳統後端 API 或者直接連接 Database' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'docker', label: 'Docker 容器化' },
@@ -531,11 +559,12 @@ export default function Deployment() {
           { id: 'fullstack', label: '④ Full Stack', premium: true, content: <FullStackTab /> },
           { id: 'database', label: '⑤ Database', premium: true, content: <DatabaseTab /> },
           { id: 'ai-viber', label: '⑥ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <QuickSelectionGuide />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

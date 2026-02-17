@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '如果冇 API Gateway，Client 要點樣同後端溝通？',
+    options: [
+      { text: '只需要知道一個統一地址就得', correct: false, explanation: '呢個係有 API Gateway 嘅情況，Gateway 提供統一入口' },
+      { text: 'Client 要知道每個微服務嘅地址同 port', correct: true, explanation: '冇 Gateway 嘅話，Client 要直接同每個微服務溝通，例如 User Service 喺 port 3001、Order Service 喺 port 3002，增加前端複雜度' },
+      { text: 'Client 直接連接 Database 讀取數據', correct: false, explanation: 'Client 唔應該直接連接 Database，呢個係嚴重嘅安全問題' },
+      { text: 'Client 唔使同後端溝通，全部喺前端處理', correct: false, explanation: '大部分應用都需要後端處理業務邏輯同數據存取' },
+    ],
+  },
+  {
+    question: '當 API Gateway 發現某個用戶嘅請求頻率超出限制，應該返回咩 HTTP status code？',
+    options: [
+      { text: '401 Unauthorized', correct: false, explanation: '401 係身份驗證失敗，唔係限流。限流同驗證係兩個唔同嘅概念' },
+      { text: '500 Internal Server Error', correct: false, explanation: '500 代表伺服器內部錯誤，限流係正常嘅保護機制，唔算伺服器出錯' },
+      { text: '429 Too Many Requests', correct: true, explanation: '429 係專門用嚟表示請求頻率超限嘅 status code，通常會附帶 Retry-After header 話俾 Client 幾時可以再試' },
+      { text: '403 Forbidden', correct: false, explanation: '403 係權限不足，代表用戶冇權訪問呢個資源，唔係頻率問題' },
+    ],
+  },
+  {
+    question: 'API Gateway 係所有請求嘅唯一入口，咁點樣避免佢成為 Single Point of Failure？',
+    options: [
+      { text: '將 Gateway 嘅邏輯搬返入每個微服務度', correct: false, explanation: '咁做會失去 Gateway 統一管理嘅好處，每個微服務都要重複做 auth、rate limiting 等工作' },
+      { text: '部署多個 Gateway instance，前面加 Load Balancer', correct: true, explanation: '生產環境一定要部署多個 Gateway instance 做冗餘，再用 Load Balancer 做故障轉移，確保單個 Gateway 掛咗唔會影響成個系統' },
+      { text: '用 Cache 將所有 response 儲存落嚟', correct: false, explanation: 'Cache 可以減輕負載，但唔能夠解決 Gateway 本身掛咗嘅問題' },
+      { text: '每個 Client 直接內建所有微服務嘅地址做 fallback', correct: false, explanation: '呢個做法等於放棄 Gateway 嘅所有好處，而且 Client 直連微服務會暴露內部架構' },
+    ],
+  },
+  {
+    question: '點解建議將 SSL Termination 放喺 API Gateway 處理，而唔係每個後端服務各自處理？',
+    options: [
+      { text: '因為 SSL 加解密會增加後端服務嘅 CPU 負擔，統一喺 Gateway 處理更高效', correct: true, explanation: 'HTTPS 嘅加解密係 CPU intensive 嘅操作。統一喺 Gateway 做 SSL Termination，後端服務之間用 HTTP 通訊就得，減少每個服務嘅 CPU 負擔' },
+      { text: '因為後端服務唔支援 HTTPS', correct: false, explanation: '後端服務絕對可以支援 HTTPS，只係統一喺 Gateway 處理更有效率' },
+      { text: '因為 SSL certificate 只能裝喺一台機上面', correct: false, explanation: 'SSL certificate 可以裝喺任何支援嘅服務上，並冇數量限制' },
+      { text: '因為 Client 唔支援 HTTPS 連接', correct: false, explanation: '現代瀏覽器同 Client 全部支援 HTTPS，而且係強烈建議使用嘅' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'load-balancer', label: 'Load Balancer 負載均衡器' },
@@ -237,10 +274,11 @@ export default function APIGateway() {
           { id: 'features', label: '② 核心功能', content: <FeaturesTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

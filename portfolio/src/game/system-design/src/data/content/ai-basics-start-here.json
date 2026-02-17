@@ -62,7 +62,7 @@
         {
           "icon": "⚔️",
           "title": "AI 模型深入對比",
-          "content": "GPT-5.3 Codex / Claude Opus 4.6 / Gemini 3 各有強弱，用數據同場景幫你揀。",
+          "content": "GPT-5.2 Codex / Claude Opus 4.6 / Gemini 3 各有強弱，用數據同場景幫你揀。",
           "link": "/topic/ai-model-comparison",
           "linkText": "免費學習 →"
         }
@@ -206,8 +206,8 @@
       "type": "table",
       "headers": ["工具", "最強場景", "價格", "適合邊個"],
       "rows": [
-        ["**ChatGPT (GPT-5.3 Codex)**", "Agentic 編程 / 通用對話 / 推理", "免費 + $20/月 Pro（需 VPN）", "全職開發者 / 內容創作者"],
-        ["**Claude (Opus 4.6)**", "1M Token Context / Agent Teams / 精確推理", "免費 + $20/月 Pro（需 VPN）", "工程師 / 研究員"],
+        ["**ChatGPT (GPT-5.2 Codex)**", "Agentic 編程 / 通用對話 / 推理", "免費 + $20/月 Pro（需 VPN）", "全職開發者 / 內容創作者"],
+        ["**Claude (Opus 4.6)**", "1M Token Context（API only）/ Agent Teams / 精確推理", "免費 + $20/月 Pro（需 VPN）", "工程師 / 研究員"],
         ["**Cursor**", "IDE 內 AI 輔助 / 代碼生成 / 重構", "$20/月 Pro（用量制，可能月中用完）", "全職開發者"],
         ["**Antigravity (Google)**", "Agent-first IDE / 多 Agent 平行 / Gemini 3", "免費預覽中", "想試多 agent 工作流嘅開發者"],
         ["**Gemini 3**", "多模態理解 / 1M Context / Google 生態", "免費額度（需 VPN）", "Google 用戶 / 預算有限"]
@@ -234,7 +234,7 @@
       "type": "card-grid",
       "cards": [
         { "icon": "🗺️", "title": "AI 工具全景圖", "content": "主流工具 + IDE 對比", "link": "/topic/ai-tools-landscape" },
-        { "icon": "⚔️", "title": "AI 模型深入對比", "content": "GPT-5.3 / Opus 4.6 / Gemini 3", "link": "/topic/ai-model-comparison" },
+        { "icon": "⚔️", "title": "AI 模型深入對比", "content": "GPT-5.2 / Opus 4.6 / Gemini 3", "link": "/topic/ai-model-comparison" },
         { "icon": "✏️", "title": "Prompt Engineering", "content": "系統化 Prompt 設計", "link": "/topic/prompt-engineering" },
         { "icon": "📋", "title": "Prompt 速查表", "content": "20+ 即抄即用模板", "link": "/topic/prompt-cheat-sheet" },
         { "icon": "🧭", "title": "Skill vs Agent", "content": "任務分類 / 模式選擇", "link": "/topic/skill-vs-agent" },

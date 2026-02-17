@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Dependency Injection 嘅核心概念係咩？',
+    options: [
+      { text: 'Class 自己用 new keyword 建立依賴', correct: false, explanation: '呢個係冇用 DI 嘅做法，會導致 Tightly Coupled' },
+      { text: 'Class 嘅依賴由外部提供（注入），而唔係自己內部建立', correct: true, explanation: '啱！DI 嘅核心就係 Inversion of Control — 依賴由外部 caller 建立同注入，Class 本身只需要用' },
+      { text: '將所有 Class 合併成一個大 Class', correct: false, explanation: '呢個係反模式，DI 嘅目的係令 Class 之間鬆散耦合' },
+      { text: '用全局變數嚟分享依賴', correct: false, explanation: '全局變數唔係 DI，反而會令 code 更加難測試同維護' },
+    ],
+  },
+  {
+    question: 'DI 對 Unit Testing 嘅最大好處係咩？',
+    options: [
+      { text: '唔使寫測試就知道 code 啱唔啱', correct: false, explanation: 'DI 唔係免除測試，而係令測試更容易寫' },
+      { text: '可以注入 Mock 物件取代真實依賴，令測試快速同獨立', correct: true, explanation: '啱！因為依賴由外部注入，測試時可以傳入 Mock（例如 jest.fn()），唔使啟動真正嘅 Database 或 API' },
+      { text: '自動生成所有 test case', correct: false, explanation: 'DI 唔會自動生成 test case，只係令手動寫測試更加容易' },
+      { text: '令 production code 同 test code 共用同一個 database', correct: false, explanation: 'DI 嘅好處正正係可以喺 test 用 Mock，避免依賴真實 database' },
+    ],
+  },
+  {
+    question: '以下邊個係用咗 Dependency Injection 嘅寫法？',
+    options: [
+      { text: 'constructor() { this.db = new PostgresDB(); }', correct: false, explanation: '呢個係直接喺內部 new 依賴，屬於 Tightly Coupled，冇用 DI' },
+      { text: 'constructor(db) { this.db = db; }', correct: true, explanation: '啱！依賴透過 Constructor 參數傳入，由外部決定用邊個 DB 實作，呢個就係 Constructor Injection' },
+      { text: 'const db = globalDB;', correct: false, explanation: '用全局變數唔係 DI，會令 code 難以測試同替換' },
+      { text: 'this.db = DB.getInstance();', correct: false, explanation: '呢個係 Singleton pattern，唔係 DI。Class 仍然自己決定用邊個實作' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'system-design-patterns', label: '系統設計模式總覽' },
@@ -441,10 +469,11 @@ export default function DependencyInjection() {
           { id: 'tab-comparison', label: '有 vs 冇 DI', content: <ComparisonTab /> },
           { id: 'tab-testing', label: '測試優勢', premium: true, content: <TestingTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

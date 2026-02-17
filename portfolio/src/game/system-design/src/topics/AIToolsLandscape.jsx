@@ -9,6 +9,11 @@ const relatedTopics = [
   { slug: 'prompt-engineering', label: 'Prompt Engineering' },
 ];
 
+const FACT_CHECK_META = {
+  asOf: '2026-02-16',
+  sources: ['OpenAI pricing', 'Anthropic pricing', 'Gemini API pricing', 'DeepSeek API pricing'],
+};
+
 /* ── Category Card ── */
 function CategoryCard({ color, icon, title, items }) {
   return (
@@ -25,35 +30,61 @@ function CategoryCard({ color, icon, title, items }) {
 
 /* ── Comparison Table ── */
 function ComparisonTable() {
-  const headers = ['工具', 'Coding', '推理', '搜尋', '多模態', 'Context', '月費 (個人)'];
-  const rows = [
-    { tool: 'GPT-5.3 Codex', coding: '⭐⭐', reasoning: '⭐⭐⭐', search: '⭐⭐', multimodal: '⭐⭐⭐', context: '400K', cost: '$20 (需 VPN)', costColor: '#F59E0B' },
-    { tool: 'Claude Opus 4.6', coding: '⭐⭐⭐', reasoning: '⭐⭐⭐', search: '❌', multimodal: '⭐', context: '1M', cost: '$20 (需 VPN)', costColor: '#F59E0B' },
-    { tool: 'Gemini 3', coding: '⭐⭐', reasoning: '⭐⭐', search: '⭐⭐', multimodal: '⭐⭐⭐', context: '1M', cost: '免費 (需 VPN)', costColor: '#34d399' },
-    { tool: 'Cursor', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '❌', context: '多模型', cost: '$20 (用量制)', costColor: '#F59E0B' },
-    { tool: 'Antigravity', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '⭐⭐', context: 'Gemini 3', cost: '免費預覽', costColor: '#34d399' },
-    { tool: 'Copilot', coding: '⭐⭐', reasoning: '⭐', search: '❌', multimodal: '❌', context: '—', cost: '$10', costColor: '#34d399' },
-    { tool: 'DeepSeek', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '⭐', context: '128K', cost: '免費 / API 極平', costColor: '#34d399' },
+  const modelHeaders = ['AI 模型', 'Coding', '推理', '搜尋', '多模態', 'Context', '價格'];
+  const modelRows = [
+    { name: 'GPT-5.2 Codex', coding: '⭐⭐', reasoning: '⭐⭐⭐', search: '⭐⭐', multimodal: '⭐⭐⭐', context: '400K', pricing: '$20 (需 VPN)', priceColor: '#F59E0B' },
+    { name: 'Claude Opus 4.6', coding: '⭐⭐⭐', reasoning: '⭐⭐⭐', search: '❌', multimodal: '⭐', context: '1M*', pricing: '$20 (需 VPN)', priceColor: '#F59E0B' },
+    { name: 'Gemini 3', coding: '⭐⭐', reasoning: '⭐⭐', search: '⭐⭐', multimodal: '⭐⭐⭐', context: '1M', pricing: '免費 (需 VPN)', priceColor: '#34d399' },
+    { name: 'DeepSeek', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '⭐', context: '128K', pricing: '免費 / API 極平', priceColor: '#34d399' },
+  ];
+
+  const toolHeaders = ['工具 / IDE', 'Coding', '推理', '搜尋', '多模態', '底層模型', '月費 (個人)'];
+  const toolRows = [
+    { name: 'Cursor', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '❌', engine: '多模型', pricing: '$20 (用量制)', priceColor: '#F59E0B' },
+    { name: 'Antigravity', coding: '⭐⭐⭐', reasoning: '⭐⭐', search: '❌', multimodal: '⭐⭐', engine: 'Gemini 3', pricing: '免費預覽', priceColor: '#34d399' },
+    { name: 'Copilot', coding: '⭐⭐', reasoning: '⭐', search: '❌', multimodal: '❌', engine: '—', pricing: '$10', priceColor: '#34d399' },
   ];
 
   return (
     <div style={{ marginTop: 24 }}>
-      <h3 style={{ textAlign: 'center', color: '#e2e8f0', fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>能力對比（工程師視角）</h3>
+      <h3 style={{ textAlign: 'center', color: '#e2e8f0', fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>AI 模型對比（只比較模型）</h3>
       <div className="content-table-wrapper">
         <table className="content-table">
           <thead>
-            <tr>{headers.map((h, i) => <th key={i}>{h}</th>)}</tr>
+            <tr>{modelHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => (
-              <tr key={i}>
-                <td style={{ fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>{row.tool}</td>
+            {modelRows.map((row) => (
+              <tr key={row.name}>
+                <td style={{ fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>{row.name}</td>
                 <td>{row.coding}</td>
                 <td>{row.reasoning}</td>
                 <td>{row.search}</td>
                 <td>{row.multimodal}</td>
                 <td style={{ color: '#34d399' }}>{row.context}</td>
-                <td style={{ color: row.costColor, whiteSpace: 'nowrap' }}>{row.cost}</td>
+                <td style={{ color: row.priceColor, whiteSpace: 'nowrap' }}>{row.pricing}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h3 style={{ textAlign: 'center', color: '#e2e8f0', fontWeight: 700, fontSize: '1rem', margin: '20px 0 16px' }}>工具 / IDE 對比（只比較產品）</h3>
+      <div className="content-table-wrapper">
+        <table className="content-table">
+          <thead>
+            <tr>{toolHeaders.map((h, i) => <th key={i}>{h}</th>)}</tr>
+          </thead>
+          <tbody>
+            {toolRows.map((row) => (
+              <tr key={row.name}>
+                <td style={{ fontWeight: 600, color: '#e2e8f0', whiteSpace: 'nowrap' }}>{row.name}</td>
+                <td>{row.coding}</td>
+                <td>{row.reasoning}</td>
+                <td>{row.search}</td>
+                <td>{row.multimodal}</td>
+                <td style={{ color: '#9ca3af' }}>{row.engine}</td>
+                <td style={{ color: row.priceColor, whiteSpace: 'nowrap' }}>{row.pricing}</td>
               </tr>
             ))}
           </tbody>
@@ -79,8 +110,8 @@ function OverviewTab() {
           icon="💬"
           title="文字 AI"
           items={[
-            { text: 'GPT-5.3 Codex — Agentic 編程 + 推理' },
-            { text: 'Claude Opus 4.6 — 1M context + Agent Teams' },
+            { text: 'GPT-5.2 Codex — Agentic 編程 + 推理' },
+            { text: 'Claude Opus 4.6 — 高質量推理（1M context，API only）' },
             { text: 'Gemini 3 — 多模態 + Deep Think（免費但需 VPN）' },
             { text: 'Perplexity — 搜尋引擎 + 引用來源', dim: true },
             { text: 'DeepSeek — 開源 + 超低成本 API', dim: true },
@@ -115,11 +146,14 @@ function OverviewTab() {
       <ComparisonTable />
 
       <ol className="steps" style={{ marginTop: 24 }}>
-        <li><span className="step-num">1</span><span><strong>文字 AI</strong>：GPT-5.3 Codex 同 Claude Opus 4.6 係兩大王者。Codex 推理同多模態最強（400K context），Opus 嘅 1M context window 適合處理大型 codebase。Gemini 3 有免費 token 額度同 1M context，但香港要 VPN 先用到（ChatGPT 同 Claude 都係，三個都需要 VPN）。DeepSeek 係開源界王者，API 成本極低。</span></li>
+        <li><span className="step-num">1</span><span><strong>文字 AI</strong>：GPT-5.2 Codex 同 Claude Opus 4.6 係兩大王者。Codex 推理同多模態強（400K context）；Opus 偏重深度分析（1M context 只限 API 路徑）。Gemini 3 有免費 token 額度同 1M context（部分地區要 VPN），DeepSeek 係開源界王者，API 成本極低。</span></li>
         <li><span className="step-num">2</span><span><strong>開發 IDE</strong>：Cursor 做 IDE 整合最成熟，支援多模型切換，$20/月但係用量制（用得多可能未到月尾就用曬）。Antigravity 係 Google 新出嘅 Agent-first IDE，免費預覽中，支援多個 AI agent 平行工作。VS Code 配 Copilot 最普及，加上 extension 可以用 Codex 同 Claude。</span></li>
         <li><span className="step-num">3</span><span><strong>搜尋 AI</strong>：Perplexity 係 AI 搜尋引擎，每個答案都有引用來源。做 research 嘅時候用，但唔適合寫 code。</span></li>
         <li><span className="step-num">4</span><span><strong>設計 / 自動化</strong>：Canva 同 Figma AI 處理視覺設計，Notion AI 管理知識庫，Zapier/Make 串接唔同服務做自動化。</span></li>
       </ol>
+      <p className="text-xs text-text-dimmer mt-4">
+        Data as of {FACT_CHECK_META.asOf}. Sources: {FACT_CHECK_META.sources.join(' / ')}. *Claude 1M 為 API 路徑能力。
+      </p>
     </div>
   );
 }
@@ -142,13 +176,13 @@ function FrameworkTab() {
           <h4>② 預算考量</h4>
           <p><strong style={{ color: '#34d399' }}>免費</strong>：Gemini 3 API 有免費額度（需 VPN）、Antigravity 免費預覽中、DeepSeek API 極平、Copilot 免費版<br />
           <strong style={{ color: '#F59E0B' }}>$10-20/月</strong>：ChatGPT Plus $20/月（需 VPN）、Claude Pro $20/月（需 VPN）、Cursor Pro $20/月（用量制，用完即止）、Copilot Pro $10/月<br />
-          <strong style={{ color: '#ef4444' }}>API 高用量</strong>：Claude Opus API（$15-75/1M tokens）、GPT-5 API（按用量計）</p>
+          <strong style={{ color: '#ef4444' }}>API 高用量</strong>：Claude Opus API（$5-25/1M tokens）、GPT-5.2 API（$1.75-14/1M tokens）</p>
         </div>
         <div className="key-point">
           <h4>③ Context Window 需求</h4>
           <p><strong>小型任務（&lt;10K tokens）</strong>：任何工具都得<br />
-          <strong>中型專案（10-100K）</strong>：ChatGPT / Claude Sonnet，GPT-5.3 Codex 400K 亦好適合<br />
-          <strong>大型 Codebase（100K+）</strong>：Claude Opus 4.6（1M）/ Gemini Pro（1M）</p>
+          <strong>中型專案（10-100K）</strong>：ChatGPT / Claude Sonnet，GPT-5.2 Codex 400K 亦好適合<br />
+          <strong>大型 Codebase（100K+）</strong>：Gemini Pro（1M）/ Opus API 1M 路線</p>
         </div>
         <div className="key-point">
           <h4>④ 隱私同安全</h4>
@@ -218,7 +252,7 @@ function PracticeTab() {
   return (
     <div className="card">
       <h2>實戰場景：3 個工具鏈 Walkthrough</h2>
-      <div className="subtitle">而家最強嘅 coding 工具鏈——以 Codex 5.3 + Opus 4.6 為核心</div>
+      <div className="subtitle">而家最強嘅 coding 工具鏈——以 GPT-5.2 + Opus 4.6 為核心</div>
 
       <ol className="steps">
         <li>
@@ -226,7 +260,7 @@ function PracticeTab() {
           <span>
             <strong style={{ color: '#ef4444' }}>場景：Debug Production Issue</strong><br />
             <strong>工具鏈：</strong>Claude Opus → Cursor Agent<br />
-            <strong>流程：</strong>① 將 error log + stack trace 貼入 Claude Opus 4.6（用佢 1M context 讀曬相關 source code），分析 root cause，提出修復方案 → ② 用 Cursor Agent 模式打開 codebase，按 Claude 嘅分析搵到問題代碼，生成修復 patch → ③ Cursor 自動生成 unit test 驗證修復 → ④ Claude review 整個 diff 確保冇 side effect
+            <strong>流程：</strong>① 將 error log + stack trace 貼入 Claude Opus 4.6 做 root cause 分析，提出修復方案 → ② 用 Cursor Agent 模式打開 codebase，按 Claude 嘅分析搵到問題代碼，生成修復 patch → ③ Cursor 自動生成 unit test 驗證修復 → ④ Claude review 整個 diff 確保冇 side effect
           </span>
         </li>
         <li>
@@ -234,22 +268,22 @@ function PracticeTab() {
           <span>
             <strong style={{ color: '#34d399' }}>場景：Build Feature from Spec</strong><br />
             <strong>工具鏈：</strong>Claude Opus → Cursor / Antigravity<br />
-            <strong>流程：</strong>① Claude Opus 讀曬 spec + 現有 codebase（1M context 裝得落），生成 implementation plan 同 file structure → ② Cursor 按 plan 逐步實作，用 multi-file editing 同時改多個檔案 → ③ 或者用 Antigravity 開多個 agent 平行處理唔同模組 → ④ 最後用 Claude review 成個 PR
+            <strong>流程：</strong>① Claude Opus 讀 spec + 現有 codebase（超長 context 場景可改用 Gemini Pro / Opus API 1M），生成 implementation plan 同 file structure → ② Cursor 按 plan 逐步實作，用 multi-file editing 同時改多個檔案 → ③ 或者用 Antigravity 開多個 agent 平行處理唔同模組 → ④ 最後用 Claude review 成個 PR
           </span>
         </li>
         <li>
           <span className="step-num">3</span>
           <span>
             <strong style={{ color: '#F59E0B' }}>場景：Greenfield 新項目</strong><br />
-            <strong>工具鏈：</strong>GPT-5.3 Codex → Antigravity / Cursor<br />
-            <strong>流程：</strong>① 用 GPT-5.3 Codex（Agentic 模式）做 system design——定義 architecture、API contract、database schema → ② Antigravity 用多 agent 同時 scaffold 前後端 + infra config → ③ Cursor 做細節實作同 debug → ④ Claude Opus review 整體架構同 security
+            <strong>工具鏈：</strong>GPT-5.2 Codex → Antigravity / Cursor<br />
+            <strong>流程：</strong>① 用 GPT-5.2 Codex（Agentic 模式）做 system design——定義 architecture、API contract、database schema → ② Antigravity 用多 agent 同時 scaffold 前後端 + infra config → ③ Cursor 做細節實作同 debug → ④ Claude Opus review 整體架構同 security
           </span>
         </li>
       </ol>
 
       <div className="use-case">
         <h4>工具鏈組合原則</h4>
-        <p>而家最有效嘅做法係 <strong>Think → Code → Review</strong> 三步。Think 用推理型（Claude Opus / GPT-5.3 Codex），Code 用 IDE 型（Cursor / Antigravity），Review 用長 context 型（Claude Opus）。Perplexity 適合做 research 搵資料，但唔適合用嚟寫 code。</p>
+        <p>而家最有效嘅做法係 <strong>Think → Code → Review</strong> 三步。Think 用推理型（Claude Opus / GPT-5.2 Codex），Code 用 IDE 型（Cursor / Antigravity），Review 用長 context 型（Claude Opus）。Perplexity 適合做 research 搵資料，但唔適合用嚟寫 code。</p>
       </div>
     </div>
   );
@@ -264,7 +298,7 @@ function AIViberTab() {
       <div className="prompt-card">
         <h4>Prompt — 工具選擇顧問</h4>
         <div className="prompt-text">
-          {`你係一個 AI 工具專家顧問。你熟悉 ChatGPT 5（GPT-5.3 Codex）、Claude（Opus 4.6）、Cursor、Google Antigravity、GitHub Copilot、Gemini 3、Perplexity、DeepSeek 等主流 AI 工具嘅強弱。
+          {`你係一個 AI 工具專家顧問。你熟悉 ChatGPT 5（GPT-5.2 Codex）、Claude（Opus 4.6）、Cursor、Google Antigravity、GitHub Copilot、Gemini 3、Perplexity、DeepSeek 等主流 AI 工具嘅強弱。
 
 我嘅情況：
 - 任務類型：[例如：debug production issue / build new feature / write docs / system design]
@@ -290,11 +324,11 @@ function QuizTab() {
   const [submitted, setSubmitted] = useState(false);
 
   const questions = [
-    { id: 1, q: '如果你需要處理一個 150K tokens 嘅大型 codebase，以下邊個工具最適合？', options: ['ChatGPT 5', 'Cursor', 'Claude Opus 4.6', 'GitHub Copilot'], correct: 2 },
-    { id: 2, q: 'Cursor Pro $20/月嘅計費模式係點？', options: ['無限使用', '用量制，用完即止', '按 token 計', '每日有上限'], correct: 1 },
-    { id: 3, q: '以下邊個 IDE 支援多個 AI Agent 平行工作？', options: ['VS Code', 'Cursor', 'Google Antigravity', 'Sublime Text'], correct: 2 },
-    { id: 4, q: 'Gemini 3 嘅最大賣點係咩？', options: ['推理能力最強', '免費 token 額度 + 1M context（但需要 VPN）', 'IDE 整合最好', '搜尋能力最強'], correct: 1 },
-    { id: 5, q: '處理敏感數據時，以下邊個 AI 服務最適合？', options: ['ChatGPT（OpenAI）', 'Claude（Anthropic）', 'Gemini（Google）', 'Copilot（GitHub）'], correct: 1 },
+    { id: 1, q: '如果你需要處理一個 150K tokens 嘅大型 codebase，以下邊個工具最適合？', options: ['ChatGPT 5.2', 'Cursor', 'Claude Opus 4.6', 'GitHub Copilot'], correct: 2, explanation: '150K 屬於中大型分析任務，Claude Opus/長 context 路線通常比純 IDE 補全工具更穩。' },
+    { id: 2, q: 'Cursor Pro $20/月嘅計費模式係點？', options: ['無限使用', '用量制，用完即止', '按 token 計', '每日有上限'], correct: 1, explanation: 'Cursor 係 subscription + usage 型，重度使用時要注意月內額度。' },
+    { id: 3, q: '以下邊個 IDE 支援多個 AI Agent 平行工作？', options: ['VS Code', 'Cursor', 'Google Antigravity', 'Sublime Text'], correct: 2, explanation: 'Antigravity 主打 multi-agent workflow。' },
+    { id: 4, q: 'Gemini 3 嘅最大賣點係咩？', options: ['推理能力最強', '免費 token 額度 + 1M context（部分地區需 VPN）', 'IDE 整合最好', '搜尋能力最強'], correct: 1, explanation: 'Gemini 3 核心優勢係長 context + 多模態 + 成本表現，唔係 IDE 整合。' },
+    { id: 5, q: '處理敏感數據時，以下邊個 AI 服務最適合？', options: ['ChatGPT（OpenAI）', 'Claude（Anthropic）', 'Gemini（Google）', 'Copilot（GitHub）'], correct: 1, explanation: '敏感場景通常優先選擇政策與控管較嚴格嘅企業路線，最終仍要按你團隊合規要求落實。' },
   ];
 
   const score = submitted ? questions.filter((q) => answers[q.id] === q.correct).length : 0;
@@ -312,6 +346,11 @@ function QuizTab() {
               {opt}
             </label>
           ))}
+          {submitted && answers[q.id] !== undefined && (
+            <p style={{ marginTop: 6, color: answers[q.id] === q.correct ? '#34d399' : '#f87171', fontSize: 13 }}>
+              {answers[q.id] === q.correct ? '✓' : '✗'} {q.explanation}
+            </p>
+          )}
         </div>
       ))}
       {!submitted ? (

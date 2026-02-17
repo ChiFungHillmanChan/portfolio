@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Docker 主要解決咩問題？',
+    options: [
+      { text: '令程式跑得更快', correct: false, explanation: 'Docker 嘅核心目的唔係提升性能，Container 甚至可能有少少 overhead' },
+      { text: '開發環境同生產環境不一致嘅問題', correct: true, explanation: 'Docker 將應用連同所有依賴打包成 Container，確保喺任何環境都運行一致，徹底解決「It works on my machine」嘅問題' },
+      { text: '自動幫你寫 code', correct: false, explanation: 'Docker 係容器化工具，唔係 code generator' },
+      { text: '取代 Git 做版本控制', correct: false, explanation: 'Docker 同 Git 係完全唔同嘅工具，Docker 管容器，Git 管 code 版本' },
+    ],
+  },
+  {
+    question: '點解建議用 Alpine 做 Docker base image，而唔係 Ubuntu？',
+    options: [
+      { text: 'Alpine 預裝更多工具，用起嚟更方便', correct: false, explanation: '啱啱相反，Alpine 極度精簡，連 Bash 同 Curl 都冇預裝，需要用 apk add 手動安裝' },
+      { text: 'Alpine 只有約 5MB，比 Ubuntu 嘅 200MB 細 40 倍，大幅加速 build 同 deploy', correct: true, explanation: 'Alpine 係超輕量 Linux 發行版，核心理念係「只裝需要嘅」。細 Image 意味住更快嘅 build time、更快嘅傳輸同更快嘅啟動速度' },
+      { text: 'Alpine 嘅安全性比 Ubuntu 差，所以冇人攻擊', correct: false, explanation: 'Alpine 嘅安全性唔差，反而因為攻擊面更小（裝嘅嘢少），某程度上更安全' },
+      { text: 'Ubuntu 已經唔再維護，所以要用 Alpine', correct: false, explanation: 'Ubuntu 仍然係最受歡迎嘅 Linux 發行版之一，持續有維護同更新' },
+    ],
+  },
+  {
+    question: '寫 Dockerfile 嘅時候，點解建議將 COPY package.json 同 RUN npm install 放喺 COPY app code 之前？',
+    options: [
+      { text: '因為 npm install 一定要喺 COPY code 之前跑', correct: false, explanation: '技術上唔係一定要，但呢個順序有好重要嘅性能優勢' },
+      { text: '為咗善用 Docker layer cache——依賴唔常變，app code 常變，咁大部分 build 可以用 cache', correct: true, explanation: 'Docker 會 cache 每個 layer。將唔常變嘅指令放前面，當 app code 改變但 package.json 冇變嘅時候，npm install 呢個耗時步驟可以直接用 cache，大幅加速 build' },
+      { text: '因為 Docker 規定 COPY 指令一定要按字母順序', correct: false, explanation: 'Docker 冇呢個規定，指令順序係自由嘅' },
+      { text: '純粹為咗 Dockerfile 易讀，冇實際影響', correct: false, explanation: '呢個順序對 build 速度有好大嘅實際影響，唔止係可讀性問題' },
+    ],
+  },
+  {
+    question: '以下邊個檔案唔應該出現喺 Docker image 入面？',
+    options: [
+      { text: 'package.json', correct: false, explanation: 'package.json 定義咗應用嘅依賴，係 Docker image 必須包含嘅檔案' },
+      { text: 'Dockerfile', correct: false, explanation: 'Dockerfile 本身通常唔會喺 image 入面，但呢個唔係最佳答案' },
+      { text: '.env 檔案（包含 API keys 同密碼）', correct: true, explanation: '.env 包含敏感資訊如密碼同 API keys，絕對唔應該打包入 Docker image。應該用 .dockerignore 排除，運行時用環境變數注入' },
+      { text: 'index.js（應用入口檔案）', correct: false, explanation: 'index.js 係應用嘅主要 code，當然要包含喺 image 入面' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'cicd-pipeline', label: 'CI/CD 自動化部署' },
@@ -240,10 +277,11 @@ export default function Docker() {
           { id: 'optimize', label: '② Image 優化', content: <OptimizeTab /> },
           { id: 'practice', label: '③ 實戰建議', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

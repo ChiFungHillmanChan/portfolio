@@ -5,9 +5,9 @@ export const PREMIUM_PLANS = {
     tier: 'standard',
     name: 'Standard',
     icon: '🔓',
-    listPrice: 750,
+    listPrice: 350,
     salePrice: 150,
-    savings: 600,
+    savings: 200,
     billing: '一次性付款 · 永久存取',
     ctaText: '立即鎖定早鳥價',
     dailyAiLimit: 20,
@@ -17,9 +17,9 @@ export const PREMIUM_PLANS = {
     tier: 'pro',
     name: 'Pro',
     icon: '⚡',
-    listPrice: 1999,
+    listPrice: 899,
     salePrice: 399,
-    savings: 1600,
+    savings: 500,
     billing: '一次性付款 · 永久存取',
     ctaText: '立即鎖定早鳥價',
     dailyAiLimit: 80,
@@ -28,7 +28,7 @@ export const PREMIUM_PLANS = {
 };
 
 export const PREMIUM_COPY = {
-  urgencyTitle: '早鳥價 · 限時 80% OFF',
+  urgencyTitle: '早鳥價 · 限時優惠',
   urgencyBody: '未來計劃轉為月費訂閱制。而家以一次性價格鎖定，即享永久存取權，唔受未來加價影響。',
   footerNote: '早鳥優惠隨時結束。一經購買即鎖定永久存取權，不受未來價格調整影響。',
 };

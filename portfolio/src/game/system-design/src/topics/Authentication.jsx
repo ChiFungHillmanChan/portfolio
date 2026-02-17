@@ -251,10 +251,11 @@ export default function Authentication() {
           { id: 'jwt', label: '② JWT 詳解', content: <JWTTab /> },
           { id: 'comparison', label: '③ 實戰比較', premium: true, content: <ComparisonTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

@@ -1,0 +1,51 @@
+[
+  {
+    "date": "2026-02-16",
+    "version": "2.1.0",
+    "title": "內容準確性大更新",
+    "entries": [
+      "修正所有 AI 模型名稱同價錢（GPT-5.2、Claude Opus 4.6、Gemini 3、DeepSeek V3.2、Grok 4.1）",
+      "新增集中式模型數據庫（modelRegistry.json）",
+      "後端 AI 引擎遷移至 Gemini 3 Flash Preview",
+      "所有 68 個課題新增互動 Quiz",
+      "教練模式安全加固（server-side prompts）",
+      "新增更新日誌頁面"
+    ]
+  },
+  {
+    "date": "2026-02-01",
+    "version": "2.0.0",
+    "title": "Premium 雙層制上線",
+    "entries": [
+      "Standard 同 Pro 兩個付費方案",
+      "Stripe 付款整合（code + redirect 兩種流程）",
+      "分級 AI 使用限制（Free 5/日、Standard 20/日、Pro 80/日）",
+      "Firestore 後端速率限制（取代 in-memory counters）",
+      "管理員面板（用戶管理 + 建議查看）"
+    ]
+  },
+  {
+    "date": "2026-01-15",
+    "version": "1.5.0",
+    "title": "AI 功能擴展",
+    "entries": [
+      "AI 教練模式（per-topic coaching）",
+      "AI 學習路徑規劃器",
+      "AI Viber Prompt 生成器",
+      "課題建議功能",
+      "雲端進度同步"
+    ]
+  },
+  {
+    "date": "2025-12-01",
+    "version": "1.0.0",
+    "title": "初始版本",
+    "entries": [
+      "68 個系統設計課題（廣東話）",
+      "11 個分類（AI 核心、職涯、工程、網絡、存儲等）",
+      "Firebase Google 登入",
+      "搜尋功能",
+      "學習進度追蹤"
+    ]
+  }
+]

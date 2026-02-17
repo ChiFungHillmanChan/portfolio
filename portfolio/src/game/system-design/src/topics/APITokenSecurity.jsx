@@ -2,12 +2,47 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: 'Frontend 直接 call AI API 最大嘅風險係咩？',
+    options: [
+      { text: 'API response 會比較慢', correct: false, explanation: '速度唔係主要問題，backend proxy 嘅 latency 增加好少。' },
+      { text: 'API Key 會暴露喺 client-side code，任何人都可以用 DevTools 睇到', correct: true, explanation: 'Frontend 嘅所有 code 都係公開嘅，用 DevTools 就可以攞到 API Key。一旦洩露，你嘅帳單會被人任用。' },
+      { text: '會觸發 CORS 錯誤', correct: false, explanation: 'CORS 係技術問題可以解決，但 key 洩露係安全災難。' },
+      { text: '冇辦法做 caching', correct: false, explanation: 'Caching 同 API Key 暴露係兩回事。' },
+    ],
+  },
+  {
+    question: 'Authentication 同 Authorization 嘅分別係咩？',
+    options: [
+      { text: '一樣嘅嘢，只係叫法唔同', correct: false, explanation: '兩者完全唔同：一個驗證身份，一個決定權限。' },
+      { text: 'Authentication 驗證「你係邊個」，Authorization 決定「你可以做咩」', correct: true, explanation: 'API Key 通常同時做埋兩樣嘢，所以一旦洩露就雙重災難——身份同權限都俾人攞到。' },
+      { text: 'Authentication 係前端嘅嘢，Authorization 係後端嘅嘢', correct: false, explanation: '兩者都應該喺後端驗證，前端只係提交 credentials。' },
+      { text: 'Authentication 用密碼，Authorization 用 token', correct: false, explanation: '兩者都可以用 token 實現，分別在於驗證嘅內容唔同。' },
+    ],
+  },
+  {
+    question: '以下邊個係最安全嘅 API Key 管理策略（Production 環境）？',
+    options: [
+      { text: '放喺 .env 檔案 push 上 private GitHub repo', correct: false, explanation: 'Private repo 都可能被 fork 或者權限設定錯誤而洩露。.env 應該永遠 gitignore。' },
+      { text: '用 base64 encode 後放喺 frontend', correct: false, explanation: 'Base64 唔係加密，任何人都可以 decode。呢個做法等於冇保護。' },
+      { text: '用 Cloud Secret Manager + Backend Proxy + Key Rotation', correct: true, explanation: 'Production 最佳實踐：Cloud Secret Manager 加密存儲 + IAM 權限控制 + audit log，Backend Proxy 隔離 key，定期 rotation 防止長期洩露。' },
+      { text: '用 localStorage 加密存儲', correct: false, explanation: 'localStorage 係 client-side，任何 JavaScript 都可以讀取，唔安全。' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'ai-model-comparison', label: 'AI 模型深入對比' },
   { slug: 'ai-tools-landscape', label: 'AI 工具全景圖' },
   { slug: 'authentication', label: 'Authentication 驗證' },
   { slug: 'mcp-protocol', label: 'MCP 模型上下文協議' },
 ];
+
+const FACT_CHECK_META = {
+  asOf: '2026-02-16',
+  sources: ['OpenAI pricing', 'Anthropic pricing', 'Gemini API pricing', 'DeepSeek API pricing'],
+};
 
 function OverviewTab() {
   return (
@@ -36,8 +71,8 @@ function OverviewTab() {
           {/* Row 1: Claude Opus 4.6 */}
           <rect x="20" y="76" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
           <text x="40" y="95" fill="#a78bfa" fontSize="10" fontWeight="600">Claude Opus 4.6</text>
-          <text x="280" y="95" fill="#ef4444" fontSize="10">$15.00</text>
-          <text x="480" y="95" fill="#ef4444" fontSize="10">$75.00</text>
+          <text x="280" y="95" fill="#ef4444" fontSize="10">$5.00</text>
+          <text x="480" y="95" fill="#ef4444" fontSize="10">$25.00</text>
           <text x="650" y="95" fill="#9ca3af" fontSize="9">旗艦推理</text>
 
           {/* Row 2: Claude Sonnet 4.5 */}
@@ -47,11 +82,11 @@ function OverviewTab() {
           <text x="480" y="123" fill="#F59E0B" fontSize="10">$15.00</text>
           <text x="650" y="123" fill="#9ca3af" fontSize="9">性價比之選</text>
 
-          {/* Row 3: GPT-5.3 Codex */}
+          {/* Row 3: GPT-5.2 Codex */}
           <rect x="20" y="132" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
-          <text x="40" y="151" fill="#34d399" fontSize="10" fontWeight="600">GPT-5.3 Codex</text>
-          <text x="280" y="151" fill="#F59E0B" fontSize="10">$2.00</text>
-          <text x="480" y="151" fill="#F59E0B" fontSize="10">$10.00</text>
+          <text x="40" y="151" fill="#34d399" fontSize="10" fontWeight="600">GPT-5.2 Codex</text>
+          <text x="280" y="151" fill="#F59E0B" fontSize="10">$1.75</text>
+          <text x="480" y="151" fill="#F59E0B" fontSize="10">$14.00</text>
           <text x="650" y="151" fill="#9ca3af" fontSize="9">Agentic 編程</text>
 
           {/* Row 4: Gemini 3 Pro */}
@@ -64,8 +99,8 @@ function OverviewTab() {
           {/* Row 5: Gemini 3 Flash */}
           <rect x="20" y="188" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
           <text x="40" y="207" fill="#34d399" fontSize="10" fontWeight="600">Gemini 3 Flash</text>
-          <text x="280" y="207" fill="#34d399" fontSize="10">$0.10</text>
-          <text x="480" y="207" fill="#34d399" fontSize="10">$0.40</text>
+          <text x="280" y="207" fill="#34d399" fontSize="10">$0.50</text>
+          <text x="480" y="207" fill="#34d399" fontSize="10">$3.00</text>
           <text x="650" y="207" fill="#9ca3af" fontSize="9">超平快速</text>
 
           {/* Row 6: DeepSeek V3.2 */}
@@ -84,29 +119,29 @@ function OverviewTab() {
           {/* Bars */}
           <text x="40" y="308" fill="#a78bfa" fontSize="9">Claude Opus 4.6</text>
           <rect x="180" y="298" width="500" height="14" rx="3" fill="#7c3aed" opacity="0.8" />
-          <text x="690" y="309" fill="#e2e8f0" fontSize="9">$75</text>
+          <text x="690" y="309" fill="#e2e8f0" fontSize="9">$25</text>
 
           <text x="40" y="330" fill="#a78bfa" fontSize="9">Claude Sonnet 4.5</text>
-          <rect x="180" y="320" width="100" height="14" rx="3" fill="#8b5cf6" opacity="0.7" />
-          <text x="290" y="331" fill="#e2e8f0" fontSize="9">$15</text>
+          <rect x="180" y="320" width="300" height="14" rx="3" fill="#8b5cf6" opacity="0.7" />
+          <text x="490" y="331" fill="#e2e8f0" fontSize="9">$15</text>
 
-          <text x="40" y="352" fill="#34d399" fontSize="9">GPT-5.3 Codex</text>
-          <rect x="180" y="342" width="67" height="14" rx="3" fill="#059669" opacity="0.7" />
-          <text x="257" y="353" fill="#e2e8f0" fontSize="9">$10</text>
+          <text x="40" y="352" fill="#34d399" fontSize="9">GPT-5.2 Codex</text>
+          <rect x="180" y="342" width="280" height="14" rx="3" fill="#059669" opacity="0.7" />
+          <text x="470" y="353" fill="#e2e8f0" fontSize="9">$14</text>
 
           <text x="40" y="374" fill="#F59E0B" fontSize="9">Gemini 3 Pro</text>
-          <rect x="180" y="364" width="120" height="14" rx="3" fill="#d97706" opacity="0.7" />
-          <text x="310" y="375" fill="#e2e8f0" fontSize="9">$12-18</text>
+          <rect x="180" y="364" width="360" height="14" rx="3" fill="#d97706" opacity="0.7" />
+          <text x="550" y="375" fill="#e2e8f0" fontSize="9">$12-18</text>
 
           <text x="40" y="396" fill="#34d399" fontSize="9">Gemini 3 Flash</text>
-          <rect x="180" y="386" width="3" height="14" rx="1" fill="#10B981" opacity="0.8" />
-          <text x="193" y="397" fill="#e2e8f0" fontSize="9">$0.40</text>
+          <rect x="180" y="386" width="60" height="14" rx="1" fill="#10B981" opacity="0.8" />
+          <text x="250" y="397" fill="#e2e8f0" fontSize="9">$3.00</text>
 
           <text x="40" y="418" fill="#ef4444" fontSize="9">DeepSeek V3.2</text>
-          <rect x="180" y="408" width="3" height="14" rx="1" fill="#ef4444" opacity="0.8" />
-          <text x="193" y="419" fill="#e2e8f0" fontSize="9">$0.42</text>
+          <rect x="180" y="408" width="8" height="14" rx="1" fill="#ef4444" opacity="0.8" />
+          <text x="198" y="419" fill="#e2e8f0" fontSize="9">$0.42</text>
 
-          <text x="375" y="450" textAnchor="middle" fill="#9ca3af" fontSize="9">Opus output 成本係 Flash 嘅 188 倍 — 揀錯模型真係會破產</text>
+          <text x="375" y="450" textAnchor="middle" fill="#9ca3af" fontSize="9">Opus output 成本約係 Flash 嘅 8.3 倍 — 高價模型要做 routing</text>
         </svg>
       </div>
 
@@ -115,6 +150,9 @@ function OverviewTab() {
         <li><span className="step-num">2</span><span><strong>Authentication（你係邊個）vs Authorization（你可以做咩）</strong> — Authentication 驗證你嘅身份，Authorization 決定你嘅權限。API Key 通常同時做埋兩樣嘢，所以一旦洩露就雙重災難。</span></li>
         <li><span className="step-num">3</span><span><strong>Token 有 scope（讀/寫/admin）— 永遠用最小權限</strong>。如果你嘅 app 淨係需要 read，就唔好俾 write 權限。OpenAI、Anthropic 都支援 restricted API keys，用得盡用。萬一洩露，damage 都細好多。</span></li>
       </ol>
+      <p className="text-xs text-text-dimmer mt-4">
+        Data as of {FACT_CHECK_META.asOf}. Sources: {FACT_CHECK_META.sources.join(' / ')}. Claude Opus 4.6 cache pricing：5m write $6.25 / 1h write $10 / hit-refresh $0.50（per 1M）。
+      </p>
     </div>
   );
 }
@@ -294,14 +332,14 @@ app.post('/api/chat', async (req, res) => {
             Output：1,000 users x 5 msg x 800 tokens x 30 days = <strong>120M tokens</strong><br /><br />
             <strong>月費對比：</strong><br />
             <code style={{ display: 'block', background: '#1a1d27', padding: '8px 12px', borderRadius: 8, margin: '8px 0', fontSize: 13, whiteSpace: 'pre-wrap' }}>
-{`Claude Opus 4.6:  75 x $15 + 120 x $75    = $1,125 + $9,000  = $10,125/月
+{`Claude Opus 4.6:  75 x $5  + 120 x $25    = $375   + $3,000  = $3,375/月
 Claude Sonnet 4.5: 75 x $3  + 120 x $15   = $225   + $1,800  = $2,025/月
-GPT-5.3 Codex:   75 x $2   + 120 x $10    = $150   + $1,200  = $1,350/月
+GPT-5.2 Codex:   75 x $1.75 + 120 x $14   = $131   + $1,680  = $1,811/月
 Gemini 3 Pro:    75 x $4   + 120 x $18    = $300   + $2,160  = $2,460/月
-Gemini 3 Flash:  75 x $0.10 + 120 x $0.40 = $7.50  + $48     = $55.50/月
+Gemini 3 Flash:  75 x $0.50 + 120 x $3.00 = $37.50 + $360    = $397.50/月
 DeepSeek V3.2:   75 x $0.28 + 120 x $0.42 = $21    + $50.40  = $71.40/月`}
             </code>
-            <strong style={{ color: '#ef4444' }}>Opus 比 Flash 貴 182 倍</strong>。所以真實 production 通常會用 routing：簡單問題用 Flash，複雜問題先升級用 Opus。呢個叫做 <strong>model routing / cascading</strong>。DeepSeek V3.2 質量接近 GPT-5.3 但成本只需 5%，係開源陣營嘅性價比之王。
+            <strong style={{ color: '#ef4444' }}>Opus 比 Flash 貴約 8.5 倍</strong>。所以真實 production 通常會用 routing：簡單問題用 Flash，複雜問題先升級用 Opus。呢個叫做 <strong>model routing / cascading</strong>。DeepSeek V3.2 喺成本上仍然極有優勢，適合大流量任務。
           </span>
         </li>
       </ol>
@@ -338,11 +376,11 @@ function AIViberTab() {
 請你：
 1. 計算每月總 token 用量（input + output 分開算）
 2. 用以下模型計算月費：
-   - Claude Opus 4.6 ($15/$75 per 1M)
+   - Claude Opus 4.6 ($5/$25 per 1M)
    - Claude Sonnet 4.5 ($3/$15 per 1M)
-   - GPT-5.3 Codex ($2/$10 per 1M)
+   - GPT-5.2 Codex ($1.75/$14 per 1M)
    - Gemini 3 Pro ($4/$18 per 1M)
-   - Gemini 3 Flash ($0.10/$0.40 per 1M)
+   - Gemini 3 Flash ($0.50/$3.00 per 1M)
    - DeepSeek V3.2 ($0.28/$0.42 per 1M)
 3. 建議最佳嘅 model routing 策略（邊啲 request 用平模型，邊啲用貴模型）
 4. 預估用 routing 策略後嘅實際月費（通常慳 60-80%）`}
@@ -380,7 +418,7 @@ function QuizTab() {
   const questions = [
     { id: 1, q: '以下邊個做法最危險？', options: ['將 API Key 存喺 .env 檔案', '將 API Key hardcode 喺 frontend JavaScript', '將 API Key 存喺 Cloud Secret Manager', '用 backend proxy 隱藏 API Key'], correct: 1 },
     { id: 2, q: 'Authentication 同 Authorization 嘅分別係咩？', options: ['一樣嘅嘢，只係叫法唔同', 'Authentication 驗證身份，Authorization 決定權限', 'Authentication 決定權限，Authorization 驗證身份', '兩者都同 API Key 無關'], correct: 1 },
-    { id: 3, q: '如果你嘅 app 用 Claude Opus 4.6 處理每月 100M output tokens，月費大約幾多？', options: ['$750', '$1,500', '$7,500', '$15,000'], correct: 2 },
+    { id: 3, q: '如果你嘅 app 用 Claude Opus 4.6 處理每月 100M output tokens，月費大約幾多？', options: ['$500', '$2,500', '$7,500', '$25,000'], correct: 1 },
     { id: 4, q: '以下邊個係正確嘅 API Key 保護策略？', options: ['Frontend 直接 call OpenAI API，用 HTTPS 就安全', '將 key 存喺 localStorage 加密', '用 backend proxy，key 只存 server side', '將 key base64 encode 放喺 frontend'], correct: 2 },
     { id: 5, q: 'Key Rotation 嘅建議頻率係幾多？', options: ['只要冇洩露就唔使換', '每 30-90 日', '每年一次', '每次 deploy 都換'], correct: 1 },
   ];

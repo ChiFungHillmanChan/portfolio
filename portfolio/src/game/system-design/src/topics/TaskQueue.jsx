@@ -1,5 +1,36 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'API 收到一個「生成 PDF 報表」嘅請求（需要 30 秒完成）。最佳嘅處理方式係咩？',
+    options: [
+      { text: '等 PDF 生成完成後先回覆 200 OK 同返回 PDF', correct: false, explanation: '等 30 秒先回覆會令用戶等到頸都長，而且可能觸發 timeout。超過幾秒嘅操作都唔應該同步處理。' },
+      { text: '即刻回覆 202 Accepted，將任務放入 Task Queue，由 Worker 背後慢慢做', correct: true, explanation: '呢個係最佳做法。API 即時回覆「收到喇」（202 Accepted），然後將生成 PDF 嘅任務 push 入 Queue。Worker 喺背後慢慢處理，完成後可以透過 webhook 或者 email 通知用戶。呢個就係異步處理嘅精髓。' },
+      { text: '開一個新嘅 thread 同步處理，API 繼續服務其他請求', correct: false, explanation: '開新 thread 雖然唔會阻塞主 thread，但仍然消耗 Server 資源。如果好多人同時請求生成 PDF，Server 會因為太多 thread 而崩潰。用 Task Queue 可以控制併發量。' },
+      { text: '返回 500 Error，叫用戶遲啲再試', correct: false, explanation: '返回 500 完全係錯誤嘅做法。用戶嘅請求係合法嘅，系統應該接受並處理，只係用異步方式。' },
+    ],
+  },
+  {
+    question: '一個 Task 失敗咗，系統用 Exponential Backoff 重試。前三次重試嘅等待時間應該係點樣？',
+    options: [
+      { text: '1 秒 → 1 秒 → 1 秒（固定間隔）', correct: false, explanation: '固定間隔重試唔係 Exponential Backoff。如果下游服務暫時過載，固定間隔會持續施加壓力，唔俾佢喘息嘅機會。' },
+      { text: '1 秒 → 2 秒 → 4 秒（指數遞增）', correct: true, explanation: '呢個就係 Exponential Backoff 嘅核心模式。每次重試嘅等待時間翻倍：1s → 2s → 4s → 8s → 16s。呢樣做可以俾過載嘅下游服務足夠嘅恢復時間，係最重要嘅重試策略。' },
+      { text: '10 秒 → 20 秒 → 30 秒（線性遞增）', correct: false, explanation: '線性遞增唔係 Exponential Backoff。而且初始等待 10 秒太長，好多暫時性問題可能 1 秒後就恢復咗。Exponential Backoff 從小間隔開始，指數增長。' },
+      { text: '隨機時間（每次都唔同）', correct: false, explanation: '純隨機唔係 Exponential Backoff。不過 Jitter（隨機抖動）確實係一個進階優化——喺 Exponential Backoff 嘅基礎上加少少隨機數，避免大量任務同一時間重試。' },
+    ],
+  },
+  {
+    question: '一個 Task 重試咗 5 次都失敗，最啱嘅處理方式係咩？',
+    options: [
+      { text: '繼續重試，直到成功為止', correct: false, explanation: '無限重試係最危險嘅做法。如果係 bug 造成嘅失敗，無限重試永遠唔會成功，但會不斷佔用 Queue 資源，導致其他正常任務排唔到隊。' },
+      { text: '直接刪除呢個 Task，當冇發生過', correct: false, explanation: '直接刪除會丟失數據。如果係付款通知嘅 Task，靜默刪除會導致用戶收唔到通知，影響好大。失敗嘅 Task 需要被記錄同處理。' },
+      { text: '送去 Dead Letter Queue（DLQ），設定 alert 通知工程師排查', correct: true, explanation: 'DLQ 係專門儲存「處理唔到嘅任務」嘅地方。送去 DLQ 後設定 alert（例如 Slack 通知），工程師可以排查原因——可能係 bug、數據問題、或者下游服務長期故障。修復後可以從 DLQ 重新處理。' },
+      { text: '將重試次數增加到 100 次', correct: false, explanation: '增加重試次數唔係解決問題嘅方法。如果 5 次都失敗，多數係有 bug 或者持久性問題。應該送去 DLQ 做人工排查，而唔係盲目增加重試。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'message-queue', label: 'Message Queue 消息隊列' },
@@ -199,6 +230,8 @@ export default function TaskQueue() {
           { id: 'retry', label: '② 重試機制', content: <RetryTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

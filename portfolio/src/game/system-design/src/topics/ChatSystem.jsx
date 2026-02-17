@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '設計即時通訊系統，點解用 WebSocket 而唔係 HTTP Polling？',
+    options: [
+      { text: '因為 WebSocket 比 HTTP 更加安全', correct: false, explanation: '安全性取決於有冇用 TLS（wss:// vs ws://），同 HTTP vs WebSocket 嘅協議選擇冇直接關係。兩者都可以加密傳輸。' },
+      { text: '因為 WebSocket 係雙向長連接，Server 可以主動推送訊息，唔使 Client 不停問', correct: true, explanation: 'WebSocket 建立一條持久嘅雙向通道。Server 有新訊息可以即時推送俾 Client。HTTP Polling 就好似不停打電話問「有冇新訊息」，浪費大量資源同增加延遲。呢個係即時通訊嘅關鍵技術選擇。' },
+      { text: '因為 WebSocket 可以傳輸更大嘅數據', correct: false, explanation: 'WebSocket 同 HTTP 都可以傳輸大數據。數據大小唔係選擇 WebSocket 嘅主要原因，關鍵係佢嘅即時雙向通訊能力。' },
+      { text: '因為 HTTP Polling 唔支援 JSON 格式', correct: false, explanation: 'HTTP Polling 完全支援 JSON 格式。WebSocket 嘅優勢唔係數據格式，而係通訊模式——持久連接 vs 反覆建立連接。' },
+    ],
+  },
+  {
+    question: 'User A 發訊息俾 User B，但 User B 而家唔 online。系統應該點處理？',
+    options: [
+      { text: '直接丟棄訊息，等 User A 重新發送', correct: false, explanation: '丟棄訊息係最差嘅做法。用戶期望發出去嘅訊息一定會送到，就算對方而家唔 online。呢個係 Chat 系統嘅基本要求。' },
+      { text: '將訊息存入「未讀消息」表，等 User B 上線後推送', correct: true, explanation: '呢個係正確做法。訊息先持久化到 Message DB，同時記錄喺 User B 嘅「未讀消息」列表。當 User B 上線建立 WebSocket 連接後，系統將所有未讀訊息推送返俾佢。仲可以配合 Push Notification 提醒 User B 有新訊息。' },
+      { text: '一直 hold 住訊息喺 Memory 入面，等 User B 上線', correct: false, explanation: '將訊息放喺 Memory 入面好危險——如果 Server 重啟，訊息就冇晒。訊息一定要持久化到資料庫先至可靠。' },
+      { text: '將訊息發俾 User B 嘅所有裝置，總有一個會收到', correct: false, explanation: '如果 User B 所有裝置都唔 online，發去邊個裝置都冇用。正確做法係先持久化，上線後再推送。' },
+    ],
+  },
+  {
+    question: '一個 Group Chat 有 500 人，User A 發一條訊息。系統點樣將訊息送到其他 499 個人？',
+    options: [
+      { text: 'User A 嘅 Client 直接發 499 個 Request 俾每個成員', correct: false, explanation: 'Client 端唔應該負責消息分發。呢個會令 Client 負載極重，而且網絡不穩定時好多人收唔到。消息分發一定係 Server 端嘅責任。' },
+      { text: '用 Fan-out 策略，Server 端將訊息寫入每個成員嘅 inbox', correct: true, explanation: '呢個就係 Group Chat Fan-out 嘅標準做法。Server 收到訊息後，將訊息寫入 499 個成員各自嘅 inbox（或者 feed）。Online 嘅成員透過 WebSocket 即時收到推送，Offline 嘅等上線後拉取。' },
+      { text: '只存一份訊息，500 個人都去同一個地方讀', correct: false, explanation: '雖然訊息只存一份係合理嘅（節省空間），但每個成員嘅未讀狀態、通知狀態都係獨立嘅，所以仍然需要 per-user 嘅記錄。呢個唔係純粹 read fan-out 咁簡單。' },
+      { text: '用 Broadcast 一次過發俾所有 WebSocket 連接', correct: false, explanation: 'Broadcast 只能送到而家 online 嘅成員。500 人入面可能只有 50 人 online，其餘 450 人嘅訊息就丟咗。一定要配合持久化同離線推送。' },
+    ],
+  },
+  {
+    question: '即時通訊系統入面，點解需要用 Message Queue（例如 Kafka）做中間層？',
+    options: [
+      { text: '因為 Message Queue 可以加密訊息內容', correct: false, explanation: 'Message Queue 主要唔係用嚟加密嘅。加密應該喺應用層面用 TLS 或者 end-to-end encryption 實現。' },
+      { text: '為咗將「接收訊息」同「處理 + 發送訊息」解耦，提升系統嘅彈性同可靠性', correct: true, explanation: '呢個就係解耦嘅精髓。WebSocket Gateway 收到訊息後放入 Queue，Chat Service 從 Queue 消費同處理。如果 Chat Service 暫時忙碌，訊息唔會丟失，Queue 會 buffer 住。而且可以獨立 scale Gateway 同 Chat Service。' },
+      { text: '因為 WebSocket 唔可以直接同 Database 通訊', correct: false, explanation: 'WebSocket Server 可以直接連接 Database。用 Message Queue 唔係因為技術限制，而係因為架構設計上嘅好處——解耦、緩衝、可靠性。' },
+      { text: '因為 Message Queue 比 WebSocket 更快', correct: false, explanation: 'WebSocket 嘅傳輸速度唔比 Message Queue 慢。用 Queue 嘅目的唔係提速，而係將系統組件解耦，提高整體嘅可靠性同可擴展性。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'message-queue', label: 'Message Queue 消息隊列' },
@@ -195,10 +232,11 @@ export default function ChatSystem() {
           { id: 'websocket', label: '② WebSocket 解說', content: <WebSocketTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

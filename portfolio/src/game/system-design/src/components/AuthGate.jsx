@@ -37,7 +37,7 @@ export default function AuthGate({ onDismiss, requirePremium, featureName }) {
         return;
       }
 
-      await activatePremium(trimmed);
+      await activatePremium();
       setCodeSuccess(true);
     } catch {
       setCodeError('網絡錯誤，請稍後再試');
@@ -91,8 +91,8 @@ export default function AuthGate({ onDismiss, requirePremium, featureName }) {
           >
             <span className="text-xl">🔓</span>
             <div className="flex-1">
-              <div className="text-sm font-bold"><span className="line-through text-text-dimmer font-normal">HK$750</span> HK$150 一次性解鎖</div>
-              <div className="text-[0.7rem] text-text-dim">早鳥價 80% OFF · 永久存取 · 未來將轉月費制</div>
+              <div className="text-sm font-bold"><span className="line-through text-text-dimmer font-normal">HK$350</span> HK$150 一次性解鎖</div>
+              <div className="text-[0.7rem] text-text-dim">早鳥價優惠 · 永久存取 · 未來將轉月費制</div>
             </div>
             <span className="text-text-dim">&rarr;</span>
           </a>

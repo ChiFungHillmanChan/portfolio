@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Self-host 同 Cloud 最核心嘅 trade-off 係咩？',
+    options: [
+      { text: 'Self-host 一定平過 Cloud', correct: false, explanation: 'Self-host 唔一定平，前期硬件投入大，而且要計埋維護時間嘅成本' },
+      { text: 'Cloud 用錢買方便同彈性，Self-host 用時間換自由同控制權', correct: true, explanation: '啱！Cloud 好似租酒店，乜都幫手搞但要交月租。Self-host 好似買屋，前期投入大但長遠自由度高' },
+      { text: 'Cloud 永遠比 Self-host 快', correct: false, explanation: '速度取決於具體配置，Self-host 可以用高規格硬件達到同等甚至更快嘅速度' },
+      { text: 'Self-host 唔使任何技術知識', correct: false, explanation: 'Self-host 需要大量技術知識嚟管理硬件、OS、networking、security 等' },
+    ],
+  },
+  {
+    question: '邊種情況最適合用 Cloud 而唔係 Self-host？',
+    options: [
+      { text: '需要快速 scale、唔想管硬件、流量波動大嘅 startup', correct: true, explanation: '啱！Startup 需要快速驗證想法，Cloud 提供即時 scale up/down、唔使管硬件，非常適合流量唔穩定嘅早期階段' },
+      { text: '長期穩定運行嘅個人 blog', correct: false, explanation: '個人 blog 流量穩定又低，Self-host 或者 static hosting 可能更划算' },
+      { text: '需要完全控制硬件嘅合規要求', correct: false, explanation: '需要完全控制硬件嘅話應該 Self-host' },
+      { text: '預算無限嘅大企業', correct: false, explanation: '大企業反而可能有 on-premise data center，唔一定用 Cloud' },
+    ],
+  },
+  {
+    question: 'Self-host 最大嘅隱藏成本係咩？',
+    options: [
+      { text: '電費', correct: false, explanation: '電費雖然係成本之一，但唔係最大嘅隱藏成本' },
+      { text: '維護時間同精力 — 硬件故障、OS 更新、security patch 全部要自己搞', correct: true, explanation: '啱！Self-host 最容易低估嘅係人力成本。硬件壞、被攻擊、需要更新都要自己處理，呢啲時間嘅機會成本好高' },
+      { text: '購買 domain name', correct: false, explanation: 'Domain name 費用好低，而且 Cloud 同 Self-host 都需要' },
+      { text: '辦公室租金', correct: false, explanation: 'Self-host 可以放喺屋企，唔一定需要辦公室' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'deployment', label: '免費部署平台' },
@@ -317,10 +345,11 @@ export default function SelfHostVsCloud() {
           { id: 'scaling', label: '③ 自動擴展', premium: true, content: <ScalingTab /> },
           { id: 'monitoring', label: '④ 監控日誌', premium: true, content: <MonitoringTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

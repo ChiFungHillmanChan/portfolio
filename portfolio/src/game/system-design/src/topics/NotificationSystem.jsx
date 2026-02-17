@@ -2,7 +2,44 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: '設計通知系統嘅時候，點解每個通知渠道（Push / SMS / Email）應該有獨立嘅 Worker？',
+    options: [
+      { text: '因為唔同渠道嘅 code 太長，放一齊會好亂', correct: false, explanation: 'Code 組織係一個原因，但唔係架構上要分開嘅核心理由。真正嘅原因係同擴展性同容錯有關。' },
+      { text: '因為每個渠道可以獨立擴展同獨立容錯，一個掛唔影響其他', correct: true, explanation: '呢個就係核心原因。例如 SMS 供應商暫時故障，只有 SMS Worker 受影響，Push 同 Email 繼續正常運作。而且每個渠道嘅流量唔同，可以各自按需 scale。' },
+      { text: '因為第三方 API 限制，唔可以同時調用多個渠道', correct: false, explanation: '第三方 API 冇呢種限制。分開 Worker 嘅原因係為咗系統嘅可擴展性同容錯能力，唔係外部 API 嘅限制。' },
+      { text: '因為一個 Worker 只能處理一種數據格式', correct: false, explanation: 'Worker 技術上可以處理多種格式，但將每個渠道分開係更好嘅架構設計。呢個係 Single Responsibility Principle 嘅體現。' },
+    ],
+  },
+  {
+    question: '用戶 5 分鐘內收到 20 條行銷通知，咩設計可以防止呢種情況？',
+    options: [
+      { text: '喺前端做過濾，超過 5 條就唔顯示', correct: false, explanation: '前端過濾唔係根本解決方案。通知已經發出去，SMS 同 Email 都收到晒，用戶一樣會被轟炸。Rate Limiting 一定要喺後端做。' },
+      { text: '喺 Notification Service 加入 Rate Limiting，限制每個用戶每小時嘅通知數量', correct: true, explanation: '呢個係正確做法。喺後端設定同一用戶每小時最多 X 個通知，超過就靜默丟棄或者排隊延後發送。呢個可以有效防止通知轟炸，保護用戶體驗。' },
+      { text: '減少 Worker 數量，通知發慢啲就唔會太多', correct: false, explanation: '減少 Worker 會拖慢所有用戶嘅通知，包括重要嘅交易通知。問題唔係發送速度，而係同一用戶收太多通知。' },
+      { text: '將所有通知合併成一封每日摘要 Email', correct: false, explanation: '每日摘要適合低優先級通知，但交易通知（例如付款確認）需要即時送達。正確做法係用 Rate Limiting 控制頻率，唔係一刀切合併。' },
+    ],
+  },
+  {
+    question: '設計一個重要通知嘅 Fallback 策略：先發 Push Notification，5 分鐘內用戶冇打開就發 SMS。呢個策略嘅關鍵技術挑戰係咩？',
+    options: [
+      { text: '5 分鐘嘅 delay 太長，用戶體驗唔好', correct: false, explanation: '5 分鐘係可以調整嘅參數，唔係技術挑戰。真正嘅挑戰係系統點樣知道用戶有冇打開 Push Notification。' },
+      { text: '需要追蹤 Push 嘅送達同打開狀態，再設定定時觸發 SMS 嘅機制', correct: true, explanation: '呢個係核心挑戰。系統需要：1) 透過 APNs/FCM 嘅 delivery receipt 確認送達；2) 前端回報「已打開」狀態；3) 用 delayed job 喺 5 分鐘後檢查狀態，未打開就觸發 SMS。呢幾步缺一不可。' },
+      { text: 'SMS 成本太高，唔應該做 Fallback', correct: false, explanation: '成本雖然係考量因素，但對於重要通知（例如銀行交易提醒）嚟講，確保送達比成本更重要。呢個係產品決策，唔係技術挑戰。' },
+      { text: '只需要設定一個 5 分鐘嘅 setTimeout 就搞掂', correct: false, explanation: 'setTimeout 喺單台 Server 上面可以用，但喺分佈式系統入面 Server 可能會重啟。需要用持久化嘅 delayed job（例如 Task Queue）先至可靠。' },
+    ],
+  },
+  {
+    question: '通知系統嘅 Template 功能有咩好處？',
+    options: [
+      { text: '可以令通知顯示更加靚', correct: false, explanation: '外觀只係好處之一。Template 嘅核心價值唔係外觀，而係將通知內容管理同工程 code 解耦。' },
+      { text: '可以減少 Server 嘅記憶體使用', correct: false, explanation: 'Template 系統唔會明顯減少記憶體使用。佢嘅價值係喺開發效率同內容管理方面。' },
+      { text: 'PM 可以自己改通知文案，唔使工程師改 code 再部署', correct: true, explanation: '呢個就係 Template 系統最大嘅價值。將通知內容（文案、多語言）同發送邏輯分開，PM 透過管理後台就可以修改、A/B test 通知文案，完全唔使動 code，大幅提升迭代速度。' },
+      { text: '可以自動將通知翻譯成所有語言', correct: false, explanation: 'Template 系統需要人手為每種語言寫好 Template，唔會自動翻譯。但佢提供咗一個結構化嘅方式嚟管理多語言版本。' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'message-queue', label: 'Message Queue 消息隊列' },
@@ -228,10 +265,11 @@ export default function NotificationSystem() {
           { id: 'channels', label: '② 通知渠道', content: <ChannelsTab /> },
           { id: 'practice', label: '③ 實戰要點', premium: true, content: <PracticeTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

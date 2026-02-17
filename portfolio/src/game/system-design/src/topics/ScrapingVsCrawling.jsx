@@ -1,5 +1,54 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'Web Scraping 同 Web Crawling 嘅核心分別係咩？',
+    options: [
+      { text: 'Scraping 用 Python，Crawling 用 Java', correct: false, explanation: '兩者都可以用任何語言實現，程式語言唔係核心分別' },
+      { text: 'Scraping 係針對已知 URL 提取特定資料；Crawling 係探索未知頁面建立地圖', correct: true, explanation: 'Scraping 目標明確——已經知道去邊度攞咩資料。Crawling 係探索性質——從種子 URL 開始四圍搵連結，建立網站地圖或索引' },
+      { text: 'Scraping 係合法嘅，Crawling 係違法嘅', correct: false, explanation: '兩者都可以合法使用。Crawling 甚至係被歡迎嘅（有助 SEO）。關鍵係遵守 robots.txt 同控制請求速率' },
+      { text: 'Scraping 只可以攞文字，Crawling 可以攞圖片', correct: false, explanation: '兩者都可以提取任何類型嘅內容，唔限於文字或圖片' },
+    ],
+  },
+  {
+    question: '以下邊個場景最適合用 Web Scraping？',
+    options: [
+      { text: '建立一個搜尋引擎嘅索引', correct: false, explanation: '搜尋引擎索引需要探索成個互聯網嘅未知頁面，呢個係 Crawling 嘅典型應用' },
+      { text: '每日追蹤 Amazon 上面某幾個產品嘅價錢變化', correct: true, explanation: '已經有明確嘅產品 URL，目標係提取特定嘅價錢資料——呢個完全係 Scraping 嘅經典用例' },
+      { text: '發現一個網站入面所有嘅頁面', correct: false, explanation: '發現未知頁面係 Crawling 嘅核心功能，唔係 Scraping' },
+      { text: '建立網站嘅 sitemap', correct: false, explanation: '建立 sitemap 需要遍歷整個網站嘅連結結構，呢個係 Crawling 做嘅嘢' },
+    ],
+  },
+  {
+    question: '點解網站擁有者通常歡迎 Web Crawling？',
+    options: [
+      { text: '因為 Crawler 會幫佢哋修復網站 bug', correct: false, explanation: 'Crawler 只係爬取同記錄網頁內容，唔會修改任何嘢' },
+      { text: '因為畀 Google 等搜尋引擎爬到就代表有機會出現喺搜尋結果，帶來流量', correct: true, explanation: '網站需要被搜尋引擎 Crawler 爬到先可以被索引。被索引 = 出現喺搜尋結果 = 帶來免費流量。所以好多網站主動提供 sitemap.xml 方便 Crawler' },
+      { text: '因為 Crawler 會付費使用佢哋嘅 API', correct: false, explanation: 'Crawler 通常直接爬取公開嘅 HTML 頁面，唔需要付費' },
+      { text: '因為法律規定必須允許 Crawling', correct: false, explanation: '網站可以透過 robots.txt 限制 Crawling。歡迎 Crawling 主要係出於商業考量（SEO）' },
+    ],
+  },
+  {
+    question: '實際項目中，Scraping 同 Crawling 最強嘅用法係咩？',
+    options: [
+      { text: '永遠只用其中一種就夠', correct: false, explanation: '好多實際項目需要兩者結合先可以達到最佳效果' },
+      { text: '先用 Crawling 發現頁面 URL，再用 Scraping 針對性提取每個頁面嘅資料', correct: true, explanation: '例如：先 Crawl 一個電商網站發現所有產品頁面嘅 URL，然後 Scrape 每個產品頁面提取價錢同評論。兩者結合先係最強嘅策略' },
+      { text: '同時用兩種會被網站 ban 得更快', correct: false, explanation: '被 ban 嘅原因係請求速率太高，同用一種定兩種技術冇直接關係。控制好速率就唔會有問題' },
+      { text: '兩種技術已經過時，應該用 AI 取代', correct: false, explanation: 'Scraping 同 Crawling 仍然係數據收集嘅核心技術。AI 可以增強佢哋（例如智能解析），但唔會取代' },
+    ],
+  },
+  {
+    question: '無論做 Scraping 定 Crawling，最重要嘅禮儀規則係咩？',
+    options: [
+      { text: '只喺禮拜日爬取', correct: false, explanation: '冇呢個約定俗成。控制請求速率同遵守 robots.txt 先係重點' },
+      { text: '遵守 robots.txt 規則同控制請求速率，唔好打爆人哋 Server', correct: true, explanation: 'robots.txt 指明邊啲頁面可以爬、邊啲唔可以。控制速率（例如每個 domain 每秒 1-2 次）防止被當成 DDoS 攻擊。呢兩個係最基本嘅禮儀' },
+      { text: '每次爬取前要發 email 通知網站管理員', correct: false, explanation: '唔需要逐次通知。只要遵守 robots.txt 同控制速率就已經足夠' },
+      { text: '用 VPN 隱藏自己嘅 IP 地址', correct: false, explanation: '用 VPN 隱藏身份唔係禮儀，反而可能被視為可疑行為。正當嘅爬蟲通常會設定清晰嘅 User-Agent 表明身份' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'web-crawler', label: 'Web Crawler 網頁爬蟲' },
@@ -523,6 +572,7 @@ export default function ScrapingVsCrawling() {
           { id: 'crawling', label: '② Web Crawling', content: <CrawlingTab /> },
           { id: 'comparison', label: '③ 分別同應用', premium: true, content: <ComparisonTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+          { id: 'quiz', label: '⑤ Quiz', premium: true, content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

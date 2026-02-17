@@ -1,5 +1,54 @@
 import TopicTabs from '../components/TopicTabs';
+import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
+
+const quizData = [
+  {
+    question: 'STAR 框架入面，邊個部分應該佔答案嘅最大比例？',
+    options: [
+      { text: 'Situation——要詳細描述背景', correct: false, explanation: 'Situation 應該用 2-3 句講完就得，唔應該花太多時間。面試官最想聽嘅唔係背景' },
+      { text: 'Action——要具體講清楚每一步做咗咩', correct: true, explanation: 'Action 應該佔成個答案嘅 60%。呢度係展示能力嘅地方——具體講做咗啲咩、點做、點解咁做。面試官最想聽嘅就係呢部分' },
+      { text: 'Result——要用最多時間講成果', correct: false, explanation: 'Result 好重要但唔需要最長。有數據嘅簡潔總結加上學到嘅教訓就夠' },
+      { text: 'Task——要詳細解釋任務嘅複雜性', correct: false, explanation: 'Task 同 Situation 加埋唔應該超過 30 秒。簡潔講清楚要做咩就得' },
+    ],
+  },
+  {
+    question: '面試嘅時候被問到失敗經歷，最好嘅應對策略係咩？',
+    options: [
+      { text: '話自己從來冇試過失敗', correct: false, explanation: '呢個答法會被認為唔夠誠實或者經驗唔足。每個工程師都會遇到問題，唔承認反而扣分' },
+      { text: '坦誠面對失敗，重點講點處理危機同從中學到咩', correct: true, explanation: '面試官問失敗經歷係想睇自省能力同成長能力。坦誠承認 + 系統性處理 + 預防改善 = 最有說服力嘅答案。呢個先係加分嘅關鍵' },
+      { text: '將責任推畀團隊其他成員', correct: false, explanation: '推卸責任係大忌。面試官想睇 ownership 同 accountability' },
+      { text: '盡量輕描淡寫，話「其實唔算咩大事」', correct: false, explanation: '淡化問題會令面試官覺得唔夠認真，或者唔識 evaluate impact' },
+    ],
+  },
+  {
+    question: '用 STAR 答 Behavioral Question 嘅時候，應該用邊個人稱？',
+    options: [
+      { text: '「我哋團隊」——強調團隊合作', correct: false, explanation: '全程用「我哋」會令面試官分唔清個人貢獻。面試係評估你個人，唔係團隊' },
+      { text: '「我」——清楚展示個人嘅具體貢獻同決策', correct: true, explanation: '用「我負責 X」、「我決定 Y」、「我帶領 Z」。面試官想知嘅係你個人做咗咩。可以提及團隊，但主語一定要係「我」' },
+      { text: '「大家」——顯示自己好 humble', correct: false, explanation: '過度 humble 會令面試官唔知道你嘅實際能力同貢獻。呢個唔係面試嘅目的' },
+      { text: '唔需要特別注意人稱', correct: false, explanation: '人稱係 behavioral interview 嘅關鍵細節。用錯人稱直接影響面試官對你能力嘅判斷' },
+    ],
+  },
+  {
+    question: '準備 Behavioral Interview 嘅最佳策略係咩？',
+    options: [
+      { text: '背熟所有常見問題嘅標準答案', correct: false, explanation: '背書式答案聽落唔自然，面試官一追問就露底。呢個係最差嘅策略' },
+      { text: '預先整理 5-8 個真實故事，用 STAR 格式寫低，練到自然流暢', correct: true, explanation: '大部分 behavioral 問題都可以用同一批故事嚟答（角度唔同）。提前用 STAR 寫低、練到自然——到時唔係「即場作答」，而係「揀最啱嘅故事嚟講」' },
+      { text: '完全唔準備，即興發揮最真實', correct: false, explanation: '即興容易答到冇結構、跑題、漏重點。STAR 框架需要練習先可以用得好' },
+      { text: '上網搵範例答案，面試時照搬', correct: false, explanation: '用其他人嘅故事風險好大——面試官一追問細節就會穿崩' },
+    ],
+  },
+  {
+    question: '以下邊個係用 STAR 答題嘅常見錯誤？',
+    options: [
+      { text: 'Action 部分有具體步驟', correct: false, explanation: '呢個係正確做法！Action 要越具體越好' },
+      { text: 'Result 有可量化嘅成果', correct: false, explanation: '呢個都係正確做法！數字令答案更有可信度' },
+      { text: 'Situation 講太長，花 3 分鐘講背景', correct: true, explanation: 'Situation 講太長係最常見嘅錯誤。面試官已經唔耐煩嘅時候你仲未講到 Action。建議 Situation 同 Task 加埋唔超過 30 秒' },
+      { text: '用「我」做主語', correct: false, explanation: '用「我」做主語係正確嘅。面試官想聽你個人嘅貢獻' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'interview-process', label: 'Big Tech 面試流程' },
@@ -509,6 +558,7 @@ export default function StarMethod() {
           { id: 'star-tips', label: '③ 答題技巧', premium: true, content: <StarTipsTab /> },
           { id: 'star-takeaway', label: '④ 重點總結', premium: true, content: <StarTakeawayTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+          { id: 'quiz', label: '⑥ Quiz', premium: true, content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">

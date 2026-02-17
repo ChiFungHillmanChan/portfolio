@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Redis 點解可以做到微秒級（microsecond）嘅延遲？',
+    options: [
+      { text: '因為 Redis 用咗特別快嘅 programming language', correct: false, explanation: 'Redis 用 C 寫，但速度嘅關鍵唔係語言，而係存儲方式' },
+      { text: '因為 Redis 將數據存喺 RAM（記憶體）入面，跳過咗磁碟 I/O', correct: true, explanation: '啱！傳統 DB 每次查詢都要經過磁碟 I/O，而 Redis 完全喺記憶體操作，速度快幾個數量級' },
+      { text: '因為 Redis 唔支援複雜嘅數據結構', correct: false, explanation: 'Redis 支援 String、List、Set、Hash、Sorted Set 等多種結構，唔係因為簡單先快' },
+      { text: '因為 Redis 只支援本地 access', correct: false, explanation: 'Redis 可以透過網絡 access，速度快係因為 in-memory 存儲' },
+    ],
+  },
+  {
+    question: 'Redis 最常見嘅 use case 係咩？',
+    options: [
+      { text: '取代 PostgreSQL 做主要 database', correct: false, explanation: 'Redis 通常唔適合做主要 DB，因為記憶體貴而且數據持久化唔及傳統 DB 可靠' },
+      { text: 'Caching layer — 將頻繁讀取嘅數據暫存，減少對主 database 嘅查詢', correct: true, explanation: '啱！Redis 最經典嘅用途就係做 cache。將 hot data 存入 Redis，大幅減少 DB 查詢次數，降低延遲' },
+      { text: '存儲大型檔案（例如影片、圖片）', correct: false, explanation: '大型檔案應該存喺 Object Storage（如 S3），Redis 係 key-value store，唔適合存大檔案' },
+      { text: '做 frontend 嘅 state management', correct: false, explanation: 'Frontend state management 用 Redux 等工具，Redis 係 backend 嘅 in-memory store' },
+    ],
+  },
+  {
+    question: 'Redis 嘅 Sorted Set 數據結構適合用嚟做咩？',
+    options: [
+      { text: '存儲用戶密碼', correct: false, explanation: '密碼應該 hash 之後存喺 database，唔係放喺 Redis' },
+      { text: 'Leaderboard（排行榜）— 每個 member 有 score，可以快速排名同查詢 top N', correct: true, explanation: '啱！Sorted Set 自動按 score 排序，O(log N) 就可以插入、查詢排名同攞 top N，非常適合即時排行榜' },
+      { text: '存儲 HTML template', correct: false, explanation: 'HTML template 用 String 或者檔案系統存儲更合適' },
+      { text: '做 database migration', correct: false, explanation: 'Database migration 係另一個概念，同 Redis Sorted Set 無關' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'distributed-cache', label: 'Distributed Cache 分佈式快取' },
@@ -344,10 +372,11 @@ export default function Redis() {
           { id: 'tradeoffs', label: '② Trade-offs', content: <TradeoffsTab /> },
           { id: 'realworld', label: '③ 實戰應用', premium: true, content: <RealworldTab /> },
           { id: 'ai-viber', label: '④ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>

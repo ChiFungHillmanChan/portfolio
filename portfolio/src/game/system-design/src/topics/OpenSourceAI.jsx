@@ -2,6 +2,36 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const quizData = [
+  {
+    question: '以下邊個係開源 AI 相比閉源最大嘅優勢？',
+    options: [
+      { text: '推理能力最強', correct: false, explanation: '頂級推理能力仍然係閉源模型（Opus、GPT-5.2）領先，開源約 90-95% 水平。' },
+      { text: '部署最簡單', correct: false, explanation: '開源模型需要 GPU infra 同 DevOps 知識，部署比閉源 API 複雜好多。' },
+      { text: '數據私隱保護 + 無供應商鎖定 + 可 fine-tune', correct: true, explanation: '開源 AI 嘅數據留喺你 server、隨時換模型、可以改 architecture 做 fine-tune——呢三個優勢係閉源做唔到嘅。' },
+      { text: 'Multimodal 能力最好', correct: false, explanation: '閉源模型嘅 multimodal（尤其 Gemini）仍然領先。' },
+    ],
+  },
+  {
+    question: '邊個開源模型擁有最長嘅 context window？',
+    options: [
+      { text: 'DeepSeek V3.2（128K）', correct: false, explanation: '128K 已經好長，但唔係最長。' },
+      { text: 'Llama 4 Scout（10M tokens）', correct: true, explanation: 'Llama 4 Scout 支援 10M token context window，係所有模型中最長，可以食曬成個大型 monorepo。' },
+      { text: 'Qwen 2.5-72B（128K）', correct: false, explanation: 'Qwen 嘅 context window 同 DeepSeek 一樣係 128K。' },
+      { text: 'Mixtral 8x22B（64K）', correct: false, explanation: 'Mixtral 嘅 context window 係 64K，係呢幾個入面最短嘅。' },
+    ],
+  },
+  {
+    question: 'DeepSeek V3.2 嘅 API 定價大約係 Claude Opus 嘅幾分之一？',
+    options: [
+      { text: '1/5', correct: false, explanation: '$0.42 vs $25（output），差距遠多過 5 倍。' },
+      { text: '1/10', correct: false, explanation: '仍然低估咗差距。' },
+      { text: '大約 1/50', correct: true, explanation: 'DeepSeek output $0.42/1M vs Opus output $25/1M，約 1/60。連 input 一齊計通常落喺 1/40-1/60 區間，近似可當 1/50 級別。' },
+      { text: '1/100', correct: false, explanation: '以目前 Opus $25 output 計，1/100 明顯過低。' },
+    ],
+  },
+];
+
 const relatedTopics = [
   { slug: 'ai-model-comparison', label: 'AI 模型深入對比' },
   { slug: 'ai-tools-landscape', label: 'AI 工具全景圖' },
@@ -15,7 +45,7 @@ function OverviewTab() {
       <h2>開源 AI 生態圈</h2>
       <div className="subtitle">點解開源 AI 重要？邊個模型最強？點樣自建部署？</div>
       <p>
-        2025-2026 年，開源 AI 經歷咗爆發式增長。DeepSeek V3.2 以 MIT license 提供接近 GPT-5 嘅能力，Llama 4 Scout 支援 10M token context，OpenClaw 成為最受歡迎嘅開源 AI agent（183K GitHub stars）。作為工程師，你需要知道<strong style={{ color: '#ef4444' }}>幾時用商業 API、幾時用開源方案</strong>。
+        2025-2026 年，開源 AI 經歷咗爆發式增長。DeepSeek V3.2 以 MIT license 提供接近 GPT-5.2 嘅能力，Llama 4 Scout 支援 10M token context，OpenClaw 成為最受歡迎嘅開源 AI agent（183K GitHub stars）。作為工程師，你需要知道<strong style={{ color: '#ef4444' }}>幾時用商業 API、幾時用開源方案</strong>。
       </p>
       <p>開源 AI 嘅四大優勢：<strong>成本低</strong>（API 定價或自建推理）、<strong>私隱保護</strong>（數據唔離開你嘅 server）、<strong>可自訂</strong>（fine-tune 到你嘅 domain）、<strong>無供應商鎖定</strong>。</p>
 
@@ -36,7 +66,7 @@ function OverviewTab() {
           <rect x="20" y="76" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
           <text x="80" y="95" textAnchor="middle" fill="#e2e8f0" fontSize="10">成本</text>
           <text x="270" y="95" textAnchor="middle" fill="#34d399" fontSize="10">$0.28-0.42/1M tokens 或自建免費</text>
-          <text x="560" y="95" textAnchor="middle" fill="#F59E0B" fontSize="10">$0.10-75/1M tokens</text>
+          <text x="560" y="95" textAnchor="middle" fill="#F59E0B" fontSize="10">$0.50-25/1M tokens</text>
 
           {/* Row 2: Privacy */}
           <rect x="20" y="104" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
@@ -54,7 +84,7 @@ function OverviewTab() {
           <rect x="20" y="160" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
           <text x="80" y="179" textAnchor="middle" fill="#e2e8f0" fontSize="10">頂級性能</text>
           <text x="270" y="179" textAnchor="middle" fill="#F59E0B" fontSize="10">接近但仍有差距（~90-95%）</text>
-          <text x="560" y="179" textAnchor="middle" fill="#34d399" fontSize="10">最強（Opus 4.6 / GPT-5.3）</text>
+          <text x="560" y="179" textAnchor="middle" fill="#34d399" fontSize="10">最強（Opus 4.6 / GPT-5.2）</text>
 
           {/* Row 5: Setup */}
           <rect x="20" y="188" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
@@ -78,7 +108,7 @@ function OverviewTab() {
       </div>
 
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong style={{ color: '#ef4444' }}>DeepSeek</strong>：中國 AI 公司，V3.2 用 MoE 架構（256 experts），MIT license 完全開源。API 定價 $0.28/$0.42 per 1M tokens，係商業模型嘅 1/50。Sparse Attention 技術令佢喺長文本表現出色。</span></li>
+        <li><span className="step-num">1</span><span><strong style={{ color: '#ef4444' }}>DeepSeek</strong>：中國 AI 公司，V3.2 用 MoE 架構（256 experts），MIT license 完全開源。API 定價 $0.28/$0.42 per 1M tokens，通常只係商業旗艦模型嘅 1/40-1/60 成本。Sparse Attention 技術令佢喺長文本表現出色。</span></li>
         <li><span className="step-num">2</span><span><strong style={{ color: '#3B82F6' }}>Meta Llama 4</strong>：Scout 版本支援 10M token context（史上最長），17B active / 109B total params。Maverick 版本 1M context，400B total params。兩個都支援 multimodal。完全開源，可自建部署。</span></li>
         <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>Mistral / Mixtral</strong>：法國公司，MoE 架構效率極高。3B/8B 嘅小模型可以喺手機上跑，回應速度 &lt;500ms。適合 edge computing 同低延遲場景。</span></li>
         <li><span className="step-num">4</span><span><strong style={{ color: '#a78bfa' }}>Qwen（通義千問）</strong>：阿里巴巴出品，0.5B 到 72B params 都有。多語言能力最強（中英日韓），coding 能力出色。適合亞洲市場同多語言場景。</span></li>
@@ -171,7 +201,7 @@ function ModelComparisonTab() {
       <div className="key-points">
         <div className="key-point">
           <h4>DeepSeek V3.2 — 性價比之王</h4>
-          <p>MoE 架構用 256 experts，Sparse Attention 技術令長文本處理效率極高。MIT license 意味住你可以用喺任何商業場景。API 定價只需 Claude Opus 嘅 1/50，但 coding 同推理能力接近 GPT-5 水平。</p>
+          <p>MoE 架構用 256 experts，Sparse Attention 技術令長文本處理效率極高。MIT license 意味住你可以用喺任何商業場景。API 定價通常只需 Claude Opus 嘅 1/40-1/60，但 coding 同推理能力接近 GPT-5.2 水平。</p>
         </div>
         <div className="key-point">
           <h4>Llama 4 Scout — Context 怪獸</h4>

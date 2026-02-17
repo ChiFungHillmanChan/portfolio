@@ -1,22 +1,93 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { usePremium } from '../context/PremiumContext';
+import { useAuth } from '../context/AuthContext';
+import GoogleSignInButton from '../components/GoogleSignInButton';
 import { PREMIUM_COPY, PREMIUM_PLANS, formatHKD } from '../data/premiumPlans';
 
 export default function Premium() {
-  const { isPremium, activatePremium } = usePremium();
+  const { isPremium, confirmStripeSession, loadingEntitlement } = usePremium();
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
+  const [confirmStatus, setConfirmStatus] = useState('idle');
+  const [confirmMessage, setConfirmMessage] = useState('');
   const standard = PREMIUM_PLANS.standard;
   const pro = PREMIUM_PLANS.pro;
 
-  useEffect(() => {
-    const sessionId = searchParams.get('session_id');
-    if (sessionId && !isPremium) {
-      activatePremium(sessionId);
-    }
-  }, [searchParams, isPremium, activatePremium]);
+  const sessionId = useMemo(() => {
+    const fromRouter = searchParams.get('session_id');
+    if (fromRouter) return fromRouter;
+    const fromWindow = new URLSearchParams(window.location.search).get('session_id');
+    return fromWindow || '';
+  }, [searchParams]);
 
-  if (isPremium) {
+  const clearSessionIdFromUrl = () => {
+    const params = new URLSearchParams(window.location.search);
+    if (!params.has('session_id')) return;
+    params.delete('session_id');
+    const nextQuery = params.toString();
+    const nextUrl = `${window.location.pathname}${nextQuery ? `?${nextQuery}` : ''}${window.location.hash}`;
+    window.history.replaceState(null, '', nextUrl);
+  };
+
+  useEffect(() => {
+    if (!sessionId) return;
+    if (isPremium) {
+      setConfirmStatus('success');
+      clearSessionIdFromUrl();
+      return;
+    }
+    if (!user) {
+      setConfirmStatus('needs-login');
+      setConfirmMessage('已偵測到付款返回，請先登入原本付款電郵嘅 Google 帳號完成解鎖。');
+      return;
+    }
+
+    let cancelled = false;
+    (async () => {
+      setConfirmStatus('confirming');
+      setConfirmMessage('');
+      try {
+        await confirmStripeSession(sessionId);
+        if (cancelled) return;
+        setConfirmStatus('success');
+        clearSessionIdFromUrl();
+      } catch (err) {
+        if (cancelled) return;
+        if (err?.status === 403) {
+          setConfirmStatus('failed');
+          setConfirmMessage('付款電郵與目前登入帳號不一致，請切換到付款用嘅帳號再試。');
+        } else if (err?.status === 404) {
+          setConfirmStatus('pending');
+          setConfirmMessage('暫時未找到付款記錄，請等 1-2 分鐘後重新整理。');
+        } else if (err?.status === 409) {
+          setConfirmStatus('failed');
+          setConfirmMessage(err?.message || '付款記錄狀態未就緒，請稍後再試。');
+        } else {
+          setConfirmStatus('failed');
+          setConfirmMessage(err?.message || '付款確認失敗，請稍後再試。');
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [sessionId, isPremium, user, confirmStripeSession]);
+
+  if (loadingEntitlement || (confirmStatus === 'confirming' && !isPremium)) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-full px-6 py-16 text-center">
+        <div className="text-4xl mb-4 animate-pulse">⏳</div>
+        <h2 className="text-xl font-bold text-text-primary mb-2">確認付款中...</h2>
+        <p className="text-text-dim text-sm max-w-lg">
+          正在向伺服器核實付款狀態，請稍候。
+        </p>
+      </div>
+    );
+  }
+
+  if (isPremium && confirmStatus !== 'failed') {
     return (
       <div className="flex flex-col items-center justify-center min-h-full px-6 py-16 text-center">
         <div className="text-6xl mb-6">🎉</div>
@@ -24,6 +95,9 @@ export default function Premium() {
         <p className="text-text-dim text-base leading-relaxed max-w-lg">
           你已經解鎖所有 Premium 內容。享受實戰練習同 AI Viber 模板！
         </p>
+        {confirmStatus === 'success' && (
+          <p className="text-accent-green text-sm mt-3">付款已由後端確認完成。</p>
+        )}
       </div>
     );
   }
@@ -34,6 +108,25 @@ export default function Premium() {
         <h1>Premium 解鎖</h1>
         <p>早鳥限定優惠 · 一次性付款，永久解鎖所有進階內容</p>
       </header>
+
+      {confirmStatus === 'needs-login' && (
+        <div className="max-w-2xl mx-auto mb-4 p-4 rounded-xl bg-amber-500/10 border border-amber-500/25">
+          <div className="text-sm text-amber-300 mb-2">{confirmMessage}</div>
+          <GoogleSignInButton />
+        </div>
+      )}
+
+      {confirmStatus === 'pending' && (
+        <div className="max-w-2xl mx-auto mb-4 p-4 rounded-xl bg-blue-500/10 border border-blue-500/25 text-sm text-blue-300">
+          {confirmMessage}
+        </div>
+      )}
+
+      {confirmStatus === 'failed' && (
+        <div className="max-w-2xl mx-auto mb-4 p-4 rounded-xl bg-red-500/10 border border-red-500/25 text-sm text-red-300">
+          {confirmMessage}
+        </div>
+      )}
 
       {/* Urgency banner */}
       <div className="max-w-2xl mx-auto mb-6 px-4 py-3 rounded-xl bg-amber-500/10 border border-amber-500/25 text-center">

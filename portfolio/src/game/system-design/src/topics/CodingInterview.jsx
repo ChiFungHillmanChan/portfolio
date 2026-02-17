@@ -2,7 +2,35 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
-const quizData = [];
+const quizData = [
+  {
+    question: 'Coding Interview 入面，面試官最想睇嘅係咩？',
+    options: [
+      { text: '背出完美嘅 code solution', correct: false, explanation: '背答案唔係面試官想睇嘅，佢哋更重視思考過程同溝通' },
+      { text: '候選人點樣理解問題、溝通思路、規劃方案嘅過程', correct: true, explanation: '啱！面試官真正想睇嘅係解決問題嘅過程——點樣問 clarifying questions、點樣規劃、點樣 communicate，就算 code 唔完美都可以過' },
+      { text: '打字速度有幾快', correct: false, explanation: '打字速度完全唔係考核重點' },
+      { text: '識幾多種 programming language', correct: false, explanation: '面試通常只用一種語言，識幾多語言唔重要' },
+    ],
+  },
+  {
+    question: '收到 coding 題目之後，最應該先做咩？',
+    options: [
+      { text: '立刻開始寫 code', correct: false, explanation: '衝去寫 code 係大忌，應該先理解清楚題目同確認 edge case' },
+      { text: '問 clarifying questions 確認題意，討論 approach 先至開始寫', correct: true, explanation: '啱！先問清楚 input/output format、edge case、constraints，再講解自己嘅 approach 同 time complexity，取得面試官同意先至開始寫 code' },
+      { text: '默默諗幾分鐘，唔好出聲', correct: false, explanation: '唔出聲會令面試官唔知道你諗緊咩，應該 think out loud' },
+      { text: '問面試官攞 hint', correct: false, explanation: '一開始就攞 hint 會扣分，應該先展示自己嘅思考過程' },
+    ],
+  },
+  {
+    question: '點解 coding interview 要 think out loud（講出思考過程）？',
+    options: [
+      { text: '因為面試官聽唔到你嘅內心獨白', correct: false, explanation: '呢個雖然係事實，但唔係核心原因' },
+      { text: '因為面試官需要了解你嘅思路，適時提供 hint；同時展示你嘅溝通同合作能力', correct: true, explanation: '啱！Think out loud 令面試官可以評估你嘅思考方式，喺卡住嘅時候提供 hint，同時展示你係一個容易合作嘅 teammate' },
+      { text: '因為可以拖延時間', correct: false, explanation: 'Think out loud 唔係拖延，而係展示結構化思考' },
+      { text: '因為面試規則要求必須講嘢', correct: false, explanation: '冇硬性規則，但 think out loud 係 best practice' },
+    ],
+  },
+];
 
 const relatedTopics = [
   { slug: 'star-method', label: 'STAR 面試法' },
@@ -563,10 +591,11 @@ export default function CodingInterview() {
           { id: 'clarify', label: '③ 釐清問題', premium: true, content: <ClarifyTab /> },
           { id: 'communicate', label: '④ 溝通同合作', premium: true, content: <CommunicateTab /> },
           { id: 'ai-viber', label: '⑤ AI Viber', premium: true, content: <AIViberTab /> },
+        
+          { id: 'quiz', label: '小測', content: <QuizRenderer data={quizData} /> },
         ]}
       />
       <div className="topic-container">
-        <QuizRenderer data={quizData} />
         <RelatedTopics topics={relatedTopics} />
       </div>
     </>
