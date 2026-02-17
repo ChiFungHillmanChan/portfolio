@@ -5,7 +5,7 @@ import { usePremium } from '../context/PremiumContext';
 import { useProgress } from '../context/ProgressContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 import topicData from '../data/topics.json';
-import { API_BASE, STRIPE_URL, STRIPE_PRO_URL } from '../config/constants';
+import { API_BASE } from '../config/constants';
 import { PREMIUM_PLANS, PREMIUM_COPY, formatHKD, tierDisplayName } from '../data/premiumPlans';
 
 // ─── Superadmin Panel (cached — only fetches once) ───
@@ -407,77 +407,119 @@ function PlanTab({ isPremium, isSuperAdmin, token, activatePremium }) {
           {/* Plan Cards */}
           <div className="flex flex-col sm:flex-row gap-3 mb-4">
             {/* Standard */}
-            <a
-              href={STRIPE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 p-4 rounded-xl border border-accent-indigo/30 bg-accent-indigo/5 no-underline hover:bg-accent-indigo/10 transition-colors"
-            >
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">🔓</span>
-                <span className="text-xs font-semibold text-accent-indigo-light uppercase tracking-wider">Standard</span>
-              </div>
-              <div className="flex items-baseline gap-1.5 mb-0.5">
-                <span className="text-xs text-text-dimmer line-through">{formatHKD(standard.listPrice)}</span>
-                <span className="text-xl font-bold text-text-primary">{formatHKD(standard.salePrice)}</span>
-              </div>
-              <div className="inline-block px-1.5 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.6rem] font-semibold mb-1">慳 {formatHKD(standard.savings)}</div>
-              <div className="text-[0.65rem] text-text-dimmer mb-3">一次性付款 · 永久存取</div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-accent-green">✓</span> AI 助手 + 教練模式
+            {standard.comingSoon ? (
+              <div className="flex-1 p-4 rounded-xl border border-accent-indigo/30 bg-accent-indigo/5 opacity-60">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{standard.icon}</span>
+                  <span className="text-xs font-semibold text-accent-indigo-light uppercase tracking-wider">{standard.name}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-accent-green">✓</span> 實戰項目 + Viber 模板
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-accent-green">✓</span> 小測驗 + 面試 Checklist
-                </div>
-                <div className="flex items-center gap-1.5 text-xs text-text-dimmer">
-                  <span>—</span> 每日 {standard.dailyAiLimit} 次 AI 對話
-                </div>
+                <div className="mt-3 text-center text-sm font-semibold text-gray-400">Coming Soon</div>
               </div>
-              <div className="mt-3 text-center text-sm font-semibold text-accent-indigo">
-                鎖定早鳥價 &rarr;
-              </div>
-            </a>
+            ) : (
+              <a
+                href={standard.stripeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 p-4 rounded-xl border border-accent-indigo/30 bg-accent-indigo/5 no-underline hover:bg-accent-indigo/10 transition-colors"
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{standard.icon}</span>
+                  <span className="text-xs font-semibold text-accent-indigo-light uppercase tracking-wider">{standard.name}</span>
+                </div>
+                <div className="flex items-baseline gap-1.5 mb-0.5">
+                  <span className="text-xs text-text-dimmer line-through">{formatHKD(standard.listPrice)}</span>
+                  <span className="text-xl font-bold text-text-primary">{formatHKD(standard.salePrice)}</span>
+                </div>
+                <div className="inline-block px-1.5 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.6rem] font-semibold mb-1">慳 {formatHKD(standard.savings)}</div>
+                <div className="text-[0.65rem] text-text-dimmer mb-3">{standard.billing}</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-accent-green">✓</span> AI 助手 + 教練模式
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-accent-green">✓</span> 實戰項目 + Viber 模板
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-accent-green">✓</span> 小測驗 + 面試 Checklist
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-dimmer">
+                    <span>—</span> 每日 {standard.dailyAiLimit} 次 AI 對話
+                  </div>
+                </div>
+                <div className="mt-3 text-center text-sm font-semibold text-accent-indigo">
+                  {standard.ctaText} &rarr;
+                </div>
+              </a>
+            )}
 
             {/* Pro */}
-            <a
-              href={STRIPE_PRO_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 p-4 rounded-xl border border-amber-500/40 bg-amber-500/5 no-underline hover:bg-amber-500/10 transition-colors relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 bg-amber-500 text-black text-[0.55rem] font-bold px-2 py-0.5 rounded-bl-lg">推薦</div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">⚡</span>
-                <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">Pro</span>
-              </div>
-              <div className="flex items-baseline gap-1.5 mb-0.5">
-                <span className="text-xs text-text-dimmer line-through">{formatHKD(pro.listPrice)}</span>
-                <span className="text-xl font-bold text-text-primary">{formatHKD(pro.salePrice)}</span>
-              </div>
-              <div className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[0.6rem] font-semibold mb-1">慳 {formatHKD(pro.savings)}</div>
-              <div className="text-[0.65rem] text-text-dimmer mb-3">一次性付款 · 永久存取</div>
-              <div className="space-y-1">
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-accent-green">✓</span> Standard 所有功能
+            {pro.comingSoon ? (
+              <div className="flex-1 p-4 rounded-xl border border-amber-500/40 bg-amber-500/5 opacity-60 relative overflow-hidden">
+                <div className="absolute top-0 right-0 bg-gray-500 text-white text-[0.55rem] font-bold px-2 py-0.5 rounded-bl-lg">Coming Soon</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{pro.icon}</span>
+                  <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{pro.name}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-amber-400">★</span> 每日 {pro.dailyAiLimit} 次 AI 對話
+                <div className="flex items-baseline gap-1.5 mb-0.5">
+                  <span className="text-xs text-text-dimmer line-through">{formatHKD(pro.listPrice)}</span>
+                  <span className="text-xl font-bold text-text-primary">{formatHKD(pro.salePrice)}</span>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-amber-400">★</span> 進階實戰 + AI 課題
+                <div className="text-[0.65rem] text-text-dimmer mb-3">{pro.billing}</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-accent-green">✓</span> Standard 所有功能
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-amber-400">★</span> 每日 {pro.dailyAiLimit} 次 AI 對話
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-amber-400">★</span> 進階實戰 + AI 課題
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-amber-400">★</span> 未來新功能優先存取
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 text-xs text-text-muted">
-                  <span className="text-amber-400">★</span> 未來新功能優先存取
+                <div className="mt-3 text-center text-sm font-semibold text-gray-400">
+                  Coming Soon
                 </div>
               </div>
-              <div className="mt-3 text-center text-sm font-semibold text-amber-400">
-                鎖定早鳥價 &rarr;
-              </div>
-            </a>
+            ) : (
+              <a
+                href={pro.stripeUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 p-4 rounded-xl border border-amber-500/40 bg-amber-500/5 no-underline hover:bg-amber-500/10 transition-colors relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 bg-amber-500 text-black text-[0.55rem] font-bold px-2 py-0.5 rounded-bl-lg">推薦</div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">{pro.icon}</span>
+                  <span className="text-xs font-semibold text-amber-400 uppercase tracking-wider">{pro.name}</span>
+                </div>
+                <div className="flex items-baseline gap-1.5 mb-0.5">
+                  <span className="text-xs text-text-dimmer line-through">{formatHKD(pro.listPrice)}</span>
+                  <span className="text-xl font-bold text-text-primary">{formatHKD(pro.salePrice)}</span>
+                </div>
+                <div className="inline-block px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[0.6rem] font-semibold mb-1">慳 {formatHKD(pro.savings)}</div>
+                <div className="text-[0.65rem] text-text-dimmer mb-3">{pro.billing}</div>
+                <div className="space-y-1">
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-accent-green">✓</span> Standard 所有功能
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-amber-400">★</span> 每日 {pro.dailyAiLimit} 次 AI 對話
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-amber-400">★</span> 進階實戰 + AI 課題
+                  </div>
+                  <div className="flex items-center gap-1.5 text-xs text-text-muted">
+                    <span className="text-amber-400">★</span> 未來新功能優先存取
+                  </div>
+                </div>
+                <div className="mt-3 text-center text-sm font-semibold text-amber-400">
+                  {pro.ctaText} &rarr;
+                </div>
+              </a>
+            )}
           </div>
 
           {/* Access Code Form */}

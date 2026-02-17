@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { usePremium, TIER_LIMITS } from '../context/PremiumContext';
 import GoogleSignInButton from './GoogleSignInButton';
 import topicData from '../data/topics.json';
-import { API_BASE, STRIPE_URL } from '../config/constants';
+import { API_BASE } from '../config/constants';
+import { PREMIUM_PLANS, formatHKD } from '../data/premiumPlans';
 
 function escapeHtml(str) {
   const d = document.createElement('div');
@@ -373,27 +374,40 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle, hidden
                   <span>🆓 Free</span><span className="text-text-muted">{TIER_LIMITS.free} 次/日</span>
                 </div>
                 <div className="flex justify-between text-text-dim">
-                  <span>🔓 Standard (<span className="line-through text-text-dimmer">$350</span> HK$150)</span><span className="text-accent-indigo-light">{TIER_LIMITS.standard} 次/日</span>
+                  <span>🔓 Standard (<span className="line-through text-text-dimmer">{formatHKD(PREMIUM_PLANS.standard.listPrice)}</span> {formatHKD(PREMIUM_PLANS.standard.salePrice)})</span><span className="text-accent-indigo-light">{TIER_LIMITS.standard} 次/日</span>
                 </div>
                 <div className="flex justify-between text-text-dim">
-                  <span>⚡ Pro (<span className="line-through text-text-dimmer">$899</span> HK$399)</span><span className="text-amber-400">{TIER_LIMITS.pro} 次/日</span>
+                  <span>⚡ Pro {PREMIUM_PLANS.pro.comingSoon ? <span className="text-gray-400">(Coming Soon)</span> : <>(<span className="line-through text-text-dimmer">{formatHKD(PREMIUM_PLANS.pro.listPrice)}</span> {formatHKD(PREMIUM_PLANS.pro.salePrice)})</>}</span><span className="text-amber-400">{TIER_LIMITS.pro} 次/日</span>
                 </div>
               </div>
             </div>
 
-            <a
-              href={STRIPE_URL}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
-            >
-              <span>🔓</span>
-              <div className="flex-1">
-                <div className="text-sm font-bold">早鳥價優惠 · 鎖定永久存取</div>
-                <div className="text-xs text-text-dim"><span className="line-through">$350</span> HK$150 · <span className="line-through">$899</span> HK$399</div>
-              </div>
-              <span className="text-text-dim">&rarr;</span>
-            </a>
+            {(() => {
+              const std = PREMIUM_PLANS.standard;
+              return std.comingSoon ? (
+                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/30 text-text-primary mb-5 opacity-60">
+                  <span>🔓</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold">Coming Soon</div>
+                    <div className="text-xs text-text-dim">Premium 訂閱即將推出</div>
+                  </div>
+                </div>
+              ) : (
+                <a
+                  href={std.stripeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
+                >
+                  <span>🔓</span>
+                  <div className="flex-1">
+                    <div className="text-sm font-bold">早鳥價優惠 · 鎖定永久存取</div>
+                    <div className="text-xs text-text-dim"><span className="line-through">{formatHKD(std.listPrice)}</span> {formatHKD(std.salePrice)}</div>
+                  </div>
+                  <span className="text-text-dim">&rarr;</span>
+                </a>
+              );
+            })()}
 
             <GoogleSignInButton />
           </div>

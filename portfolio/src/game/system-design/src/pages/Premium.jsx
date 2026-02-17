@@ -175,14 +175,20 @@ export default function Premium() {
             </div>
           </div>
 
-          <a
-            href={standard.stripeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block w-full px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-xl font-semibold text-sm transition-colors text-center"
-          >
-            {standard.ctaText} — {formatHKD(standard.salePrice)}
-          </a>
+          {standard.comingSoon ? (
+            <span className="inline-block w-full px-6 py-3 bg-gray-600 text-gray-300 rounded-xl font-semibold text-sm text-center cursor-not-allowed">
+              Coming Soon
+            </span>
+          ) : (
+            <a
+              href={standard.stripeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block w-full px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-xl font-semibold text-sm transition-colors text-center"
+            >
+              {standard.ctaText} — {formatHKD(standard.salePrice)}
+            </a>
+          )}
         </div>
 
         {/* Pro Plan */}
@@ -224,14 +230,20 @@ export default function Premium() {
             </div>
           </div>
 
-          <a
-            href={pro.stripeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-block w-full px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-semibold text-sm transition-colors text-center"
-          >
-            {pro.ctaText} — {formatHKD(pro.salePrice)}
-          </a>
+          {pro.comingSoon ? (
+            <span className="inline-block w-full px-6 py-3 bg-gray-600 text-gray-300 rounded-xl font-semibold text-sm text-center cursor-not-allowed">
+              Coming Soon
+            </span>
+          ) : (
+            <a
+              href={pro.stripeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block w-full px-6 py-3 bg-amber-500 hover:bg-amber-400 text-black rounded-xl font-semibold text-sm transition-colors text-center"
+            >
+              {pro.ctaText} — {formatHKD(pro.salePrice)}
+            </a>
+          )}
         </div>
       </div>
 

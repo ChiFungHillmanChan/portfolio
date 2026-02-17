@@ -2,7 +2,8 @@ import { useState } from 'react';
 import GoogleSignInButton from './GoogleSignInButton';
 import { useAuth } from '../context/AuthContext';
 import { usePremium } from '../context/PremiumContext';
-import { API_BASE, STRIPE_URL } from '../config/constants';
+import { API_BASE } from '../config/constants';
+import { PREMIUM_PLANS, formatHKD } from '../data/premiumPlans';
 
 export default function AuthGate({ onDismiss, requirePremium, featureName }) {
   const { user, token } = useAuth();
@@ -82,21 +83,32 @@ export default function AuthGate({ onDismiss, requirePremium, featureName }) {
           </p>
         </div>
 
-        {requirePremium && (
-          <a
-            href={STRIPE_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
-          >
-            <span className="text-xl">🔓</span>
-            <div className="flex-1">
-              <div className="text-sm font-bold"><span className="line-through text-text-dimmer font-normal">HK$350</span> HK$150 一次性解鎖</div>
-              <div className="text-[0.7rem] text-text-dim">早鳥價優惠 · 永久存取 · 未來將轉月費制</div>
+        {requirePremium && (() => {
+          const standard = PREMIUM_PLANS.standard;
+          return standard.comingSoon ? (
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/30 text-text-primary mb-5 opacity-60">
+              <span className="text-xl">🔓</span>
+              <div className="flex-1">
+                <div className="text-sm font-bold">Coming Soon</div>
+                <div className="text-[0.7rem] text-text-dim">Premium 訂閱即將推出</div>
+              </div>
             </div>
-            <span className="text-text-dim">&rarr;</span>
-          </a>
-        )}
+          ) : (
+            <a
+              href={standard.stripeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
+            >
+              <span className="text-xl">🔓</span>
+              <div className="flex-1">
+                <div className="text-sm font-bold"><span className="line-through text-text-dimmer font-normal">{formatHKD(standard.listPrice)}</span> {formatHKD(standard.salePrice)} 一次性解鎖</div>
+                <div className="text-[0.7rem] text-text-dim">早鳥價優惠 · 永久存取</div>
+              </div>
+              <span className="text-text-dim">&rarr;</span>
+            </a>
+          );
+        })()}
 
         {/* Access code entry — only shown when user is logged in and premium is required */}
         {requirePremium && user && (

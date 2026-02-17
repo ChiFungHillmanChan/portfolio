@@ -1,4 +1,4 @@
-import { STRIPE_URL, STRIPE_PRO_URL } from '../config/constants';
+import { STRIPE_URL } from '../config/constants';
 
 export const PREMIUM_PLANS = {
   standard: {
@@ -12,6 +12,7 @@ export const PREMIUM_PLANS = {
     ctaText: '立即鎖定早鳥價',
     dailyAiLimit: 20,
     stripeUrl: STRIPE_URL,
+    comingSoon: false,
   },
   pro: {
     tier: 'pro',
@@ -21,9 +22,10 @@ export const PREMIUM_PLANS = {
     salePrice: 399,
     savings: 500,
     billing: '一次性付款 · 永久存取',
-    ctaText: '立即鎖定早鳥價',
+    ctaText: 'Coming Soon',
     dailyAiLimit: 80,
-    stripeUrl: STRIPE_PRO_URL,
+    stripeUrl: null,
+    comingSoon: true,
   },
 };
 

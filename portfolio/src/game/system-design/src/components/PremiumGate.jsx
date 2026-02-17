@@ -19,14 +19,20 @@ export default function PremiumGate() {
       <div className="inline-block px-2 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.65rem] font-semibold mb-1">早鳥價 · 慳 {formatHKD(standard.savings)}</div>
       <p className="text-[0.65rem] text-text-darkest mb-6">一次性付款 · 永久存取 · 未來將轉月費制</p>
       <div className="flex gap-3">
-        <a
-          href={standard.stripeUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-lg font-medium text-sm transition-colors"
-        >
-          立即鎖定早鳥價 — {formatHKD(standard.salePrice)}
-        </a>
+        {standard.comingSoon ? (
+          <span className="px-6 py-3 bg-gray-600 text-gray-300 rounded-lg font-medium text-sm cursor-not-allowed">
+            Coming Soon
+          </span>
+        ) : (
+          <a
+            href={standard.stripeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-lg font-medium text-sm transition-colors"
+          >
+            {standard.ctaText} — {formatHKD(standard.salePrice)}
+          </a>
+        )}
         <button
           onClick={() => navigate('/premium')}
           className="px-6 py-3 bg-transparent border border-border hover:border-border-hover text-text-dim hover:text-text-secondary rounded-lg font-medium text-sm transition-all"
