@@ -24,8 +24,9 @@ const difficultyColors = {
   advanced: { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', label: '高級' },
 };
 
-export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDesktop }) {
-  const [filter, setFilter] = useState('all');
+const PLAN_KEY = 'sd_learning_plan';
+
+export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDesktop, filter, onFilterChange, scrollToSlug, onScrollComplete, onNavigate }) {
   const [search, setSearch] = useState('');
   const [collapsed, setCollapsed] = useState(loadCollapsed);
   const navigate = useNavigate();
@@ -34,6 +35,7 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
   const { user, signInWithGoogle, signOut } = useAuth();
   const { isPremium, tier } = usePremium();
   const filterScrollRef = useRef(null);
+  const navRef = useRef(null);
 
   const toggleSection = useCallback((categoryId) => {
     setCollapsed((prev) => {
@@ -59,6 +61,46 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
       });
     }
   }, [currentSlug]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Scroll to active topic when triggered by Layout (direct URL nav)
+  useEffect(() => {
+    if (!scrollToSlug) return;
+    // Small delay to let DOM update after section expand
+    const timer = setTimeout(() => {
+      const el = navRef.current?.querySelector(`[data-slug="${CSS.escape(scrollToSlug)}"]`);
+      if (el) el.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      onScrollComplete?.();
+    }, 150);
+    return () => clearTimeout(timer);
+  }, [scrollToSlug, onScrollComplete]);
+
+  // Check if learning plan exists for roadmap filter
+  const hasLearningPlan = useMemo(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem(PLAN_KEY));
+      return !!(saved?.pathDetails?.length);
+    } catch { return false; }
+  }, []);
+
+  const roadmapTopics = useMemo(() => {
+    if (filter !== 'roadmap') return null;
+    try {
+      const saved = JSON.parse(localStorage.getItem(PLAN_KEY));
+      if (!saved?.pathDetails) return null;
+      return saved.pathDetails.map((item, idx) => {
+        const topic = topicData.topics.find((t) => t.slug === item.id);
+        return {
+          ...topic,
+          slug: item.id,
+          title: item.titleZh || item.title || topic?.title || item.id,
+          sub: topic?.sub || '',
+          icon: topic?.icon || '📖',
+          roadmapIndex: idx,
+          roadmapCompleted: (saved.completed || []).includes(idx),
+        };
+      }).filter((t) => t);
+    } catch { return null; }
+  }, [filter]);
 
   const filteredTopics = useMemo(() => {
     return topicData.topics.filter((t) => {
@@ -94,6 +136,7 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
 
   const handleTopicClick = (slug, disabled) => {
     if (disabled) return;
+    onNavigate?.();
     navigate(`/topic/${slug}`);
     onClose?.();
   };
@@ -157,6 +200,18 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
         {/* Filters — wrap to show all */}
         <div className="border-b border-border px-2.5 py-2">
           <div className="flex flex-wrap gap-1.5">
+            {hasLearningPlan && (
+              <button
+                className={`px-2 py-1 rounded-full border text-[0.65rem] font-medium cursor-pointer transition-all whitespace-nowrap ${
+                  filter === 'roadmap'
+                    ? 'bg-accent-indigo/15 border-accent-indigo text-accent-indigo-light'
+                    : 'bg-transparent border-border text-text-dimmer hover:border-border-hover hover:text-text-dim'
+                }`}
+                onClick={() => onFilterChange(filter === 'roadmap' ? 'all' : 'roadmap')}
+              >
+                🗺️ 我嘅路線
+              </button>
+            )}
             {topicData.filters.map((f) => (
               <button
                 key={f.id}
@@ -165,7 +220,7 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
                     ? 'bg-accent-indigo/15 border-accent-indigo text-accent-indigo-light'
                     : 'bg-transparent border-border text-text-dimmer hover:border-border-hover hover:text-text-dim'
                 }`}
-                onClick={() => setFilter(f.id)}
+                onClick={() => onFilterChange(f.id)}
               >
                 {f.label}
               </button>
@@ -185,98 +240,138 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
         </div>
 
         {/* Nav — takes remaining space minus the fixed footer */}
-        <nav className="flex-1 overflow-y-auto px-2.5 py-3">
-          {groupedTopics.map((item, i) => {
-            if (item.type === 'section') {
-              const isClosed = !isSearching && collapsed[item.id];
-              // Count topics in this section
-              let topicCount = 0;
-              for (let j = i + 1; j < groupedTopics.length && groupedTopics[j].type !== 'section'; j++) {
-                topicCount++;
-              }
+        <nav ref={navRef} className="flex-1 overflow-y-auto px-2.5 py-3">
+          {filter === 'roadmap' && roadmapTopics ? (
+            /* Roadmap view — flat list in learning plan order */
+            roadmapTopics.map((item) => {
+              const isActive = currentSlug === item.slug;
+              const viewed = isViewed(item.slug);
               return (
                 <button
-                  key={`section-${item.id}`}
-                  className="flex items-center gap-1.5 w-full text-left text-[0.7rem] font-semibold uppercase tracking-wider px-2.5 pt-4 pb-2 cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ color: item.color || '#94a3b8' }}
-                  onClick={() => toggleSection(item.id)}
-                  aria-expanded={!isClosed}
+                  key={item.slug}
+                  data-slug={item.slug}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-left transition-all relative group cursor-pointer ${
+                    isActive
+                      ? 'bg-accent-indigo/10 text-text-primary border-l-2 border-accent-indigo'
+                      : 'text-text-dim hover:bg-white/[0.03] hover:text-text-secondary'
+                  }`}
+                  onClick={() => handleTopicClick(item.slug, false)}
                 >
-                  <svg
-                    width="12"
-                    height="12"
-                    viewBox="0 0 12 12"
-                    className={`flex-shrink-0 transition-transform duration-200 ${isClosed ? '-rotate-90' : ''}`}
-                    fill="currentColor"
+                  <span className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-[0.65rem] font-bold"
+                    style={{
+                      background: item.roadmapCompleted ? 'rgba(34,197,94,0.2)' : 'rgba(99,102,241,0.15)',
+                      color: item.roadmapCompleted ? '#22c55e' : '#818cf8',
+                    }}
                   >
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-                  </svg>
-                  <span className="flex-1">{item.label}</span>
-                  <span className="text-[0.6rem] font-normal opacity-50">{topicCount}</span>
+                    {item.roadmapCompleted ? '✓' : item.roadmapIndex + 1}
+                  </span>
+                  <span
+                    className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    style={{ background: 'rgba(99,102,241,0.15)' }}
+                  >
+                    {item.icon}
+                  </span>
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[0.88rem] truncate">{item.title}</span>
+                    <span className="block text-[0.72rem] text-text-dimmer truncate">{item.sub}</span>
+                  </span>
+                  {viewed && <span className="w-2 h-2 rounded-full bg-accent-green flex-shrink-0" />}
                 </button>
               );
-            }
-
-            // Hide topics if their section is collapsed
-            const sectionId = item.category;
-            if (!isSearching && collapsed[sectionId]) return null;
-
-            const isActive = currentSlug === item.slug;
-            const viewed = isViewed(item.slug);
-            const diff = item.difficulty ? difficultyColors[item.difficulty] : null;
-
-            return (
-              <button
-                key={item.slug}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-left transition-all relative group ${
-                  item.disabled
-                    ? 'opacity-40 cursor-not-allowed'
-                    : 'cursor-pointer'
-                } ${
-                  isActive
-                    ? 'bg-accent-indigo/10 text-text-primary border-l-2 border-accent-indigo'
-                    : 'text-text-dim hover:bg-white/[0.03] hover:text-text-secondary'
-                } ${item.highlight ? 'border border-accent-indigo/30 mt-2' : ''}`}
-                onClick={() => handleTopicClick(item.slug, item.disabled)}
-                disabled={item.disabled}
-              >
-                <span
-                  className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm"
-                  style={{
-                    background: item.category === 'ai-core'
-                      ? 'rgba(167,139,250,0.2)'
-                      : 'rgba(99,102,241,0.15)',
-                  }}
-                >
-                  {item.icon}
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-[0.88rem] truncate">
-                    {item.title}
-                  </span>
-                  <span className="block text-[0.72rem] text-text-dimmer truncate">
-                    {item.sub}
-                  </span>
-                </span>
-                {viewed && (
-                  <span className="w-2 h-2 rounded-full bg-accent-green flex-shrink-0" />
-                )}
-                {item.premium && (
-                  <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-[rgba(167,139,250,0.2)] text-[#a78bfa] flex-shrink-0">
-                    Premium
-                  </span>
-                )}
-                {diff && (
-                  <span
-                    className="text-[0.6rem] px-1.5 py-0.5 rounded flex-shrink-0"
-                    style={{ background: diff.bg, color: diff.text }}
+            })
+          ) : (
+            /* Default category-grouped view */
+            groupedTopics.map((item, i) => {
+              if (item.type === 'section') {
+                const isClosed = !isSearching && collapsed[item.id];
+                let topicCount = 0;
+                for (let j = i + 1; j < groupedTopics.length && groupedTopics[j].type !== 'section'; j++) {
+                  topicCount++;
+                }
+                return (
+                  <button
+                    key={`section-${item.id}`}
+                    className="flex items-center gap-1.5 w-full text-left text-[0.7rem] font-semibold uppercase tracking-wider px-2.5 pt-4 pb-2 cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ color: item.color || '#94a3b8' }}
+                    onClick={() => toggleSection(item.id)}
+                    aria-expanded={!isClosed}
                   >
-                    {diff.label}
+                    <svg
+                      width="12"
+                      height="12"
+                      viewBox="0 0 12 12"
+                      className={`flex-shrink-0 transition-transform duration-200 ${isClosed ? '-rotate-90' : ''}`}
+                      fill="currentColor"
+                    >
+                      <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                    </svg>
+                    <span className="flex-1">{item.label}</span>
+                    <span className="text-[0.6rem] font-normal opacity-50">{topicCount}</span>
+                  </button>
+                );
+              }
+
+              const sectionId = item.category;
+              if (!isSearching && collapsed[sectionId]) return null;
+
+              const isActive = currentSlug === item.slug;
+              const viewed = isViewed(item.slug);
+              const diff = item.difficulty ? difficultyColors[item.difficulty] : null;
+
+              return (
+                <button
+                  key={item.slug}
+                  data-slug={item.slug}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg w-full text-left transition-all relative group ${
+                    item.disabled
+                      ? 'opacity-40 cursor-not-allowed'
+                      : 'cursor-pointer'
+                  } ${
+                    isActive
+                      ? 'bg-accent-indigo/10 text-text-primary border-l-2 border-accent-indigo'
+                      : 'text-text-dim hover:bg-white/[0.03] hover:text-text-secondary'
+                  } ${item.highlight ? 'border border-accent-indigo/30 mt-2' : ''}`}
+                  onClick={() => handleTopicClick(item.slug, item.disabled)}
+                  disabled={item.disabled}
+                >
+                  <span
+                    className="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-sm"
+                    style={{
+                      background: item.category === 'ai-core'
+                        ? 'rgba(167,139,250,0.2)'
+                        : 'rgba(99,102,241,0.15)',
+                    }}
+                  >
+                    {item.icon}
                   </span>
-                )}
-              </button>
-            );
-          })}
+                  <span className="flex-1 min-w-0">
+                    <span className="block text-[0.88rem] truncate">
+                      {item.title}
+                    </span>
+                    <span className="block text-[0.72rem] text-text-dimmer truncate">
+                      {item.sub}
+                    </span>
+                  </span>
+                  {viewed && (
+                    <span className="w-2 h-2 rounded-full bg-accent-green flex-shrink-0" />
+                  )}
+                  {item.premium && (
+                    <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-[rgba(167,139,250,0.2)] text-[#a78bfa] flex-shrink-0">
+                      Premium
+                    </span>
+                  )}
+                  {diff && (
+                    <span
+                      className="text-[0.6rem] px-1.5 py-0.5 rounded flex-shrink-0"
+                      style={{ background: diff.bg, color: diff.text }}
+                    >
+                      {diff.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })
+          )}
         </nav>
 
         {/* Fixed footer — login / user + settings */}

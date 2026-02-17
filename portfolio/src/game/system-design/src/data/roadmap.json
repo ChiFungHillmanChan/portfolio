@@ -4,7 +4,7 @@
       "id": "ai",
       "label": "AI 專題",
       "color": "#A78BFA",
-      "topics": ["ai-basics-start-here", "ai-tools-landscape", "ai-model-comparison", "prompt-engineering", "prompt-cheat-sheet", "skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "api-token-security", "multi-ai-workflow", "ai-evaluation-loop", "mcp-protocol", "ai-idea-generation", "open-source-ai", "mock-design"]
+      "topics": ["ai-basics-start-here", "ai-tools-landscape", "ai-model-comparison", "prompt-engineering", "prompt-cheat-sheet", "skill-vs-agent", "context-rot-solution", "sdd-spec-driven-development", "api-token-security", "multi-ai-workflow", "ai-evaluation-loop", "mcp-protocol", "claude-skills-building", "ai-idea-generation", "open-source-ai", "mock-design"]
     },
     {
       "id": "basics",
@@ -88,6 +88,7 @@
     ["multi-ai-workflow", "ai-evaluation-loop"],
     ["ai-tools-landscape", "mcp-protocol"],
     ["prompt-engineering", "ai-idea-generation"],
-    ["ai-model-comparison", "open-source-ai"]
+    ["ai-model-comparison", "open-source-ai"],
+    ["mcp-protocol", "claude-skills-building"]
   ]
 }

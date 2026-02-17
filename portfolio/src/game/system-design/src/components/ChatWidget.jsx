@@ -213,16 +213,80 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle, hidden
     { id: 'suggest', icon: '💡', label: '建議課題' },
   ];
 
+  // Draggable FAB for touch devices (mobile/iPad)
+  // Uses native event listeners with { passive: false } to allow preventDefault
+  const fabRef = useRef(null);
+  const dragState = useRef({ dragging: false, startX: 0, startY: 0, startLeft: 0, startTop: 0, moved: false });
+  const [fabPos, setFabPos] = useState({ right: 24, bottom: 24 });
+  const fabPosRef = useRef(fabPos);
+
+  useEffect(() => {
+    const fab = fabRef.current;
+    if (!fab) return;
+
+    const onTouchStart = (e) => {
+      const touch = e.touches[0];
+      const rect = fab.getBoundingClientRect();
+      dragState.current = {
+        dragging: true,
+        startX: touch.clientX,
+        startY: touch.clientY,
+        startLeft: rect.left,
+        startTop: rect.top,
+        moved: false,
+      };
+    };
+
+    const onTouchMove = (e) => {
+      const ds = dragState.current;
+      if (!ds.dragging) return;
+      const touch = e.touches[0];
+      const dx = touch.clientX - ds.startX;
+      const dy = touch.clientY - ds.startY;
+      if (Math.abs(dx) > 5 || Math.abs(dy) > 5) ds.moved = true;
+      if (!ds.moved) return;
+      e.preventDefault();
+      const newLeft = ds.startLeft + dx;
+      const newTop = ds.startTop + dy;
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const size = 56;
+      const clampedLeft = Math.max(8, Math.min(newLeft, vw - size - 8));
+      const clampedTop = Math.max(8, Math.min(newTop, vh - size - 8));
+      const newPos = { right: vw - clampedLeft - size, bottom: vh - clampedTop - size };
+      fabPosRef.current = newPos;
+      setFabPos(newPos);
+    };
+
+    const onTouchEnd = () => {
+      dragState.current.dragging = false;
+    };
+
+    fab.addEventListener('touchstart', onTouchStart, { passive: true });
+    fab.addEventListener('touchmove', onTouchMove, { passive: false });
+    fab.addEventListener('touchend', onTouchEnd, { passive: true });
+    return () => {
+      fab.removeEventListener('touchstart', onTouchStart);
+      fab.removeEventListener('touchmove', onTouchMove);
+      fab.removeEventListener('touchend', onTouchEnd);
+    };
+  }, []);
+
   if (hidden) return null;
 
   return (
     <>
-      {/* FAB */}
+      {/* FAB — draggable on touch devices */}
       <button
-        className={`fixed bottom-6 right-6 w-14 h-14 rounded-full bg-accent-indigo text-white text-2xl border-none cursor-pointer z-50 shadow-lg transition-all hover:bg-accent-indigo-hover ${
-          isOpen ? 'scale-0 rotate-90' : 'scale-100'
+        ref={fabRef}
+        className={`fixed w-14 h-14 rounded-full bg-accent-indigo text-white text-2xl border-none cursor-pointer z-50 shadow-lg hover:bg-accent-indigo-hover touch-none ${
+          isOpen ? 'scale-0 rotate-90 transition-all' : 'scale-100'
         }`}
-        onClick={() => setIsOpen(true)}
+        style={{ right: fabPos.right, bottom: fabPos.bottom }}
+        onClick={() => {
+          if (!dragState.current.moved) setIsOpen(true);
+          dragState.current.moved = false;
+        }}
         aria-label="AI 助手"
       >
         🤖
@@ -309,10 +373,10 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle, hidden
                   <span>🆓 Free</span><span className="text-text-muted">{TIER_LIMITS.free} 次/日</span>
                 </div>
                 <div className="flex justify-between text-text-dim">
-                  <span>🔓 Standard (<span className="line-through text-text-dimmer">$750</span> HK$150)</span><span className="text-accent-indigo-light">{TIER_LIMITS.standard} 次/日</span>
+                  <span>🔓 Standard (<span className="line-through text-text-dimmer">$350</span> HK$150)</span><span className="text-accent-indigo-light">{TIER_LIMITS.standard} 次/日</span>
                 </div>
                 <div className="flex justify-between text-text-dim">
-                  <span>⚡ Pro (<span className="line-through text-text-dimmer">$1,999</span> HK$399)</span><span className="text-amber-400">{TIER_LIMITS.pro} 次/日</span>
+                  <span>⚡ Pro (<span className="line-through text-text-dimmer">$899</span> HK$399)</span><span className="text-amber-400">{TIER_LIMITS.pro} 次/日</span>
                 </div>
               </div>
             </div>
@@ -325,8 +389,8 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle, hidden
             >
               <span>🔓</span>
               <div className="flex-1">
-                <div className="text-sm font-bold">早鳥價 80% OFF · 鎖定永久存取</div>
-                <div className="text-xs text-text-dim"><span className="line-through">$750</span> HK$150 · <span className="line-through">$1,999</span> HK$399</div>
+                <div className="text-sm font-bold">早鳥價優惠 · 鎖定永久存取</div>
+                <div className="text-xs text-text-dim"><span className="line-through">$350</span> HK$150 · <span className="line-through">$899</span> HK$399</div>
               </div>
               <span className="text-text-dim">&rarr;</span>
             </a>

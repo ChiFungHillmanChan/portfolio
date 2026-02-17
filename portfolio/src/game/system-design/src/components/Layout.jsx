@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatWidget from './ChatWidget';
@@ -11,8 +11,13 @@ export default function Layout() {
   const [desktopCollapsed, setDesktopCollapsed] = useState(() => {
     try { return localStorage.getItem(DESKTOP_COLLAPSED_KEY) === 'true'; } catch { return false; }
   });
+  const [filter, setFilter] = useState('all');
   const params = useParams();
   const location = useLocation();
+
+  // Track whether navigation was triggered by sidebar click
+  const justNavigatedRef = useRef(false);
+  const [scrollToSlug, setScrollToSlug] = useState(null);
 
   const toggleDesktopSidebar = useCallback(() => {
     setDesktopCollapsed((prev) => {
@@ -27,6 +32,24 @@ export default function Layout() {
   const currentTopic = currentSlug
     ? topicData.topics.find((t) => t.slug === currentSlug)
     : null;
+
+  // Detect direct URL navigation (not from sidebar click)
+  useEffect(() => {
+    if (!currentSlug) return;
+    if (justNavigatedRef.current) {
+      // Navigation came from sidebar click — reset flag, no auto-open
+      justNavigatedRef.current = false;
+      return;
+    }
+    // Direct URL navigation — open sidebar on mobile + trigger scroll
+    const isMobile = window.innerWidth < 1024;
+    if (isMobile) setSidebarOpen(true);
+    setScrollToSlug(currentSlug);
+  }, [currentSlug]);
+
+  const handleSidebarNavigate = useCallback(() => {
+    justNavigatedRef.current = true;
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
@@ -59,11 +82,16 @@ export default function Layout() {
         onClose={() => setSidebarOpen(false)}
         desktopCollapsed={desktopCollapsed}
         onToggleDesktop={toggleDesktopSidebar}
+        filter={filter}
+        onFilterChange={setFilter}
+        scrollToSlug={scrollToSlug}
+        onScrollComplete={() => setScrollToSlug(null)}
+        onNavigate={handleSidebarNavigate}
       />
 
       {/* Main content */}
       <main className={`flex-1 overflow-y-auto pt-[52px] ${desktopCollapsed ? '' : 'lg:pt-0'}`}>
-        <Outlet />
+        <Outlet context={{ filter }} />
       </main>
 
       {/* Chat Widget — hidden on coaching page which has its own chat */}

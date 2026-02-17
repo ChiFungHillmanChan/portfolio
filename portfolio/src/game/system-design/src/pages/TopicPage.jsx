@@ -5,6 +5,7 @@ import { usePremium } from '../context/PremiumContext';
 import topicComponents from '../topics';
 import topicData from '../data/topics.json';
 import PremiumGate from '../components/PremiumGate';
+import TopicNavButtons from '../components/TopicNavButtons';
 
 export default function TopicPage() {
   const { slug } = useParams();
@@ -45,14 +46,18 @@ export default function TopicPage() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="flex items-center justify-center min-h-[40vh]">
-          <div className="text-text-muted text-sm">載入中⋯</div>
-        </div>
-      }
-    >
-      <TopicComponent />
-    </Suspense>
+    <>
+      <TopicNavButtons currentSlug={slug} variant="compact" />
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center min-h-[40vh]">
+            <div className="text-text-muted text-sm">載入中⋯</div>
+          </div>
+        }
+      >
+        <TopicComponent />
+      </Suspense>
+      <TopicNavButtons currentSlug={slug} variant="full" />
+    </>
   );
 }
