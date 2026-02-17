@@ -166,7 +166,7 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
       )}
 
       <aside
-        className={`fixed z-50 w-[280px] min-w-[280px] h-screen bg-bg-primary border-r border-border flex flex-col transition-transform duration-300 ${
+        className={`fixed z-50 w-[280px] min-w-[280px] h-[100dvh] bg-bg-primary border-r border-border flex flex-col transition-transform duration-300 ${
           desktopCollapsed ? '' : 'lg:static'
         } ${
           isOpen ? 'translate-x-0' : `-translate-x-full ${desktopCollapsed ? '' : 'lg:translate-x-0'}`
@@ -375,7 +375,7 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
         </nav>
 
         {/* Fixed footer — login / user + settings */}
-        <div className="border-t border-border bg-bg-primary flex-shrink-0">
+        <div className="border-t border-border bg-bg-primary flex-shrink-0 pb-[env(safe-area-inset-bottom)]">
           {user ? (
             <div className="px-3 py-3">
               {/* User row */}

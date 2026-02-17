@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
+import { GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, onAuthStateChanged } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
 const AuthContext = createContext(null);
 
 const googleProvider = new GoogleAuthProvider();
+
+const isMobile = () => /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -12,6 +14,13 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Handle redirect result (mobile sign-in flow)
+    getRedirectResult(auth).catch((err) => {
+      if (err.code !== 'auth/popup-closed-by-user') {
+        console.error('Redirect sign-in error:', err);
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser({
@@ -51,7 +60,11 @@ export function AuthProvider({ children }) {
 
   const signInWithGoogle = useCallback(async () => {
     try {
-      await signInWithPopup(auth, googleProvider);
+      if (isMobile()) {
+        await signInWithRedirect(auth, googleProvider);
+      } else {
+        await signInWithPopup(auth, googleProvider);
+      }
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') {
         console.error('Google sign-in error:', err);

@@ -52,7 +52,7 @@ export default function Layout() {
   }, []);
 
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden">
       {/* Top header bar — always visible on mobile, visible on desktop only when sidebar collapsed */}
       <div className={`fixed top-0 left-0 right-0 h-[52px] bg-bg-primary border-b border-border flex items-center px-4 z-30 ${desktopCollapsed ? '' : 'lg:hidden'}`}>
         {/* Mobile hamburger */}
