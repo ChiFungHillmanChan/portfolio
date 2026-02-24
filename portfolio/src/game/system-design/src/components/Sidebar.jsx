@@ -24,6 +24,14 @@ const difficultyColors = {
   advanced: { bg: 'rgba(239,68,68,0.15)', text: '#ef4444', label: '高級' },
 };
 
+const NEW_BADGE_DAYS = 30;
+function isNewTopic(addedDate) {
+  if (!addedDate) return false;
+  const added = new Date(addedDate);
+  const now = new Date();
+  return (now - added) / (1000 * 60 * 60 * 24) <= NEW_BADGE_DAYS;
+}
+
 const PLAN_KEY = 'sd_learning_plan';
 
 export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDesktop, filter, onFilterChange, scrollToSlug, onScrollComplete, onNavigate }) {
@@ -354,6 +362,11 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
                   </span>
                   {viewed && (
                     <span className="w-2 h-2 rounded-full bg-accent-green flex-shrink-0" />
+                  )}
+                  {isNewTopic(item.addedDate) && (
+                    <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-[rgba(52,211,153,0.2)] text-[#34d399] font-semibold flex-shrink-0">
+                      New
+                    </span>
                   )}
                   {item.premium && (
                     <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-[rgba(167,139,250,0.2)] text-[#a78bfa] flex-shrink-0">

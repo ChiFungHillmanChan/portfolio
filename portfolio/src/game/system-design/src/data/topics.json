@@ -1,109 +1,884 @@
 {
   "categories": [
-    { "id": "ai-core", "label": "AI 基礎 — Start Here", "color": "#a78bfa" },
-    { "id": "career", "label": "職場與面試" },
-    { "id": "engineering", "label": "工程實踐" },
-    { "id": "network", "label": "網絡與流量控制" },
-    { "id": "storage", "label": "數據與存儲" },
-    { "id": "cache", "label": "快取與讀取優化" },
-    { "id": "async", "label": "異步與消息處理" },
-    { "id": "app", "label": "應用系統設計" },
-    { "id": "security", "label": "監控與安全" },
-    { "id": "deploy", "label": "部署與託管" },
-    { "id": "resource", "label": "學習資源" }
+    {
+      "id": "ai-core",
+      "label": "AI 基礎 — Start Here",
+      "color": "#a78bfa"
+    },
+    {
+      "id": "career",
+      "label": "職場與面試"
+    },
+    {
+      "id": "engineering",
+      "label": "工程實踐"
+    },
+    {
+      "id": "network",
+      "label": "網絡與流量控制"
+    },
+    {
+      "id": "storage",
+      "label": "數據與存儲"
+    },
+    {
+      "id": "cache",
+      "label": "快取與讀取優化"
+    },
+    {
+      "id": "async",
+      "label": "異步與消息處理"
+    },
+    {
+      "id": "app",
+      "label": "應用系統設計"
+    },
+    {
+      "id": "security",
+      "label": "監控與安全"
+    },
+    {
+      "id": "deploy",
+      "label": "部署與託管"
+    },
+    {
+      "id": "resource",
+      "label": "學習資源"
+    }
   ],
   "filters": [
-    { "id": "all", "label": "全部" },
-    { "id": "career", "label": "面試" },
-    { "id": "engineering", "label": "工程" },
-    { "id": "network", "label": "網絡" },
-    { "id": "storage", "label": "存儲" },
-    { "id": "cache", "label": "快取" },
-    { "id": "async", "label": "異步" },
-    { "id": "app", "label": "應用" },
-    { "id": "security", "label": "安全" },
-    { "id": "deploy", "label": "部署" },
-    { "id": "resource", "label": "資源" },
-    { "id": "ai-core", "label": "AI 基礎" }
+    {
+      "id": "all",
+      "label": "全部"
+    },
+    {
+      "id": "career",
+      "label": "面試"
+    },
+    {
+      "id": "engineering",
+      "label": "工程"
+    },
+    {
+      "id": "network",
+      "label": "網絡"
+    },
+    {
+      "id": "storage",
+      "label": "存儲"
+    },
+    {
+      "id": "cache",
+      "label": "快取"
+    },
+    {
+      "id": "async",
+      "label": "異步"
+    },
+    {
+      "id": "app",
+      "label": "應用"
+    },
+    {
+      "id": "security",
+      "label": "安全"
+    },
+    {
+      "id": "deploy",
+      "label": "部署"
+    },
+    {
+      "id": "resource",
+      "label": "資源"
+    },
+    {
+      "id": "ai-core",
+      "label": "AI 基礎"
+    }
   ],
   "topics": [
-    { "slug": "ai-basics-start-here", "title": "AI 基礎入門指南", "sub": "學習路徑 / 工具對比 / 14 個核心主題", "icon": "🚀", "category": "ai-core", "premium": false, "highlight": true },
-    { "slug": "ai-tools-landscape", "title": "AI 工具全景圖", "sub": "11 款工具對比 / 邊個做咩最強 / 點揀", "icon": "🗺️", "category": "ai-core", "premium": false },
-    { "slug": "ai-model-comparison", "title": "AI 模型深入對比", "sub": "GPT-5.2 / Opus 4.6 / Gemini 3 / DeepSeek / 強弱分析", "icon": "⚔️", "category": "ai-core", "premium": false },
-    { "slug": "prompt-engineering", "title": "Prompt Engineering 系統設計", "sub": "角色化指令 / 結構化模板 / 工程化思維", "icon": "✏️", "category": "ai-core", "premium": true },
-    { "slug": "prompt-cheat-sheet", "title": "Prompt 速查表", "sub": "20+ 工程師專用模板 / 即抄即用", "icon": "📋", "category": "ai-core", "premium": true },
-    { "slug": "skill-vs-agent", "title": "Skill vs Agent", "sub": "穩定任務用 Skill / 探索任務用 Agent", "icon": "🧭", "category": "ai-core", "premium": true },
-    { "slug": "context-rot-solution", "title": "Context Rot 解法", "sub": "長對話語義衰退 / Checkpoint / State File", "icon": "🧠", "category": "ai-core", "premium": true },
-    { "slug": "sdd-spec-driven-development", "title": "SDD 規格驅動開發", "sub": "先寫 Spec 再用 AI 實作", "icon": "📋", "category": "ai-core", "premium": true },
-    { "slug": "api-token-security", "title": "API Token 安全與成本", "sub": "11 款模型定價 / .env 安全 / Proxy 架構", "icon": "🔑", "category": "ai-core", "premium": true },
-    { "slug": "multi-ai-workflow", "title": "多 AI 協作工作流", "sub": "AI Pipeline / 工具定位 / 分工合作", "icon": "🔗", "category": "ai-core", "premium": true },
-    { "slug": "ai-evaluation-loop", "title": "AI 評估迴圈", "sub": "量化 AI 輸出 / Golden Sample / A/B Test", "icon": "🔄", "category": "ai-core", "premium": true },
-    { "slug": "mcp-protocol", "title": "MCP 模型上下文協議", "sub": "統一 AI 接口 / Tool Integration / Plugin 生態", "icon": "🔌", "category": "ai-core", "premium": true },
-    { "slug": "ai-idea-generation", "title": "AI 輔助系統設計", "sub": "創新思維框架 / 需求分析 / 方案生成", "icon": "💡", "category": "ai-core", "premium": true },
-    { "slug": "claude-skills-building", "title": "Claude Skills 建構", "sub": "SKILL.md / Progressive Disclosure / 五大 Pattern", "icon": "🧩", "category": "ai-core", "premium": true },
-    { "slug": "open-source-ai", "title": "開源 AI 生態圈", "sub": "DeepSeek / Llama 4 / OpenClaw / 自建部署", "icon": "🦞", "category": "ai-core", "premium": true },
-    { "slug": "mock-design", "title": "Mock Design 模擬面試", "sub": "35 分鐘計時 / 提示 / 參考答案", "icon": "⏱️", "category": "ai-core", "premium": true, "highlight": true },
-
-    { "slug": "backend-roadmap", "title": "Backend 學習路線", "sub": "Java / Linux / DB / API / Cloud", "icon": "🗺", "category": "career", "difficulty": "beginner" },
-    { "slug": "junior-vs-senior", "title": "Junior 定 Senior", "sub": "Tasks vs Goals / 升職策略", "icon": "📊", "category": "career" },
-    { "slug": "ai-vs-software-engineer", "title": "AI 會取代工程師？", "sub": "寫 Code 從來唔係主要工作", "icon": "🤖", "category": "career" },
-    { "slug": "interview-process", "title": "Big Tech 面試流程", "sub": "HR Screen → On-site → Team Match", "icon": "🏢", "category": "career" },
-    { "slug": "star-method", "title": "STAR 面試法", "sub": "Behavioral Interview 答題框架", "icon": "⭐", "category": "career" },
-    { "slug": "coding-interview", "title": "程式面試攻略", "sub": "釐清問題 / 溝通 / 合作態度", "icon": "💻", "category": "career" },
-
-    { "slug": "git-vs-github", "title": "Git vs GitHub", "sub": "本地版本控制 vs 雲端協作", "icon": "🔀", "category": "engineering", "difficulty": "beginner" },
-    { "slug": "print-vs-debugger", "title": "Print 定 Debugger", "sub": "Breakpoint / stdout / 點樣揀", "icon": "🔎", "category": "engineering" },
-    { "slug": "docker", "title": "Docker 容器化", "sub": "Alpine 瘦身 / .dockerignore / 擴展", "icon": "🐳", "category": "engineering", "difficulty": "beginner" },
-    { "slug": "dependency-injection", "title": "依賴注入", "sub": "解耦 / Mock 測試 / Constructor DI", "icon": "💉", "category": "engineering", "difficulty": "intermediate" },
-    { "slug": "system-design-patterns", "title": "系統設計模式總覽", "sub": "擴展 / 實時 / 可靠性模式", "icon": "🧩", "category": "engineering", "difficulty": "intermediate" },
-    { "slug": "coding-agent-design", "title": "Coding Agent 設計", "sub": "ReAct Loop / Tool Use / Sandbox", "icon": "🤖", "category": "engineering", "difficulty": "intermediate" },
-
-    { "slug": "port-forwarding", "title": "Port Forwarding", "sub": "NAT / Router 規則 / Tunneling", "icon": "🔌", "category": "network", "difficulty": "beginner" },
-    { "slug": "localhost-hosting", "title": "本地開發分享", "sub": "ngrok / Cloudflare Tunnel", "icon": "🏠", "category": "network", "difficulty": "beginner" },
-    { "slug": "cdn", "title": "CDN 內容分發", "sub": "GeoDNS / Edge Cache / Purge", "icon": "🌐", "category": "network", "difficulty": "beginner" },
-    { "slug": "load-balancer", "title": "負載均衡器", "sub": "Round Robin / L4 vs L7 / Health Check", "icon": "⚖️", "category": "network", "difficulty": "beginner" },
-    { "slug": "api-gateway", "title": "API 閘道", "sub": "驗證 / 限流 / 路由分發", "icon": "🚪", "category": "network", "difficulty": "intermediate" },
-    { "slug": "large-api-response", "title": "大型 API 回應", "sub": "Pagination / 壓縮 / S3 卸載", "icon": "📦", "category": "network", "difficulty": "intermediate" },
-    { "slug": "rate-limiter", "title": "流量限制器", "sub": "Token Bucket / Sliding Window / 429", "icon": "🚦", "category": "network", "difficulty": "intermediate" },
-    { "slug": "scraping-vs-crawling", "title": "Scraping vs Crawling", "sub": "數據提取 / 網站地圖 / SEO", "icon": "🕷", "category": "network", "difficulty": "advanced" },
-
-    { "slug": "database-basics", "title": "Database 基礎", "sub": "DBMS / ACID / SQL vs NoSQL", "icon": "🗃", "category": "storage", "difficulty": "beginner" },
-    { "slug": "object-storage", "title": "物件存儲", "sub": "預簽名網址 / 分段上傳 / CDN", "icon": "📦", "category": "storage", "difficulty": "beginner" },
-    { "slug": "redis", "title": "Redis", "sub": "In-Memory / Leaderboard / Postgres 配合", "icon": "⚡", "category": "storage", "difficulty": "intermediate" },
-    { "slug": "key-value-store", "title": "鍵值存儲", "sub": "分區 / 複製 / Quorum 共識", "icon": "🗄", "category": "storage", "difficulty": "intermediate" },
-    { "slug": "unique-id-generator", "title": "唯一 ID 生成器", "sub": "Snowflake 64-bit / 時間排序", "icon": "❄️", "category": "storage", "difficulty": "intermediate" },
-    { "slug": "pick-database", "title": "點揀 Database", "sub": "CAP 定理 / SQL vs NoSQL", "icon": "🎯", "category": "storage", "difficulty": "advanced" },
-
-    { "slug": "cache-invalidation", "title": "Cache 失效策略", "sub": "TTL / Write Through / Around / Back", "icon": "⚡", "category": "cache", "difficulty": "intermediate" },
-    { "slug": "scale-reads", "title": "讀取擴展", "sub": "索引 / 三層快取 / 讀取副本", "icon": "📈", "category": "cache", "difficulty": "intermediate" },
-    { "slug": "distributed-cache", "title": "分散式快取", "sub": "Consistent Hashing / 雪崩防護", "icon": "⚡", "category": "cache", "difficulty": "intermediate" },
-    { "slug": "fix-slow-database", "title": "Debug 慢 Database", "sub": "Slow Query / Index / Cache / 換 DB", "icon": "🐌", "category": "cache", "difficulty": "advanced" },
-
-    { "slug": "task-queue", "title": "任務佇列", "sub": "異步任務 / 重試機制 / 死信佇列", "icon": "📋", "category": "async", "difficulty": "intermediate" },
-    { "slug": "notification-system", "title": "通知系統", "sub": "推送 / 短訊 / 電郵多渠道", "icon": "🔔", "category": "async", "difficulty": "intermediate" },
-    { "slug": "message-queue", "title": "消息佇列", "sub": "Kafka / 發佈訂閱 / 精確一次", "icon": "📨", "category": "async", "difficulty": "intermediate" },
-
-    { "slug": "session-manager", "title": "Session 管理器", "sub": "Cookie vs JWT / Redis 存儲", "icon": "🔐", "category": "app", "difficulty": "intermediate" },
-    { "slug": "url-shortener", "title": "短網址系統", "sub": "Base62 / 301 vs 302 / 數據分析", "icon": "🔗", "category": "app", "difficulty": "advanced" },
-    { "slug": "search-autocomplete", "title": "搜尋自動補全", "sub": "Trie 前綴樹 / 排名 / 防抖", "icon": "🔍", "category": "app", "difficulty": "advanced" },
-    { "slug": "web-crawler", "title": "網頁爬蟲", "sub": "廣度優先 / 布隆過濾器 / robots.txt", "icon": "🕷", "category": "app", "difficulty": "advanced" },
-    { "slug": "news-feed", "title": "動態消息流", "sub": "寫時推送 vs 讀時拉取 / 排名", "icon": "📰", "category": "app", "difficulty": "advanced" },
-    { "slug": "chat-system", "title": "即時通訊系統", "sub": "WebSocket / 消息佇列 / 離線消息", "icon": "💬", "category": "app", "difficulty": "advanced" },
-    { "slug": "chess-game-design", "title": "線上棋類遊戲", "sub": "Matchmaking / WebSocket / Game State", "icon": "♟", "category": "app", "difficulty": "advanced" },
-    { "slug": "video-streaming", "title": "影片串流", "sub": "轉碼 / HLS-DASH / CDN 分發", "icon": "🎬", "category": "app", "difficulty": "advanced" },
-    { "slug": "payment-system", "title": "支付系統", "sub": "冪等性 / 複式記帳 / Saga / Webhook", "icon": "💳", "category": "app", "difficulty": "advanced" },
-
-    { "slug": "authentication", "title": "Authentication 驗證", "sub": "Basic / Session / JWT", "icon": "🔑", "category": "security", "difficulty": "beginner" },
-    { "slug": "self-host-vs-cloud", "title": "自架 vs 雲端", "sub": "AWS vs 自架 / 擴展 / 監控比較", "icon": "☁️", "category": "security", "difficulty": "beginner" },
-    { "slug": "metrics-logging", "title": "監控與日誌", "sub": "Kafka / Prometheus / Grafana", "icon": "📊", "category": "security", "difficulty": "intermediate" },
-    { "slug": "monitoring", "title": "應用程式監控", "sub": "Prometheus / Grafana / 告警系統", "icon": "📡", "category": "security", "difficulty": "intermediate" },
-    { "slug": "cicd-pipeline", "title": "CI/CD 自動化部署", "sub": "GitHub Actions / IaC / 自動測試", "icon": "🔄", "category": "security", "difficulty": "intermediate" },
-    { "slug": "server-vs-serverless", "title": "Server vs Serverless", "sub": "VPS / Lambda / 點樣揀", "icon": "🖥", "category": "security", "difficulty": "advanced" },
-    { "slug": "secure-ai-agents", "title": "AI Agent 安全", "sub": "Lethal Trifecta / Guardrail 防護", "icon": "🛡", "category": "security", "difficulty": "advanced" },
-    { "slug": "ai-scraper-defense", "title": "防禦 AI 爬蟲", "sub": "robots.txt / Honeypot / Bot 偵測", "icon": "🕸️", "category": "security", "difficulty": "advanced" },
-
-    { "slug": "deployment", "title": "免費部署平台", "sub": "Vercel / Railway / Supabase / Firebase", "icon": "🚀", "category": "deploy", "difficulty": "beginner" },
-
-    { "slug": "references", "title": "學習資源參考", "sub": "YouTube / Reddit / GitHub / 書籍", "icon": "📚", "category": "resource", "disabled": true }
+    {
+      "slug": "ai-basics-start-here",
+      "title": "AI 基礎入門指南",
+      "sub": "學習路徑 / 工具對比 / 14 個核心主題",
+      "icon": "🚀",
+      "category": "ai-core",
+      "premium": false,
+      "highlight": true
+    },
+    {
+      "slug": "ai-tools-landscape",
+      "title": "AI 工具全景圖",
+      "sub": "11 款工具對比 / 邊個做咩最強 / 點揀",
+      "icon": "🗺️",
+      "category": "ai-core",
+      "premium": false
+    },
+    {
+      "slug": "ai-model-comparison",
+      "title": "AI 模型深入對比",
+      "sub": "GPT-5.2 / Opus 4.6 / Gemini 3 / DeepSeek / 強弱分析",
+      "icon": "⚔️",
+      "category": "ai-core",
+      "premium": false
+    },
+    {
+      "slug": "prompt-engineering",
+      "title": "Prompt Engineering 系統設計",
+      "sub": "角色化指令 / 結構化模板 / 工程化思維",
+      "icon": "✏️",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "prompt-cheat-sheet",
+      "title": "Prompt 速查表",
+      "sub": "20+ 工程師專用模板 / 即抄即用",
+      "icon": "📋",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "skill-vs-agent",
+      "title": "Skill vs Agent",
+      "sub": "穩定任務用 Skill / 探索任務用 Agent",
+      "icon": "🧭",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "context-rot-solution",
+      "title": "Context Rot 解法",
+      "sub": "長對話語義衰退 / Checkpoint / State File",
+      "icon": "🧠",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "sdd-spec-driven-development",
+      "title": "SDD 規格驅動開發",
+      "sub": "先寫 Spec 再用 AI 實作",
+      "icon": "📋",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "api-token-security",
+      "title": "API Token 安全與成本",
+      "sub": "11 款模型定價 / .env 安全 / Proxy 架構",
+      "icon": "🔑",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "multi-ai-workflow",
+      "title": "多 AI 協作工作流",
+      "sub": "AI Pipeline / 工具定位 / 分工合作",
+      "icon": "🔗",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "ai-evaluation-loop",
+      "title": "AI 評估迴圈",
+      "sub": "量化 AI 輸出 / Golden Sample / A/B Test",
+      "icon": "🔄",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "mcp-protocol",
+      "title": "MCP 模型上下文協議",
+      "sub": "統一 AI 接口 / Tool Integration / Plugin 生態",
+      "icon": "🔌",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "ai-idea-generation",
+      "title": "AI 輔助系統設計",
+      "sub": "創新思維框架 / 需求分析 / 方案生成",
+      "icon": "💡",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "claude-skills-building",
+      "title": "Claude Skills 建構",
+      "sub": "SKILL.md / Progressive Disclosure / 五大 Pattern",
+      "icon": "🧩",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "open-source-ai",
+      "title": "開源 AI 生態圈",
+      "sub": "DeepSeek / Llama 4 / OpenClaw / 自建部署",
+      "icon": "🦞",
+      "category": "ai-core",
+      "premium": true
+    },
+    {
+      "slug": "mock-design",
+      "title": "Mock Design 模擬面試",
+      "sub": "35 分鐘計時 / 提示 / 參考答案",
+      "icon": "⏱️",
+      "category": "ai-core",
+      "premium": true,
+      "highlight": true
+    },
+    {
+      "slug": "backend-roadmap",
+      "title": "Backend 學習路線",
+      "sub": "Java / Linux / DB / API / Cloud",
+      "icon": "🗺",
+      "category": "career",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "junior-vs-senior",
+      "title": "Junior 定 Senior",
+      "sub": "Tasks vs Goals / 升職策略",
+      "icon": "📊",
+      "category": "career"
+    },
+    {
+      "slug": "ai-vs-software-engineer",
+      "title": "AI 會取代工程師？",
+      "sub": "寫 Code 從來唔係主要工作",
+      "icon": "🤖",
+      "category": "career"
+    },
+    {
+      "slug": "interview-process",
+      "title": "Big Tech 面試流程",
+      "sub": "HR Screen → On-site → Team Match",
+      "icon": "🏢",
+      "category": "career"
+    },
+    {
+      "slug": "star-method",
+      "title": "STAR 面試法",
+      "sub": "Behavioral Interview 答題框架",
+      "icon": "⭐",
+      "category": "career"
+    },
+    {
+      "slug": "coding-interview",
+      "title": "程式面試攻略",
+      "sub": "釐清問題 / 溝通 / 合作態度",
+      "icon": "💻",
+      "category": "career"
+    },
+    {
+      "slug": "git-vs-github",
+      "title": "Git vs GitHub",
+      "sub": "本地版本控制 vs 雲端協作",
+      "icon": "🔀",
+      "category": "engineering",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "print-vs-debugger",
+      "title": "Print 定 Debugger",
+      "sub": "Breakpoint / stdout / 點樣揀",
+      "icon": "🔎",
+      "category": "engineering"
+    },
+    {
+      "slug": "docker",
+      "title": "Docker 容器化",
+      "sub": "Alpine 瘦身 / .dockerignore / 擴展",
+      "icon": "🐳",
+      "category": "engineering",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "dependency-injection",
+      "title": "依賴注入",
+      "sub": "解耦 / Mock 測試 / Constructor DI",
+      "icon": "💉",
+      "category": "engineering",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "system-design-patterns",
+      "title": "系統設計模式總覽",
+      "sub": "擴展 / 實時 / 可靠性模式",
+      "icon": "🧩",
+      "category": "engineering",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "coding-agent-design",
+      "title": "Coding Agent 設計",
+      "sub": "ReAct Loop / Tool Use / Sandbox",
+      "icon": "🤖",
+      "category": "engineering",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "port-forwarding",
+      "title": "Port Forwarding",
+      "sub": "NAT / Router 規則 / Tunneling",
+      "icon": "🔌",
+      "category": "network",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "localhost-hosting",
+      "title": "本地開發分享",
+      "sub": "ngrok / Cloudflare Tunnel",
+      "icon": "🏠",
+      "category": "network",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "cdn",
+      "title": "CDN 內容分發",
+      "sub": "GeoDNS / Edge Cache / Purge",
+      "icon": "🌐",
+      "category": "network",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "load-balancer",
+      "title": "負載均衡器",
+      "sub": "Round Robin / L4 vs L7 / Health Check",
+      "icon": "⚖️",
+      "category": "network",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "api-gateway",
+      "title": "API 閘道",
+      "sub": "驗證 / 限流 / 路由分發",
+      "icon": "🚪",
+      "category": "network",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "large-api-response",
+      "title": "大型 API 回應",
+      "sub": "Pagination / 壓縮 / S3 卸載",
+      "icon": "📦",
+      "category": "network",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "rate-limiter",
+      "title": "流量限制器",
+      "sub": "Token Bucket / Sliding Window / 429",
+      "icon": "🚦",
+      "category": "network",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "scraping-vs-crawling",
+      "title": "Scraping vs Crawling",
+      "sub": "數據提取 / 網站地圖 / SEO",
+      "icon": "🕷",
+      "category": "network",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "dns-deep-dive",
+      "title": "DNS 域名解析",
+      "sub": "遞歸 / 權威 / TTL / GeoDNS",
+      "icon": "🌍",
+      "category": "network",
+      "difficulty": "beginner",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "websocket-vs-sse",
+      "title": "WebSocket vs SSE",
+      "sub": "雙向 vs 單向 / EventSource / 點樣揀",
+      "icon": "🔄",
+      "category": "network",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "grpc-vs-rest",
+      "title": "gRPC vs REST",
+      "sub": "Protobuf / HTTP2 / 微服務通訊",
+      "icon": "⚡",
+      "category": "network",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "circuit-breaker",
+      "title": "Circuit Breaker 熔斷器",
+      "sub": "半開狀態 / Fallback / 級聯故障防護",
+      "icon": "🔌",
+      "category": "network",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "service-discovery",
+      "title": "服務發現",
+      "sub": "Consul / etcd / DNS-based / Health Check",
+      "icon": "🔎",
+      "category": "network",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "reverse-proxy",
+      "title": "反向代理",
+      "sub": "Nginx / 靜態資源 / SSL Termination",
+      "icon": "🛡",
+      "category": "network",
+      "difficulty": "beginner",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "database-basics",
+      "title": "Database 基礎",
+      "sub": "DBMS / ACID / SQL vs NoSQL",
+      "icon": "🗃",
+      "category": "storage",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "object-storage",
+      "title": "物件存儲",
+      "sub": "預簽名網址 / 分段上傳 / CDN",
+      "icon": "📦",
+      "category": "storage",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "redis",
+      "title": "Redis",
+      "sub": "In-Memory / Leaderboard / Postgres 配合",
+      "icon": "⚡",
+      "category": "storage",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "key-value-store",
+      "title": "鍵值存儲",
+      "sub": "分區 / 複製 / Quorum 共識",
+      "icon": "🗄",
+      "category": "storage",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "unique-id-generator",
+      "title": "唯一 ID 生成器",
+      "sub": "Snowflake 64-bit / 時間排序",
+      "icon": "❄️",
+      "category": "storage",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "pick-database",
+      "title": "點揀 Database",
+      "sub": "CAP 定理 / SQL vs NoSQL",
+      "icon": "🎯",
+      "category": "storage",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "database-sharding",
+      "title": "Database 分片策略",
+      "sub": "Horizontal / Vertical / Shard Key 點揀",
+      "icon": "🔪",
+      "category": "storage",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "database-replication",
+      "title": "Database 複製",
+      "sub": "Leader-Follower / Multi-Leader / 一致性",
+      "icon": "🔄",
+      "category": "storage",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "data-modeling",
+      "title": "數據建模",
+      "sub": "Schema Design / 正規化 / 反正規化",
+      "icon": "📐",
+      "category": "storage",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "cap-theorem",
+      "title": "CAP 定理深入",
+      "sub": "三角取捨 / Partition Tolerance / 真實例子",
+      "icon": "⚖️",
+      "category": "storage",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "time-series-db",
+      "title": "時序數據庫",
+      "sub": "InfluxDB / 監控數據 / 寫入優化",
+      "icon": "📈",
+      "category": "storage",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "consensus-algorithms",
+      "title": "共識演算法",
+      "sub": "Raft / Paxos / Leader Election",
+      "icon": "🗳",
+      "category": "storage",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "cache-invalidation",
+      "title": "Cache 失效策略",
+      "sub": "TTL / Write Through / Around / Back",
+      "icon": "⚡",
+      "category": "cache",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "scale-reads",
+      "title": "讀取擴展",
+      "sub": "索引 / 三層快取 / 讀取副本",
+      "icon": "📈",
+      "category": "cache",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "distributed-cache",
+      "title": "分散式快取",
+      "sub": "Consistent Hashing / 雪崩防護",
+      "icon": "⚡",
+      "category": "cache",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "fix-slow-database",
+      "title": "Debug 慢 Database",
+      "sub": "Slow Query / Index / Cache / 換 DB",
+      "icon": "🐌",
+      "category": "cache",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "task-queue",
+      "title": "任務佇列",
+      "sub": "異步任務 / 重試機制 / 死信佇列",
+      "icon": "📋",
+      "category": "async",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "notification-system",
+      "title": "通知系統",
+      "sub": "推送 / 短訊 / 電郵多渠道",
+      "icon": "🔔",
+      "category": "async",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "message-queue",
+      "title": "消息佇列",
+      "sub": "Kafka / 發佈訂閱 / 精確一次",
+      "icon": "📨",
+      "category": "async",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "distributed-transactions",
+      "title": "分佈式事務",
+      "sub": "2PC / 3PC / Saga Pattern / 補償機制",
+      "icon": "🔗",
+      "category": "async",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "notification-push",
+      "title": "推送通知架構",
+      "sub": "FCM / APNs / Fallback 策略",
+      "icon": "📲",
+      "category": "async",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "session-manager",
+      "title": "Session 管理器",
+      "sub": "Cookie vs JWT / Redis 存儲",
+      "icon": "🔐",
+      "category": "app",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "url-shortener",
+      "title": "短網址系統",
+      "sub": "Base62 / 301 vs 302 / 數據分析",
+      "icon": "🔗",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "search-autocomplete",
+      "title": "搜尋自動補全",
+      "sub": "Trie 前綴樹 / 排名 / 防抖",
+      "icon": "🔍",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "web-crawler",
+      "title": "網頁爬蟲",
+      "sub": "廣度優先 / 布隆過濾器 / robots.txt",
+      "icon": "🕷",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "news-feed",
+      "title": "動態消息流",
+      "sub": "寫時推送 vs 讀時拉取 / 排名",
+      "icon": "📰",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "chat-system",
+      "title": "即時通訊系統",
+      "sub": "WebSocket / 消息佇列 / 離線消息",
+      "icon": "💬",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "chess-game-design",
+      "title": "線上棋類遊戲",
+      "sub": "Matchmaking / WebSocket / Game State",
+      "icon": "♟",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "video-streaming",
+      "title": "影片串流",
+      "sub": "轉碼 / HLS-DASH / CDN 分發",
+      "icon": "🎬",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "payment-system",
+      "title": "支付系統",
+      "sub": "冪等性 / 複式記帳 / Saga / Webhook",
+      "icon": "💳",
+      "category": "app",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "ticket-booking",
+      "title": "搶票系統",
+      "sub": "秒殺 / 超賣防護 / 分佈式鎖",
+      "icon": "🎫",
+      "category": "app",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "file-storage-system",
+      "title": "雲端文件系統",
+      "sub": "Google Drive / 分塊上傳 / 同步衝突",
+      "icon": "📁",
+      "category": "app",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "recommendation-system",
+      "title": "推薦系統",
+      "sub": "協同過濾 / 冷啟動 / A/B 測試",
+      "icon": "🎯",
+      "category": "app",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "location-service",
+      "title": "位置服務",
+      "sub": "Geohash / 附近搜尋 / Uber 配對",
+      "icon": "📍",
+      "category": "app",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "email-system",
+      "title": "電郵系統設計",
+      "sub": "SMTP / 佇列 / 垃圾郵件過濾",
+      "icon": "📧",
+      "category": "app",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "authentication",
+      "title": "Authentication 驗證",
+      "sub": "Basic / Session / JWT",
+      "icon": "🔑",
+      "category": "security",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "self-host-vs-cloud",
+      "title": "自架 vs 雲端",
+      "sub": "AWS vs 自架 / 擴展 / 監控比較",
+      "icon": "☁️",
+      "category": "security",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "metrics-logging",
+      "title": "監控與日誌",
+      "sub": "Kafka / Prometheus / Grafana",
+      "icon": "📊",
+      "category": "security",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "monitoring",
+      "title": "應用程式監控",
+      "sub": "Prometheus / Grafana / 告警系統",
+      "icon": "📡",
+      "category": "security",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "cicd-pipeline",
+      "title": "CI/CD 自動化部署",
+      "sub": "GitHub Actions / IaC / 自動測試",
+      "icon": "🔄",
+      "category": "security",
+      "difficulty": "intermediate"
+    },
+    {
+      "slug": "server-vs-serverless",
+      "title": "Server vs Serverless",
+      "sub": "VPS / Lambda / 點樣揀",
+      "icon": "🖥",
+      "category": "security",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "secure-ai-agents",
+      "title": "AI Agent 安全",
+      "sub": "Lethal Trifecta / Guardrail 防護",
+      "icon": "🛡",
+      "category": "security",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "ai-scraper-defense",
+      "title": "防禦 AI 爬蟲",
+      "sub": "robots.txt / Honeypot / Bot 偵測",
+      "icon": "🕸️",
+      "category": "security",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "oauth-sso",
+      "title": "OAuth 2.0 與 SSO",
+      "sub": "Authorization Code / PKCE / 第三方登入",
+      "icon": "🔐",
+      "category": "security",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "ddos-protection",
+      "title": "DDoS 防護",
+      "sub": "L3/L4/L7 攻擊 / WAF / Cloudflare",
+      "icon": "🛡",
+      "category": "security",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "disaster-recovery",
+      "title": "災難恢復",
+      "sub": "RTO / RPO / 多區部署 / 備份策略",
+      "icon": "🆘",
+      "category": "security",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "api-design",
+      "title": "API 設計最佳實踐",
+      "sub": "RESTful 規範 / 版本控制 / 錯誤處理",
+      "icon": "📝",
+      "category": "engineering",
+      "difficulty": "beginner",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "microservices-vs-monolith",
+      "title": "微服務 vs 單體",
+      "sub": "拆分時機 / API Gateway / 分佈式痛點",
+      "icon": "🏗",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "idempotency-patterns",
+      "title": "冪等性設計",
+      "sub": "Idempotency Key / 重試安全 / 狀態機",
+      "icon": "🔁",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "testing-strategy",
+      "title": "測試策略",
+      "sub": "單元 / 整合 / E2E / 測試金字塔",
+      "icon": "🧪",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "twelve-factor-app",
+      "title": "12-Factor App",
+      "sub": "Config / Logging / Disposability",
+      "icon": "📋",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "deployment",
+      "title": "免費部署平台",
+      "sub": "Vercel / Railway / Supabase / Firebase",
+      "icon": "🚀",
+      "category": "deploy",
+      "difficulty": "beginner"
+    },
+    {
+      "slug": "references",
+      "title": "學習資源參考",
+      "sub": "YouTube / Reddit / GitHub / 書籍",
+      "icon": "📚",
+      "category": "resource",
+      "disabled": true
+    }
   ]
 }

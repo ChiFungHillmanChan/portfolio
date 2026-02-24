@@ -16,13 +16,13 @@
       "id": "network",
       "label": "網絡與流量",
       "color": "#F59E0B",
-      "topics": ["cdn", "load-balancer", "api-gateway", "rate-limiter", "large-api-response"]
+      "topics": ["dns-deep-dive", "cdn", "load-balancer", "reverse-proxy", "api-gateway", "rate-limiter", "large-api-response", "websocket-vs-sse", "grpc-vs-rest", "circuit-breaker", "service-discovery"]
     },
     {
       "id": "storage",
       "label": "資料庫與存儲",
       "color": "#8B5CF6",
-      "topics": ["pick-database", "redis", "key-value-store", "object-storage", "unique-id-generator"]
+      "topics": ["pick-database", "redis", "key-value-store", "object-storage", "unique-id-generator", "database-sharding", "database-replication", "data-modeling", "cap-theorem", "time-series-db", "consensus-algorithms"]
     },
     {
       "id": "cache",
@@ -34,25 +34,25 @@
       "id": "async",
       "label": "異步處理",
       "color": "#10B981",
-      "topics": ["task-queue", "message-queue", "notification-system"]
+      "topics": ["task-queue", "message-queue", "notification-system", "distributed-transactions", "notification-push"]
     },
     {
       "id": "apps",
       "label": "應用系統",
       "color": "#EC4899",
-      "topics": ["session-manager", "url-shortener", "search-autocomplete", "web-crawler", "news-feed", "chat-system", "chess-game-design", "video-streaming", "payment-system"]
+      "topics": ["session-manager", "url-shortener", "search-autocomplete", "web-crawler", "news-feed", "chat-system", "chess-game-design", "video-streaming", "payment-system", "ticket-booking", "file-storage-system", "recommendation-system", "location-service", "email-system"]
     },
     {
       "id": "ops",
       "label": "運維與安全",
       "color": "#06B6D4",
-      "topics": ["metrics-logging", "monitoring", "cicd-pipeline", "self-host-vs-cloud", "server-vs-serverless", "secure-ai-agents", "ai-scraper-defense"]
+      "topics": ["metrics-logging", "monitoring", "cicd-pipeline", "self-host-vs-cloud", "server-vs-serverless", "secure-ai-agents", "ai-scraper-defense", "ddos-protection", "disaster-recovery", "oauth-sso"]
     },
     {
       "id": "patterns",
       "label": "設計模式與面試",
       "color": "#F97316",
-      "topics": ["system-design-patterns", "dependency-injection", "coding-agent-design", "backend-roadmap", "junior-vs-senior", "interview-process", "star-method", "coding-interview", "ai-vs-software-engineer", "print-vs-debugger", "scraping-vs-crawling"]
+      "topics": ["system-design-patterns", "dependency-injection", "coding-agent-design", "backend-roadmap", "junior-vs-senior", "interview-process", "star-method", "coding-interview", "ai-vs-software-engineer", "print-vs-debugger", "scraping-vs-crawling", "twelve-factor-app", "idempotency-patterns", "microservices-vs-monolith", "api-design", "testing-strategy"]
     }
   ],
   "edges": [
@@ -89,6 +89,42 @@
     ["ai-tools-landscape", "mcp-protocol"],
     ["prompt-engineering", "ai-idea-generation"],
     ["ai-model-comparison", "open-source-ai"],
-    ["mcp-protocol", "claude-skills-building"]
+    ["mcp-protocol", "claude-skills-building"],
+
+    ["dns-deep-dive", "cdn"],
+    ["database-basics", "database-sharding"],
+    ["database-basics", "database-replication"],
+    ["database-basics", "data-modeling"],
+    ["database-basics", "cap-theorem"],
+    ["cap-theorem", "pick-database"],
+    ["database-replication", "distributed-cache"],
+    ["rate-limiter", "circuit-breaker"],
+    ["chat-system", "websocket-vs-sse"],
+    ["api-gateway", "grpc-vs-rest"],
+    ["message-queue", "distributed-transactions"],
+    ["notification-system", "notification-push"],
+    ["rate-limiter", "ticket-booking"],
+    ["redis", "ticket-booking"],
+    ["object-storage", "file-storage-system"],
+    ["rate-limiter", "ddos-protection"],
+    ["cdn", "ddos-protection"],
+    ["monitoring", "disaster-recovery"],
+    ["database-sharding", "pick-database"],
+    ["payment-system", "distributed-transactions"],
+    ["monitoring", "time-series-db"],
+    ["docker", "twelve-factor-app"],
+    ["load-balancer", "service-discovery"],
+    ["news-feed", "recommendation-system"],
+    ["search-autocomplete", "recommendation-system"],
+    ["load-balancer", "reverse-proxy"],
+    ["reverse-proxy", "service-discovery"],
+    ["database-replication", "consensus-algorithms"],
+    ["redis", "location-service"],
+    ["payment-system", "idempotency-patterns"],
+    ["notification-system", "email-system"],
+    ["task-queue", "email-system"],
+    ["docker", "microservices-vs-monolith"],
+    ["cicd-pipeline", "testing-strategy"],
+    ["authentication", "oauth-sso"]
   ]
 }

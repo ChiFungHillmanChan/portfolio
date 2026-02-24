@@ -53,6 +53,35 @@ import URLShortener from './URLShortener';
 import VideoStreaming from './VideoStreaming';
 import WebCrawler from './WebCrawler';
 
+// New topics — Batch 1 (14 topics)
+import CapTheorem from './CapTheorem';
+import CircuitBreaker from './CircuitBreaker';
+import DataModeling from './DataModeling';
+import DatabaseReplication from './DatabaseReplication';
+import DatabaseSharding from './DatabaseSharding';
+import DdosProtection from './DdosProtection';
+import DisasterRecovery from './DisasterRecovery';
+import DistributedTransactions from './DistributedTransactions';
+import DnsDeepDive from './DnsDeepDive';
+import FileStorageSystem from './FileStorageSystem';
+import GrpcVsRest from './GrpcVsRest';
+import NotificationPush from './NotificationPush';
+import TicketBooking from './TicketBooking';
+import WebsocketVsSse from './WebsocketVsSse';
+import TimeSeriesDb from './TimeSeriesDb';
+import TwelveFactorApp from './TwelveFactorApp';
+import RecommendationSystem from './RecommendationSystem';
+import ServiceDiscovery from './ServiceDiscovery';
+import ReverseProxy from './ReverseProxy';
+import ConsensusAlgorithms from './ConsensusAlgorithms';
+import LocationService from './LocationService';
+import IdempotencyPatterns from './IdempotencyPatterns';
+import EmailSystem from './EmailSystem';
+import MicroservicesVsMonolith from './MicroservicesVsMonolith';
+import ApiDesign from './ApiDesign';
+import TestingStrategy from './TestingStrategy';
+import OauthSso from './OauthSso';
+
 // Free AI-core topics — static imports (always in main bundle)
 import AIToolsLandscape from './AIToolsLandscape';
 import AIModelComparison from './AIModelComparison';
@@ -144,6 +173,35 @@ const topicComponents = {
   'url-shortener': URLShortener,
   'video-streaming': VideoStreaming,
   'web-crawler': WebCrawler,
+
+  // New topics — Batch 1
+  'cap-theorem': CapTheorem,
+  'circuit-breaker': CircuitBreaker,
+  'data-modeling': DataModeling,
+  'database-replication': DatabaseReplication,
+  'database-sharding': DatabaseSharding,
+  'ddos-protection': DdosProtection,
+  'disaster-recovery': DisasterRecovery,
+  'distributed-transactions': DistributedTransactions,
+  'dns-deep-dive': DnsDeepDive,
+  'file-storage-system': FileStorageSystem,
+  'grpc-vs-rest': GrpcVsRest,
+  'notification-push': NotificationPush,
+  'ticket-booking': TicketBooking,
+  'websocket-vs-sse': WebsocketVsSse,
+  'time-series-db': TimeSeriesDb,
+  'twelve-factor-app': TwelveFactorApp,
+  'recommendation-system': RecommendationSystem,
+  'service-discovery': ServiceDiscovery,
+  'reverse-proxy': ReverseProxy,
+  'consensus-algorithms': ConsensusAlgorithms,
+  'location-service': LocationService,
+  'idempotency-patterns': IdempotencyPatterns,
+  'email-system': EmailSystem,
+  'microservices-vs-monolith': MicroservicesVsMonolith,
+  'api-design': ApiDesign,
+  'testing-strategy': TestingStrategy,
+  'oauth-sso': OauthSso,
 };
 
 export default topicComponents;

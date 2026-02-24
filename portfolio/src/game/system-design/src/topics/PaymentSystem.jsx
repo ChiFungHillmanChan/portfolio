@@ -142,8 +142,63 @@ function IdempotencyTab() {
           <p>每次請求帶唯一 key，Server 記錄 (key → response)。重複請求返回相同結果，唔會重複扣款。呢個係支付系統嘅第一道防線。</p>
         </div>
         <div className="key-point">
-          <h4>Double-entry Bookkeeping</h4>
+          <h4>Double-entry Bookkeeping（雙向記帳）</h4>
           <p>傳統銀行嘅做法：每筆交易兩邊記帳——用戶帳戶 -X，商家帳戶 +X。debit = credit 永遠成立，方便對帳同 audit。</p>
+          <p style={{ marginTop: '8px', color: '#94a3b8', fontSize: '0.9rem' }}>
+            <strong style={{ color: '#f87171' }}>點解唔可以只記一條？</strong>
+            {' '}如果你只記「用戶付咗 $100」，但冇記「商家收咗 $100」，咁出問題嘅時候（例如網路中斷、Webhook 延遲），你根本唔知錢去咗邊。雙向記帳嘅核心就係：<strong style={{ color: '#34d399' }}>每一筆錢嘅「出」同「入」都有記錄，加埋永遠等於零</strong>。如果唔等於零，即係有 bug 或者有人搞嘢，系統可以即刻偵測到。
+          </p>
+        </div>
+
+        <div className="key-point" style={{ background: 'linear-gradient(135deg, #1e293b 0%, #172033 100%)', border: '1px solid #334155' }}>
+          <h4 style={{ color: '#a78bfa' }}>實例：用戶付 HK$100 買嘢</h4>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', marginTop: '8px', fontSize: '0.85rem' }}>
+              <thead>
+                <tr style={{ borderBottom: '2px solid #334155' }}>
+                  <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>Transaction</th>
+                  <th style={{ padding: '8px', textAlign: 'left', color: '#94a3b8' }}>帳戶</th>
+                  <th style={{ padding: '8px', textAlign: 'right', color: '#f87171' }}>Debit（出）</th>
+                  <th style={{ padding: '8px', textAlign: 'right', color: '#34d399' }}>Credit（入）</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <td style={{ padding: '8px', color: '#cbd5e1' }} rowSpan={2}>付款</td>
+                  <td style={{ padding: '8px', color: '#60a5fa' }}>用戶帳戶</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#f87171' }}>$100</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#475569' }}>—</td>
+                </tr>
+                <tr style={{ borderBottom: '2px solid #334155' }}>
+                  <td style={{ padding: '8px', color: '#f59e0b' }}>商家帳戶</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#475569' }}>—</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#34d399' }}>$100</td>
+                </tr>
+                <tr style={{ borderBottom: '1px solid #1e293b' }}>
+                  <td style={{ padding: '8px', color: '#cbd5e1' }} rowSpan={2}>退款</td>
+                  <td style={{ padding: '8px', color: '#f59e0b' }}>商家帳戶</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#f87171' }}>$100</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#475569' }}>—</td>
+                </tr>
+                <tr>
+                  <td style={{ padding: '8px', color: '#60a5fa' }}>用戶帳戶</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#475569' }}>—</td>
+                  <td style={{ padding: '8px', textAlign: 'right', color: '#34d399' }}>$100</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p style={{ marginTop: '10px', color: '#94a3b8', fontSize: '0.85rem' }}>
+            每一行 Transaction，Debit 同 Credit 加埋一定係 <strong style={{ color: '#34d399' }}>$0</strong>。付款：用戶出 $100，商家入 $100。退款反過嚟：商家出 $100，用戶入 $100。任何時候 Debit ≠ Credit，即刻知道有問題。
+          </p>
+          <p style={{ marginTop: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <strong style={{ color: '#f59e0b' }}>同 Webhook 點樣配合？</strong>
+            {' '}Stripe 付款成功後會 send Webhook 通知你。你收到 Webhook 之後先寫入 Ledger（一條 debit + 一條 credit）。兩條記錄 match，呢筆交易先算「完成」。中間無論用戶撳多少次、網路 lag 幾耐，只要 Ledger 入面 debit = credit，就冇問題。
+          </p>
+          <p style={{ marginTop: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
+            <strong style={{ color: '#818cf8' }}>DB 點儲？</strong>
+            {' '}通常一個 <code style={{ color: '#c084fc', background: '#1e1b4b', padding: '2px 6px', borderRadius: '4px' }}>ledger_entries</code> table，每行有 <code style={{ color: '#c084fc', background: '#1e1b4b', padding: '2px 6px', borderRadius: '4px' }}>account_id</code>、<code style={{ color: '#c084fc', background: '#1e1b4b', padding: '2px 6px', borderRadius: '4px' }}>type</code>（debit / credit）、<code style={{ color: '#c084fc', background: '#1e1b4b', padding: '2px 6px', borderRadius: '4px' }}>amount</code>、<code style={{ color: '#c084fc', background: '#1e1b4b', padding: '2px 6px', borderRadius: '4px' }}>transaction_id</code>。可以放同一個 table，用 type 分就得。每日對帳就 query 呢個 table，確保所有 transaction 嘅 SUM(debit) = SUM(credit)。
+          </p>
         </div>
         <div className="key-point">
           <h4>Saga Pattern</h4>
