@@ -5,6 +5,14 @@ import { usePremium } from '../context/PremiumContext';
 import topicData from '../data/topics.json';
 import roadmapData from '../data/roadmap.json';
 
+const NEW_BADGE_DAYS = 30;
+function isNewTopic(addedDate) {
+  if (!addedDate) return false;
+  const added = new Date(addedDate);
+  const now = new Date();
+  return (now - added) / (1000 * 60 * 60 * 24) <= NEW_BADGE_DAYS;
+}
+
 /* ── Topological sort (Kahn's) within a group ── */
 function topoSortGroup(slugs, edges) {
   const slugSet = new Set(slugs);
@@ -336,6 +344,11 @@ export default function Roadmap() {
                         >
                           {topic.title}
                         </span>
+                        {isNewTopic(topic.addedDate) && (
+                          <span className="text-[0.55rem] px-1.5 py-0.5 rounded-full bg-[rgba(52,211,153,0.2)] text-[#34d399] font-semibold mt-1">
+                            New
+                          </span>
+                        )}
                         {/* Group color dot */}
                         <span
                           className="w-1.5 h-1.5 rounded-full mt-1.5"
@@ -493,6 +506,11 @@ function MobilePath({ visibleGroups, topicMap, isViewed, getNodeState, currentSl
                       >
                         {topic.title}
                       </span>
+                      {isNewTopic(topic.addedDate) && (
+                        <span className="text-[0.5rem] px-1 py-0.5 rounded-full bg-[rgba(52,211,153,0.2)] text-[#34d399] font-semibold mt-0.5">
+                          New
+                        </span>
+                      )}
                       <span
                         className="w-1 h-1 rounded-full mt-1"
                         style={{ backgroundColor: group.color, opacity: isLocked ? 0.2 : 0.6 }}

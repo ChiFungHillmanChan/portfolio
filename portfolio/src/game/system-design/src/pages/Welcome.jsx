@@ -1,11 +1,24 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useProgress } from '../context/ProgressContext';
 import topicData from '../data/topics.json';
+
+const NEW_BADGE_DAYS = 30;
+function isNewTopic(addedDate) {
+  if (!addedDate) return false;
+  const added = new Date(addedDate);
+  const now = new Date();
+  return (now - added) / (1000 * 60 * 60 * 24) <= NEW_BADGE_DAYS;
+}
 
 export default function Welcome() {
   const navigate = useNavigate();
   const { total } = useProgress();
   const topicCount = topicData.topics.filter((t) => !t.disabled).length;
+
+  const newTopics = useMemo(() =>
+    topicData.topics.filter((t) => !t.disabled && isNewTopic(t.addedDate)),
+  []);
 
   return (
     <div className="flex flex-col items-center justify-center min-h-full px-6 py-16 text-center">
@@ -50,6 +63,37 @@ export default function Welcome() {
           開始探索 →
         </span>
       </button>
+
+      {/* New topics section */}
+      {newTopics.length > 0 && (
+        <div className="w-full max-w-lg mt-8">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-[0.7rem] px-2 py-0.5 rounded-full bg-[rgba(52,211,153,0.2)] text-[#34d399] font-semibold">
+              New
+            </span>
+            <span className="text-sm font-semibold text-text-secondary">
+              新增 {newTopics.length} 個課題
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {newTopics.slice(0, 12).map((t) => (
+              <button
+                key={t.slug}
+                onClick={() => navigate(`/topic/${t.slug}`)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] border border-border text-[0.78rem] text-text-dim hover:text-text-secondary hover:border-[rgba(52,211,153,0.3)] hover:bg-[rgba(52,211,153,0.05)] transition-all text-left"
+              >
+                <span>{t.icon}</span>
+                <span className="truncate max-w-[140px]">{t.title}</span>
+              </button>
+            ))}
+            {newTopics.length > 12 && (
+              <span className="flex items-center px-3 py-1.5 text-[0.75rem] text-text-dimmer">
+                +{newTopics.length - 12} 更多
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Quick links to new features */}
       <div className="flex flex-wrap gap-3 mt-8">
