@@ -11,6 +11,7 @@ import Roadmap from './pages/Roadmap';
 import AIPlanner from './pages/AIPlanner';
 import Coaching from './pages/Coaching';
 import Projects from './pages/Projects';
+import LearningPaths from './pages/LearningPaths';
 import Settings from './pages/Settings';
 import Changelog from './pages/Changelog';
 import { useAuth } from './context/AuthContext';
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="coaching" element={<Coaching />} />
               <Route path="coaching/:slug" element={<Coaching />} />
               <Route path="projects" element={<Projects />} />
+              <Route path="paths" element={<LearningPaths />} />
               <Route path="premium" element={<Premium />} />
               <Route path="settings" element={<Settings />} />
               <Route path="changelog" element={<Changelog />} />

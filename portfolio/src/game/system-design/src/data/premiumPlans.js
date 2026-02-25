@@ -44,3 +44,21 @@ export function tierDisplayName(tier) {
   if (tier === 'standard') return `Standard (${formatHKD(PREMIUM_PLANS.standard.salePrice)})`;
   return 'Free';
 }
+
+export const COMPETITOR_COMPARISON = [
+  { name: 'ByteByteGo', price: 'US$79/年', hkd: '~HK$620', type: '影片 + 圖解', flag: '🇺🇸', highlight: false },
+  { name: '九章算法', price: '¥3,999', hkd: '~HK$4,400', type: '錄播 + 作業', flag: '🇨🇳', highlight: false },
+  { name: 'DesignGurus', price: 'US$79', hkd: '~HK$620', type: '文字 + Quiz', flag: '🇺🇸', highlight: false },
+  { name: '本平台', price: 'HK$150', hkd: 'HK$150', type: 'AI 互動 + 廣東話', flag: '🇭🇰', highlight: true },
+];
+
+export const VALUE_STACK = [
+  { item: '95+ 圖解課題', value: 2000, suffix: '' },
+  { item: 'AI 教練 1 對 1', value: 1500, suffix: '' },
+  { item: '8 個實戰項目 + AI 評估', value: 2000, suffix: '' },
+  { item: 'AI 學習計劃生成器', value: 800, suffix: '' },
+  { item: 'Prompt 模板庫', value: 500, suffix: '' },
+  { item: '永久更新 + 新課題', value: 1000, suffix: '/年' },
+];
+
+export const DAILY_COST_REFRAME = 'HK$150 ÷ 365 = 每日 HK$0.41';

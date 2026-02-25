@@ -1,0 +1,90 @@
+[
+  {
+    "id": "interview-sprint",
+    "title": "面試衝刺",
+    "icon": "🎯",
+    "color": "#6366f1",
+    "description": "12 個核心課題 + 2 個實戰項目，針對系統設計面試最常見嘅題型",
+    "estimatedHours": 20,
+    "topics": [
+      "database-basics",
+      "api-design",
+      "load-balancer",
+      "cdn",
+      "dns-deep-dive",
+      "cache-invalidation",
+      "message-queue",
+      "rate-limiter",
+      "key-value-store",
+      "url-shortener",
+      "chat-system",
+      "system-design-patterns"
+    ],
+    "requiredProjects": ["url-shortener-challenge", "chat-system-challenge"],
+    "requiresPremium": false,
+    "requiredCoachingSessions": 0,
+    "certificate": {
+      "title": "System Design 面試衝刺",
+      "badge": "🎯",
+      "color": "#6366f1"
+    }
+  },
+  {
+    "id": "ai-engineer",
+    "title": "AI 工程師",
+    "icon": "🤖",
+    "color": "#a78bfa",
+    "description": "10 個 AI 核心主題 + 3 次教練對話，掌握 AI 工程實戰技能",
+    "estimatedHours": 15,
+    "topics": [
+      "ai-basics-start-here",
+      "ai-tools-landscape",
+      "ai-model-comparison",
+      "prompt-engineering",
+      "prompt-cheat-sheet",
+      "skill-vs-agent",
+      "mcp-protocol",
+      "multi-ai-workflow",
+      "ai-evaluation-loop",
+      "claude-skills-building"
+    ],
+    "requiredProjects": [],
+    "requiresPremium": true,
+    "requiredCoachingSessions": 3,
+    "certificate": {
+      "title": "AI 工程師入門",
+      "badge": "🤖",
+      "color": "#a78bfa"
+    }
+  },
+  {
+    "id": "junior-to-mid",
+    "title": "Junior→Mid",
+    "icon": "📈",
+    "color": "#22c55e",
+    "description": "從初級到中級工程師必學嘅 12 個課題 + 1 個實戰項目",
+    "estimatedHours": 18,
+    "topics": [
+      "git-vs-github",
+      "docker",
+      "print-vs-debugger",
+      "testing-strategy",
+      "twelve-factor-app",
+      "dependency-injection",
+      "api-gateway",
+      "reverse-proxy",
+      "junior-vs-senior",
+      "star-method",
+      "coding-interview",
+      "backend-roadmap"
+    ],
+    "requiredProjects": ["rate-limiter-challenge"],
+    "requiresPremium": false,
+    "requiredCoachingSessions": 0,
+    "certificate": {
+      "title": "Junior→Mid 升級之路",
+      "badge": "📈",
+      "color": "#22c55e"
+    }
+  }
+]
