@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { usePremium } from '../context/PremiumContext';
 import { useAuth } from '../context/AuthContext';
 import GoogleSignInButton from '../components/GoogleSignInButton';
-import { PREMIUM_COPY, PREMIUM_PLANS, formatHKD } from '../data/premiumPlans';
+import { PREMIUM_COPY, PREMIUM_PLANS, COMPETITOR_COMPARISON, VALUE_STACK, DAILY_COST_REFRAME, formatHKD } from '../data/premiumPlans';
 
 export default function Premium() {
   const { isPremium, confirmStripeSession, loadingEntitlement } = usePremium();
@@ -133,6 +133,50 @@ export default function Premium() {
         <div className="text-sm font-semibold text-amber-400 mb-0.5">{PREMIUM_COPY.urgencyTitle}</div>
         <div className="text-xs text-text-dim leading-relaxed">
           {PREMIUM_COPY.urgencyBody}
+        </div>
+      </div>
+
+      {/* 市場對比 */}
+      <div className="max-w-2xl mx-auto mb-6">
+        <h3 className="text-sm font-semibold text-text-secondary mb-3 text-center">市場對比</h3>
+        <div className="grid grid-cols-4 text-[0.75rem] border border-border rounded-xl overflow-hidden">
+          <div className="px-3 py-2 bg-white/[0.04] text-text-dimmer font-semibold">平台</div>
+          <div className="px-3 py-2 bg-white/[0.04] text-text-dimmer font-semibold">價格</div>
+          <div className="px-3 py-2 bg-white/[0.04] text-text-dimmer font-semibold">HKD</div>
+          <div className="px-3 py-2 bg-white/[0.04] text-text-dimmer font-semibold">特點</div>
+          {COMPETITOR_COMPARISON.map((c) => (
+            <div key={c.name} className={`contents ${c.highlight ? '[&>div]:bg-accent-indigo/[0.08]' : ''}`}>
+              <div className={`px-3 py-2.5 text-text-secondary border-t border-border flex items-center gap-1 ${c.highlight ? 'border-l-2 border-l-accent-indigo font-semibold' : ''}`}>
+                {c.flag} {c.name}
+              </div>
+              <div className="px-3 py-2.5 text-text-dim border-t border-border">{c.price}</div>
+              <div className={`px-3 py-2.5 border-t border-border ${c.highlight ? 'text-accent-green font-semibold' : 'text-text-dim'}`}>{c.hkd}</div>
+              <div className="px-3 py-2.5 text-text-dim border-t border-border">{c.type}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* 你實際得到咩 */}
+      <div className="max-w-2xl mx-auto mb-6">
+        <div className="card">
+          <h3 className="text-sm font-semibold text-text-secondary mb-4 text-center">你實際得到咩</h3>
+          <div className="flex flex-col gap-2.5 mb-4">
+            {VALUE_STACK.map((v) => (
+              <div key={v.item} className="flex items-center gap-2.5">
+                <span className="text-accent-green text-sm">✓</span>
+                <span className="flex-1 text-[0.82rem] text-text-muted">{v.item}</span>
+                <span className="text-[0.75rem] text-text-dimmer line-through">{formatHKD(v.value)}{v.suffix}</span>
+              </div>
+            ))}
+          </div>
+          <div className="border-t border-border pt-3 text-center">
+            <div className="text-xs text-text-dimmer mb-1">
+              市場總值 <span className="line-through">{formatHKD(VALUE_STACK.reduce((sum, v) => sum + v.value, 0))}+</span>
+            </div>
+            <div className="text-lg font-bold text-accent-green mb-1">早鳥價 {formatHKD(standard.salePrice)}</div>
+            <div className="text-[0.72rem] text-text-dimmer">{DAILY_COST_REFRAME}</div>
+          </div>
         </div>
       </div>
 

@@ -146,11 +146,15 @@ export default function Coaching() {
 
       const data = await res.json();
       const response = data.answer || '未能回應，請重試。';
-      setMessages((prev) => [...prev, {
-        role: 'coach',
-        content: response,
-        ts: Date.now(),
-      }]);
+      setMessages((prev) => {
+        const updatedMessages = [...prev, { role: 'coach', content: response, ts: Date.now() }];
+        // Count coaching session when conversation reaches 5+ messages
+        if (updatedMessages.length === 5) {
+          const count = parseInt(localStorage.getItem('sd_coaching_sessions_count') || '0', 10);
+          localStorage.setItem('sd_coaching_sessions_count', String(count + 1));
+        }
+        return updatedMessages;
+      });
     } catch {
       setMessages((prev) => [...prev, {
         role: 'coach',

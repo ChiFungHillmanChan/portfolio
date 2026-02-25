@@ -205,6 +205,29 @@ export default function Sidebar({ isOpen, onClose, desktopCollapsed, onToggleDes
           </a>
         </div>
 
+        {/* Page nav */}
+        <div className="border-b border-border px-2.5 py-2">
+          <div className="flex gap-1.5">
+            {[
+              { path: '/roadmap', label: '🗺 路線圖' },
+              { path: '/paths', label: '🎯 學習路徑' },
+              { path: '/plan', label: '📋 AI 計劃' },
+            ].map((item) => (
+              <button
+                key={item.path}
+                className={`px-2 py-1 rounded-full border text-[0.65rem] font-medium cursor-pointer transition-all whitespace-nowrap ${
+                  location.pathname === item.path
+                    ? 'bg-accent-indigo/15 border-accent-indigo text-accent-indigo-light'
+                    : 'bg-transparent border-border text-text-dimmer hover:border-border-hover hover:text-text-dim'
+                }`}
+                onClick={() => { navigate(item.path); onClose?.(); }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Filters — wrap to show all */}
         <div className="border-b border-border px-2.5 py-2">
           <div className="flex flex-wrap gap-1.5">

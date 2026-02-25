@@ -17,6 +17,7 @@ export default function PremiumGate() {
         <span className="text-lg font-bold text-text-primary">{formatHKD(standard.salePrice)}</span>
       </div>
       <div className="inline-block px-2 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.65rem] font-semibold mb-1">早鳥價 · 慳 {formatHKD(standard.savings)}</div>
+      <p className="text-[0.72rem] text-text-dimmer mb-1">比其他平台平 90%+ · AI 互動 + 廣東話</p>
       <p className="text-[0.65rem] text-text-darkest mb-6">一次性付款 · 永久存取 · 未來將轉月費制</p>
       <div className="flex gap-3">
         {standard.comingSoon ? (

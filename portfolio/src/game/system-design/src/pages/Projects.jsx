@@ -29,6 +29,17 @@ function saveChallengeStatus(status) {
 function challengeDesignKey(id) { return `sd_challenge_design_${id}`; }
 function challengeChatKey(id) { return `sd_challenge_chat_${id}`; }
 function challengeResultKey(id) { return `sd_challenge_result_${id}`; }
+function guidedModeKey(id) { return `sd_guided_mode_${id}`; }
+function guidedAnswersKey(id) { return `sd_guided_answers_${id}`; }
+function guidedStepKey(id) { return `sd_guided_step_${id}`; }
+
+const GUIDED_STEPS = [
+  { id: 'requirements', title: '需求分析', question: '用戶量？讀寫比例？Non-functional requirements？' },
+  { id: 'high-level', title: 'High-Level 設計', question: '主要 components 同關係' },
+  { id: 'database', title: 'Database 設計', question: 'DB 選型、Schema、索引' },
+  { id: 'scaling', title: 'Scaling', question: '用戶量 x10？Bottleneck？' },
+  { id: 'deep-dive', title: 'Deep Dive', question: '揀一個 component 深入設計' },
+];
 
 function getTrialChallenge() {
   return localStorage.getItem(TRIAL_KEY) || null;
@@ -108,6 +119,141 @@ function EvaluationResult({ challenge, result, onRetry, onBack }) {
   );
 }
 
+// ─── Guided Mode View ───
+function GuidedModeView({ challenge, challengeContext, token, onAllDone }) {
+  const [guidedStep, setGuidedStep] = useState(() => {
+    try { return parseInt(localStorage.getItem(guidedStepKey(challenge.id)) || '0', 10); } catch { return 0; }
+  });
+  const [guidedAnswers, setGuidedAnswers] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(guidedAnswersKey(challenge.id)) || '{}'); } catch { return {}; }
+  });
+  const [aiFeedback, setAiFeedback] = useState('');
+  const [gettingFeedback, setGettingFeedback] = useState(false);
+
+  const currentStep = GUIDED_STEPS[guidedStep];
+
+  // Save state
+  useEffect(() => {
+    localStorage.setItem(guidedStepKey(challenge.id), String(guidedStep));
+  }, [guidedStep, challenge.id]);
+
+  useEffect(() => {
+    localStorage.setItem(guidedAnswersKey(challenge.id), JSON.stringify(guidedAnswers));
+  }, [guidedAnswers, challenge.id]);
+
+  const handleGuidedFeedback = async () => {
+    if (!token || !guidedAnswers[currentStep.id]?.trim()) return;
+    setGettingFeedback(true);
+    setAiFeedback('');
+    try {
+      const res = await fetch(`${API_BASE}/ai/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          mode: 'coaching',
+          coachingType: 'challenge',
+          challengeMode: 'coach',
+          challengeId: challenge.id,
+          challengeTitle: challenge.title,
+          challengeContext,
+          query: `學生正在做「${challenge.title}」嘅第 ${guidedStep + 1} 步「${currentStep.title}」。\n問題：${currentStep.question}\n學生答案：${guidedAnswers[currentStep.id]}\n\n請用廣東話俾 200 字以內嘅反饋，指出做得好同需要改進嘅地方。`,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAiFeedback(data.answer || '未能取得反饋');
+      } else {
+        setAiFeedback('未能取得 AI 反饋，請稍後再試');
+      }
+    } catch {
+      setAiFeedback('網絡錯誤');
+    } finally {
+      setGettingFeedback(false);
+    }
+  };
+
+  const handleNext = () => {
+    setAiFeedback('');
+    if (guidedStep < GUIDED_STEPS.length - 1) {
+      setGuidedStep(guidedStep + 1);
+    }
+  };
+
+  const handleAllDone = () => {
+    const combined = GUIDED_STEPS.map((step, i) =>
+      `## ${i + 1}. ${step.title}\n${guidedAnswers[step.id] || '（未填寫）'}`
+    ).join('\n\n');
+    onAllDone(combined);
+  };
+
+  const isLastStep = guidedStep === GUIDED_STEPS.length - 1;
+
+  return (
+    <div className="flex flex-col gap-4">
+      {/* Step indicator */}
+      <div className="flex items-center gap-1">
+        {GUIDED_STEPS.map((step, i) => (
+          <button
+            key={step.id}
+            className={`flex-1 h-2 rounded-full transition-all cursor-pointer border-none ${
+              i < guidedStep ? 'bg-accent-green' : i === guidedStep ? 'bg-accent-indigo' : 'bg-white/[0.08]'
+            }`}
+            onClick={() => { setGuidedStep(i); setAiFeedback(''); }}
+            title={step.title}
+          />
+        ))}
+      </div>
+
+      {/* Current step */}
+      <div className="card">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-semibold text-accent-indigo-light">Step {guidedStep + 1}/{GUIDED_STEPS.length}</span>
+          <h3 className="text-sm font-bold text-text-primary">{currentStep.title}</h3>
+        </div>
+        <p className="text-[0.82rem] text-text-dim mb-3">{currentStep.question}</p>
+        <textarea
+          className="w-full min-h-[140px] px-4 py-3 rounded-lg border border-border bg-bg-primary text-text-secondary text-[0.88rem] outline-none resize-y leading-relaxed focus:border-accent-indigo placeholder:text-text-darkest"
+          placeholder="寫你嘅答案..."
+          value={guidedAnswers[currentStep.id] || ''}
+          onChange={(e) => setGuidedAnswers((prev) => ({ ...prev, [currentStep.id]: e.target.value }))}
+        />
+        <div className="flex gap-2 mt-3">
+          <button
+            onClick={handleGuidedFeedback}
+            disabled={gettingFeedback || !guidedAnswers[currentStep.id]?.trim()}
+            className="px-4 py-2 rounded-lg border border-accent-indigo/30 text-accent-indigo-light text-xs font-medium bg-transparent cursor-pointer hover:bg-accent-indigo/10 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {gettingFeedback ? '思考中...' : '取得 AI 反饋'}
+          </button>
+          {isLastStep ? (
+            <button
+              onClick={handleAllDone}
+              className="px-4 py-2 rounded-lg bg-accent-indigo text-white text-xs font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors"
+            >
+              完成設計
+            </button>
+          ) : (
+            <button
+              onClick={handleNext}
+              className="px-4 py-2 rounded-lg bg-accent-indigo text-white text-xs font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors"
+            >
+              下一步
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* AI feedback */}
+      {aiFeedback && (
+        <div className="card border-accent-indigo/20">
+          <h4 className="text-xs font-semibold text-accent-indigo-light mb-2">AI 反饋</h4>
+          <p className="text-[0.82rem] text-text-muted leading-relaxed whitespace-pre-wrap">{aiFeedback}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Challenge Session View ───
 function ChallengeSession({ challenge, onBack, onSubmitResult }) {
   const { token } = useAuth();
@@ -117,6 +263,9 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
   const [sending, setSending] = useState(false);
   const [revealedHints, setRevealedHints] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [mode, setMode] = useState(() => {
+    try { return localStorage.getItem(guidedModeKey(challenge.id)) || 'open'; } catch { return 'open'; }
+  });
   const chatEndRef = useRef(null);
 
   // Load saved state
@@ -142,6 +291,11 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
       localStorage.setItem(challengeChatKey(challenge.id), JSON.stringify(chatMessages));
     }
   }, [chatMessages, challenge.id]);
+
+  // Save mode
+  useEffect(() => {
+    localStorage.setItem(guidedModeKey(challenge.id), mode);
+  }, [mode, challenge.id]);
 
   // Mark as in-progress
   useEffect(() => {
@@ -210,9 +364,10 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
     }
   };
 
-  const runKeywordEvaluation = () => {
+  const runKeywordEvaluation = (overrideText) => {
+    const source = overrideText || designText;
     const allText = (
-      designText + ' ' +
+      source + ' ' +
       chatMessages.map((m) => m.content).join(' ')
     ).toLowerCase();
 
@@ -227,12 +382,15 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
     });
   };
 
-  const handleSubmit = async () => {
-    if (!designText.trim()) return;
+  const handleSubmit = async (overrideText) => {
+    const submitText = overrideText || designText;
+    if (!submitText.trim()) return;
     setSubmitting(true);
 
+    if (overrideText) setDesignText(overrideText);
+
     // 1. Keyword evaluation (instant)
-    const keywordResults = runKeywordEvaluation();
+    const keywordResults = runKeywordEvaluation(overrideText);
 
     // 2. Update status
     const passed = keywordResults.filter((r) => r.matched).length;
@@ -253,7 +411,7 @@ function ChallengeSession({ challenge, onBack, onSubmitResult }) {
 ${criteriaList}
 
 學生嘅設計方案：
-${designText}
+${submitText}
 
 ${chatMessages.length > 0 ? `學生同 AI 嘅討論記錄：\n${chatMessages.map((m) => `${m.role === 'user' ? '學生' : 'AI'}：${m.content}`).join('\n')}` : ''}
 
@@ -308,7 +466,20 @@ ${chatMessages.length > 0 ? `學生同 AI 嘅討論記錄：\n${chatMessages.map
             {diff.label}
           </span>
         </div>
-        <span className="text-xs text-accent-indigo-light">⏱ 進行中</span>
+        <div className="flex items-center gap-1 border border-border rounded-lg overflow-hidden flex-shrink-0">
+          <button
+            className={`px-2.5 py-1 text-[0.68rem] font-medium border-none cursor-pointer transition-all ${mode === 'open' ? 'bg-accent-indigo/15 text-accent-indigo-light' : 'bg-transparent text-text-dimmer hover:text-text-dim'}`}
+            onClick={() => setMode('open')}
+          >
+            自由模式
+          </button>
+          <button
+            className={`px-2.5 py-1 text-[0.68rem] font-medium border-none cursor-pointer transition-all ${mode === 'guided' ? 'bg-accent-indigo/15 text-accent-indigo-light' : 'bg-transparent text-text-dimmer hover:text-text-dim'}`}
+            onClick={() => setMode('guided')}
+          >
+            引導模式
+          </button>
+        </div>
       </div>
 
       {/* Scrollable content */}
@@ -343,79 +514,92 @@ ${chatMessages.length > 0 ? `學生同 AI 嘅討論記錄：\n${chatMessages.map
             </div>
           </div>
 
-          {/* Design textarea */}
-          <div className="card">
-            <h3 className="text-sm font-bold text-text-primary mb-3">✏️ 你嘅設計</h3>
-            <textarea
-              className="w-full min-h-[200px] px-4 py-3 rounded-lg border border-border bg-bg-primary text-text-secondary text-[0.88rem] outline-none resize-y leading-relaxed focus:border-accent-indigo placeholder:text-text-darkest"
-              placeholder="喺度寫你嘅系統設計方案...&#10;&#10;建議包括：&#10;- API 設計&#10;- 資料庫 Schema&#10;- 核心算法&#10;- 架構圖（用文字描述）&#10;- 擴展方案"
-              value={designText}
-              onChange={(e) => setDesignText(e.target.value)}
+          {mode === 'guided' ? (
+            <GuidedModeView
+              challenge={challenge}
+              challengeContext={challengeContext}
+              token={token}
+              onAllDone={(combined) => handleSubmit(combined)}
             />
-          </div>
-
-          {/* AI chat */}
-          <div className="card">
-            <h3 className="text-sm font-bold text-text-primary mb-3">🤖 AI 助手</h3>
-            <div className="border border-border rounded-lg bg-bg-primary overflow-hidden">
-              {/* Chat messages */}
-              <div className="max-h-[300px] overflow-y-auto px-3 py-3 flex flex-col gap-2.5">
-                {chatMessages.length === 0 && (
-                  <div className="text-xs text-text-dimmer text-center py-4">
-                    有問題可以隨時問 AI 助手，佢會引導你思考
-                  </div>
-                )}
-                {chatMessages.map((msg, i) => (
-                  <div
-                    key={i}
-                    className={`max-w-[85%] px-3 py-2 rounded-xl text-[0.82rem] leading-relaxed whitespace-pre-wrap ${
-                      msg.role === 'user'
-                        ? 'self-end bg-accent-indigo text-white'
-                        : 'self-start bg-bg-secondary border border-border text-text-muted'
-                    }`}
-                  >
-                    {msg.content}
-                  </div>
-                ))}
-                {sending && (
-                  <div className="self-start text-text-dimmer text-xs animate-pulse">思考中...</div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-              {/* Chat input */}
-              <div className="flex gap-2 px-3 py-2.5 border-t border-border">
-                <input
-                  className="flex-1 px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-secondary text-[0.82rem] outline-none focus:border-accent-indigo placeholder:text-text-darkest"
-                  placeholder="問 AI 助手..."
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+          ) : (
+            <>
+              {/* Design textarea */}
+              <div className="card">
+                <h3 className="text-sm font-bold text-text-primary mb-3">✏️ 你嘅設計</h3>
+                <textarea
+                  className="w-full min-h-[200px] px-4 py-3 rounded-lg border border-border bg-bg-primary text-text-secondary text-[0.88rem] outline-none resize-y leading-relaxed focus:border-accent-indigo placeholder:text-text-darkest"
+                  placeholder="喺度寫你嘅系統設計方案...&#10;&#10;建議包括：&#10;- API 設計&#10;- 資料庫 Schema&#10;- 核心算法&#10;- 架構圖（用文字描述）&#10;- 擴展方案"
+                  value={designText}
+                  onChange={(e) => setDesignText(e.target.value)}
                 />
-                <button
-                  className="w-9 h-9 rounded-lg border-none bg-accent-indigo text-white text-sm cursor-pointer flex-shrink-0 flex items-center justify-center hover:bg-accent-indigo-hover transition-colors disabled:opacity-40"
-                  onClick={handleChatSend}
-                  disabled={sending}
-                >
-                  ➤
-                </button>
               </div>
-            </div>
-          </div>
+
+              {/* AI chat */}
+              <div className="card">
+                <h3 className="text-sm font-bold text-text-primary mb-3">🤖 AI 助手</h3>
+                <div className="border border-border rounded-lg bg-bg-primary overflow-hidden">
+                  {/* Chat messages */}
+                  <div className="max-h-[300px] overflow-y-auto px-3 py-3 flex flex-col gap-2.5">
+                    {chatMessages.length === 0 && (
+                      <div className="text-xs text-text-dimmer text-center py-4">
+                        有問題可以隨時問 AI 助手，佢會引導你思考
+                      </div>
+                    )}
+                    {chatMessages.map((msg, i) => (
+                      <div
+                        key={i}
+                        className={`max-w-[85%] px-3 py-2 rounded-xl text-[0.82rem] leading-relaxed whitespace-pre-wrap ${
+                          msg.role === 'user'
+                            ? 'self-end bg-accent-indigo text-white'
+                            : 'self-start bg-bg-secondary border border-border text-text-muted'
+                        }`}
+                      >
+                        {msg.content}
+                      </div>
+                    ))}
+                    {sending && (
+                      <div className="self-start text-text-dimmer text-xs animate-pulse">思考中...</div>
+                    )}
+                    <div ref={chatEndRef} />
+                  </div>
+                  {/* Chat input */}
+                  <div className="flex gap-2 px-3 py-2.5 border-t border-border">
+                    <input
+                      className="flex-1 px-3 py-2 rounded-lg border border-border bg-bg-primary text-text-secondary text-[0.82rem] outline-none focus:border-accent-indigo placeholder:text-text-darkest"
+                      placeholder="問 AI 助手..."
+                      value={chatInput}
+                      onChange={(e) => setChatInput(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChatSend(); } }}
+                    />
+                    <button
+                      className="w-9 h-9 rounded-lg border-none bg-accent-indigo text-white text-sm cursor-pointer flex-shrink-0 flex items-center justify-center hover:bg-accent-indigo-hover transition-colors disabled:opacity-40"
+                      onClick={handleChatSend}
+                      disabled={sending}
+                    >
+                      ➤
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
-      {/* Submit bar */}
-      <div className="px-4 py-3 border-t border-border bg-bg-primary flex-shrink-0">
-        <div className="max-w-3xl mx-auto">
-          <button
-            onClick={handleSubmit}
-            disabled={submitting || !designText.trim()}
-            className="w-full py-3 rounded-lg bg-accent-indigo text-white text-sm font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
-            {submitting ? '評估中...' : '提交評估'}
-          </button>
+      {/* Submit bar — only in open mode */}
+      {mode === 'open' && (
+        <div className="px-4 py-3 border-t border-border bg-bg-primary flex-shrink-0">
+          <div className="max-w-3xl mx-auto">
+            <button
+              onClick={() => handleSubmit()}
+              disabled={submitting || !designText.trim()}
+              className="w-full py-3 rounded-lg bg-accent-indigo text-white text-sm font-medium border-none cursor-pointer hover:bg-accent-indigo-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            >
+              {submitting ? '評估中...' : '提交評估'}
+            </button>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

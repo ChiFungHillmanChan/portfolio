@@ -121,6 +121,12 @@ export default function Welcome() {
         >
           🛠 實戰項目
         </button>
+        <button
+          onClick={() => navigate('/paths')}
+          className="px-5 py-2.5 rounded-lg bg-bg-secondary border border-border text-text-dim hover:text-text-primary hover:border-accent-indigo/50 transition-all text-sm"
+        >
+          🎯 學習路徑
+        </button>
       </div>
     </div>
   );
