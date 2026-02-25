@@ -283,7 +283,8 @@
       "title": "Print 定 Debugger",
       "sub": "Breakpoint / stdout / 點樣揀",
       "icon": "🔎",
-      "category": "engineering"
+      "category": "engineering",
+      "difficulty": "beginner"
     },
     {
       "slug": "docker",
@@ -292,6 +293,15 @@
       "icon": "🐳",
       "category": "engineering",
       "difficulty": "beginner"
+    },
+    {
+      "slug": "api-design",
+      "title": "API 設計最佳實踐",
+      "sub": "RESTful 規範 / 版本控制 / 錯誤處理",
+      "icon": "📝",
+      "category": "engineering",
+      "difficulty": "beginner",
+      "addedDate": "2026-02-24"
     },
     {
       "slug": "dependency-injection",
@@ -316,6 +326,42 @@
       "icon": "🤖",
       "category": "engineering",
       "difficulty": "intermediate"
+    },
+    {
+      "slug": "microservices-vs-monolith",
+      "title": "微服務 vs 單體",
+      "sub": "拆分時機 / API Gateway / 分佈式痛點",
+      "icon": "🏗",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "idempotency-patterns",
+      "title": "冪等性設計",
+      "sub": "Idempotency Key / 重試安全 / 狀態機",
+      "icon": "🔁",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "testing-strategy",
+      "title": "測試策略",
+      "sub": "單元 / 整合 / E2E / 測試金字塔",
+      "icon": "🧪",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "twelve-factor-app",
+      "title": "12-Factor App",
+      "sub": "Config / Logging / Disposability",
+      "icon": "📋",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
     },
     {
       "slug": "port-forwarding",
@@ -350,6 +396,24 @@
       "difficulty": "beginner"
     },
     {
+      "slug": "dns-deep-dive",
+      "title": "DNS 域名解析",
+      "sub": "遞歸 / 權威 / TTL / GeoDNS",
+      "icon": "🌍",
+      "category": "network",
+      "difficulty": "beginner",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "reverse-proxy",
+      "title": "反向代理",
+      "sub": "Nginx / 靜態資源 / SSL Termination",
+      "icon": "🛡",
+      "category": "network",
+      "difficulty": "beginner",
+      "addedDate": "2026-02-24"
+    },
+    {
       "slug": "api-gateway",
       "title": "API 閘道",
       "sub": "驗證 / 限流 / 路由分發",
@@ -372,23 +436,6 @@
       "icon": "🚦",
       "category": "network",
       "difficulty": "intermediate"
-    },
-    {
-      "slug": "scraping-vs-crawling",
-      "title": "Scraping vs Crawling",
-      "sub": "數據提取 / 網站地圖 / SEO",
-      "icon": "🕷",
-      "category": "network",
-      "difficulty": "advanced"
-    },
-    {
-      "slug": "dns-deep-dive",
-      "title": "DNS 域名解析",
-      "sub": "遞歸 / 權威 / TTL / GeoDNS",
-      "icon": "🌍",
-      "category": "network",
-      "difficulty": "beginner",
-      "addedDate": "2026-02-24"
     },
     {
       "slug": "websocket-vs-sse",
@@ -427,13 +474,12 @@
       "addedDate": "2026-02-24"
     },
     {
-      "slug": "reverse-proxy",
-      "title": "反向代理",
-      "sub": "Nginx / 靜態資源 / SSL Termination",
-      "icon": "🛡",
+      "slug": "scraping-vs-crawling",
+      "title": "Scraping vs Crawling",
+      "sub": "數據提取 / 網站地圖 / SEO",
+      "icon": "🕷",
       "category": "network",
-      "difficulty": "beginner",
-      "addedDate": "2026-02-24"
+      "difficulty": "advanced"
     },
     {
       "slug": "database-basics",
@@ -476,23 +522,6 @@
       "difficulty": "intermediate"
     },
     {
-      "slug": "pick-database",
-      "title": "點揀 Database",
-      "sub": "CAP 定理 / SQL vs NoSQL",
-      "icon": "🎯",
-      "category": "storage",
-      "difficulty": "advanced"
-    },
-    {
-      "slug": "database-sharding",
-      "title": "Database 分片策略",
-      "sub": "Horizontal / Vertical / Shard Key 點揀",
-      "icon": "🔪",
-      "category": "storage",
-      "difficulty": "advanced",
-      "addedDate": "2026-02-24"
-    },
-    {
       "slug": "database-replication",
       "title": "Database 複製",
       "sub": "Leader-Follower / Multi-Leader / 一致性",
@@ -517,6 +546,23 @@
       "icon": "⚖️",
       "category": "storage",
       "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
+      "slug": "pick-database",
+      "title": "點揀 Database",
+      "sub": "CAP 定理 / SQL vs NoSQL",
+      "icon": "🎯",
+      "category": "storage",
+      "difficulty": "advanced"
+    },
+    {
+      "slug": "database-sharding",
+      "title": "Database 分片策略",
+      "sub": "Horizontal / Vertical / Shard Key 點揀",
+      "icon": "🔪",
+      "category": "storage",
+      "difficulty": "advanced",
       "addedDate": "2026-02-24"
     },
     {
@@ -594,15 +640,6 @@
       "difficulty": "intermediate"
     },
     {
-      "slug": "distributed-transactions",
-      "title": "分佈式事務",
-      "sub": "2PC / 3PC / Saga Pattern / 補償機制",
-      "icon": "🔗",
-      "category": "async",
-      "difficulty": "advanced",
-      "addedDate": "2026-02-24"
-    },
-    {
       "slug": "notification-push",
       "title": "推送通知架構",
       "sub": "FCM / APNs / Fallback 策略",
@@ -612,12 +649,30 @@
       "addedDate": "2026-02-24"
     },
     {
+      "slug": "distributed-transactions",
+      "title": "分佈式事務",
+      "sub": "2PC / 3PC / Saga Pattern / 補償機制",
+      "icon": "🔗",
+      "category": "async",
+      "difficulty": "advanced",
+      "addedDate": "2026-02-24"
+    },
+    {
       "slug": "session-manager",
       "title": "Session 管理器",
       "sub": "Cookie vs JWT / Redis 存儲",
       "icon": "🔐",
       "category": "app",
       "difficulty": "intermediate"
+    },
+    {
+      "slug": "email-system",
+      "title": "電郵系統設計",
+      "sub": "SMTP / 佇列 / 垃圾郵件過濾",
+      "icon": "📧",
+      "category": "app",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
     },
     {
       "slug": "url-shortener",
@@ -720,15 +775,6 @@
       "addedDate": "2026-02-24"
     },
     {
-      "slug": "email-system",
-      "title": "電郵系統設計",
-      "sub": "SMTP / 佇列 / 垃圾郵件過濾",
-      "icon": "📧",
-      "category": "app",
-      "difficulty": "intermediate",
-      "addedDate": "2026-02-24"
-    },
-    {
       "slug": "authentication",
       "title": "Authentication 驗證",
       "sub": "Basic / Session / JWT",
@@ -769,6 +815,15 @@
       "difficulty": "intermediate"
     },
     {
+      "slug": "oauth-sso",
+      "title": "OAuth 2.0 與 SSO",
+      "sub": "Authorization Code / PKCE / 第三方登入",
+      "icon": "🔐",
+      "category": "security",
+      "difficulty": "intermediate",
+      "addedDate": "2026-02-24"
+    },
+    {
       "slug": "server-vs-serverless",
       "title": "Server vs Serverless",
       "sub": "VPS / Lambda / 點樣揀",
@@ -793,15 +848,6 @@
       "difficulty": "advanced"
     },
     {
-      "slug": "oauth-sso",
-      "title": "OAuth 2.0 與 SSO",
-      "sub": "Authorization Code / PKCE / 第三方登入",
-      "icon": "🔐",
-      "category": "security",
-      "difficulty": "intermediate",
-      "addedDate": "2026-02-24"
-    },
-    {
       "slug": "ddos-protection",
       "title": "DDoS 防護",
       "sub": "L3/L4/L7 攻擊 / WAF / Cloudflare",
@@ -817,51 +863,6 @@
       "icon": "🆘",
       "category": "security",
       "difficulty": "advanced",
-      "addedDate": "2026-02-24"
-    },
-    {
-      "slug": "api-design",
-      "title": "API 設計最佳實踐",
-      "sub": "RESTful 規範 / 版本控制 / 錯誤處理",
-      "icon": "📝",
-      "category": "engineering",
-      "difficulty": "beginner",
-      "addedDate": "2026-02-24"
-    },
-    {
-      "slug": "microservices-vs-monolith",
-      "title": "微服務 vs 單體",
-      "sub": "拆分時機 / API Gateway / 分佈式痛點",
-      "icon": "🏗",
-      "category": "engineering",
-      "difficulty": "intermediate",
-      "addedDate": "2026-02-24"
-    },
-    {
-      "slug": "idempotency-patterns",
-      "title": "冪等性設計",
-      "sub": "Idempotency Key / 重試安全 / 狀態機",
-      "icon": "🔁",
-      "category": "engineering",
-      "difficulty": "intermediate",
-      "addedDate": "2026-02-24"
-    },
-    {
-      "slug": "testing-strategy",
-      "title": "測試策略",
-      "sub": "單元 / 整合 / E2E / 測試金字塔",
-      "icon": "🧪",
-      "category": "engineering",
-      "difficulty": "intermediate",
-      "addedDate": "2026-02-24"
-    },
-    {
-      "slug": "twelve-factor-app",
-      "title": "12-Factor App",
-      "sub": "Config / Logging / Disposability",
-      "icon": "📋",
-      "category": "engineering",
-      "difficulty": "intermediate",
       "addedDate": "2026-02-24"
     },
     {

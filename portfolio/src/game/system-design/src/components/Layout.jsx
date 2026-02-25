@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Outlet, useParams, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import ChatWidget from './ChatWidget';
+import LoginNudge from './LoginNudge';
 import topicData from '../data/topics.json';
 
 const DESKTOP_COLLAPSED_KEY = 'sd-desktop-sidebar-collapsed';
@@ -17,6 +18,7 @@ export default function Layout() {
 
   // Track whether navigation was triggered by sidebar click
   const justNavigatedRef = useRef(false);
+  const mainRef = useRef(null);
   const [scrollToSlug, setScrollToSlug] = useState(null);
 
   const toggleDesktopSidebar = useCallback(() => {
@@ -41,9 +43,7 @@ export default function Layout() {
       justNavigatedRef.current = false;
       return;
     }
-    // Direct URL navigation — open sidebar on mobile + trigger scroll
-    const isMobile = window.innerWidth < 1024;
-    if (isMobile) setSidebarOpen(true);
+    // Direct URL navigation — trigger scroll (sidebar stays closed on mobile)
     setScrollToSlug(currentSlug);
   }, [currentSlug]);
 
@@ -90,9 +90,12 @@ export default function Layout() {
       />
 
       {/* Main content */}
-      <main className={`flex-1 overflow-y-auto pt-[52px] ${desktopCollapsed ? '' : 'lg:pt-0'}`}>
+      <main ref={mainRef} className={`flex-1 overflow-y-auto pt-[52px] ${desktopCollapsed ? '' : 'lg:pt-0'}`}>
         <Outlet context={{ filter }} />
       </main>
+
+      {/* Login nudge for non-logged-in users */}
+      <LoginNudge mainRef={mainRef} />
 
       {/* Chat Widget — hidden on coaching page which has its own chat */}
       <ChatWidget
