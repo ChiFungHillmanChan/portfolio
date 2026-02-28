@@ -382,32 +382,13 @@ export default function ChatWidget({ currentTopicSlug, currentTopicTitle, hidden
               </div>
             </div>
 
-            {(() => {
-              const std = PREMIUM_PLANS.standard;
-              return std.comingSoon ? (
-                <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/30 text-text-primary mb-5 opacity-60">
-                  <span>🔓</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-bold">Coming Soon</div>
-                    <div className="text-xs text-text-dim">Premium 訂閱即將推出</div>
-                  </div>
-                </div>
-              ) : (
-                <a
-                  href={std.stripeUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary no-underline mb-5 hover:bg-accent-indigo/20 transition-colors"
-                >
-                  <span>🔓</span>
-                  <div className="flex-1">
-                    <div className="text-sm font-bold">早鳥價優惠 · 鎖定永久存取</div>
-                    <div className="text-xs text-text-dim"><span className="line-through">{formatHKD(std.listPrice)}</span> {formatHKD(std.salePrice)}</div>
-                  </div>
-                  <span className="text-text-dim">&rarr;</span>
-                </a>
-              );
-            })()}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-accent-indigo/10 border border-accent-indigo/30 text-text-primary mb-5">
+              <span>🔓</span>
+              <div className="flex-1">
+                <div className="text-sm font-bold">登入後即可查看升級選項</div>
+                <div className="text-xs text-text-dim">早鳥價優惠 · 永久存取</div>
+              </div>
+            </div>
 
             <GoogleSignInButton />
           </div>

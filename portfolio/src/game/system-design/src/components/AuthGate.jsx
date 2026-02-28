@@ -83,7 +83,7 @@ export default function AuthGate({ onDismiss, requirePremium, featureName }) {
           </p>
         </div>
 
-        {requirePremium && (() => {
+        {requirePremium && user && (() => {
           const standard = PREMIUM_PLANS.standard;
           return standard.comingSoon ? (
             <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-500/10 border border-gray-500/30 text-text-primary mb-5 opacity-60">

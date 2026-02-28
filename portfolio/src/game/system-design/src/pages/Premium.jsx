@@ -219,7 +219,12 @@ export default function Premium() {
             </div>
           </div>
 
-          {standard.comingSoon ? (
+          {!user ? (
+            <div className="w-full flex flex-col items-center gap-2">
+              <p className="text-xs text-text-dim">請先登入再購買</p>
+              <GoogleSignInButton />
+            </div>
+          ) : standard.comingSoon ? (
             <span className="inline-block w-full px-6 py-3 bg-gray-600 text-gray-300 rounded-xl font-semibold text-sm text-center cursor-not-allowed">
               Coming Soon
             </span>
@@ -274,7 +279,12 @@ export default function Premium() {
             </div>
           </div>
 
-          {pro.comingSoon ? (
+          {!user ? (
+            <div className="w-full flex flex-col items-center gap-2">
+              <p className="text-xs text-text-dim">請先登入再購買</p>
+              <GoogleSignInButton />
+            </div>
+          ) : pro.comingSoon ? (
             <span className="inline-block w-full px-6 py-3 bg-gray-600 text-gray-300 rounded-xl font-semibold text-sm text-center cursor-not-allowed">
               Coming Soon
             </span>

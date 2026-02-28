@@ -1,8 +1,11 @@
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import GoogleSignInButton from './GoogleSignInButton';
 import { PREMIUM_PLANS, formatHKD } from '../data/premiumPlans';
 
 export default function PremiumGate() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const standard = PREMIUM_PLANS.standard;
 
   return (
@@ -19,28 +22,35 @@ export default function PremiumGate() {
       <div className="inline-block px-2 py-0.5 rounded bg-accent-green/15 text-accent-green text-[0.65rem] font-semibold mb-1">早鳥價 · 慳 {formatHKD(standard.savings)}</div>
       <p className="text-[0.72rem] text-text-dimmer mb-1">比其他平台平 90%+ · AI 互動 + 廣東話</p>
       <p className="text-[0.65rem] text-text-darkest mb-6">一次性付款 · 永久存取 · 未來將轉月費制</p>
-      <div className="flex gap-3">
-        {standard.comingSoon ? (
-          <span className="px-6 py-3 bg-gray-600 text-gray-300 rounded-lg font-medium text-sm cursor-not-allowed">
-            Coming Soon
-          </span>
-        ) : (
-          <a
-            href={standard.stripeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-lg font-medium text-sm transition-colors"
+      {!user ? (
+        <div className="flex flex-col items-center gap-3">
+          <p className="text-sm text-text-dim">請先登入再購買</p>
+          <GoogleSignInButton />
+        </div>
+      ) : (
+        <div className="flex gap-3">
+          {standard.comingSoon ? (
+            <span className="px-6 py-3 bg-gray-600 text-gray-300 rounded-lg font-medium text-sm cursor-not-allowed">
+              Coming Soon
+            </span>
+          ) : (
+            <a
+              href={standard.stripeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-6 py-3 bg-accent-indigo hover:bg-accent-indigo-hover text-white rounded-lg font-medium text-sm transition-colors"
+            >
+              {standard.ctaText} — {formatHKD(standard.salePrice)}
+            </a>
+          )}
+          <button
+            onClick={() => navigate('/premium')}
+            className="px-6 py-3 bg-transparent border border-border hover:border-border-hover text-text-dim hover:text-text-secondary rounded-lg font-medium text-sm transition-all"
           >
-            {standard.ctaText} — {formatHKD(standard.salePrice)}
-          </a>
-        )}
-        <button
-          onClick={() => navigate('/premium')}
-          className="px-6 py-3 bg-transparent border border-border hover:border-border-hover text-text-dim hover:text-text-secondary rounded-lg font-medium text-sm transition-all"
-        >
-          了解更多
-        </button>
-      </div>
+            了解更多
+          </button>
+        </div>
+      )}
     </div>
   );
 }
