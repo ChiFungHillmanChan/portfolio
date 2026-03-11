@@ -10,12 +10,14 @@ import CacheInvalidation from './CacheInvalidation';
 import CDN from './CDN';
 import ChatSystem from './ChatSystem';
 import ChessGameDesign from './ChessGameDesign';
+import CachingBasics from './CachingBasics';
 import CICDPipeline from './CICDPipeline';
 import CodingAgentDesign from './CodingAgentDesign';
 import CodingInterview from './CodingInterview';
 import DatabaseBasics from './DatabaseBasics';
 import DependencyInjection from './DependencyInjection';
 import Deployment from './Deployment';
+import DeploymentStrategies from './DeploymentStrategies';
 import DistributedCache from './DistributedCache';
 import Docker from './Docker';
 import FixSlowDatabase from './FixSlowDatabase';
@@ -128,6 +130,7 @@ const topicComponents = {
   'authentication': Authentication,
   'backend-roadmap': BackendRoadmap,
   'cache-invalidation': CacheInvalidation,
+  'caching-basics': CachingBasics,
   'cdn': CDN,
   'chat-system': ChatSystem,
   'chess-game-design': ChessGameDesign,
@@ -137,6 +140,7 @@ const topicComponents = {
   'database-basics': DatabaseBasics,
   'dependency-injection': DependencyInjection,
   'deployment': Deployment,
+  'deployment-strategies': DeploymentStrategies,
   'distributed-cache': DistributedCache,
   'docker': Docker,
   'fix-slow-database': FixSlowDatabase,

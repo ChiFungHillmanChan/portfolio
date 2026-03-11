@@ -584,6 +584,15 @@
       "addedDate": "2026-02-24"
     },
     {
+      "slug": "caching-basics",
+      "title": "Caching 快取基礎",
+      "sub": "Browser / CDN / Redis — 點解要 Cache",
+      "icon": "💾",
+      "category": "cache",
+      "difficulty": "beginner",
+      "addedDate": "2026-03-11"
+    },
+    {
       "slug": "cache-invalidation",
       "title": "Cache 失效策略",
       "sub": "TTL / Write Through / Around / Back",
@@ -872,6 +881,15 @@
       "icon": "🚀",
       "category": "deploy",
       "difficulty": "beginner"
+    },
+    {
+      "slug": "deployment-strategies",
+      "title": "部署策略",
+      "sub": "Big Bang / Blue-Green / Canary",
+      "icon": "🎯",
+      "category": "deploy",
+      "difficulty": "intermediate",
+      "addedDate": "2026-03-11"
     },
     {
       "slug": "references",
