@@ -2,6 +2,8 @@ import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 import QuizRenderer from '../components/QuizRenderer';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['AI agent security research', 'Prompt injection attack papers', 'OWASP LLM Top 10'] };
+
 const quizData = [
   {
     question: '「致命三角」（Lethal Trifecta）嘅三個元素係咩？',

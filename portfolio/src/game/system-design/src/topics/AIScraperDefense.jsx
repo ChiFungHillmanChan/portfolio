@@ -2,6 +2,8 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['robots.txt specification', 'Bot detection best practices', 'Honeypot defense patterns'] };
+
 const quizData = [
   {
     question: 'robots.txt 作為防禦 AI scraper 嘅第一道防線，最大嘅局限係咩？',

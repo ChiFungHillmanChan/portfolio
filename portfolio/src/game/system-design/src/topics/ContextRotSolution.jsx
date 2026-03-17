@@ -2,6 +2,8 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['Context window research', 'AI conversation management best practices'] };
+
 const quizData = [
   {
     question: '點解 AI 對話越嚟越長之後，輸出質素會下降？',

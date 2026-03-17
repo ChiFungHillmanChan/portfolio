@@ -2,6 +2,8 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['AI-assisted design thinking', 'System design methodology'] };
+
 const quizData = [
   {
     question: '用 AI 做 Idea Generation 嘅時候，最重要嘅第一步係咩？',

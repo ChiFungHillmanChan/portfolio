@@ -2,6 +2,8 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['Anthropic MCP spec', 'OpenAI Plugin docs', 'MCP community'] };
+
 const quizData = [
   {
     question: 'MCP (Model Context Protocol) 嘅核心定位係咩？',

@@ -72,8 +72,8 @@ function ToolsTab() {
           </thead>
           <tbody>
             <tr>
-              <td style={{ fontWeight: 600, color: '#e2e8f0' }}>GPT-5.2 Codex</td>
-              <td>Multimodal + Agentic coding</td>
+              <td style={{ fontWeight: 600, color: '#e2e8f0' }}>GPT-5.4</td>
+              <td>Multimodal + Agentic + Computer Use</td>
               <td>高階任務成本高</td>
               <td>Debug + 架構草稿</td>
             </tr>
@@ -84,8 +84,8 @@ function ToolsTab() {
               <td>Spec review / 重要決策</td>
             </tr>
             <tr>
-              <td style={{ fontWeight: 600, color: '#e2e8f0' }}>Gemini 3 Pro</td>
-              <td>超長 context、跨文件整理</td>
+              <td style={{ fontWeight: 600, color: '#e2e8f0' }}>Gemini 3.1 Pro</td>
+              <td>超長 context、跨文件整理、推理大幅升級</td>
               <td>推理穩定性因題目而異</td>
               <td>大型文件彙整 / 長文分析</td>
             </tr>
@@ -107,7 +107,7 @@ function ToolsTab() {
 
       <div className="use-case">
         <h4>一條實用規則</h4>
-        <p>平任務用 Flash / DeepSeek，貴任務先升 Opus 或 GPT-5.2，永遠做 model routing。</p>
+        <p>平任務用 Flash / DeepSeek，貴任務先升 Opus 或 GPT-5.4，永遠做 model routing。</p>
       </div>
     </div>
   );

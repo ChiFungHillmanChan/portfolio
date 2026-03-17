@@ -2,6 +2,8 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['Anthropic Claude Code docs', 'Cursor docs', 'OpenClaw GitHub'] };
+
 const quizData = [
   {
     question: 'Coding Agent 嘅核心 loop 係咩？',

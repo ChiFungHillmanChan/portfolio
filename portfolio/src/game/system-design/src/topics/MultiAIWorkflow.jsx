@@ -2,6 +2,8 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['OpenAI pricing', 'Anthropic pricing', 'Google AI pricing', 'DeepSeek API pricing'] };
+
 const quizData = [
   {
     question: 'Multi-AI Pipeline 入面，邊個階段最容易出問題？',
@@ -77,7 +79,7 @@ function OverviewTab() {
           <g transform="translate(170,60)">
             <rect width="130" height="95" rx="14" fill="#1a1d27" stroke="#10B981" strokeWidth="2" filter="url(#glowGreen)" />
             <text x="65" y="25" textAnchor="middle" fill="#10B981" fontSize="13" fontWeight="700">Architecture</text>
-            <text x="65" y="48" textAnchor="middle" fill="#6ee7b7" fontSize="10">GPT-5.2 / Claude</text>
+            <text x="65" y="48" textAnchor="middle" fill="#6ee7b7" fontSize="10">GPT-5.4 / Claude</text>
             <text x="65" y="64" textAnchor="middle" fill="#9ca3af" fontSize="9">推理 + 長 context</text>
             <text x="65" y="80" textAnchor="middle" fill="#9ca3af" fontSize="9">設計 spec + 架構</text>
           </g>
@@ -131,12 +133,16 @@ function OverviewTab() {
 
       <h3 style={{ color: '#e2e8f0', marginTop: 24 }}>工具定位矩陣</h3>
       <ol className="steps">
-        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>文字 AI</strong>：GPT-5.2 Codex（框架設計、brainstorm）、Claude Opus 4.6（長文件分析、1M context API only）、DeepSeek V3.2（預算友好嘅開源替代）、Gemini（多模態、圖片+文字混合輸入）</span></li>
+        <li><span className="step-num">1</span><span><strong style={{ color: '#3B82F6' }}>文字 AI</strong>：GPT-5.4（框架設計、brainstorm）、Claude Opus 4.6（長文件分析、1M context API only）、DeepSeek V3.2（預算友好嘅開源替代）、Gemini（多模態、圖片+文字混合輸入）</span></li>
         <li><span className="step-num">2</span><span><strong style={{ color: '#10B981' }}>搜尋 AI</strong>：Perplexity（即時搜尋 + 引用來源）、Notion AI（團隊知識庫搜尋同整理）</span></li>
         <li><span className="step-num">3</span><span><strong style={{ color: '#F59E0B' }}>開發 AI</strong>：Cursor（IDE 內 AI 編碼、整個 codebase context）、Copilot（行內補全 + 測試生成）、OpenClaw（開源 AI agent、適合自建部署）</span></li>
         <li><span className="step-num">4</span><span><strong style={{ color: '#8B5CF6' }}>設計 AI</strong>：Figma AI（wireframe 同 UI 設計）、Canva（海報、社交媒體、文檔排版）</span></li>
         <li><span className="step-num">5</span><span><strong style={{ color: '#EF4444' }}>自動化</strong>：Zapier / Make（服務串接、workflow 自動化）、LangChain（多模型 orchestration）、MCP（統一 context 協議）。開源方案可以用 Llama 4 做 self-hosted inference</span></li>
       </ol>
+
+      <p style={{ marginTop: 16, fontSize: '0.78rem', color: '#6b7280' }}>
+        Data as of {FACT_CHECK_META.asOf}. Sources: {FACT_CHECK_META.sources.join(' / ')}.
+      </p>
     </div>
   );
 }
@@ -234,7 +240,7 @@ function AIViberTab() {
    - 期望 output format
 
 2. **Architecture 階段**
-   - 用邊個 AI 做系統設計（GPT-5.2 Codex / Claude Opus 4.6 / DeepSeek V3.2 (budget)）
+   - 用邊個 AI 做系統設計（GPT-5.4 / Claude Opus 4.6 / DeepSeek V3.2 (budget)）
    - 需要 feed 咩 context 入去
    - 期望產出：API spec / system diagram / data model
 

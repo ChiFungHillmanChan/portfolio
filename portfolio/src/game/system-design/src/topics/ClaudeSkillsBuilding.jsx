@@ -2,6 +2,8 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['Anthropic Claude Code docs', 'Claude Skills documentation'] };
+
 const relatedTopics = [
   { slug: 'mcp-protocol', label: 'MCP 模型上下文協議' },
   { slug: 'skill-vs-agent', label: 'Skill vs Agent' },

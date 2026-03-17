@@ -2,6 +2,8 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['Anthropic docs', 'AI agent design patterns'] };
+
 const quizData = [
   {
     question: 'Skill 模式同 Agent 模式嘅最核心分別係咩？',

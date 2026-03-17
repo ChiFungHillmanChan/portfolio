@@ -2,11 +2,13 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['DeepSeek docs', 'Meta Llama blog', 'Mistral docs', 'Alibaba Qwen docs'] };
+
 const quizData = [
   {
     question: '以下邊個係開源 AI 相比閉源最大嘅優勢？',
     options: [
-      { text: '推理能力最強', correct: false, explanation: '頂級推理能力仍然係閉源模型（Opus、GPT-5.2）領先，開源約 90-95% 水平。' },
+      { text: '推理能力最強', correct: false, explanation: '頂級推理能力仍然係閉源模型（Opus、GPT-5.4）領先，開源約 90-95% 水平。' },
       { text: '部署最簡單', correct: false, explanation: '開源模型需要 GPU infra 同 DevOps 知識，部署比閉源 API 複雜好多。' },
       { text: '數據私隱保護 + 無供應商鎖定 + 可 fine-tune', correct: true, explanation: '開源 AI 嘅數據留喺你 server、隨時換模型、可以改 architecture 做 fine-tune——呢三個優勢係閉源做唔到嘅。' },
       { text: 'Multimodal 能力最好', correct: false, explanation: '閉源模型嘅 multimodal（尤其 Gemini）仍然領先。' },
@@ -45,7 +47,7 @@ function OverviewTab() {
       <h2>開源 AI 生態圈</h2>
       <div className="subtitle">點解開源 AI 重要？邊個模型最強？點樣自建部署？</div>
       <p>
-        2025-2026 年，開源 AI 經歷咗爆發式增長。DeepSeek V3.2 以 MIT license 提供接近 GPT-5.2 嘅能力，Llama 4 Scout 支援 10M token context，OpenClaw 成為最受歡迎嘅開源 AI agent（183K GitHub stars）。作為工程師，你需要知道<strong style={{ color: '#ef4444' }}>幾時用商業 API、幾時用開源方案</strong>。
+        2025-2026 年，開源 AI 經歷咗爆發式增長。DeepSeek V3.2 以 MIT license 提供接近 GPT-5.4 嘅能力，Llama 4 Scout 支援 10M token context，OpenClaw 成為最受歡迎嘅開源 AI agent（183K GitHub stars）。作為工程師，你需要知道<strong style={{ color: '#ef4444' }}>幾時用商業 API、幾時用開源方案</strong>。
       </p>
       <p>開源 AI 嘅四大優勢：<strong>成本低</strong>（API 定價或自建推理）、<strong>私隱保護</strong>（數據唔離開你嘅 server）、<strong>可自訂</strong>（fine-tune 到你嘅 domain）、<strong>無供應商鎖定</strong>。</p>
 
@@ -84,7 +86,7 @@ function OverviewTab() {
           <rect x="20" y="160" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
           <text x="80" y="179" textAnchor="middle" fill="#e2e8f0" fontSize="10">頂級性能</text>
           <text x="270" y="179" textAnchor="middle" fill="#F59E0B" fontSize="10">接近但仍有差距（~90-95%）</text>
-          <text x="560" y="179" textAnchor="middle" fill="#34d399" fontSize="10">最強（Opus 4.6 / GPT-5.2）</text>
+          <text x="560" y="179" textAnchor="middle" fill="#34d399" fontSize="10">最強（Opus 4.6 / GPT-5.4）</text>
 
           {/* Row 5: Setup */}
           <rect x="20" y="188" width="710" height="28" rx="0" fill="#1a1d27" stroke="#475569" strokeWidth="0.5" />
@@ -201,7 +203,7 @@ function ModelComparisonTab() {
       <div className="key-points">
         <div className="key-point">
           <h4>DeepSeek V3.2 — 性價比之王</h4>
-          <p>MoE 架構用 256 experts，Sparse Attention 技術令長文本處理效率極高。MIT license 意味住你可以用喺任何商業場景。API 定價通常只需 Claude Opus 嘅 1/40-1/60，但 coding 同推理能力接近 GPT-5.2 水平。</p>
+          <p>MoE 架構用 256 experts，Sparse Attention 技術令長文本處理效率極高。MIT license 意味住你可以用喺任何商業場景。API 定價通常只需 Claude Opus 嘅 1/40-1/60，但 coding 同推理能力接近 GPT-5.4 水平。</p>
         </div>
         <div className="key-point">
           <h4>Llama 4 Scout — Context 怪獸</h4>

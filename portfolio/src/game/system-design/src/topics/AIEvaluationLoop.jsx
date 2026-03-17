@@ -2,6 +2,8 @@ import TopicTabs from '../components/TopicTabs';
 import QuizRenderer from '../components/QuizRenderer';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['AI evaluation best practices', 'LLM-as-Judge papers'] };
+
 const quizData = [
   {
     question: '點解「靠感覺」評估 AI 輸出係唔可靠嘅？',

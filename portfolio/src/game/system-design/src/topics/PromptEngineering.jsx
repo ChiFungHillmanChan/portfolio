@@ -2,6 +2,8 @@ import { useState } from 'react';
 import TopicTabs from '../components/TopicTabs';
 import RelatedTopics from '../components/RelatedTopics';
 
+const FACT_CHECK_META = { asOf: '2026-03-17', sources: ['OpenAI docs', 'Anthropic docs', 'Prompt engineering best practices'] };
+
 const quizData = [
   {
     question: '喺 Prompt 四層架構入面，Developer Prompt 嘅主要職責係咩？',
