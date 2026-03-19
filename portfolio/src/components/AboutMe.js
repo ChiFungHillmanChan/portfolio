@@ -43,11 +43,12 @@ const AboutMe = () => {
       start_date: "October 2025",
       end_date: "Present",
       description: [
-        "Develop end-to-end AI solutions spanning image generation, text summarisation, and question-answering for education-focused products.",
-        "Fine-tune large language models to improve accuracy and latency, aligning deliverables with educator requirements.",
-        "Partner with cross-functional teams to translate stakeholder needs into deployable machine learning features."
+        "Built an AI-powered medical research forum platform serving 300+ university and master's students across 8 Hong Kong institutions (including HKU, PolyU, and EdUHK) for medical research collaboration and discussion.",
+        "Developed a local LLM platform with a web-based UI, benchmark testing suite, and a visual agent builder that lets users observe LLM reasoning processes — deployed for Hong Kong secondary schools and students.",
+        "Architected an all-in-one AI platform featuring comic generation, a website builder with auto-deployment, collaborative bug-fixing tools, multiplayer features, and AI persona tutors for interactive student learning.",
+        "Streamlined internal workflows by building automation scripts for project scaffolding, AI usage tracking, and reusable development templates across the engineering team."
       ],
-      skills: ["AI Engineering", "LLM Fine-tuning", "Stakeholder Collaboration", "MLOps"]
+      skills: ["AI Engineering", "LLM", "Full-Stack Development", "Platform Architecture", "Workflow Automation"]
     },
     {
       title: "Programming Tutor",
