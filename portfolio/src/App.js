@@ -39,7 +39,7 @@ const getGameComponentFromHostname = () => {
 
 function App() {
   useEffect(() => {
-    if (process.env.REACT_APP_BUGSPARK_ENABLED === 'true') {
+    if (process.env.REACT_APP_BUGSPARK_ENABLED === 'true' && process.env.NODE_ENV !== 'production') {
       BugSpark.init({
         projectKey: process.env.REACT_APP_BUGSPARK_PROJECT_KEY,
         endpoint: process.env.REACT_APP_BUGSPARK_ENDPOINT,
