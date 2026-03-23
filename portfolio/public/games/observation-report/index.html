@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Observation Report Demo</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh}
+.container{max-width:960px;margin:0 auto;padding:24px}
+h1{font-size:1.5rem;font-weight:700;margin-bottom:4px}
+.subtitle{color:#94a3b8;font-size:.875rem;margin-bottom:24px}
+.card{background:#1e293b;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:16px}
+.card h2{font-size:1rem;font-weight:600;margin-bottom:12px;color:#f1f5f9}
+label{display:block;font-size:.75rem;font-weight:500;color:#94a3b8;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
+input,select,textarea{width:100%;padding:8px 12px;background:#0f172a;border:1px solid #334155;border-radius:8px;color:#e2e8f0;font-size:.875rem;margin-bottom:12px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#6366f1}
+textarea{resize:vertical;min-height:60px}
+.row{display:flex;gap:12px}
+.row>*{flex:1}
+button{padding:10px 20px;border-radius:8px;border:none;font-size:.875rem;font-weight:600;cursor:pointer;transition:all .15s}
+.btn-primary{background:#6366f1;color:#fff}
+.btn-primary:hover{background:#818cf8}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:#334155;color:#e2e8f0}
+.btn-secondary:hover{background:#475569}
+.btn-danger{background:#dc2626;color:#fff}
+.btn-danger:hover{background:#ef4444}
+.btn-sm{padding:6px 12px;font-size:.75rem}
+.actions{display:flex;gap:8px;margin-top:8px}
+.status-bar{padding:12px 16px;border-radius:8px;font-size:.875rem;margin-bottom:12px;display:none}
+.status-bar.info{display:block;background:#1e3a5f;border:1px solid #2563eb;color:#93c5fd}
+.status-bar.error{display:block;background:#3b1111;border:1px solid #dc2626;color:#fca5a5}
+.status-bar.success{display:block;background:#0f2e1a;border:1px solid #16a34a;color:#86efac}
+#log{background:#020617;border:1px solid #1e293b;border-radius:8px;padding:12px;font-family:'SF Mono',Monaco,Consolas,monospace;font-size:.75rem;line-height:1.6;max-height:300px;overflow-y:auto;white-space:pre-wrap;word-break:break-all;margin-top:8px;display:none}
+#stream-output{background:#020617;border:1px solid #1e293b;border-radius:8px;padding:16px;font-size:.875rem;line-height:1.7;max-height:500px;overflow-y:auto;white-space:pre-wrap;word-break:break-word;display:none}
+.step-indicator{display:flex;gap:4px;margin-bottom:16px}
+.step{flex:1;height:4px;border-radius:2px;background:#334155;transition:background .3s}
+.step.active{background:#6366f1}
+.step.done{background:#16a34a}
+.hidden{display:none}
+.tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.7rem;font-weight:600;margin-left:8px}
+.tag-stream{background:#6366f120;color:#818cf8;border:1px solid #6366f140}
+.tag-poll{background:#f59e0b20;color:#fbbf24;border:1px solid #f59e0b40}
+.file-info{font-size:.75rem;color:#94a3b8;margin-bottom:12px}
+.progress-bar{width:100%;height:6px;background:#334155;border-radius:3px;overflow:hidden;margin-bottom:8px;display:none}
+.progress-fill{height:100%;background:#6366f1;border-radius:3px;transition:width .3s}
+.config-summary{font-size:.75rem;color:#64748b;margin-top:8px;padding:8px;background:#0f172a;border-radius:6px}
+hr{border:none;border-top:1px solid #334155;margin:16px 0}
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Evoke Square API Demo</h1>
+  <p class="subtitle">Pure API key demo &mdash; same endpoints any platform would call</p>
+
+  <!-- Step indicator -->
+  <div class="step-indicator">
+    <div class="step" id="step-1"></div>
+    <div class="step" id="step-2"></div>
+    <div class="step" id="step-3"></div>
+    <div class="step" id="step-4"></div>
+  </div>
+
+  <div id="status" class="status-bar"></div>
+
+  <!-- 1. Config -->
+  <div class="card" id="card-config">
+    <h2>1. API Configuration</h2>
+    <label>API Base URL</label>
+    <input id="baseUrl" placeholder="https://your-evoke-instance.com" />
+    <label>API Key (Bearer token)</label>
+    <input id="apiKey" type="password" placeholder="evk_live_xxxx_xxxx or evk_test_xxxx_xxxx" />
+    <div class="actions">
+      <button class="btn-primary" onclick="testConnection()">Test Connection</button>
+    </div>
+  </div>
+
+  <!-- 2. Upload -->
+  <div class="card" id="card-upload">
+    <h2>2. Upload Video</h2>
+    <label>Select video file</label>
+    <input id="videoFile" type="file" accept=".mp4,.mov,.avi,.mpeg,.webm,.wmv,.3gpp" />
+    <div class="file-info" id="fileInfo"></div>
+    <div class="progress-bar" id="uploadProgress"><div class="progress-fill" id="uploadFill"></div></div>
+    <div class="actions">
+      <button class="btn-primary" onclick="uploadVideo()" id="btnUpload">Upload to Blob</button>
+    </div>
+  </div>
+
+  <!-- 3. Analysis config -->
+  <div class="card" id="card-analysis">
+    <h2>3. Configure Analysis</h2>
+    <div class="row">
+      <div>
+        <label>Mode</label>
+        <select id="mode">
+          <option value="preset">Preset</option>
+          <option value="custom">Custom Prompt</option>
+        </select>
+      </div>
+      <div id="presetGroup">
+        <label>Preset</label>
+        <select id="preset">
+          <option value="observation">Observation</option>
+          <option value="general">General</option>
+        </select>
+      </div>
+    </div>
+    <div id="promptGroup" class="hidden">
+      <label>Custom Prompt</label>
+      <textarea id="customPrompt" rows="3" placeholder="Analyse this classroom video focusing on..."></textarea>
+    </div>
+    <div class="row">
+      <div>
+        <label>Response Type</label>
+        <select id="responseType">
+          <option value="docs">Docs (structured)</option>
+          <option value="text">Text (markdown)</option>
+          <option value="json">JSON</option>
+        </select>
+      </div>
+      <div>
+        <label>RAG Mode</label>
+        <select id="ragMode">
+          <option value="all">All layers</option>
+          <option value="global">Global only</option>
+          <option value="school">School only</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Output Language</label>
+        <select id="outputLang">
+          <option value="en">English</option>
+          <option value="zh-TW">Chinese (Traditional)</option>
+        </select>
+      </div>
+      <div>
+        <label>Delivery</label>
+        <select id="delivery">
+          <option value="stream">Stream (SSE)</option>
+          <option value="poll">Queue + Poll</option>
+        </select>
+      </div>
+    </div>
+    <hr />
+    <h2>Video Config (optional)</h2>
+    <div class="row">
+      <div>
+        <label>FPS (0.1 &ndash; 24)</label>
+        <input id="fps" type="number" value="1" min="0.1" max="24" step="0.1" />
+      </div>
+      <div>
+        <label>Resolution</label>
+        <select id="resolution">
+          <option value="medium">Medium</option>
+          <option value="low">Low</option>
+          <option value="high">High</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Start Offset (e.g. 40s)</label>
+        <input id="startOffset" placeholder="optional" />
+      </div>
+      <div>
+        <label>End Offset (e.g. 120s)</label>
+        <input id="endOffset" placeholder="optional" />
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn-primary" onclick="submitAnalysis()" id="btnSubmit">Submit Analysis</button>
+    </div>
+  </div>
+
+  <!-- 4. Results -->
+  <div class="card" id="card-results">
+    <h2>4. Results <span class="tag hidden" id="tagStream">STREAM</span><span class="tag hidden" id="tagPoll">POLL</span></h2>
+    <div id="stream-output"></div>
+    <div class="actions" id="resultActions" style="display:none">
+      <button class="btn-secondary btn-sm" onclick="copyResult()">Copy</button>
+      <button class="btn-danger btn-sm" onclick="resetAll()">Reset</button>
+    </div>
+  </div>
+
+  <!-- Log -->
+  <div class="card">
+    <h2>API Log</h2>
+    <div class="actions" style="margin-bottom:8px">
+      <button class="btn-secondary btn-sm" onclick="clearLog()">Clear</button>
+    </div>
+    <pre id="log"></pre>
+  </div>
+</div>
+
+<script>
+// State
+let blobUrl = '';
+let jobId = '';
+let fullResult = '';
+
+// Helpers
+const $ = (id) => document.getElementById(id);
+const log = (msg) => { const el = $('log'); el.style.display = 'block'; el.textContent += `[${new Date().toLocaleTimeString()}] ${msg}\n`; el.scrollTop = el.scrollHeight; };
+const clearLog = () => { $('log').textContent = ''; $('log').style.display = 'none'; };
+
+function setStatus(type, msg) {
+  const el = $('status');
+  el.className = `status-bar ${type}`;
+  el.textContent = msg;
+}
+
+function setStep(n) {
+  for (let i = 1; i <= 4; i++) {
+    const el = $(`step-${i}`);
+    el.className = i < n ? 'step done' : i === n ? 'step active' : 'step';
+  }
+}
+
+function getHeaders() {
+  return { 'Authorization': `Bearer ${$('apiKey').value.trim()}`, 'Content-Type': 'application/json' };
+}
+
+function getBase() { return $('baseUrl').value.trim().replace(/\/$/, ''); }
+
+// Toggle preset / custom prompt
+$('mode').addEventListener('change', () => {
+  const isCustom = $('mode').value === 'custom';
+  $('presetGroup').classList.toggle('hidden', isCustom);
+  $('promptGroup').classList.toggle('hidden', !isCustom);
+});
+
+// File info display
+$('videoFile').addEventListener('change', () => {
+  const file = $('videoFile').files[0];
+  if (file) {
+    const sizeMB = (file.size / 1024 / 1024).toFixed(1);
+    $('fileInfo').textContent = `${file.name} (${sizeMB} MB)`;
+  }
+});
+
+// 1. Test connection
+async function testConnection() {
+  const base = getBase();
+  if (!base || !$('apiKey').value.trim()) { setStatus('error', 'Enter base URL and API key'); return; }
+  log(`GET ${base}/api/v1/analysis/test-ping (checking auth...)`);
+  setStatus('info', 'Testing connection...');
+  try {
+    // Use a fake job ID to test auth — expect 404 = auth works, 401/403 = bad key
+    const res = await fetch(`${base}/api/v1/analysis/nonexistent-test`, { headers: getHeaders() });
+    log(`Response: ${res.status}`);
+    if (res.status === 404) {
+      setStatus('success', 'Connected and authenticated (API key valid)');
+      setStep(1);
+    } else if (res.status === 401 || res.status === 403) {
+      const body = await res.json().catch(() => ({}));
+      setStatus('error', `Auth failed: ${body?.error?.message ?? res.status}`);
+    } else {
+      setStatus('success', `Connection OK (status ${res.status})`);
+      setStep(1);
+    }
+  } catch (e) {
+    log(`Error: ${e.message}`);
+    setStatus('error', `Connection failed: ${e.message}`);
+  }
+}
+
+// 2. Upload video
+async function uploadVideo() {
+  const file = $('videoFile').files[0];
+  if (!file) { setStatus('error', 'Select a video file first'); return; }
+
+  const base = getBase();
+  $('btnUpload').disabled = true;
+  setStatus('info', 'Step 1/2: Getting upload URL...');
+  setStep(2);
+
+  try {
+    // Get SAS URL
+    const ext = file.name.split('.').pop().toLowerCase();
+    const mimeMap = { mp4:'video/mp4', mov:'video/quicktime', avi:'video/x-msvideo', mpeg:'video/mpeg', webm:'video/webm', wmv:'video/x-ms-wmv', '3gpp':'video/3gpp' };
+    const contentType = mimeMap[ext] || 'video/mp4';
+
+    log(`POST ${base}/api/v1/uploads/video`);
+    log(`  body: { fileName: "${file.name}", contentType: "${contentType}" }`);
+
+    const urlRes = await fetch(`${base}/api/v1/uploads/video`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({ fileName: file.name, contentType }),
+    });
+
+    const urlData = await urlRes.json();
+    log(`Response ${urlRes.status}: ${JSON.stringify(urlData).slice(0, 200)}`);
+
+    if (!urlRes.ok || !urlData.data?.sasUrl) {
+      throw new Error(urlData.error?.message ?? 'Failed to get upload URL');
+    }
+
+    blobUrl = urlData.data.blobUrl;
+
+    // Upload via XHR for progress
+    setStatus('info', 'Step 2/2: Uploading to blob storage...');
+    $('uploadProgress').style.display = 'block';
+    log(`PUT ${blobUrl.split('?')[0]} (uploading ${(file.size/1024/1024).toFixed(1)} MB)`);
+
+    await new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          const pct = Math.round((e.loaded / e.total) * 100);
+          $('uploadFill').style.width = pct + '%';
+          if (pct % 20 === 0) log(`Upload progress: ${pct}%`);
+        }
+      };
+      xhr.onload = () => xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`));
+      xhr.onerror = () => reject(new Error('Upload network error'));
+      xhr.open('PUT', urlData.data.sasUrl);
+      xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+      xhr.setRequestHeader('Content-Type', contentType);
+      xhr.send(file);
+    });
+
+    log(`Upload complete. Blob URL: ${blobUrl}`);
+    setStatus('success', 'Video uploaded successfully');
+    setStep(2);
+  } catch (e) {
+    log(`Upload error: ${e.message}`);
+    setStatus('error', e.message);
+  } finally {
+    $('btnUpload').disabled = false;
+  }
+}
+
+// 3. Submit analysis
+async function submitAnalysis() {
+  if (!blobUrl) { setStatus('error', 'Upload a video first'); return; }
+  const base = getBase();
+  const isStream = $('delivery').value === 'stream';
+  const isCustom = $('mode').value === 'custom';
+
+  // Build request body
+  const body = {
+    video_uri: blobUrl,
+    response_type: $('responseType').value,
+    rag: $('ragMode').value,
+    output_language: $('outputLang').value,
+    stream: isStream,
+    video_config: {
+      fps: parseFloat($('fps').value) || 1,
+      resolution: $('resolution').value,
+    },
+  };
+
+  if (isCustom) {
+    body.prompt = $('customPrompt').value.trim();
+  } else {
+    body.preset = $('preset').value;
+  }
+
+  const startOff = $('startOffset').value.trim();
+  const endOff = $('endOffset').value.trim();
+  if (startOff) body.video_config.start_offset = startOff;
+  if (endOff) body.video_config.end_offset = endOff;
+
+  $('btnSubmit').disabled = true;
+  setStep(3);
+
+  const outputEl = $('stream-output');
+  outputEl.style.display = 'block';
+  outputEl.textContent = '';
+  fullResult = '';
+
+  log(`POST ${base}/api/v1/analysis`);
+  log(`  body: ${JSON.stringify(body, null, 2)}`);
+
+  try {
+    const res = await fetch(`${base}/api/v1/analysis`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error?.message ?? `HTTP ${res.status}`);
+    }
+
+    if (isStream && res.headers.get('content-type')?.includes('text/event-stream')) {
+      // SSE stream
+      $('tagStream').classList.remove('hidden');
+      setStatus('info', 'Streaming analysis...');
+      jobId = res.headers.get('X-Job-Id') || '';
+      if (jobId) log(`Job ID (from header): ${jobId}`);
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop();
+
+        for (const part of parts) {
+          if (!part.trim() || part.trim().startsWith(': heartbeat')) continue;
+
+          let eventType = 'message';
+          let dataStr = '';
+          for (const line of part.split('\n')) {
+            if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+            else if (line.startsWith('data: ')) dataStr = line.slice(6);
+          }
+
+          if (!dataStr) continue;
+
+          try {
+            const data = JSON.parse(dataStr);
+
+            if (eventType === 'stage') {
+              log(`[stage] ${data.stage}: ${data.message}`);
+              setStatus('info', data.message);
+            } else if (eventType === 'chunk') {
+              outputEl.textContent += data.text;
+              fullResult += data.text;
+              outputEl.scrollTop = outputEl.scrollHeight;
+            } else if (eventType === 'done') {
+              log(`[done] Job ${data.job_id} completed`);
+              jobId = data.job_id;
+              if (data.response) {
+                const formatted = typeof data.response === 'string' ? data.response : JSON.stringify(data.response, null, 2);
+                if (!fullResult) {
+                  outputEl.textContent = formatted;
+                  fullResult = formatted;
+                }
+              }
+              setStatus('success', 'Analysis complete');
+              setStep(4);
+              $('resultActions').style.display = 'flex';
+            } else if (eventType === 'error') {
+              throw new Error(data.message || 'Stream error');
+            }
+          } catch (parseErr) {
+            if (parseErr.message !== 'Stream error' && !parseErr.message.includes('error')) {
+              log(`[parse warning] ${parseErr.message}`);
+            } else {
+              throw parseErr;
+            }
+          }
+        }
+      }
+    } else {
+      // Poll mode
+      $('tagPoll').classList.remove('hidden');
+      const data = await res.json();
+      jobId = data.data?.job_id;
+      log(`Job created: ${jobId} (status: ${data.data?.status})`);
+      setStatus('info', `Job ${jobId} queued. Polling...`);
+      await pollJob(jobId);
+    }
+  } catch (e) {
+    log(`Analysis error: ${e.message}`);
+    setStatus('error', e.message);
+  } finally {
+    $('btnSubmit').disabled = false;
+  }
+}
+
+// Polling
+async function pollJob(id) {
+  const base = getBase();
+  const maxAttempts = 120;
+
+  for (let i = 0; i < maxAttempts; i++) {
+    await new Promise((r) => setTimeout(r, 5000));
+    log(`GET ${base}/api/v1/analysis/${id} (poll #${i + 1})`);
+
+    try {
+      const res = await fetch(`${base}/api/v1/analysis/${id}`, { headers: getHeaders() });
+      const data = await res.json();
+      const job = data.data;
+
+      if (!job) { log('No data in response'); continue; }
+
+      if (job.status === 'queued' || job.status === 'processing') {
+        const wait = job.estimated_wait_seconds ? ` (~${job.estimated_wait_seconds}s remaining)` : '';
+        setStatus('info', `Status: ${job.status}${wait}`);
+        log(`Status: ${job.status}${wait}`);
+        continue;
+      }
+
+      if (job.status === 'completed') {
+        const result = job.response ?? job.report;
+        const formatted = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+        $('stream-output').style.display = 'block';
+        $('stream-output').textContent = formatted;
+        fullResult = formatted;
+        setStatus('success', 'Analysis complete');
+        setStep(4);
+        $('resultActions').style.display = 'flex';
+        log(`Job completed. Response type: ${job.response_type ?? 'legacy'}`);
+        return;
+      }
+
+      if (job.status === 'failed') {
+        const errMsg = data.error?.message ?? 'Job failed';
+        throw new Error(errMsg);
+      }
+    } catch (e) {
+      log(`Poll error: ${e.message}`);
+      setStatus('error', e.message);
+      return;
+    }
+  }
+
+  setStatus('error', 'Polling timed out after 10 minutes');
+}
+
+// Utilities
+function copyResult() {
+  navigator.clipboard.writeText(fullResult).then(() => setStatus('success', 'Copied to clipboard'));
+}
+
+function resetAll() {
+  blobUrl = '';
+  jobId = '';
+  fullResult = '';
+  $('stream-output').textContent = '';
+  $('stream-output').style.display = 'none';
+  $('uploadFill').style.width = '0%';
+  $('uploadProgress').style.display = 'none';
+  $('fileInfo').textContent = '';
+  $('videoFile').value = '';
+  $('tagStream').classList.add('hidden');
+  $('tagPoll').classList.add('hidden');
+  $('resultActions').style.display = 'none';
+  setStep(0);
+  setStatus('info', 'Reset. Ready for new analysis.');
+}
+
+// Init: load saved credentials from localStorage
+(function init() {
+  const savedKey = localStorage.getItem('evoke_api_key') || '';
+  const savedUrl = localStorage.getItem('evoke_base_url') || '';
+  if (savedKey) $('apiKey').value = savedKey;
+  if (savedUrl) $('baseUrl').value = savedUrl;
+})();
+
+// Persist credentials to localStorage on change
+$('apiKey').addEventListener('change', () => {
+  const v = $('apiKey').value.trim();
+  if (v) localStorage.setItem('evoke_api_key', v);
+  else localStorage.removeItem('evoke_api_key');
+});
+$('baseUrl').addEventListener('change', () => {
+  const v = $('baseUrl').value.trim();
+  if (v) localStorage.setItem('evoke_base_url', v);
+  else localStorage.removeItem('evoke_base_url');
+});
+</script>
+</body>
+</html>
