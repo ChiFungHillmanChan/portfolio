@@ -16,6 +16,7 @@ import PromptHunterGame from './game/prompt-hunter/PromptHunterGame';
 import CardGame from './game/card-game/CardGame';
 import CasinoGame from './game/casino-game/CasinoGame';
 import SystemDesignGame from './game/system-design/SystemDesignGame';
+import Connect4Game from './game/connect4/Connect4Game';
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
@@ -23,6 +24,7 @@ const GAME_SUBDOMAIN_COMPONENTS = {
   'card-game': CardGame,
   'casino-game': CasinoGame,
   'system-design': SystemDesignGame,
+  'connect4': Connect4Game,
 };
 
 const getGameComponentFromHostname = () => {
@@ -62,6 +64,7 @@ function App() {
         <Route path="/card-game" element={<CardGame />} />
         <Route path="/casino-game" element={<CasinoGame />} />
         <Route path="/system-design" element={<SystemDesignGame />} />
+        <Route path="/connect4" element={<Connect4Game />} />
 
         {/* Your existing routes with Layout */}
         <Route element={<Layout />}>
