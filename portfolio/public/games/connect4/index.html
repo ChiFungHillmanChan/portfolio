@@ -278,13 +278,16 @@
 
 <script type="module">
 // ============================================================
-// FIREBASE (leaderboard) — graceful if offline or blocked
+// FIREBASE (leaderboard) — graceful if offline, blocked, or auth disabled.
+// Reads (leaderboard viewing) work with firestoreReady.
+// Writes (submissions) require firebaseReady (needs anonymous auth).
 // ============================================================
-let firebaseReady = false;
+let firestoreReady = false;  // can query / onSnapshot leaderboard
+let firebaseReady = false;   // can also write (anonymous auth succeeded)
 let db = null;
 let auth = null;
 let lbCol = null;
-let fbApi = null;   // holds { addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp }
+let fbApi = null;
 
 (async () => {
   try {
@@ -313,13 +316,16 @@ let fbApi = null;   // holds { addDoc, query, where, orderBy, limit, onSnapshot,
       onSnapshot: firestoreMod.onSnapshot,
       serverTimestamp: firestoreMod.serverTimestamp,
     };
-    await authMod.signInAnonymously(auth);
-    firebaseReady = true;
+    firestoreReady = true;   // reads OK from here
+    try {
+      await authMod.signInAnonymously(auth);
+      firebaseReady = true;
+    } catch (authErr) {
+      console.warn('[c4] anon auth unavailable — read-only:', authErr.message);
+    }
     document.dispatchEvent(new CustomEvent('c4-lb-ready'));
   } catch (err) {
-    console.warn('[c4] leaderboard disabled:', err.message);
-    const btn = document.getElementById('hof-btn');
-    if (btn) btn.setAttribute('hidden', '');
+    console.warn('[c4] firebase init failed — leaderboard offline:', err.message);
   }
 })();
 
@@ -884,7 +890,7 @@ function renderList(entries) {
 
 function subscribeTab(mode) {
   if (currentUnsub) { currentUnsub(); currentUnsub = null; }
-  if (!firebaseReady) { hofStatus.innerHTML = 'Leaderboard offline'; return; }
+  if (!firestoreReady) { hofStatus.innerHTML = 'Leaderboard offline'; return; }
   hofStatus.innerHTML = '<span class="dot"></span>Live · Verifying entries…';
   const q = fbApi.query(
     lbCol,
