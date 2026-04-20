@@ -90,7 +90,7 @@
   .seg button:hover:not(.active) { color: var(--ink); background: rgba(255,255,255,0.03); }
   .seg button.active { background: var(--ink); color: var(--bg); font-weight: 600; }
   .seg button:not(:last-child) { border-right: 1px solid rgba(255,255,255,0.1); }
-  .actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 4px; }
+  .actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 4px; }
   .btn { background: transparent; border: 1px solid rgba(255,255,255,0.15); color: var(--ink); padding: 14px; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; cursor: pointer; border-radius: 4px; transition: all 0.2s ease; }
   .btn:hover { background: var(--ink); color: var(--bg); border-color: var(--ink); }
   .btn.primary { background: var(--p1); border-color: var(--p1); color: var(--ink); font-weight: 600; }
@@ -152,13 +152,60 @@
 
   <div class="actions">
     <button class="btn" id="undo-btn">↶ Undo</button>
+    <button class="btn" id="hof-btn">🏆 Hall of Fame</button>
     <button class="btn primary" id="new-btn">New Game</button>
   </div>
 
   <footer>BITBOARDS · NEGAMAX · α-β PRUNING · OPENING BOOK</footer>
 </div>
 
-<script>
+<script type="module">
+// ============================================================
+// FIREBASE (leaderboard) — graceful if offline or blocked
+// ============================================================
+let firebaseReady = false;
+let db = null;
+let auth = null;
+let lbCol = null;
+let fbApi = null;   // holds { addDoc, query, where, orderBy, limit, onSnapshot, serverTimestamp }
+
+(async () => {
+  try {
+    const [{ initializeApp }, firestoreMod, authMod] = await Promise.all([
+      import("https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js"),
+      import("https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js"),
+      import("https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js"),
+    ]);
+    const app = initializeApp({
+      apiKey: "AIzaSyC2wBCjM1c8bX8VQP4vQbE_q-KoBrRY_vc",
+      authDomain: "system-design-c84d3.firebaseapp.com",
+      projectId: "system-design-c84d3",
+      storageBucket: "system-design-c84d3.firebasestorage.app",
+      messagingSenderId: "547168317115",
+      appId: "1:547168317115:web:f5130cde873096b7f3839e"
+    });
+    db = firestoreMod.getFirestore(app);
+    auth = authMod.getAuth(app);
+    lbCol = firestoreMod.collection(db, 'connect4Leaderboard');
+    fbApi = {
+      addDoc: firestoreMod.addDoc,
+      query: firestoreMod.query,
+      where: firestoreMod.where,
+      orderBy: firestoreMod.orderBy,
+      limit: firestoreMod.limit,
+      onSnapshot: firestoreMod.onSnapshot,
+      serverTimestamp: firestoreMod.serverTimestamp,
+    };
+    await authMod.signInAnonymously(auth);
+    firebaseReady = true;
+    document.dispatchEvent(new CustomEvent('c4-lb-ready'));
+  } catch (err) {
+    console.warn('[c4] leaderboard disabled:', err.message);
+    const btn = document.getElementById('hof-btn');
+    if (btn) btn.setAttribute('hidden', '');
+  }
+})();
+
 // ============================================================
 // CONNECT 4 ENGINE — bitboard + negamax + α-β + opening book
 // ============================================================
