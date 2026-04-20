@@ -471,6 +471,43 @@ function findBestMove(pos, maxDepth, useBook) {
 }
 
 // ============================================================
+// REPLAY VALIDATION — re-simulate a submission vs our engine
+// Returns true iff the moves produce a legitimate human win.
+// ============================================================
+function validateSubmission(entry) {
+  try {
+    if (!Array.isArray(entry.moves)) return false;
+    if (entry.moves.length !== entry.steps) return false;
+    if (entry.difficulty !== 'impossible') return false;
+    if (entry.mode !== 'human-first' && entry.mode !== 'ai-first') return false;
+
+    const p = new Position();
+    let turn = entry.mode === 'human-first' ? 'human' : 'ai';
+    for (let i = 0; i < entry.moves.length; i++) {
+      const col = entry.moves[i];
+      if (!Number.isInteger(col) || col < 0 || col >= COLS) return false;
+      if (!p.canPlay(col)) return false;
+
+      if (turn === 'ai') {
+        const expected = findBestMove(p, 14, entry.mode === 'ai-first');
+        if (col !== expected) return false;
+      }
+      p.play(col);
+
+      const justMoved = p.mask ^ p.current;
+      if (Position.hasFourInARow(justMoved)) {
+        return i === entry.moves.length - 1 && turn === 'human';
+      }
+      turn = turn === 'human' ? 'ai' : 'human';
+    }
+    return false;
+  } catch (err) {
+    console.warn('[c4] replay error:', err);
+    return false;
+  }
+}
+
+// ============================================================
 // UI
 // ============================================================
 const boardEl = document.getElementById('board');
