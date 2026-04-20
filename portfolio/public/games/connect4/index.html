@@ -140,13 +140,36 @@
   .hof-status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--win); box-shadow: 0 0 8px var(--win); margin-right: 6px; vertical-align: middle; animation: pulse-dot 1.5s ease-in-out infinite; }
   @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 
+  /* RESULT POPUP */
+  .result-card { text-align: center; max-width: 360px; }
+  .result-icon { font-size: 64px; margin-bottom: 4px; animation: resultPop 0.6s cubic-bezier(.34,1.56,.64,1); }
+  .result-title { font-family: 'Fraunces', serif; font-style: italic; font-weight: 900; font-size: 40px; letter-spacing: -0.02em; margin-bottom: 6px; }
+  .result-title.win { color: var(--win); text-shadow: 0 0 30px rgba(127,216,164,0.5); }
+  .result-title.loss { color: var(--p2); text-shadow: 0 0 30px rgba(244,197,66,0.5); }
+  .result-title.draw { color: var(--accent); }
+  .result-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 22px; }
+  .result-actions { grid-template-columns: 1fr 1fr; }
+  @keyframes resultPop {
+    0% { transform: scale(0.3) rotate(-15deg); opacity: 0; }
+    60% { transform: scale(1.15) rotate(5deg); opacity: 1; }
+    100% { transform: scale(1) rotate(0); opacity: 1; }
+  }
+
   /* SCREEN SYSTEM */
   .screen { display: flex; flex-direction: column; gap: 20px; width: 100%; }
   .screen.hidden { display: none; }
 
+  .tagline { font-family: 'Fraunces', serif; font-style: italic; font-size: 14px; color: var(--ink-dim); margin-top: 14px; max-width: 420px; margin-left: auto; margin-right: auto; line-height: 1.5; }
+  .tagline strong { color: var(--p1-glow); font-weight: 600; font-style: normal; }
+  .tagline em { color: var(--p2); font-weight: 600; }
+  .accent-word { color: var(--p2); font-weight: 600; font-style: normal; }
+
   .home-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
   .home-primary { padding: 18px; font-size: 13px; letter-spacing: 0.2em; min-height: 56px; }
-  .home-secondary { padding: 16px; min-height: 52px; }
+
+  .home-hof { background: linear-gradient(145deg, var(--grid-light), var(--grid)); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 18px 16px; margin-top: 8px; }
+  .home-hof-head { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+  .home-hof-title { font-family: 'Fraunces', serif; font-style: italic; font-size: 20px; font-weight: 900; color: var(--win); text-align: center; }
 
   .game-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0; }
   .game-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); letter-spacing: 0.15em; text-transform: uppercase; text-align: right; }
@@ -175,6 +198,11 @@
     .hof-row { grid-template-columns: 26px 1fr auto; gap: 8px; padding: 9px 10px; font-size: 11px; }
     .hof-row .hof-date { display: none; }
     .game-title { font-size: 10px; letter-spacing: 0.12em; }
+    .tagline { font-size: 13px; }
+    .result-icon { font-size: 56px; }
+    .result-title { font-size: 34px; }
+    .home-hof { padding: 14px 12px; }
+    .home-hof-title { font-size: 18px; }
   }
 </style>
 </head>
@@ -184,7 +212,8 @@
     <header>
       <div class="eyebrow">— est. 1974 · solved 1988 —</div>
       <h1>Connect <span class="amp">&</span> Four</h1>
-      <div class="subtitle">you vs. the algorithm</div>
+      <div class="subtitle">the <span class="accent-word">Impossible</span> version — the hardest</div>
+      <div class="tagline">If the machine moves first, you have a <strong>99.99%</strong> chance of losing. <em>Challenge me?</em></div>
     </header>
 
     <div class="controls">
@@ -198,17 +227,26 @@
       <div class="control-group">
         <div class="control-label">difficulty</div>
         <div class="seg" id="diff-seg">
-          <button data-diff="3">Easy</button>
-          <button data-diff="6">Medium</button>
-          <button data-diff="10">Hard</button>
-          <button data-diff="14" class="active">Impossible</button>
+          <button data-diff="3">Try Game</button>
+          <button data-diff="14" class="active">Challenge</button>
         </div>
       </div>
     </div>
 
     <div class="home-actions">
       <button class="btn primary home-primary" id="start-btn">Start Game ▶</button>
-      <button class="btn home-secondary" id="hof-btn">🏆 Hall of Fame</button>
+    </div>
+
+    <div class="home-hof">
+      <div class="home-hof-head">
+        <div class="home-hof-title">🏆 Hall of Fame</div>
+        <div class="hof-tabs">
+          <button class="hof-tab active" data-tab="human-first">Human First</button>
+          <button class="hof-tab" data-tab="ai-first">Machine First</button>
+        </div>
+      </div>
+      <div class="hof-list" id="hof-list"></div>
+      <div class="hof-status" id="hof-status"><span class="dot"></span>Live · Loading…</div>
     </div>
 
     <footer>BITBOARDS · NEGAMAX · α-β PRUNING · OPENING BOOK</footer>
@@ -239,9 +277,6 @@
       <div class="board" id="board"></div>
     </div>
 
-    <div class="game-actions">
-      <button class="btn primary" id="new-btn">New Game</button>
-    </div>
   </section>
 </div>
 
@@ -261,18 +296,15 @@
   </div>
 </div>
 
-<div class="overlay" id="hof-overlay" hidden>
-  <div class="hof-card">
-    <div class="hof-head">
-      <div class="hof-title">Hall of Fame</div>
-      <button class="hof-close" id="hof-close" aria-label="Close">✕</button>
+<div class="modal" id="result-modal" hidden>
+  <div class="modal-card result-card">
+    <div class="result-icon" id="result-icon">🏆</div>
+    <div class="result-title" id="result-title">YOU WIN</div>
+    <div class="result-sub" id="result-sub">Connected four</div>
+    <div class="modal-actions result-actions">
+      <button class="btn" id="result-view">View Board</button>
+      <button class="btn primary" id="result-menu">Back to Menu</button>
     </div>
-    <div class="hof-tabs">
-      <button class="hof-tab active" data-tab="human-first">Human First</button>
-      <button class="hof-tab" data-tab="ai-first">Machine First</button>
-    </div>
-    <div class="hof-list" id="hof-list"></div>
-    <div class="hof-status" id="hof-status"><span class="dot"></span>Live · Loading…</div>
   </div>
 </div>
 
@@ -339,6 +371,23 @@ const SIZE = ROWS * COLS;       // 42
 const COL_ORDER = [3, 2, 4, 1, 5, 0, 6];
 const WIN_SCORE = 100000;
 
+// Pre-cached BigInts — eliminates per-call allocation in hot paths.
+const B_H1 = BigInt(H1);                 // 7n
+const B_2H1 = BigInt(2 * H1);            // 14n
+const B_H1M1 = BigInt(H1 - 1);           // 6n
+const B_2H1M1 = BigInt(2 * (H1 - 1));    // 12n
+const B_H1P1 = BigInt(H1 + 1);           // 8n
+const B_2H1P1 = BigInt(2 * (H1 + 1));    // 16n
+const B_ROWS_MASK = (1n << BigInt(ROWS)) - 1n;   // 63n
+const COL_SHIFT = [0,1,2,3,4,5,6].map(c => BigInt(c * H1));
+const COL_BOTTOM = [0,1,2,3,4,5,6].map(c => 1n << COL_SHIFT[c]);
+const COL_TOP = [0,1,2,3,4,5,6].map(c => 1n << BigInt(c * H1 + ROWS - 1));
+
+// Mobile detection — coarse pointer = likely touch device with weaker CPU.
+const IS_MOBILE = typeof window !== 'undefined'
+  && (window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 1);
+const AI_TIME_BUDGET_MS = IS_MOBILE ? 1500 : 3500;
+
 class Position {
   constructor() {
     this.current = 0n;
@@ -357,16 +406,15 @@ class Position {
   }
 
   canPlay(col) {
-    const topBit = 1n << BigInt(col * H1 + ROWS - 1);
-    return (this.mask & topBit) === 0n;
+    return (this.mask & COL_TOP[col]) === 0n;
   }
 
   play(col) {
-    const newMask = this.mask | (this.mask + (1n << BigInt(col * H1)));
+    const newMask = this.mask | (this.mask + COL_BOTTOM[col]);
     this.current ^= this.mask;
     this.mask = newMask;
     this.moves++;
-    const colBits = (this.mask >> BigInt(col * H1)) & ((1n << BigInt(ROWS)) - 1n);
+    const colBits = (this.mask >> COL_SHIFT[col]) & B_ROWS_MASK;
     let row = -1;
     let b = colBits;
     while (b) { row++; b >>= 1n; }
@@ -378,10 +426,10 @@ class Position {
     if (this.history.length === 0) return null;
     const last = this.history.pop();
     const col = last.col;
-    const colMask = ((1n << BigInt(H1)) - 1n) << BigInt(col * H1);
+    const colMask = B_ROWS_MASK << COL_SHIFT[col];
     const colBits = this.mask & colMask;
     let highest = 0n;
-    let bit = 1n << BigInt(col * H1);
+    let bit = COL_BOTTOM[col];
     for (let r = 0; r < ROWS; r++) {
       if (colBits & bit) highest = bit;
       bit <<= 1n;
@@ -393,19 +441,19 @@ class Position {
   }
 
   static hasFourInARow(pos) {
-    let m = pos & (pos >> BigInt(H1));
-    if (m & (m >> BigInt(2 * H1))) return true;
-    m = pos & (pos >> BigInt(H1 - 1));
-    if (m & (m >> BigInt(2 * (H1 - 1)))) return true;
-    m = pos & (pos >> BigInt(H1 + 1));
-    if (m & (m >> BigInt(2 * (H1 + 1)))) return true;
+    let m = pos & (pos >> B_H1);
+    if (m & (m >> B_2H1)) return true;
+    m = pos & (pos >> B_H1M1);
+    if (m & (m >> B_2H1M1)) return true;
+    m = pos & (pos >> B_H1P1);
+    if (m & (m >> B_2H1P1)) return true;
     m = pos & (pos >> 1n);
     if (m & (m >> 2n)) return true;
     return false;
   }
 
   wouldWin(col) {
-    const newMask = this.mask | (this.mask + (1n << BigInt(col * H1)));
+    const newMask = this.mask | (this.mask + COL_BOTTOM[col]);
     const newPieceBit = newMask & ~this.mask;
     const playerAfter = this.current | newPieceBit;
     return Position.hasFourInARow(playerAfter);
@@ -527,8 +575,9 @@ function bookLookup(history) {
   return (col !== undefined) ? col : null;
 }
 
-function findBestMove(pos, maxDepth, useBook) {
+function findBestMove(pos, maxDepth, useBook, timeBudgetMs) {
   transTable.clear();
+  const deadline = timeBudgetMs > 0 ? Date.now() + timeBudgetMs : Infinity;
 
   for (let i = 0; i < COLS; i++) {
     const c = COL_ORDER[i];
@@ -548,6 +597,7 @@ function findBestMove(pos, maxDepth, useBook) {
   let bestCol = COL_ORDER.find(c => pos.canPlay(c));
   let bestScore = -Infinity;
   for (let depth = 1; depth <= maxDepth; depth++) {
+    if (Date.now() > deadline) break;
     let localBest = bestCol;
     let localScore = -Infinity;
     for (let i = 0; i < COLS; i++) {
@@ -610,7 +660,6 @@ const colHoverEl = document.getElementById('col-hover');
 const statusEl = document.getElementById('status');
 const scoreHumanEl = document.getElementById('score-human');
 const scoreAiEl = document.getElementById('score-ai');
-const newBtn = document.getElementById('new-btn');
 
 let position = new Position();
 let grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
@@ -684,26 +733,31 @@ function makeMove(col, who) {
       const d = boardEl.children[idx].querySelector('.disc');
       if (d) d.classList.add('win');
     });
+    const submittable = who === 'human' && aiDepth === 14 && firebaseReady;
+    const meta = submittable ? {
+      mode: humanFirst ? 'human-first' : 'ai-first',
+      steps: moveLog.length,
+      moves: moveLog.map(m => m.col)
+    } : null;
     if (who === 'human') {
       score.human++;
       setStatus('you connected four — you win', 'win');
-      if (aiDepth === 14 && firebaseReady) {
-        const meta = {
-          mode: humanFirst ? 'human-first' : 'ai-first',
-          steps: moveLog.length,
-          moves: moveLog.map(m => m.col)
-        };
-        setTimeout(() => openSubmitModal(meta), 900);
-      }
+      scheduleTimer(() => openResultModal('win', meta), 1000);
     } else {
       score.ai++;
       setStatus('machine connected four — you lose', 'loss');
+      scheduleTimer(() => openResultModal('loss', null), 1000);
     }
     updateScore();
     return;
   }
 
-  if (position.isDraw()) { gameOver = true; setStatus('board full — a draw', 'draw'); return; }
+  if (position.isDraw()) {
+    gameOver = true;
+    setStatus('board full — a draw', 'draw');
+    scheduleTimer(() => openResultModal('draw', null), 800);
+    return;
+  }
 
   humanIsCurrent = !humanIsCurrent;
   if (humanIsCurrent) {
@@ -717,7 +771,8 @@ function makeMove(col, who) {
 function aiMove() {
   if (gameOver) return;
   const start = performance.now();
-  const col = findBestMove(position, aiDepth, !humanFirst);
+  const budget = aiDepth >= 10 ? AI_TIME_BUDGET_MS : 0;
+  const col = findBestMove(position, aiDepth, !humanFirst, budget);
   const elapsed = performance.now() - start;
   const remaining = Math.max(0, 400 - elapsed);
   scheduleTimer(() => makeMove(col, 'ai'), remaining);
@@ -786,8 +841,6 @@ document.getElementById('diff-seg').addEventListener('click', (e) => {
   aiDepth = parseInt(btn.dataset.diff, 10);
 });
 
-newBtn.addEventListener('click', newGame);
-
 // ============================================================
 // LEADERBOARD UI — submit modal
 // ============================================================
@@ -848,11 +901,8 @@ submitGo.addEventListener('click', async () => {
 });
 
 // ============================================================
-// HALL OF FAME OVERLAY — tabs + realtime onSnapshot
+// HALL OF FAME — inline on Home, auto-subscribed via onSnapshot
 // ============================================================
-const hofBtn = document.getElementById('hof-btn');
-const hofOverlay = document.getElementById('hof-overlay');
-const hofClose = document.getElementById('hof-close');
 const hofList = document.getElementById('hof-list');
 const hofStatus = document.getElementById('hof-status');
 const hofTabs = document.querySelectorAll('.hof-tab');
@@ -917,17 +967,6 @@ function subscribeTab(mode) {
   });
 }
 
-hofBtn.addEventListener('click', () => {
-  hofOverlay.hidden = false;
-  subscribeTab(currentTab);
-});
-hofClose.addEventListener('click', () => {
-  hofOverlay.hidden = true;
-  if (currentUnsub) { currentUnsub(); currentUnsub = null; }
-});
-hofOverlay.addEventListener('click', (e) => {
-  if (e.target === hofOverlay) hofClose.click();
-});
 hofTabs.forEach(tab => {
   tab.addEventListener('click', () => {
     hofTabs.forEach(t => t.classList.remove('active'));
@@ -935,6 +974,66 @@ hofTabs.forEach(tab => {
     currentTab = tab.dataset.tab;
     subscribeTab(currentTab);
   });
+});
+
+// Auto-subscribe as soon as Firestore is ready; re-subscribe when returning to Home.
+document.addEventListener('c4-lb-ready', () => { if (!homeScreen.classList.contains('hidden')) subscribeTab(currentTab); });
+if (firestoreReady) subscribeTab(currentTab);
+
+// ============================================================
+// RESULT POPUP — fires on every game end (win / loss / draw)
+// ============================================================
+const resultModal = document.getElementById('result-modal');
+const resultIcon = document.getElementById('result-icon');
+const resultTitle = document.getElementById('result-title');
+const resultSub = document.getElementById('result-sub');
+const resultView = document.getElementById('result-view');
+const resultMenu = document.getElementById('result-menu');
+let pendingSubmitMeta = null;
+
+function openResultModal(outcome, submittableMeta) {
+  pendingSubmitMeta = submittableMeta;
+  if (outcome === 'win') {
+    resultIcon.textContent = '🏆';
+    resultTitle.textContent = 'YOU WIN';
+    resultTitle.className = 'result-title win';
+    resultSub.textContent = submittableMeta ? 'You beat the IMPOSSIBLE AI' : 'Connected four';
+  } else if (outcome === 'loss') {
+    resultIcon.textContent = '🤖';
+    resultTitle.textContent = 'MACHINE WINS';
+    resultTitle.className = 'result-title loss';
+    resultSub.textContent = 'The machine connected four';
+  } else {
+    resultIcon.textContent = '🤝';
+    resultTitle.textContent = 'DRAW';
+    resultTitle.className = 'result-title draw';
+    resultSub.textContent = 'Board full — no winner';
+  }
+  resultModal.hidden = false;
+}
+
+function closeResultModal() { resultModal.hidden = true; }
+
+resultView.addEventListener('click', () => {
+  closeResultModal();
+  // Chain into submit if this was a submittable impossible human win
+  if (pendingSubmitMeta) {
+    const meta = pendingSubmitMeta;
+    pendingSubmitMeta = null;
+    setTimeout(() => openSubmitModal(meta), 400);
+  }
+});
+
+resultMenu.addEventListener('click', () => {
+  closeResultModal();
+  const meta = pendingSubmitMeta;
+  pendingSubmitMeta = null;
+  if (meta) {
+    // Save first, then return home after modal closes
+    setTimeout(() => openSubmitModal(meta), 400);
+  } else {
+    showHome();
+  }
 });
 
 // ============================================================
@@ -946,16 +1045,20 @@ const startBtn = document.getElementById('start-btn');
 const menuBtn = document.getElementById('menu-btn');
 const levelLabel = document.getElementById('game-level-label');
 
-const DEPTH_LABELS = { 3: 'Easy', 6: 'Medium', 10: 'Hard', 14: 'Impossible' };
+const DEPTH_LABELS = { 3: 'Try Game', 14: 'Challenge' };
 
 function showHome() {
   cancelPending();
   gameOver = true;
+  resultModal.hidden = true;
+  submitModal.hidden = true;
   gameScreen.classList.add('hidden');
   homeScreen.classList.remove('hidden');
+  if (firestoreReady) subscribeTab(currentTab);
 }
 
 function showGame() {
+  if (currentUnsub) { currentUnsub(); currentUnsub = null; }
   levelLabel.textContent = DEPTH_LABELS[aiDepth] || 'Custom';
   homeScreen.classList.add('hidden');
   gameScreen.classList.remove('hidden');
