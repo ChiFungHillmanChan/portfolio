@@ -109,20 +109,23 @@
         ]
     },
     {
-        "id": 5,
-        "title": "Personal ChatBot",
-        "shortDescription": "A customizable training chatbot that responds based on keyword-matching patterns and predefined mood-based responses, designed to simulate a personal conversational assistant.",
-        "fullDescription": "This project is a keyword-driven training chatbot that uses a JSON-based structure to simulate dynamic and context-aware responses. It operates by matching user inputs to categorized patterns such as greetings, education, technologies, projects, hobbies, and more. Each category includes multiple natural-language patterns and a curated list of potential responses, complete with tone ('mood'), tags, and optional follow-up prompts to enhance interactivity. The bot also supports 'easter eggs' — special hidden responses triggered by specific phrases, adding personality and engagement. This modular structure makes it easy to extend with new patterns, responses, or themes, making it suitable for personal portfolio sites or onboarding chatbots. The project showcases skills in natural language pattern recognition, structured data design, and user-centric conversational flow.",
-        "image": "chatbot.png",
-        "url": "https://hillman-chatbot.vercel.app/",
+        "id": 14,
+        "title": "Connect 4 — You vs Machine",
+        "shortDescription": "An unbeatable Connect 4 implementation. Bitboard negamax with α-β pruning, transposition tables, and an opening book derived from the solved-game literature — guaranteed win when the machine moves first.",
+        "fullDescription": "Connect 4 is a solved game: with perfect play, the first player always wins by starting in the center column. This build turns that theoretical result into a playable AI. The engine stores each position in a 49-bit bigint bitboard and searches the game tree with negamax and α-β pruning, move ordering from the center outwards, and a transposition table. For the opening, it consults a small hardcoded book drawn from Victor Allis's and James D. Allen's solved-game tables. In the default configuration — machine-first, 'Impossible' depth — the AI is unbeatable; in 'Challenge' mode the human plays first and can, with perfect play, force a draw. The interface is a single self-contained HTML page with a drop-animation board, difficulty selector, and undo.",
+        "image": "connect4.png",
+        "url": "https://connect4.hillmanchan.com",
         "category": "game",
         "sourceCode": "no-source-code",
-        "demoUrl": "/chat-box",
+        "demoUrl": "/connect4",
         "liveDemo": "no-demo",
         "technologies": [
-            "HTML",
-            "CSS",
-            "JavaScript"
+            "JavaScript",
+            "HTML5",
+            "Bitboards",
+            "Negamax",
+            "Alpha-Beta Pruning",
+            "Game Theory"
         ]
     },
     {
@@ -224,23 +227,20 @@
         ]
     },
     {
-        "id": 13,
-        "title": "Connect 4 — You vs Machine",
-        "shortDescription": "An unbeatable Connect 4 implementation. Bitboard negamax with α-β pruning, transposition tables, and an opening book derived from the solved-game literature — guaranteed win when the machine moves first.",
-        "fullDescription": "Connect 4 is a solved game: with perfect play, the first player always wins by starting in the center column. This build turns that theoretical result into a playable AI. The engine stores each position in a 49-bit bigint bitboard and searches the game tree with negamax and α-β pruning, move ordering from the center outwards, and a transposition table. For the opening, it consults a small hardcoded book drawn from Victor Allis's and James D. Allen's solved-game tables. In the default configuration — machine-first, 'Impossible' depth — the AI is unbeatable; in 'Challenge' mode the human plays first and can, with perfect play, force a draw. The interface is a single self-contained HTML page with a drop-animation board, difficulty selector, and undo.",
-        "image": "coming_soon.png",
-        "url": "https://connect4.hillmanchan.com",
+        "id": 5,
+        "title": "Personal ChatBot",
+        "shortDescription": "A customizable training chatbot that responds based on keyword-matching patterns and predefined mood-based responses, designed to simulate a personal conversational assistant.",
+        "fullDescription": "This project is a keyword-driven training chatbot that uses a JSON-based structure to simulate dynamic and context-aware responses. It operates by matching user inputs to categorized patterns such as greetings, education, technologies, projects, hobbies, and more. Each category includes multiple natural-language patterns and a curated list of potential responses, complete with tone ('mood'), tags, and optional follow-up prompts to enhance interactivity. The bot also supports 'easter eggs' — special hidden responses triggered by specific phrases, adding personality and engagement. This modular structure makes it easy to extend with new patterns, responses, or themes, making it suitable for personal portfolio sites or onboarding chatbots. The project showcases skills in natural language pattern recognition, structured data design, and user-centric conversational flow.",
+        "image": "chatbot.png",
+        "url": "https://hillman-chatbot.vercel.app/",
         "category": "game",
         "sourceCode": "no-source-code",
-        "demoUrl": "/connect4",
+        "demoUrl": "/chat-box",
         "liveDemo": "no-demo",
         "technologies": [
-            "JavaScript",
-            "HTML5",
-            "Bitboards",
-            "Negamax",
-            "Alpha-Beta Pruning",
-            "Game Theory"
+            "HTML",
+            "CSS",
+            "JavaScript"
         ]
     },
     {
