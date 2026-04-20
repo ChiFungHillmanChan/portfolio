@@ -938,14 +938,21 @@ submitGo.addEventListener('click', async () => {
 });
 
 // ============================================================
-// HALL OF FAME — inline on Home, auto-subscribed via onSnapshot
+// HALL OF FAME — inline on Home, auto-subscribed via onSnapshot.
+// Persistent listeners: one per mode, created once when Firestore
+// becomes ready. Tab switching never tears down / rebuilds listeners,
+// so there is no per-click Firestore read cost. Validation results
+// are cached per doc id so each submission is verified exactly once.
 // ============================================================
 const hofList = document.getElementById('hof-list');
 const hofStatus = document.getElementById('hof-status');
 const hofTabs = document.querySelectorAll('.hof-tab');
 let currentTab = 'human-first';
-let currentUnsub = null;
-const knownEntries = { 'human-first': new Set(), 'ai-first': new Set() };
+const tabState = {
+  'human-first': { entries: [], unsub: null, loaded: false, seenIds: new Set() },
+  'ai-first':    { entries: [], unsub: null, loaded: false, seenIds: new Set() }
+};
+const validatedCache = new Map();   // docId -> boolean (validator result)
 
 function formatDate(ts) {
   if (!ts || !ts.toDate) return '—';
@@ -975,10 +982,22 @@ function renderList(entries) {
   });
 }
 
-function subscribeTab(mode) {
-  if (currentUnsub) { currentUnsub(); currentUnsub = null; }
-  if (!firestoreReady) { hofStatus.innerHTML = 'Leaderboard offline'; return; }
-  hofStatus.innerHTML = '<span class="dot"></span>Live · Verifying entries…';
+function renderActiveTab() {
+  const state = tabState[currentTab];
+  renderList(state.entries);
+  if (!firestoreReady) {
+    hofStatus.innerHTML = 'Leaderboard offline';
+  } else if (state.loaded) {
+    hofStatus.innerHTML = '<span class="dot"></span>Live · ' + state.entries.length + ' verified';
+  } else {
+    hofStatus.innerHTML = '<span class="dot"></span>Live · Loading…';
+  }
+}
+
+function subscribeMode(mode) {
+  const state = tabState[mode];
+  if (state.unsub || !firestoreReady) return;   // idempotent — already subscribed
+
   const q = fbApi.query(
     lbCol,
     fbApi.where('mode', '==', mode),
@@ -987,35 +1006,55 @@ function subscribeTab(mode) {
     fbApi.orderBy('createdAt', 'asc'),
     fbApi.limit(100)
   );
-  currentUnsub = fbApi.onSnapshot(q, (snap) => {
+  state.unsub = fbApi.onSnapshot(q, (snap) => {
+    const wasLoaded = state.loaded;
     const validated = [];
     snap.forEach(docSnap => {
       const data = docSnap.data();
-      if (!validateSubmission(data)) return;
-      const isNew = !knownEntries[mode].has(docSnap.id);
-      knownEntries[mode].add(docSnap.id);
+      let isValid = validatedCache.get(docSnap.id);
+      if (isValid === undefined) {
+        isValid = validateSubmission(data);
+        validatedCache.set(docSnap.id, isValid);
+      }
+      if (!isValid) { state.seenIds.add(docSnap.id); return; }
+      const isNew = wasLoaded && !state.seenIds.has(docSnap.id);
+      state.seenIds.add(docSnap.id);
       validated.push({ ...data, _isNew: isNew });
     });
-    renderList(validated);
-    hofStatus.innerHTML = '<span class="dot"></span>Live · ' + validated.length + ' verified';
+    state.entries = validated;
+    state.loaded = true;
+    if (currentTab === mode) renderActiveTab();
   }, (err) => {
-    console.warn('[c4] onSnapshot error:', err);
-    hofStatus.innerHTML = 'Leaderboard error: ' + (err.code || err.message);
+    console.warn('[c4] onSnapshot error (' + mode + '):', err);
+    if (state.unsub) { state.unsub(); state.unsub = null; }   // allow retry
+    if (currentTab === mode) hofStatus.innerHTML = 'Leaderboard error: ' + (err.code || err.message);
   });
+}
+
+function switchTab(newTab) {
+  currentTab = newTab;
+  subscribeMode(newTab);    // idempotent; only opens a listener if this tab hasn't subscribed yet
+  renderActiveTab();
 }
 
 hofTabs.forEach(tab => {
   tab.addEventListener('click', () => {
     hofTabs.forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    currentTab = tab.dataset.tab;
-    subscribeTab(currentTab);
+    switchTab(tab.dataset.tab);
   });
 });
 
-// Auto-subscribe as soon as Firestore is ready; re-subscribe when returning to Home.
-document.addEventListener('c4-lb-ready', () => { if (!homeScreen.classList.contains('hidden')) subscribeTab(currentTab); });
-if (firestoreReady) subscribeTab(currentTab);
+// One-time subscribe for BOTH modes once Firestore is ready.
+// Listeners live for the whole page session; Firestore only bills reads on
+// actual data deltas, so keeping both open is cheaper than churn.
+function subscribeAllModes() {
+  subscribeMode('human-first');
+  subscribeMode('ai-first');
+  renderActiveTab();
+}
+document.addEventListener('c4-lb-ready', subscribeAllModes);
+if (firestoreReady) subscribeAllModes();
 
 // ============================================================
 // RESULT POPUP — fires on every game end (win / loss / draw)
@@ -1091,11 +1130,12 @@ function showHome() {
   submitModal.hidden = true;
   gameScreen.classList.add('hidden');
   homeScreen.classList.remove('hidden');
-  if (firestoreReady) subscribeTab(currentTab);
+  // Listeners are persistent — just refresh the active tab's render in case
+  // data arrived while we were on the Game screen.
+  renderActiveTab();
 }
 
 function showGame() {
-  if (currentUnsub) { currentUnsub(); currentUnsub = null; }
   levelLabel.textContent = DEPTH_LABELS[aiDepth] || 'Custom';
   homeScreen.classList.add('hidden');
   gameScreen.classList.remove('hidden');
