@@ -224,6 +224,26 @@
         ]
     },
     {
+        "id": 13,
+        "title": "Connect 4 — You vs Machine",
+        "shortDescription": "An unbeatable Connect 4 implementation. Bitboard negamax with α-β pruning, transposition tables, and an opening book derived from the solved-game literature — guaranteed win when the machine moves first.",
+        "fullDescription": "Connect 4 is a solved game: with perfect play, the first player always wins by starting in the center column. This build turns that theoretical result into a playable AI. The engine stores each position in a 49-bit bigint bitboard and searches the game tree with negamax and α-β pruning, move ordering from the center outwards, and a transposition table. For the opening, it consults a small hardcoded book drawn from Victor Allis's and James D. Allen's solved-game tables. In the default configuration — machine-first, 'Impossible' depth — the AI is unbeatable; in 'Challenge' mode the human plays first and can, with perfect play, force a draw. The interface is a single self-contained HTML page with a drop-animation board, difficulty selector, and undo.",
+        "image": "coming_soon.png",
+        "url": "https://connect4.hillmanchan.com",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/connect4",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "JavaScript",
+            "HTML5",
+            "Bitboards",
+            "Negamax",
+            "Alpha-Beta Pruning",
+            "Game Theory"
+        ]
+    },
+    {
         "id": 12,
         "title": "Coming Soon",
         "shortDescription": "This project demonstration will come soon",
