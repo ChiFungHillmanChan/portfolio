@@ -114,6 +114,31 @@
   .name-input:focus { border-color: var(--p1); }
   .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .modal-err { color: var(--p1-glow); font-size: 10px; margin-top: 10px; min-height: 14px; }
+
+  .hof-card { background: linear-gradient(145deg, var(--grid-light), var(--grid)); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 24px; max-width: 520px; width: 94%; max-height: 88vh; overflow-y: auto; }
+  .hof-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+  .hof-title { font-family: 'Fraunces', serif; font-style: italic; font-size: 24px; font-weight: 900; }
+  .hof-close { background: transparent; border: none; color: var(--ink-dim); font-size: 20px; cursor: pointer; padding: 4px 10px; }
+  .hof-close:hover { color: var(--ink); }
+  .hof-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; margin-bottom: 16px; border: 1px solid rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden; }
+  .hof-tab { background: transparent; border: none; color: var(--ink-dim); padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; cursor: pointer; }
+  .hof-tab.active { background: var(--ink); color: var(--bg); font-weight: 600; }
+  .hof-tab .badge { display: inline-block; margin-left: 6px; color: var(--win); font-weight: 600; }
+  .hof-list { display: flex; flex-direction: column; gap: 6px; }
+  .hof-row { display: grid; grid-template-columns: 30px 1fr auto auto; gap: 10px; align-items: center; padding: 10px 12px; background: rgba(255,255,255,0.02); border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .hof-row.flash { animation: flashIn 1.2s ease-out; }
+  @keyframes flashIn {
+    0% { background: rgba(127,216,164,0.3); transform: scale(1.02); }
+    100% { background: rgba(255,255,255,0.02); transform: scale(1); }
+  }
+  .hof-rank { color: var(--accent); font-weight: 600; }
+  .hof-name { color: var(--ink); font-family: 'Fraunces', serif; font-size: 16px; font-style: italic; font-weight: 600; }
+  .hof-steps { color: var(--win); font-weight: 600; }
+  .hof-date { color: var(--ink-dim); font-size: 10px; }
+  .hof-empty { padding: 32px 12px; text-align: center; color: var(--ink-dim); font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; }
+  .hof-status { margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-dim); letter-spacing: 0.15em; text-align: center; text-transform: uppercase; }
+  .hof-status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--win); box-shadow: 0 0 8px var(--win); margin-right: 6px; vertical-align: middle; animation: pulse-dot 1.5s ease-in-out infinite; }
+  @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
 </style>
 </head>
 <body>
@@ -184,6 +209,21 @@
       <button class="btn primary" id="submit-go">Submit</button>
     </div>
     <div class="modal-err" id="submit-err"></div>
+  </div>
+</div>
+
+<div class="overlay" id="hof-overlay" hidden>
+  <div class="hof-card">
+    <div class="hof-head">
+      <div class="hof-title">Hall of Fame</div>
+      <button class="hof-close" id="hof-close" aria-label="Close">✕</button>
+    </div>
+    <div class="hof-tabs">
+      <button class="hof-tab active" data-tab="human-first">Human First</button>
+      <button class="hof-tab" data-tab="ai-first">Machine First</button>
+    </div>
+    <div class="hof-list" id="hof-list"></div>
+    <div class="hof-status" id="hof-status"><span class="dot"></span>Live · Loading…</div>
   </div>
 </div>
 
@@ -760,6 +800,96 @@ submitGo.addEventListener('click', async () => {
   } finally {
     submitGo.disabled = false;
   }
+});
+
+// ============================================================
+// HALL OF FAME OVERLAY — tabs + realtime onSnapshot
+// ============================================================
+const hofBtn = document.getElementById('hof-btn');
+const hofOverlay = document.getElementById('hof-overlay');
+const hofClose = document.getElementById('hof-close');
+const hofList = document.getElementById('hof-list');
+const hofStatus = document.getElementById('hof-status');
+const hofTabs = document.querySelectorAll('.hof-tab');
+let currentTab = 'human-first';
+let currentUnsub = null;
+const knownEntries = { 'human-first': new Set(), 'ai-first': new Set() };
+
+function formatDate(ts) {
+  if (!ts || !ts.toDate) return '—';
+  const d = ts.toDate();
+  return d.toISOString().slice(0, 10);
+}
+
+function renderList(entries) {
+  hofList.innerHTML = '';
+  if (entries.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'hof-empty';
+    empty.textContent = 'No entries yet.';
+    hofList.appendChild(empty);
+    return;
+  }
+  entries.slice(0, 10).forEach((entry, i) => {
+    const row = document.createElement('div');
+    row.className = 'hof-row';
+    if (entry._isNew) row.classList.add('flash');
+    const rank = document.createElement('span'); rank.className = 'hof-rank'; rank.textContent = '#' + (i + 1);
+    const name = document.createElement('span'); name.className = 'hof-name'; name.textContent = entry.name;
+    const steps = document.createElement('span'); steps.className = 'hof-steps'; steps.textContent = entry.steps + ' steps';
+    const date = document.createElement('span'); date.className = 'hof-date'; date.textContent = formatDate(entry.createdAt);
+    row.appendChild(rank); row.appendChild(name); row.appendChild(steps); row.appendChild(date);
+    hofList.appendChild(row);
+  });
+}
+
+function subscribeTab(mode) {
+  if (currentUnsub) { currentUnsub(); currentUnsub = null; }
+  if (!firebaseReady) { hofStatus.innerHTML = 'Leaderboard offline'; return; }
+  hofStatus.innerHTML = '<span class="dot"></span>Live · Verifying entries…';
+  const q = fbApi.query(
+    lbCol,
+    fbApi.where('mode', '==', mode),
+    fbApi.where('difficulty', '==', 'impossible'),
+    fbApi.orderBy('steps', 'asc'),
+    fbApi.orderBy('createdAt', 'asc'),
+    fbApi.limit(100)
+  );
+  currentUnsub = fbApi.onSnapshot(q, (snap) => {
+    const validated = [];
+    snap.forEach(docSnap => {
+      const data = docSnap.data();
+      if (!validateSubmission(data)) return;
+      const isNew = !knownEntries[mode].has(docSnap.id);
+      knownEntries[mode].add(docSnap.id);
+      validated.push({ ...data, _isNew: isNew });
+    });
+    renderList(validated);
+    hofStatus.innerHTML = '<span class="dot"></span>Live · ' + validated.length + ' verified';
+  }, (err) => {
+    console.warn('[c4] onSnapshot error:', err);
+    hofStatus.innerHTML = 'Leaderboard error: ' + (err.code || err.message);
+  });
+}
+
+hofBtn.addEventListener('click', () => {
+  hofOverlay.hidden = false;
+  subscribeTab(currentTab);
+});
+hofClose.addEventListener('click', () => {
+  hofOverlay.hidden = true;
+  if (currentUnsub) { currentUnsub(); currentUnsub = null; }
+});
+hofOverlay.addEventListener('click', (e) => {
+  if (e.target === hofOverlay) hofClose.click();
+});
+hofTabs.forEach(tab => {
+  tab.addEventListener('click', () => {
+    hofTabs.forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    subscribeTab(currentTab);
+  });
 });
 
 updateScore();
