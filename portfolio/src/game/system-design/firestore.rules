@@ -22,5 +22,26 @@ service cloud.firestore {
         && (!('sessionId' in request.resource.data) || request.resource.data.sessionId == resource.data.sessionId)
         && (!('superadmin' in request.resource.data) || request.resource.data.superadmin == resource.data.superadmin);
     }
+
+    match /connect4Leaderboard/{entryId} {
+      allow read: if true;
+
+      allow create: if request.auth != null
+        && request.resource.data.keys().hasOnly(['name','mode','steps','moves','difficulty','createdAt','uid'])
+        && request.resource.data.name is string
+        && request.resource.data.name.size() >= 3
+        && request.resource.data.name.size() <= 20
+        && request.resource.data.mode in ['human-first', 'ai-first']
+        && request.resource.data.steps is int
+        && request.resource.data.steps >= 7
+        && request.resource.data.steps <= 42
+        && request.resource.data.moves is list
+        && request.resource.data.moves.size() == request.resource.data.steps
+        && request.resource.data.difficulty == 'impossible'
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt == request.time;
+
+      allow update, delete: if false;
+    }
   }
 }
