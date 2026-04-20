@@ -139,61 +139,110 @@
   .hof-status { margin-top: 10px; font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--ink-dim); letter-spacing: 0.15em; text-align: center; text-transform: uppercase; }
   .hof-status .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--win); box-shadow: 0 0 8px var(--win); margin-right: 6px; vertical-align: middle; animation: pulse-dot 1.5s ease-in-out infinite; }
   @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+  /* SCREEN SYSTEM */
+  .screen { display: flex; flex-direction: column; gap: 20px; width: 100%; }
+  .screen.hidden { display: none; }
+
+  .home-actions { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+  .home-primary { padding: 18px; font-size: 13px; letter-spacing: 0.2em; min-height: 56px; }
+  .home-secondary { padding: 16px; min-height: 52px; }
+
+  .game-topbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 0; }
+  .game-title { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-dim); letter-spacing: 0.15em; text-transform: uppercase; text-align: right; }
+  .game-title #game-level-label { color: var(--accent); font-weight: 600; }
+  .btn-slim { padding: 10px 14px; font-size: 11px; min-height: 40px; }
+
+  .game-actions { display: grid; grid-template-columns: 1fr; gap: 10px; margin-top: 4px; }
+
+  /* MOBILE POLISH */
+  @media (max-width: 480px) {
+    body { padding: 16px 12px 32px; }
+    .shell { gap: 14px; }
+    h1 { font-size: clamp(34px, 12vw, 56px); }
+    .eyebrow { font-size: 9px; letter-spacing: 0.3em; }
+    .scoreboard { padding: 10px 14px; }
+    .score { font-size: 26px; }
+    .seg button { padding: 12px 4px; min-height: 44px; font-size: 9px; }
+    .btn { padding: 14px 10px; min-height: 48px; font-size: 10px; letter-spacing: 0.12em; }
+    .home-primary { min-height: 60px; font-size: 13px; }
+    .col-hover { gap: 4px; height: 22px; }
+    .board { gap: 4px; }
+    .board-wrap { padding: 8px; }
+    .modal-card { padding: 22px 18px; }
+    .modal-title { font-size: 22px; }
+    .hof-card { padding: 18px 16px; }
+    .hof-row { grid-template-columns: 26px 1fr auto; gap: 8px; padding: 9px 10px; font-size: 11px; }
+    .hof-row .hof-date { display: none; }
+    .game-title { font-size: 10px; letter-spacing: 0.12em; }
+  }
 </style>
 </head>
 <body>
 <div class="shell">
-  <header>
-    <div class="eyebrow">— est. 1974 · solved 1988 —</div>
-    <h1>Connect <span class="amp">&</span> Four</h1>
-    <div class="subtitle">you vs. the algorithm</div>
-  </header>
+  <section class="screen" id="home-screen">
+    <header>
+      <div class="eyebrow">— est. 1974 · solved 1988 —</div>
+      <h1>Connect <span class="amp">&</span> Four</h1>
+      <div class="subtitle">you vs. the algorithm</div>
+    </header>
 
-  <div class="scoreboard">
-    <div class="player">
-      <div class="chip-mini human"></div>
-      <div><div>human</div><div class="score" id="score-human">0</div></div>
-    </div>
-    <div class="score-divider">vs</div>
-    <div class="player right">
-      <div><div>machine</div><div class="score" id="score-ai">0</div></div>
-      <div class="chip-mini ai"></div>
-    </div>
-  </div>
-
-  <div class="status your-turn" id="status">press NEW to begin</div>
-
-  <div class="board-wrap" id="board-wrap">
-    <div class="col-hover" id="col-hover"></div>
-    <div class="board" id="board"></div>
-  </div>
-
-  <div class="controls">
-    <div class="control-group">
-      <div class="control-label">first move</div>
-      <div class="seg" id="first-seg">
-        <button data-first="human">Human</button>
-        <button data-first="ai" class="active">Machine</button>
+    <div class="controls">
+      <div class="control-group">
+        <div class="control-label">first move</div>
+        <div class="seg" id="first-seg">
+          <button data-first="human">Human</button>
+          <button data-first="ai" class="active">Machine</button>
+        </div>
+      </div>
+      <div class="control-group">
+        <div class="control-label">difficulty</div>
+        <div class="seg" id="diff-seg">
+          <button data-diff="3">Easy</button>
+          <button data-diff="6">Medium</button>
+          <button data-diff="10">Hard</button>
+          <button data-diff="14" class="active">Impossible</button>
+        </div>
       </div>
     </div>
-    <div class="control-group">
-      <div class="control-label">difficulty</div>
-      <div class="seg" id="diff-seg">
-        <button data-diff="3">Easy</button>
-        <button data-diff="6">Medium</button>
-        <button data-diff="10">Hard</button>
-        <button data-diff="14" class="active">Impossible</button>
+
+    <div class="home-actions">
+      <button class="btn primary home-primary" id="start-btn">Start Game ▶</button>
+      <button class="btn home-secondary" id="hof-btn">🏆 Hall of Fame</button>
+    </div>
+
+    <footer>BITBOARDS · NEGAMAX · α-β PRUNING · OPENING BOOK</footer>
+  </section>
+
+  <section class="screen hidden" id="game-screen">
+    <div class="game-topbar">
+      <button class="btn btn-slim" id="menu-btn">← Menu</button>
+      <div class="game-title">Connect 4 · <span id="game-level-label">Impossible</span></div>
+    </div>
+
+    <div class="scoreboard">
+      <div class="player">
+        <div class="chip-mini human"></div>
+        <div><div>human</div><div class="score" id="score-human">0</div></div>
+      </div>
+      <div class="score-divider">vs</div>
+      <div class="player right">
+        <div><div>machine</div><div class="score" id="score-ai">0</div></div>
+        <div class="chip-mini ai"></div>
       </div>
     </div>
-  </div>
 
-  <div class="actions">
-    <button class="btn" id="undo-btn">↶ Undo</button>
-    <button class="btn" id="hof-btn">🏆 Hall of Fame</button>
-    <button class="btn primary" id="new-btn">New Game</button>
-  </div>
+    <div class="status your-turn" id="status">press NEW to begin</div>
 
-  <footer>BITBOARDS · NEGAMAX · α-β PRUNING · OPENING BOOK</footer>
+    <div class="board-wrap" id="board-wrap">
+      <div class="col-hover" id="col-hover"></div>
+      <div class="board" id="board"></div>
+    </div>
+
+    <div class="game-actions">
+      <button class="btn primary" id="new-btn">New Game</button>
+    </div>
+  </section>
 </div>
 
 <div class="modal" id="submit-modal" hidden>
@@ -556,16 +605,24 @@ const statusEl = document.getElementById('status');
 const scoreHumanEl = document.getElementById('score-human');
 const scoreAiEl = document.getElementById('score-ai');
 const newBtn = document.getElementById('new-btn');
-const undoBtn = document.getElementById('undo-btn');
 
 let position = new Position();
 let grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
 let humanFirst = false;
 let humanIsCurrent = false;
 let aiDepth = 14;
-let gameOver = false;
+let gameOver = true;             // start locked until Start Game is clicked
 let score = { human: 0, ai: 0 };
 let moveLog = [];
+let pendingTimer = null;         // tracks any pending AI/move setTimeout
+
+function scheduleTimer(fn, delay) {
+  if (pendingTimer) clearTimeout(pendingTimer);
+  pendingTimer = setTimeout(() => { pendingTimer = null; fn(); }, delay);
+}
+function cancelPending() {
+  if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
+}
 
 for (let r = ROWS - 1; r >= 0; r--) {
   for (let c = 0; c < COLS; c++) {
@@ -601,6 +658,7 @@ function handleColumnClick(c) {
 }
 
 function makeMove(col, who) {
+  if (gameOver) return;
   const row = position.play(col);
   moveLog.push({ col, row, who });
   grid[row][col] = who;
@@ -646,7 +704,7 @@ function makeMove(col, who) {
     setStatus('your move — choose a column', 'your-turn');
   } else {
     setStatus('machine is thinking…', 'thinking');
-    setTimeout(aiMove, 350);
+    scheduleTimer(aiMove, 350);
   }
 }
 
@@ -656,7 +714,7 @@ function aiMove() {
   const col = findBestMove(position, aiDepth, !humanFirst);
   const elapsed = performance.now() - start;
   const remaining = Math.max(0, 400 - elapsed);
-  setTimeout(() => makeMove(col, 'ai'), remaining);
+  scheduleTimer(() => makeMove(col, 'ai'), remaining);
 }
 
 function findWinningCells(playerBits) {
@@ -691,6 +749,7 @@ function updateScore() {
 }
 
 function newGame() {
+  cancelPending();
   position = new Position();
   grid = Array.from({length: ROWS}, () => Array(COLS).fill(null));
   moveLog = [];
@@ -701,27 +760,8 @@ function newGame() {
     setStatus('your move — choose a column', 'your-turn');
   } else {
     setStatus('machine moves first…', 'thinking');
-    setTimeout(aiMove, 500);
+    scheduleTimer(aiMove, 500);
   }
-}
-
-function undo() {
-  if (moveLog.length === 0) return;
-  let undone = 0;
-  while (moveLog.length > 0 && undone < 2) {
-    const last = moveLog.pop();
-    position.undo();
-    grid[last.row][last.col] = null;
-    const idx = (ROWS - 1 - last.row) * COLS + last.col;
-    boardEl.children[idx].innerHTML = '';
-    undone++;
-    if (last.who === 'human') break;
-  }
-  gameOver = false;
-  if (moveLog.length === 0) humanIsCurrent = humanFirst;
-  else humanIsCurrent = moveLog[moveLog.length - 1].who === 'ai';
-  if (humanIsCurrent) setStatus('your move — choose a column', 'your-turn');
-  else { setStatus('machine is thinking…', 'thinking'); setTimeout(aiMove, 300); }
 }
 
 document.getElementById('first-seg').addEventListener('click', (e) => {
@@ -741,7 +781,6 @@ document.getElementById('diff-seg').addEventListener('click', (e) => {
 });
 
 newBtn.addEventListener('click', newGame);
-undoBtn.addEventListener('click', undo);
 
 // ============================================================
 // LEADERBOARD UI — submit modal
@@ -891,6 +930,34 @@ hofTabs.forEach(tab => {
     subscribeTab(currentTab);
   });
 });
+
+// ============================================================
+// SCREEN SWITCHING — Home ↔ Game
+// ============================================================
+const homeScreen = document.getElementById('home-screen');
+const gameScreen = document.getElementById('game-screen');
+const startBtn = document.getElementById('start-btn');
+const menuBtn = document.getElementById('menu-btn');
+const levelLabel = document.getElementById('game-level-label');
+
+const DEPTH_LABELS = { 3: 'Easy', 6: 'Medium', 10: 'Hard', 14: 'Impossible' };
+
+function showHome() {
+  cancelPending();
+  gameOver = true;
+  gameScreen.classList.add('hidden');
+  homeScreen.classList.remove('hidden');
+}
+
+function showGame() {
+  levelLabel.textContent = DEPTH_LABELS[aiDepth] || 'Custom';
+  homeScreen.classList.add('hidden');
+  gameScreen.classList.remove('hidden');
+  newGame();
+}
+
+startBtn.addEventListener('click', showGame);
+menuBtn.addEventListener('click', showHome);
 
 updateScore();
 </script>
