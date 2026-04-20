@@ -383,10 +383,9 @@ const COL_SHIFT = [0,1,2,3,4,5,6].map(c => BigInt(c * H1));
 const COL_BOTTOM = [0,1,2,3,4,5,6].map(c => 1n << COL_SHIFT[c]);
 const COL_TOP = [0,1,2,3,4,5,6].map(c => 1n << BigInt(c * H1 + ROWS - 1));
 
-// Mobile detection — coarse pointer = likely touch device with weaker CPU.
-const IS_MOBILE = typeof window !== 'undefined'
-  && (window.matchMedia?.('(pointer: coarse)').matches || navigator.maxTouchPoints > 1);
-const AI_TIME_BUDGET_MS = IS_MOBILE ? 1500 : 3500;
+// AI plays perfect strategy — no time cap. UX compensates: if a move takes
+// more than LONG_THINK_MS, status text switches to "I need to think longer…".
+const LONG_THINK_MS = 3000;
 
 class Position {
   constructor() {
@@ -575,14 +574,13 @@ function bookLookup(history) {
   return (col !== undefined) ? col : null;
 }
 
-function findBestMove(pos, maxDepth, useBook, timeBudgetMs) {
-  transTable.clear();
-  const deadline = timeBudgetMs > 0 ? Date.now() + timeBudgetMs : Infinity;
-
+function findTacticalMove(pos, useBook) {
+  // Immediate winning move
   for (let i = 0; i < COLS; i++) {
     const c = COL_ORDER[i];
     if (pos.canPlay(c) && pos.wouldWin(c)) return c;
   }
+  // Immediate block
   for (let i = 0; i < COLS; i++) {
     const c = COL_ORDER[i];
     if (!pos.canPlay(c)) continue;
@@ -590,26 +588,56 @@ function findBestMove(pos, maxDepth, useBook, timeBudgetMs) {
     probe.current = probe.current ^ probe.mask;
     if (probe.wouldWin(c)) return c;
   }
+  // Opening book
   if (useBook) {
     const col = bookLookup(pos.history);
     if (col !== null && pos.canPlay(col)) return col;
   }
+  return null;
+}
+
+function searchDepth(pos, depth) {
+  let localBest = COL_ORDER.find(c => pos.canPlay(c));
+  let localScore = -Infinity;
+  for (let i = 0; i < COLS; i++) {
+    const c = COL_ORDER[i];
+    if (!pos.canPlay(c)) continue;
+    const child = pos.clone();
+    child.play(c);
+    const score = -negamax(child, depth - 1, -Infinity, Infinity);
+    if (score > localScore) { localScore = score; localBest = c; }
+  }
+  return { col: localBest, score: localScore };
+}
+
+// Sync version — used by replay validator. Blocks until full depth reached.
+function findBestMove(pos, maxDepth, useBook) {
+  transTable.clear();
+  const tactical = findTacticalMove(pos, useBook);
+  if (tactical !== null) return tactical;
   let bestCol = COL_ORDER.find(c => pos.canPlay(c));
   let bestScore = -Infinity;
   for (let depth = 1; depth <= maxDepth; depth++) {
-    if (Date.now() > deadline) break;
-    let localBest = bestCol;
-    let localScore = -Infinity;
-    for (let i = 0; i < COLS; i++) {
-      const c = COL_ORDER[i];
-      if (!pos.canPlay(c)) continue;
-      const child = pos.clone();
-      child.play(c);
-      const score = -negamax(child, depth - 1, -Infinity, Infinity);
-      if (score > localScore) { localScore = score; localBest = c; }
-    }
-    bestCol = localBest;
-    bestScore = localScore;
+    const r = searchDepth(pos, depth);
+    bestCol = r.col; bestScore = r.score;
+    if (bestScore >= WIN_SCORE - 50) break;
+  }
+  return bestCol;
+}
+
+// Async version — used by live AI. Yields to UI between depth iterations so
+// the browser can repaint (e.g. to flip the status text to "thinking longer").
+async function findBestMoveLive(pos, maxDepth, useBook, onDepthStart) {
+  transTable.clear();
+  const tactical = findTacticalMove(pos, useBook);
+  if (tactical !== null) return tactical;
+  let bestCol = COL_ORDER.find(c => pos.canPlay(c));
+  let bestScore = -Infinity;
+  for (let depth = 1; depth <= maxDepth; depth++) {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    if (onDepthStart) onDepthStart(depth);
+    const r = searchDepth(pos, depth);
+    bestCol = r.col; bestScore = r.score;
     if (bestScore >= WIN_SCORE - 50) break;
   }
   return bestCol;
@@ -768,14 +796,23 @@ function makeMove(col, who) {
   }
 }
 
-function aiMove() {
+async function aiMove() {
   if (gameOver) return;
   const start = performance.now();
-  const budget = aiDepth >= 10 ? AI_TIME_BUDGET_MS : 0;
-  const col = findBestMove(position, aiDepth, !humanFirst, budget);
-  const elapsed = performance.now() - start;
-  const remaining = Math.max(0, 400 - elapsed);
-  scheduleTimer(() => makeMove(col, 'ai'), remaining);
+  let longThinkId = setTimeout(() => {
+    if (!gameOver && !humanIsCurrent) setStatus('I need to think longer…', 'thinking');
+  }, LONG_THINK_MS);
+  try {
+    const col = await findBestMoveLive(position, aiDepth, !humanFirst);
+    clearTimeout(longThinkId);
+    if (gameOver) return;
+    const elapsed = performance.now() - start;
+    const remaining = Math.max(0, 400 - elapsed);
+    scheduleTimer(() => makeMove(col, 'ai'), remaining);
+  } catch (err) {
+    clearTimeout(longThinkId);
+    console.warn('[c4] aiMove error:', err);
+  }
 }
 
 function findWinningCells(playerBits) {
