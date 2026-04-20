@@ -1,0 +1,23 @@
+html.connect4-game-mode,
+body.connect4-game-mode {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #0a0e1a;
+}
+
+.connect4-container {
+  width: 100vw;
+  height: 100vh;
+  background: #0a0e1a;
+  position: relative;
+}
+
+.connect4-iframe {
+  border: none;
+  width: 100%;
+  height: 100%;
+  display: block;
+  background: transparent;
+}
