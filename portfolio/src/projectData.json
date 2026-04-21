@@ -22,6 +22,26 @@
         ]
     },
     {
+        "id": 15,
+        "title": "Scene — macOS Workspace Switcher",
+        "shortDescription": "A native macOS menu-bar app that switches apps, window layouts, and Focus modes with one shortcut. 11 pre-built layouts, ⌘⌃1–9 global hotkeys, and automation triggers — keyboard-first and fully open source.",
+        "fullDescription": "Scene is a SwiftUI menu-bar app that collapses multi-app workflows into a single keystroke. Each 'scene' bundles the apps you want open, a window layout (11 customisable pre-builds — halves, thirds, grids, L-shapes), and a macOS Focus mode; pressing ⌘⌃1–9 launches missing apps, snaps windows into place, and toggles the matching Focus system-wide. It supports drag-swap between windows and automation triggers (monitor connection, time-of-day, calendar events) so workspaces can appear without any input at all. Runs with zero telemetry, ships notarised by Apple, supports both Apple Silicon and Intel on macOS 14+, and is released open source under MIT. The accompanying landing page at scene-mac.vercel.app is a keyboard-first marketing site — calm, hotkey-driven, and out of the user's way — designed to mirror the product's 'one click, your workspace appears' feel.",
+        "image": "scene.jpg",
+        "url": "https://scene-mac.vercel.app/",
+        "category": "program",
+        "sourceCode": "https://github.com/ChiFungHillmanChan/macbook-resizer",
+        "demoUrl": "https://scene-mac.vercel.app/",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "Swift",
+            "SwiftUI",
+            "AppKit",
+            "macOS",
+            "Accessibility API",
+            "Focus Modes"
+        ]
+    },
+    {
         "id": 11,
         "title": "System Design",
         "shortDescription": "An interactive system design learning platform covering 28 topics — from load balancers and caches to payment systems and AI agent security — with inline SVG architecture diagrams.",
