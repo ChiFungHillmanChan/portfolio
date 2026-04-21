@@ -31,7 +31,7 @@
         "category": "program",
         "sourceCode": "https://github.com/ChiFungHillmanChan/macbook-resizer",
         "demoUrl": "https://scene-mac.vercel.app/",
-        "liveDemo": "no-demo",
+        "liveDemo": "scene_demo.mp4",
         "technologies": [
             "Swift",
             "SwiftUI",
