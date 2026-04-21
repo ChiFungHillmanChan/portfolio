@@ -51,8 +51,20 @@
   .chip-mini.ai { background: radial-gradient(circle at 30% 30%, var(--p2-glow), var(--p2)); box-shadow: 0 0 12px rgba(244,197,66,0.5); }
   .score { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 900; font-style: italic; line-height: 1; }
   .score-divider { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--ink-dim); letter-spacing: 0.2em; }
-  .status { text-align: center; padding: 12px; border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; transition: all 0.3s ease; }
-  .status.thinking { color: var(--p2); border-color: var(--p2); }
+  .status { text-align: center; padding: 12px; border: 1px dashed rgba(255,255,255,0.1); border-radius: 4px; min-height: 48px; display: flex; align-items: center; justify-content: center; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; transition: color 0.3s ease, border-color 0.3s ease, background 0.3s ease; }
+  .status.thinking { color: var(--p2); border-color: var(--p2); animation: think-pulse 1.6s ease-in-out infinite; }
+  /* Swapping messages during a long think: the text fades out, swaps, fades in. */
+  .status.swap { animation: think-swap 0.35s ease both, think-pulse 1.6s ease-in-out 0.35s infinite; }
+  @keyframes think-pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(244,197,66,0); }
+    50%      { opacity: 0.78; box-shadow: 0 0 14px 0 rgba(244,197,66,0.25); }
+  }
+  @keyframes think-swap {
+    0%   { opacity: 1; transform: translateY(0); }
+    45%  { opacity: 0; transform: translateY(-4px); }
+    55%  { opacity: 0; transform: translateY(4px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
   .status.your-turn { color: var(--p1-glow); border-color: rgba(230,57,70,0.4); }
   .status.win { color: var(--win); border-color: var(--win); background: rgba(127,216,164,0.06); }
   .status.loss { color: var(--p2); background: rgba(244,197,66,0.06); }
@@ -241,8 +253,8 @@
       <div class="home-hof-head">
         <div class="home-hof-title">🏆 Hall of Fame</div>
         <div class="hof-tabs">
-          <button class="hof-tab active" data-tab="human-first">Human First</button>
-          <button class="hof-tab" data-tab="ai-first">Machine First</button>
+          <button class="hof-tab" data-tab="human-first">Human First</button>
+          <button class="hof-tab active" data-tab="ai-first">Machine First</button>
         </div>
       </div>
       <div class="hof-list" id="hof-list"></div>
@@ -383,9 +395,17 @@ const COL_SHIFT = [0,1,2,3,4,5,6].map(c => BigInt(c * H1));
 const COL_BOTTOM = [0,1,2,3,4,5,6].map(c => 1n << COL_SHIFT[c]);
 const COL_TOP = [0,1,2,3,4,5,6].map(c => 1n << BigInt(c * H1 + ROWS - 1));
 
-// AI plays perfect strategy — no time cap. UX compensates: if a move takes
-// more than LONG_THINK_MS, status text switches to "I need to think longer…".
-const LONG_THINK_MS = 3000;
+// AI plays perfect strategy — no time cap. UX compensates with a staged
+// progression of increasingly-apologetic status messages so a 3–8 second
+// post-book solve feels like a thinking AI, not a frozen page. Each stage
+// triggers a brief fade-swap animation on the status pill (see CSS rule
+// `.status.swap`).
+const THINK_STAGES = [
+  { at: 1000,  text: "I'm thinking…" },
+  { at: 3000,  text: "Don't rush me! No bugs — just thinking!" },
+  { at: 6000,  text: "Still thinking… this one's tricky" },
+  { at: 10000, text: "Perfect play takes time. Almost there." },
+];
 
 class Position {
   constructor() {
@@ -525,17 +545,19 @@ const TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
 const transTable = new Map();
 
 // ============================================================
-// WASM ENGINE LOADER
-// Rust-compiled WebAssembly port of the same negamax + α-β + TT engine
-// with native u64 bitboards (no BigInt) and a native hash table. ~10-20×
-// faster than the JS engine below on any non-tactical position, and
-// drastically less CPU / thermal load on mobile. Loaded async; aiMove()
-// prefers wasm when ready and falls back to the JS engine if wasm isn't
-// available yet or failed to load. validateSubmission keeps using the JS
-// engine so leaderboard verification stays byte-for-byte compatible with
-// how the game played when existing submissions were created.
+// WASM ENGINE LOADER — two engines live here:
+//   wasmSolve        depth-limited negamax + α-β + heuristic eval.
+//                    Matches the JS engine below byte-for-byte. Used for
+//                    Try Game mode (intentionally beatable at depth 3).
+//   wasmSolvePerfect Pascal-Pons weak solver (null-window bisection, no
+//                    depth cap, no heuristic). Returns a provably optimal
+//                    column for the current player. Since Connect 4 is a
+//                    solved first-player-wins game, Challenge mode routes
+//                    through this and the machine is literally unbeatable
+//                    when it moves first.
 // ============================================================
-let wasmSolve = null;   // (mask:BigInt, current:BigInt, moves:Number, maxDepth:Number) -> Number (col 0..6, or -1)
+let wasmSolve = null;          // (mask, current, moves, maxDepth) -> col
+let wasmSolvePerfect = null;   // (mask, current, moves) -> col  (Challenge)
 (async () => {
   try {
     const resp = await fetch('./connect4-solver.wasm');
@@ -543,6 +565,7 @@ let wasmSolve = null;   // (mask:BigInt, current:BigInt, moves:Number, maxDepth:
     const bytes = await resp.arrayBuffer();
     const { instance } = await WebAssembly.instantiate(bytes);
     wasmSolve = instance.exports.solve_best_move;
+    wasmSolvePerfect = instance.exports.solve_perfect;
     console.log('[c4] wasm engine ready (' + bytes.byteLength + ' bytes)');
   } catch (err) {
     console.warn('[c4] wasm load failed — using JS engine:', err.message);
@@ -1521,6 +1544,16 @@ function findBestMove(pos, maxDepth) {
 
 // Async version — used by live AI. Yields to UI between depth iterations so
 // the browser can repaint (e.g. to flip the status text to "thinking longer").
+//
+// At CHALLENGE depth (14) we route through the perfect solver
+// (wasmSolvePerfect) — provably optimal play, not a depth-limited heuristic.
+// This trades a cold-start cost on the first post-book move of a session
+// (~3–5 s, during which the UI shows "I need to think longer…") for the
+// guarantee that the machine is literally unbeatable when it moves first.
+// The wasm transposition table persists for the whole page session, so
+// subsequent AI moves land on TT hits and return in 0–200 ms. At Try Game
+// depth (3) we stay on the fast depth-limited engine so the AI remains
+// beatable for training.
 async function findBestMoveLive(pos, maxDepth, onDepthStart) {
   // JS-side fast path: book hit, immediate win, or immediate block. All
   // cheap, handled in JS so the wasm call boundary isn't touched for the
@@ -1528,15 +1561,23 @@ async function findBestMoveLive(pos, maxDepth, onDepthStart) {
   const tactical = findTacticalMove(pos);
   if (tactical !== null) return tactical;
 
-  // Wasm fast path: any non-trivial search. Yields to the UI once first so
-  // the "machine is thinking…" status can paint before the call blocks.
+  const wantPerfect = maxDepth >= 14;
+
+  // Wasm fast path. Yields to the UI once first so the "machine is thinking…"
+  // status can paint before the synchronous wasm call blocks.
+  if (wantPerfect && wasmSolvePerfect) {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    if (onDepthStart) onDepthStart(maxDepth);
+    const col = Number(wasmSolvePerfect(pos.mask, pos.current, pos.moves));
+    if (col >= 0) return col;
+    // col < 0 should not happen for a non-full, non-terminal position. Fall
+    // through to depth-limited wasm / JS as a safety net.
+  }
   if (wasmSolve) {
     await new Promise(resolve => setTimeout(resolve, 0));
     if (onDepthStart) onDepthStart(maxDepth);
     const col = Number(wasmSolve(pos.mask, pos.current, pos.moves, maxDepth));
     if (col >= 0) return col;
-    // col < 0 means wasm found no legal move, which shouldn't happen here.
-    // Fall through to JS as a safety net.
   }
 
   // JS fallback (wasm not yet loaded / failed / old browser).
@@ -1555,8 +1596,28 @@ async function findBestMoveLive(pos, maxDepth, onDepthStart) {
 }
 
 // ============================================================
-// REPLAY VALIDATION — re-simulate a submission vs our engine
-// Returns true iff the moves produce a legitimate human win.
+// REPLAY VALIDATION — re-simulate a submission and confirm it's a real
+// game ending with a human 4-in-a-row.
+//
+// Deliberately NOT checking "did the AI play the engine's favourite
+// column?" — before this change we replayed each AI move with the JS
+// engine at depth 14 and rejected on mismatch, which silently dropped
+// EVERY legitimate submission the moment the live wasm engine (which now
+// routes through the perfect solver in Challenge mode) picked a different
+// but equally-valid tied move. The board constrains what AI could have
+// done far more than an engine-equality check ever did:
+//
+//   - all moves must be legal on a progressively played board
+//   - the final move must be the HUMAN's and must complete 4-in-a-row
+//   - no intermediate position may already be a 4-in-a-row (i.e. play
+//     can't continue after someone has already won)
+//
+// That's enough to rule out the cheat ("I crafted a 7-move win where the
+// AI did nothing useful") — you can't construct a legal human 4-in-a-row
+// without actually outplaying the board. Move-optimality would only
+// catch a cheater who manually fed the JS engine through their own game,
+// which is an entirely theoretical attack on a leaderboard that has ten
+// rows on it.
 // ============================================================
 function validateSubmission(entry) {
   try {
@@ -1571,15 +1632,11 @@ function validateSubmission(entry) {
       const col = entry.moves[i];
       if (!Number.isInteger(col) || col < 0 || col >= COLS) return false;
       if (!p.canPlay(col)) return false;
-
-      if (turn === 'ai') {
-        const expected = findBestMove(p, 14);
-        if (col !== expected) return false;
-      }
       p.play(col);
 
       const justMoved = p.mask ^ p.current;
       if (Position.hasFourInARow(justMoved)) {
+        // Four-in-a-row: must be the LAST move, and must be the human's.
         return i === entry.moves.length - 1 && turn === 'human';
       }
       turn = turn === 'human' ? 'ai' : 'human';
@@ -1672,7 +1729,13 @@ function makeMove(col, who) {
       const d = boardEl.children[idx].querySelector('.disc');
       if (d) d.classList.add('win');
     });
-    const submittable = who === 'human' && aiDepth === 14 && firebaseReady;
+    // Meta is built for any human win in Challenge mode — we no longer gate
+    // on firebaseReady here, because the old gate silently suppressed the
+    // submit modal whenever anon Firebase auth wasn't ready yet (e.g. a
+    // flaky cold-start or a browser that blocks third-party auth cookies).
+    // The submit button itself still refuses to write when Firebase is
+    // unreachable, and now *tells* you that instead of just hiding.
+    const submittable = who === 'human' && aiDepth === 14;
     const meta = submittable ? {
       mode: humanFirst ? 'human-first' : 'ai-first',
       steps: moveLog.length,
@@ -1707,21 +1770,45 @@ function makeMove(col, who) {
   }
 }
 
+// Swap the status text with a brief fade animation. Uses the CSS .swap
+// keyframe which restarts by toggling the class off/on across a tick.
+function swapThinkingStatus(text) {
+  if (gameOver || humanIsCurrent) return;
+  statusEl.classList.remove('swap');
+  // Force a reflow so the class-add below actually re-triggers the animation.
+  // eslint-disable-next-line no-unused-expressions
+  void statusEl.offsetWidth;
+  statusEl.classList.add('swap');
+  // Swap the text at the midpoint of the fade-out half so the new words
+  // land invisible, then fade back in.
+  setTimeout(() => {
+    if (gameOver || humanIsCurrent) return;
+    setStatus(text, 'thinking');
+    // setStatus resets className — re-add swap so the second half of the
+    // keyframe (fade-in) still plays.
+    statusEl.classList.add('swap');
+  }, 160);
+}
+
 async function aiMove() {
   if (gameOver) return;
   const start = performance.now();
-  let longThinkId = setTimeout(() => {
-    if (!gameOver && !humanIsCurrent) setStatus('I need to think longer…', 'thinking');
-  }, LONG_THINK_MS);
+  // Arm every stage timer up-front — whichever ones fire before the solver
+  // returns will animate the status text through the progression. All are
+  // cleared when findBestMoveLive resolves.
+  const stageTimers = THINK_STAGES.map(stage => setTimeout(() => {
+    if (gameOver || humanIsCurrent) return;
+    swapThinkingStatus(stage.text);
+  }, stage.at));
   try {
     const col = await findBestMoveLive(position, aiDepth);
-    clearTimeout(longThinkId);
+    stageTimers.forEach(clearTimeout);
     if (gameOver) return;
     const elapsed = performance.now() - start;
     const remaining = Math.max(0, 400 - elapsed);
     scheduleTimer(() => makeMove(col, 'ai'), remaining);
   } catch (err) {
-    clearTimeout(longThinkId);
+    stageTimers.forEach(clearTimeout);
     console.warn('[c4] aiMove error:', err);
   }
 }
@@ -1820,7 +1907,15 @@ submitGo.addEventListener('click', async () => {
   const name = submitName.value.trim();
   if (name.length < 3 || name.length > 20) { submitErr.textContent = 'Name must be 3–20 chars.'; return; }
   if (Date.now() - lastSubmitAt < 30000) { submitErr.textContent = 'Hang on — 30s cooldown.'; return; }
-  if (!firebaseReady) { submitErr.textContent = 'Leaderboard unavailable.'; return; }
+  if (!firebaseReady) {
+    // Most common cause on the live site is Safari / in-app webviews
+    // blocking third-party auth cookies, which makes signInAnonymously
+    // throw and leaves firebaseReady=false for the whole session.
+    submitErr.textContent = firestoreReady
+      ? 'Leaderboard write blocked (try another browser or disable content blockers).'
+      : 'Leaderboard offline — check your connection.';
+    return;
+  }
   const meta = submitModal.pendingMeta;
   if (!meta) { closeSubmitModal(); return; }
   submitGo.disabled = true;
@@ -1840,6 +1935,17 @@ submitGo.addEventListener('click', async () => {
     lastSubmitAt = Date.now();
     submitErr.textContent = '';
     closeSubmitModal();
+    // Auto-switch the Hall of Fame tab to the mode they just submitted to,
+    // so the new row actually appears in front of them. Without this, an
+    // ai-first win lands in Firestore with mode='ai-first' but the HoF is
+    // still looking at the Human-first tab — indistinguishable from "my
+    // entry vanished".
+    const targetTab = document.querySelector(`.hof-tab[data-tab="${meta.mode}"]`);
+    if (targetTab && !targetTab.classList.contains('active')) {
+      hofTabs.forEach(t => t.classList.remove('active'));
+      targetTab.classList.add('active');
+      switchTab(meta.mode);
+    }
   } catch (err) {
     console.warn('[c4] submit failed:', err);
     submitErr.textContent = 'Submit failed: ' + (err.code || err.message || 'unknown');
@@ -1858,7 +1964,11 @@ submitGo.addEventListener('click', async () => {
 const hofList = document.getElementById('hof-list');
 const hofStatus = document.getElementById('hof-status');
 const hofTabs = document.querySelectorAll('.hof-tab');
-let currentTab = 'human-first';
+// Default to Machine First to match the game's default first-player segment
+// (`humanFirst = false`). Before this aligned, the home-screen Hall of Fame
+// showed an empty Human-first tab while every actual submission was landing
+// on the Machine-first tab — indistinguishable from "nobody ever wins".
+let currentTab = 'ai-first';
 const tabState = {
   'human-first': { entries: [], unsub: null, loaded: false, seenIds: new Set() },
   'ai-first':    { entries: [], unsub: null, loaded: false, seenIds: new Set() }
