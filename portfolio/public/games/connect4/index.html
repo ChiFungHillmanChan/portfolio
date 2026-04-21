@@ -538,24 +538,41 @@ function negamax(pos, depth, alpha, beta) {
 
   const key = pos.key();
   const entry = transTable.get(key);
-  if (entry !== undefined && entry.depth >= depth) {
-    if (entry.bound === TT_EXACT) return entry.value;
-    if (entry.bound === TT_LOWER && entry.value > alpha) alpha = entry.value;
-    else if (entry.bound === TT_UPPER && entry.value < beta) beta = entry.value;
-    if (alpha >= beta) return entry.value;
+  let ttMove = -1;
+  if (entry !== undefined) {
+    // TT-move is useful for ORDERING even when the cached depth is too
+    // shallow to return the value — the best move at depth d-2 is almost
+    // always still the best move at depth d. This is the core speedup that
+    // makes iterative deepening pay off.
+    ttMove = entry.bestMove;
+    if (entry.depth >= depth) {
+      if (entry.bound === TT_EXACT) return entry.value;
+      if (entry.bound === TT_LOWER && entry.value > alpha) alpha = entry.value;
+      else if (entry.bound === TT_UPPER && entry.value < beta) beta = entry.value;
+      if (alpha >= beta) return entry.value;
+    }
   }
 
   const max = WIN_SCORE - pos.moves - 2;
   if (beta > max) { beta = max; if (alpha >= beta) return beta; }
 
   let best = -Infinity;
-  for (let i = 0; i < COLS; i++) {
-    const c = COL_ORDER[i];
+  let bestMove = -1;
+  // Slot -1 = TT-move (if any); slots 0..6 = COL_ORDER, skipping ttMove.
+  for (let i = -1; i < COLS; i++) {
+    let c;
+    if (i < 0) {
+      if (ttMove < 0) continue;
+      c = ttMove;
+    } else {
+      c = COL_ORDER[i];
+      if (c === ttMove) continue;
+    }
     if (!pos.canPlay(c)) continue;
     pos.play(c);
     const score = -negamax(pos, depth - 1, -beta, -alpha);
     pos.undo();
-    if (score > best) best = score;
+    if (score > best) { best = score; bestMove = c; }
     if (score > alpha) alpha = score;
     if (alpha >= beta) break;
   }
@@ -564,7 +581,7 @@ function negamax(pos, depth, alpha, beta) {
   if (best <= alphaOrig) bound = TT_UPPER;
   else if (best >= beta) bound = TT_LOWER;
   else bound = TT_EXACT;
-  transTable.set(key, { value: best, depth, bound });
+  transTable.set(key, { value: best, depth, bound, bestMove });
 
   if (transTable.size > 400000) {
     const it = transTable.keys();
@@ -742,16 +759,29 @@ function findTacticalMove(pos) {
   return null;
 }
 
-function searchDepth(pos, depth) {
+function searchDepth(pos, depth, preferredFirst) {
+  // preferredFirst: the best move from the previous iterative-deepening
+  // iteration (or -1 if none). Trying it first at the root gives the same
+  // benefit as TT-move ordering inside negamax — every subsequent child
+  // is searched under a tighter (-beta, -alpha) window coming down.
   let localBest = COL_ORDER.find(c => pos.canPlay(c));
   let localScore = -Infinity;
-  for (let i = 0; i < COLS; i++) {
-    const c = COL_ORDER[i];
+  let alpha = -Infinity;
+  for (let i = -1; i < COLS; i++) {
+    let c;
+    if (i < 0) {
+      if (preferredFirst === undefined || preferredFirst < 0) continue;
+      c = preferredFirst;
+    } else {
+      c = COL_ORDER[i];
+      if (c === preferredFirst) continue;
+    }
     if (!pos.canPlay(c)) continue;
     pos.play(c);
-    const score = -negamax(pos, depth - 1, -Infinity, Infinity);
+    const score = -negamax(pos, depth - 1, -Infinity, -alpha);
     pos.undo();
     if (score > localScore) { localScore = score; localBest = c; }
+    if (score > alpha) alpha = score;
   }
   return { col: localBest, score: localScore };
 }
@@ -766,9 +796,11 @@ function findBestMove(pos, maxDepth) {
   if (tactical !== null) return tactical;
   let bestCol = COL_ORDER.find(c => pos.canPlay(c));
   let bestScore = -Infinity;
+  let preferredFirst = -1;
   for (let depth = 1; depth <= maxDepth; depth++) {
-    const r = searchDepth(pos, depth);
+    const r = searchDepth(pos, depth, preferredFirst);
     bestCol = r.col; bestScore = r.score;
+    preferredFirst = r.col;               // PV hand-off to next ID iteration
     if (bestScore >= WIN_SCORE - 50) break;
   }
   return bestCol;
@@ -781,11 +813,13 @@ async function findBestMoveLive(pos, maxDepth, onDepthStart) {
   if (tactical !== null) return tactical;
   let bestCol = COL_ORDER.find(c => pos.canPlay(c));
   let bestScore = -Infinity;
+  let preferredFirst = -1;
   for (let depth = 1; depth <= maxDepth; depth++) {
     await new Promise(resolve => setTimeout(resolve, 0));
     if (onDepthStart) onDepthStart(depth);
-    const r = searchDepth(pos, depth);
+    const r = searchDepth(pos, depth, preferredFirst);
     bestCol = r.col; bestScore = r.score;
+    preferredFirst = r.col;
     if (bestScore >= WIN_SCORE - 50) break;
   }
   return bestCol;
