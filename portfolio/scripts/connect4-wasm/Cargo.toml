@@ -1,0 +1,17 @@
+[package]
+name = "connect4-solver"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+# Size-optimized release profile — the .wasm ships to every visitor.
+[profile.release]
+opt-level = "z"         # optimize for size
+lto = true              # cross-crate LTO
+codegen-units = 1       # single unit lets LLVM inline more aggressively
+panic = "abort"         # no unwinding — panics become a plain trap
+strip = true            # strip symbols
+
+[dependencies]
