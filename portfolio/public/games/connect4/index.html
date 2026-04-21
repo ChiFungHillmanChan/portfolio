@@ -545,30 +545,82 @@ const TT_EXACT = 0, TT_LOWER = 1, TT_UPPER = 2;
 const transTable = new Map();
 
 // ============================================================
-// WASM ENGINE LOADER — two engines live here:
-//   wasmSolve        depth-limited negamax + α-β + heuristic eval.
-//                    Matches the JS engine below byte-for-byte. Used for
-//                    Try Game mode (intentionally beatable at depth 3).
-//   wasmSolvePerfect Pascal-Pons weak solver (null-window bisection, no
-//                    depth cap, no heuristic). Returns a provably optimal
-//                    column for the current player. Since Connect 4 is a
-//                    solved first-player-wins game, Challenge mode routes
-//                    through this and the machine is literally unbeatable
-//                    when it moves first.
+// WASM ENGINE — runs in a Web Worker.
+//
+// The perfect solver's cold-start bisection can block for several seconds.
+// On the main thread that freezes the status-pulse animation and
+// eventually trips Chrome's "Page Unresponsive" dialog. So we host both
+// wasm entry points (solve_best_move + solve_perfect) inside
+// connect4-solver-worker.js and communicate via postMessage. The main
+// thread stays event-loop-free while the worker thread crunches.
+//
+// Message plumbing: each request gets a monotonically-increasing id; a
+// Map<id, {resolve, reject}> tracks outstanding promises; the worker echoes
+// the id back in its response so we can match.
 // ============================================================
-let wasmSolve = null;          // (mask, current, moves, maxDepth) -> col
-let wasmSolvePerfect = null;   // (mask, current, moves) -> col  (Challenge)
-(async () => {
+let solverWorker = null;
+let solverWorkerReady = false;
+let solverWorkerBroken = false;
+let nextSolveId = 1;
+const pendingSolves = new Map();
+// Queue of requests fired before the worker reports "ready" — they get
+// flushed as soon as it does, so the early game (book hits only) doesn't
+// need to wait for wasm instantiation to complete.
+const preReadyQueue = [];
+
+function solveViaWorker(op, payload) {
+  return new Promise((resolve, reject) => {
+    if (solverWorkerBroken || !solverWorker) {
+      reject(new Error('solver worker unavailable'));
+      return;
+    }
+    const id = nextSolveId++;
+    pendingSolves.set(id, { resolve, reject });
+    const msg = { id, op, ...payload };
+    if (solverWorkerReady) {
+      solverWorker.postMessage(msg);
+    } else {
+      preReadyQueue.push(msg);
+    }
+  });
+}
+
+(() => {
   try {
-    const resp = await fetch('./connect4-solver.wasm');
-    if (!resp.ok) throw new Error('wasm fetch failed: ' + resp.status);
-    const bytes = await resp.arrayBuffer();
-    const { instance } = await WebAssembly.instantiate(bytes);
-    wasmSolve = instance.exports.solve_best_move;
-    wasmSolvePerfect = instance.exports.solve_perfect;
-    console.log('[c4] wasm engine ready (' + bytes.byteLength + ' bytes)');
+    solverWorker = new Worker('./connect4-solver-worker.js');
+    solverWorker.onmessage = (e) => {
+      const data = e.data;
+      if (data.type === 'ready') {
+        solverWorkerReady = true;
+        console.log('[c4] solver worker ready');
+        while (preReadyQueue.length) solverWorker.postMessage(preReadyQueue.shift());
+        return;
+      }
+      if (data.type === 'error') {
+        console.warn('[c4] solver worker wasm-load error:', data.error);
+        solverWorkerBroken = true;
+        // Drain anything waiting on the worker.
+        for (const [id, p] of pendingSolves) p.reject(new Error(data.error));
+        pendingSolves.clear();
+        preReadyQueue.length = 0;
+        return;
+      }
+      const { id, col, error } = data;
+      const slot = pendingSolves.get(id);
+      if (!slot) return;
+      pendingSolves.delete(id);
+      if (error) slot.reject(new Error(error));
+      else slot.resolve(col);
+    };
+    solverWorker.onerror = (err) => {
+      console.warn('[c4] solver worker error:', err && (err.message || err));
+      solverWorkerBroken = true;
+      for (const [id, p] of pendingSolves) p.reject(err || new Error('worker error'));
+      pendingSolves.clear();
+    };
   } catch (err) {
-    console.warn('[c4] wasm load failed — using JS engine:', err.message);
+    console.warn('[c4] could not start solver worker:', err.message);
+    solverWorkerBroken = true;
   }
 })();
 
@@ -1542,45 +1594,42 @@ function findBestMove(pos, maxDepth) {
   return bestCol;
 }
 
-// Async version — used by live AI. Yields to UI between depth iterations so
-// the browser can repaint (e.g. to flip the status text to "thinking longer").
-//
-// At CHALLENGE depth (14) we route through the perfect solver
-// (wasmSolvePerfect) — provably optimal play, not a depth-limited heuristic.
-// This trades a cold-start cost on the first post-book move of a session
-// (~3–5 s, during which the UI shows "I need to think longer…") for the
-// guarantee that the machine is literally unbeatable when it moves first.
-// The wasm transposition table persists for the whole page session, so
-// subsequent AI moves land on TT hits and return in 0–200 ms. At Try Game
-// depth (3) we stay on the fast depth-limited engine so the AI remains
-// beatable for training.
+// Async version — used by live AI. Because the actual wasm call happens on
+// a Web Worker thread, the await below genuinely yields the main thread to
+// the renderer — the thinking-pulse animation and the stage-swap text
+// transitions keep running smoothly while the solver crunches. At CHALLENGE
+// depth (14) we dispatch the perfect solver (provably optimal play, no
+// depth cap); at Try Game depth (3) we dispatch the fast depth-limited
+// engine so the AI remains beatable. The worker's transposition table
+// persists for the whole page session, so the first post-book solve of a
+// session takes a few seconds cold but subsequent solves land on TT hits
+// and return in 0–200 ms.
 async function findBestMoveLive(pos, maxDepth, onDepthStart) {
   // JS-side fast path: book hit, immediate win, or immediate block. All
-  // cheap, handled in JS so the wasm call boundary isn't touched for the
-  // common case of "AI knows the answer instantly".
+  // cheap, handled on the main thread so the worker boundary isn't touched
+  // for the common case of "AI knows the answer instantly".
   const tactical = findTacticalMove(pos);
   if (tactical !== null) return tactical;
 
   const wantPerfect = maxDepth >= 14;
+  if (onDepthStart) onDepthStart(maxDepth);
 
-  // Wasm fast path. Yields to the UI once first so the "machine is thinking…"
-  // status can paint before the synchronous wasm call blocks.
-  if (wantPerfect && wasmSolvePerfect) {
-    await new Promise(resolve => setTimeout(resolve, 0));
-    if (onDepthStart) onDepthStart(maxDepth);
-    const col = Number(wasmSolvePerfect(pos.mask, pos.current, pos.moves));
-    if (col >= 0) return col;
-    // col < 0 should not happen for a non-full, non-terminal position. Fall
-    // through to depth-limited wasm / JS as a safety net.
-  }
-  if (wasmSolve) {
-    await new Promise(resolve => setTimeout(resolve, 0));
-    if (onDepthStart) onDepthStart(maxDepth);
-    const col = Number(wasmSolve(pos.mask, pos.current, pos.moves, maxDepth));
-    if (col >= 0) return col;
+  // Worker path — main thread stays responsive throughout the solve.
+  if (!solverWorkerBroken) {
+    try {
+      const op = wantPerfect ? 'perfect' : 'depth-limited';
+      const payload = wantPerfect
+        ? { mask: pos.mask, current: pos.current, moves: pos.moves }
+        : { mask: pos.mask, current: pos.current, moves: pos.moves, maxDepth };
+      const col = await solveViaWorker(op, payload);
+      if (col >= 0) return col;
+    } catch (err) {
+      console.warn('[c4] worker solve failed, falling back to JS:', err.message);
+    }
   }
 
-  // JS fallback (wasm not yet loaded / failed / old browser).
+  // JS fallback (worker unavailable / failed). Synchronous and slow at
+  // maxDepth=14 but keeps the game playable in the worst case.
   let bestCol = COL_ORDER.find(c => pos.canPlay(c));
   let bestScore = -Infinity;
   let preferredFirst = -1;
