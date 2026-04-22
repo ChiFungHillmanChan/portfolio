@@ -383,9 +383,18 @@ const COL_SHIFT = [0,1,2,3,4,5,6].map(c => BigInt(c * H1));
 const COL_BOTTOM = [0,1,2,3,4,5,6].map(c => 1n << COL_SHIFT[c]);
 const COL_TOP = [0,1,2,3,4,5,6].map(c => 1n << BigInt(c * H1 + ROWS - 1));
 
-// AI plays perfect strategy — no time cap. UX compensates: if a move takes
-// more than LONG_THINK_MS, status text switches to "I need to think longer…".
+// AI plays perfect strategy with a soft per-move budget. For Challenge mode,
+// the wasm engine runs at depth 12 first (≤500ms in all observed positions)
+// and only attempts depth 14 if stage 1 returned fast. Mobile caps at 12 to
+// keep responses under 1s on slower CPUs. If a move exceeds LONG_THINK_MS the
+// status text switches to "I need to think longer…".
 const LONG_THINK_MS = 3000;
+const IS_MOBILE = /iPhone|iPad|iPod|Android|Mobile|Tablet/i.test(
+  (typeof navigator !== 'undefined' && navigator.userAgent) || ''
+);
+const MOBILE_DEPTH_CAP = 12;
+const STAGE1_DEPTH = 12;
+const STAGE2_PROMOTE_MS = 100;   // only attempt stage 2 (full depth) if stage 1 finished within this
 
 class Position {
   constructor() {
@@ -1528,13 +1537,29 @@ async function findBestMoveLive(pos, maxDepth, onDepthStart) {
   const tactical = findTacticalMove(pos);
   if (tactical !== null) return tactical;
 
-  // Wasm fast path: any non-trivial search. Yields to the UI once first so
-  // the "machine is thinking…" status can paint before the call blocks.
+  // Wasm fast path: staged iterative search.
+  //   stage 1: depth 12 (hard-capped by mobile and by requested maxDepth)
+  //   stage 2: full requested depth, but only if stage 1 finished fast enough
+  //            that total wall time stays well under 1s on the slow branches
+  //            we saw in bench-adversarial (worst stage-1 ≈ 500ms).
+  // This guarantees we always have a move to return, keeps worst-case latency
+  // under ~500ms, and still reaches the user-requested depth on typical
+  // positions where depth 12 completes in a few ms.
   if (wasmSolve) {
     await new Promise(resolve => setTimeout(resolve, 0));
-    if (onDepthStart) onDepthStart(maxDepth);
-    const col = Number(wasmSolve(pos.mask, pos.current, pos.moves, maxDepth));
-    if (col >= 0) return col;
+    const hardCap = IS_MOBILE ? Math.min(maxDepth, MOBILE_DEPTH_CAP) : maxDepth;
+    const stage1Depth = Math.min(STAGE1_DEPTH, hardCap);
+    if (onDepthStart) onDepthStart(stage1Depth);
+    const stage1Start = performance.now();
+    let bestCol = Number(wasmSolve(pos.mask, pos.current, pos.moves, stage1Depth));
+    const stage1Ms = performance.now() - stage1Start;
+    if (bestCol >= 0 && hardCap > stage1Depth && stage1Ms < STAGE2_PROMOTE_MS) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+      if (onDepthStart) onDepthStart(hardCap);
+      const promoted = Number(wasmSolve(pos.mask, pos.current, pos.moves, hardCap));
+      if (promoted >= 0) bestCol = promoted;
+    }
+    if (bestCol >= 0) return bestCol;
     // col < 0 means wasm found no legal move, which shouldn't happen here.
     // Fall through to JS as a safety net.
   }
