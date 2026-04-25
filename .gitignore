@@ -36,3 +36,11 @@ lambda/data/users.json
 
 # OS files
 .DS_Store
+
+# Hourglass app build/deps
+portfolio/src/game/hourglass/dist/
+portfolio/src/game/hourglass/node_modules/
+portfolio/src/game/hourglass/.firebase/
+
+# Superpowers brainstorm scratch
+.superpowers/
