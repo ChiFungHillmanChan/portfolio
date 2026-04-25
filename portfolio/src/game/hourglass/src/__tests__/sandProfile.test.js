@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { topProfile, bottomProfile, volumeOfRevolution, BULB_RADIUS, BULB_HEIGHT } from '../lib/sandProfile.js';
+import { topProfile, bottomProfile, volumeOfRevolution, BULB_RADIUS, BULB_HEIGHT, NECK_RADIUS } from '../lib/sandProfile.js';
 
 const totalSand = volumeOfRevolution(topProfile(0));
 
@@ -40,5 +40,7 @@ describe('sandProfile', () => {
   it('exposes constants', () => {
     expect(BULB_RADIUS).toBeGreaterThan(0);
     expect(BULB_HEIGHT).toBeGreaterThan(0);
+    expect(NECK_RADIUS).toBeGreaterThan(0);
+    expect(NECK_RADIUS).toBeLessThan(BULB_RADIUS);
   });
 });

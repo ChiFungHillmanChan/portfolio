@@ -4,6 +4,12 @@ export const BULB_HEIGHT = 0.55;    // half-height of one bulb (top OR bottom)
 export const NECK_RADIUS = 0.04;    // radius at the narrowest point
 const SEGMENTS = 32;                // profile resolution
 
+// Boundary contract for consumers (e.g. SandBulk): at progress=1 (top) or
+// progress=0 (bottom) the returned profile has near-zero volume and may
+// degenerate to collinear points at the same y. THREE.LatheGeometry will
+// happily accept the array but produce a zero-thickness disc; the renderer
+// must guard with `if (volumeOfRevolution(p) < ε) skip` to avoid z-fighting.
+
 const lerp = (a, b, t) => a + (b - a) * t;
 
 // Volume of revolution around the y-axis using disc summation: ∑ π r² dy.
@@ -36,6 +42,10 @@ function buildFullTopProfile() {
   for (let i = 0; i <= SEGMENTS; i++) {
     const t = i / SEGMENTS;
     const r = bulbRadius(t);
+    // y range: start slightly above the neck (×1.1 = 10% clearance so the
+    // sand surface never touches the glass neck wall) and stop slightly
+    // below the bulb crest (×0.95 = 5% safety margin against the glass
+    // wall thickness Task 9 will add).
     const y = lerp(NECK_RADIUS * 1.1, BULB_HEIGHT * 0.95, t);
     pts.push([r, y]);
   }
