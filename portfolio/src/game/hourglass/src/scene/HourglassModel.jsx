@@ -1,8 +1,13 @@
 import { useGLTF } from '@react-three/drei';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 
 useGLTF.preload('/models/hourglass.glb');
+
+// Always hide these mesh names by their loaded glb identifier. Edit this
+// list to permanently remove the static sand once we identify which
+// Object_N is which.
+const ALWAYS_HIDE = new Set(['Object_2']);  // best guess: unique-material one
 
 // Target world height for the hourglass (matches the original lathe-frame
 // footprint our sand math was sized around).
@@ -64,12 +69,14 @@ export default function HourglassModel() {
     if (!scene) return;
 
     const SAND_NAME_RE = /sand|grain|dust|particle/i;
-    // Some artists put the sand in a sub-group named e.g. "Sand_top" / "Sand_bottom".
-    // We hide any node whose name OR whose material name matches.
 
     scene.traverse((obj) => {
       const matName = obj.material?.name || '';
-      if (SAND_NAME_RE.test(obj.name) || SAND_NAME_RE.test(matName)) {
+      if (
+        SAND_NAME_RE.test(obj.name) ||
+        SAND_NAME_RE.test(matName) ||
+        ALWAYS_HIDE.has(obj.name)
+      ) {
         obj.visible = false;
         return;
       }
@@ -81,9 +88,7 @@ export default function HourglassModel() {
       if (m && 'metalness' in m && (m.metalness == null)) m.metalness = 0.2;
     });
 
-    // Always-on diagnostic so you don't need to flip a flag — paste these
-    // names into chat and I'll widen the hide-regex if anything obviously-
-    // sand slips through.
+    // Always-on diagnostic.
     const kept = [];
     const hidden = [];
     scene.traverse((o) => {
@@ -95,6 +100,34 @@ export default function HourglassModel() {
     console.log('[HourglassModel] visible meshes:', kept);
     // eslint-disable-next-line no-console
     console.log('[HourglassModel] hidden meshes:', hidden);
+
+    // Expose a helper so we can toggle individual meshes from the console
+    // to identify what each Object_N is. Usage in DevTools:
+    //   toggleMesh('Object_3')   → flips visibility of Object_3
+    //   toggleMesh()             → list all meshes with their state
+    if (typeof window !== 'undefined') {
+      window.toggleMesh = (name) => {
+        if (!name) {
+          const list = [];
+          scene.traverse((o) => {
+            if (o.isMesh) list.push(`${o.name}: ${o.visible ? 'visible' : 'HIDDEN'}`);
+          });
+          // eslint-disable-next-line no-console
+          console.log(list.join('\n'));
+          return;
+        }
+        let found = false;
+        scene.traverse((o) => {
+          if (o.name === name) {
+            o.visible = !o.visible;
+            found = true;
+            // eslint-disable-next-line no-console
+            console.log(`[toggleMesh] ${name} → ${o.visible ? 'visible' : 'HIDDEN'}`);
+          }
+        });
+        if (!found) console.warn(`[toggleMesh] no mesh named "${name}"`);
+      };
+    }
   }, [scene]);
 
   return (
