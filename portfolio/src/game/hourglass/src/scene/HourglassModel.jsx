@@ -55,11 +55,24 @@ export default function HourglassModel() {
     };
   }, [scene]);
 
-  // Walk the scene once and ensure all materials cast/receive shadows,
-  // and apply some subtle PBR polish if the artist shipped flat materials.
+  // Walk the scene once.
+  // (1) Hide any baked-in sand meshes the artist included — our SandBulk +
+  //     SandStream are the source of truth and the static baked sand causes
+  //     a "two doms / two piles" duplication that confuses the eye.
+  // (2) Apply shadow flags + nudge flat materials toward PBR.
   useEffect(() => {
     if (!scene) return;
+
+    const SAND_NAME_RE = /sand|grain|dust|particle/i;
+    // Some artists put the sand in a sub-group named e.g. "Sand_top" / "Sand_bottom".
+    // We hide any node whose name OR whose material name matches.
+
     scene.traverse((obj) => {
+      const matName = obj.material?.name || '';
+      if (SAND_NAME_RE.test(obj.name) || SAND_NAME_RE.test(matName)) {
+        obj.visible = false;
+        return;
+      }
       if (!obj.isMesh) return;
       obj.castShadow = true;
       obj.receiveShadow = true;
@@ -67,6 +80,16 @@ export default function HourglassModel() {
       if (m && 'roughness' in m && (m.roughness == null || m.roughness < 0.3)) m.roughness = 0.55;
       if (m && 'metalness' in m && (m.metalness == null)) m.metalness = 0.2;
     });
+
+    // Diagnostic: list the meshes we kept so debugging the next iteration
+    // is straightforward without re-opening Blender.
+    if (typeof window !== 'undefined' && window.__HOURGLASS_DEBUG__) {
+      const kept = [];
+      scene.traverse((o) => {
+        if (o.isMesh && o.visible) kept.push(`${o.name} (${o.material?.name || 'no-mat'})`);
+      });
+      console.log('[HourglassModel] visible meshes:', kept);
+    }
   }, [scene]);
 
   return (
