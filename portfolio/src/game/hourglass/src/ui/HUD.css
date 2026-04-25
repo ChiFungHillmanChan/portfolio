@@ -1,0 +1,60 @@
+.hud {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  color: #f4eee0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+  font-size: 14px;
+  z-index: 10;
+  transition: opacity 400ms ease;
+}
+.hud.idle { opacity: 0.3; }
+.hud .chips { display: flex; gap: 6px; }
+.hud .chip {
+  padding: 6px 10px;
+  border-radius: 10px;
+  background: transparent;
+  color: rgba(244,238,224,0.7);
+  border: 1px solid rgba(255,255,255,0.06);
+  font: inherit;
+  cursor: pointer;
+}
+.hud .chip[aria-pressed="true"] {
+  background: rgba(244,238,224,0.15);
+  color: #fff;
+  border-color: rgba(255,255,255,0.25);
+}
+.hud .time {
+  font-variant-numeric: tabular-nums;
+  font-size: 20px;
+  min-width: 92px;
+  text-align: center;
+}
+.hud .time.paused { animation: pulse 1.6s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: 0.5; } }
+.hud .icon-btn {
+  width: 36px; height: 36px;
+  border: none; background: transparent; cursor: pointer;
+  color: #f4eee0; font-size: 18px;
+  border-radius: 10px;
+  display: grid; place-items: center;
+}
+.hud .icon-btn:hover { background: rgba(255,255,255,0.06); }
+@media (max-width: 768px) {
+  .hud {
+    left: 8px; right: 8px; bottom: 8px;
+    transform: none;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
