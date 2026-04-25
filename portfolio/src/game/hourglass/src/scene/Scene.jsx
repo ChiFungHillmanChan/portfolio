@@ -54,7 +54,7 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
         <directionalLight
           castShadow
           position={[2.4, 3, 2]}
-          intensity={2.2}
+          intensity={1.2}
           color="#ffd9a8"
           shadow-mapSize={[2048, 2048]}
           shadow-bias={-0.0005}
@@ -77,7 +77,7 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
       <AdaptiveDpr pixelated={false} />
       <AttentionZoom done={done} />
       <EffectComposer multisampling={4}>
-        <Bloom intensity={lowPower ? 0.2 : 0.3} luminanceThreshold={0.9} luminanceSmoothing={0.2} mipmapBlur />
+        <Bloom intensity={lowPower ? 0.05 : 0.1} luminanceThreshold={0.95} luminanceSmoothing={0.2} mipmapBlur />
         <Vignette eskil={false} offset={0.5} darkness={lowPower ? 0.3 : 0.4} />
       </EffectComposer>
     </Canvas>
