@@ -14,10 +14,15 @@ export default function SandBulk({ progress = 0 }) {
   const botRef = useRef();
   const lastProgressRef = useRef(-1);
 
+  // Glowing amber sand — emissive so it self-illuminates through the glass
+  // and triggers bloom even at high luminance threshold. Matches the
+  // cathedral-fantasy reference (lit-from-within hourglass).
   const sandMat = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#efe3c8',
-    roughness: 0.95,
-    metalness: 0,
+    color: '#c97f2a',
+    emissive: '#ff8a1a',
+    emissiveIntensity: 1.4,
+    roughness: 0.55,
+    metalness: 0.1,
   }), []);
 
   // Initial geometries — replaced each frame.

@@ -10,23 +10,40 @@ const PLATE_PROFILE = [
   [0.0,  0.06],
 ];
 
+// More elaborate baroque-style spindle: alternating beads, rings, and bulges
+// to read as ornate carved metal/wood instead of a simple turned dowel.
 const SPINDLE_PROFILE = [
   [0.00, 0.00],
-  [0.04, 0.00],
-  [0.05, 0.02],
-  [0.07, 0.05],
-  [0.05, 0.10],
+  [0.06, 0.00],
+  [0.07, 0.01],
+  [0.08, 0.025],
+  [0.07, 0.035],
+  [0.05, 0.05],
+  [0.045, 0.08],
+  [0.05, 0.11],   // small bead
+  [0.06, 0.13],
+  [0.05, 0.15],
   [0.04, 0.20],
-  [0.06, 0.28],
-  [0.05, 0.36],
-  [0.04, 0.50],
-  [0.06, 0.58],
-  [0.05, 0.66],
-  [0.04, 0.80],
-  [0.05, 0.90],
-  [0.07, 0.95],
-  [0.05, 0.98],
-  [0.04, 1.00],
+  [0.05, 0.24],
+  [0.07, 0.28],   // bulge 1
+  [0.05, 0.32],
+  [0.04, 0.40],
+  [0.05, 0.46],
+  [0.045, 0.50],
+  [0.06, 0.54],   // mid bead
+  [0.045, 0.58],
+  [0.05, 0.62],
+  [0.04, 0.70],
+  [0.05, 0.74],
+  [0.07, 0.78],   // bulge 2
+  [0.05, 0.82],
+  [0.04, 0.88],
+  [0.05, 0.92],
+  [0.06, 0.95],
+  [0.07, 0.965],
+  [0.08, 0.975],
+  [0.07, 0.99],
+  [0.06, 1.00],
   [0.00, 1.00],
 ];
 
@@ -42,10 +59,12 @@ export default function HourglassFrame() {
     return g;
   }, []);
 
+  // Aged dark bronze — slightly metallic so the warm rim light catches the
+  // edges of the carved profile and reads as ornate metal in the cathedral light.
   const woodMat = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#3a2418',
-    roughness: 0.7,
-    metalness: 0,
+    color: '#2a1a0e',
+    roughness: 0.45,
+    metalness: 0.55,
   }), []);
 
   const spindleAngles = [0, Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
