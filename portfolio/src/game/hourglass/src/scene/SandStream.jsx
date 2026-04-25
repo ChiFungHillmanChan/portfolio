@@ -3,7 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { NECK_RADIUS, BULB_HEIGHT } from '../lib/sandProfile.js';
 
-const STREAM_COUNT = 2000;
+// More particles + bigger size + brighter color so the falling stream is
+// unambiguously visible against the dark scene. Previously you couldn't tell
+// the timer had started.
+const STREAM_COUNT = 4000;
 const STREAM_TOP = NECK_RADIUS * 0.9;
 const STREAM_BOTTOM = -BULB_HEIGHT * 0.7;
 const STREAM_LENGTH = STREAM_TOP - STREAM_BOTTOM;
@@ -30,10 +33,14 @@ export default function SandStream({ progress = 0, running = false }) {
     const time = state.clock.elapsedTime;
     const arr = ref.current.geometry.attributes.position.array;
     for (let i = 0; i < STREAM_COUNT; i++) {
-      const phase = (phases[i] + time * 0.45) % 1;
+      // Gravity-like accel: phase grows non-linearly so particles speed up as
+      // they fall — looks like real granular flow rather than uniform drift.
+      const linear = (phases[i] + time * 0.55) % 1;
+      const phase = linear * linear;
       const y = STREAM_TOP - phase * STREAM_LENGTH;
-      const widthAtY = NECK_RADIUS * (0.25 + 0.6 * (1 - (y - STREAM_BOTTOM) / STREAM_LENGTH));
-      const angle = phase * 13.7 + i * 0.001;
+      // Tighter at the neck, slightly fanning out at the bottom on impact
+      const widthAtY = NECK_RADIUS * (0.18 + 0.55 * (1 - (y - STREAM_BOTTOM) / STREAM_LENGTH));
+      const angle = phases[i] * 137.5 + i * 0.001;
       arr[i * 3] = Math.cos(angle * 6) * widthAtY * 0.5;
       arr[i * 3 + 1] = y;
       arr[i * 3 + 2] = Math.sin(angle * 6) * widthAtY * 0.5;
@@ -52,11 +59,11 @@ export default function SandStream({ progress = 0, running = false }) {
         />
       </bufferGeometry>
       <pointsMaterial
-        color="#f4ecd0"
-        size={0.012}
+        color="#fff4d6"
+        size={0.022}
         sizeAttenuation
         transparent
-        opacity={0.95}
+        opacity={1}
         depthWrite={false}
       />
     </points>

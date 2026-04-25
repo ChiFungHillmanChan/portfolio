@@ -1,6 +1,6 @@
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Environment, OrbitControls, AdaptiveDpr, Sparkles, Lightformer } from '@react-three/drei';
-import { EffectComposer, Bloom, Vignette, DepthOfField } from '@react-three/postprocessing';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { Suspense, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import Table from './Table.jsx';
@@ -37,20 +37,18 @@ function AttentionZoom({ done }) {
   return null;
 }
 
-// Cathedral-style ambient: a few warm Lightformer rectangles around the
-// hourglass simulating distant torches/candles, plus a strong cool fill from
-// behind to silhouette the glass against the gloom.
-function CathedralLights() {
+// Three-point studio rig packaged as Lightformers so the IBL
+// (image-based lighting) reflects realistically on the wood and glass.
+// Tuned for *real* not *fantasy*: neutral key, warm fill, cool rim.
+function StudioLights() {
   return (
     <>
-      {/* Warm rim from behind-left (the "cathedral arch with torch" vibe) */}
-      <Lightformer form="rect" intensity={6} color="#ffb060" position={[-2.5, 1.5, -3]} scale={[3, 4, 1]} target={[0, 0, 0]} />
-      {/* Warm rim from behind-right */}
-      <Lightformer form="rect" intensity={5} color="#ff8a30" position={[2.8, 1.2, -3]} scale={[2.5, 4, 1]} target={[0, 0, 0]} />
-      {/* Cool fill from front-far to keep glass edges visible */}
-      <Lightformer form="rect" intensity={1.2} color="#5870a0" position={[0, 1.8, 5]} scale={[5, 3, 1]} target={[0, 0, 0]} />
-      {/* Distant warm glow from the floor (puddle reflection source) */}
-      <Lightformer form="rect" intensity={3} color="#c97030" position={[-4, -0.4, -2]} scale={[2, 0.4, 1]} target={[0, 0, 0]} />
+      {/* Key light: neutral white from upper-front, broad and bright */}
+      <Lightformer form="rect" intensity={4} color="#ffffff" position={[2.5, 3, 2]} scale={[3, 3, 1]} target={[0, 0, 0]} />
+      {/* Warm fill from the side at table level — picks up wood grain */}
+      <Lightformer form="rect" intensity={1.5} color="#ffd9a8" position={[-3, -0.2, 0.5]} scale={[2, 1.2, 1]} target={[0, 0, 0]} />
+      {/* Cool rim from behind-above for glass edge separation */}
+      <Lightformer form="rect" intensity={2.5} color="#a8c0ff" position={[0, 1.6, -3]} scale={[2, 2, 1]} target={[0, 0, 0]} />
     </>
   );
 }
@@ -63,53 +61,51 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
       camera={{ fov: 32, position: [1.6, 0.6, 2.4], near: 0.05, far: 40 }}
     >
-      <color attach="background" args={['#06040a']} />
-      {/* Heavy fog → distant geometry fades to near-black, gives depth */}
-      <fog attach="fog" args={['#06040a', 4, 11]} />
+      <color attach="background" args={['#0d0a08']} />
+      {/* Soft fog → distant floor falls off naturally */}
+      <fog attach="fog" args={['#0d0a08', 6, 14]} />
       <Suspense fallback={null}>
-        {/* Custom HDR built from Lightformers — replaces the studio preset
-            so the lighting actually matches the cathedral reference. */}
         <Environment resolution={256} background={false}>
-          <CathedralLights />
+          <StudioLights />
         </Environment>
 
-        {/* Very low ambient — let the rim lights do the work */}
-        <ambientLight intensity={0.03} color="#3050a0" />
+        <ambientLight intensity={0.15} color="#a8b8d0" />
 
-        {/* Warm key light from upper-front-left (one strong warm source) */}
+        {/* Strong neutral key light from upper-front for clear shadow + materials */}
         <directionalLight
           castShadow
           position={[2.4, 3, 2]}
-          intensity={0.8}
-          color="#ffd0a0"
+          intensity={2.0}
+          color="#ffffff"
           shadow-mapSize={[2048, 2048]}
           shadow-bias={-0.0005}
         />
 
-        {/* Strong warm rim from behind, low — creates the silhouette halo */}
+        {/* Subtle warm rim from behind-low — gives the hourglass a halo
+            without bleaching the scene */}
         <spotLight
-          position={[0, 0.2, -3]}
-          angle={0.6}
+          position={[0, 0.4, -2.5]}
+          angle={0.7}
           penumbra={0.7}
-          intensity={6}
-          color="#ff7a20"
-          distance={8}
+          intensity={2.5}
+          color="#ffaa66"
+          distance={6}
           target-position={[0, 0, 0]}
         />
 
         <Table />
         <Hourglass progress={progress} running={running} flipState={flipState} onFlip={onFlip} />
 
-        {/* Floating dust particles — pure atmosphere */}
+        {/* Subtle dust — restraint, not glitter */}
         {!lowPower && (
           <Sparkles
-            count={70}
-            scale={[3, 2.5, 3]}
-            position={[0, 0.4, 0]}
-            size={3}
-            speed={0.2}
-            opacity={0.6}
-            color="#ffaa55"
+            count={30}
+            scale={[2.5, 2, 2.5]}
+            position={[0, 0.3, 0]}
+            size={2}
+            speed={0.15}
+            opacity={0.35}
+            color="#ddc8a0"
           />
         )}
       </Suspense>
@@ -128,12 +124,9 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
       <AdaptiveDpr pixelated={false} />
       <AttentionZoom done={done} />
       <EffectComposer multisampling={4}>
-        {/* Bloom on the emissive sand and the rim lights — gives the glow */}
-        <Bloom intensity={lowPower ? 0.4 : 0.7} luminanceThreshold={0.6} luminanceSmoothing={0.3} mipmapBlur />
-        {!lowPower && (
-          <DepthOfField focusDistance={0.012} focalLength={0.05} bokehScale={2.5} />
-        )}
-        <Vignette eskil={false} offset={0.4} darkness={lowPower ? 0.5 : 0.7} />
+        {/* Subtle bloom only on the brightest highlights of the rim light */}
+        <Bloom intensity={lowPower ? 0.1 : 0.18} luminanceThreshold={0.85} luminanceSmoothing={0.25} mipmapBlur />
+        <Vignette eskil={false} offset={0.5} darkness={lowPower ? 0.3 : 0.45} />
       </EffectComposer>
     </Canvas>
   );

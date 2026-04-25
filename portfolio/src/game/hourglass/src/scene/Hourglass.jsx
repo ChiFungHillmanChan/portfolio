@@ -42,8 +42,13 @@ export default function Hourglass({ progress, running, flipState, onFlip }) {
     >
       <HourglassFrame />
       <GlassBulbs />
-      <SandBulk progress={progress} />
-      <SandStream progress={progress} running={running} />
+      {/* Sand sub-group is counter-rotated so the sand ALWAYS visually drains
+          downward. The wood + glass rotate with the parent (visually
+          symmetric, reads as a real flip), but gravity stays gravity. */}
+      <group rotation-z={flipState === 1 ? 0 : -Math.PI}>
+        <SandBulk progress={progress} />
+        <SandStream progress={progress} running={running} />
+      </group>
     </group>
   );
 }

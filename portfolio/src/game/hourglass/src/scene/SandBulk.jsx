@@ -3,7 +3,10 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { topProfile, bottomProfile, volumeOfRevolution } from '../lib/sandProfile.js';
 
-const VOLUME_EPSILON = 1e-4;  // skip rendering when volume is essentially zero
+// Threshold for hiding degenerate (collapsed) profiles. Set very low so the
+// bottom pile becomes visible almost immediately after the timer starts —
+// otherwise the user can't tell anything is happening for the first second.
+const VOLUME_EPSILON = 5e-6;
 
 function profilePointsToVec2(pts) {
   return pts.map(([r, y]) => new THREE.Vector2(r, y));
@@ -14,15 +17,14 @@ export default function SandBulk({ progress = 0 }) {
   const botRef = useRef();
   const lastProgressRef = useRef(-1);
 
-  // Glowing amber sand — emissive so it self-illuminates through the glass
-  // and triggers bloom even at high luminance threshold. Matches the
-  // cathedral-fantasy reference (lit-from-within hourglass).
+  // Real sand: warm tan/beige, fully matte, NO emissive. Lit by the warm
+  // rim light so it picks up the cathedral atmosphere honestly instead of
+  // looking like a glowing magic blob.
   const sandMat = useMemo(() => new THREE.MeshStandardMaterial({
-    color: '#c97f2a',
-    emissive: '#ff8a1a',
-    emissiveIntensity: 1.4,
-    roughness: 0.55,
-    metalness: 0.1,
+    color: '#d9b37a',
+    roughness: 1,
+    metalness: 0,
+    flatShading: false,
   }), []);
 
   // Initial geometries — replaced each frame.
