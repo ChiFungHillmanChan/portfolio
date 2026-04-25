@@ -3,8 +3,9 @@ import { Environment, OrbitControls, AdaptiveDpr } from '@react-three/drei';
 import { Suspense } from 'react';
 import * as THREE from 'three';
 import Table from './Table.jsx';
+import Hourglass from './Hourglass.jsx';
 
-export default function Scene() {
+export default function Scene({ progress = 0, running = false, flipState = 1, onFlip }) {
   return (
     <Canvas
       shadows
@@ -26,6 +27,7 @@ export default function Scene() {
           shadow-bias={-0.0005}
         />
         <Table />
+        <Hourglass progress={progress} running={running} flipState={flipState} onFlip={onFlip} />
       </Suspense>
       <OrbitControls
         enableDamping
