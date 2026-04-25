@@ -1,6 +1,7 @@
 import { Canvas } from '@react-three/fiber';
 import { useThree, useFrame } from '@react-three/fiber';
 import { Environment, OrbitControls, AdaptiveDpr } from '@react-three/drei';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import { Suspense, useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import Table from './Table.jsx';
@@ -73,6 +74,10 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
       />
       <AdaptiveDpr pixelated={false} />
       <AttentionZoom done={done} />
+      <EffectComposer multisampling={4}>
+        <Bloom intensity={0.3} luminanceThreshold={0.9} luminanceSmoothing={0.2} mipmapBlur />
+        <Vignette eskil={false} offset={0.5} darkness={0.4} />
+      </EffectComposer>
     </Canvas>
   );
 }
