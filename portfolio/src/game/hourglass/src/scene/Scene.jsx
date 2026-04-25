@@ -38,11 +38,11 @@ function AttentionZoom({ done }) {
   return null;
 }
 
-export default function Scene({ progress = 0, running = false, flipState = 1, done = false, onFlip }) {
+export default function Scene({ progress = 0, running = false, flipState = 1, done = false, onFlip, lowPower = false }) {
   return (
     <Canvas
       shadows
-      dpr={[1, 2]}
+      dpr={lowPower ? [1, 1.5] : [1, 2]}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
       camera={{ fov: 32, position: [1.6, 0.6, 2.4], near: 0.05, far: 40 }}
     >
@@ -71,12 +71,14 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
         maxPolarAngle={Math.PI * 0.55}
         enablePan={false}
         target={[0, 0, 0]}
+        autoRotate={!lowPower}
+        autoRotateSpeed={0.4}
       />
       <AdaptiveDpr pixelated={false} />
       <AttentionZoom done={done} />
       <EffectComposer multisampling={4}>
-        <Bloom intensity={0.3} luminanceThreshold={0.9} luminanceSmoothing={0.2} mipmapBlur />
-        <Vignette eskil={false} offset={0.5} darkness={0.4} />
+        <Bloom intensity={lowPower ? 0.2 : 0.3} luminanceThreshold={0.9} luminanceSmoothing={0.2} mipmapBlur />
+        <Vignette eskil={false} offset={0.5} darkness={lowPower ? 0.3 : 0.4} />
       </EffectComposer>
     </Canvas>
   );

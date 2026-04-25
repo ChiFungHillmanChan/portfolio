@@ -3,8 +3,10 @@ import Scene from './scene/Scene.jsx';
 import HUD from './ui/HUD.jsx';
 import { useTimer } from './hooks/useTimer.js';
 import { useAudio } from './hooks/useAudio.js';
+import { isLowPower } from './lib/device.js';
 
 export default function App() {
+  const lowPower = isLowPower();
   const timer = useTimer({ defaultDuration: 300 });
   const [muted, setMuted] = useState(() => localStorage.getItem('hourglass.muted') !== '0');
 
@@ -61,6 +63,7 @@ export default function App() {
         flipState={timer.flipState}
         done={timer.done}
         onFlip={handleFlip}
+        lowPower={lowPower}
       />
       <HUD
         duration={timer.duration}
