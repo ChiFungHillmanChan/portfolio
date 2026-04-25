@@ -11,6 +11,27 @@ export default function App() {
     localStorage.setItem('hourglass.muted', muted ? '1' : '0');
   }, [muted]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      switch (e.key.toLowerCase()) {
+        case ' ':
+          e.preventDefault();
+          if (timer.running) timer.pause(); else timer.start();
+          break;
+        case 'r': timer.reset(); break;
+        case 'f':
+          timer.flip();
+          setTimeout(() => timer.start(), 850);
+          break;
+        case 'm': setMuted((m) => !m); break;
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [timer]);
+
   const handleFlip = () => {
     timer.flip();
     setTimeout(() => timer.start(), 850);
