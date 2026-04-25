@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import Scene from './scene/Scene.jsx';
 import HUD from './ui/HUD.jsx';
 import { useTimer } from './hooks/useTimer.js';
+import { useAudio } from './hooks/useAudio.js';
 
 export default function App() {
   const timer = useTimer({ defaultDuration: 300 });
@@ -10,6 +11,8 @@ export default function App() {
   useEffect(() => {
     localStorage.setItem('hourglass.muted', muted ? '1' : '0');
   }, [muted]);
+
+  useAudio({ muted, running: timer.running, done: timer.done });
 
   // Keyboard shortcuts
   useEffect(() => {
