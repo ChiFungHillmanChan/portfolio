@@ -59,7 +59,7 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
       shadows
       dpr={lowPower ? [1, 1.5] : [1, 2]}
       gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, outputColorSpace: THREE.SRGBColorSpace }}
-      camera={{ fov: 32, position: [1.6, 0.6, 2.4], near: 0.05, far: 40 }}
+      camera={{ fov: 35, position: [2.2, 0.8, 3.4], near: 0.05, far: 40 }}
     >
       <color attach="background" args={['#0d0a08']} />
       {/* Soft fog → distant floor falls off naturally */}
@@ -118,7 +118,7 @@ export default function Scene({ progress = 0, running = false, flipState = 1, do
         maxPolarAngle={Math.PI * 0.55}
         enablePan={false}
         target={[0, 0, 0]}
-        autoRotate={!lowPower}
+        autoRotate={false}
         autoRotateSpeed={0.3}
       />
       <AdaptiveDpr pixelated={false} />

@@ -3,10 +3,9 @@ import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 import { NECK_RADIUS, BULB_HEIGHT } from '../lib/sandProfile.js';
 
-// More particles + bigger size + brighter color so the falling stream is
-// unambiguously visible against the dark scene. Previously you couldn't tell
-// the timer had started.
-const STREAM_COUNT = 4000;
+// Tight column of grains. Fewer than before since they don't need to fan out;
+// they just need to be a visible thin vertical line.
+const STREAM_COUNT = 1200;
 const STREAM_TOP = NECK_RADIUS * 0.9;
 const STREAM_BOTTOM = -BULB_HEIGHT * 0.7;
 const STREAM_LENGTH = STREAM_TOP - STREAM_BOTTOM;
@@ -32,18 +31,24 @@ export default function SandStream({ progress = 0, running = false }) {
     if (!ref.current || !visible) return;
     const time = state.clock.elapsedTime;
     const arr = ref.current.geometry.attributes.position.array;
+    // Real hourglass: sand falls in a tight thin column, almost a vertical
+    // line. The stream stays a constant narrow cylinder all the way down;
+    // the *pile* at the bottom is what spreads out (handled by SandBulk).
+    const STREAM_WIDTH = NECK_RADIUS * 0.35;
     for (let i = 0; i < STREAM_COUNT; i++) {
-      // Gravity-like accel: phase grows non-linearly so particles speed up as
-      // they fall — looks like real granular flow rather than uniform drift.
-      const linear = (phases[i] + time * 0.55) % 1;
+      // Gravity acceleration: each grain's phase grows non-linearly so it
+      // speeds up as it falls — visually reads as falling, not drifting.
+      const linear = (phases[i] + time * 0.6) % 1;
       const phase = linear * linear;
       const y = STREAM_TOP - phase * STREAM_LENGTH;
-      // Tighter at the neck, slightly fanning out at the bottom on impact
-      const widthAtY = NECK_RADIUS * (0.18 + 0.55 * (1 - (y - STREAM_BOTTOM) / STREAM_LENGTH));
-      const angle = phases[i] * 137.5 + i * 0.001;
-      arr[i * 3] = Math.cos(angle * 6) * widthAtY * 0.5;
+      // Each grain has a stable position within the column — pseudo-random
+      // by index, not by time, so individual grains stay in their lane and
+      // the column reads as a coherent line, not a swirl.
+      const angle = (i * 0.8132) % (Math.PI * 2);
+      const radius = STREAM_WIDTH * Math.sqrt((i * 0.4567) % 1);
+      arr[i * 3] = Math.cos(angle) * radius;
       arr[i * 3 + 1] = y;
-      arr[i * 3 + 2] = Math.sin(angle * 6) * widthAtY * 0.5;
+      arr[i * 3 + 2] = Math.sin(angle) * radius;
     }
     ref.current.geometry.attributes.position.needsUpdate = true;
   });
@@ -59,11 +64,11 @@ export default function SandStream({ progress = 0, running = false }) {
         />
       </bufferGeometry>
       <pointsMaterial
-        color="#fff4d6"
-        size={0.022}
+        color="#f5d99a"
+        size={0.014}
         sizeAttenuation
         transparent
-        opacity={1}
+        opacity={0.95}
         depthWrite={false}
       />
     </points>
