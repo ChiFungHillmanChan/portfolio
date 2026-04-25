@@ -4,16 +4,18 @@ import * as THREE from 'three';
 
 useGLTF.preload('/models/hourglass.glb');
 
-// The downloaded model is authored in Blender's Z-up coordinate system at
-// roughly 84 units tall. We rotate -90° on X to stand it up in three.js's
-// Y-up convention, then uniformly scale so it occupies ~1.5 world units of
-// height (matching the original lathe-frame footprint that our sand math
-// was designed around).
-//
-// SCALE was found by trial: model bbox max y ≈ 41.9 and min y ≈ -41.9 after
-// rotation, giving total height 83.8. We want height ~1.5 → scale ~0.018.
-const SCALE = 0.018;
-const Y_OFFSET = 0;  // tweak if model's pivot isn't at its centre
+// The downloaded model is Z-up Blender, bbox z = 9.37 → 41.92 (height 32.55,
+// pivot off-centre). We:
+//   1. Rotate -90° on X so model Z → world Y (stands up in three.js Y-up).
+//   2. Scale 0.046 → world height ≈ 1.5 (matches our sand math that
+//      was sized around ~1.5 units).
+//   3. Y_OFFSET shifts the model so its centre is at world y=0 (so our
+//      sand sub-group, which is also centred at y=0, sits inside the bulbs).
+// After scale: model centre y ≈ (9.37 + 41.92) / 2 × 0.046 ≈ 1.18
+// So Y_OFFSET = -1.18 puts the centre at origin, bottom at y ≈ -0.74
+// (very close to our table at y = -0.7).
+const SCALE = 0.046;
+const Y_OFFSET = -1.18;
 
 export default function HourglassModel() {
   const { scene } = useGLTF('/models/hourglass.glb');
