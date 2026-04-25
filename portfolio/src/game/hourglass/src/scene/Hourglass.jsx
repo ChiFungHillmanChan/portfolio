@@ -43,8 +43,14 @@ export default function Hourglass({ progress, running, flipState, onFlip }) {
       {/* Sand sub-group is counter-rotated so the sand ALWAYS visually drains
           downward. The model rotates with the parent (its frame is visually
           symmetric, reads as a real flip), but gravity stays gravity for the
-          sand we render. */}
-      <group rotation-z={flipState === 1 ? 0 : -Math.PI}>
+          sand we render.
+          SAND_SCALE shrinks our sand to fit inside the model's actual glass
+          bulb interior (which is smaller than the 0.5-radius our sandProfile
+          was originally sized for). */}
+      <group
+        rotation-z={flipState === 1 ? 0 : -Math.PI}
+        scale={[0.42, 0.45, 0.42]}
+      >
         <SandBulk progress={progress} />
         <SandStream progress={progress} running={running} />
       </group>

@@ -81,15 +81,20 @@ export default function HourglassModel() {
       if (m && 'metalness' in m && (m.metalness == null)) m.metalness = 0.2;
     });
 
-    // Diagnostic: list the meshes we kept so debugging the next iteration
-    // is straightforward without re-opening Blender.
-    if (typeof window !== 'undefined' && window.__HOURGLASS_DEBUG__) {
-      const kept = [];
-      scene.traverse((o) => {
-        if (o.isMesh && o.visible) kept.push(`${o.name} (${o.material?.name || 'no-mat'})`);
-      });
-      console.log('[HourglassModel] visible meshes:', kept);
-    }
+    // Always-on diagnostic so you don't need to flip a flag — paste these
+    // names into chat and I'll widen the hide-regex if anything obviously-
+    // sand slips through.
+    const kept = [];
+    const hidden = [];
+    scene.traverse((o) => {
+      if (!o.isMesh) return;
+      const tag = `${o.name || '<unnamed>'} (mat: ${o.material?.name || '<no-mat>'})`;
+      (o.visible ? kept : hidden).push(tag);
+    });
+    // eslint-disable-next-line no-console
+    console.log('[HourglassModel] visible meshes:', kept);
+    // eslint-disable-next-line no-console
+    console.log('[HourglassModel] hidden meshes:', hidden);
   }, [scene]);
 
   return (
