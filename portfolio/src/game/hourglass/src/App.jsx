@@ -1,18 +1,22 @@
 import { useEffect, useState } from 'react';
 import Scene from './scene/Scene.jsx';
 import HUD from './ui/HUD.jsx';
+import FallbackTimer from './ui/FallbackTimer.jsx';
 import { useTimer } from './hooks/useTimer.js';
 import { useAudio } from './hooks/useAudio.js';
+import { isWebGLAvailable } from './lib/webgl.js';
 import { isLowPower } from './lib/device.js';
 
 export default function App() {
+  const [webglOk] = useState(() => isWebGLAvailable());
+  if (!webglOk) return <FallbackTimer />;
+
   const lowPower = isLowPower();
   const timer = useTimer({ defaultDuration: 300 });
   const [muted, setMuted] = useState(() => localStorage.getItem('hourglass.muted') !== '0');
+  const [showTip, setShowTip] = useState(() => !localStorage.getItem('hourglass.tutorialSeen'));
 
-  useEffect(() => {
-    localStorage.setItem('hourglass.muted', muted ? '1' : '0');
-  }, [muted]);
+  useEffect(() => { localStorage.setItem('hourglass.muted', muted ? '1' : '0'); }, [muted]);
 
   useAudio({ muted, running: timer.running, done: timer.done });
 
@@ -26,6 +30,21 @@ export default function App() {
     else if (Notification.permission !== 'denied')
       Notification.requestPermission().then((p) => p === 'granted' && fire());
   }, [timer.done]);
+
+  // First-visit tooltip dismissal
+  useEffect(() => {
+    if (!showTip) return;
+    const dismiss = () => {
+      setShowTip(false);
+      localStorage.setItem('hourglass.tutorialSeen', '1');
+    };
+    window.addEventListener('pointerdown', dismiss, { once: true });
+    window.addEventListener('keydown', dismiss, { once: true });
+    return () => {
+      window.removeEventListener('pointerdown', dismiss);
+      window.removeEventListener('keydown', dismiss);
+    };
+  }, [showTip]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -52,7 +71,6 @@ export default function App() {
     timer.flip();
     setTimeout(() => timer.start(), 850);
   };
-
   const handlePlayPause = () => (timer.running ? timer.pause() : timer.start());
 
   return (
@@ -75,6 +93,15 @@ export default function App() {
         onReset={timer.reset}
         onToggleMute={() => setMuted((m) => !m)}
       />
+      {showTip && (
+        <div style={{
+          position: 'fixed', top: '15%', left: '50%', transform: 'translateX(-50%)',
+          color: 'rgba(244,238,224,0.7)', fontSize: 13, pointerEvents: 'none', zIndex: 5,
+          fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", sans-serif',
+        }}>
+          Click the hourglass to flip and start • Drag to spin
+        </div>
+      )}
     </div>
   );
 }

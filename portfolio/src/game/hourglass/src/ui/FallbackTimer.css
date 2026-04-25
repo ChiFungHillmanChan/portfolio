@@ -1,0 +1,22 @@
+.fallback {
+  position: fixed; inset: 0;
+  background: #0a0807 url('/fallback.jpg') center/contain no-repeat;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 40px;
+  color: #f4eee0;
+}
+.fallback .panel {
+  background: rgba(0,0,0,0.55);
+  padding: 16px 24px;
+  border-radius: 14px;
+  display: flex; gap: 12px; align-items: center;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+}
+.fallback select, .fallback button {
+  font: inherit; color: #f4eee0; background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;
+  padding: 6px 10px; cursor: pointer;
+}
+.fallback .time { font-variant-numeric: tabular-nums; min-width: 80px; text-align: center; }
