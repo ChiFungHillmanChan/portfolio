@@ -12,10 +12,8 @@ export function useTimer({ defaultDuration = 300 } = {}) {
   const rafRef = useRef(null);
 
   const elapsedMs = (() => {
-    if (!running && startTimestampRef.current === null) return pausedAccumulatedMsRef.current;
     if (!running) return pausedAccumulatedMsRef.current;
-    const now = performance.now();
-    return pausedAccumulatedMsRef.current + (now - startTimestampRef.current);
+    return pausedAccumulatedMsRef.current + (performance.now() - startTimestampRef.current);
   })();
 
   const totalMs = duration * 1000;
@@ -27,7 +25,7 @@ export function useTimer({ defaultDuration = 300 } = {}) {
   useEffect(() => {
     if (!running) return;
     const loop = () => {
-      setTick((t) => (t + 1) % 1000000);
+      setTick((t) => t + 1);
       rafRef.current = requestAnimationFrame(loop);
     };
     rafRef.current = requestAnimationFrame(loop);
