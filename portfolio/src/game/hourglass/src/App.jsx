@@ -14,6 +14,17 @@ export default function App() {
 
   useAudio({ muted, running: timer.running, done: timer.done });
 
+  // Notification on done
+  useEffect(() => {
+    if (!timer.done) return;
+    if (typeof Notification === 'undefined') return;
+    if (document.visibilityState === 'visible') return;
+    const fire = () => new Notification('Hourglass', { body: 'Your timer has finished.', silent: true });
+    if (Notification.permission === 'granted') fire();
+    else if (Notification.permission !== 'denied')
+      Notification.requestPermission().then((p) => p === 'granted' && fire());
+  }, [timer.done]);
+
   // Keyboard shortcuts
   useEffect(() => {
     const onKey = (e) => {
@@ -48,6 +59,7 @@ export default function App() {
         progress={timer.progress}
         running={timer.running}
         flipState={timer.flipState}
+        done={timer.done}
         onFlip={handleFlip}
       />
       <HUD
