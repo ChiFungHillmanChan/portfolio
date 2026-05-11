@@ -84,6 +84,11 @@ import ApiDesign from './ApiDesign';
 import TestingStrategy from './TestingStrategy';
 import OauthSso from './OauthSso';
 
+// New career/engineering topics — Intern/Junior/Senior level breakdowns + Solo Dev pipeline
+import WebScraperLevels from './WebScraperLevels';
+import DebugSlowAPI from './DebugSlowAPI';
+import SoloDevPipeline from './SoloDevPipeline';
+
 // Free AI-core topics — static imports (always in main bundle)
 import AIToolsLandscape from './AIToolsLandscape';
 import AIModelComparison from './AIModelComparison';
@@ -206,6 +211,11 @@ const topicComponents = {
   'api-design': ApiDesign,
   'testing-strategy': TestingStrategy,
   'oauth-sso': OauthSso,
+
+  // New career/engineering topics
+  'web-scraper-levels': WebScraperLevels,
+  'debug-slow-api': DebugSlowAPI,
+  'solo-dev-pipeline': SoloDevPipeline,
 };
 
 export default topicComponents;

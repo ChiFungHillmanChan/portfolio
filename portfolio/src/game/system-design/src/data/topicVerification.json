@@ -537,6 +537,30 @@
       "sources": [],
       "contentFreshnessDays": null,
       "premiumValueScore": null
+    },
+    {
+      "slug": "web-scraper-levels",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
+    },
+    {
+      "slug": "debug-slow-api",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
+    },
+    {
+      "slug": "solo-dev-pipeline",
+      "lastVerifiedAt": null,
+      "verificationLevel": "Needs Review",
+      "sources": [],
+      "contentFreshnessDays": null,
+      "premiumValueScore": 3
     }
   ]
 }

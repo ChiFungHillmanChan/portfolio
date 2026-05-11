@@ -355,6 +355,15 @@
       "addedDate": "2026-02-24"
     },
     {
+      "slug": "solo-dev-pipeline",
+      "title": "Solo Dev 全流程",
+      "sub": "PRD → SDD → Build → Review → Ship",
+      "icon": "🛠",
+      "category": "engineering",
+      "difficulty": "intermediate",
+      "addedDate": "2026-05-12"
+    },
+    {
       "slug": "twelve-factor-app",
       "title": "12-Factor App",
       "sub": "Config / Logging / Disposability",
@@ -708,6 +717,15 @@
       "difficulty": "advanced"
     },
     {
+      "slug": "web-scraper-levels",
+      "title": "Web Scraper 三個層次",
+      "sub": "Intern 抓 HTML / Junior 偷 API / Senior 設計可靠系統",
+      "icon": "🪜",
+      "category": "app",
+      "difficulty": "intermediate",
+      "addedDate": "2026-05-12"
+    },
+    {
       "slug": "news-feed",
       "title": "動態消息流",
       "sub": "寫時推送 vs 讀時拉取 / 排名",
@@ -814,6 +832,15 @@
       "icon": "📡",
       "category": "security",
       "difficulty": "intermediate"
+    },
+    {
+      "slug": "debug-slow-api",
+      "title": "Debug 慢 API 三個層次",
+      "sub": "Intern 加機 / Junior 量 component / Senior 用 Tracing",
+      "icon": "🐢",
+      "category": "security",
+      "difficulty": "intermediate",
+      "addedDate": "2026-05-12"
     },
     {
       "slug": "cicd-pipeline",
