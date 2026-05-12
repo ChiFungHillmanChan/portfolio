@@ -89,7 +89,7 @@
         "url": "no-website",
         "category": "fullstack",
         "sourceCode": "no-source-code",
-        "demoUrl": "no-demo",
+        "demoUrl": "contact:Hong Kong Teacher System",
         "liveDemo": "no-demo",
         "technologies": [
             "React",
@@ -234,10 +234,10 @@
         "shortDescription": "An AI detection tool that uses machine learning to detect if a text is written by AI.",
         "fullDescription": "An AI detection tool that uses machine learning to detect if a text is written by AI.",
         "image": "ai_detection.png",
-        "url": "https://ai-detector-theta.vercel.app/",
+        "url": "no-website",
         "category": "program",
-        "sourceCode": "https://ai-detector-theta.vercel.app/",
-        "demoUrl": "no-demo-url",
+        "sourceCode": "no-source-code",
+        "demoUrl": "contact:AI detection tool",
         "liveDemo": "no-demo",
         "technologies": [
             "Next.js",

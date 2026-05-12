@@ -1,4 +1,5 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { FaEnvelope, FaLinkedin, FaGithub } from 'react-icons/fa';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
@@ -9,8 +10,18 @@ const LoadingSpinner = () => (
 
 const Contact = () => {
   const form = useRef();
+  const location = useLocation();
   const [status, setStatus] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [prefilledMessage, setPrefilledMessage] = useState('');
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const message = params.get('message');
+    if (message) {
+      setPrefilledMessage(message);
+    }
+  }, [location.search]);
 
   const sendEmail = async (e) => {
     e.preventDefault();
@@ -28,9 +39,10 @@ const Contact = () => {
           publicKey: process.env.REACT_APP_PUBLIC_KEY,
         }
       );
-      
+
       setStatus('success');
       form.current.reset();
+      setPrefilledMessage('');
     } catch (error) {
       setStatus('error');
     } finally {
@@ -201,7 +213,9 @@ const Contact = () => {
                 disabled={isSubmitting}
                 placeholder="Type your message"
                 rows="4"
-                className="w-full px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-600 dark:text-white 
+                value={prefilledMessage}
+                onChange={(e) => setPrefilledMessage(e.target.value)}
+                className="w-full px-3 py-2 rounded-md bg-gray-100 dark:bg-gray-600 dark:text-white
                         focus:outline-none focus:ring-2 focus:ring-gray-500 text-sm md:text-base
                         border border-gray-300 dark:border-gray-500
                         disabled:opacity-50 disabled:cursor-not-allowed"

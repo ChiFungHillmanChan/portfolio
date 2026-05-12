@@ -35,40 +35,65 @@ const buildGameSubdomainUrl = (gameSlug) => {
   return `${protocol}//${gameSlug}.${hostname}`;
 };
 
+const buildContactDemoUrl = (projectName) => {
+  const name = projectName.trim();
+  const message = `Hi Hillman, I'd like to try the demo for "${name}". Could you let me know how I can access it? Thanks!`;
+  const params = new URLSearchParams({ project: name, message });
+  return `/contact?${params.toString()}`;
+};
+
 const resolveDemoLink = (demoUrl) => {
+  const empty = { url: null, isInternal: false, isGameSubdomain: false, subdomainUrl: null, isContactLink: false };
+
   if (!demoUrl || demoUrl === 'no-demo-url') {
-    return { url: null, isInternal: false, isGameSubdomain: false, subdomainUrl: null };
+    return empty;
   }
 
   const trimmed = demoUrl.trim();
   if (!trimmed) {
-    return { url: null, isInternal: false, isGameSubdomain: false, subdomainUrl: null };
+    return empty;
+  }
+
+  if (trimmed.toLowerCase().startsWith('contact:')) {
+    const projectName = trimmed.slice('contact:'.length).trim();
+    if (!projectName) {
+      return empty;
+    }
+    return {
+      url: buildContactDemoUrl(projectName),
+      isInternal: true,
+      isGameSubdomain: false,
+      subdomainUrl: null,
+      isContactLink: true,
+    };
   }
 
   if (trimmed.startsWith('/')) {
     const normalized = trimmed.slice(1);
     if (GAME_SUBDOMAIN_SLUGS.has(normalized)) {
-      return { 
-        url: trimmed, 
-        isInternal: true, 
+      return {
+        url: trimmed,
+        isInternal: true,
         isGameSubdomain: true,
-        subdomainUrl: buildGameSubdomainUrl(normalized)
+        subdomainUrl: buildGameSubdomainUrl(normalized),
+        isContactLink: false,
       };
     }
-    return { url: trimmed, isInternal: true, isGameSubdomain: false, subdomainUrl: null };
+    return { url: trimmed, isInternal: true, isGameSubdomain: false, subdomainUrl: null, isContactLink: false };
   }
 
   const normalized = trimmed;
   if (GAME_SUBDOMAIN_SLUGS.has(normalized)) {
-    return { 
-      url: `/${normalized}`, 
-      isInternal: true, 
+    return {
+      url: `/${normalized}`,
+      isInternal: true,
       isGameSubdomain: true,
-      subdomainUrl: buildGameSubdomainUrl(normalized)
+      subdomainUrl: buildGameSubdomainUrl(normalized),
+      isContactLink: false,
     };
   }
 
-  return { url: trimmed, isInternal: false, isGameSubdomain: false, subdomainUrl: null };
+  return { url: trimmed, isInternal: false, isGameSubdomain: false, subdomainUrl: null, isContactLink: false };
 };
 
 const ProjectDetail = () => {
@@ -85,6 +110,7 @@ const ProjectDetail = () => {
     isInternal: isInternalDemoLink,
     isGameSubdomain,
     subdomainUrl,
+    isContactLink,
   } = useMemo(() => resolveDemoLink(project?.demoUrl || null), [project?.demoUrl]);
 
   const [isVideoTooLong, setIsVideoTooLong] = useState(false);
@@ -177,7 +203,11 @@ const ProjectDetail = () => {
   const hasValidDemoUrl = Boolean(resolvedDemoUrl);
   const isInternalDemo = hasValidDemoUrl && isInternalDemoLink;
   const isGameProject = project.category === 'game';
-  const demoCtaLabel = isGameProject ? 'Play Game' : 'Try Demo';
+  const demoCtaLabel = isContactLink
+    ? 'Contact for Demo Testing'
+    : isGameProject
+      ? 'Play Game'
+      : 'Try Demo';
 
   const handleDemoNavigation = () => {
     if (!resolvedDemoUrl) {
