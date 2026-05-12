@@ -2,9 +2,14 @@
 CLAUDE.md
 .claude/
 portfolio/.claude/
+.superpowers/
 
 # Playwright MCP
 .playwright-mcp/
+
+# Root-level Vercel CLI install artifacts (the CLI is installed globally)
+/package.json
+/package-lock.json
 
 # Screenshots
 *.png
