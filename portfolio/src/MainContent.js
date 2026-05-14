@@ -80,10 +80,10 @@ const MainContent = () => {
                             {timeOfDay}, I'm Hillman Chan
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 md:mb-6">
-                            Computer Science & AI Graduate | Software Engineer
+                            AI Software Engineer | Shipping AI-Powered Products
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                        I recently earned a degree in Computer Science with a focus on Artificial Intelligence. I’m excited about the opportunity to contribute to a team, work on impactful projects, and continue learning through new challenges. You can view my portfolio to see examples of my work so far!</p>
+                        Two years out of university and one year into industry as an AI software engineer, I’ve shipped multiple projects that blend AI with full-stack engineering. I enjoy turning ideas into real, working products and keep building on the side to explore what’s next. Take a look at my portfolio to see what I’ve made so far!</p>
                     </motion.div>
                 </div>
             </section>
