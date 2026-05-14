@@ -64,8 +64,29 @@ The deployment relies on these GitHub Repository Secrets (Settings > Secrets and
 *   **Hard Refresh**: Press `Cmd+Shift+R` (Mac) or `Ctrl+F5` (Windows) to clear your browser cache.
 *   **Check Invalidation**: Currently, we are relying on cache-control headers. If you use CloudFront in the future, you may need to add an invalidation step.
 
+## 🔐 Security Headers
+
+S3 cannot attach security response headers (HSTS, CSP, X-Frame-Options, etc.)
+to objects it serves, so those headers are added at the Cloudflare edge by a
+Worker that lives at `infrastructure/cloudflare/security-headers/`. A
+CSP/Referrer-Policy fallback also ships in `portfolio/public/index.html` so
+the main page is partially covered even if the Worker is disabled.
+
+To (re)deploy the Worker:
+
+```bash
+cd infrastructure/cloudflare/security-headers
+npm install        # first time only
+npm run deploy
+```
+
+See that directory's `README.md` for the policy rationale, verification
+commands, rollback, and the manual DNS CAA record step.
+
 ## 📂 Project Structure
 *   `portfolio/`: The React application.
+*   `infrastructure/cloudflare/security-headers/`: Edge Worker that injects
+    HTTP security headers in front of the S3 origin.
 *   `.github/workflows/`: Contains the deployment automation script.
 *   `README.md`: This file.
 

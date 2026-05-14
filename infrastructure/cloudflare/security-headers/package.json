@@ -1,0 +1,14 @@
+{
+  "name": "hillmanchan-security-headers",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Cloudflare Worker that injects HTTP security headers in front of hillmanchan.com",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^3.80.0"
+  }
+}

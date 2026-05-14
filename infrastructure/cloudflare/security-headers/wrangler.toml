@@ -1,0 +1,10 @@
+name = "hillmanchan-security-headers"
+main = "src/worker.js"
+compatibility_date = "2024-11-06"
+
+# Run on every request to the apex domain + www. Adjust the zone_name to match
+# the Cloudflare zone the domain lives in. Both routes can coexist.
+routes = [
+  { pattern = "hillmanchan.com/*", zone_name = "hillmanchan.com" },
+  { pattern = "www.hillmanchan.com/*", zone_name = "hillmanchan.com" },
+]
