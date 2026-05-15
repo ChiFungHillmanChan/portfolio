@@ -13,6 +13,8 @@ portfolio/.claude/
 
 # Screenshots
 *.png
+!portfolio/src/assets/*.png
+!portfolio/public/**/*.png
 
 # Dependencies
 node_modules/
