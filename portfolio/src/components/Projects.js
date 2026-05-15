@@ -19,12 +19,12 @@ const Projects = () => {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
       <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center dark:text-white">My Projects</h2>
-      <div className="mb-8 flex justify-center px-4">
-        <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl sm:rounded-full px-2 sm:px-3 md:px-4 py-2 flex flex-wrap md:flex-nowrap gap-1.5 sm:gap-2 justify-center w-full sm:w-auto max-w-full">
+      <div className="mb-8 flex justify-center px-2 sm:px-4">
+        <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-1.5 sm:px-3 md:px-4 py-1.5 sm:py-2 flex flex-nowrap gap-1 sm:gap-2 justify-center max-w-full overflow-x-auto">
           {categories.map(({ value, label }) => (
             <button
               key={value}
-              className={`px-2.5 sm:px-3 md:px-4 py-1 text-xs sm:text-sm md:text-base whitespace-nowrap rounded-full transition-colors duration-300 ${
+              className={`px-2 sm:px-3 md:px-4 py-1 text-[11px] sm:text-sm md:text-base whitespace-nowrap rounded-full transition-colors duration-300 ${
                 activeCategory === value
                   ? 'bg-gray-800 text-white'
                   : 'hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'

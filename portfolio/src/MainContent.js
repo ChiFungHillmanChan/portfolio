@@ -81,10 +81,11 @@ const MainContent = () => {
                             {timeOfDay}, I'm Hillman Chan
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 md:mb-6">
-                            AI Software Engineer & Founder of JARVIS AI | Shipping AI-Powered Products
+                            AI Software Engineer & Founder of JARVIS AI
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                        Two years out of university and one year into industry as an AI software engineer, I’ve shipped multiple projects that blend AI with full-stack engineering. I’m also the founder of JARVIS AI, selected for the AWS Idea Launcher × HKSTP Co-Ideation Programme. I enjoy turning ideas into real, working products and keep building on the side to explore what’s next. Take a look at my portfolio to see what I’ve made so far!</p>
+                            AI software engineer and founder of JARVIS AI — selected for the AWS Idea Launcher × HKSTP Co-Ideation Programme. I ship AI + full-stack projects and keep building to see what’s next.
+                        </p>
                     </motion.div>
                 </div>
             </section>
@@ -134,12 +135,12 @@ const MainContent = () => {
             {/* Project Display Section */}
             <section className="py-12">
                 <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Top 3 Delighted Projects</h2>
-                <div className="mb-8 flex justify-center px-4">
-                    <div className="bg-gray-200 dark:bg-gray-700 rounded-2xl sm:rounded-full px-2 sm:px-3 md:px-4 py-2 flex flex-wrap md:flex-nowrap gap-1.5 sm:gap-2 justify-center w-full sm:w-auto max-w-full">
+                <div className="mb-8 flex justify-center px-2 sm:px-4">
+                    <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-1.5 sm:px-3 md:px-4 py-1.5 sm:py-2 flex flex-nowrap gap-1 sm:gap-2 justify-center max-w-full overflow-x-auto">
                     {categories.map(({ value, label }) => (
                         <button
                         key={value}
-                        className={`px-2.5 sm:px-3 md:px-4 py-1 text-xs sm:text-sm md:text-base whitespace-nowrap rounded-full transition-colors duration-300 ${
+                        className={`px-2 sm:px-3 md:px-4 py-1 text-[11px] sm:text-sm md:text-base whitespace-nowrap rounded-full transition-colors duration-300 ${
                             activeCategory === value
                             ? 'bg-gray-800 text-white'
                             : 'hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300'
