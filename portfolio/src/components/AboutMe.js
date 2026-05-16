@@ -37,7 +37,7 @@ const AboutMe = () => {
 
   const experience = [
     {
-      title: "Founder",
+      title: "AWS Startup Launcher Program: Jarvis",
       company: "JARVIS AI",
       location: "Hong Kong",
       start_date: "January 2026",

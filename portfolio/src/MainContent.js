@@ -81,10 +81,10 @@ const MainContent = () => {
                             {timeOfDay}, I'm Hillman Chan
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 md:mb-6">
-                            AI Software Engineer & Founder of JARVIS AI
+                            AI Software Engineer
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                            AI software engineer and founder of JARVIS AI — selected for the AWS Idea Launcher × HKSTP Co-Ideation Programme. I ship AI + full-stack projects and keep building to see what’s next.
+                            AI software engineer and remote founder of Jarvis AI — selected for the AWS Idea Launcher × HKSTP Co-Ideation Programme. I ship AI + full-stack projects and keep building to see what’s next.
                         </p>
                     </motion.div>
                 </div>
