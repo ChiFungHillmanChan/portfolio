@@ -67,8 +67,8 @@ function getGameConfig(gameType) {
         poker: {
             name: 'Poker',
             path: 'poker/index.html',
-            available: false,
-            features: ['Equity Calc', 'Pot Odds']
+            available: true,
+            features: ['BB/100', 'Win Rate', 'Sample Check']
         }
     };
     
