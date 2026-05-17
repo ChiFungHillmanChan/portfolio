@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="Poker calculators — BB/100 win-rate tool and more.">
+    <title>Poker</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="../css/main.css">
+    <link rel="stylesheet" href="../css/hamburger-menu.css">
+    <link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Games">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../blackjack/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+            </a>
+            <a href="../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+            <a href="index.html" class="dropdown-item active">
+                <span class="dropdown-icon">♠️</span>
+                <span>Poker</span>
+                <span class="current-badge">Current</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <div class="logo-icon">♠️</div>
+            <h1>POKER</h1>
+            <p class="subtitle">Win Rate Tools • Sample Size Checks</p>
+        </header>
+
+        <p class="intro-text">
+            Lightweight calculators for cash-game poker players. Start with the
+            <strong>bb/100 calculator</strong> to turn your session totals into a
+            comparable win rate, and see whether your sample size is big enough to trust.
+        </p>
+
+        <section class="game-modes">
+            <a href="bb100/index.html" class="mode-card bb100 available">
+                <div class="mode-icon">📈</div>
+                <h2 class="mode-title">bb/100 Calculator</h2>
+                <p class="mode-description">
+                    Convert hands played, profit/loss and blinds into a standard
+                    big-blinds-per-100-hands win rate, with a sample-size verdict
+                    so you know how much to trust the number.
+                </p>
+                <div class="mode-features">
+                    <span class="feature-tag">Win Rate</span>
+                    <span class="feature-tag">Total BB</span>
+                    <span class="feature-tag">Per-Hand Avg</span>
+                    <span class="feature-tag">NL2 → NL200</span>
+                </div>
+                <div class="mode-status">
+                    <span class="status-dot"></span>
+                    Available Now
+                </div>
+            </a>
+
+            <div class="mode-card coming-soon">
+                <div class="mode-icon">🎯</div>
+                <h2 class="mode-title">Pot Odds Trainer</h2>
+                <p class="mode-description">
+                    Practice calling-price math: convert bet sizing into required
+                    equity, and stress-test your decisions on common river spots.
+                </p>
+                <div class="mode-features">
+                    <span class="feature-tag">Required Equity</span>
+                    <span class="feature-tag">Bet Sizing</span>
+                </div>
+                <div class="mode-status">
+                    <span class="status-dot"></span>
+                    Coming Soon
+                </div>
+            </div>
+        </section>
+
+        <div class="info-section">
+            <h3>About bb/100</h3>
+            <p>
+                <strong>bb/100</strong> (big blinds per 100 hands) is the standard
+                cash-game win rate metric, because it normalises results across
+                stakes. The formula is simple: <strong>(profit ÷ big blind) ÷ hands × 100</strong>.
+                <br><br>
+                A sustainable winning rate at micros is typically <strong>3–10 bb/100</strong>;
+                at mid stakes, even <strong>2–5 bb/100</strong> is excellent. Below
+                10,000 hands, your measured rate is mostly noise — variance dominates.
+            </p>
+        </div>
+
+        <footer>
+            <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
+        </footer>
+    </div>
+
+    <script src="../js/hamburger-menu.js"></script>
+</body>
+</html>

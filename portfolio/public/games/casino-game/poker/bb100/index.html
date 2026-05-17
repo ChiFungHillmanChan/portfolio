@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="Cash-game bb/100 win-rate calculator with sample-size verdict.">
+    <title>Poker - bb/100 Calculator</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../../css/variables.css">
+    <link rel="stylesheet" href="../../css/main.css">
+    <link rel="stylesheet" href="../../css/hamburger-menu.css">
+    <link rel="stylesheet" href="css/bb100.css">
+</head>
+<body>
+    <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+        <span class="hamburger-line"></span>
+    </button>
+    <a href="../index.html" class="back-btn" aria-label="Back to Poker">
+        <span class="back-icon">←</span>
+        <span class="back-text">Back</span>
+    </a>
+    <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
+        <div class="dropdown-section">
+            <div class="dropdown-label">Games</div>
+            <a href="../../roulette/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎡</span>
+                <span>Roulette</span>
+            </a>
+            <a href="../../blackjack/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🃏</span>
+                <span>Blackjack</span>
+            </a>
+            <a href="../../baccarat/index.html" class="dropdown-item">
+                <span class="dropdown-icon">🎴</span>
+                <span>Baccarat</span>
+            </a>
+            <a href="../index.html" class="dropdown-item active">
+                <span class="dropdown-icon">♠️</span>
+                <span>Poker</span>
+                <span class="current-badge">Current</span>
+            </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <a href="../../index.html" class="dropdown-item">
+                <span class="dropdown-icon">🏠</span>
+                <span>Back to Games</span>
+            </a>
+            <a href="https://buymeacoffee.com/hillmanchan709" class="dropdown-item support-item" target="_blank" rel="noopener noreferrer">
+                <span class="dropdown-icon">☕</span>
+                <span>Support Me</span>
+            </a>
+        </div>
+    </nav>
+
+    <div class="container bb100-container">
+        <header class="bb100-header">
+            <div class="logo-icon">📈</div>
+            <h1>BB/100 CALCULATOR</h1>
+            <p class="subtitle">Cash Game Win Rate</p>
+        </header>
+
+        <section class="bb100-grid">
+            <div class="bb100-card inputs-card">
+                <h2 class="card-title">Inputs</h2>
+
+                <div class="field">
+                    <label for="handsInput">Total hands</label>
+                    <input
+                        id="handsInput"
+                        type="number"
+                        inputmode="numeric"
+                        min="0"
+                        step="1"
+                        placeholder="e.g. 25000"
+                        autocomplete="off"
+                    />
+                    <p class="hint">How many hands this win rate is measured over.</p>
+                </div>
+
+                <div class="field">
+                    <label for="profitInput">Profit / loss</label>
+                    <div class="input-with-prefix">
+                        <span class="input-prefix" id="currencyPrefix">$</span>
+                        <input
+                            id="profitInput"
+                            type="number"
+                            inputmode="decimal"
+                            step="0.01"
+                            placeholder="e.g. 120.50 (use negative for a loss)"
+                            autocomplete="off"
+                        />
+                    </div>
+                    <p class="hint">Use a negative number for a losing session.</p>
+                </div>
+
+                <div class="field">
+                    <label for="blindsSelect">Blinds (SB / BB)</label>
+                    <select id="blindsSelect">
+                        <option value="0.02" data-label="0.01 / 0.02">NL2 — 0.01 / 0.02</option>
+                        <option value="0.05" data-label="0.02 / 0.05">NL5 — 0.02 / 0.05</option>
+                        <option value="0.10" data-label="0.05 / 0.10">NL10 — 0.05 / 0.10</option>
+                        <option value="0.25" data-label="0.10 / 0.25">NL25 — 0.10 / 0.25</option>
+                        <option value="0.50" data-label="0.25 / 0.50">NL50 — 0.25 / 0.50</option>
+                        <option value="1" data-label="0.50 / 1">NL100 — 0.50 / 1</option>
+                        <option value="2" data-label="1 / 2" selected>NL200 — 1 / 2</option>
+                    </select>
+                    <p class="hint">Big-blind value is used to convert profit into BB.</p>
+                </div>
+
+                <div class="actions">
+                    <button type="button" class="btn btn-primary" id="calcBtn">Calculate</button>
+                    <button type="button" class="btn btn-ghost" id="resetBtn">Reset</button>
+                </div>
+
+                <p class="formula">
+                    <strong>Formula:</strong>
+                    <code>bb/100 = (profit ÷ bb) ÷ hands × 100</code>
+                </p>
+            </div>
+
+            <div class="bb100-card results-card">
+                <h2 class="card-title">Results</h2>
+
+                <div class="result-row primary-result" id="rateRow">
+                    <div class="result-label">Win rate</div>
+                    <div class="result-value" id="rateValue">—</div>
+                    <div class="result-unit">bb/100</div>
+                </div>
+
+                <div class="result-grid">
+                    <div class="result-row">
+                        <div class="result-label">Total big blinds won</div>
+                        <div class="result-value" id="totalBbValue">—</div>
+                        <div class="result-unit">bb</div>
+                    </div>
+
+                    <div class="result-row">
+                        <div class="result-label">Average per hand</div>
+                        <div class="result-value" id="perHandValue">—</div>
+                        <div class="result-unit"><span id="perHandUnit">$ / hand</span></div>
+                    </div>
+
+                    <div class="result-row">
+                        <div class="result-label">Stake</div>
+                        <div class="result-value small" id="stakeValue">1 / 2</div>
+                        <div class="result-unit"></div>
+                    </div>
+                </div>
+
+                <div class="verdict" id="verdictBox" hidden>
+                    <div class="verdict-line" id="rateVerdict"></div>
+                    <div class="verdict-line muted" id="sampleVerdict"></div>
+                </div>
+
+                <div class="error-msg" id="errorMsg" hidden></div>
+            </div>
+        </section>
+
+        <div class="info-section bb100-info">
+            <h3>What counts as a good win rate?</h3>
+            <p>
+                Rough benchmarks from cash-game tracking communities:
+            </p>
+            <ul class="benchmarks">
+                <li><strong>&lt; 0 bb/100</strong> — losing rate; review strategy and game selection.</li>
+                <li><strong>0–3 bb/100</strong> — marginal winner; variance still dominates.</li>
+                <li><strong>3–7 bb/100</strong> — solid, sustainable winner at most stakes.</li>
+                <li><strong>7–15 bb/100</strong> — strong rate, typical of good micro-stakes players.</li>
+                <li><strong>15+ bb/100</strong> — crushing; usually small samples or microstakes.</li>
+            </ul>
+            <p class="sample-note">
+                <strong>Sample matters more than rate.</strong> Below 10,000 hands, bb/100 is
+                mostly noise. Serious win-rate claims usually need 50,000–100,000+ hands.
+            </p>
+        </div>
+
+        <footer>
+            <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
+        </footer>
+    </div>
+
+    <script src="../../js/hamburger-menu.js"></script>
+    <script src="js/bb100.js"></script>
+</body>
+</html>
