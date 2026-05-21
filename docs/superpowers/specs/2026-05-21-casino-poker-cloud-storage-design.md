@@ -53,13 +53,13 @@ casino-game.hillmanchan.com  (Firebase Hosting, static)
 
 The 8-file sample at `/Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8/` contains **1,815 Hero hands**. GGPoker's app shows (before-rake):
 
-- Final green Winnings ≈ **+$8.72**
+- Final green Winnings ≈ **+$8.71**
 - Final orange All-in EV ≈ **+$11.23**
 - Hand count footer: **1,815 of 1,815 Hands**
 
 **Precision target: EXACT to the cent — no tolerance.** Internally compute to 6 decimal places (BigInt micro-cents); display 2 decimals on the chart and tooltips, 6 decimals in the verify script for proof.
 
-**Phase 1's verify CLI is a HARD GATE.** No Phase 2+ work begins until the CLI prints `Green: $8.72  Orange: $11.23` exactly. Same rule as the old E spec.
+**Phase 1's verify CLI is a HARD GATE.** No Phase 2+ work begins until the CLI prints `Green: $8.71  Orange: $11.23` exactly. Same rule as the old E spec.
 
 To achieve this:
 - **Integer arithmetic everywhere.** All dollar amounts stored as BigInt **micro-cents** (1 UC = $1e-6). No float drift.
@@ -98,7 +98,7 @@ To achieve this:
 **Current state (as of 2026-05-21):** Phase 1 is **largely implemented on branch `feat/poker-bb100-calculator`**. The bb100/ directory already contains all parser modules (`gg-parser.mjs`, `hand-model.mjs`, `validator.mjs`), equity modules (`cards.mjs`, `evaluator.mjs`, `equity.mjs`), stats (`money.mjs`, `compute.mjs`), tests for each, `verify/verify.mjs`, tabs (`tabs.js`), upload UX (`upload.js`, `upload.css`), and a working EV chart in `index.html`. Recent commits (hover crosshair, drag-zoom, side-pot decomposition, rake-share BigInt fix) are Phase 1 polish.
 
 **What remains for Phase 1 → done:**
-1. **Verify CLI HARD GATE** — run `node verify/verify.mjs` against the 1815-hand sample; confirm green=$8.72 and orange=$11.23 to the cent, run twice for bit-identical output. If numbers don't match, fix before Phase 2.
+1. **Verify CLI HARD GATE** — run `node verify/verify.mjs` against the 1815-hand sample; confirm green=$8.71 and orange=$11.23 to the cent, run twice for bit-identical output. If numbers don't match, fix before Phase 2.
 2. Extract any inlined chart code into a dedicated `js/chart/render.mjs` if it's currently embedded in `upload.js` (cleanup; not blocking if already factored).
 3. Ensure the `index.html` has the 3-tab scaffold (Manual / Upload GG Hands / My Sessions), with "My Sessions" hidden until Phase 2 wires it up.
 4. Commit branch + merge to main (or stay on feat branch for Phase 2 work).
@@ -366,7 +366,7 @@ When Phase 2 ships, an additional **"Save to cloud"** button appears in this pan
 ```
 Hands parsed:                   1815 / 1815
 Final Winnings (after rake):    $X.XXXXXX
-Final Winnings (before rake):   $8.XXXXXX     ← rounds to $8.72 (must match GG)
+Final Winnings (before rake):   $8.XXXXXX     ← rounds to $8.71 (must match GG)
 Final All-in EV (after rake):   $X.XXXXXX
 Final All-in EV (before rake):  $11.XXXXXX    ← rounds to $11.23 (must match GG)
 Red line final:                 $X.XXXXXX
@@ -377,7 +377,7 @@ Position breakdown:             [BTN/SB/BB/UTG/HJ/CO with counts + $]
 Equity cache hits:              X / X
 ```
 
-**Phase 1 done = exact match.** When rounded to 2 decimals, green = $8.72 and orange = $11.23. No tolerance. Run twice — every digit identical. If numbers don't match, fix before Phase 2.
+**Phase 1 done = exact match.** When rounded to 2 decimals, green = $8.71 and orange = $11.23. No tolerance. Run twice — every digit identical. If numbers don't match, fix before Phase 2.
 
 ---
 
@@ -1156,7 +1156,7 @@ Stripe fees (3.4% + HK$2.35/txn) take ~10–15% off revenue. Net margin still 80
 ```
 Phase 1 — Local foundation (Sub-project E)         ~1 day remaining (mostly done)
   Already on disk: parser, equity, evaluator, stats, tests, verify CLI, upload UX, EV chart
-  Remaining: run verify CLI → confirm $8.72 / $11.23 to the cent (HARD GATE);
+  Remaining: run verify CLI → confirm $8.71 / $11.23 to the cent (HARD GATE);
              extract chart/render.mjs if inlined; add 3-tab scaffold (My Sessions hidden);
              commit + merge feat/poker-bb100-calculator
   Ships as: working local-only EV chart, no auth, no cloud.
