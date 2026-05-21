@@ -26,8 +26,21 @@ const POS_ORDER = ['BTN', 'SB', 'BB', 'UTG', 'LJ', 'HJ', 'CO'];
 const SESSION_KEY = 'poker-upload-session-v1';
 
 let parsedHands = [];
+let originalFiles = [];
+let lastSummary = null;
 let opts = { beforeRake: true, lines: { winnings: true, ev: true, red: true, blue: true } };
 let chartInstance = null;
+
+// Notify cloud bootstrap when a session is loaded (no hard dependency — cloud module is loaded as a sibling script)
+function notifyCloudSessionLoaded() {
+  if (parsedHands.length === 0) return;
+  // Dynamic import keeps cloud code out of the critical path for logged-out users.
+  import('./cloud/session-state.js')
+    .then(({ setCurrentSession }) => {
+      setCurrentSession({ hands: parsedHands, files: originalFiles, summary: lastSummary });
+    })
+    .catch(() => {}); // cloud module missing is fine — local-only mode still works
+}
 
 // === File intake ===
 
@@ -80,6 +93,7 @@ async function handleFiles(files) {
   if (files.length === 0) return;
   showStatus(`Reading ${files.length} files...`);
   parsedHands = [];
+  originalFiles = Array.from(files);
   const rejected = [];
   let skippedHands = 0;
   for (const f of files) {
@@ -128,11 +142,13 @@ function showStatus(msg, kind = 'info') {
 
 function renderAll() {
   const { series, summary } = computeSeries(parsedHands, opts);
+  lastSummary = summary;
   renderChart(series);
   renderControls();
   renderSummary(summary);
   renderPosition(summary);
   saveSession(series, summary);
+  notifyCloudSessionLoaded();
 }
 
 // Custom plugin: draw a vertical crosshair line at the hovered hand position
