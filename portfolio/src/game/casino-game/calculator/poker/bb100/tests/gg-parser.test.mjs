@@ -112,11 +112,40 @@ test('parseHand: fold preflop on button → uncalledUC = $0 (no uncalled bet)', 
   assert.equal(h.uncalledUC, 0n);
 });
 
-// === Rake / showdown / all-in ===
+// === Rake / jackpot / showdown / all-in ===
 test('parseHand: rake extracted from SUMMARY', () => {
   const h = parseHand(fix('hand-3bet-fold.txt'));
   assert.equal(h.rakeUC, dollarsToUC('0.02'));
   assert.equal(h.totalPotUC, dollarsToUC('0.15'));
+});
+
+test('parseHand: jackpotUC = $0 when SUMMARY line has Jackpot $0', () => {
+  const h = parseHand(fix('hand-3bet-fold.txt'));
+  // hand-3bet-fold.txt has: Total pot $0.15 | Rake $0.02 | Jackpot $0 | Bingo $0 | Fortune $0 | Tax $0
+  assert.equal(h.jackpotUC, 0n);
+});
+
+test('parseHand: jackpotUC parsed correctly from SUMMARY with non-zero jackpot', () => {
+  // Inline fixture with a $0.03 jackpot fee
+  const text = `Poker Hand #RC9999999: Hold'em No Limit ($0.01/$0.02) - 2026/05/21 03:00:00
+Table 'TestTable' 2-max Seat #1 is the button
+Seat 1: Villain1 ($2 in chips)
+Seat 2: Hero ($2 in chips)
+Villain1: posts small blind $0.01
+Hero: posts big blind $0.02
+*** HOLE CARDS ***
+Dealt to Hero [Ks Kh]
+Villain1: folds
+Uncalled bet ($0.01) returned to Hero
+Hero collected $0.02 from pot
+*** SUMMARY ***
+Total pot $0.03 | Rake $0.00 | Jackpot $0.03 | Bingo $0 | Fortune $0 | Tax $0
+Seat 1: Villain1 (button) (small blind) folded before Flop
+Seat 2: Hero (big blind) collected ($0.02)
+`;
+  const h = parseHand(text);
+  assert.equal(h.jackpotUC, dollarsToUC('0.03'));
+  assert.equal(h.rakeUC, 0n);
 });
 
 test('parseHand: walk in BB → reachedShowdown=false (Hero collected, not showed)', () => {

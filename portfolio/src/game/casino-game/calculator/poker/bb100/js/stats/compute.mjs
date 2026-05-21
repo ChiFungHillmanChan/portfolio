@@ -14,25 +14,23 @@ const STREET_BOARD_LEN = {
 
 /**
  * Compute Hero's per-hand result in micro-cents (BigInt).
- * If beforeRake=true and Hero won something, add back Hero's rake share.
+ * If beforeRake=true and Hero won something, add back Hero's fee share (rake + jackpot).
  */
 function perHandResult(hand, beforeRake) {
   let result = hand.collectedUC - hand.contributedUC;
 
-  if (
-    beforeRake &&
-    hand.collectedUC > 0n &&
-    hand.totalPotUC > hand.rakeUC
-  ) {
-    // grossPot = totalPot - rake  (what players put in before rake was taken)
-    const grossPot = hand.totalPotUC - hand.rakeUC;
-    // Hero's proportional share of rake — exclude uncalled returns from the numerator
-    // because uncalled bets are returned pre-contest and don't represent won pot
+  if (beforeRake) {
+    // heroWonFromPot = amount Hero won from the contested pot (excluding uncalled returns)
     const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
-    const heroShareOfRake = grossPot > 0n
-      ? (hand.rakeUC * heroWonFromPot) / grossPot
-      : 0n;
-    result += heroShareOfRake;
+    if (heroWonFromPot > 0n && hand.totalPotUC > hand.rakeUC) {
+      // grossPotDenom = totalPot - rake  (denominator: what was truly contested)
+      const grossPotDenom = hand.totalPotUC - hand.rakeUC;
+      // totalFees = rake + jackpot (all fees taken from the pot)
+      const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
+      const rakeShare = (totalFees * heroWonFromPot) / grossPotDenom;
+      result += rakeShare;
+    }
+    // For losing hands: rakeShare = 0n (no change)
   }
 
   return result;
@@ -45,6 +43,10 @@ function perHandResult(hand, beforeRake) {
 function evResult(hand, result, beforeRake) {
   // No all-in → EV = actual result
   if (!hand.heroAllIn) return result;
+
+  // GGPoker does NOT compute All-in EV adjustment when an uncalled bet was returned to Hero
+  // (Hero shoved over villain's effective stack). Fall back to actual result.
+  if (hand.uncalledUC > 0n) return result;
 
   // All-in but no showdown data or multi-way → fall back
   if (!hand.showdown) return result;
@@ -166,11 +168,13 @@ export function computeSeries(hands, opts = {}) {
 
     // Rake paid (Hero's share on winning hands, always after-rake perspective)
     // Exclude uncalled returns from numerator — they are returned pre-contest
-    if (hand.collectedUC > 0n && hand.totalPotUC > hand.rakeUC) {
-      const grossPot = hand.totalPotUC - hand.rakeUC;
-      const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
-      rakePaidUC += grossPot > 0n
-        ? (hand.rakeUC * heroWonFromPot) / grossPot
+    // Include jackpot in total fees (matches the before-rake formula)
+    const heroWonFromPotRake = hand.collectedUC - hand.uncalledUC;
+    if (heroWonFromPotRake > 0n && hand.totalPotUC > hand.rakeUC) {
+      const grossPotDenom = hand.totalPotUC - hand.rakeUC;
+      const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
+      rakePaidUC += grossPotDenom > 0n
+        ? (totalFees * heroWonFromPotRake) / grossPotDenom
         : 0n;
     }
   }

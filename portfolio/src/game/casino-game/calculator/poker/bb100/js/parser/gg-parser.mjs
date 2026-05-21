@@ -199,7 +199,8 @@ const PLAYER_SHOWS_RE = /^(.+?): shows \[([^\]]+)\]/;
 const HERO_SHOWS_INLINE_RE = /^Hero: shows \[([^\]]+)\]/;
 
 // Summary parsing
-const TOTAL_POT_RE = /^Total pot \$([0-9.]+) \| Rake \$([0-9.]+)/;
+// Handles: "Total pot $X | Rake $Y | Jackpot $Z | Bingo $A | Fortune $B | Tax $C"
+const TOTAL_POT_RE = /^Total pot \$([0-9.]+) \| Rake \$([0-9.]+)(?:\s*\|\s*Jackpot \$([0-9.]+))?/;
 const HERO_SUMMARY_RE = /^Seat \d+: Hero(?:\s+\([^)]+\))*\s+(showed|mucked|folded|collected|won)/;
 // More flexible hero summary to capture cards if shown
 const HERO_SUMMARY_SHOWED_RE = /^Seat \d+: Hero(?:\s+\([^)]+\))*\s+showed \[([^\]]+)\]/;
@@ -302,11 +303,12 @@ export function parseHand(text) {
 
     // ── SUMMARY section ──
     if (phase === 'summary') {
-      // Total pot + rake
+      // Total pot + rake + jackpot
       const potM = TOTAL_POT_RE.exec(line);
       if (potM) {
         hand.totalPotUC = dollarsToUC(potM[1]);
         hand.rakeUC = dollarsToUC(potM[2]);
+        hand.jackpotUC = potM[3] ? dollarsToUC(potM[3]) : 0n;
         continue;
       }
 

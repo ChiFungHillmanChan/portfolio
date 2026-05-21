@@ -5,16 +5,20 @@ import { dollarsToUC } from '../js/stats/money.mjs';
 import { newHand } from '../js/parser/hand-model.mjs';
 import { computeSeries } from '../js/stats/compute.mjs';
 
-function h({ contributed = '0', collected = '0', rake = '0', totalPot, showdown = false, position = 'BTN', bb = '0.02', heroAllIn = false } = {}) {
+function h({ contributed = '0', collected = '0', rake = '0', jackpot = '0', totalPot, showdown = false, position = 'BTN', bb = '0.02', heroAllIn = false, uncalled = '0' } = {}) {
   const contUC = dollarsToUC(contributed);
   const collUC = dollarsToUC(collected);
   const rakeUC = dollarsToUC(rake);
+  const jackpotUC = dollarsToUC(jackpot);
+  const uncalledUC = dollarsToUC(uncalled);
   // Default totalPot: if no rake, contUC + collUC; otherwise caller must specify
   const potUC = totalPot ? dollarsToUC(totalPot) : (contUC + collUC);
   return newHand({
     contributedUC: contUC,
     collectedUC: collUC,
+    uncalledUC,
     rakeUC,
+    jackpotUC,
     totalPotUC: potUC,
     reachedShowdown: showdown,
     heroAllIn,
@@ -114,4 +118,39 @@ test('computeSeries on empty input returns empty series', () => {
   assert.equal(series.winningsUC.length, 0);
   assert.equal(summary.hands, 0);
   assert.equal(summary.totalUC, 0n);
+});
+
+test('computeSeries: beforeRake includes jackpot in fee total on winning hands', () => {
+  // rake=$0.01, jackpot=$0.02 → totalFees=$0.03
+  // collected=$0.10 (all from pot, uncalled=$0), totalPot=$0.20
+  // grossPotDenom = 0.20 - 0.01 = 0.19
+  // heroWonFromPot = 0.10
+  // rakeShare = (30000n * 100000n) / 190000n = 15789n
+  // result after-rake = 100000n - <contributed>, before-rake = after + 15789n
+  const hands = [
+    h({ contributed: '0.10', collected: '0.10', totalPot: '0.20', rake: '0.01', jackpot: '0.02' }),
+  ];
+  const after = computeSeries(hands, { beforeRake: false });
+  const before = computeSeries(hands, { beforeRake: true });
+  const afterResult = after.series.winningsUC.at(-1);
+  const beforeResult = before.series.winningsUC.at(-1);
+  // Before-rake should be larger than after-rake (fee share added back)
+  assert.ok(beforeResult > afterResult, 'before-rake result should be greater than after-rake');
+  // rakeShare = round((30000n * 100000n) / 190000n) = 15789n
+  const expectedRakeShare = (30000n * 100000n) / 190000n;
+  assert.equal(beforeResult - afterResult, expectedRakeShare);
+});
+
+test('computeSeries: EV is NOT computed for hands with uncalled bet returned (falls back to actual)', () => {
+  // heroAllIn=true, uncalledUC > 0 → evResult should equal perHandResult (no equity adjustment)
+  // Even without showdown data, this tests the uncalled short-circuit
+  const hands = [
+    h({ contributed: '1.00', collected: '0.50', rake: '0.02', totalPot: '1.98',
+        heroAllIn: true, uncalled: '0.50', showdown: false }),
+  ];
+  const { series } = computeSeries(hands, { beforeRake: false });
+  // winningsUC = collectedUC - contributedUC = 0.50 - 1.00 = -0.50 (500000n loss)
+  // evUC should equal winningsUC because uncalledUC > 0 forces fallback
+  assert.equal(series.evUC.at(-1), series.winningsUC.at(-1),
+    'EV should equal actual result when uncalledUC > 0');
 });
