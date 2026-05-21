@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="../../css/hamburger-menu.css">
     <link rel="stylesheet" href="css/bb100.css">
     <link rel="stylesheet" href="css/upload.css">
+    <link rel="stylesheet" href="css/auth.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" crossorigin="anonymous"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" crossorigin="anonymous"></script>
@@ -70,6 +71,10 @@
             <h1>BB/100 CALCULATOR</h1>
             <p class="subtitle">Cash Game Win Rate</p>
         </header>
+
+        <div class="auth-row">
+            <div id="authSlot" class="auth-slot"></div>
+        </div>
 
         <div class="tab-bar" role="tablist">
             <button class="tab-btn active" data-tab="manual" role="tab" aria-selected="true">Manual Entry</button>
@@ -235,6 +240,7 @@
     <script src="../../js/hamburger-menu.js"></script>
     <script src="js/bb100.js"></script>
     <script src="js/tabs.js"></script>
+    <script type="module" src="js/auth/auth-ui.js"></script>
     <script type="module" src="js/upload.js"></script>
 </body>
 </html>
