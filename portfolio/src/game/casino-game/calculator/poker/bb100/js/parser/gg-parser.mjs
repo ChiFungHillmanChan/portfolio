@@ -460,21 +460,12 @@ export function parseHand(text) {
     }
 
     // ── Villain actions (track per-player contributions for side-pot decomposition) ──
-    // Skip lines starting with Hero (already handled above), summary section, and preamble
+    // Skip lines starting with Hero (already handled above) and summary section.
+    // NOTE: Villain blind posts happen during 'preamble' phase (before *** HOLE CARDS ***),
+    // so blind handlers must run during preamble; other actions only run from preflop onwards.
 
-    if (phase !== 'summary' && phase !== 'preamble') {
-      // Uncalled return to villain (subtract from their contributions)
-      const ucVillainM = UNCALLED_VILLAIN_RE.exec(line);
-      if (ucVillainM) {
-        const name = ucVillainM[2].trim();
-        if (name !== 'Hero') {
-          const uc = dollarsToUC(ucVillainM[1]);
-          villainContributions[name] = (villainContributions[name] ?? 0n) - uc;
-        }
-        continue;
-      }
-
-      // Villain posts blind
+    if (phase !== 'summary') {
+      // Villain posts blind (may occur in preamble before *** HOLE CARDS ***)
       const vSbM = VILLAIN_POSTS_SB_RE.exec(line);
       if (vSbM && vSbM[1].trim() !== 'Hero') {
         const name = vSbM[1].trim();
@@ -489,6 +480,19 @@ export function parseHand(text) {
         const amt = dollarsToUC(vBbM[2]);
         villainContributions[name] = (villainContributions[name] ?? 0n) + amt;
         villainStreetCommitted[name] = (villainStreetCommitted[name] ?? 0n) + amt;
+        continue;
+      }
+    }
+
+    if (phase !== 'summary' && phase !== 'preamble') {
+      // Uncalled return to villain (subtract from their contributions)
+      const ucVillainM = UNCALLED_VILLAIN_RE.exec(line);
+      if (ucVillainM) {
+        const name = ucVillainM[2].trim();
+        if (name !== 'Hero') {
+          const uc = dollarsToUC(ucVillainM[1]);
+          villainContributions[name] = (villainContributions[name] ?? 0n) - uc;
+        }
         continue;
       }
 
