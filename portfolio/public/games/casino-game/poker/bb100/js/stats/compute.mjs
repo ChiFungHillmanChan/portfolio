@@ -27,7 +27,10 @@ function perHandResult(hand, beforeRake) {
       const grossPotDenom = hand.totalPotUC - hand.rakeUC;
       // totalFees = rake + jackpot (all fees taken from the pot)
       const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
-      const rakeShare = (totalFees * heroWonFromPot) / grossPotDenom;
+      // Round-half-up BigInt division: (a + c/2) / c instead of a / c
+      // Eliminates the systematic downward truncation that costs ~1¢ across many hands.
+      const num = totalFees * heroWonFromPot;
+      const rakeShare = (num + grossPotDenom / 2n) / grossPotDenom;
       result += rakeShare;
     }
     // For losing hands: rakeShare = 0n (no change)
@@ -167,15 +170,15 @@ export function computeSeries(hands, opts = {}) {
     byPosition[pos].totalUC += result;
 
     // Rake paid (Hero's share on winning hands, always after-rake perspective)
-    // Exclude uncalled returns from numerator — they are returned pre-contest
-    // Include jackpot in total fees (matches the before-rake formula)
+    // Same round-half-up formula as the per-hand result.
     const heroWonFromPotRake = hand.collectedUC - hand.uncalledUC;
     if (heroWonFromPotRake > 0n && hand.totalPotUC > hand.rakeUC) {
       const grossPotDenom = hand.totalPotUC - hand.rakeUC;
       const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
-      rakePaidUC += grossPotDenom > 0n
-        ? (totalFees * heroWonFromPotRake) / grossPotDenom
-        : 0n;
+      if (grossPotDenom > 0n) {
+        const num = totalFees * heroWonFromPotRake;
+        rakePaidUC += (num + grossPotDenom / 2n) / grossPotDenom;
+      }
     }
   }
 
