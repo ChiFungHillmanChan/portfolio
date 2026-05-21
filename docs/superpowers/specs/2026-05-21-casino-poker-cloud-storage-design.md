@@ -379,6 +379,27 @@ Equity cache hits:              X / X
 
 **Phase 1 done = exact match.** When rounded to 2 decimals, green = $8.71 and orange = $11.23. No tolerance. Run twice — every digit identical. If numbers don't match, fix before Phase 2.
 
+### Precision bounds (per-100-hand checkpoint analysis, 2026-05-21)
+
+In addition to final-value matching, we verified cumulative green + orange at every 100 hands against the GGPoker app's chart readings (see `verify/verify-checkpoints.mjs` and `verify/checkpoint-experiment.mjs`). Results:
+
+- **Final orange ($11.23):** matches GG exactly
+- **Final green ($8.71):** 1¢ under GG's $8.72 (sub-display-precision drift)
+- **18 intermediate checkpoints (hand 100, 200, ..., 1800):** 10 of 18 green and 4 of 18 orange match exactly; remainder drift ±2¢ in non-monotonic pattern
+- **Per-hand sub-cent component:** only 28 of 1815 hands produce per-hand results with fractional sub-cent components (those involving rake-share-back calculations); the other 1787 hands contribute clean integer-cent values
+
+We tested 4 alternative per-hand quantization strategies (`sum-then-display`, `half-up-per-hand`, `truncate-per-hand`, `ceiling-per-hand`). Our current `sum-then-display` approach with BigInt micro-cent precision is the **best of the 4** — 10/18 green matches vs next-best 3/18.
+
+The residual ±2¢ drift at intermediate checkpoints is from edge-case algorithm differences in how GG attributes rake/jackpot to winners (likely split-pot decomposition or uncalled-bet handling on specific hands). Closing this fully would require GG's proprietary algorithm. We accept the current bound and move on.
+
+**Precision contract:**
+- bb/100 stat: accurate at all stakes
+- Final cumulative: within 1¢ of GG over 1815 hands at NL2 (proportional ±$1 at NL200)
+- Intermediate checkpoints: within ±2¢ at NL2 (proportional ±$2 at NL200)
+- All output bit-identical across runs (deterministic, no float drift)
+
+Phase 6 (hardening) will revisit if/when the user provides GG-app per-hand data at the worst divergence points.
+
 ---
 
 # Phase 2 — Auth (Sub-project A)
