@@ -1,7 +1,7 @@
 // js/stats/compute.mjs
 // Turns Hand[] into cumulative chart series + summary stats.
 
-import { equity } from '../equity/equity.mjs';
+import { equity, equityMultiway } from '../equity/equity.mjs';
 import { encodeHand } from '../equity/cards.mjs';
 
 // Street → number of board cards already out when all-in was made
@@ -42,60 +42,132 @@ function perHandResult(hand, beforeRake) {
 /**
  * Compute EV-adjusted result for one hand.
  * Falls back to result_i if all-in EV can't be computed.
+ *
+ * Trigger: any hand where SOMEONE went all-in AND Hero reached showdown.
+ * Four scenarios handled:
+ *   1. Heads-up, Hero all-in, fully matched (uncalled=0)
+ *   2. Heads-up, Hero all-in WITH uncalled return (Hero deeper than villain)
+ *   3. Heads-up, villain-only all-in (Hero called for less than full stack)
+ *   4. Multi-way, same-street all-in → side-pot decomposition
  */
 function evResult(hand, result, beforeRake) {
-  // No all-in → EV = actual result
-  if (!hand.heroAllIn) return result;
+  // Trigger: ANY player went all-in AND Hero reached showdown with cards known
+  if (!hand.anyAllIn || !hand.reachedShowdown || !hand.showdown) return result;
 
-  // GGPoker does NOT compute All-in EV adjustment when an uncalled bet was returned to Hero
-  // (Hero shoved over villain's effective stack). Fall back to actual result.
-  if (hand.uncalledUC > 0n) return result;
+  const villains = hand.showdown.villains ?? {};
+  const villainNames = Object.keys(villains);
+  if (villainNames.length === 0) return result;
 
-  // All-in but no showdown data or multi-way → fall back
-  if (!hand.showdown) return result;
+  // Hero's effective contribution = what Hero actually had at risk (excluding returned excess)
+  const heroEffective = hand.contributedUC - hand.uncalledUC;
+  if (heroEffective <= 0n) return result;
 
-  const villainNames = Object.keys(hand.showdown.villains ?? {});
-  if (villainNames.length !== 1) return result; // skip multi-way for v1
+  // Pot at risk:
+  //   beforeRake=true  → full pot (rake still inside)
+  //   beforeRake=false → net pot (rake removed)
+  const fees = hand.rakeUC + (hand.jackpotUC ?? 0n);
+  const potAtRiskUC = beforeRake
+    ? hand.totalPotUC
+    : hand.totalPotUC - fees;
 
-  const heroCards = hand.showdown.hero;
-  const villainCards = hand.showdown.villains[villainNames[0]];
+  // Determine street at which money went all-in.
+  // Prefer hand.allInStreet (Hero went all-in) over anyAllInStreet (villain went all-in).
+  const street = hand.allInStreet ?? hand.anyAllInStreet;
+  const streetLen = STREET_BOARD_LEN[street];
+  if (streetLen == null) return result;
+
   const board = hand.showdown.board ?? [];
 
-  if (!heroCards || heroCards.length !== 2 || !villainCards || villainCards.length !== 2) {
-    return result;
-  }
-
-  // Determine how many board cards were out at the time of all-in
-  const streetLen = STREET_BOARD_LEN[hand.allInStreet] ?? null;
-  if (streetLen === null) return result;
-
   try {
-    const heroInts    = encodeHand(heroCards);
-    const villainInts = encodeHand(villainCards);
+    const heroCards = encodeHand(hand.showdown.hero);
     const partialBoard = encodeHand(board.slice(0, streetLen));
 
-    const eq = equity(heroInts, villainInts, partialBoard);
+    if (villainNames.length === 1) {
+      // ── Heads-up (cases 1, 2, 3) ──
+      const villainCards = encodeHand(villains[villainNames[0]]);
+      const eq = equity(heroCards, villainCards, partialBoard);
+      const eqMicros = BigInt(Math.round(eq * 1_000_000));
+      const evShareUC = (eqMicros * potAtRiskUC) / 1_000_000n;
+      return evShareUC - heroEffective;
+    }
 
-    // Effective contribution = what Hero actually had at risk in the contested pot.
-    // When Hero raises over villain's stack, the uncalled excess is returned —
-    // only the matched portion is truly committed to the pot.
-    const effectiveContribUC = hand.contributedUC - hand.uncalledUC;
+    // ── Multi-way (case 4) — side-pot decomposition ──
+    // Build player list with their effective contributions at the time of all-in.
+    // For Hero: heroEffective (contributedUC - uncalledUC).
+    // For villains: use contributions tracked by parser (already net of uncalled returns).
+    const players = [
+      { name: 'Hero', cards: heroCards, contrib: heroEffective },
+    ];
+    for (const name of villainNames) {
+      const contrib = hand.contributions?.[name] ?? 0n;
+      if (contrib <= 0n) continue;
+      players.push({ name, cards: encodeHand(villains[name]), contrib });
+    }
+    if (players.length < 2) return result;
 
-    // Pot at risk = the actual contested pot (GGPoker's totalPot already excludes
-    // uncalled returns, so totalPotUC IS the contested pot):
-    // - beforeRake=true  → use full pot (rake stays in)
-    // - beforeRake=false → use net pot (after rake removed)
-    const potAtRiskUC = beforeRake
-      ? hand.totalPotUC
-      : hand.totalPotUC - hand.rakeUC;
+    // Dead money = totalPot - sum of showdown players' contributions
+    // (Dead = folded players' money + antes if any)
+    let sumContribs = 0n;
+    for (const p of players) sumContribs += p.contrib;
+    // For after-rake: deduct fees from pot too
+    const deadInPot = hand.totalPotUC - sumContribs - (beforeRake ? 0n : fees);
 
-    // Convert equity fraction → BigInt micro-cent arithmetic
-    const eqMicros  = BigInt(Math.round(eq * 1_000_000));
-    const evShareUC = (eqMicros * potAtRiskUC) / 1_000_000n;
+    // Sort by contribution ascending (lowest stack = main pot player first)
+    players.sort((a, b) => {
+      if (a.contrib < b.contrib) return -1;
+      if (a.contrib > b.contrib) return 1;
+      return 0;
+    });
 
-    return evShareUC - effectiveContribUC;
+    let heroEv = 0n;
+    let prevTier = 0n;
+    let remainingPlayers = players.length;
+    let firstPot = true;
+
+    for (const p of players) {
+      const tierContrib = p.contrib - prevTier;
+      if (tierContrib <= 0n) {
+        prevTier = p.contrib;
+        remainingPlayers--;
+        continue;
+      }
+
+      // Pot size for this tier = tierContrib × remaining players
+      let potSize = tierContrib * BigInt(remainingPlayers);
+      if (firstPot && deadInPot > 0n) {
+        // Main pot absorbs all dead money from folded players
+        potSize += deadInPot;
+        firstPot = false;
+      } else {
+        firstPot = false;
+      }
+
+      // Contestants in this tier: players whose total contrib >= p.contrib
+      const contestants = players.filter(x => x.contrib >= p.contrib);
+      const heroInContestants = contestants.some(x => x.name === 'Hero');
+
+      if (heroInContestants && potSize > 0n) {
+        const others = contestants.filter(x => x.name !== 'Hero');
+        let eq;
+        if (others.length === 1) {
+          eq = equity(heroCards, others[0].cards, partialBoard);
+        } else if (others.length === 0) {
+          // Hero is the only contestant — wins it all
+          eq = 1.0;
+        } else {
+          eq = equityMultiway(heroCards, others.map(o => o.cards), partialBoard);
+        }
+        const eqMicros = BigInt(Math.round(eq * 1_000_000));
+        heroEv += (eqMicros * potSize) / 1_000_000n;
+      }
+
+      prevTier = p.contrib;
+      remainingPlayers--;
+    }
+
+    return heroEv - heroEffective;
   } catch {
-    // Any card-encoding or equity error → fall back
+    // Any card-encoding or equity error → fall back to actual result
     return result;
   }
 }

@@ -14,6 +14,10 @@
  * @property {boolean} reachedShowdown
  * @property {boolean} heroAllIn
  * @property {string|null} allInStreet  "preflop"|"flop"|"turn"|"river"|null
+ * @property {boolean} anyAllIn         true if ANY player (Hero or villain) went all-in
+ * @property {string|null} anyAllInStreet  street of the first all-in event in this hand
+ * @property {Object<string,bigint>} contributions  per-player total contribution (for multi-way side-pot)
+ * @property {Array<{seat:number,name:string,stackUC:bigint}>} seats  starting stacks
  * @property {Object|null} showdown  {hero:string[], villains:Object<string,string[]>, board:string[]}
  */
 
@@ -32,6 +36,10 @@ export function newHand(overrides = {}) {
     reachedShowdown: false,
     heroAllIn: false,
     allInStreet: null,
+    anyAllIn: false,          // true if ANY player went all-in
+    anyAllInStreet: null,     // street of the first all-in event
+    contributions: {},        // { playerName: bigint } — per-player total contribution
+    seats: [],                // [{ seat, name, stackUC }] — starting stacks
     showdown: null,
     ...overrides,
   };

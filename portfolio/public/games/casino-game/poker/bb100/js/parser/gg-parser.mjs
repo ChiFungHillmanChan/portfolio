@@ -66,10 +66,10 @@ function parseHeader(line) {
 const BUTTON_RE = /Seat #(\d+) is the button/;
 
 // Seat 5: Hero ($2.15 in chips)
-const SEAT_RE = /^Seat (\d+): (.+?) \(/;
+const SEAT_RE = /^Seat (\d+): (.+?) \(\$([0-9.]+) in chips\)/;
 
 /**
- * Returns { heroSeat, buttonSeat, seats: [{seat, name}] }
+ * Returns { heroSeat, buttonSeat, seats: [{seat, name, stackUC}] }
  */
 function parseSeatsSection(lines) {
   let heroSeat = -1;
@@ -86,7 +86,8 @@ function parseSeatsSection(lines) {
     if (sm) {
       const seat = parseInt(sm[1], 10);
       const name = sm[2].trim();
-      seats.push({ seat, name });
+      const stackUC = dollarsToUC(sm[3]);
+      seats.push({ seat, name, stackUC });
       if (name === 'Hero') heroSeat = seat;
     }
   }
@@ -190,6 +191,17 @@ const HERO_BETS_RE = /^Hero: bets \$([0-9.]+)/;
 const HERO_RAISES_RE = /^Hero: raises \$[0-9.]+ to \$([0-9.]+)/;
 const HERO_ALLIN_RE = /^Hero:.*and is all-in/;
 
+// Any-player all-in detection
+const ANY_ALLIN_RE = / and is all-in$/;
+
+// Villain action regexes (generic — name captured in group 1)
+const VILLAIN_POSTS_SB_RE  = /^(.+): posts small blind \$([0-9.]+)/;
+const VILLAIN_POSTS_BB_RE  = /^(.+): posts big blind \$([0-9.]+)/;
+const VILLAIN_CALLS_RE     = /^(.+): calls \$([0-9.]+)/;
+const VILLAIN_BETS_RE      = /^(.+): bets \$([0-9.]+)/;
+const VILLAIN_RAISES_RE    = /^(.+): raises \$[0-9.]+ to \$([0-9.]+)/;
+const UNCALLED_VILLAIN_RE  = /^Uncalled bet \(\$([0-9.]+)\) returned to (.+)/;
+
 // Collection lines
 const HERO_COLLECTED_RE = /^Hero collected \$([0-9.]+) from (pot|side pot|main pot|pot \d+)/;
 const UNCALLED_HERO_RE = /^Uncalled bet \(\$([0-9.]+)\) returned to Hero/;
@@ -229,6 +241,10 @@ export function parseHand(text) {
   let phase = 'preamble'; // preamble → preflop → flop → turn → river → showdown → summary
   let heroStreetCommitted = 0n;
 
+  // Villain contribution tracking (for multi-way side-pot decomposition)
+  const villainStreetCommitted = {}; // name → bigint (current street)
+  const villainContributions  = {}; // name → bigint (total hand)
+
   // Seats and board
   const boardCards = [];
   let heroCards = null;
@@ -244,6 +260,12 @@ export function parseHand(text) {
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
 
+    // ── Any-player all-in detection (check before phase-specific handlers) ──
+    if (!hand.anyAllIn && ANY_ALLIN_RE.test(line)) {
+      hand.anyAllIn = true;
+      hand.anyAllInStreet = (phase === 'preflop' || phase === 'preamble') ? 'preflop' : phase;
+    }
+
     // ── Seat table (preamble) ──
     if (phase === 'preamble') {
       const bm = BUTTON_RE.exec(line);
@@ -253,7 +275,8 @@ export function parseHand(text) {
       if (sm) {
         const seat = parseInt(sm[1], 10);
         const name = sm[2].trim();
-        seats.push({ seat, name });
+        const stackUC = dollarsToUC(sm[3]);
+        seats.push({ seat, name, stackUC });
         seatByName[name] = seat;
         if (name === 'Hero') heroSeat = seat;
         continue;
@@ -273,6 +296,8 @@ export function parseHand(text) {
       if (marker === 'FLOP') {
         phase = 'flop';
         heroStreetCommitted = 0n;
+        // Reset villain street tracking
+        for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
         const m = BOARD_FLOP_RE.exec(line);
         if (m) boardCards.push(...parseCards(m[1]));
         continue;
@@ -280,6 +305,7 @@ export function parseHand(text) {
       if (marker === 'TURN') {
         phase = 'turn';
         heroStreetCommitted = 0n;
+        for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
         const m = BOARD_TURN_RE.exec(line);
         if (m) boardCards.push(...parseCards(m[1]));
         continue;
@@ -287,6 +313,7 @@ export function parseHand(text) {
       if (marker === 'RIVER') {
         phase = 'river';
         heroStreetCommitted = 0n;
+        for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
         const m = BOARD_RIVER_RE.exec(line);
         if (m) boardCards.push(...parseCards(m[1]));
         continue;
@@ -431,6 +458,72 @@ export function parseHand(text) {
       }
       continue;
     }
+
+    // ── Villain actions (track per-player contributions for side-pot decomposition) ──
+    // Skip lines starting with Hero (already handled above), summary section, and preamble
+
+    if (phase !== 'summary' && phase !== 'preamble') {
+      // Uncalled return to villain (subtract from their contributions)
+      const ucVillainM = UNCALLED_VILLAIN_RE.exec(line);
+      if (ucVillainM) {
+        const name = ucVillainM[2].trim();
+        if (name !== 'Hero') {
+          const uc = dollarsToUC(ucVillainM[1]);
+          villainContributions[name] = (villainContributions[name] ?? 0n) - uc;
+        }
+        continue;
+      }
+
+      // Villain posts blind
+      const vSbM = VILLAIN_POSTS_SB_RE.exec(line);
+      if (vSbM && vSbM[1].trim() !== 'Hero') {
+        const name = vSbM[1].trim();
+        const amt = dollarsToUC(vSbM[2]);
+        villainContributions[name] = (villainContributions[name] ?? 0n) + amt;
+        villainStreetCommitted[name] = (villainStreetCommitted[name] ?? 0n) + amt;
+        continue;
+      }
+      const vBbM = VILLAIN_POSTS_BB_RE.exec(line);
+      if (vBbM && vBbM[1].trim() !== 'Hero') {
+        const name = vBbM[1].trim();
+        const amt = dollarsToUC(vBbM[2]);
+        villainContributions[name] = (villainContributions[name] ?? 0n) + amt;
+        villainStreetCommitted[name] = (villainStreetCommitted[name] ?? 0n) + amt;
+        continue;
+      }
+
+      // Villain calls
+      const vCallsM = VILLAIN_CALLS_RE.exec(line);
+      if (vCallsM && vCallsM[1].trim() !== 'Hero') {
+        const name = vCallsM[1].trim();
+        const amt = dollarsToUC(vCallsM[2]);
+        villainContributions[name] = (villainContributions[name] ?? 0n) + amt;
+        villainStreetCommitted[name] = (villainStreetCommitted[name] ?? 0n) + amt;
+        continue;
+      }
+
+      // Villain bets
+      const vBetsM = VILLAIN_BETS_RE.exec(line);
+      if (vBetsM && vBetsM[1].trim() !== 'Hero') {
+        const name = vBetsM[1].trim();
+        const amt = dollarsToUC(vBetsM[2]);
+        villainContributions[name] = (villainContributions[name] ?? 0n) + amt;
+        villainStreetCommitted[name] = amt; // bets reset the street commitment
+        continue;
+      }
+
+      // Villain raises
+      const vRaisesM = VILLAIN_RAISES_RE.exec(line);
+      if (vRaisesM && vRaisesM[1].trim() !== 'Hero') {
+        const name = vRaisesM[1].trim();
+        const newTotal = dollarsToUC(vRaisesM[2]);
+        const prev = villainStreetCommitted[name] ?? 0n;
+        const extra = newTotal - prev;
+        villainContributions[name] = (villainContributions[name] ?? 0n) + extra;
+        villainStreetCommitted[name] = newTotal;
+        continue;
+      }
+    }
   }
 
   // ── Hero cards ──
@@ -439,6 +532,12 @@ export function parseHand(text) {
 
   // ── Position ──
   hand.hero.position = determinePosition(heroSeat, buttonSeat, seats, lines);
+
+  // ── Seats (with starting stacks) ──
+  hand.seats = seats;
+
+  // ── Villain contributions ──
+  hand.contributions = villainContributions;
 
   // ── Showdown object ──
   if (hand.reachedShowdown) {
