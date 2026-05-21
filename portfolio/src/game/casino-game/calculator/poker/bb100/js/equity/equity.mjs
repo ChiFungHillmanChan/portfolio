@@ -57,6 +57,46 @@ function enumerate2(hero, villain, board, deck) {
   return (wins + ties * 0.5) / total;
 }
 
+// Preflop cache: avoids re-enumerating 1.7M boards for the same hole cards.
+const PREFLOP_CACHE = new Map();
+
+function canonicalPreflopKey(hero, villain) {
+  // Key is the sorted 4 card ints — same exact cards → same equity.
+  const cards = [...hero, ...villain].slice().sort((a, b) => a - b);
+  return cards.join(',');
+}
+
 function enumerate5(hero, villain, deck) {
-  throw new Error('preflop equity not implemented yet (Task 6)');
+  const key = canonicalPreflopKey(hero, villain);
+  const cached = PREFLOP_CACHE.get(key);
+  if (cached !== undefined) return cached;
+
+  let wins = 0, ties = 0, total = 0;
+  const n = deck.length; // 48
+  for (let a = 0; a < n; a++) {
+    for (let b = a + 1; b < n; b++) {
+      for (let c = b + 1; c < n; c++) {
+        for (let d = c + 1; d < n; d++) {
+          for (let e = d + 1; e < n; e++) {
+            const board = [deck[a], deck[b], deck[c], deck[d], deck[e]];
+            const r = resolveOne(hero, villain, board);
+            if (r === 1.0) wins++;
+            else if (r === 0.5) ties++;
+            total++;
+          }
+        }
+      }
+    }
+  }
+  const result = (wins + ties * 0.5) / total;
+  PREFLOP_CACHE.set(key, result);
+  return result;
+}
+
+export function clearEquityCache() {
+  PREFLOP_CACHE.clear();
+}
+
+export function equityCacheSize() {
+  return PREFLOP_CACHE.size;
 }

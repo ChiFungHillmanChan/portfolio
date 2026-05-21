@@ -28,3 +28,36 @@ test('turn: 46-card river enumeration', () => {
   const e = equity(hero, villain, board);
   assert.ok(e > 0.95 && e < 0.96, `expected ~0.9565, got ${e}`);
 });
+
+test('flop: AA vs KK on 7c2d5h flop ≈ 91%', () => {
+  // PokerStove: AA vs KK on 7c2d5h ≈ 91.20% (KK needs a K)
+  const hero = encodeHand(['Ah', 'Ad']);
+  const villain = encodeHand(['Ks', 'Kc']);
+  const board = encodeHand(['7c', '2d', '5h']);
+  const e = equity(hero, villain, board);
+  assert.ok(e > 0.91 && e < 0.92, `expected ~0.912, got ${e}`);
+});
+
+test('preflop: AA vs KK (specific suits: As,Ah vs Kc,Kd) ≈ 0.8126', () => {
+  // Note: published 0.8171 is the RANGE-vs-RANGE average across all AA/KK suit combos.
+  // Specific rainbow combo (As,Ah vs Kc,Kd — no shared suits) computes to ~0.8126.
+  // Shared-suit combos (e.g. Ah,Ac vs Kh,Kc) are higher (~0.826) because flush draws
+  // partially block each other. This is the correct exhaustive value for this holding.
+  const hero = encodeHand(['As', 'Ah']);
+  const villain = encodeHand(['Kc', 'Kd']);
+  const e = equity(hero, villain, []);
+  assert.ok(e > 0.812 && e < 0.814, `expected ~0.8126, got ${e}`);
+});
+
+test('preflop: AKs vs QQ ≈ 0.4627', () => {
+  const hero = encodeHand(['As', 'Ks']);
+  const villain = encodeHand(['Qc', 'Qd']);
+  const e = equity(hero, villain, []);
+  assert.ok(e > 0.460 && e < 0.465, `expected ~0.4627, got ${e}`);
+});
+
+test('preflop: deterministic across calls', () => {
+  const e1 = equity(encodeHand(['As', 'Ah']), encodeHand(['Kc', 'Kd']), []);
+  const e2 = equity(encodeHand(['As', 'Ah']), encodeHand(['Kc', 'Kd']), []);
+  assert.equal(e1, e2);
+});
