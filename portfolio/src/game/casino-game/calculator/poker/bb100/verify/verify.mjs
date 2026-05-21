@@ -44,6 +44,8 @@ for (const f of files) {
   totalSkipped += r.skipped;
 }
 
+allHands.sort((a, b) => a.date.localeCompare(b.date));
+
 const parseDuration = performance.now() - startParse;
 
 console.log(`\n========================================`);

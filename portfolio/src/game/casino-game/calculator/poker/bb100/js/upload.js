@@ -101,6 +101,9 @@ async function handleFiles(files) {
     showStatus(`No valid hands parsed.\n${reasons}`, 'error');
     return;
   }
+  // Sort hands chronologically so the chart matches GGPoker's display
+  // (8 files of overlapping time windows must be interleaved by timestamp)
+  parsedHands.sort((a, b) => a.date.localeCompare(b.date));
   const skipMsg = skippedHands ? `, skipped ${skippedHands} malformed` : '';
   const rejMsg = rejected.length ? `, rejected ${rejected.length} files` : '';
   showStatus(`Parsed ${parsedHands.length.toLocaleString()} hands from ${files.length - rejected.length} files${skipMsg}${rejMsg}`);
@@ -148,7 +151,18 @@ function renderChart(series) {
       animation: false,
       interaction: { mode: 'index', intersect: false },
       scales: {
-        x: { ticks: { color: '#a0a0b0', maxTicksLimit: 20 }, grid: { color: '#1f1f2a' } },
+        x: {
+          ticks: {
+            color: '#a0a0b0',
+            autoSkip: false,
+            callback: function(value, index) {
+              // Show only every 100th hand label (100, 200, ..., 1800)
+              const handNum = index + 1; // labels are 1..n
+              return handNum % 100 === 0 ? handNum : '';
+            },
+          },
+          grid: { color: '#1f1f2a' },
+        },
         y: { ticks: { color: '#a0a0b0', callback: v => '$' + v.toFixed(2) }, grid: { color: '#1f1f2a' } },
       },
       plugins: {
