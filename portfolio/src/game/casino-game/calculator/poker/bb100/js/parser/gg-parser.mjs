@@ -356,7 +356,9 @@ export function parseHand(text) {
     }
     const uncalledM = UNCALLED_HERO_RE.exec(line);
     if (uncalledM) {
-      hand.collectedUC += dollarsToUC(uncalledM[1]);
+      const uc = dollarsToUC(uncalledM[1]);
+      hand.collectedUC += uc;
+      hand.uncalledUC += uc;     // also track the uncalled portion separately
       continue;
     }
 

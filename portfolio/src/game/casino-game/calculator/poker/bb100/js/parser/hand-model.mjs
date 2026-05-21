@@ -7,6 +7,7 @@
  * @property {{seat:number, position:string, cards:string[]|null}} hero
  * @property {bigint} contributedUC
  * @property {bigint} collectedUC
+ * @property {bigint} uncalledUC  amount of "Uncalled bet returned to Hero" (subset of collectedUC)
  * @property {bigint} rakeUC
  * @property {bigint} totalPotUC
  * @property {boolean} reachedShowdown
@@ -23,6 +24,7 @@ export function newHand(overrides = {}) {
     hero: { seat: 0, position: 'BTN', cards: null },
     contributedUC: 0n,
     collectedUC: 0n,
+    uncalledUC: 0n,           // amount of "Uncalled bet returned to Hero"
     rakeUC: 0n,
     totalPotUC: 0n,
     reachedShowdown: false,

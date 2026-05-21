@@ -26,8 +26,12 @@ function perHandResult(hand, beforeRake) {
   ) {
     // grossPot = totalPot - rake  (what players put in before rake was taken)
     const grossPot = hand.totalPotUC - hand.rakeUC;
-    // Hero's proportional share of rake
-    const heroShareOfRake = (hand.rakeUC * hand.collectedUC) / grossPot;
+    // Hero's proportional share of rake — exclude uncalled returns from the numerator
+    // because uncalled bets are returned pre-contest and don't represent won pot
+    const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
+    const heroShareOfRake = grossPot > 0n
+      ? (hand.rakeUC * heroWonFromPot) / grossPot
+      : 0n;
     result += heroShareOfRake;
   }
 
@@ -67,18 +71,24 @@ function evResult(hand, result, beforeRake) {
 
     const eq = equity(heroInts, villainInts, partialBoard);
 
-    // Gross pot for EV purposes:
+    // Effective contribution = what Hero actually had at risk in the contested pot.
+    // When Hero raises over villain's stack, the uncalled excess is returned —
+    // only the matched portion is truly committed to the pot.
+    const effectiveContribUC = hand.contributedUC - hand.uncalledUC;
+
+    // Pot at risk = the actual contested pot (GGPoker's totalPot already excludes
+    // uncalled returns, so totalPotUC IS the contested pot):
     // - beforeRake=true  → use full pot (rake stays in)
     // - beforeRake=false → use net pot (after rake removed)
-    const grossPotUC = beforeRake
+    const potAtRiskUC = beforeRake
       ? hand.totalPotUC
       : hand.totalPotUC - hand.rakeUC;
 
     // Convert equity fraction → BigInt micro-cent arithmetic
     const eqMicros  = BigInt(Math.round(eq * 1_000_000));
-    const evShareUC = (eqMicros * grossPotUC) / 1_000_000n;
+    const evShareUC = (eqMicros * potAtRiskUC) / 1_000_000n;
 
-    return evShareUC - hand.contributedUC;
+    return evShareUC - effectiveContribUC;
   } catch {
     // Any card-encoding or equity error → fall back
     return result;
@@ -155,9 +165,13 @@ export function computeSeries(hands, opts = {}) {
     byPosition[pos].totalUC += result;
 
     // Rake paid (Hero's share on winning hands, always after-rake perspective)
+    // Exclude uncalled returns from numerator — they are returned pre-contest
     if (hand.collectedUC > 0n && hand.totalPotUC > hand.rakeUC) {
       const grossPot = hand.totalPotUC - hand.rakeUC;
-      rakePaidUC += (hand.rakeUC * hand.collectedUC) / grossPot;
+      const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
+      rakePaidUC += grossPot > 0n
+        ? (hand.rakeUC * heroWonFromPot) / grossPot
+        : 0n;
     }
   }
 

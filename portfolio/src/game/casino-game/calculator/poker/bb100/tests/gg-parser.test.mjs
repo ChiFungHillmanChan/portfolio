@@ -91,6 +91,27 @@ test('parseHand: uncalled-return → correct contributions', () => {
   assert.equal(h.collectedUC, dollarsToUC('0.62')); // $0.50 uncalled + $0.12 collected
 });
 
+// === uncalledUC tracking ===
+test('parseHand: walk in BB → uncalledUC = $0.01 (the returned SB excess)', () => {
+  const h = parseHand(fix('hand-walk-bb.txt'));
+  assert.equal(h.uncalledUC, dollarsToUC('0.01'));
+});
+
+test('parseHand: 3bet fold → uncalledUC = $0.18 (the returned raise)', () => {
+  const h = parseHand(fix('hand-3bet-fold.txt'));
+  assert.equal(h.uncalledUC, dollarsToUC('0.18'));
+});
+
+test('parseHand: uncalled-return fixture → uncalledUC = $0.50 (returned flop bet)', () => {
+  const h = parseHand(fix('hand-uncalled-return.txt'));
+  assert.equal(h.uncalledUC, dollarsToUC('0.50'));
+});
+
+test('parseHand: fold preflop on button → uncalledUC = $0 (no uncalled bet)', () => {
+  const h = parseHand(fix('hand-fold-preflop.txt'));
+  assert.equal(h.uncalledUC, 0n);
+});
+
 // === Rake / showdown / all-in ===
 test('parseHand: rake extracted from SUMMARY', () => {
   const h = parseHand(fix('hand-3bet-fold.txt'));
