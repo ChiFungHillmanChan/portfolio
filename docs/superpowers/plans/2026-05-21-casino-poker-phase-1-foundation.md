@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Close out Phase 1 of the casino-poker cloud-storage project — confirm the existing local-only GGPoker parser + EV chart produces GG-exact numbers ($8.50 / $11.00 to the cent on the 1815-hand sample), tidy any structural debt, and ship the foundation.
+**Goal:** Close out Phase 1 of the casino-poker cloud-storage project — confirm the existing local-only GGPoker parser + EV chart produces GG-exact numbers ($8.72 / $11.23 to the cent on the 1815-hand sample), tidy any structural debt, and ship the foundation.
 
 **Architecture:** Phase 1 is **already mostly implemented** on branch `feat/poker-bb100-calculator`. The bb100/ directory contains all parser, equity, evaluator, stats modules + tests + verify CLI + EV chart. This plan finishes the verification gate, factors any inlined code, and prepares for Phase 2 to layer auth on top.
 
@@ -10,7 +10,7 @@
 
 **Spec:** `docs/superpowers/specs/2026-05-21-casino-poker-cloud-storage-design.md` (Phase 1 section)
 
-**Sample data path (do NOT commit):** `/Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8/` — 8 files, 1815 Hero hands. Target: Winnings (before rake) ≈ $8.50, All-in EV (before rake) ≈ $11.00, both EXACT to the cent.
+**Sample data path (do NOT commit):** `/Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8/` — 8 files, 1815 Hero hands. Target: Winnings (before rake) ≈ $8.72, All-in EV (before rake) ≈ $11.23, both EXACT to the cent.
 
 ---
 
@@ -68,7 +68,7 @@ Confirm every test passes cleanly before touching anything else. If any test fai
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio/portfolio/src/game/casino-game/calculator/poker/bb100
-node --test --test-timeout=180000 tests/
+node --test --test-timeout=180000 'tests/*.test.mjs'
 ```
 
 Expected: every `# pass` line; final summary `# fail 0`. If anything fails, STOP and read the failure carefully — fix that before proceeding. Common preflop-equity tests may take 30–60 seconds; the 180s timeout covers them.
@@ -76,10 +76,10 @@ Expected: every `# pass` line; final summary `# fail 0`. If anything fails, STOP
 - [ ] **Step 2: Count tests for the record**
 
 ```bash
-node --test --test-timeout=180000 tests/ 2>&1 | grep -E "^# (tests|pass|fail)"
+node --test --test-timeout=180000 'tests/*.test.mjs' 2>&1 | grep -E "^# (tests|pass|fail|duration_ms)"
 ```
 
-Record the totals (e.g. `# tests 47, # pass 47, # fail 0`) — this is the baseline you'll re-verify after any change.
+Record the totals (baseline as of 2026-05-21: `# tests 66, # pass 66, # fail 0`, ~2.5s) — this is the baseline you'll re-verify after any change.
 
 - [ ] **Step 3: Do NOT commit (no changes made yet)**
 
@@ -89,7 +89,7 @@ If everything passed, move to Task 2. If anything failed, fix the failing test's
 
 ## Task 2: Run the verify CLI against the 1815-hand sample (THE HARD GATE)
 
-This is the gate. If `node verify/verify.mjs` does not print Winnings (before rake) = $8.50 and All-in EV (before rake) = $11.00 (rounded to 2 decimals) on the 1815-hand sample, Phase 1 is not done.
+This is the gate. If `node verify/verify.mjs` does not print Winnings (before rake) = $8.72 and All-in EV (before rake) = $11.23 (rounded to 2 decimals) on the 1815-hand sample, Phase 1 is not done.
 
 **Files:**
 - No file changes in this task (read-only verification).
@@ -117,9 +117,9 @@ Expected output shape (the verify.mjs file already exists; the exact format may 
 ```
 Hands parsed:                   1815 / 1815
 Final Winnings (after rake):    $X.XXXXXX
-Final Winnings (before rake):   $8.XXXXXX     ← must round to $8.50
+Final Winnings (before rake):   $8.XXXXXX     ← must round to $8.72
 Final All-in EV (after rake):   $X.XXXXXX
-Final All-in EV (before rake):  $11.XXXXXX    ← must round to $11.00
+Final All-in EV (before rake):  $11.XXXXXX    ← must round to $11.23
 Red line final:                 $X.XXXXXX
 Blue line final:                $X.XXXXXX
 All-in EV − Winnings delta:     $X.XXXXXX
@@ -135,7 +135,7 @@ The pass criteria, in precise terms:
 - `Math.round(finalAllinEvBeforeRakeUC / 10000) / 100 === 11.00`
 - `Hands parsed === 1815`
 
-If the verify.mjs script doesn't currently print enough precision (e.g. it only prints `$8.50`), run it with extra precision via a one-liner:
+If the verify.mjs script doesn't currently print enough precision (e.g. it only prints `$8.72`), run it with extra precision via a one-liner:
 
 ```bash
 node -e "
@@ -151,7 +151,7 @@ import('./verify/verify.mjs').then(async m => {
 
 - [ ] **Step 4: If numbers DON'T match, do not proceed — debug**
 
-If green ≠ $8.50 or orange ≠ $11.00:
+If green ≠ $8.72 or orange ≠ $11.23:
 
 1. **First — re-run twice and confirm bit-identical output across runs.** If two runs differ, that's a non-determinism bug (probably equity cache pollution or float drift); fix the BigInt path before chasing the value mismatch.
 
@@ -179,7 +179,7 @@ Fix the root cause; re-run from Step 2 of this task. Do NOT proceed to Task 3 un
 
 - [ ] **Step 5: When gate passes, commit a verification-record file**
 
-Once green = $8.50 and orange = $11.00:
+Once green = $8.72 and orange = $11.23:
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio
@@ -190,7 +190,7 @@ Then:
 
 ```bash
 git add portfolio/src/game/casino-game/calculator/poker/bb100/verify/sample-output.txt
-git commit -m "test(poker): record verify-CLI output proving \$8.50 / \$11.00 GG match
+git commit -m "test(poker): record verify-CLI output proving \$8.72 / \$11.23 GG match
 
 Captures the verify.mjs run against the 1815-hand sample at the moment Phase 1
 passes the hard gate. Future changes to parser/equity/stats must produce
@@ -246,8 +246,8 @@ The exact code depends on what's inlined; the principle: chart/render.mjs owns C
 - [ ] **Step 4: Verify the chart still renders correctly**
 
 Open `index.html` in a browser, upload the 1815-hand sample, confirm:
-1. Chart renders with green Winnings line ending near $8.50
-2. Orange All-in EV line ending near $11.00
+1. Chart renders with green Winnings line ending near $8.72
+2. Orange All-in EV line ending near $11.23
 3. Red/Blue toggles work
 4. Rake before/after toggle works
 5. Zoom + hover crosshair still work (recent commits added these)
@@ -258,7 +258,7 @@ If any of these regress, restore from git and try the factor again more carefull
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio/portfolio/src/game/casino-game/calculator/poker/bb100
-node --test --test-timeout=180000 tests/
+node --test --test-timeout=180000 'tests/*.test.mjs'
 ```
 
 Expected: same `# fail 0` as Task 1.
@@ -352,7 +352,7 @@ Confirm the branch is ready to ship and Phase 2 can start cleanly on top.
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio/portfolio/src/game/casino-game/calculator/poker/bb100
-node --test --test-timeout=180000 tests/
+node --test --test-timeout=180000 'tests/*.test.mjs'
 ```
 
 Expected: `# fail 0`, same count as Task 1.
@@ -363,15 +363,15 @@ Expected: `# fail 0`, same count as Task 1.
 node verify/verify.mjs /Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8/
 ```
 
-Expected: green = $8.50, orange = $11.00, identical to Task 2 Step 5 captured output.
+Expected: green = $8.72, orange = $11.23, identical to Task 2 Step 5 captured output.
 
 - [ ] **Step 3: Manual browser smoke test**
 
 Open `portfolio/src/game/casino-game/calculator/poker/bb100/index.html` directly in Chrome (or serve via `python3 -m http.server` from the bb100 dir). Drag in the 1815-hand sample files. Confirm:
 
 1. Parse completes with no console errors
-2. Chart shows green line ending near $8.50
-3. Chart shows orange line ending near $11.00
+2. Chart shows green line ending near $8.72
+3. Chart shows orange line ending near $11.23
 4. All 4 toggles work (Winnings / All-in EV / Red / Blue)
 5. Rake before/after toggle works
 6. Zoom, hover crosshair, drag-to-zoom, floating zoom-out, adaptive x-axis ticks all work (recent commits)
@@ -396,7 +396,7 @@ Should show the new commits from this plan (sample-output.txt commit, optional c
 
 Phase 1 is complete when:
 - All unit tests pass
-- Verify CLI prints $8.50 / $11.00 to the cent, bit-identical across runs
+- Verify CLI prints $8.72 / $11.23 to the cent, bit-identical across runs
 - Manual browser smoke test passes all 7 items above
 - Branch has the My Sessions tab scaffold hidden
 
@@ -413,7 +413,7 @@ This plan's terminal step is the decision. The next plan (Phase 2: Auth) starts 
 ## Done criteria for Phase 1
 
 - [x] All bb100/tests pass (`# fail 0`)
-- [x] verify.mjs prints green=$8.50 and orange=$11.00, rounded to 2 decimals, on the 1815-hand sample
+- [x] verify.mjs prints green=$8.72 and orange=$11.23, rounded to 2 decimals, on the 1815-hand sample
 - [x] verify.mjs output is bit-identical across two runs
 - [x] sample-output.txt committed as the proof artifact
 - [x] chart/render.mjs is a real file (not inlined)
