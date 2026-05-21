@@ -23,15 +23,20 @@ function perHandResult(hand, beforeRake) {
     // heroWonFromPot = amount Hero won from the contested pot (excluding uncalled returns)
     const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
     if (heroWonFromPot > 0n && hand.totalPotUC > hand.rakeUC) {
-      // grossPotDenom = totalPot - rake  (denominator: what was truly contested)
-      const grossPotDenom = hand.totalPotUC - hand.rakeUC;
+      // grossPotDenom = totalPot - rake - cashDrop
+      // Cash Drop is GG bonus money injected into the pot that no player contributed,
+      // so it shouldn't be in the denominator when computing each player's rake share.
+      const cashDrop = hand.cashDropUC ?? 0n;
+      const grossPotDenom = hand.totalPotUC - hand.rakeUC - cashDrop;
       // totalFees = rake + jackpot (all fees taken from the pot)
       const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
-      // Round-half-up BigInt division: (a + c/2) / c instead of a / c
-      // Eliminates the systematic downward truncation that costs ~1¢ across many hands.
-      const num = totalFees * heroWonFromPot;
-      const rakeShare = (num + grossPotDenom / 2n) / grossPotDenom;
-      result += rakeShare;
+      if (grossPotDenom > 0n) {
+        // Round-half-up BigInt division: (a + c/2) / c instead of a / c
+        // Eliminates the systematic downward truncation that costs ~1¢ across many hands.
+        const num = totalFees * heroWonFromPot;
+        const rakeShare = (num + grossPotDenom / 2n) / grossPotDenom;
+        result += rakeShare;
+      }
     }
     // For losing hands: rakeShare = 0n (no change)
   }
@@ -242,10 +247,11 @@ export function computeSeries(hands, opts = {}) {
     byPosition[pos].totalUC += result;
 
     // Rake paid (Hero's share on winning hands, always after-rake perspective)
-    // Same round-half-up formula as the per-hand result.
+    // Same round-half-up formula as the per-hand result; same Cash Drop adjustment.
     const heroWonFromPotRake = hand.collectedUC - hand.uncalledUC;
     if (heroWonFromPotRake > 0n && hand.totalPotUC > hand.rakeUC) {
-      const grossPotDenom = hand.totalPotUC - hand.rakeUC;
+      const cashDrop = hand.cashDropUC ?? 0n;
+      const grossPotDenom = hand.totalPotUC - hand.rakeUC - cashDrop;
       const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
       if (grossPotDenom > 0n) {
         const num = totalFees * heroWonFromPotRake;

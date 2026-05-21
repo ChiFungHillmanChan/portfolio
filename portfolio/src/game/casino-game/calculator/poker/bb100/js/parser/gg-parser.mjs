@@ -212,6 +212,10 @@ const UNCALLED_HERO_RE = /^Uncalled bet \(\$([0-9.]+)\) returned to Hero/;
 const PLAYER_SHOWS_RE = /^(.+?): shows \[([^\]]+)\]/;
 const HERO_SHOWS_INLINE_RE = /^Hero: shows \[([^\]]+)\]/;
 
+// GGPoker Rush&Cash "Cash Drop" — bonus money injected into the pot (no player contributes)
+// Example line: "Cash Drop to Pot : total $0.2 " (note trailing space in GG output)
+const CASH_DROP_RE = /^Cash Drop to Pot : total \$([0-9.]+)/;
+
 // Summary parsing
 // Handles: "Total pot $X | Rake $Y | Jackpot $Z | Bingo $A | Fortune $B | Tax $C"
 const TOTAL_POT_RE = /^Total pot \$([0-9.]+) \| Rake \$([0-9.]+)(?:\s*\|\s*Jackpot \$([0-9.]+))?/;
@@ -266,6 +270,13 @@ export function parseHand(text) {
     if (!hand.anyAllIn && ANY_ALLIN_RE.test(line)) {
       hand.anyAllIn = true;
       hand.anyAllInStreet = (phase === 'preflop' || phase === 'preamble') ? 'preflop' : phase;
+    }
+
+    // ── Cash Drop bonus money (Rush & Cash, appears before *** HOLE CARDS ***) ──
+    const cashDropM = CASH_DROP_RE.exec(line);
+    if (cashDropM) {
+      hand.cashDropUC += dollarsToUC(cashDropM[1]);
+      continue;
     }
 
     // ── Seat table (preamble) ──
