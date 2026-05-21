@@ -178,10 +178,12 @@ function parseCards(cardStr) {
 const STREETS = ['preflop', 'flop', 'turn', 'river'];
 
 // Matches: *** FLOP *** [Kc 7d 2c]  or  *** TURN *** [Kc 7d 2c] [3h]  etc.
-const STREET_RE = /^\*\*\* (HOLE CARDS|FLOP|TURN|RIVER|SHOWDOWN|SUMMARY) \*\*\*/;
-const BOARD_FLOP_RE = /^\*\*\* FLOP \*\*\* \[([^\]]+)\]/;
-const BOARD_TURN_RE = /^\*\*\* TURN \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
-const BOARD_RIVER_RE = /^\*\*\* RIVER \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
+// Also matches Run-It-Twice markers: *** FIRST FLOP ***, *** SECOND TURN ***, *** FIRST SHOWDOWN ***, etc.
+// Capture group [1] = FIRST/SECOND/'' prefix, [2] = base marker (HOLE CARDS/FLOP/TURN/RIVER/SHOWDOWN/SUMMARY).
+const STREET_RE = /^\*\*\* (FIRST |SECOND )?(HOLE CARDS|FLOP|TURN|RIVER|SHOWDOWN|SUMMARY) \*\*\*/;
+const BOARD_FLOP_RE = /^\*\*\* (?:FIRST )?FLOP \*\*\* \[([^\]]+)\]/;
+const BOARD_TURN_RE = /^\*\*\* (?:FIRST )?TURN \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
+const BOARD_RIVER_RE = /^\*\*\* (?:FIRST )?RIVER \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
 
 // Action regexes for Hero
 const HERO_POSTS_SB_RE = /^Hero: posts small blind \$([0-9.]+)/;
@@ -286,7 +288,12 @@ export function parseHand(text) {
     // ── Street transitions ──
     const streetM = STREET_RE.exec(line);
     if (streetM) {
-      const marker = streetM[1];
+      const prefix = (streetM[1] || '').trim(); // '', 'FIRST', or 'SECOND'
+      const marker = streetM[2];
+      // For Run-It-Twice hands, SECOND <STREET> repeats the same betting street with a
+      // different board. We only consume the FIRST board cards and ignore SECOND boards
+      // (and SECOND SHOWDOWN), so we don't double-count street commitments or duplicate cards.
+      const isSecondRun = prefix === 'SECOND';
       if (marker === 'HOLE CARDS') {
         phase = 'preflop';
         // Do NOT reset heroStreetCommitted here — blind posts are pre-flop commitments.
@@ -294,6 +301,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'FLOP') {
+        if (isSecondRun) continue; // ignore SECOND FLOP — same betting street, different board
         phase = 'flop';
         heroStreetCommitted = 0n;
         // Reset villain street tracking
@@ -303,6 +311,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'TURN') {
+        if (isSecondRun) continue;
         phase = 'turn';
         heroStreetCommitted = 0n;
         for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
@@ -311,6 +320,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'RIVER') {
+        if (isSecondRun) continue;
         phase = 'river';
         heroStreetCommitted = 0n;
         for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
@@ -319,6 +329,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'SHOWDOWN') {
+        if (isSecondRun) continue; // ignore SECOND SHOWDOWN
         phase = 'showdown';
         continue;
       }
