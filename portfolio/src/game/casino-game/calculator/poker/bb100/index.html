@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="../../css/main.css">
     <link rel="stylesheet" href="../../css/hamburger-menu.css">
     <link rel="stylesheet" href="css/bb100.css">
+    <link rel="stylesheet" href="css/upload.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
@@ -67,6 +69,12 @@
             <p class="subtitle">Cash Game Win Rate</p>
         </header>
 
+        <div class="tab-bar" role="tablist">
+            <button class="tab-btn active" data-tab="manual" role="tab" aria-selected="true">Manual Entry</button>
+            <button class="tab-btn" data-tab="upload" role="tab" aria-selected="false">Upload GG Hands</button>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="manual">
         <section class="bb100-grid">
             <div class="bb100-card inputs-card">
                 <h2 class="card-title">Inputs</h2>
@@ -181,6 +189,30 @@
                 mostly noise. Serious win-rate claims usually need 50,000–100,000+ hands.
             </p>
         </div>
+        </div>
+
+        <section class="tab-panel" data-tab-panel="upload" hidden>
+            <div class="upload-card">
+                <div class="upload-zone" id="uploadZone">
+                    <p class="upload-instr">Drop GGPoker hand-history files (.txt) here</p>
+                    <p class="upload-or">or</p>
+                    <button type="button" class="btn btn-primary" id="uploadPickBtn">Browse files</button>
+                    <input type="file" id="uploadFileInput" multiple accept=".txt,text/plain" hidden>
+                    <p class="upload-hint">Files are parsed in your browser. Nothing is uploaded anywhere. Folder drop supported in Chrome/Edge/Brave.</p>
+                </div>
+                <div class="upload-status" id="uploadStatus" hidden></div>
+            </div>
+
+            <div class="upload-results" id="uploadResults" hidden>
+                <div class="chart-card">
+                    <div class="chart-controls" id="chartControls"></div>
+                    <canvas id="evChart"></canvas>
+                    <div class="chart-footer" id="chartFooter"></div>
+                </div>
+                <div class="upload-summary" id="uploadSummary"></div>
+                <div class="position-card" id="positionCard"></div>
+            </div>
+        </section>
 
         <footer>
             <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
@@ -189,5 +221,7 @@
 
     <script src="../../js/hamburger-menu.js"></script>
     <script src="js/bb100.js"></script>
+    <script src="js/tabs.js"></script>
+    <script type="module" src="js/upload.js"></script>
 </body>
 </html>
