@@ -1,0 +1,34 @@
+// js/parser/hand-model.mjs
+/**
+ * @typedef {Object} Hand
+ * @property {string} id
+ * @property {{sbUC:bigint, bbUC:bigint}} stake
+ * @property {string} date
+ * @property {{seat:number, position:string, cards:string[]|null}} hero
+ * @property {bigint} contributedUC
+ * @property {bigint} collectedUC
+ * @property {bigint} rakeUC
+ * @property {bigint} totalPotUC
+ * @property {boolean} reachedShowdown
+ * @property {boolean} heroAllIn
+ * @property {string|null} allInStreet  "preflop"|"flop"|"turn"|"river"|null
+ * @property {Object|null} showdown  {hero:string[], villains:Object<string,string[]>, board:string[]}
+ */
+
+export function newHand(overrides = {}) {
+  return {
+    id: '',
+    stake: { sbUC: 0n, bbUC: 0n },
+    date: '',
+    hero: { seat: 0, position: 'BTN', cards: null },
+    contributedUC: 0n,
+    collectedUC: 0n,
+    rakeUC: 0n,
+    totalPotUC: 0n,
+    reachedShowdown: false,
+    heroAllIn: false,
+    allInStreet: null,
+    showdown: null,
+    ...overrides,
+  };
+}
