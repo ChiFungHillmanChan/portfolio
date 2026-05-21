@@ -197,9 +197,21 @@ function renderChart(series) {
               return handNum % step === 0 ? handNum : '';
             },
           },
-          grid: { color: '#1f1f2a' },
+          grid: { color: 'rgba(255,255,255,0.04)', drawTicks: true, tickColor: 'rgba(255,255,255,0.15)' },
         },
-        y: { position: 'right', ticks: { color: '#a0a0b0', callback: v => '$' + v.toFixed(2) }, grid: { color: '#1f1f2a' } },
+        y: {
+          position: 'right',
+          ticks: { color: '#a0a0b0', callback: v => '$' + v.toFixed(2), maxTicksLimit: 10 },
+          grid: {
+            color: 'rgba(255,255,255,0.12)',
+            lineWidth: 1,
+            drawTicks: true,
+            tickColor: 'rgba(255,255,255,0.25)',
+            // Highlight the $0 line — important reference
+            z: 1,
+          },
+          border: { color: 'rgba(255,255,255,0.2)' },
+        },
       },
       plugins: {
         legend: { labels: { color: '#a0a0b0' } },
