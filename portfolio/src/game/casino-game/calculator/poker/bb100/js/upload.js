@@ -102,8 +102,12 @@ async function handleFiles(files) {
     return;
   }
   // Sort hands chronologically so the chart matches GGPoker's display
-  // (8 files of overlapping time windows must be interleaved by timestamp)
-  parsedHands.sort((a, b) => a.date.localeCompare(b.date));
+  // (overlapping time windows from multiple tables must be interleaved by timestamp).
+  // Tiebreak by hand id when timestamps collide at second precision (~14% of NL2 hands).
+  parsedHands.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.id.localeCompare(b.id);
+  });
   const skipMsg = skippedHands ? `, skipped ${skippedHands} malformed` : '';
   const rejMsg = rejected.length ? `, rejected ${rejected.length} files` : '';
   showStatus(`Parsed ${parsedHands.length.toLocaleString()} hands from ${files.length - rejected.length} files${skipMsg}${rejMsg}`);
