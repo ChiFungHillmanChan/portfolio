@@ -163,7 +163,7 @@ function renderChart(series) {
           },
           grid: { color: '#1f1f2a' },
         },
-        y: { ticks: { color: '#a0a0b0', callback: v => '$' + v.toFixed(2) }, grid: { color: '#1f1f2a' } },
+        y: { position: 'right', ticks: { color: '#a0a0b0', callback: v => '$' + v.toFixed(2) }, grid: { color: '#1f1f2a' } },
       },
       plugins: {
         legend: { labels: { color: '#a0a0b0' } },
