@@ -15,8 +15,6 @@
  * @property {boolean} heroAllIn
  * @property {string|null} allInStreet  "preflop"|"flop"|"turn"|"river"|null
  * @property {Object|null} showdown  {hero:string[], villains:Object<string,string[]>, board:string[]}
- * @property {Array<{seat:number, name:string, stackUC:bigint}>} seats  all seated players at hand start
- * @property {Object<string, bigint>} contributions  effective contribution per player to the contested pot
  */
 
 export function newHand(overrides = {}) {
@@ -35,8 +33,6 @@ export function newHand(overrides = {}) {
     heroAllIn: false,
     allInStreet: null,
     showdown: null,
-    seats: [],                // [{seat, name, stackUC}] — starting stacks
-    contributions: {},        // {playerName: bigint} — effective contribution per player
     ...overrides,
   };
 }

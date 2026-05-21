@@ -1,7 +1,7 @@
 // js/stats/compute.mjs
 // Turns Hand[] into cumulative chart series + summary stats.
 
-import { equity, multiwaySidePotEV } from '../equity/equity.mjs';
+import { equity } from '../equity/equity.mjs';
 import { encodeHand } from '../equity/cards.mjs';
 
 // Street → number of board cards already out when all-in was made
@@ -44,92 +44,55 @@ function evResult(hand, result, beforeRake) {
   // No all-in → EV = actual result
   if (!hand.heroAllIn) return result;
 
-  // All-in but no showdown data → fall back
+  // GGPoker does NOT compute All-in EV adjustment when an uncalled bet was returned to Hero
+  // (Hero shoved over villain's effective stack). Fall back to actual result.
+  if (hand.uncalledUC > 0n) return result;
+
+  // All-in but no showdown data or multi-way → fall back
   if (!hand.showdown) return result;
 
   const villainNames = Object.keys(hand.showdown.villains ?? {});
+  if (villainNames.length !== 1) return result; // skip multi-way for v1
+
   const heroCards = hand.showdown.hero;
+  const villainCards = hand.showdown.villains[villainNames[0]];
   const board = hand.showdown.board ?? [];
 
-  if (!heroCards || heroCards.length !== 2) return result;
+  if (!heroCards || heroCards.length !== 2 || !villainCards || villainCards.length !== 2) {
+    return result;
+  }
 
   // Determine how many board cards were out at the time of all-in
   const streetLen = STREET_BOARD_LEN[hand.allInStreet] ?? null;
   if (streetLen === null) return result;
 
-  // ── Heads-up, no uncalled bet ──────────────────────────────────────────────
-  // Use the original direct formula (matches GGPoker exactly, verified $8.71/$11.23)
-  if (villainNames.length === 1 && hand.uncalledUC === 0n) {
-    const villainCards = hand.showdown.villains[villainNames[0]];
-    if (!villainCards || villainCards.length !== 2) return result;
-
-    try {
-      const heroInts     = encodeHand(heroCards);
-      const villainInts  = encodeHand(villainCards);
-      const partialBoard = encodeHand(board.slice(0, streetLen));
-
-      const eq = equity(heroInts, villainInts, partialBoard);
-
-      const effectiveContribUC = hand.contributedUC - hand.uncalledUC;
-      const potAtRiskUC = beforeRake
-        ? hand.totalPotUC
-        : hand.totalPotUC - hand.rakeUC;
-
-      const eqMicros  = BigInt(Math.round(eq * 1_000_000));
-      const evShareUC = (eqMicros * potAtRiskUC) / 1_000_000n;
-      return evShareUC - effectiveContribUC;
-    } catch {
-      return result;
-    }
-  }
-
-  // ── Multi-way all-in (or heads-up with uncalled — GGPoker skips these) ────
-  // GGPoker does NOT compute All-in EV when an uncalled bet was returned to Hero
-  // (heads-up: Hero shoved over villain's effective stack). Fall back for heads-up uncalled.
-  if (villainNames.length === 1 && hand.uncalledUC > 0n) return result;
-
-  // Multi-way (2+ villains): use side-pot decomposition
-  // Requires contribution data for each showdown player
-  if (villainNames.length < 1) return result;
-
-  const contributions = hand.contributions ?? {};
-
   try {
-    const partialBoardCards = encodeHand(board.slice(0, streetLen));
-    const heroInts = encodeHand(heroCards);
+    const heroInts    = encodeHand(heroCards);
+    const villainInts = encodeHand(villainCards);
+    const partialBoard = encodeHand(board.slice(0, streetLen));
 
-    // Build the players map with encoded cards and effective contributions
-    const players = new Map();
+    const eq = equity(heroInts, villainInts, partialBoard);
 
-    // Hero's effective contribution
-    const heroContribUC = contributions['Hero'] ?? (hand.contributedUC - hand.uncalledUC);
-    players.set('Hero', { cards: heroInts, contributionUC: heroContribUC });
+    // Effective contribution = what Hero actually had at risk in the contested pot.
+    // When Hero raises over villain's stack, the uncalled excess is returned —
+    // only the matched portion is truly committed to the pot.
+    const effectiveContribUC = hand.contributedUC - hand.uncalledUC;
 
-    // Each villain that showed cards and has contribution data
-    for (const name of villainNames) {
-      const cards = hand.showdown.villains[name];
-      if (!cards || cards.length !== 2) continue;
-      const contribUC = contributions[name];
-      if (contribUC === undefined || contribUC <= 0n) continue;
-      players.set(name, { cards: encodeHand(cards), contributionUC: contribUC });
-    }
+    // Pot at risk = the actual contested pot (GGPoker's totalPot already excludes
+    // uncalled returns, so totalPotUC IS the contested pot):
+    // - beforeRake=true  → use full pot (rake stays in)
+    // - beforeRake=false → use net pot (after rake removed)
+    const potAtRiskUC = beforeRake
+      ? hand.totalPotUC
+      : hand.totalPotUC - hand.rakeUC;
 
-    // Need at least Hero + 1 villain
-    if (players.size < 2) return result;
+    // Convert equity fraction → BigInt micro-cent arithmetic
+    const eqMicros  = BigInt(Math.round(eq * 1_000_000));
+    const evShareUC = (eqMicros * potAtRiskUC) / 1_000_000n;
 
-    // Dead money = total pot − sum of player contribs − rake − jackpot
-    // (totalPotUC already has uncalled bets removed by GGPoker)
-    let sumContribs = 0n;
-    for (const p of players.values()) sumContribs += p.contributionUC;
-    const fees = hand.rakeUC + (hand.jackpotUC ?? 0n);
-    const deadMoneyUC = hand.totalPotUC - sumContribs - fees;
-
-    // For beforeRake: include fees in the pot (they're part of the total at-risk)
-    const effectiveDeadUC = beforeRake ? deadMoneyUC + fees : deadMoneyUC;
-
-    const heroEvShareUC = multiwaySidePotEV('Hero', players, partialBoardCards, effectiveDeadUC);
-    return heroEvShareUC - heroContribUC;
+    return evShareUC - effectiveContribUC;
   } catch {
+    // Any card-encoding or equity error → fall back
     return result;
   }
 }
