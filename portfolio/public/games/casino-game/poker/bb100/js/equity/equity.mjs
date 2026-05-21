@@ -199,6 +199,87 @@ function enumerate5(hero, villain, deck) {
   return result;
 }
 
+// ─── Multi-way side-pot EV ─────────────────────────────────────────────────────
+
+/**
+ * Decompose a multi-way all-in into side pots and compute Hero's EV.
+ *
+ * @param {string} heroName - The key for the hero player in `players` (typically "Hero")
+ * @param {Map<string, {cards: number[], contributionUC: bigint}>} players
+ *   Each showdown participant mapped to their hole cards (encoded ints) and
+ *   their effective contribution (after any uncalled-bet returns).
+ * @param {number[]} board  - Board cards at the moment of all-in (0/3/4/5 encoded ints)
+ * @param {bigint} deadMoneyUC - Dead money already in the pot from folded players
+ * @returns {bigint} Hero's expected value in micro-cents (BigInt)
+ */
+export function multiwaySidePotEV(heroName, players, board, deadMoneyUC = 0n) {
+  // Sort players by ascending contribution (smallest stack first)
+  const entries = [...players.entries()].sort((a, b) => {
+    if (a[1].contributionUC < b[1].contributionUC) return -1;
+    if (a[1].contributionUC > b[1].contributionUC) return 1;
+    return 0;
+  });
+
+  const heroPresent = players.has(heroName);
+  if (!heroPresent) return 0n;
+
+  let heroEvUC = 0n;
+  let prevTierUC = 0n;
+  const nTotal = entries.length;
+
+  // Walk through contribution tiers to build pots
+  for (let i = 0; i < nTotal; i++) {
+    const tierUC = entries[i][1].contributionUC;
+
+    // Skip duplicate tiers (all players in this tier have same contrib)
+    if (tierUC === prevTierUC) continue;
+
+    // This pot is contested by players[i..nTotal-1] (all with contrib >= tierUC)
+    // (Players with smaller contributions can't contest this pot)
+    const potContestants = entries.slice(i); // everyone at or above this tier
+    const potSize_perPlayer = tierUC - prevTierUC;
+    let potUC = potSize_perPlayer * BigInt(nTotal - i);
+
+    // Add dead money to the lowest (first/main) pot
+    if (i === 0) potUC += deadMoneyUC;
+
+    // If Hero is not among the contestants for this pot, skip
+    const heroInPot = potContestants.some(([name]) => name === heroName);
+    if (!heroInPot) {
+      prevTierUC = tierUC;
+      continue;
+    }
+
+    // Compute Hero's equity in this pot
+    let heroEquity;
+    if (potContestants.length === 1) {
+      // Hero is the only contestant → wins pot outright (shouldn't happen in normal play)
+      heroEquity = 1.0;
+    } else if (potContestants.length === 2) {
+      // Heads-up equity
+      const heroCards = players.get(heroName).cards;
+      const other = potContestants.find(([name]) => name !== heroName);
+      const villainCards = other[1].cards;
+      heroEquity = equity(heroCards, villainCards, board);
+    } else {
+      // Multi-way equity
+      const heroCards = players.get(heroName).cards;
+      const villainCardsArray = potContestants
+        .filter(([name]) => name !== heroName)
+        .map(([, p]) => p.cards);
+      heroEquity = equityMultiway(heroCards, villainCardsArray, board);
+    }
+
+    // Hero's EV share from this pot (BigInt arithmetic)
+    const eqMicros = BigInt(Math.round(heroEquity * 1_000_000));
+    heroEvUC += (eqMicros * potUC) / 1_000_000n;
+
+    prevTierUC = tierUC;
+  }
+
+  return heroEvUC;
+}
+
 export function clearEquityCache() {
   PREFLOP_CACHE.clear();
   MULTIWAY_CACHE.clear();
