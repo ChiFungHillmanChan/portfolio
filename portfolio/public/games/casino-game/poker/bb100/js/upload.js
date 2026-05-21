@@ -135,6 +135,27 @@ function renderAll() {
   saveSession(series, summary);
 }
 
+// Custom plugin: draw a vertical crosshair line at the hovered hand position
+const crosshairPlugin = {
+  id: 'crosshair',
+  afterDraw(chart) {
+    const active = chart.tooltip?.getActiveElements?.();
+    if (!active || active.length === 0) return;
+    const x = active[0].element.x;
+    const { top, bottom } = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(x, top);
+    ctx.lineTo(x, bottom);
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+    ctx.setLineDash([4, 3]);
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
 function renderChart(series) {
   if (chartInstance) chartInstance.destroy();
   const n = series.winningsUC.length;
@@ -149,6 +170,7 @@ function renderChart(series) {
   chartInstance = new Chart(els.chartCanvas.getContext('2d'), {
     type: 'line',
     data: { labels, datasets },
+    plugins: [crosshairPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -173,18 +195,40 @@ function renderChart(series) {
         legend: { labels: { color: '#a0a0b0' } },
         tooltip: {
           callbacks: {
+            title: ctx => `Hand ${ctx[0].label}`,
             label: ctx => {
               const uc = BigInt(Math.round(ctx.parsed.y * 1e6));
               return `${ctx.dataset.label}: ${formatUSD(uc)}`;
             },
           },
         },
+        zoom: {
+          zoom: {
+            drag: {
+              enabled: true,
+              backgroundColor: 'rgba(74,222,128,0.15)',
+              borderColor: 'rgba(74,222,128,0.6)',
+              borderWidth: 1,
+            },
+            wheel: { enabled: true, modifierKey: 'shift' },
+            pinch: { enabled: true },
+            mode: 'x',
+          },
+          pan: { enabled: true, mode: 'x', modifierKey: 'alt' },
+          limits: { x: { min: 'original', max: 'original', minRange: 5 } },
+        },
       },
     },
   });
 
   const handCount = n.toLocaleString();
-  els.chartFooter.textContent = `${handCount} of ${handCount} Hands`;
+  els.chartFooter.textContent = `${handCount} of ${handCount} Hands  •  drag to zoom range  •  shift+wheel to zoom  •  alt+drag to pan`;
+}
+
+export function resetChartZoom() {
+  if (chartInstance && typeof chartInstance.resetZoom === 'function') {
+    chartInstance.resetZoom();
+  }
 }
 
 function mkDataset(label, ucSeries, color) {
@@ -220,6 +264,17 @@ function renderControls() {
     opts = { ...opts, beforeRake: checked };
     renderAll();
   }));
+  // Reset zoom button
+  const resetBtn = document.createElement('button');
+  resetBtn.type = 'button';
+  resetBtn.className = 'chart-reset-btn';
+  resetBtn.textContent = 'Reset zoom';
+  resetBtn.addEventListener('click', () => {
+    if (chartInstance && typeof chartInstance.resetZoom === 'function') {
+      chartInstance.resetZoom();
+    }
+  });
+  els.chartControls.appendChild(resetBtn);
 }
 
 function makeToggle(label, color, checked, onChange) {

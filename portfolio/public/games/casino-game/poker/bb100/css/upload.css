@@ -30,3 +30,18 @@
   .chart-controls { gap: 0.5rem; font-size: 0.85rem; }
   .upload-card, .chart-card, .position-card { padding: 1rem; }
 }
+
+.chart-reset-btn {
+  padding: 0.35rem 0.85rem;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 0.35rem;
+  color: var(--text-secondary, #a0a0b0);
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.15s;
+}
+.chart-reset-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary, #e0e0ea); }
+.chart-card { cursor: crosshair; }
