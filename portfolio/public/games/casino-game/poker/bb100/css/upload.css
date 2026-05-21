@@ -31,17 +31,28 @@
   .upload-card, .chart-card, .position-card { padding: 1rem; }
 }
 
-.chart-reset-btn {
-  padding: 0.35rem 0.85rem;
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.15);
-  border-radius: 0.35rem;
-  color: var(--text-secondary, #a0a0b0);
-  font: inherit;
-  font-size: 0.85rem;
+.chart-wrap { position: relative; }
+.chart-zoom-out-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: rgba(10,10,15,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: var(--text-primary, #e0e0ea);
+  font: 600 1.4rem/1 var(--font-mono, 'JetBrains Mono', monospace);
   cursor: pointer;
-  margin-left: auto;
   transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
 }
-.chart-reset-btn:hover { background: rgba(255,255,255,0.1); color: var(--text-primary, #e0e0ea); }
+.chart-zoom-out-btn:hover { background: rgba(74,222,128,0.18); border-color: rgba(74,222,128,0.6); color: #4ade80; }
+.chart-zoom-out-btn:active { transform: scale(0.95); }
+.chart-zoom-out-btn[hidden] { display: none; }
 .chart-card { cursor: crosshair; }

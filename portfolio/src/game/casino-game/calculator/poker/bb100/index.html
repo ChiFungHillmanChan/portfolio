@@ -208,7 +208,10 @@
             <div class="upload-results" id="uploadResults" hidden>
                 <div class="chart-card">
                     <div class="chart-controls" id="chartControls"></div>
-                    <canvas id="evChart"></canvas>
+                    <div class="chart-wrap">
+                        <button type="button" class="chart-zoom-out-btn" id="chartZoomOutBtn" aria-label="Reset zoom to full range" hidden>−</button>
+                        <canvas id="evChart"></canvas>
+                    </div>
                     <div class="chart-footer" id="chartFooter"></div>
                 </div>
                 <div class="upload-summary" id="uploadSummary"></div>

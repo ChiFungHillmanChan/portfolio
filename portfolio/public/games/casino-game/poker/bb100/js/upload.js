@@ -181,10 +181,20 @@ function renderChart(series) {
           ticks: {
             color: '#a0a0b0',
             autoSkip: false,
-            callback: function(value, index) {
-              // Show only every 100th hand label (100, 200, ..., 1800)
-              const handNum = index + 1; // labels are 1..n
-              return handNum % 100 === 0 ? handNum : '';
+            callback: function(value) {
+              // `value` is the absolute data index (0..n-1). Hand number = value + 1.
+              // Adapt tick label density to visible range so labels are useful when zoomed.
+              const handNum = value + 1;
+              const visible = (this.max ?? 0) - (this.min ?? 0) + 1;
+              let step;
+              if (visible > 1000)      step = 100;
+              else if (visible > 400)  step = 50;
+              else if (visible > 200)  step = 25;
+              else if (visible > 100)  step = 10;
+              else if (visible > 40)   step = 5;
+              else if (visible > 15)   step = 2;
+              else                     step = 1;
+              return handNum % step === 0 ? handNum : '';
             },
           },
           grid: { color: '#1f1f2a' },
@@ -213,8 +223,14 @@ function renderChart(series) {
             wheel: { enabled: true, modifierKey: 'shift' },
             pinch: { enabled: true },
             mode: 'x',
+            onZoomComplete: ({ chart }) => updateZoomOutButton(chart),
           },
-          pan: { enabled: true, mode: 'x', modifierKey: 'alt' },
+          pan: {
+            enabled: true,
+            mode: 'x',
+            modifierKey: 'alt',
+            onPanComplete: ({ chart }) => updateZoomOutButton(chart),
+          },
           limits: { x: { min: 'original', max: 'original', minRange: 5 } },
         },
       },
@@ -228,7 +244,28 @@ function renderChart(series) {
 export function resetChartZoom() {
   if (chartInstance && typeof chartInstance.resetZoom === 'function') {
     chartInstance.resetZoom();
+    updateZoomOutButton(chartInstance);
   }
+}
+
+function updateZoomOutButton(chart) {
+  const btn = document.getElementById('chartZoomOutBtn');
+  if (!btn || !chart) return;
+  const xScale = chart.scales.x;
+  const totalLen = chart.data.labels.length;
+  const isZoomed = xScale.min > 0 || xScale.max < totalLen - 1;
+  btn.hidden = !isZoomed;
+}
+
+// Wire the zoom-out button once
+const zoomOutBtn = document.getElementById('chartZoomOutBtn');
+if (zoomOutBtn) {
+  zoomOutBtn.addEventListener('click', () => {
+    if (chartInstance && typeof chartInstance.resetZoom === 'function') {
+      chartInstance.resetZoom();
+      updateZoomOutButton(chartInstance);
+    }
+  });
 }
 
 function mkDataset(label, ucSeries, color) {
@@ -264,17 +301,6 @@ function renderControls() {
     opts = { ...opts, beforeRake: checked };
     renderAll();
   }));
-  // Reset zoom button
-  const resetBtn = document.createElement('button');
-  resetBtn.type = 'button';
-  resetBtn.className = 'chart-reset-btn';
-  resetBtn.textContent = 'Reset zoom';
-  resetBtn.addEventListener('click', () => {
-    if (chartInstance && typeof chartInstance.resetZoom === 'function') {
-      chartInstance.resetZoom();
-    }
-  });
-  els.chartControls.appendChild(resetBtn);
 }
 
 function makeToggle(label, color, checked, onChange) {
