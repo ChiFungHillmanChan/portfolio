@@ -624,3 +624,66 @@
 }
 
 body.settings-open { overflow: hidden; }
+
+/* === Compact upload pill (shown after first upload) ===================== */
+
+.upload-compact-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  background: rgba(74,222,128,0.08);
+  border: 1px solid rgba(74,222,128,0.28);
+  color: #4ade80;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  transition: all 0.15s;
+}
+.upload-compact-pill:hover {
+  background: rgba(74,222,128,0.16);
+  border-color: rgba(74,222,128,0.45);
+  color: #6ee895;
+}
+.upload-compact-pill[hidden] { display: none !important; }
+.upload-pill-icon { font-size: 14px; }
+.upload-pill-chevron { font-size: 11px; opacity: 0.7; margin-left: 0.15rem; }
+
+/* Small × button in the top-right of the expanded zone — collapses without
+   uploading. Only shown after first upload (otherwise no point collapsing). */
+.upload-zone { position: relative; }
+.upload-zone-collapse {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #888;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: 'JetBrains Mono', monospace;
+  transition: all 0.12s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.upload-zone-collapse:hover {
+  background: rgba(239,68,68,0.15);
+  border-color: rgba(239,68,68,0.35);
+  color: #ef4444;
+}
+.upload-zone-collapse[hidden] { display: none !important; }
+
+/* Compact upload-card when collapsed (no big padding when only the pill shows) */
+.upload-card:has(.upload-zone[hidden]) {
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: 0;
+}
+

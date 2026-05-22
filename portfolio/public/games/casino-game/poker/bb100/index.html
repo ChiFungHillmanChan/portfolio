@@ -206,8 +206,18 @@
         </div>
 
         <section class="tab-panel" data-tab-panel="upload" hidden>
-            <div class="upload-card">
+            <div class="upload-card" id="uploadCard">
+                <!-- Compact pill — shown after the first upload, click to re-open the drop-zone -->
+                <button type="button" class="upload-compact-pill" id="uploadCompactPill" hidden>
+                    <span class="upload-pill-icon">📂</span>
+                    <span class="upload-pill-label" id="uploadPillLabel">Add more files</span>
+                    <span class="upload-pill-chevron" aria-hidden="true">▾</span>
+                </button>
+
                 <div class="upload-zone" id="uploadZone">
+                    <!-- Once the zone has been expanded after an initial upload,
+                         a small "× collapse" button appears top-right of the zone. -->
+                    <button type="button" class="upload-zone-collapse" id="uploadZoneCollapse" aria-label="Collapse upload" hidden>✕</button>
                     <p class="upload-instr">Drop GGPoker hand-history files (.txt) here</p>
                     <p class="upload-or">or</p>
                     <button type="button" class="btn btn-primary" id="uploadPickBtn">Browse files</button>
@@ -218,7 +228,7 @@
             </div>
 
             <div class="upload-results" id="uploadResults" hidden>
-                <div class="filter-bar" id="filterBar" hidden></div>
+                <!-- Save-to-cloud injected here by bootstrap.js (#saveToCloudContainer, firstChild) -->
 
                 <div class="sub-tab-bar" id="resultsSubTabs" role="tablist">
                     <button type="button" class="sub-tab-btn active" data-sub-tab="board" role="tab" aria-selected="true">📈 Board</button>
@@ -243,6 +253,10 @@
                 </div>
 
                 <div class="sub-tab-panel" data-sub-tab-panel="replay" hidden>
+                    <!-- Filter bar lives inside Hand Replay tab — keeps Board/Details
+                         uncluttered. Filter state still applies globally via
+                         getFilteredHands() so all tabs reflect the same subset. -->
+                    <div class="filter-bar" id="filterBar" hidden></div>
                     <div class="hand-browser-card" id="handBrowser" hidden></div>
                 </div>
 
