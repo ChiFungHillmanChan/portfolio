@@ -278,7 +278,7 @@ export async function handleFiles(files) {
     }
 
     if (allHandsById.size === 0) {
-      const reasons = rejected.map(r => `• ${r.name}: ${r.reason}`).join('\n');
+      const reasons = rejected.map(r => `• ${escapeHtml(r.name)}: ${escapeHtml(r.reason)}`).join('\n');
       showStatus(`No valid hands parsed.\n${reasons}`, 'error');
       return;
     }
@@ -291,7 +291,7 @@ export async function handleFiles(files) {
     // determinate progress bar (yielding every 50 hands) since the equity
     // calculation on cold cache can take 8s for ~7 preflop all-ins.
     const parts = [];
-    if (newHands > 0) parts.push(`✓ Added ${newHands.toLocaleString()} new hands`);
+    if (newHands > 0) parts.push(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Added ${newHands.toLocaleString()} new hands`);
     if (dupHands > 0) parts.push(`${dupHands.toLocaleString()} duplicates skipped`);
     if (skippedHands > 0) parts.push(`${skippedHands} malformed skipped`);
     if (rejected.length > 0) parts.push(`${rejected.length} files rejected`);
@@ -339,9 +339,21 @@ export function clearAllUploads() {
   if (els.zoneCollapseBtn) els.zoneCollapseBtn.hidden = true;
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// `msg` may contain pre-built trusted HTML (e.g. inline SVG icons baked into
+// status template literals). User-supplied substrings (filenames, parser
+// errors) must be HTML-escaped at the callsite before being interpolated.
 function showStatus(msg, kind = 'info') {
   els.status.hidden = false;
-  els.status.textContent = msg;
+  els.status.innerHTML = String(msg).replace(/\n/g, '<br>');
   els.status.dataset.kind = kind;
 }
 
@@ -827,7 +839,7 @@ async function renderAll() {
     console.error('[poker] computeSeries failed:', err);
     hideProgress();
     hideChartSpinner();
-    showStatus(`Compute failed: ${err.message}`, 'error');
+    showStatus(`Compute failed: ${escapeHtml(err.message)}`, 'error');
     return;
   }
   // Cache for subsequent rake-toggle / line-visibility re-renders.
@@ -857,7 +869,7 @@ async function renderAll() {
   } catch (err) {
     console.error('[poker] renderChart failed:', err);
     hideChartSpinner();
-    showStatus(`Chart render failed: ${err.message}`, 'error');
+    showStatus(`Chart render failed: ${escapeHtml(err.message)}`, 'error');
     return;
   }
   console.log(`[poker] renderChart: ${(performance.now() - tChart).toFixed(0)}ms`);
@@ -1476,7 +1488,7 @@ export async function loadCachedSession({ summary, seriesBefore, seriesAfter, ha
     ? `${sessionMeta.fileNames.length} file${sessionMeta.fileNames.length === 1 ? '' : 's'}`
     : 'cloud session';
   const idShort = sessionMeta?.sessionId ? ` · ${sessionMeta.sessionId.slice(-8)}` : '';
-  showStatus(`☁ Opened cached session${idShort} · ${handCount.toLocaleString()} hands · ${fileLabel}`, 'ok');
+  showStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 19H6a4 4 0 0 1 0-8 6 6 0 0 1 11.66-2A4 4 0 0 1 18 19z"/></svg> Opened cached session${escapeHtml(idShort)} · ${handCount.toLocaleString()} hands · ${escapeHtml(fileLabel)}`, 'ok');
 
   // Drive the actual draw via the existing renderAll path — its first guard
   // hits the cached-session branch and re-uses rerenderFromCache + renderPosition.

@@ -156,6 +156,7 @@ function renderSaveButton() {
         signing: "Requesting upload URL",
         "uploading-hands": "Uploading hands",
         "uploading-index": "Uploading index",
+        "uploading-series": "Uploading series cache",
         committing: "Saving to cloud",
         done: "Done",
       };
@@ -164,6 +165,10 @@ function renderSaveButton() {
           hands: session.hands,
           originalFiles: session.files,
           summary: session.summary,
+          // Forward the pre-computed BigInt series so re-opens can render
+          // instantly. session-state.js captured these from `lastCompute`.
+          seriesBefore: session.seriesBefore || null,
+          seriesAfter: session.seriesAfter || null,
           onProgress: ({ stage, progress }) => {
             const label = stageLabel[stage] || stage;
             showProgress({
@@ -175,7 +180,7 @@ function renderSaveButton() {
           },
         });
         hideProgress();
-        setStatus(`✓ Saved ${r.handCount.toLocaleString()} hands (session ${r.sessionId.slice(-8)})`, "ok");
+        setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Saved ${r.handCount.toLocaleString()} hands (session ${escapeHtml(r.sessionId.slice(-8))})`, "ok");
         refreshQuotaMeter();
         // If My Sessions tab is currently visible, refresh it
         if (isSessionsTabActive()) {
@@ -184,22 +189,41 @@ function renderSaveButton() {
       } catch (err) {
         hideProgress();
         console.error("[poker cloud] save failed:", err);
-        setStatus(`✗ ${err.message}`, "err");
+        setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg> ${escapeHtml(err.message)}`, "err");
       } finally {
         btn.disabled = false;
       }
     },
-  }, [`☁️  Save ${session.hands.length.toLocaleString()} hands to cloud`]);
+  }, [
+    // Inline cloud SVG icon — built via createContextualFragment so the
+    // existing `el()` helper (which appendChilds a textNode for strings)
+    // doesn't render the markup as literal text.
+    document.createRange().createContextualFragment(
+      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 19H6a4 4 0 0 1 0-8 6 6 0 0 1 11.66-2A4 4 0 0 1 18 19z"/></svg>`
+    ),
+    `  Save ${session.hands.length.toLocaleString()} hands to cloud`,
+  ]);
   const status = el("div", { id: SAVE_STATUS_ID, class: "save-status" });
   slot.appendChild(btn);
   slot.appendChild(status);
 }
 
+// `text` may contain pre-built trusted HTML (inline SVG icons). Callers must
+// HTML-escape any user-supplied substrings (e.g. err.message) before passing.
 function setStatus(text, kind = "info") {
   const s = document.getElementById(SAVE_STATUS_ID);
   if (!s) return;
   s.className = "save-status " + kind;
-  s.textContent = text;
+  s.innerHTML = String(text);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function isSessionsTabActive() {
