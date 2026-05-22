@@ -1,0 +1,57 @@
+.progress-bar-host {
+  margin: 12px 0;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.pb-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #d0d0d8;
+  margin-bottom: 6px;
+}
+
+.pb-stage {
+  font-weight: 600;
+}
+
+.pb-count {
+  font-variant-numeric: tabular-nums;
+  color: #a0a0b0;
+}
+
+.pb-track {
+  height: 8px;
+  background: #1f1f2a;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.pb-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80, #22c55e);
+  transition: width 0.2s ease;
+  border-radius: 4px;
+}
+
+.pb-fill.indeterminate {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    #4ade80 30%,
+    #22c55e 50%,
+    #4ade80 70%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: pb-indeterminate 1.4s linear infinite;
+}
+
+@keyframes pb-indeterminate {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}

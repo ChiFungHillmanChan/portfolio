@@ -1,0 +1,53 @@
+Loading hand histories from: /Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8/
+
+  GG20260521-0135 - RushAndCash32413714 - 0.01 - 0.02 - 6max.txt: 205 hands (0 skipped)
+  GG20260521-0135 - RushAndCash32413718 - 0.01 - 0.02 - 6max.txt: 214 hands (0 skipped)
+  GG20260521-0135 - RushAndCash32413733 - 0.01 - 0.02 - 6max.txt: 194 hands (0 skipped)
+  GG20260521-0135 - RushAndCash32413741 - 0.01 - 0.02 - 6max.txt: 199 hands (0 skipped)
+  GG20260521-1155 - RushAndCash32667018 - 0.01 - 0.02 - 6max.txt: 254 hands (0 skipped)
+  GG20260521-1155 - RushAndCash32667093 - 0.01 - 0.02 - 6max.txt: 232 hands (0 skipped)
+  GG20260521-1155 - RushAndCash32667156 - 0.01 - 0.02 - 6max.txt: 254 hands (0 skipped)
+  GG20260521-1155 - RushAndCash32667164 - 0.01 - 0.02 - 6max.txt: 263 hands (0 skipped)
+
+========================================
+Hands parsed:               1815
+Hands skipped:              0
+Files rejected:             0
+Parse + equity duration:    68 ms
+========================================
+
+=== AFTER RAKE ===
+(compute duration: 8923 ms)
+Final Winnings (green):     $6.20       $6.200000
+Final All-in EV (orange):   $8.78       $8.784392
+Red line final:             -$0.47      -$0.470000
+Blue line final:            $6.67       $6.670000
+bb/100:                     17.08
+All-in EV − Winnings:       $2.58
+Rake paid (absolute):       $2.51 (6.91 bb/100)
+Position breakdown:
+  BTN :  301 hands, -$2.02
+  SB  :  302 hands, $5.05
+  BB  :  301 hands, -$0.41
+  HJ  :  307 hands, $5.09
+  CO  :  314 hands, $2.22
+  LJ  :  290 hands, -$3.73
+
+=== BEFORE RAKE ===
+(compute duration: 4 ms)
+Final Winnings (green):     $8.71       $8.707116
+Final All-in EV (orange):   $11.23      $11.233045
+Red line final:             $0.54       $0.537386
+Blue line final:            $8.17       $8.169730
+bb/100:                     23.99
+All-in EV − Winnings:       $2.53
+Rake paid (absolute):       $2.51 (6.91 bb/100)
+Position breakdown:
+  BTN :  301 hands, -$1.64
+  SB  :  302 hands, $5.59
+  BB  :  301 hands, $0.11
+  HJ  :  307 hands, $5.73
+  CO  :  314 hands, $2.61
+  LJ  :  290 hands, -$3.69
+
+Equity cache size (preflop matchups): 7

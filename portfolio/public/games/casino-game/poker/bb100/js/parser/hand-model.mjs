@@ -10,6 +10,7 @@
  * @property {bigint} uncalledUC  amount of "Uncalled bet returned to Hero" (subset of collectedUC)
  * @property {bigint} rakeUC
  * @property {bigint} jackpotUC   GGPoker jackpot fee (from SUMMARY line "Jackpot $X")
+ * @property {bigint} cashDropUC  GGPoker Rush&Cash bonus money injected into pot (no player contributes)
  * @property {bigint} totalPotUC
  * @property {boolean} reachedShowdown
  * @property {boolean} heroAllIn
@@ -32,6 +33,7 @@ export function newHand(overrides = {}) {
     uncalledUC: 0n,           // amount of "Uncalled bet returned to Hero"
     rakeUC: 0n,
     jackpotUC: 0n,            // GGPoker jackpot fee
+    cashDropUC: 0n,           // GGPoker Rush&Cash "Cash Drop to Pot" bonus money
     totalPotUC: 0n,
     reachedShowdown: false,
     heroAllIn: false,
