@@ -284,3 +284,87 @@
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Stale-cache batch refresh banner — shown above the sessions list when one
+   or more saved sessions still carry a series.json.gz produced by an older
+   COMPUTE_FINGERPRINT. Clicking "Refresh now" runs them through a headless
+   parse → compute → upload pipeline (see migrate-stale-cache.js). */
+.sessions-stale-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  margin: 0 0 14px;
+  background: rgba(251, 146, 60, 0.10);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  border-radius: 8px;
+  font-family: 'Rajdhani', sans-serif;
+}
+.sessions-stale-banner__icon {
+  flex: 0 0 auto;
+  color: #fb923c;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+  padding-top: 2px;
+}
+.sessions-stale-banner__body { flex: 1 1 auto; min-width: 0; }
+.sessions-stale-banner__title {
+  color: #fb923c;
+  font-weight: 700;
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+.sessions-stale-banner__sub {
+  color: #b0b4bc;
+  font-size: 13px;
+  line-height: 1.4;
+}
+.sessions-stale-banner__progress { margin-top: 8px; }
+.sessions-stale-banner__bar {
+  height: 5px;
+  background: rgba(255,255,255,0.08);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.sessions-stale-banner__fill {
+  height: 100%;
+  background: linear-gradient(90deg, #fb923c, #f97316);
+  width: 0%;
+  transition: width 200ms ease;
+}
+.sessions-stale-banner__status {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  color: #b0b4bc;
+}
+.sessions-stale-banner__actions {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 6px;
+  align-items: flex-start;
+}
+.sessions-stale-banner__actions .btn-primary,
+.sessions-stale-banner__actions .btn-secondary {
+  padding: 5px 12px;
+  font-size: 13px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: filter 0.15s;
+}
+.sessions-stale-banner__actions .btn-primary {
+  background: linear-gradient(180deg, #fb923c 0%, #f97316 100%);
+  color: #0a0a0f;
+  border: 0;
+}
+.sessions-stale-banner__actions .btn-primary:hover { filter: brightness(1.1); }
+.sessions-stale-banner__actions .btn-primary[disabled] { opacity: 0.6; cursor: progress; }
+.sessions-stale-banner__actions .btn-secondary {
+  background: transparent;
+  color: #b0b4bc;
+  border: 1px solid rgba(255,255,255,0.18);
+}
+.sessions-stale-banner__actions .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
