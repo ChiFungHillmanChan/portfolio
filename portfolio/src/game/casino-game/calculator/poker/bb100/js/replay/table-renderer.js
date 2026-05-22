@@ -11,7 +11,9 @@ const VIEW_H = 460;
 // Seat positions around an ellipse-ish table. Indexed by seats.length.
 // Each entry is { x, y, betX, betY } where (x,y) is seat center, (betX,betY)
 // is the chip-stack target between the seat and the pot.
-// Hero is always anchored at the bottom (seat order rotates so Hero is last).
+// Hero is always anchored at the bottom-center (x=360); layouts are
+// mirror-symmetric around x=360 so the table feels like a clock face with
+// hero ↔ opposite seat aligned vertically.
 const SEAT_LAYOUT = {
   2: [
     { x: 360, y: 90,  betX: 360, betY: 180 },
@@ -36,13 +38,12 @@ const SEAT_LAYOUT = {
     { x: 360, y: 380, betX: 360, betY: 280 }, // hero
   ],
   6: [
-    { x: 200, y: 80,  betX: 270, betY: 170 },
-    { x: 520, y: 80,  betX: 450, betY: 170 },
-    { x: 80,  y: 230, betX: 200, betY: 240 },
-    { x: 640, y: 230, betX: 520, betY: 240 },
-    { x: 220, y: 380, betX: 280, betY: 290 },
-    { x: 360, y: 400, betX: 360, betY: 290 }, // hero
-    // Note: 6-max uses 5 villains + hero; if extracted has 6 the 6th is hero last
+    { x: 360, y: 75,  betX: 360, betY: 175 },          // top-center (opposite hero)
+    { x: 130, y: 200, betX: 240, betY: 230 },          // mid-left
+    { x: 590, y: 200, betX: 480, betY: 230 },          // mid-right
+    { x: 220, y: 380, betX: 290, betY: 305 },          // lower-left
+    { x: 500, y: 380, betX: 430, betY: 305 },          // lower-right
+    { x: 360, y: 410, betX: 360, betY: 320 },          // hero
   ],
   7: [
     { x: 180, y: 70,  betX: 250, betY: 160 },
@@ -54,25 +55,25 @@ const SEAT_LAYOUT = {
     { x: 360, y: 400, betX: 360, betY: 290 }, // hero
   ],
   8: [
-    { x: 180, y: 60,  betX: 240, betY: 150 },
-    { x: 540, y: 60,  betX: 480, betY: 150 },
-    { x: 60,  y: 170, betX: 180, betY: 200 },
-    { x: 660, y: 170, betX: 540, betY: 200 },
-    { x: 60,  y: 310, betX: 180, betY: 270 },
-    { x: 660, y: 310, betX: 540, betY: 270 },
-    { x: 240, y: 400, betX: 290, betY: 290 },
-    { x: 480, y: 400, betX: 430, betY: 290 }, // hero
+    { x: 360, y: 60,  betX: 360, betY: 160 },          // top-center (opposite hero)
+    { x: 130, y: 140, betX: 240, betY: 200 },          // upper-left
+    { x: 590, y: 140, betX: 480, betY: 200 },          // upper-right
+    { x: 65,  y: 250, betX: 195, betY: 260 },          // mid-left
+    { x: 655, y: 250, betX: 525, betY: 260 },          // mid-right
+    { x: 210, y: 385, betX: 285, betY: 315 },          // lower-left
+    { x: 510, y: 385, betX: 435, betY: 315 },          // lower-right
+    { x: 360, y: 415, betX: 360, betY: 325 },          // hero
   ],
   9: [
-    { x: 360, y: 50,  betX: 360, betY: 145 },
-    { x: 170, y: 80,  betX: 240, betY: 160 },
-    { x: 550, y: 80,  betX: 480, betY: 160 },
-    { x: 50,  y: 200, betX: 170, betY: 220 },
-    { x: 670, y: 200, betX: 550, betY: 220 },
-    { x: 60,  y: 340, betX: 180, betY: 270 },
-    { x: 660, y: 340, betX: 540, betY: 270 },
-    { x: 240, y: 410, betX: 290, betY: 290 },
-    { x: 480, y: 410, betX: 430, betY: 290 }, // hero
+    { x: 235, y: 55,  betX: 295, betY: 165 },          // upper-left
+    { x: 485, y: 55,  betX: 425, betY: 165 },          // upper-right
+    { x: 90,  y: 150, betX: 215, betY: 220 },          // upper-mid-left
+    { x: 630, y: 150, betX: 505, betY: 220 },          // upper-mid-right
+    { x: 55,  y: 285, betX: 190, betY: 280 },          // mid-left
+    { x: 665, y: 285, betX: 530, betY: 280 },          // mid-right
+    { x: 200, y: 395, betX: 280, betY: 320 },          // lower-left
+    { x: 520, y: 395, betX: 440, betY: 320 },          // lower-right
+    { x: 360, y: 420, betX: 360, betY: 325 },          // hero
   ],
 };
 

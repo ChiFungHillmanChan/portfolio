@@ -192,7 +192,7 @@
 
 .hand-row {
   display: grid;
-  grid-template-columns: 60px 1fr 100px 50px 70px 90px auto;
+  grid-template-columns: 60px 1fr 100px 50px 64px 90px auto;
   align-items: center;
   gap: 0.6rem;
   padding: 0.4rem 0.6rem;
@@ -217,7 +217,34 @@
   font-size: 11.5px;
   font-weight: 600;
 }
-.hand-cards { color: #d0d0d8; letter-spacing: 0.04em; }
+.hand-cards { color: #d0d0d8; letter-spacing: 0.04em; display: inline-flex; align-items: center; }
+
+/* Mini-card visuals (used in hand browser cells + can be reused elsewhere) */
+.mini-cards {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+}
+.mini-card {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 30px;
+  background: #f5f5fa;
+  border: 1px solid rgba(0, 0, 0, 0.45);
+  border-radius: 3px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+}
+.mini-card-rank { font-size: 11px; }
+.mini-card-suit { font-size: 11px; margin-top: 1px; }
+.mini-card.suit-h, .mini-card.suit-d { color: #d4263a; }
+.mini-card.suit-s, .mini-card.suit-c { color: #111; }
 .hand-result { text-align: right; font-weight: 600; }
 .hand-result.win { color: #4ade80; }
 .hand-result.loss { color: #ef4444; }
@@ -301,6 +328,14 @@
   border-color: rgba(74,222,128,0.45);
   color: #4ade80;
   font-weight: 600;
+}
+
+.filter-chip-rank {
+  min-width: 26px;
+  padding: 4px 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 600;
+  text-align: center;
 }
 
 .filter-custom-row { padding-left: 50px; }
