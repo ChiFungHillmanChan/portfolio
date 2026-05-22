@@ -18,8 +18,17 @@ const VIEW_H = 460;
 // clockwise from Hero (lower-LEFT for N>=4), and ordered[N-2] one step
 // counter-clockwise from Hero (lower-RIGHT — the SB seat when Hero is BB).
 //
-// Chip position is 30% of the way from the seat toward table center,
-// keeping bet displays close to (and clearly "in front of") their owner.
+// Chip position: centerline seats (top/bottom) get the chip stacked
+// above/below the cards, vertically inline with the avatar but clear of
+// the card bounding box. Side seats use a fraction of the seat→pot line,
+// which is mostly horizontal so the chip lands beside the cards instead
+// of on top of them. Constants below match the card/chip BG sizes in
+// buildTable so the geometry stays sound if those rects ever resize.
+const POT_CENTER_Y = VIEW_H / 2 + 60;
+const CARD_HALF_HEIGHT = 20;
+const CHIP_HALF_HEIGHT = 10;
+const CARD_CLEAR_PX = 5;
+
 function computeSeatLayout(n) {
   const cx = VIEW_W / 2;
   const cy = VIEW_H / 2;
@@ -27,19 +36,38 @@ function computeSeatLayout(n) {
   // don't look stranded at the edges of a too-wide table.
   const rx = n <= 3 ? VIEW_W * 0.30 : VIEW_W * 0.40;
   const ry = n <= 3 ? VIEW_H * 0.34 : VIEW_H * 0.40;
-  const chipFrac = 0.30;
   const layout = [];
   for (let i = 0; i < n; i++) {
     const angleDeg = 180 + ((i + 1) * 360 / n);
     const angleRad = angleDeg * Math.PI / 180;
     const x = cx + rx * Math.sin(angleRad);
     const y = cy - ry * Math.cos(angleRad);
-    layout.push({
-      x,
-      y,
-      betX: x + (cx - x) * chipFrac,
-      betY: y + (cy - y) * chipFrac,
-    });
+
+    // Mirrors cardOffsetY in buildTable: cards above avatar for lower
+    // seats, below avatar for upper seats.
+    const cardOffsetY = y > cy ? -56 : 32;
+    const cardsY = y + cardOffsetY;
+
+    let betX, betY;
+    if (Math.abs(x - cx) < 30) {
+      // Centerline seat (e.g. Hero at bottom, or BTN at top). Stack the
+      // chip past the card box toward the pot, clamping so it never
+      // crashes into the pot label either.
+      const minOffset = CARD_HALF_HEIGHT + CARD_CLEAR_PX + CHIP_HALF_HEIGHT;
+      const dyToPot = POT_CENTER_Y - cardsY;
+      const dir = Math.sign(dyToPot) || -1;
+      const maxOffset = Math.max(minOffset, Math.abs(dyToPot) - 18);
+      const offset = Math.min(minOffset + 5, maxOffset);
+      betX = x;
+      betY = cardsY + dir * offset;
+    } else {
+      // Side seat: a fraction of the seat→pot vector keeps the chip on
+      // the inside of the seat (between cards and the table middle) and
+      // clearly to the side of the cards.
+      betX = x + (cx - x) * 0.35;
+      betY = y + (POT_CENTER_Y - y) * 0.35;
+    }
+    layout.push({ x, y, betX, betY });
   }
   return layout;
 }
