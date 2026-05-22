@@ -300,7 +300,8 @@ function formatDateShort(iso) {
 
 async function openReplay(hand, index) {
   try {
-    const { showReplay } = await import('./replay/static-replay.js');
+    // Phase 5b: animated SVG viewer (with a text-log tab as fallback).
+    const { showReplay } = await import('./replay/animated-replay.js');
     showReplay(hand.text, { title: `Hand #${(index + 1).toLocaleString()} — ${hand.id}` });
   } catch (err) {
     console.error('replay open failed', err);
