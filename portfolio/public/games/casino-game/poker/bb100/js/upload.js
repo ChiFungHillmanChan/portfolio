@@ -1,5 +1,6 @@
 // js/upload.js
-import { parseFile } from './parser/gg-parser.mjs';
+import { parseFile, splitIntoHands, parseHand } from './parser/gg-parser.mjs';
+import { validateFile } from './parser/validator.mjs';
 import { computeSeries } from './stats/compute.mjs';
 import { ucToDollars, formatUSD } from './stats/money.mjs';
 import { showProgress, hideProgress, nextFrame } from './progress-bar.js';
@@ -143,37 +144,64 @@ async function handleFiles(files) {
       await nextFrame();
     }
 
-    // Phase B: parse each file, merge into master Map (dedup by hand.id)
-    showProgress({ stage: 'Parsing hands', current: 0, total: 0, indeterminate: true });
+    // Phase B: split each file into hand-text chunks, then parse hand-by-hand
+    // yielding every PARSE_YIELD_EVERY hands so the browser stays responsive
+    // on very large files (e.g. one 10MB file with 5K hands would otherwise
+    // block ~5s — past the "page unresponsive" threshold).
+    const PARSE_YIELD_EVERY = 200;
+    let totalChunksToParse = 0;
+    const perFileChunks = [];
+    for (const ft of fileTexts) {
+      if (!ft) { perFileChunks.push(null); continue; }
+      const validation = validateFile(ft.name, ft.text);
+      if (!validation.valid) {
+        rejected.push({ name: ft.name, reason: `Validation failed: ${validation.reason}` });
+        perFileChunks.push(null);
+        continue;
+      }
+      const chunks = splitIntoHands(ft.text);
+      perFileChunks.push({ ft, chunks });
+      totalChunksToParse += chunks.length;
+    }
+    showProgress({ stage: 'Parsing hands', current: 0, total: totalChunksToParse });
     await nextFrame();
-    for (let i = 0; i < fileTexts.length; i++) {
-      const ft = fileTexts[i];
-      if (!ft) continue;
-      try {
-        const r = parseFile(ft.name, ft.text);
-        if (r.hands.length === 0 && r.errors && r.errors.length > 0) {
-          rejected.push({ name: ft.name, reason: r.errors[0] });
-          continue;
-        }
-        for (const hand of r.hands) {
+
+    let parsedSoFar = 0;
+    for (const pf of perFileChunks) {
+      if (!pf) continue;
+      const { ft, chunks } = pf;
+      let fileHadAnyHand = false;
+      for (let i = 0; i < chunks.length; i++) {
+        const chunk = chunks[i];
+        try {
+          const hand = parseHand(chunk);
+          hand.text = chunk;
+          hand.fileName = ft.name;
           if (allHandsById.has(hand.id)) {
             dupHands++;
-            continue;
+          } else {
+            allHandsById.set(hand.id, hand);
+            newHands++;
           }
-          allHandsById.set(hand.id, hand);
-          newHands++;
+          fileHadAnyHand = true;
+        } catch (_) {
+          skippedHands++;
         }
-        // Track the source File so cloud save can include it
+        parsedSoFar++;
+        if (parsedSoFar % PARSE_YIELD_EVERY === 0) {
+          showProgress({
+            stage: `Parsing hands — ${newHands.toLocaleString()} new, ${dupHands.toLocaleString()} duplicate`,
+            current: parsedSoFar,
+            total: totalChunksToParse,
+          });
+          await nextFrame();
+        }
+      }
+      if (fileHadAnyHand) {
         const key = fileKey(ft.file);
         if (!allFiles.has(key)) allFiles.set(key, ft.file);
-        skippedHands += r.skipped;
-        showProgress({
-          stage: `Parsing hands — ${newHands.toLocaleString()} new, ${dupHands.toLocaleString()} duplicate`,
-          indeterminate: true,
-        });
-        await nextFrame();
-      } catch (e) {
-        rejected.push({ name: ft.name, reason: `parse error: ${e.message}` });
+      } else {
+        rejected.push({ name: ft.name, reason: 'no Hero hands parsed from file' });
       }
     }
 
@@ -187,10 +215,9 @@ async function handleFiles(files) {
     rebuildSorted();
     originalFiles = Array.from(allFiles.values());
 
-    // Phase C: compute series + render
-    showProgress({ stage: `Computing chart for ${parsedHands.length.toLocaleString()} hands`, indeterminate: true });
-    await nextFrame();
-
+    // Phase C: compute series + render. renderAll() now drives its own
+    // determinate progress bar (yielding every 50 hands) since the equity
+    // calculation on cold cache can take 8s for ~7 preflop all-ins.
     const parts = [];
     if (newHands > 0) parts.push(`✓ Added ${newHands.toLocaleString()} new hands`);
     if (dupHands > 0) parts.push(`${dupHands.toLocaleString()} duplicates skipped`);
@@ -199,9 +226,8 @@ async function handleFiles(files) {
     const summaryStatus = parts.join(' · ') + ` · Total: ${parsedHands.length.toLocaleString()} hands across ${originalFiles.length} files`;
     showStatus(summaryStatus, newHands > 0 ? 'ok' : 'info');
 
-    await nextFrame();
-    renderAll();
     els.results.hidden = false;
+    await renderAll();
   } finally {
     // Guarantee the progress bar always clears even if compute throws.
     hideProgress();
@@ -425,7 +451,7 @@ function toDatetimeLocalValue(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-function renderAll() {
+async function renderAll() {
   const filtered = getFilteredHands();
   if (filtered.length === 0) {
     // Nothing to chart but still render the filter bar so user can change filter
@@ -437,7 +463,18 @@ function renderAll() {
     els.chartFooter.textContent = parsedHands.length > 0 ? 'No hands match the current filter.' : '';
     return;
   }
-  const { series, summary } = computeSeries(filtered, opts);
+  // Yield-aware compute: every 50 hands the loop releases the event loop so
+  // the browser stays responsive on 20K+ datasets. The first-time equity
+  // computation is the slow part (~1.1s per uncached preflop all-in matchup).
+  showProgress({ stage: `Computing chart for ${filtered.length.toLocaleString()} hands`, current: 0, total: filtered.length });
+  await nextFrame();
+  const { series, summary } = await computeSeries(filtered, opts, {
+    yieldEvery: 50,
+    onProgress: (i, n) => {
+      showProgress({ stage: `Computing chart — hand ${i.toLocaleString()} / ${n.toLocaleString()}`, current: i, total: n });
+    },
+  });
+  hideProgress();
   lastSummary = summary;
   renderChart(series);
   renderControls();
@@ -593,10 +630,39 @@ const crosshairPlugin = {
   },
 };
 
-function renderChart(series) {
+// Downsample a BigInt[] series + index labels to at most MAX_CHART_POINTS,
+// always preserving the final point so the cumulative end value stays exact.
+// 'min-max' style: bucket the series and pick one representative per bucket.
+const MAX_CHART_POINTS = 5000;
+
+function downsampleSeries(series, n) {
+  if (n <= MAX_CHART_POINTS) {
+    const labels = Array.from({ length: n }, (_, i) => i + 1);
+    return { labels, series, downsampled: false };
+  }
+  const targetPoints = MAX_CHART_POINTS;
+  const stride = n / targetPoints; // float stride for even spacing
+  const labels = [];
+  const out = {};
+  for (const k of Object.keys(series)) out[k] = [];
+  for (let i = 0; i < targetPoints; i++) {
+    const idx = Math.min(n - 1, Math.floor(i * stride));
+    labels.push(idx + 1);
+    for (const k of Object.keys(series)) out[k].push(series[k][idx]);
+  }
+  // Always include the final point so the cumulative end stays exact.
+  if (labels[labels.length - 1] !== n) {
+    labels.push(n);
+    for (const k of Object.keys(series)) out[k].push(series[k][n - 1]);
+  }
+  return { labels, series: out, downsampled: true };
+}
+
+function renderChart(rawSeries) {
   if (chartInstance) chartInstance.destroy();
-  const n = series.winningsUC.length;
-  const labels = Array.from({ length: n }, (_, i) => i + 1);
+  const rawN = rawSeries.winningsUC.length;
+  const { labels, series, downsampled } = downsampleSeries(rawSeries, rawN);
+  const n = labels.length;
 
   const datasets = [];
   if (opts.lines.winnings) datasets.push(mkDataset('Winnings', series.winningsUC, COLORS.winnings));
@@ -619,9 +685,13 @@ function renderChart(series) {
             color: '#a0a0b0',
             autoSkip: false,
             callback: function(value) {
-              // `value` is the absolute data index (0..n-1). Hand number = value + 1.
+              // `value` is the absolute data index (0..n-1). The label at that
+              // index is the actual hand number (= index+1 when not downsampled,
+              // sparser when downsampled to <=5000 chart points).
+              const labelArr = this.chart.data.labels;
+              const handNum = labelArr ? labelArr[value] : value + 1;
+              if (handNum == null) return '';
               // Adapt tick label density to visible range so labels are useful when zoomed.
-              const handNum = value + 1;
               const visible = (this.max ?? 0) - (this.min ?? 0) + 1;
               let step;
               if (visible > 1000)      step = 100;
@@ -686,8 +756,11 @@ function renderChart(series) {
     },
   });
 
-  const handCount = n.toLocaleString();
-  els.chartFooter.textContent = `${handCount} of ${handCount} Hands  •  drag to zoom range  •  shift+wheel to zoom  •  alt+drag to pan`;
+  const handCountRaw = rawN.toLocaleString();
+  const downsampleNote = downsampled
+    ? `  •  showing ${n.toLocaleString()} sample points (auto-downsampled from ${handCountRaw} for performance — final value exact)`
+    : '';
+  els.chartFooter.textContent = `${handCountRaw} of ${handCountRaw} Hands${downsampleNote}  •  drag to zoom range  •  shift+wheel to zoom  •  alt+drag to pan`;
 }
 
 export function resetChartZoom() {

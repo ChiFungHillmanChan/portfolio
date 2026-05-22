@@ -61,7 +61,7 @@ console.log(`========================================\n`);
 for (const beforeRake of [false, true]) {
   console.log(`=== ${beforeRake ? 'BEFORE RAKE' : 'AFTER RAKE'} ===`);
   const t0 = performance.now();
-  const { series, summary } = computeSeries(allHands, { beforeRake });
+  const { series, summary } = await computeSeries(allHands, { beforeRake });
   const dur = performance.now() - t0;
   console.log(`(compute duration: ${dur.toFixed(0)} ms)`);
 

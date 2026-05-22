@@ -70,7 +70,7 @@ if (allHands.length < 1800) {
   process.exit(1);
 }
 
-const { series } = computeSeries(allHands, { beforeRake: true });
+const { series } = await computeSeries(allHands, { beforeRake: true });
 
 // Round BigInt micro-cents to nearest cent (display precision).
 // formatUSD already does round-half-up; we need the rounded number for comparison.

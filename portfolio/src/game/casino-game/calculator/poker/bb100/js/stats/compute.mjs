@@ -178,11 +178,18 @@ function evResult(hand, result, beforeRake) {
 }
 
 /**
- * computeSeries(hands, opts) → { series, summary }
+ * computeSeries(hands, opts, control?) → Promise<{ series, summary }>
  *
  * opts.beforeRake: boolean
  *   true  → add Hero's rake share back on winning hands (gross view)
  *   false → report net-of-rake results (default)
+ *
+ * control: { yieldEvery?: number, onProgress?: (i, total) => void }
+ *   When yieldEvery > 0, the function yields to the event loop after that
+ *   many hands so the browser stays responsive on large datasets. Each yield
+ *   first calls onProgress(i, total). When yieldEvery = 0 (default), no
+ *   yielding happens — the function returns a resolved Promise immediately.
+ *   Useful for Node scripts that don't need to share the event loop.
  *
  * series: {
  *   winningsUC: BigInt[]   cumulative total result
@@ -194,8 +201,10 @@ function evResult(hand, result, beforeRake) {
  * summary: { hands, totalUC, evTotalUC, evMinusWinUC, bbPer100,
  *            byPosition, rakePaidUC, rakeBbPer100 }
  */
-export function computeSeries(hands, opts = {}) {
+export async function computeSeries(hands, opts = {}, control = {}) {
   const beforeRake = Boolean(opts.beforeRake);
+  const yieldEvery = control.yieldEvery | 0;
+  const onProgress = control.onProgress || null;
 
   // --- Series accumulators ---
   const winningsUC = [];
@@ -213,7 +222,9 @@ export function computeSeries(hands, opts = {}) {
   let bbWeightedSum = 0;  // for bb/100 calculation (Number arithmetic)
   let rakePaidUC   = 0n;
 
-  for (const hand of hands) {
+  const total = hands.length;
+  for (let i = 0; i < total; i++) {
+    const hand = hands[i];
     const result = perHandResult(hand, beforeRake);
     const ev     = evResult(hand, result, beforeRake);
 
@@ -258,7 +269,16 @@ export function computeSeries(hands, opts = {}) {
         rakePaidUC += (num + grossPotDenom / 2n) / grossPotDenom;
       }
     }
+
+    // Yield to event loop periodically so the browser stays responsive on
+    // large datasets. The slow part is evResult()'s exhaustive equity enum
+    // (~1.1s/hand for preflop all-ins, hits cache after first occurrence).
+    if (yieldEvery > 0 && (i + 1) % yieldEvery === 0 && i + 1 < total) {
+      if (onProgress) onProgress(i + 1, total);
+      await new Promise((r) => setTimeout(r, 0));
+    }
   }
+  if (onProgress) onProgress(total, total);
 
   // --- Summary ---
   const n = hands.length;
