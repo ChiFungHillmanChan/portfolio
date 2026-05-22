@@ -219,13 +219,23 @@
                     <!-- Once the zone has been expanded after an initial upload,
                          a small collapse button appears top-right of the zone. -->
                     <button type="button" class="upload-zone-collapse" id="uploadZoneCollapse" aria-label="Collapse upload" hidden><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
-                    <p class="upload-instr">Drop GGPoker hand-history files (.txt) here</p>
+                    <p class="upload-instr">Drop GGPoker hand-history files or folders here</p>
                     <p class="upload-or">or</p>
-                    <button type="button" class="btn btn-primary" id="uploadPickBtn">Browse files</button>
+                    <div class="upload-zone-actions">
+                        <button type="button" class="btn btn-primary" id="uploadPickBtn">Browse files</button>
+                        <button type="button" class="btn btn-secondary" id="uploadFolderPickBtn">Pick folder</button>
+                    </div>
                     <input type="file" id="uploadFileInput" multiple accept=".txt,text/plain" hidden>
-                    <p class="upload-hint">Files are parsed in your browser. Nothing is uploaded anywhere. Folder drop supported in Chrome/Edge/Brave.</p>
+                    <!-- Folder picker: `webkitdirectory` is non-standard but works in Chrome/Edge/Brave/Safari/Firefox.
+                         The browser only allows one folder per pick, but a folder may contain arbitrarily-nested
+                         .txt files — we filter to GG-shaped ones at intake. Pick again to add more folders. -->
+                    <input type="file" id="uploadFolderInput" webkitdirectory directory multiple hidden>
+                    <p class="upload-hint">Files are parsed in your browser — nothing is uploaded. Drag multiple folders at once, or click <strong>Pick folder</strong> repeatedly to add more.</p>
                 </div>
                 <div class="upload-status" id="uploadStatus" hidden></div>
+                <!-- Inline cloud-restore panel: filled by cloud/inline-restore.js when the user is signed in.
+                     Lets you reopen a saved session without leaving the Upload tab (also reachable via Settings → My Sessions). -->
+                <div class="upload-cloud-restore" id="uploadCloudRestore" hidden></div>
             </div>
 
             <div class="upload-results" id="uploadResults" hidden>

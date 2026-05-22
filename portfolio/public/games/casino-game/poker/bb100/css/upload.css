@@ -3,9 +3,158 @@
 .upload-zone.drag-active { background: rgba(212,175,55,0.05); border-color: var(--accent-gold, #d4af37); }
 .upload-instr { font-size: 1.1rem; margin-bottom: 0.5rem; }
 .upload-or { color: var(--text-secondary, #a0a0b0); margin: 0.5rem 0; }
+.upload-zone-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: center;
+  align-items: center;
+}
+.upload-zone-actions .btn-secondary {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #d0d0d8;
+  padding: 0.55rem 1.1rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.12s;
+}
+.upload-zone-actions .btn-secondary:hover {
+  background: rgba(74,222,128,0.1);
+  border-color: rgba(74,222,128,0.45);
+  color: #4ade80;
+}
 .upload-hint { color: var(--text-dim, #707080); font-size: 0.85rem; margin-top: 1rem; }
 .upload-status { margin-top: 1rem; padding: 0.75rem 1rem; background: rgba(255,255,255,0.03); border-radius: 0.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; white-space: pre-line; }
 .upload-status[data-kind="error"] { background: rgba(230,57,70,0.1); border: 1px solid rgba(230,57,70,0.3); }
+
+/* Inline cloud restore panel — appears under the upload zone when signed-in */
+.upload-cloud-restore {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  background: rgba(74,222,128,0.04);
+  border: 1px solid rgba(74,222,128,0.18);
+  border-radius: 0.6rem;
+  font-family: 'Rajdhani', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.upload-cloud-restore[hidden] { display: none; }
+.cloud-restore-header {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.cloud-restore-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #d0d0d8;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.cloud-restore-title .ui-svg-icon { color: #4ade80; }
+.cloud-restore-spacer { flex: 1; }
+.cloud-restore-btn {
+  background: rgba(74,222,128,0.12);
+  border: 1px solid rgba(74,222,128,0.4);
+  color: #4ade80;
+  padding: 0.35rem 0.85rem;
+  border-radius: 0.4rem;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.cloud-restore-btn:hover:not(:disabled) {
+  background: rgba(74,222,128,0.22);
+}
+.cloud-restore-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.cloud-restore-btn--ghost {
+  background: transparent;
+  border-color: rgba(255,255,255,0.16);
+  color: #c0c4cc;
+}
+.cloud-restore-btn--ghost:hover:not(:disabled) {
+  background: rgba(255,255,255,0.06);
+  color: #fff;
+  border-color: rgba(255,255,255,0.3);
+}
+.cloud-restore-status {
+  font-size: 12.5px;
+  color: #8a8a96;
+  font-family: 'JetBrains Mono', monospace;
+}
+.cloud-restore-status[data-kind="err"] { color: #ef4444; }
+.cloud-restore-status[data-kind="ok"] { color: #4ade80; }
+.cloud-restore-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0.25rem;
+  margin: 0;
+  list-style: none;
+  background: rgba(0,0,0,0.18);
+  border-radius: 0.4rem;
+}
+.cloud-restore-list[hidden] { display: none; }
+.cloud-restore-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.45rem 0.6rem;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.35rem;
+  font-size: 12.5px;
+  color: #c0c4cc;
+}
+.cloud-restore-item-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  min-width: 0;
+}
+.cloud-restore-item-date {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  color: #d0d0d8;
+}
+.cloud-restore-item-sub {
+  font-size: 11.5px;
+  color: #8a8a96;
+}
+.cloud-restore-empty {
+  font-size: 12.5px;
+  color: #8a8a96;
+  padding: 0.4rem 0.2rem;
+}
+.cloud-restore-signin {
+  font-size: 12.5px;
+  color: #c0c4cc;
+}
+.cloud-restore-signin a {
+  color: #4ade80;
+  text-decoration: underline;
+  cursor: pointer;
+}
 .upload-results { margin-top: 2rem; display: flex; flex-direction: column; gap: 1.5rem; }
 .chart-card { padding: 1.5rem; background: #0a0a0f; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.08); }
 .chart-controls { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1rem; }

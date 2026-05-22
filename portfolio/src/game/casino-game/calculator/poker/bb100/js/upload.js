@@ -9,6 +9,8 @@ const els = {
   zone: document.getElementById('uploadZone'),
   pickBtn: document.getElementById('uploadPickBtn'),
   fileInput: document.getElementById('uploadFileInput'),
+  folderPickBtn: document.getElementById('uploadFolderPickBtn'),
+  folderInput: document.getElementById('uploadFolderInput'),
   status: document.getElementById('uploadStatus'),
   results: document.getElementById('uploadResults'),
   chartCanvas: document.getElementById('evChart'),
@@ -129,7 +131,27 @@ function notifyCloudSessionLoaded() {
 // === File intake ===
 
 els.pickBtn.addEventListener('click', () => els.fileInput.click());
-els.fileInput.addEventListener('change', () => handleFiles(Array.from(els.fileInput.files)));
+els.fileInput.addEventListener('change', async () => {
+  const picked = Array.from(els.fileInput.files);
+  // Reset so re-picking the same file still fires `change`.
+  els.fileInput.value = '';
+  await handleFiles(picked);
+});
+
+if (els.folderPickBtn && els.folderInput) {
+  els.folderPickBtn.addEventListener('click', () => els.folderInput.click());
+  els.folderInput.addEventListener('change', async () => {
+    // A folder pick yields all descendant files — pre-filter to .txt so non-GG
+    // junk (notes, .ds_store, screenshots) is silently dropped at intake.
+    const picked = Array.from(els.folderInput.files).filter(isLikelyHandHistoryFile);
+    els.folderInput.value = '';
+    if (picked.length === 0) {
+      showStatus('No .txt files found in that folder. Pick a folder that contains GGPoker hand histories.', 'info');
+      return;
+    }
+    await handleFiles(picked);
+  });
+}
 
 els.zone.addEventListener('dragover', e => {
   e.preventDefault();
@@ -140,8 +162,31 @@ els.zone.addEventListener('drop', async e => {
   e.preventDefault();
   els.zone.classList.remove('drag-active');
   const files = await collectFilesFromDrop(e.dataTransfer);
-  await handleFiles(files);
+  // Drag-drop walks arbitrarily-nested folders. Pre-filter to .txt at intake
+  // so we don't validate hundreds of binary/junk files when a user drops a
+  // whole archive folder.
+  const txtFiles = files.filter(isLikelyHandHistoryFile);
+  if (txtFiles.length === 0) {
+    showStatus('No .txt files found in the dropped folders. Drop GGPoker hand histories.', 'info');
+    return;
+  }
+  await handleFiles(txtFiles);
 });
+
+// Lightweight filter run BEFORE we read file contents. Skips binary/non-txt
+// quietly — keeps the rejection list focused on .txt files that actually
+// failed the GG-format check, instead of flooding it with "wrong extension".
+function isLikelyHandHistoryFile(f) {
+  if (!f || !f.name) return false;
+  const name = f.name.toLowerCase();
+  if (!name.endsWith('.txt')) return false;
+  // Skip macOS metadata files that copy alongside real .txt files.
+  if (name.startsWith('._')) return false;
+  // Cap individual files at 50MB — validator will reject anything bigger
+  // with a clean message; this just stops us from reading enormous blobs.
+  if (f.size > 50 * 1024 * 1024) return false;
+  return true;
+}
 
 async function collectFilesFromDrop(dt) {
   const items = dt.items;
@@ -193,6 +238,15 @@ function fileKey(f) {
 // has to be recomputed locally.
 export async function handleFiles(files) {
   if (files.length === 0) return;
+  // If a cached cloud session is currently on-screen, taking on new local
+  // files means the chart can no longer come from the cached series. Drop
+  // the flag so renderAll's cached-session short-circuit doesn't fire — the
+  // standard compute path then runs over the merged hand set (hydrated cloud
+  // hands + new local files). If hydration hadn't completed yet, allHandsById
+  // is empty so this is effectively a fresh upload.
+  if (lastCompute && lastCompute.isCachedSession) {
+    lastCompute = null;
+  }
   const totalBefore = allHandsById.size;
   showStatus(`Reading ${files.length} files...`);
   const rejected = [];
@@ -278,8 +332,12 @@ export async function handleFiles(files) {
     }
 
     if (allHandsById.size === 0) {
-      const reasons = rejected.map(r => `• ${escapeHtml(r.name)}: ${escapeHtml(r.reason)}`).join('\n');
-      showStatus(`No valid hands parsed.\n${reasons}`, 'error');
+      const REJECT_PREVIEW = 5;
+      const shown = rejected.slice(0, REJECT_PREVIEW);
+      const extra = rejected.length - shown.length;
+      const reasons = shown.map(r => `• ${escapeHtml(r.name)}: ${escapeHtml(r.reason)}`).join('\n');
+      const moreLine = extra > 0 ? `\n…and ${extra.toLocaleString()} more file${extra === 1 ? '' : 's'}` : '';
+      showStatus(`No valid hands parsed.\n${reasons}${moreLine}`, 'error');
       return;
     }
 
@@ -769,14 +827,20 @@ function rerenderFromCache() {
 }
 
 async function renderAll() {
-  // Cached-session view: a series.json.gz was downloaded into `lastCompute`
-  // and `parsedHands` is empty by design (no per-hand metadata available).
-  // Filtering, hand browser, replay are disabled in this mode — only the
-  // rake toggle and line-visibility checkboxes apply, and both are free
-  // pivots through rerenderFromCache().
+  // Cached-session view: a series.json.gz was downloaded into `lastCompute`.
+  // Chart, summary, by-position card are driven by the cached series — never
+  // recomputed here. If per-hand records have ALSO been hydrated (background
+  // fetch of hands.txt.gz after the cached open), expose the replay filter
+  // bar + hand browser so the user can scrub individual hands. The global
+  // filter bar stays hidden because the chart is locked to the cached series
+  // and a filter chip would mislead.
   if (lastCompute && lastCompute.isCachedSession) {
     rerenderFromCache();
     renderPosition(lastCompute.summary);
+    if (parsedHands.length > 0) {
+      renderReplayFilterBar();
+      renderHandBrowserFiltered(applyReplayFilter(parsedHands));
+    }
     return;
   }
 
@@ -1493,4 +1557,42 @@ export async function loadCachedSession({ summary, seriesBefore, seriesAfter, ha
   // Drive the actual draw via the existing renderAll path — its first guard
   // hits the cached-session branch and re-uses rerenderFromCache + renderPosition.
   await renderAll();
+}
+
+/**
+ * Populate per-hand records into the cached-session view AFTER the chart has
+ * already been drawn from the cached series. Loaded by cloud/load-session.js
+ * as a background pass after a fast-path "Open" so the user can still click
+ * any hand → replay (each hand carries its raw GG text in `hand.text`).
+ *
+ * Strictly additive — the cached chart, summary, and by-position card are
+ * untouched. We just reveal the replay filter bar + hand browser.
+ *
+ * @param {Array} hands      Parsed Hand[] (each with `.text` set to the raw chunk)
+ * @param {Object} [opts]
+ * @param {string} [opts.sessionId]  Guard against stale background fetches
+ *                                   when the user has since opened a different
+ *                                   session — drop the result silently if the
+ *                                   current cached session no longer matches.
+ */
+export async function hydrateHandsForReplay(hands, opts = {}) {
+  if (!lastCompute || !lastCompute.isCachedSession) return;
+  if (!Array.isArray(hands) || hands.length === 0) return;
+  if (opts.sessionId && lastCompute.sessionMeta?.sessionId !== opts.sessionId) return;
+
+  allHandsById.clear();
+  for (const h of hands) {
+    if (!h || !h.id) continue;
+    if (!allHandsById.has(h.id)) allHandsById.set(h.id, h);
+  }
+  rebuildSorted();
+
+  // Refresh status so the user knows replay is now available. Keep it concise.
+  showStatus(
+    `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Replay ready · ${parsedHands.length.toLocaleString()} hands available below`,
+    'ok',
+  );
+
+  renderReplayFilterBar();
+  renderHandBrowserFiltered(applyReplayFilter(parsedHands));
 }
