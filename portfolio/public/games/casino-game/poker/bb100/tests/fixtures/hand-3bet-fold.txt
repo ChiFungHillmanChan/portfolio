@@ -1,0 +1,32 @@
+Poker Hand #RC1000003: Hold'em No Limit ($0.01/$0.02) - 2026/05/21 03:01:00
+Table 'TestTable' 6-max Seat #1 is the button
+Seat 1: Villain1 ($2 in chips)
+Seat 2: Villain2 ($2 in chips)
+Seat 3: Villain3 ($2 in chips)
+Seat 4: Villain4 ($2 in chips)
+Seat 5: Hero ($2 in chips)
+Seat 6: Villain5 ($2 in chips)
+Villain2: posts small blind $0.01
+Villain3: posts big blind $0.02
+*** HOLE CARDS ***
+Dealt to Hero [As Ac]
+Villain4: raises $0.04 to $0.06
+Hero: raises $0.18 to $0.24
+Villain5: folds
+Villain1: folds
+Villain2: folds
+Villain3: folds
+Villain4: folds
+Uncalled bet ($0.18) returned to Hero
+*** SHOWDOWN ***
+Hero collected $0.13 from pot
+*** SUMMARY ***
+Total pot $0.15 | Rake $0.02 | Jackpot $0 | Bingo $0 | Fortune $0 | Tax $0
+Seat 1: Villain1 (button) folded before Flop (didn't bet)
+Seat 2: Villain2 (small blind) folded before Flop
+Seat 3: Villain3 (big blind) folded before Flop
+Seat 4: Villain4 folded before Flop
+Seat 5: Hero collected ($0.13)
+Seat 6: Villain5 folded before Flop (didn't bet)
+
+
