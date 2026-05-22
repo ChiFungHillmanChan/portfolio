@@ -2,6 +2,7 @@
 // Fetches paginated sessions via /poker/list-sessions and renders a table.
 
 import { apiCall } from "../auth/api-client.js";
+import { COMPUTE_FINGERPRINT } from "../stats/compute.mjs";
 
 function fmtBytes(n) {
   if (n < 1024) return `${n} B`;
@@ -43,6 +44,18 @@ export async function renderSessions(container) {
   }
 
   container.replaceChildren();
+
+  // Stale-cache banner: count sessions whose cached chart was computed with
+  // an older COMPUTE_FINGERPRINT. The next open of each would otherwise
+  // re-trigger the recompute path. The banner lets the user batch-refresh
+  // them all up-front so subsequent opens are sub-second.
+  const staleSessions = (listResp.sessions || []).filter(
+    (s) => s.hasSeries && s.computeFingerprint && s.computeFingerprint !== COMPUTE_FINGERPRINT
+  );
+  if (staleSessions.length > 0) {
+    container.appendChild(buildStaleBanner(staleSessions, container));
+  }
+
   const list = document.createElement("ul");
   list.className = "sessions-list";
 
@@ -124,4 +137,105 @@ async function onDelete(sessionId, itemEl) {
   } catch (err) {
     alert("Delete failed: " + err.message);
   }
+}
+
+// ─── Stale-cache batch refresh banner ─────────────────────────────────────
+// One banner that owns its own progress state. Clicking "Refresh now" walks
+// each stale session through download → parse → compute → upload via the
+// migrate-stale-cache module. We don't touch the chart UI during migration —
+// just update the banner text and progress bar.
+
+function buildStaleBanner(staleSessions, sessionsContainer) {
+  const wrap = document.createElement("div");
+  wrap.className = "sessions-stale-banner";
+  // innerHTML is built from trusted literals + numeric counts only.
+  wrap.innerHTML = `
+    <div class="sessions-stale-banner__icon" aria-hidden="true">
+      <svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+    </div>
+    <div class="sessions-stale-banner__body">
+      <div class="sessions-stale-banner__title">${staleSessions.length} session${staleSessions.length === 1 ? "" : "s"} have an outdated chart cache</div>
+      <div class="sessions-stale-banner__sub">Refresh now and future opens become sub-second. Otherwise each session recomputes once on its next open.</div>
+      <div class="sessions-stale-banner__progress" hidden>
+        <div class="sessions-stale-banner__bar"><div class="sessions-stale-banner__fill"></div></div>
+        <div class="sessions-stale-banner__status">Preparing…</div>
+      </div>
+    </div>
+    <div class="sessions-stale-banner__actions">
+      <button type="button" class="btn-primary" data-stale-action="run">Refresh ${staleSessions.length}</button>
+      <button type="button" class="btn-secondary" data-stale-action="stop" hidden>Stop</button>
+    </div>
+  `;
+
+  const runBtn = wrap.querySelector('[data-stale-action="run"]');
+  const stopBtn = wrap.querySelector('[data-stale-action="stop"]');
+  const progressWrap = wrap.querySelector(".sessions-stale-banner__progress");
+  const fill = wrap.querySelector(".sessions-stale-banner__fill");
+  const status = wrap.querySelector(".sessions-stale-banner__status");
+  const sub = wrap.querySelector(".sessions-stale-banner__sub");
+
+  const abortFlag = { aborted: false };
+
+  runBtn.addEventListener("click", async () => {
+    runBtn.disabled = true;
+    runBtn.hidden = true;
+    stopBtn.hidden = false;
+    progressWrap.hidden = false;
+
+    const { migrateAllStaleSessions } = await import("./migrate-stale-cache.js");
+    let result;
+    try {
+      result = await migrateAllStaleSessions({
+        abortFlag,
+        onProgress: (evt) => {
+          const total = evt.total || staleSessions.length;
+          const current = evt.current || 0;
+          const pct = total > 0 ? Math.round((current / total) * 100) : 0;
+          fill.style.width = `${pct}%`;
+          const last8 = evt.session ? evt.session.sessionId.slice(-8) : "";
+          if (evt.phase === "downloading") {
+            status.textContent = `(${current}/${total}) Downloading hands for ${last8}…`;
+          } else if (evt.phase === "parsing") {
+            status.textContent = `(${current}/${total}) Parsing ${last8}…`;
+          } else if (evt.phase === "computing") {
+            const handCount = evt.handCount ? ` (${evt.handCount.toLocaleString()} hands)` : "";
+            const inner = typeof evt.progress === "number" ? ` ${Math.round(evt.progress * 100)}%` : "";
+            status.textContent = `(${current}/${total}) Computing ${last8}${handCount}${inner}…`;
+          } else if (evt.phase === "uploading") {
+            status.textContent = `(${current}/${total}) Saving fresh cache for ${last8}…`;
+          } else if (evt.phase === "session-error") {
+            status.textContent = `(${current}/${total}) ${last8}: ${evt.error}`;
+          }
+        },
+      });
+    } catch (err) {
+      status.textContent = `Migration failed: ${err.message}`;
+      console.error("[poker cloud migrate] aborted with error:", err);
+      stopBtn.hidden = true;
+      return;
+    }
+
+    stopBtn.hidden = true;
+    if (result.failed === 0 && !abortFlag.aborted) {
+      sub.textContent = `All ${result.migrated} session${result.migrated === 1 ? "" : "s"} refreshed. Future opens are now fast.`;
+      status.textContent = "Done.";
+    } else if (abortFlag.aborted) {
+      sub.textContent = `Stopped after ${result.migrated}/${result.total}. Remaining sessions still recompute on first open.`;
+      status.textContent = "Stopped.";
+    } else {
+      sub.textContent = `Refreshed ${result.migrated}/${result.total}. ${result.failed} failed — check console for details.`;
+      status.textContent = "Done with errors.";
+    }
+
+    // Re-render the list so the banner disappears for newly-fresh sessions.
+    setTimeout(() => renderSessions(sessionsContainer), 2500);
+  });
+
+  stopBtn.addEventListener("click", () => {
+    abortFlag.aborted = true;
+    stopBtn.disabled = true;
+    status.textContent = "Stopping after current session…";
+  });
+
+  return wrap;
 }
