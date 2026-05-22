@@ -15,7 +15,7 @@ const TIERS = [
   { key: "ultra",    label: "Ultra",    hands: 5000000, monthly: 80, yearly: 800 },
 ];
 
-const TIER_ORDER = ["free", "standard", "pro", "ultra"];
+const TIER_ORDER = ["free", "standard", "pro", "ultra", "superadmin"];
 
 function tierIndex(tier) {
   const i = TIER_ORDER.indexOf(tier || "free");
@@ -137,7 +137,9 @@ export function renderTierBanner(container, quota) {
   const header = el("div", { class: "tier-banner-header" });
   const lead = tier === "free"
     ? "Need more storage? Pick a plan:"
-    : `You're on the ${tier[0].toUpperCase() + tier.slice(1)} plan.`;
+    : tier === "superadmin"
+      ? "You're on the Superadmin plan — all limits unlocked."
+      : `You're on the ${tier[0].toUpperCase() + tier.slice(1)} plan.`;
   header.appendChild(el("div", { class: "tier-banner-lead" }, [lead]));
   if (hasSub) {
     const right = el("div", { class: "tier-banner-actions" });
@@ -156,10 +158,12 @@ export function renderTierBanner(container, quota) {
   }
   wrap.appendChild(header);
 
-  // Tier cards row
-  const cards = el("div", { class: "tier-card-row" });
-  for (const t of TIERS) cards.appendChild(tierCard(t, tier));
-  wrap.appendChild(cards);
+  // Tier cards row — skip for superadmin (everything is already unlocked).
+  if (tier !== "superadmin") {
+    const cards = el("div", { class: "tier-card-row" });
+    for (const t of TIERS) cards.appendChild(tierCard(t, tier));
+    wrap.appendChild(cards);
+  }
 
   container.appendChild(wrap);
 }
