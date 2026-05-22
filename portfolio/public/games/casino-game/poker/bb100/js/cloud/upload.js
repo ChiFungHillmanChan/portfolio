@@ -39,12 +39,27 @@ function buildHandsBlob(originalFiles) {
     .join("");
 }
 
+// Recursively convert BigInt values to strings so the result is JSON-safe.
+// Summary objects contain BigInts everywhere (totalUC, rakePaidUC, byPosition
+// totals, the new totalBefore/AfterUC and evTotal*UC fields), and JSON.stringify
+// throws "Do not know how to serialize a BigInt" on the first one it hits.
+function sanitizeForJson(v) {
+  if (typeof v === "bigint") return v.toString();
+  if (Array.isArray(v)) return v.map(sanitizeForJson);
+  if (v && typeof v === "object") {
+    const out = {};
+    for (const [k, val] of Object.entries(v)) out[k] = sanitizeForJson(val);
+    return out;
+  }
+  return v;
+}
+
 function buildIndexBlob(hands, summary) {
   // Per-hand lightweight metadata. We DO NOT store full action lines here; that
   // stays in hands.txt.gz. This index is the fast-listing payload.
   return JSON.stringify({
     version: 1,
-    summary,
+    summary: sanitizeForJson(summary),
     hands: hands.map((h) => ({
       id: h.id,
       date: h.date,
@@ -114,7 +129,9 @@ export async function saveSessionToCloud({ hands, originalFiles, summary, onProg
     handCount,
     bytesUncompressed,
     bytesCompressed,
-    summary,
+    // summary contains BigInts (rakePaidUC, totalBefore/AfterUC, byPosition…).
+    // apiCall serializes its body as JSON, so we must sanitize first.
+    summary: sanitizeForJson(summary),
     fileNames: fileTexts.map((f) => f.name),
   });
   if (!commit.ok) {
