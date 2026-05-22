@@ -463,27 +463,59 @@ async function renderAll() {
     els.chartFooter.textContent = parsedHands.length > 0 ? 'No hands match the current filter.' : '';
     return;
   }
-  // Yield-aware compute: every 50 hands the loop releases the event loop so
-  // the browser stays responsive on 20K+ datasets. The first-time equity
-  // computation is the slow part (~1.1s per uncached preflop all-in matchup).
+  // Yield-aware compute: every 10 hands the loop releases the event loop so
+  // the browser stays responsive even when several preflop all-in matchups
+  // (each ~1.1s of uncached equity work) cluster together.
+  const tStart = performance.now();
+  let maxGapMs = 0;
+  let lastTick = tStart;
+  let slowHandCount = 0;  // hands with anyAllIn (likely equity work)
+  for (const h of filtered) { if (h.anyAllIn) slowHandCount++; }
+  console.log(`[poker] renderAll start: ${filtered.length.toLocaleString()} hands, ${slowHandCount} potential all-in equity calcs`);
+
   showProgress({ stage: `Computing chart for ${filtered.length.toLocaleString()} hands`, current: 0, total: filtered.length });
   await nextFrame();
+
   const { series, summary } = await computeSeries(filtered, opts, {
-    yieldEvery: 50,
+    yieldEvery: 10,
     onProgress: (i, n) => {
+      const now = performance.now();
+      const gap = now - lastTick;
+      if (gap > maxGapMs) maxGapMs = gap;
+      lastTick = now;
       showProgress({ stage: `Computing chart — hand ${i.toLocaleString()} / ${n.toLocaleString()}`, current: i, total: n });
     },
   });
+  const computeMs = performance.now() - tStart;
+  console.log(`[poker] compute done: ${computeMs.toFixed(0)}ms total, max gap ${maxGapMs.toFixed(0)}ms between yields`);
+  if (maxGapMs > 4000) {
+    console.warn(`[poker] long single-block detected (${maxGapMs.toFixed(0)}ms). One hand had heavy uncached equity work — investigate hand range near hand ${Math.floor((maxGapMs / computeMs) * filtered.length)} / ${filtered.length}`);
+  }
+
   hideProgress();
-  lastSummary = summary;
+  // Yield once more so the browser paints "compute done" before we start the
+  // (synchronous) chart construction — Chart.js initializing 5000 stepped
+  // points × 4 series can take 0.5–1.5s on its own.
+  await nextFrame();
+
+  const tChart = performance.now();
   renderChart(series);
+  console.log(`[poker] renderChart: ${(performance.now() - tChart).toFixed(0)}ms`);
+
+  // Spread the remaining renders across animation frames so none of them
+  // compound onto the chart's heavy first paint.
+  await nextFrame();
   renderControls();
   renderSummary(summary);
+  await nextFrame();
   renderPosition(summary);
   renderFilterBar();
+  await nextFrame();
   renderHandBrowserFiltered(filtered);
   saveSession(series, summary);
   notifyCloudSessionLoaded();
+  lastSummary = summary;
+  console.log(`[poker] renderAll total: ${(performance.now() - tStart).toFixed(0)}ms`);
 }
 
 // === Hand browser (Phase 5a — click any hand to replay) ===

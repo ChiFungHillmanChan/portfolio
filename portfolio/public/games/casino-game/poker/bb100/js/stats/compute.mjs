@@ -273,7 +273,20 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     // Yield to event loop periodically so the browser stays responsive on
     // large datasets. The slow part is evResult()'s exhaustive equity enum
     // (~1.1s/hand for preflop all-ins, hits cache after first occurrence).
-    if (yieldEvery > 0 && (i + 1) % yieldEvery === 0 && i + 1 < total) {
+    //
+    // Two triggers:
+    //   1. every `yieldEvery` hands (covers steady-state)
+    //   2. immediately after any hand that hit the equity path (anyAllIn +
+    //      showdown). One uncached preflop matchup can be 1.1s on its own;
+    //      if several cluster in one yieldEvery window, the gap exceeds
+    //      Chrome's 5s "page unresponsive" threshold. Yielding right after
+    //      each suspected-heavy hand bounds the gap to ~one hand's work.
+    const didEquityWork = hand.anyAllIn && hand.reachedShowdown && hand.showdown;
+    const shouldYield =
+      yieldEvery > 0 &&
+      i + 1 < total &&
+      ((i + 1) % yieldEvery === 0 || didEquityWork);
+    if (shouldYield) {
       if (onProgress) onProgress(i + 1, total);
       await new Promise((r) => setTimeout(r, 0));
     }
