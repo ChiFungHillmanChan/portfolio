@@ -221,11 +221,21 @@
 /* CSS transitions on snapshot diffs */
 .poker-table .seat,
 .poker-table .bet-chip,
-.poker-table .hole-cards,
 .poker-table .board-slot,
 .poker-table .dealer-btn,
 .poker-table .event-ribbon {
   transition: opacity 250ms ease, transform 450ms cubic-bezier(0.34, 1.2, 0.4, 1);
+}
+
+/* Hole cards: own transition so we can compose translate-to-muck on fold.
+   Each seat sets --card-base-y (resting offset), --fold-dx / --fold-dy
+   (vector toward the table center) on the .hole-cards element via inline
+   style at buildTable time. JS sets the resting transform via `style.transform`
+   (CSS), and the .folded rule below overrides it to fly cards to the muck. */
+.poker-table .hole-cards {
+  transition: opacity 500ms ease, transform 700ms cubic-bezier(0.4, 0.1, 0.6, 1);
+  transform-box: fill-box;
+  transform-origin: center;
 }
 
 .poker-table .seat-stack,
@@ -238,6 +248,18 @@
 .poker-table.instant *, .poker-table.instant {
   transition: none !important;
   animation: none !important;
+}
+
+/* Fold animation: cards slide toward the table middle and fade out as the
+   seat dims. The translate composes the resting base offset (--card-base-y)
+   with the per-seat muck vector (--fold-dx, --fold-dy) so the cards visually
+   "go into the muck" no matter which seat folded. */
+.poker-table .seat.folded .hole-cards {
+  transform:
+    translate(var(--fold-dx, 0px),
+              calc(var(--card-base-y, 0px) + var(--fold-dy, 0px)))
+    scale(0.55) !important;
+  opacity: 0 !important;
 }
 
 /* Felt */
@@ -341,6 +363,23 @@
   font-family: 'Rajdhani', sans-serif;
   font-weight: 700;
   font-size: 14px;
+}
+
+/* Position label (BTN, SB, BB, UTG, HJ, CO, …) shown inside the avatar.
+   Slightly smaller to fit "UTG+1" comfortably; the dealer "D" badge stays
+   as a separate marker so BTN remains visually unmistakable. */
+.poker-table .seat-position {
+  fill: #ffd34d;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.poker-table .seat.folded .seat-position {
+  fill: #6f7080;
+}
+.poker-table .seat.is-hero .seat-position {
+  fill: #d8ffe8;
 }
 
 /* Seat label (name + stack) */

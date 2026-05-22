@@ -8,74 +8,83 @@
 const VIEW_W = 720;
 const VIEW_H = 460;
 
-// Seat positions around an ellipse-ish table. Indexed by seats.length.
-// Each entry is { x, y, betX, betY } where (x,y) is seat center, (betX,betY)
-// is the chip-stack target between the seat and the pot.
-// Hero is always anchored at the bottom-center (x=360); layouts are
-// mirror-symmetric around x=360 so the table feels like a clock face with
-// hero ↔ opposite seat aligned vertically.
+// Build seat positions clockwise from Hero. ordered[i] is i+1 clockwise
+// steps away from Hero (who sits at the bottom). With this convention the
+// action sequence on screen — BTN → SB → BB → UTG → ... → BTN — also
+// follows a literal clockwise rotation around the table.
+//
+// Hero index is N-1 and lands at clock-angle 180° (bottom). ordered[i]
+// lands at 180° + (i+1)*(360°/N), which puts ordered[0] one step
+// clockwise from Hero (lower-LEFT for N>=4), and ordered[N-2] one step
+// counter-clockwise from Hero (lower-RIGHT — the SB seat when Hero is BB).
+//
+// Chip position is 30% of the way from the seat toward table center,
+// keeping bet displays close to (and clearly "in front of") their owner.
+function computeSeatLayout(n) {
+  const cx = VIEW_W / 2;
+  const cy = VIEW_H / 2;
+  // Radii: shrink the ellipse a bit for smaller player counts so seats
+  // don't look stranded at the edges of a too-wide table.
+  const rx = n <= 3 ? VIEW_W * 0.30 : VIEW_W * 0.40;
+  const ry = n <= 3 ? VIEW_H * 0.34 : VIEW_H * 0.40;
+  const chipFrac = 0.30;
+  const layout = [];
+  for (let i = 0; i < n; i++) {
+    const angleDeg = 180 + ((i + 1) * 360 / n);
+    const angleRad = angleDeg * Math.PI / 180;
+    const x = cx + rx * Math.sin(angleRad);
+    const y = cy - ry * Math.cos(angleRad);
+    layout.push({
+      x,
+      y,
+      betX: x + (cx - x) * chipFrac,
+      betY: y + (cy - y) * chipFrac,
+    });
+  }
+  return layout;
+}
+
 const SEAT_LAYOUT = {
-  2: [
-    { x: 360, y: 90,  betX: 360, betY: 180 },
-    { x: 360, y: 370, betX: 360, betY: 280 }, // hero
-  ],
-  3: [
-    { x: 140, y: 200, betX: 240, betY: 230 },
-    { x: 580, y: 200, betX: 480, betY: 230 },
-    { x: 360, y: 380, betX: 360, betY: 280 }, // hero
-  ],
-  4: [
-    { x: 360, y: 80,  betX: 360, betY: 170 },
-    { x: 120, y: 230, betX: 230, betY: 240 },
-    { x: 600, y: 230, betX: 490, betY: 240 },
-    { x: 360, y: 380, betX: 360, betY: 280 }, // hero
-  ],
-  5: [
-    { x: 200, y: 90,  betX: 270, betY: 180 },
-    { x: 520, y: 90,  betX: 450, betY: 180 },
-    { x: 100, y: 260, betX: 210, betY: 260 },
-    { x: 620, y: 260, betX: 510, betY: 260 },
-    { x: 360, y: 380, betX: 360, betY: 280 }, // hero
-  ],
-  6: [
-    { x: 360, y: 75,  betX: 360, betY: 175 },          // top-center (opposite hero)
-    { x: 130, y: 200, betX: 240, betY: 230 },          // mid-left
-    { x: 590, y: 200, betX: 480, betY: 230 },          // mid-right
-    { x: 220, y: 380, betX: 290, betY: 305 },          // lower-left
-    { x: 500, y: 380, betX: 430, betY: 305 },          // lower-right
-    { x: 360, y: 410, betX: 360, betY: 320 },          // hero
-  ],
-  7: [
-    { x: 180, y: 70,  betX: 250, betY: 160 },
-    { x: 540, y: 70,  betX: 470, betY: 160 },
-    { x: 70,  y: 200, betX: 190, betY: 220 },
-    { x: 650, y: 200, betX: 530, betY: 220 },
-    { x: 130, y: 350, betX: 240, betY: 280 },
-    { x: 590, y: 350, betX: 480, betY: 280 },
-    { x: 360, y: 400, betX: 360, betY: 290 }, // hero
-  ],
-  8: [
-    { x: 360, y: 60,  betX: 360, betY: 160 },          // top-center (opposite hero)
-    { x: 130, y: 140, betX: 240, betY: 200 },          // upper-left
-    { x: 590, y: 140, betX: 480, betY: 200 },          // upper-right
-    { x: 65,  y: 250, betX: 195, betY: 260 },          // mid-left
-    { x: 655, y: 250, betX: 525, betY: 260 },          // mid-right
-    { x: 210, y: 385, betX: 285, betY: 315 },          // lower-left
-    { x: 510, y: 385, betX: 435, betY: 315 },          // lower-right
-    { x: 360, y: 415, betX: 360, betY: 325 },          // hero
-  ],
-  9: [
-    { x: 235, y: 55,  betX: 295, betY: 165 },          // upper-left
-    { x: 485, y: 55,  betX: 425, betY: 165 },          // upper-right
-    { x: 90,  y: 150, betX: 215, betY: 220 },          // upper-mid-left
-    { x: 630, y: 150, betX: 505, betY: 220 },          // upper-mid-right
-    { x: 55,  y: 285, betX: 190, betY: 280 },          // mid-left
-    { x: 665, y: 285, betX: 530, betY: 280 },          // mid-right
-    { x: 200, y: 395, betX: 280, betY: 320 },          // lower-left
-    { x: 520, y: 395, betX: 440, betY: 320 },          // lower-right
-    { x: 360, y: 420, betX: 360, betY: 325 },          // hero
-  ],
+  2: computeSeatLayout(2),
+  3: computeSeatLayout(3),
+  4: computeSeatLayout(4),
+  5: computeSeatLayout(5),
+  6: computeSeatLayout(6),
+  7: computeSeatLayout(7),
+  8: computeSeatLayout(8),
+  9: computeSeatLayout(9),
 };
+
+// Clockwise position names indexed off the button, matching standard
+// 6-max / full-ring nomenclature. positionLabels(N)[k] is the position
+// k clockwise steps from BTN (so [0]=BTN, [1]=SB, [2]=BB, ...).
+const POSITION_NAMES_BY_COUNT = {
+  2: ['BTN', 'BB'],                                              // heads-up: BTN is SB
+  3: ['BTN', 'SB', 'BB'],
+  4: ['BTN', 'SB', 'BB', 'UTG'],
+  5: ['BTN', 'SB', 'BB', 'UTG', 'CO'],
+  6: ['BTN', 'SB', 'BB', 'UTG', 'HJ', 'CO'],
+  7: ['BTN', 'SB', 'BB', 'UTG', 'LJ', 'HJ', 'CO'],
+  8: ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'LJ', 'HJ', 'CO'],
+  9: ['BTN', 'SB', 'BB', 'UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO'],
+};
+
+// Walk the (already clockwise-sorted) ordered list starting from the BTN
+// and tag each player with their position label. Returns
+// { [playerName]: positionString }.
+function computePositionLabels(ordered) {
+  const n = ordered.length;
+  const names = POSITION_NAMES_BY_COUNT[n];
+  if (!names) return {};
+  const btnIdx = ordered.findIndex((p) => p.isButton);
+  if (btnIdx === -1) return {};
+  const result = {};
+  for (let i = 0; i < n; i++) {
+    const player = ordered[(btnIdx + i) % n];
+    result[player.name] = names[i];
+  }
+  return result;
+}
 
 // Order players so Hero ends up at the bottom seat. Returns a NEW ordered
 // array where the last element is Hero (if Hero is among the players).
@@ -90,20 +99,8 @@ function orderPlayersHeroLast(players) {
 
 function layoutForSeats(n) {
   if (SEAT_LAYOUT[n]) return SEAT_LAYOUT[n];
-  // Fallback: spread evenly around an ellipse
-  const layout = [];
-  const cx = VIEW_W / 2, cy = VIEW_H / 2;
-  const rx = VIEW_W * 0.42, ry = VIEW_H * 0.38;
-  for (let i = 0; i < n; i++) {
-    const t = (i / n) * Math.PI * 2 - Math.PI / 2;
-    layout.push({
-      x: cx + Math.cos(t) * rx,
-      y: cy + Math.sin(t) * ry,
-      betX: cx + Math.cos(t) * rx * 0.55,
-      betY: cy + Math.sin(t) * ry * 0.55,
-    });
-  }
-  return layout;
+  // Fallback for unusual seat counts (>9 or <2)
+  return computeSeatLayout(n);
 }
 
 function svgEl(tag, attrs = {}) {
@@ -142,6 +139,7 @@ function cardSuitGlyph(card) {
 export function buildTable(mountEl, snap0) {
   const ordered = orderPlayersHeroLast(snap0.players);
   const layout = layoutForSeats(ordered.length);
+  const positionLabels = computePositionLabels(ordered);
 
   const svg = svgEl("svg", {
     viewBox: `0 0 ${VIEW_W} ${VIEW_H}`,
@@ -198,13 +196,18 @@ export function buildTable(mountEl, snap0) {
   const seatRefs = {};
   ordered.forEach((p, i) => {
     const pos = layout[i];
-    const group = svgEl("g", { class: "seat", "data-name": p.name, transform: `translate(${pos.x}, ${pos.y})` });
+    const group = svgEl("g", { class: "seat" + (p.isHero ? " is-hero" : ""), "data-name": p.name, transform: `translate(${pos.x}, ${pos.y})` });
 
     // Avatar bg + ring
     const ring = svgEl("circle", { r: 28, class: "seat-ring" });
     const avatar = svgEl("circle", { r: 22, class: "seat-avatar" + (p.isHero ? " seat-hero" : "") });
-    const initial = svgEl("text", { x: 0, y: 5, "text-anchor": "middle", class: "seat-initial" });
-    initial.textContent = p.name === "Hero" ? "H" : (p.name.length > 8 ? p.name.slice(0, 1).toUpperCase() : p.name.slice(0, 2).toUpperCase());
+    // Show position (BTN, SB, BB, UTG, HJ, CO, …) inside the avatar — it's
+    // the single most useful identifier in a hand replay. The player's
+    // hash/name still appears in the label below; Hero is identified by
+    // the green ring on the avatar.
+    const positionLabel = positionLabels[p.name] || (p.name === "Hero" ? "H" : "?");
+    const initial = svgEl("text", { x: 0, y: 5, "text-anchor": "middle", class: "seat-initial seat-position" });
+    initial.textContent = positionLabel;
 
     // Name + stack
     const labelY = pos.y > VIEW_H / 2 ? 50 : 50; // always below avatar for simplicity
@@ -220,9 +223,20 @@ export function buildTable(mountEl, snap0) {
     // Action text (above avatar)
     const actionText = svgEl("text", { x: 0, y: -36, "text-anchor": "middle", class: "seat-action" });
 
-    // Hole cards (two slots, slightly fanned)
+    // Hole cards (two slots, slightly fanned). Cards sit above the avatar
+    // for lower-half seats and below the avatar for upper-half seats.
+    // We control the base position via CSS custom properties so the .folded
+    // CSS rule can compose its own translate-to-table-center on top.
     const cardOffsetY = pos.y > VIEW_H / 2 ? -56 : 32;
-    const cardsGroup = svgEl("g", { class: "hole-cards", transform: `translate(0, ${cardOffsetY})`, opacity: 0 });
+    const cardsGroup = svgEl("g", { class: "hole-cards", opacity: 0 });
+    // Fold animation target: translate the cards from their resting place
+    // toward the table center so a fold visually flows into the muck.
+    const foldDx = (VIEW_W / 2 - pos.x) * 0.65;
+    const foldDy = (VIEW_H / 2 - (pos.y + cardOffsetY)) * 0.65;
+    cardsGroup.style.setProperty("--card-base-y", `${cardOffsetY}px`);
+    cardsGroup.style.setProperty("--fold-dx", `${foldDx}px`);
+    cardsGroup.style.setProperty("--fold-dy", `${foldDy}px`);
+    cardsGroup.style.transform = `translate(0, ${cardOffsetY}px)`;
     const cardSlots = [];
     for (let c = 0; c < 2; c++) {
       const card = svgEl("g", { class: "hole-card", transform: `translate(${c === 0 ? -16 : 16}, 0) rotate(${c === 0 ? -8 : 8})` });
@@ -236,8 +250,11 @@ export function buildTable(mountEl, snap0) {
       cardSlots.push({ card, rect, rank, suit });
     }
 
-    // Dealer button marker (only for the player on the button)
-    const dealerBtn = svgEl("g", { class: "dealer-btn", transform: `translate(${pos.x > VIEW_W / 2 ? -32 : 32}, 26)`, opacity: p.isButton ? 1 : 0 });
+    // Dealer button marker (only for the player on the button). Choose
+    // a side that doesn't crash into the seat label below the avatar.
+    let dealerOffsetX = pos.x > VIEW_W / 2 + 10 ? -32 : (pos.x < VIEW_W / 2 - 10 ? 32 : -36);
+    const dealerOffsetY = pos.y > VIEW_H / 2 ? -28 : 26;
+    const dealerBtn = svgEl("g", { class: "dealer-btn", transform: `translate(${dealerOffsetX}, ${dealerOffsetY})`, opacity: p.isButton ? 1 : 0 });
     const dealerCircle = svgEl("circle", { r: 9, class: "dealer-btn-bg" });
     const dealerText = svgEl("text", { y: 4, "text-anchor": "middle", class: "dealer-btn-text" });
     dealerText.textContent = "D";
@@ -368,14 +385,19 @@ export function renderSnapshot(refs, snap, opts = {}) {
     // Action text — last action of this street
     ref.actionText.textContent = p.lastAction || "";
 
-    // Hole cards visibility + content
-    if (p.cards && p.cards.length > 0) {
+    // Hole cards: visible (face-down) for any dealt player. Hero always
+    // shows face; villains show face only after their `shows` event.
+    // Folded players keep the cards mounted so the CSS fold animation
+    // (.folded .hole-cards) can play; opacity 0 is reached via the rule.
+    if (p.dealt || (p.cards && p.cards.length > 0)) {
       ref.cardsGroup.setAttribute("opacity", "1");
-      const showFace = p.isHero || p.revealed;
-      p.cards.forEach((card, ci) => {
+      const realCards = (p.cards && p.cards.length > 0) ? p.cards : null;
+      const showFace = realCards && (p.isHero || p.revealed);
+      for (let ci = 0; ci < 2; ci++) {
         const slot = ref.cardSlots[ci];
-        if (!slot) return;
-        if (showFace) {
+        if (!slot) continue;
+        const card = realCards ? realCards[ci] : null;
+        if (showFace && card) {
           slot.rect.setAttribute("class", "card-bg card-face " + suitClass(card));
           slot.rank.textContent = cardRankText(card);
           slot.suit.textContent = cardSuitGlyph(card);
@@ -386,7 +408,7 @@ export function renderSnapshot(refs, snap, opts = {}) {
           slot.rank.textContent = "";
           slot.suit.textContent = "";
         }
-      });
+      }
     } else {
       ref.cardsGroup.setAttribute("opacity", "0");
     }
