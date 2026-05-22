@@ -12,6 +12,7 @@
 import { apiCall } from "../auth/api-client.js";
 import { COMPUTE_FINGERPRINT } from "../stats/compute.mjs";
 import { showProgress, hideProgress } from "../progress-bar.js";
+import { getCurrentSession } from "./session-state.js";
 
 // Per-key signal that this string value should be rehydrated to BigInt. The
 // JSON shape mirrors stats/compute.mjs's summary + the gzipped series — both
@@ -122,6 +123,40 @@ async function recomputeFromHands(sessionMeta, onStatus) {
   const { handleFiles } = await import("../upload.js");
   onStatus?.(`Recomputing chart from ${splits.length} file${splits.length === 1 ? "" : "s"}…`);
   await handleFiles(files);
+
+  // Auto-refresh the cloud cache: silently write the freshly-computed
+  // series.json.gz back to this same session so the next open takes the
+  // fast path. Fire-and-forget — if the refresh fails (network, auth
+  // expired, backend hasn't shipped the action yet) the chart already
+  // rendered correctly and the user sees a recompute again next time,
+  // exactly as today. We don't surface errors to the user.
+  //
+  // upload.js's notifyCloudSessionLoaded() lazily dynamic-imports
+  // session-state.js, so `setCurrentSession` may not have run yet by
+  // the time handleFiles resolves. Poll briefly until the series data
+  // shows up (or bail after ~500ms).
+  let session = null;
+  for (let i = 0; i < 25; i++) {
+    session = getCurrentSession();
+    if (session?.seriesBefore && session?.seriesAfter) break;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  if (session?.seriesBefore && session?.seriesAfter) {
+    import("./upload.js")
+      .then(({ refreshSeriesForExistingSession }) => {
+        if (typeof refreshSeriesForExistingSession !== "function") return null;
+        return refreshSeriesForExistingSession({
+          sessionId: sessionMeta.sessionId,
+          seriesBefore: session.seriesBefore,
+          seriesAfter: session.seriesAfter,
+          summary: session.summary,
+        });
+      })
+      .then((r) => {
+        if (r) console.log(`[poker cloud] series cache refreshed for ${sessionMeta.sessionId.slice(-8)} (${(r.bytesCompressed / 1024).toFixed(1)} KB)`);
+      })
+      .catch((err) => console.warn("[poker cloud] series cache auto-refresh failed:", err.message));
+  }
 }
 
 /**

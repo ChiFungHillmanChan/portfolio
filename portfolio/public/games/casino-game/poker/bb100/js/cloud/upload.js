@@ -105,6 +105,50 @@ async function putToPresignedUrl(url, blob) {
   }
 }
 
+/**
+ * Refresh the cached series.json.gz for an EXISTING cloud session — used
+ * after a fingerprint-mismatch recompute to silently write the fresh chart
+ * cache back to S3 so the next open of this session takes the fast path.
+ *
+ * Failure here is non-fatal for the caller: the user already has the chart
+ * rendered correctly, they just don't benefit from the cache refresh.
+ * Callers should fire-and-forget.
+ *
+ * @param {{sessionId:string, seriesBefore:Object, seriesAfter:Object, summary:Object}} args
+ * @returns {Promise<{sessionId:string, bytesCompressed:number}>}
+ */
+export async function refreshSeriesForExistingSession({ sessionId, seriesBefore, seriesAfter, summary }) {
+  if (!sessionId) throw new Error("missing sessionId");
+  if (!seriesBefore || !seriesAfter) throw new Error("missing series data");
+
+  const seriesText = buildSeriesBlob({ seriesBefore, seriesAfter, summary });
+  const seriesGz = await gzipBlob(seriesText);
+
+  const sign = await apiCall("sign-update-series", {
+    sessionId,
+    bytesCompressed: seriesGz.size,
+  });
+  if (!sign.ok) {
+    throw new Error(`sign-update-series failed: ${sign.error || JSON.stringify(sign)}`);
+  }
+  if (!sign.uploadUrl) {
+    throw new Error("sign-update-series returned no uploadUrl");
+  }
+
+  await putToPresignedUrl(sign.uploadUrl, seriesGz);
+
+  const commit = await apiCall("commit-update-series", {
+    sessionId,
+    computeFingerprint: COMPUTE_FINGERPRINT,
+    bytesCompressed: seriesGz.size,
+  });
+  if (!commit.ok) {
+    throw new Error(`commit-update-series failed: ${commit.reason || commit.error || "unknown"}`);
+  }
+
+  return { sessionId, bytesCompressed: seriesGz.size };
+}
+
 export async function saveSessionToCloud({
   hands,
   originalFiles,
