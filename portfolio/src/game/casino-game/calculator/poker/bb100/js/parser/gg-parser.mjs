@@ -604,6 +604,10 @@ export function parseFile(fileName, content) {
   for (const chunk of chunks) {
     try {
       const hand = parseHand(chunk);
+      // Attach raw text so the replay viewer can re-extract action lines
+      // without re-parsing the whole file. Memory cost is small (~1.5KB/hand).
+      hand.text = chunk;
+      hand.fileName = fileName;
       hands.push(hand);
     } catch (e) {
       skipped++;

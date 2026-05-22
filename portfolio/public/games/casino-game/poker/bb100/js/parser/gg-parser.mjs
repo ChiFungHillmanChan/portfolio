@@ -178,10 +178,12 @@ function parseCards(cardStr) {
 const STREETS = ['preflop', 'flop', 'turn', 'river'];
 
 // Matches: *** FLOP *** [Kc 7d 2c]  or  *** TURN *** [Kc 7d 2c] [3h]  etc.
-const STREET_RE = /^\*\*\* (HOLE CARDS|FLOP|TURN|RIVER|SHOWDOWN|SUMMARY) \*\*\*/;
-const BOARD_FLOP_RE = /^\*\*\* FLOP \*\*\* \[([^\]]+)\]/;
-const BOARD_TURN_RE = /^\*\*\* TURN \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
-const BOARD_RIVER_RE = /^\*\*\* RIVER \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
+// Also matches Run-It-Twice markers: *** FIRST FLOP ***, *** SECOND TURN ***, *** FIRST SHOWDOWN ***, etc.
+// Capture group [1] = FIRST/SECOND/'' prefix, [2] = base marker (HOLE CARDS/FLOP/TURN/RIVER/SHOWDOWN/SUMMARY).
+const STREET_RE = /^\*\*\* (FIRST |SECOND )?(HOLE CARDS|FLOP|TURN|RIVER|SHOWDOWN|SUMMARY) \*\*\*/;
+const BOARD_FLOP_RE = /^\*\*\* (?:FIRST )?FLOP \*\*\* \[([^\]]+)\]/;
+const BOARD_TURN_RE = /^\*\*\* (?:FIRST )?TURN \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
+const BOARD_RIVER_RE = /^\*\*\* (?:FIRST )?RIVER \*\*\* \[[^\]]+\] \[([^\]]+)\]/;
 
 // Action regexes for Hero
 const HERO_POSTS_SB_RE = /^Hero: posts small blind \$([0-9.]+)/;
@@ -209,6 +211,10 @@ const UNCALLED_HERO_RE = /^Uncalled bet \(\$([0-9.]+)\) returned to Hero/;
 // Showdown action section: "Name: shows [cards]" (before *** SHOWDOWN ***)
 const PLAYER_SHOWS_RE = /^(.+?): shows \[([^\]]+)\]/;
 const HERO_SHOWS_INLINE_RE = /^Hero: shows \[([^\]]+)\]/;
+
+// GGPoker Rush&Cash "Cash Drop" — bonus money injected into the pot (no player contributes)
+// Example line: "Cash Drop to Pot : total $0.2 " (note trailing space in GG output)
+const CASH_DROP_RE = /^Cash Drop to Pot : total \$([0-9.]+)/;
 
 // Summary parsing
 // Handles: "Total pot $X | Rake $Y | Jackpot $Z | Bingo $A | Fortune $B | Tax $C"
@@ -266,6 +272,13 @@ export function parseHand(text) {
       hand.anyAllInStreet = (phase === 'preflop' || phase === 'preamble') ? 'preflop' : phase;
     }
 
+    // ── Cash Drop bonus money (Rush & Cash, appears before *** HOLE CARDS ***) ──
+    const cashDropM = CASH_DROP_RE.exec(line);
+    if (cashDropM) {
+      hand.cashDropUC += dollarsToUC(cashDropM[1]);
+      continue;
+    }
+
     // ── Seat table (preamble) ──
     if (phase === 'preamble') {
       const bm = BUTTON_RE.exec(line);
@@ -286,7 +299,12 @@ export function parseHand(text) {
     // ── Street transitions ──
     const streetM = STREET_RE.exec(line);
     if (streetM) {
-      const marker = streetM[1];
+      const prefix = (streetM[1] || '').trim(); // '', 'FIRST', or 'SECOND'
+      const marker = streetM[2];
+      // For Run-It-Twice hands, SECOND <STREET> repeats the same betting street with a
+      // different board. We only consume the FIRST board cards and ignore SECOND boards
+      // (and SECOND SHOWDOWN), so we don't double-count street commitments or duplicate cards.
+      const isSecondRun = prefix === 'SECOND';
       if (marker === 'HOLE CARDS') {
         phase = 'preflop';
         // Do NOT reset heroStreetCommitted here — blind posts are pre-flop commitments.
@@ -294,6 +312,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'FLOP') {
+        if (isSecondRun) continue; // ignore SECOND FLOP — same betting street, different board
         phase = 'flop';
         heroStreetCommitted = 0n;
         // Reset villain street tracking
@@ -303,6 +322,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'TURN') {
+        if (isSecondRun) continue;
         phase = 'turn';
         heroStreetCommitted = 0n;
         for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
@@ -311,6 +331,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'RIVER') {
+        if (isSecondRun) continue;
         phase = 'river';
         heroStreetCommitted = 0n;
         for (const k of Object.keys(villainStreetCommitted)) villainStreetCommitted[k] = 0n;
@@ -319,6 +340,7 @@ export function parseHand(text) {
         continue;
       }
       if (marker === 'SHOWDOWN') {
+        if (isSecondRun) continue; // ignore SECOND SHOWDOWN
         phase = 'showdown';
         continue;
       }
@@ -460,21 +482,12 @@ export function parseHand(text) {
     }
 
     // ── Villain actions (track per-player contributions for side-pot decomposition) ──
-    // Skip lines starting with Hero (already handled above), summary section, and preamble
+    // Skip lines starting with Hero (already handled above) and summary section.
+    // NOTE: Villain blind posts happen during 'preamble' phase (before *** HOLE CARDS ***),
+    // so blind handlers must run during preamble; other actions only run from preflop onwards.
 
-    if (phase !== 'summary' && phase !== 'preamble') {
-      // Uncalled return to villain (subtract from their contributions)
-      const ucVillainM = UNCALLED_VILLAIN_RE.exec(line);
-      if (ucVillainM) {
-        const name = ucVillainM[2].trim();
-        if (name !== 'Hero') {
-          const uc = dollarsToUC(ucVillainM[1]);
-          villainContributions[name] = (villainContributions[name] ?? 0n) - uc;
-        }
-        continue;
-      }
-
-      // Villain posts blind
+    if (phase !== 'summary') {
+      // Villain posts blind (may occur in preamble before *** HOLE CARDS ***)
       const vSbM = VILLAIN_POSTS_SB_RE.exec(line);
       if (vSbM && vSbM[1].trim() !== 'Hero') {
         const name = vSbM[1].trim();
@@ -489,6 +502,19 @@ export function parseHand(text) {
         const amt = dollarsToUC(vBbM[2]);
         villainContributions[name] = (villainContributions[name] ?? 0n) + amt;
         villainStreetCommitted[name] = (villainStreetCommitted[name] ?? 0n) + amt;
+        continue;
+      }
+    }
+
+    if (phase !== 'summary' && phase !== 'preamble') {
+      // Uncalled return to villain (subtract from their contributions)
+      const ucVillainM = UNCALLED_VILLAIN_RE.exec(line);
+      if (ucVillainM) {
+        const name = ucVillainM[2].trim();
+        if (name !== 'Hero') {
+          const uc = dollarsToUC(ucVillainM[1]);
+          villainContributions[name] = (villainContributions[name] ?? 0n) - uc;
+        }
         continue;
       }
 
@@ -578,6 +604,10 @@ export function parseFile(fileName, content) {
   for (const chunk of chunks) {
     try {
       const hand = parseHand(chunk);
+      // Attach raw text so the replay viewer can re-extract action lines
+      // without re-parsing the whole file. Memory cost is small (~1.5KB/hand).
+      hand.text = chunk;
+      hand.fileName = fileName;
       hands.push(hand);
     } catch (e) {
       skipped++;

@@ -1,0 +1,166 @@
+/* Static replay modal */
+.replay-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Rajdhani', sans-serif;
+}
+
+.replay-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.replay-modal-panel {
+  position: relative;
+  background: #0f0f17;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  max-width: 720px;
+  width: 92vw;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.replay-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.replay-modal-title {
+  margin: 0;
+  font-size: 16px;
+  color: #fff;
+  letter-spacing: 0.04em;
+}
+
+.replay-modal-close {
+  background: transparent;
+  border: 0;
+  color: #888;
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+}
+
+.replay-modal-close:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.replay-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  color: #c0c4cc;
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.replay-header {
+  font-size: 18px !important;
+  color: #4ade80 !important;
+}
+
+.replay-section {
+  margin: 14px 0 6px;
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #6f7080;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 2px;
+}
+
+.replay-line {
+  padding: 2px 0;
+}
+
+.replay-line.replay-hero {
+  color: #fff;
+  font-weight: 600;
+}
+
+.replay-line.replay-allin {
+  color: #fb923c;
+  font-weight: 700;
+}
+
+/* Card chips */
+.replay-cards {
+  display: inline-flex;
+  gap: 4px;
+  margin: 0 2px;
+}
+
+.replay-card {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #1f1f2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  font-weight: 600;
+}
+
+.replay-card.suit-h, .replay-card.suit-d { color: #ef4444; }
+.replay-card.suit-c, .replay-card.suit-s { color: #d0d0d8; }
+
+/* "Click to replay" hint on chart */
+.replay-hint {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  color: #888;
+  text-align: center;
+  margin-top: 6px;
+  font-style: italic;
+}
+
+/* Hand picker (Phase 5a — simple input) */
+.replay-picker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  color: #b0b0c0;
+  margin: 8px 0;
+}
+
+.replay-picker input[type="number"] {
+  width: 80px;
+  padding: 4px 8px;
+  background: #1f1f2a;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.replay-picker button {
+  padding: 5px 14px;
+  background: rgba(74, 222, 128, 0.15);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+}
+
+.replay-picker button:hover {
+  background: rgba(74, 222, 128, 0.25);
+}

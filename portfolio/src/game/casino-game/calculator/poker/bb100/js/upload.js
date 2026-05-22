@@ -15,6 +15,7 @@ const els = {
   chartControls: document.getElementById('chartControls'),
   summary: document.getElementById('uploadSummary'),
   position: document.getElementById('positionCard'),
+  handBrowser: document.getElementById('handBrowser'),
 };
 
 const COLORS = {
@@ -182,8 +183,129 @@ function renderAll() {
   renderControls();
   renderSummary(summary);
   renderPosition(summary);
+  renderHandBrowser();
   saveSession(series, summary);
   notifyCloudSessionLoaded();
+}
+
+// === Hand browser (Phase 5a — click any hand to replay) ===
+
+const HAND_PAGE_SIZE = 50;
+let handPage = 0;
+
+function handResultUC(h) {
+  return h.collectedUC - h.contributedUC;
+}
+
+function renderHandBrowser() {
+  const el = els.handBrowser;
+  if (!el) return;
+  el.replaceChildren();
+  if (parsedHands.length === 0) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  handPage = Math.min(handPage, Math.floor((parsedHands.length - 1) / HAND_PAGE_SIZE));
+
+  const title = document.createElement('h3');
+  title.textContent = `Hand browser — click any hand to replay`;
+  el.appendChild(title);
+
+  const pager = document.createElement('div');
+  pager.className = 'hand-pager';
+  el.appendChild(pager);
+
+  const list = document.createElement('div');
+  list.className = 'hand-list';
+  el.appendChild(list);
+
+  function renderPage() {
+    const totalPages = Math.max(1, Math.ceil(parsedHands.length / HAND_PAGE_SIZE));
+    const start = handPage * HAND_PAGE_SIZE;
+    const end = Math.min(start + HAND_PAGE_SIZE, parsedHands.length);
+
+    pager.replaceChildren();
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = 'hand-pager-btn';
+    prev.textContent = '‹ Prev';
+    prev.disabled = handPage === 0;
+    prev.addEventListener('click', () => { handPage = Math.max(0, handPage - 1); renderPage(); });
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'hand-pager-btn';
+    next.textContent = 'Next ›';
+    next.disabled = handPage >= totalPages - 1;
+    next.addEventListener('click', () => { handPage = Math.min(totalPages - 1, handPage + 1); renderPage(); });
+
+    const info = document.createElement('span');
+    info.className = 'hand-pager-info';
+    info.textContent = `Hands ${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${parsedHands.length.toLocaleString()} · Page ${handPage + 1} / ${totalPages}`;
+
+    pager.append(prev, info, next);
+
+    list.replaceChildren();
+    for (let i = start; i < end; i++) {
+      const h = parsedHands[i];
+      const row = document.createElement('div');
+      row.className = 'hand-row';
+      const resultUC = handResultUC(h);
+      const resultCls = resultUC > 0n ? 'win' : resultUC < 0n ? 'loss' : 'neutral';
+
+      const handNum = document.createElement('span');
+      handNum.className = 'hand-num';
+      handNum.textContent = `#${(i + 1).toLocaleString()}`;
+
+      const idCell = document.createElement('span');
+      idCell.className = 'hand-id';
+      idCell.textContent = h.id;
+
+      const dateCell = document.createElement('span');
+      dateCell.className = 'hand-date';
+      dateCell.textContent = formatDateShort(h.date);
+
+      const posCell = document.createElement('span');
+      posCell.className = 'hand-pos';
+      posCell.textContent = h.hero.position || '?';
+
+      const cardsCell = document.createElement('span');
+      cardsCell.className = 'hand-cards';
+      cardsCell.textContent = h.hero.cards ? h.hero.cards.join(' ') : '— —';
+
+      const resultCell = document.createElement('span');
+      resultCell.className = 'hand-result ' + resultCls;
+      resultCell.textContent = formatUSD(resultUC);
+
+      const replayBtn = document.createElement('button');
+      replayBtn.type = 'button';
+      replayBtn.className = 'hand-replay-btn';
+      replayBtn.textContent = '▶ Replay';
+      replayBtn.addEventListener('click', () => openReplay(h, i));
+
+      row.append(handNum, idCell, dateCell, posCell, cardsCell, resultCell, replayBtn);
+      list.appendChild(row);
+    }
+  }
+
+  renderPage();
+}
+
+function formatDateShort(iso) {
+  // "2026-05-21T03:18:50Z" → "05-21 03:18"
+  if (!iso) return '';
+  return iso.slice(5, 10) + ' ' + iso.slice(11, 16);
+}
+
+async function openReplay(hand, index) {
+  try {
+    const { showReplay } = await import('./replay/static-replay.js');
+    showReplay(hand.text, { title: `Hand #${(index + 1).toLocaleString()} — ${hand.id}` });
+  } catch (err) {
+    console.error('replay open failed', err);
+    alert('Could not open replay: ' + err.message);
+  }
 }
 
 // Custom plugin: draw a vertical crosshair line at the hovered hand position

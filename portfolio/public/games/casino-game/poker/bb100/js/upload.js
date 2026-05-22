@@ -2,6 +2,7 @@
 import { parseFile } from './parser/gg-parser.mjs';
 import { computeSeries } from './stats/compute.mjs';
 import { ucToDollars, formatUSD } from './stats/money.mjs';
+import { showProgress, hideProgress, nextFrame } from './progress-bar.js';
 
 const els = {
   zone: document.getElementById('uploadZone'),
@@ -14,6 +15,7 @@ const els = {
   chartControls: document.getElementById('chartControls'),
   summary: document.getElementById('uploadSummary'),
   position: document.getElementById('positionCard'),
+  handBrowser: document.getElementById('handBrowser'),
 };
 
 const COLORS = {
@@ -26,8 +28,21 @@ const POS_ORDER = ['BTN', 'SB', 'BB', 'UTG', 'LJ', 'HJ', 'CO'];
 const SESSION_KEY = 'poker-upload-session-v1';
 
 let parsedHands = [];
+let originalFiles = [];
+let lastSummary = null;
 let opts = { beforeRake: true, lines: { winnings: true, ev: true, red: true, blue: true } };
 let chartInstance = null;
+
+// Notify cloud bootstrap when a session is loaded (no hard dependency — cloud module is loaded as a sibling script)
+function notifyCloudSessionLoaded() {
+  if (parsedHands.length === 0) return;
+  // Dynamic import keeps cloud code out of the critical path for logged-out users.
+  import('./cloud/session-state.js')
+    .then(({ setCurrentSession }) => {
+      setCurrentSession({ hands: parsedHands, files: originalFiles, summary: lastSummary });
+    })
+    .catch(() => {}); // cloud module missing is fine — local-only mode still works
+}
 
 // === File intake ===
 
@@ -80,27 +95,56 @@ async function handleFiles(files) {
   if (files.length === 0) return;
   showStatus(`Reading ${files.length} files...`);
   parsedHands = [];
+  originalFiles = Array.from(files);
   const rejected = [];
   let skippedHands = 0;
-  for (const f of files) {
+
+  // Phase A: read all file texts (cheap, but yields per file so progress bar paints)
+  showProgress({ stage: 'Reading files', current: 0, total: files.length });
+  await nextFrame();
+  const fileTexts = [];
+  for (let i = 0; i < files.length; i++) {
     try {
-      const text = await f.text();
-      const r = parseFile(f.name, text);
+      fileTexts.push({ name: files[i].name, text: await files[i].text() });
+    } catch (e) {
+      rejected.push({ name: files[i].name, reason: `read error: ${e.message}` });
+      fileTexts.push(null);
+    }
+    showProgress({ stage: 'Reading files', current: i + 1, total: files.length });
+    await nextFrame();
+  }
+
+  // Phase B: parse each file, counting hands as we go
+  showProgress({ stage: 'Parsing hands', current: 0, total: 0, indeterminate: true });
+  await nextFrame();
+  for (let i = 0; i < fileTexts.length; i++) {
+    const ft = fileTexts[i];
+    if (!ft) continue;
+    try {
+      const r = parseFile(ft.name, ft.text);
       if (r.hands.length === 0 && r.errors && r.errors.length > 0) {
-        rejected.push({ name: f.name, reason: r.errors[0] });
+        rejected.push({ name: ft.name, reason: r.errors[0] });
         continue;
       }
       parsedHands.push(...r.hands);
       skippedHands += r.skipped;
+      showProgress({
+        stage: `Parsing hands — ${parsedHands.length.toLocaleString()} so far`,
+        indeterminate: true,
+      });
+      await nextFrame();
     } catch (e) {
-      rejected.push({ name: f.name, reason: `read error: ${e.message}` });
+      rejected.push({ name: ft.name, reason: `parse error: ${e.message}` });
     }
   }
+
   if (parsedHands.length === 0) {
+    hideProgress();
     const reasons = rejected.map(r => `• ${r.name}: ${r.reason}`).join('\n');
     showStatus(`No valid hands parsed.\n${reasons}`, 'error');
     return;
   }
+
   // Sort hands chronologically so the chart matches GGPoker's display
   // (overlapping time windows from multiple tables must be interleaved by timestamp).
   // Tiebreak by hand id when timestamps collide at second precision (~14% of NL2 hands).
@@ -108,14 +152,20 @@ async function handleFiles(files) {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.id.localeCompare(b.id);
   });
+
+  // Phase C: compute series + render (compute is the slow bit; show indeterminate bar)
+  showProgress({ stage: `Computing chart for ${parsedHands.length.toLocaleString()} hands`, indeterminate: true });
+  await nextFrame();
+
   const skipMsg = skippedHands ? `, skipped ${skippedHands} malformed` : '';
   const rejMsg = rejected.length ? `, rejected ${rejected.length} files` : '';
   showStatus(`Parsed ${parsedHands.length.toLocaleString()} hands from ${files.length - rejected.length} files${skipMsg}${rejMsg}`);
-  // Defer render so the status message paints first (equity calc may take a few seconds)
-  setTimeout(() => {
-    renderAll();
-    els.results.hidden = false;
-  }, 16);
+
+  // Yield once more, then run the heavy work + render
+  await nextFrame();
+  renderAll();
+  els.results.hidden = false;
+  hideProgress();
 }
 
 function showStatus(msg, kind = 'info') {
@@ -128,11 +178,134 @@ function showStatus(msg, kind = 'info') {
 
 function renderAll() {
   const { series, summary } = computeSeries(parsedHands, opts);
+  lastSummary = summary;
   renderChart(series);
   renderControls();
   renderSummary(summary);
   renderPosition(summary);
+  renderHandBrowser();
   saveSession(series, summary);
+  notifyCloudSessionLoaded();
+}
+
+// === Hand browser (Phase 5a — click any hand to replay) ===
+
+const HAND_PAGE_SIZE = 50;
+let handPage = 0;
+
+function handResultUC(h) {
+  return h.collectedUC - h.contributedUC;
+}
+
+function renderHandBrowser() {
+  const el = els.handBrowser;
+  if (!el) return;
+  el.replaceChildren();
+  if (parsedHands.length === 0) {
+    el.hidden = true;
+    return;
+  }
+  el.hidden = false;
+  handPage = Math.min(handPage, Math.floor((parsedHands.length - 1) / HAND_PAGE_SIZE));
+
+  const title = document.createElement('h3');
+  title.textContent = `Hand browser — click any hand to replay`;
+  el.appendChild(title);
+
+  const pager = document.createElement('div');
+  pager.className = 'hand-pager';
+  el.appendChild(pager);
+
+  const list = document.createElement('div');
+  list.className = 'hand-list';
+  el.appendChild(list);
+
+  function renderPage() {
+    const totalPages = Math.max(1, Math.ceil(parsedHands.length / HAND_PAGE_SIZE));
+    const start = handPage * HAND_PAGE_SIZE;
+    const end = Math.min(start + HAND_PAGE_SIZE, parsedHands.length);
+
+    pager.replaceChildren();
+    const prev = document.createElement('button');
+    prev.type = 'button';
+    prev.className = 'hand-pager-btn';
+    prev.textContent = '‹ Prev';
+    prev.disabled = handPage === 0;
+    prev.addEventListener('click', () => { handPage = Math.max(0, handPage - 1); renderPage(); });
+
+    const next = document.createElement('button');
+    next.type = 'button';
+    next.className = 'hand-pager-btn';
+    next.textContent = 'Next ›';
+    next.disabled = handPage >= totalPages - 1;
+    next.addEventListener('click', () => { handPage = Math.min(totalPages - 1, handPage + 1); renderPage(); });
+
+    const info = document.createElement('span');
+    info.className = 'hand-pager-info';
+    info.textContent = `Hands ${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${parsedHands.length.toLocaleString()} · Page ${handPage + 1} / ${totalPages}`;
+
+    pager.append(prev, info, next);
+
+    list.replaceChildren();
+    for (let i = start; i < end; i++) {
+      const h = parsedHands[i];
+      const row = document.createElement('div');
+      row.className = 'hand-row';
+      const resultUC = handResultUC(h);
+      const resultCls = resultUC > 0n ? 'win' : resultUC < 0n ? 'loss' : 'neutral';
+
+      const handNum = document.createElement('span');
+      handNum.className = 'hand-num';
+      handNum.textContent = `#${(i + 1).toLocaleString()}`;
+
+      const idCell = document.createElement('span');
+      idCell.className = 'hand-id';
+      idCell.textContent = h.id;
+
+      const dateCell = document.createElement('span');
+      dateCell.className = 'hand-date';
+      dateCell.textContent = formatDateShort(h.date);
+
+      const posCell = document.createElement('span');
+      posCell.className = 'hand-pos';
+      posCell.textContent = h.hero.position || '?';
+
+      const cardsCell = document.createElement('span');
+      cardsCell.className = 'hand-cards';
+      cardsCell.textContent = h.hero.cards ? h.hero.cards.join(' ') : '— —';
+
+      const resultCell = document.createElement('span');
+      resultCell.className = 'hand-result ' + resultCls;
+      resultCell.textContent = formatUSD(resultUC);
+
+      const replayBtn = document.createElement('button');
+      replayBtn.type = 'button';
+      replayBtn.className = 'hand-replay-btn';
+      replayBtn.textContent = '▶ Replay';
+      replayBtn.addEventListener('click', () => openReplay(h, i));
+
+      row.append(handNum, idCell, dateCell, posCell, cardsCell, resultCell, replayBtn);
+      list.appendChild(row);
+    }
+  }
+
+  renderPage();
+}
+
+function formatDateShort(iso) {
+  // "2026-05-21T03:18:50Z" → "05-21 03:18"
+  if (!iso) return '';
+  return iso.slice(5, 10) + ' ' + iso.slice(11, 16);
+}
+
+async function openReplay(hand, index) {
+  try {
+    const { showReplay } = await import('./replay/static-replay.js');
+    showReplay(hand.text, { title: `Hand #${(index + 1).toLocaleString()} — ${hand.id}` });
+  } catch (err) {
+    console.error('replay open failed', err);
+    alert('Could not open replay: ' + err.message);
+  }
 }
 
 // Custom plugin: draw a vertical crosshair line at the hovered hand position
