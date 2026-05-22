@@ -16,6 +16,8 @@ const els = {
   summary: document.getElementById('uploadSummary'),
   position: document.getElementById('positionCard'),
   handBrowser: document.getElementById('handBrowser'),
+  filterBar: document.getElementById('filterBar'),
+  uploadSummaryBanner: document.getElementById('uploadSummaryBanner'),
 };
 
 const COLORS = {
@@ -27,10 +29,20 @@ const COLORS = {
 const POS_ORDER = ['BTN', 'SB', 'BB', 'UTG', 'LJ', 'HJ', 'CO'];
 const SESSION_KEY = 'poker-upload-session-v1';
 
+// Master store — keyed by hand.id so re-uploads dedupe naturally.
+const allHandsById = new Map();
+// Sorted view (chronological); rebuilt lazily after any merge/clear.
 let parsedHands = [];
+// Files seen, deduped by name+size+lastModified key.
+const allFiles = new Map();
 let originalFiles = [];
 let lastSummary = null;
-let opts = { beforeRake: true, lines: { winnings: true, ev: true, red: true, blue: true } };
+// opts.filter: dateMode ∈ ['all','today','last-1h','last-3h','last-24h','custom'].
+let opts = {
+  beforeRake: true,
+  lines: { winnings: true, ev: true, red: true, blue: true },
+  filter: { dateMode: 'all', customStart: null, customEnd: null, stakes: null },
+};
 let chartInstance = null;
 
 // Notify cloud bootstrap when a session is loaded (no hard dependency — cloud module is loaded as a sibling script)
@@ -91,81 +103,125 @@ async function walkEntry(entry, out) {
   }
 }
 
+// Compare hands chronologically — date string is ISO-Z so lex == chrono. Tiebreak by id.
+function chronoCompare(a, b) {
+  if (a.date !== b.date) return a.date.localeCompare(b.date);
+  return a.id.localeCompare(b.id);
+}
+
+// Rebuild the sorted view from the master Map. Cheap relative to parse.
+function rebuildSorted() {
+  parsedHands = Array.from(allHandsById.values()).sort(chronoCompare);
+}
+
+function fileKey(f) {
+  return `${f.name}|${f.size}|${f.lastModified}`;
+}
+
 async function handleFiles(files) {
   if (files.length === 0) return;
+  const totalBefore = allHandsById.size;
   showStatus(`Reading ${files.length} files...`);
-  parsedHands = [];
-  originalFiles = Array.from(files);
   const rejected = [];
   let skippedHands = 0;
+  let newHands = 0;
+  let dupHands = 0;
 
-  // Phase A: read all file texts (cheap, but yields per file so progress bar paints)
-  showProgress({ stage: 'Reading files', current: 0, total: files.length });
-  await nextFrame();
-  const fileTexts = [];
-  for (let i = 0; i < files.length; i++) {
-    try {
-      fileTexts.push({ name: files[i].name, text: await files[i].text() });
-    } catch (e) {
-      rejected.push({ name: files[i].name, reason: `read error: ${e.message}` });
-      fileTexts.push(null);
-    }
-    showProgress({ stage: 'Reading files', current: i + 1, total: files.length });
+  try {
+    // Phase A: read all file texts (cheap, but yields per file so progress bar paints)
+    showProgress({ stage: 'Reading files', current: 0, total: files.length });
     await nextFrame();
-  }
-
-  // Phase B: parse each file, counting hands as we go
-  showProgress({ stage: 'Parsing hands', current: 0, total: 0, indeterminate: true });
-  await nextFrame();
-  for (let i = 0; i < fileTexts.length; i++) {
-    const ft = fileTexts[i];
-    if (!ft) continue;
-    try {
-      const r = parseFile(ft.name, ft.text);
-      if (r.hands.length === 0 && r.errors && r.errors.length > 0) {
-        rejected.push({ name: ft.name, reason: r.errors[0] });
-        continue;
+    const fileTexts = [];
+    for (let i = 0; i < files.length; i++) {
+      try {
+        fileTexts.push({ name: files[i].name, file: files[i], text: await files[i].text() });
+      } catch (e) {
+        rejected.push({ name: files[i].name, reason: `read error: ${e.message}` });
+        fileTexts.push(null);
       }
-      parsedHands.push(...r.hands);
-      skippedHands += r.skipped;
-      showProgress({
-        stage: `Parsing hands — ${parsedHands.length.toLocaleString()} so far`,
-        indeterminate: true,
-      });
+      showProgress({ stage: 'Reading files', current: i + 1, total: files.length });
       await nextFrame();
-    } catch (e) {
-      rejected.push({ name: ft.name, reason: `parse error: ${e.message}` });
     }
-  }
 
-  if (parsedHands.length === 0) {
+    // Phase B: parse each file, merge into master Map (dedup by hand.id)
+    showProgress({ stage: 'Parsing hands', current: 0, total: 0, indeterminate: true });
+    await nextFrame();
+    for (let i = 0; i < fileTexts.length; i++) {
+      const ft = fileTexts[i];
+      if (!ft) continue;
+      try {
+        const r = parseFile(ft.name, ft.text);
+        if (r.hands.length === 0 && r.errors && r.errors.length > 0) {
+          rejected.push({ name: ft.name, reason: r.errors[0] });
+          continue;
+        }
+        for (const hand of r.hands) {
+          if (allHandsById.has(hand.id)) {
+            dupHands++;
+            continue;
+          }
+          allHandsById.set(hand.id, hand);
+          newHands++;
+        }
+        // Track the source File so cloud save can include it
+        const key = fileKey(ft.file);
+        if (!allFiles.has(key)) allFiles.set(key, ft.file);
+        skippedHands += r.skipped;
+        showProgress({
+          stage: `Parsing hands — ${newHands.toLocaleString()} new, ${dupHands.toLocaleString()} duplicate`,
+          indeterminate: true,
+        });
+        await nextFrame();
+      } catch (e) {
+        rejected.push({ name: ft.name, reason: `parse error: ${e.message}` });
+      }
+    }
+
+    if (allHandsById.size === 0) {
+      const reasons = rejected.map(r => `• ${r.name}: ${r.reason}`).join('\n');
+      showStatus(`No valid hands parsed.\n${reasons}`, 'error');
+      return;
+    }
+
+    // Rebuild sorted view (chronological, tie-break by id)
+    rebuildSorted();
+    originalFiles = Array.from(allFiles.values());
+
+    // Phase C: compute series + render
+    showProgress({ stage: `Computing chart for ${parsedHands.length.toLocaleString()} hands`, indeterminate: true });
+    await nextFrame();
+
+    const parts = [];
+    if (newHands > 0) parts.push(`✓ Added ${newHands.toLocaleString()} new hands`);
+    if (dupHands > 0) parts.push(`${dupHands.toLocaleString()} duplicates skipped`);
+    if (skippedHands > 0) parts.push(`${skippedHands} malformed skipped`);
+    if (rejected.length > 0) parts.push(`${rejected.length} files rejected`);
+    const summaryStatus = parts.join(' · ') + ` · Total: ${parsedHands.length.toLocaleString()} hands across ${originalFiles.length} files`;
+    showStatus(summaryStatus, newHands > 0 ? 'ok' : 'info');
+
+    await nextFrame();
+    renderAll();
+    els.results.hidden = false;
+  } finally {
+    // Guarantee the progress bar always clears even if compute throws.
     hideProgress();
-    const reasons = rejected.map(r => `• ${r.name}: ${r.reason}`).join('\n');
-    showStatus(`No valid hands parsed.\n${reasons}`, 'error');
-    return;
   }
+}
 
-  // Sort hands chronologically so the chart matches GGPoker's display
-  // (overlapping time windows from multiple tables must be interleaved by timestamp).
-  // Tiebreak by hand id when timestamps collide at second precision (~14% of NL2 hands).
-  parsedHands.sort((a, b) => {
-    if (a.date !== b.date) return a.date.localeCompare(b.date);
-    return a.id.localeCompare(b.id);
-  });
-
-  // Phase C: compute series + render (compute is the slow bit; show indeterminate bar)
-  showProgress({ stage: `Computing chart for ${parsedHands.length.toLocaleString()} hands`, indeterminate: true });
-  await nextFrame();
-
-  const skipMsg = skippedHands ? `, skipped ${skippedHands} malformed` : '';
-  const rejMsg = rejected.length ? `, rejected ${rejected.length} files` : '';
-  showStatus(`Parsed ${parsedHands.length.toLocaleString()} hands from ${files.length - rejected.length} files${skipMsg}${rejMsg}`);
-
-  // Yield once more, then run the heavy work + render
-  await nextFrame();
-  renderAll();
-  els.results.hidden = false;
-  hideProgress();
+// Clear all uploaded hands and reset state.
+export function clearAllUploads() {
+  if (allHandsById.size === 0) return;
+  if (!confirm(`Clear all ${allHandsById.size.toLocaleString()} uploaded hands?`)) return;
+  allHandsById.clear();
+  allFiles.clear();
+  parsedHands = [];
+  originalFiles = [];
+  lastSummary = null;
+  if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+  els.results.hidden = true;
+  showStatus('Cleared. Upload hand-history files to start over.', 'info');
+  if (els.filterBar) els.filterBar.replaceChildren();
+  if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
 }
 
 function showStatus(msg, kind = 'info') {
@@ -176,14 +232,219 @@ function showStatus(msg, kind = 'info') {
 
 // === Render ===
 
+// === Filtering ===
+
+function filterDateRange() {
+  const now = new Date();
+  const f = opts.filter;
+  switch (f.dateMode) {
+    case 'today': {
+      const start = new Date(now);
+      start.setHours(0, 0, 0, 0);
+      return [start, null];
+    }
+    case 'last-1h':  return [new Date(now - 1 * 3600_000), null];
+    case 'last-3h':  return [new Date(now - 3 * 3600_000), null];
+    case 'last-24h': return [new Date(now - 24 * 3600_000), null];
+    case 'custom':   return [f.customStart, f.customEnd];
+    case 'all':
+    default:         return [null, null];
+  }
+}
+
+function getFilteredHands() {
+  if (parsedHands.length === 0) return parsedHands;
+  const [start, end] = filterDateRange();
+  const stakeFilter = opts.filter.stakes;
+  if (!start && !end && (!stakeFilter || stakeFilter.size === 0)) return parsedHands;
+  return parsedHands.filter((h) => {
+    if (start || end) {
+      const d = new Date(h.date);
+      if (start && d < start) return false;
+      if (end && d > end) return false;
+    }
+    if (stakeFilter && stakeFilter.size > 0) {
+      // Stake key: bb amount in micro-cents (BigInt) → cents for comparison
+      const bbCents = Number(h.stake.bbUC / 10000n);
+      if (!stakeFilter.has(bbCents)) return false;
+    }
+    return true;
+  });
+}
+
+// Build the list of unique stakes present in parsedHands, with hand-counts.
+function uniqueStakes() {
+  const counts = new Map(); // bbCents → count
+  for (const h of parsedHands) {
+    const bbCents = Number(h.stake.bbUC / 10000n);
+    counts.set(bbCents, (counts.get(bbCents) || 0) + 1);
+  }
+  return Array.from(counts.entries()).sort((a, b) => a[0] - b[0]);
+}
+
+function stakeLabel(bbCents) {
+  const bb = bbCents / 100;
+  // NL2 = 0.01/0.02, NL5 = 0.02/0.05, NL10 = 0.05/0.10, NL25 = 0.10/0.25, NL50 = 0.25/0.50, NL100 = 0.50/1, NL200 = 1/2
+  return `NL${Math.round(bb * 100)} ($${bb.toFixed(2)})`;
+}
+
+function renderFilterBar() {
+  if (!els.filterBar) return;
+  els.filterBar.replaceChildren();
+  if (parsedHands.length === 0) {
+    els.filterBar.hidden = true;
+    return;
+  }
+  els.filterBar.hidden = false;
+
+  // Row 1: date presets
+  const dateRow = document.createElement('div');
+  dateRow.className = 'filter-row';
+  const dateLabel = document.createElement('span');
+  dateLabel.className = 'filter-row-label';
+  dateLabel.textContent = 'Date:';
+  dateRow.appendChild(dateLabel);
+  const presets = [
+    ['all', 'All'],
+    ['today', 'Today'],
+    ['last-1h', 'Last 1h'],
+    ['last-3h', 'Last 3h'],
+    ['last-24h', 'Last 24h'],
+    ['custom', 'Custom'],
+  ];
+  for (const [key, label] of presets) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'filter-chip' + (opts.filter.dateMode === key ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      opts = { ...opts, filter: { ...opts.filter, dateMode: key } };
+      renderAll();
+    });
+    dateRow.appendChild(btn);
+  }
+  els.filterBar.appendChild(dateRow);
+
+  // Optional custom-range inputs
+  if (opts.filter.dateMode === 'custom') {
+    const customRow = document.createElement('div');
+    customRow.className = 'filter-row filter-custom-row';
+    const fromLbl = document.createElement('label');
+    fromLbl.className = 'filter-input-label';
+    fromLbl.textContent = 'From';
+    const fromInput = document.createElement('input');
+    fromInput.type = 'datetime-local';
+    fromInput.className = 'filter-input';
+    if (opts.filter.customStart) fromInput.value = toDatetimeLocalValue(opts.filter.customStart);
+    fromInput.addEventListener('change', () => {
+      opts = { ...opts, filter: { ...opts.filter, customStart: fromInput.value ? new Date(fromInput.value) : null } };
+      renderAll();
+    });
+    const toLbl = document.createElement('label');
+    toLbl.className = 'filter-input-label';
+    toLbl.textContent = 'To';
+    const toInput = document.createElement('input');
+    toInput.type = 'datetime-local';
+    toInput.className = 'filter-input';
+    if (opts.filter.customEnd) toInput.value = toDatetimeLocalValue(opts.filter.customEnd);
+    toInput.addEventListener('change', () => {
+      opts = { ...opts, filter: { ...opts.filter, customEnd: toInput.value ? new Date(toInput.value) : null } };
+      renderAll();
+    });
+    customRow.appendChild(fromLbl);
+    customRow.appendChild(fromInput);
+    customRow.appendChild(toLbl);
+    customRow.appendChild(toInput);
+    els.filterBar.appendChild(customRow);
+  }
+
+  // Row 2: stake chips (auto from data; multi-select)
+  const stakes = uniqueStakes();
+  if (stakes.length > 0) {
+    const stakeRow = document.createElement('div');
+    stakeRow.className = 'filter-row';
+    const stakeLabelEl = document.createElement('span');
+    stakeLabelEl.className = 'filter-row-label';
+    stakeLabelEl.textContent = 'Stakes:';
+    stakeRow.appendChild(stakeLabelEl);
+    const selected = opts.filter.stakes || new Set();
+
+    // "All stakes" toggle — clears the selection
+    const allBtn = document.createElement('button');
+    allBtn.type = 'button';
+    allBtn.className = 'filter-chip' + (selected.size === 0 ? ' active' : '');
+    allBtn.textContent = `All (${parsedHands.length.toLocaleString()})`;
+    allBtn.addEventListener('click', () => {
+      opts = { ...opts, filter: { ...opts.filter, stakes: null } };
+      renderAll();
+    });
+    stakeRow.appendChild(allBtn);
+
+    for (const [bbCents, count] of stakes) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      const isOn = selected.has(bbCents);
+      btn.className = 'filter-chip' + (isOn ? ' active' : '');
+      btn.textContent = `${stakeLabel(bbCents)} (${count.toLocaleString()})`;
+      btn.addEventListener('click', () => {
+        const next = new Set(selected);
+        if (isOn) next.delete(bbCents);
+        else next.add(bbCents);
+        opts = { ...opts, filter: { ...opts.filter, stakes: next.size === 0 ? null : next } };
+        renderAll();
+      });
+      stakeRow.appendChild(btn);
+    }
+    els.filterBar.appendChild(stakeRow);
+  }
+
+  // Row 3: result counter + clear-all button
+  const actionsRow = document.createElement('div');
+  actionsRow.className = 'filter-row filter-actions-row';
+  const filtered = getFilteredHands();
+  const counter = document.createElement('span');
+  counter.className = 'filter-counter';
+  counter.textContent = filtered.length === parsedHands.length
+    ? `Showing all ${parsedHands.length.toLocaleString()} hands`
+    : `Showing ${filtered.length.toLocaleString()} of ${parsedHands.length.toLocaleString()} hands`;
+  actionsRow.appendChild(counter);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'filter-clear-btn';
+  clearBtn.textContent = 'Clear all uploaded hands';
+  clearBtn.addEventListener('click', clearAllUploads);
+  actionsRow.appendChild(clearBtn);
+
+  els.filterBar.appendChild(actionsRow);
+}
+
+function toDatetimeLocalValue(d) {
+  if (!(d instanceof Date) || isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function renderAll() {
-  const { series, summary } = computeSeries(parsedHands, opts);
+  const filtered = getFilteredHands();
+  if (filtered.length === 0) {
+    // Nothing to chart but still render the filter bar so user can change filter
+    renderFilterBar();
+    if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
+    els.summary.replaceChildren();
+    els.position.replaceChildren();
+    if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
+    els.chartFooter.textContent = parsedHands.length > 0 ? 'No hands match the current filter.' : '';
+    return;
+  }
+  const { series, summary } = computeSeries(filtered, opts);
   lastSummary = summary;
   renderChart(series);
   renderControls();
   renderSummary(summary);
   renderPosition(summary);
-  renderHandBrowser();
+  renderFilterBar();
+  renderHandBrowserFiltered(filtered);
   saveSession(series, summary);
   notifyCloudSessionLoaded();
 }
@@ -197,16 +458,18 @@ function handResultUC(h) {
   return h.collectedUC - h.contributedUC;
 }
 
-function renderHandBrowser() {
+function renderHandBrowserFiltered(filtered) {
   const el = els.handBrowser;
   if (!el) return;
   el.replaceChildren();
-  if (parsedHands.length === 0) {
+  if (filtered.length === 0) {
     el.hidden = true;
     return;
   }
   el.hidden = false;
-  handPage = Math.min(handPage, Math.floor((parsedHands.length - 1) / HAND_PAGE_SIZE));
+  handPage = Math.min(handPage, Math.floor((filtered.length - 1) / HAND_PAGE_SIZE));
+  // Use `filtered` instead of the global `parsedHands` so the browser respects filters.
+  const hands = filtered;
 
   const title = document.createElement('h3');
   title.textContent = `Hand browser — click any hand to replay`;
@@ -221,9 +484,9 @@ function renderHandBrowser() {
   el.appendChild(list);
 
   function renderPage() {
-    const totalPages = Math.max(1, Math.ceil(parsedHands.length / HAND_PAGE_SIZE));
+    const totalPages = Math.max(1, Math.ceil(hands.length / HAND_PAGE_SIZE));
     const start = handPage * HAND_PAGE_SIZE;
-    const end = Math.min(start + HAND_PAGE_SIZE, parsedHands.length);
+    const end = Math.min(start + HAND_PAGE_SIZE, hands.length);
 
     pager.replaceChildren();
     const prev = document.createElement('button');
@@ -242,13 +505,13 @@ function renderHandBrowser() {
 
     const info = document.createElement('span');
     info.className = 'hand-pager-info';
-    info.textContent = `Hands ${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${parsedHands.length.toLocaleString()} · Page ${handPage + 1} / ${totalPages}`;
+    info.textContent = `Hands ${(start + 1).toLocaleString()}–${end.toLocaleString()} of ${hands.length.toLocaleString()} · Page ${handPage + 1} / ${totalPages}`;
 
     pager.append(prev, info, next);
 
     list.replaceChildren();
     for (let i = start; i < end; i++) {
-      const h = parsedHands[i];
+      const h = hands[i];
       const row = document.createElement('div');
       row.className = 'hand-row';
       const resultUC = handResultUC(h);
