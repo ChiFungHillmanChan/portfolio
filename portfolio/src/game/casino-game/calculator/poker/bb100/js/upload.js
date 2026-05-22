@@ -1145,21 +1145,43 @@ function renderChart(rawSeries) {
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
+          afterBuildTicks: function(scale) {
+            // Replace Chart.js auto-picked ticks (which are at round chart-INDEX
+            // values like 1985, 3970, ...) with ticks at round HAND-NUMBER values
+            // like 2000, 4000, ... Labels are 1-based hand numbers; chart indexes
+            // map to labels via downsampleSeries (1:1 for ≤5000 hands, ~5:1 for
+            // 23K hands). We binary-search labels[] to find the chart index
+            // closest to each round target.
+            const labels = scale.chart.data.labels;
+            if (!labels || labels.length === 0) return;
+            const maxHand = labels[labels.length - 1];
+            // Pick a "nice" step so we end up with 6-11 ticks across the range.
+            const candidates = [10, 20, 25, 50, 100, 200, 250, 500, 1000, 2000, 2500, 5000, 10000, 20000, 25000, 50000, 100000];
+            let step = candidates[candidates.length - 1];
+            for (const c of candidates) {
+              if (maxHand / c <= 10) { step = c; break; }
+            }
+            const ticks = [{ value: 0 }];  // always show first hand
+            for (let target = step; target <= maxHand; target += step) {
+              // Find smallest chart index where labels[i] >= target
+              let lo = 0, hi = labels.length - 1, idx = labels.length - 1;
+              while (lo <= hi) {
+                const mid = (lo + hi) >> 1;
+                if (labels[mid] >= target) { idx = mid; hi = mid - 1; } else { lo = mid + 1; }
+              }
+              if (ticks[ticks.length - 1].value !== idx) ticks.push({ value: idx });
+            }
+            scale.ticks = ticks;
+          },
           ticks: {
             color: '#a0a0b0',
-            // Chart.js picks ~maxTicksLimit evenly-spaced ticks from the
-            // visible index range and rotates labels as needed. Robust to
-            // downsampling because we no longer require labels to be exact
-            // multiples of a step — we just stamp whatever hand-number the
-            // label-array carries at each chosen index.
-            autoSkip: true,
+            autoSkip: false,
             maxRotation: 0,
             minRotation: 0,
-            maxTicksLimit: 12,
             callback: function(value) {
-              // `value` is the absolute data index (0..n-1). The label at
-              // that index is the actual hand number (= index+1 when not
-              // downsampled, sparser when downsampled to <=5000 chart points).
+              // `value` is the chart index. Look up the hand number at that
+              // index and stamp it as the label (round numbers chosen by
+              // afterBuildTicks above).
               const labelArr = this.chart.data.labels;
               const handNum = labelArr ? labelArr[value] : value + 1;
               if (handNum == null) return '';
