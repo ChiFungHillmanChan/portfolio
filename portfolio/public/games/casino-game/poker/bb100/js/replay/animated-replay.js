@@ -7,6 +7,12 @@
 // Architecture:
 //   handText → extractActions() → buildSnapshots() → buildTable() → renderSnapshot per step
 //   Playback loop walks the snapshot[] driven by a setTimeout clock.
+//
+// All wiring (close, tabs, controls, scrubber, unit toggle, keyboard) goes
+// through a single delegated click handler on the modal root so it survives
+// re-renders and works on the first open. Earlier versions wired listeners
+// in `ensureModal` (one-time setup) and the close button silently failed
+// when DOM ordering / [hidden] attribute interactions left a stale layer.
 
 import { extractActions } from "./action-extractor.js";
 import { buildSnapshots } from "./state-engine.js";
@@ -33,6 +39,9 @@ function durationForEvent(ev) {
   return BASE_DURATION[ev?.type] ?? DEFAULT_DURATION;
 }
 
+// Module-level state — single replay at a time.
+let state = null;
+
 // ── DOM template ────────────────────────────────────────────────────────────
 
 function ensureModal() {
@@ -43,15 +52,19 @@ function ensureModal() {
   modal.className = "replay-modal replay-modal-animated";
   modal.hidden = true;
   modal.innerHTML = `
-    <div class="replay-modal-backdrop"></div>
+    <div class="replay-modal-backdrop" data-replay-action="close"></div>
     <div class="replay-modal-panel replay-modal-panel-wide" role="dialog" aria-modal="true">
       <div class="replay-modal-header">
         <h3 class="replay-modal-title">Hand Replay</h3>
+        <div class="replay-unit-toggle" role="group" aria-label="Display unit">
+          <button type="button" data-unit="dollars" class="active">$</button>
+          <button type="button" data-unit="bb">BB</button>
+        </div>
         <div class="replay-view-tabs" role="tablist">
           <button type="button" class="replay-view-tab active" data-view="table" role="tab" aria-selected="true">Table</button>
           <button type="button" class="replay-view-tab" data-view="log" role="tab" aria-selected="false">Text log</button>
         </div>
-        <button type="button" class="replay-modal-close" aria-label="Close">✕</button>
+        <button type="button" class="replay-modal-close" data-replay-action="close" aria-label="Close">✕</button>
       </div>
       <div class="replay-modal-body replay-modal-body-animated">
         <div class="replay-table-mount" data-view-panel="table"></div>
@@ -81,15 +94,57 @@ function ensureModal() {
     </div>
   `;
   document.body.appendChild(modal);
-  modal.querySelector(".replay-modal-backdrop").addEventListener("click", closeModal);
-  modal.querySelector(".replay-modal-close").addEventListener("click", closeModal);
+  // SINGLE delegated click handler — survives any re-rendering of internals.
+  modal.addEventListener("click", onModalClick);
+  // Scrubber needs `input` event (continuous as user drags), not click.
+  modal.querySelector(".replay-scrubber-input").addEventListener("input", onScrubInput);
   document.addEventListener("keydown", onKeyDown);
   return modal;
 }
 
-// ── Playback state ──────────────────────────────────────────────────────────
+function onModalClick(e) {
+  const target = e.target;
+  if (!(target instanceof Element)) return;
 
-let state = null;
+  // Close: anything tagged data-replay-action="close" (backdrop OR ✕ button)
+  if (target.matches('[data-replay-action="close"]') || target.closest('[data-replay-action="close"]')) {
+    closeModal();
+    return;
+  }
+  // Tab switch
+  const tab = target.closest(".replay-view-tab");
+  if (tab) {
+    switchView(tab.dataset.view);
+    return;
+  }
+  // Unit toggle ($ / BB)
+  const unitBtn = target.closest(".replay-unit-toggle button");
+  if (unitBtn) {
+    setUnit(unitBtn.dataset.unit);
+    return;
+  }
+  // Speed
+  const speedBtn = target.closest(".replay-speed");
+  if (speedBtn) {
+    setSpeed(parseInt(speedBtn.dataset.speed, 10));
+    return;
+  }
+  // Playback controls
+  const ctl = target.closest(".replay-ctl");
+  if (ctl) {
+    const act = ctl.dataset.act;
+    if (act === "prev")    { setPlaying(false); step(-1); }
+    else if (act === "next") { setPlaying(false); step(+1); }
+    else if (act === "play") { togglePlay(); }
+    else if (act === "restart") { setPlaying(false); jumpTo(0); }
+    return;
+  }
+}
+
+function onScrubInput(e) {
+  setPlaying(false);
+  jumpTo(parseInt(e.target.value, 10));
+}
 
 function onKeyDown(e) {
   const modal = document.getElementById(MODAL_ID);
@@ -111,6 +166,8 @@ function onKeyDown(e) {
   else if (e.key === "4") setSpeed(4);
 }
 
+// ── Playback control ───────────────────────────────────────────────────────
+
 function updateScrubber() {
   if (!state) return;
   const { modal, idx, snapshots } = state;
@@ -122,7 +179,6 @@ function updateScrubber() {
   input.value = String(idx);
   const fill = modal.querySelector(".replay-scrubber-fill");
   fill.style.width = total > 0 ? `${(idx / total) * 100}%` : "0%";
-  // Update prev/next buttons
   modal.querySelector('[data-act="prev"]').disabled = idx === 0;
   modal.querySelector('[data-act="next"]').disabled = idx === total;
 }
@@ -130,7 +186,7 @@ function updateScrubber() {
 function applySnapshot(instant = false) {
   if (!state) return;
   const snap = state.snapshots[state.idx];
-  renderSnapshot(state.tableRefs, snap, { instant });
+  renderSnapshot(state.tableRefs, snap, { instant, unit: state.unit, bbDollars: state.bbDollars });
   updateScrubber();
   updateLogHighlight();
 }
@@ -147,8 +203,7 @@ function step(delta) {
 function jumpTo(idx) {
   if (!state) return;
   const total = state.snapshots.length - 1;
-  const clamped = Math.max(0, Math.min(total, idx));
-  state.idx = clamped;
+  state.idx = Math.max(0, Math.min(total, idx));
   applySnapshot(true);
 }
 
@@ -156,8 +211,10 @@ function setPlaying(playing) {
   if (!state) return;
   state.playing = playing;
   const btn = state.modal.querySelector('[data-act="play"]');
-  btn.textContent = playing ? "⏸" : "▶";
-  btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+  if (btn) {
+    btn.textContent = playing ? "⏸" : "▶";
+    btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+  }
   if (playing) {
     if (state.idx >= state.snapshots.length - 1) state.idx = 0;
     scheduleNext();
@@ -179,7 +236,7 @@ function scheduleNext() {
     setPlaying(false);
     return;
   }
-  const ev = state.extracted.events[state.idx]; // event we're about to apply
+  const ev = state.extracted.events[state.idx];
   const dur = durationForEvent(ev) / state.speed;
   state.timer = setTimeout(() => {
     if (!state || !state.playing) return;
@@ -201,9 +258,31 @@ function setSpeed(mult) {
   }
 }
 
+function setUnit(unit) {
+  if (!state) return;
+  if (unit !== "dollars" && unit !== "bb") return;
+  state.unit = unit;
+  state.modal.querySelectorAll(".replay-unit-toggle button").forEach((b) => {
+    b.classList.toggle("active", b.dataset.unit === unit);
+  });
+  // Re-render current snapshot AND text log with new unit
+  applySnapshot(true);
+  const logMount = state.modal.querySelector(".replay-log-mount");
+  if (logMount) renderTextLog(logMount, state.extracted, state.unit, state.bbDollars);
+  updateLogHighlight();
+}
+
 // ── Text log fallback (a11y view) ──────────────────────────────────────────
 
-function renderTextLog(mount, extracted) {
+function fmtMoney(amount, unit, bbDollars) {
+  if (unit === "bb" && bbDollars > 0) {
+    const bb = amount / bbDollars;
+    return `${bb >= 0 ? "" : "-"}${Math.abs(bb).toFixed(1)}bb`;
+  }
+  return `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
+}
+
+function renderTextLog(mount, extracted, unit = "dollars", bbDollars = 0) {
   mount.replaceChildren();
   const list = document.createElement("div");
   list.className = "replay-log-list";
@@ -214,14 +293,15 @@ function renderTextLog(mount, extracted) {
   ));
   for (let i = 0; i < extracted.events.length; i++) {
     const ev = extracted.events[i];
-    const line = makeLogLine(describeEvent(ev), "log-event");
+    const line = makeLogLine(describeEvent(ev, unit, bbDollars), "log-event");
     line.dataset.eventIdx = String(i);
     list.appendChild(line);
   }
   mount.appendChild(list);
 }
 
-function describeEvent(ev) {
+function describeEvent(ev, unit, bbDollars) {
+  const M = (a) => fmtMoney(a, unit, bbDollars);
   switch (ev.type) {
     case "street":
       if (ev.name === "flop") return `*** FLOP *** [${(ev.cards || []).join(" ")}]`;
@@ -232,19 +312,19 @@ function describeEvent(ev) {
     case "deal-hole":
       return `${ev.player} dealt [${(ev.cards || []).join(" ")}]`;
     case "post-blind":
-      return `${ev.player} posts ${ev.blind} $${ev.amount.toFixed(2)}`;
+      return `${ev.player} posts ${ev.blind} ${M(ev.amount)}`;
     case "action":
       if (ev.verb === "folds") return `${ev.player} folds`;
       if (ev.verb === "checks") return `${ev.player} checks`;
-      if (ev.verb === "calls") return `${ev.player} calls $${(ev.amount || 0).toFixed(2)}${ev.allIn ? " ★ ALL-IN" : ""}`;
-      if (ev.verb === "bets") return `${ev.player} bets $${(ev.amount || 0).toFixed(2)}${ev.allIn ? " ★ ALL-IN" : ""}`;
-      if (ev.verb === "raises") return `${ev.player} raises $${(ev.raiseBy || 0).toFixed(2)} to $${(ev.to || 0).toFixed(2)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      if (ev.verb === "calls") return `${ev.player} calls ${M(ev.amount || 0)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      if (ev.verb === "bets") return `${ev.player} bets ${M(ev.amount || 0)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      if (ev.verb === "raises") return `${ev.player} raises ${M(ev.raiseBy || 0)} to ${M(ev.to || 0)}${ev.allIn ? " ★ ALL-IN" : ""}`;
       return `${ev.player} ${ev.verb}`;
-    case "uncalled": return `Uncalled bet ($${ev.amount.toFixed(2)}) returned to ${ev.player}`;
+    case "uncalled": return `Uncalled bet (${M(ev.amount)}) returned to ${ev.player}`;
     case "shows":    return `${ev.player} shows [${(ev.cards || []).join(" ")}]`;
     case "mucks":    return `${ev.player} mucks`;
-    case "collect":  return `${ev.player} collected $${ev.amount.toFixed(2)} from ${ev.pot} pot`;
-    case "cash-drop":return `Cash Drop: +$${ev.amount.toFixed(2)} into pot`;
+    case "collect":  return `${ev.player} collected ${M(ev.amount)} from ${ev.pot} pot`;
+    case "cash-drop":return `Cash Drop: +${M(ev.amount)} into pot`;
     default: return `(${ev.type})`;
   }
 }
@@ -260,8 +340,6 @@ function updateLogHighlight() {
   if (!state) return;
   const log = state.modal.querySelector(".replay-log-list");
   if (!log) return;
-  // The snapshot at idx=k corresponds to events[k-1] being the last applied event.
-  // So highlight the line with dataset.eventIdx === (state.idx - 1).
   const targetIdx = state.idx - 1;
   log.querySelectorAll(".replay-log-line.active").forEach((n) => n.classList.remove("active"));
   if (targetIdx >= 0) {
@@ -292,6 +370,7 @@ export function showReplay(handText, { title } = {}) {
   const modal = ensureModal();
   const extracted = extractActions(handText);
   const { snapshots } = buildSnapshots(extracted);
+  const bbDollars = Number(extracted.meta?.stake?.bb || 0);
 
   modal.querySelector(".replay-modal-title").textContent =
     title || `Hand Replay — #${extracted.meta.handId || ""}`;
@@ -300,9 +379,9 @@ export function showReplay(handText, { title } = {}) {
   const tableRefs = buildTable(tableMount, snapshots[0]);
 
   const logMount = modal.querySelector(".replay-log-mount");
-  renderTextLog(logMount, extracted);
+  renderTextLog(logMount, extracted, "dollars", bbDollars);
 
-  // Initialize state
+  // Reset state (kills any previous timer first)
   if (state?.timer) clearTimeout(state.timer);
   state = {
     modal,
@@ -313,28 +392,14 @@ export function showReplay(handText, { title } = {}) {
     playing: false,
     speed: 2,
     timer: null,
+    unit: "dollars",  // user-toggleable via $/BB pill
+    bbDollars,        // for BB conversion
   };
 
-  // Wire controls (re-wire each open since DOM may be reused)
-  modal.querySelector('[data-act="prev"]').onclick = () => { setPlaying(false); step(-1); };
-  modal.querySelector('[data-act="next"]').onclick = () => { setPlaying(false); step(+1); };
-  modal.querySelector('[data-act="play"]').onclick = () => togglePlay();
-  modal.querySelector('[data-act="restart"]').onclick = () => { setPlaying(false); jumpTo(0); };
-  modal.querySelectorAll(".replay-speed").forEach((b) => {
-    b.onclick = () => setSpeed(parseInt(b.dataset.speed, 10));
-  });
-  modal.querySelectorAll(".replay-view-tab").forEach((t) => {
-    t.onclick = () => switchView(t.dataset.view);
-  });
-  const scrubber = modal.querySelector(".replay-scrubber-input");
-  scrubber.oninput = (e) => {
-    setPlaying(false);
-    jumpTo(parseInt(e.target.value, 10));
-  };
-
-  // Initial render
+  // Reset UI to defaults via the same code paths the buttons use
   switchView("table");
   setSpeed(2);
+  setUnit("dollars");
   applySnapshot(true);
 
   modal.hidden = false;

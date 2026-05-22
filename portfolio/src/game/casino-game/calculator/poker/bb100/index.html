@@ -75,14 +75,17 @@
             <p class="subtitle">Cash Game Win Rate</p>
         </header>
 
-        <div class="auth-row">
-            <div id="authSlot" class="auth-slot"></div>
-        </div>
+        <button type="button" id="settingsBtn" class="settings-btn" aria-label="Open settings" title="Settings · sign-in · cloud sessions">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+            <span class="settings-btn-label">Settings</span>
+        </button>
 
         <div class="tab-bar" role="tablist">
             <button class="tab-btn active" data-tab="manual" role="tab" aria-selected="true">Manual Entry</button>
             <button class="tab-btn" data-tab="upload" role="tab" aria-selected="false">Upload GG Hands</button>
-            <button class="tab-btn" data-tab="sessions" role="tab" aria-selected="false" hidden>My Sessions</button>
         </div>
 
         <div class="tab-panel" data-tab-panel="manual">
@@ -216,31 +219,66 @@
 
             <div class="upload-results" id="uploadResults" hidden>
                 <div class="filter-bar" id="filterBar" hidden></div>
-                <div class="chart-card">
-                    <div class="chart-controls" id="chartControls"></div>
-                    <div class="chart-wrap">
-                        <button type="button" class="chart-zoom-out-btn" id="chartZoomOutBtn" aria-label="Reset zoom to full range" hidden>−</button>
-                        <canvas id="evChart"></canvas>
-                        <div class="chart-spinner" id="chartSpinner" hidden role="status" aria-live="polite">
-                            <div class="chart-spinner-ring"></div>
-                            <div class="chart-spinner-label" id="chartSpinnerLabel">Computing chart…</div>
-                            <div class="chart-spinner-progress" id="chartSpinnerProgress"></div>
-                        </div>
-                    </div>
-                    <div class="chart-footer" id="chartFooter"></div>
+
+                <div class="sub-tab-bar" id="resultsSubTabs" role="tablist">
+                    <button type="button" class="sub-tab-btn active" data-sub-tab="board" role="tab" aria-selected="true">📈 Board</button>
+                    <button type="button" class="sub-tab-btn" data-sub-tab="replay" role="tab" aria-selected="false">🎬 Hand Replay</button>
+                    <button type="button" class="sub-tab-btn" data-sub-tab="details" role="tab" aria-selected="false">📊 Details</button>
                 </div>
-                <div class="upload-summary" id="uploadSummary"></div>
-                <div class="position-card" id="positionCard"></div>
-                <div class="hand-browser-card" id="handBrowser" hidden></div>
+
+                <div class="sub-tab-panel" data-sub-tab-panel="board">
+                    <div class="chart-card">
+                        <div class="chart-controls" id="chartControls"></div>
+                        <div class="chart-wrap">
+                            <button type="button" class="chart-zoom-out-btn" id="chartZoomOutBtn" aria-label="Reset zoom to full range" hidden>−</button>
+                            <canvas id="evChart"></canvas>
+                            <div class="chart-spinner" id="chartSpinner" hidden role="status" aria-live="polite">
+                                <div class="chart-spinner-ring"></div>
+                                <div class="chart-spinner-label" id="chartSpinnerLabel">Computing chart…</div>
+                                <div class="chart-spinner-progress" id="chartSpinnerProgress"></div>
+                            </div>
+                        </div>
+                        <div class="chart-footer" id="chartFooter"></div>
+                    </div>
+                </div>
+
+                <div class="sub-tab-panel" data-sub-tab-panel="replay" hidden>
+                    <div class="hand-browser-card" id="handBrowser" hidden></div>
+                </div>
+
+                <div class="sub-tab-panel" data-sub-tab-panel="details" hidden>
+                    <div class="upload-summary" id="uploadSummary"></div>
+                    <div class="position-card" id="positionCard"></div>
+                </div>
             </div>
         </section>
 
-        <section class="tab-panel" data-tab-panel="sessions" hidden>
-            <div class="sessions-placeholder">
-                <p>Sign in to save and view your uploaded hand histories.</p>
-                <p class="placeholder-hint">Cloud storage launches with Phase 2 — Firebase Auth.</p>
+        <!-- Settings drawer — auth, quota, tier upgrade, My Sessions all live here -->
+        <aside class="settings-drawer" id="settingsDrawer" hidden aria-hidden="true">
+            <div class="settings-backdrop" data-settings-action="close"></div>
+            <div class="settings-panel" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+                <div class="settings-header">
+                    <h2 id="settingsTitle">Settings</h2>
+                    <button type="button" class="settings-close" data-settings-action="close" aria-label="Close settings">✕</button>
+                </div>
+                <div class="settings-body">
+                    <section class="settings-section">
+                        <h3 class="settings-section-title">Account</h3>
+                        <div id="authSlot" class="auth-slot"></div>
+                    </section>
+                    <section class="settings-section" id="settingsQuotaSection">
+                        <h3 class="settings-section-title">Storage</h3>
+                        <div id="quotaMeter" class="quota-meter-wrap"></div>
+                        <div id="tierBanner" class="tier-banner-wrap"></div>
+                        <div id="upgradeToast" class="upgrade-toast-wrap"></div>
+                    </section>
+                    <section class="settings-section" id="settingsSessionsSection">
+                        <h3 class="settings-section-title">My Sessions</h3>
+                        <div id="settingsSessionsList" data-tab-panel="sessions"></div>
+                    </section>
+                </div>
             </div>
-        </section>
+        </aside>
 
         <footer>
             <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
@@ -250,6 +288,8 @@
     <script src="../../js/hamburger-menu.js"></script>
     <script src="js/bb100.js"></script>
     <script src="js/tabs.js"></script>
+    <script src="js/sub-tabs.js"></script>
+    <script src="js/settings.js"></script>
     <script type="module" src="js/auth/auth-ui.js"></script>
     <script type="module" src="js/cloud/bootstrap.js"></script>
     <script type="module" src="js/upload.js"></script>

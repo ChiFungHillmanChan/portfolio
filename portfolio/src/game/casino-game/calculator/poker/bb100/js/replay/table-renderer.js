@@ -303,15 +303,28 @@ export function buildTable(mountEl, snap0) {
   };
 }
 
+// Format a dollar amount as either "$X.XX" or "X.X bb" depending on unit.
+function fmtAmount(amount, unit, bbDollars) {
+  if (unit === "bb" && bbDollars > 0) {
+    const bb = amount / bbDollars;
+    return `${bb < 0 ? "-" : ""}${Math.abs(bb).toFixed(1)}bb`;
+  }
+  return `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
+}
+
 /**
  * Apply a snapshot to the SVG, only updating what changed.
  *
  * @param {Object} refs    Output of buildTable.
  * @param {Object} snap    Snapshot from state-engine.
- * @param {{instant?:boolean}} [opts]  If true, suppress CSS transitions for the next paint.
+ * @param {{instant?:boolean, unit?:'dollars'|'bb', bbDollars?:number}} [opts]
+ *   instant: suppress CSS transitions for the next paint.
+ *   unit + bbDollars: control whether stacks/pot/chips are shown in $ or BB.
  */
 export function renderSnapshot(refs, snap, opts = {}) {
   const { boardSlots, potText, seatRefs, eventRibbon, eventText, streetLabel, svg } = refs;
+  const unit = opts.unit || "dollars";
+  const bbDollars = opts.bbDollars || 0;
   if (opts.instant) {
     svg.classList.add("instant");
     requestAnimationFrame(() => svg.classList.remove("instant"));
@@ -333,7 +346,7 @@ export function renderSnapshot(refs, snap, opts = {}) {
   }
 
   // Pot
-  potText.textContent = `Pot $${(snap.pot || 0).toFixed(2)}`;
+  potText.textContent = `Pot ${fmtAmount(snap.pot || 0, unit, bbDollars)}`;
 
   // Players
   for (const [name, ref] of Object.entries(seatRefs)) {
@@ -349,7 +362,7 @@ export function renderSnapshot(refs, snap, opts = {}) {
     else ref.group.classList.remove("allin");
 
     // Stack text
-    ref.stackText.textContent = `$${(p.stack || 0).toFixed(2)}`;
+    ref.stackText.textContent = fmtAmount(p.stack || 0, unit, bbDollars);
 
     // Action text — last action of this street
     ref.actionText.textContent = p.lastAction || "";
@@ -380,7 +393,7 @@ export function renderSnapshot(refs, snap, opts = {}) {
     // Bet chip — visible iff the player has a current-street commitment
     if (p.committedStreet > 0) {
       ref.chipGroup.setAttribute("opacity", "1");
-      ref.chipText.textContent = `$${p.committedStreet.toFixed(2)}`;
+      ref.chipText.textContent = fmtAmount(p.committedStreet, unit, bbDollars);
     } else {
       ref.chipGroup.setAttribute("opacity", "0");
     }

@@ -218,15 +218,34 @@ export async function computeSeries(hands, opts = {}, control = {}) {
   let cumEv  = 0n;
 
   // --- Summary accumulators ---
-  const byPosition = {};  // { [pos]: { count, totalUC } }
-  let bbWeightedSum = 0;  // for bb/100 calculation (Number arithmetic)
+  // We track BOTH "before rake" and "after rake" totals + bb/100 in one pass
+  // so the UI can show both side-by-side without a second compute call.
+  // The equity work inside evResult is shared via the cache, so calling
+  // evResult twice per hand is essentially the same cost as once.
+  const byPosition = {};  // { [pos]: { count, totalUC } } — uses requested mode
+  let bbWeightedBefore = 0;
+  let bbWeightedAfter = 0;
+  let evBbWeightedBefore = 0;
+  let evBbWeightedAfter = 0;
+  let totalBeforeUC = 0n;
+  let totalAfterUC = 0n;
+  let evTotalBeforeUC = 0n;
+  let evTotalAfterUC = 0n;
   let rakePaidUC   = 0n;
 
   const total = hands.length;
   for (let i = 0; i < total; i++) {
     const hand = hands[i];
-    const result = perHandResult(hand, beforeRake);
-    const ev     = evResult(hand, result, beforeRake);
+    // Compute both modes — equity work inside evResult is cache-shared so
+    // the second pair is ~free.
+    const resultBefore = perHandResult(hand, true);
+    const resultAfter  = perHandResult(hand, false);
+    const evBefore     = evResult(hand, resultBefore, true);
+    const evAfter      = evResult(hand, resultAfter, false);
+
+    // What goes on the chart (cumulative series) is the user-toggled mode.
+    const result = beforeRake ? resultBefore : resultAfter;
+    const ev     = beforeRake ? evBefore     : evAfter;
 
     // Cumulative series
     cumWin  += result;
@@ -243,13 +262,21 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     blueUC.push(cumBlue);
     evUC.push(cumEv);
 
-    // bb/100 per hand
+    // Totals + bb-weighted sums for both modes
+    totalBeforeUC  += resultBefore;
+    totalAfterUC   += resultAfter;
+    evTotalBeforeUC += evBefore;
+    evTotalAfterUC  += evAfter;
     const bbUC = hand.stake.bbUC;
     if (bbUC > 0n) {
-      bbWeightedSum += Number(result) / Number(bbUC);
+      const bbF = Number(bbUC);
+      bbWeightedBefore += Number(resultBefore) / bbF;
+      bbWeightedAfter  += Number(resultAfter)  / bbF;
+      evBbWeightedBefore += Number(evBefore) / bbF;
+      evBbWeightedAfter  += Number(evAfter)  / bbF;
     }
 
-    // Position breakdown
+    // Position breakdown — uses the user-toggled mode for the dollar column
     const pos = hand.hero.position;
     if (!byPosition[pos]) {
       byPosition[pos] = { count: 0, totalUC: 0n };
@@ -295,12 +322,18 @@ export async function computeSeries(hands, opts = {}, control = {}) {
 
   // --- Summary ---
   const n = hands.length;
-  const totalUC   = cumWin;
-  const evTotalUC = cumEv;
+  const totalUC   = cumWin;          // matches the user-toggled mode (legacy)
+  const evTotalUC = cumEv;            // matches the user-toggled mode (legacy)
 
-  const bbPer100 = n > 0 ? (bbWeightedSum / n) * 100 : 0;
+  // bb/100 for both modes; bb/100 ≈ avg(result_i / bb_i) × 100
+  const bbPer100Before = n > 0 ? (bbWeightedBefore / n) * 100 : 0;
+  const bbPer100After  = n > 0 ? (bbWeightedAfter  / n) * 100 : 0;
+  const evBbPer100Before = n > 0 ? (evBbWeightedBefore / n) * 100 : 0;
+  const evBbPer100After  = n > 0 ? (evBbWeightedAfter  / n) * 100 : 0;
+  // Legacy field: matches user-toggled mode
+  const bbPer100 = beforeRake ? bbPer100Before : bbPer100After;
 
-  // Rake bb/100
+  // Rake bb/100 — same denominator (avg bb across hands), numerator = rake paid
   let avgBbUC = 0;
   if (n > 0) {
     avgBbUC = Number(hands.reduce((s, h) => s + h.stake.bbUC, 0n)) / n;
@@ -311,6 +344,7 @@ export async function computeSeries(hands, opts = {}, control = {}) {
 
   const summary = {
     hands: n,
+    // Legacy fields (preserve existing callers/tests)
     totalUC,
     evTotalUC,
     evMinusWinUC: evTotalUC - totalUC,
@@ -318,6 +352,15 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     byPosition,
     rakePaidUC,
     rakeBbPer100,
+    // New: both modes available simultaneously
+    totalBeforeUC,
+    totalAfterUC,
+    evTotalBeforeUC,
+    evTotalAfterUC,
+    bbPer100Before,
+    bbPer100After,
+    evBbPer100Before,
+    evBbPer100After,
   };
 
   const series = { winningsUC, redUC, blueUC, evUC };

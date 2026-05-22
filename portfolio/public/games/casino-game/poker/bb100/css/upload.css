@@ -348,3 +348,179 @@
   .chart-spinner-ring { animation: none; border-top-color: transparent; border-color: #4ade80; }
   .chart-spinner { animation: none; }
 }
+
+/* === Sub-tabs (Board / Replay / Details) ================================ */
+.sub-tab-bar {
+  display: flex;
+  gap: 0.25rem;
+  margin: 0 0 0.85rem;
+  padding: 0.25rem;
+  background: #0f0f17;
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 10px;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+.sub-tab-btn {
+  background: transparent;
+  border: 0;
+  color: #888;
+  padding: 8px 16px;
+  border-radius: 7px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13.5px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: all 0.15s;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+.sub-tab-btn:hover { color: #d0d0d8; background: rgba(255,255,255,0.04); }
+.sub-tab-btn.active {
+  background: rgba(74,222,128,0.16);
+  color: #4ade80;
+}
+.sub-tab-panel[hidden] { display: none !important; }
+
+/* === New summary layout ================================================= */
+.summary-title {
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.summary-section-title {
+  margin: 0.85rem 0 0.35rem;
+  font-size: 11px;
+  font-weight: 700;
+  color: #6f7080;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  padding-bottom: 0.2rem;
+}
+.summary-section-title:first-of-type { margin-top: 0; }
+
+/* === Settings button (top-right) ======================================== */
+.settings-btn {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 6px 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #c0c4cc;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  transition: all 0.15s;
+  z-index: 10;
+}
+.settings-btn:hover {
+  background: rgba(74,222,128,0.08);
+  border-color: rgba(74,222,128,0.35);
+  color: #4ade80;
+}
+.settings-btn svg { display: block; }
+.settings-btn-label {
+  font-weight: 500;
+}
+@media (max-width: 640px) {
+  .settings-btn-label { display: none; }
+  .settings-btn { padding: 6px; }
+}
+
+/* === Settings drawer ===================================================== */
+.settings-drawer {
+  position: fixed;
+  inset: 0;
+  z-index: 9000;
+  font-family: 'Rajdhani', sans-serif;
+}
+.settings-drawer[hidden] { display: none !important; }
+
+.settings-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+.settings-drawer.is-open .settings-backdrop { opacity: 1; }
+
+.settings-panel {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(440px, 92vw);
+  background: #0f0f17;
+  border-left: 1px solid rgba(255,255,255,0.08);
+  box-shadow: -8px 0 30px rgba(0,0,0,0.5);
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 220ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.settings-drawer.is-open .settings-panel {
+  transform: translateX(0);
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.settings-header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+.settings-close {
+  background: transparent;
+  border: 0;
+  color: #888;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 6px;
+  transition: all 0.12s;
+}
+.settings-close:hover {
+  background: rgba(255,255,255,0.08);
+  color: #fff;
+}
+
+.settings-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem 1.25rem 1.5rem;
+}
+.settings-section {
+  margin-bottom: 1.5rem;
+}
+.settings-section:last-child { margin-bottom: 0; }
+.settings-section-title {
+  margin: 0 0 0.6rem;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+body.settings-open { overflow: hidden; }

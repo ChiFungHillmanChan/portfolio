@@ -909,20 +909,63 @@ function makeToggle(label, color, checked, onChange) {
 
 function renderSummary(summary) {
   els.summary.replaceChildren();
-  const rows = [
-    ['Hands', summary.hands.toLocaleString()],
-    [`Total ${opts.beforeRake ? '(before rake)' : '(after rake)'}`, formatUSD(summary.totalUC)],
-    ['bb/100', summary.bbPer100.toFixed(2)],
-    ['All-in EV − Winnings', formatUSD(summary.evMinusWinUC)],
-    ['Rake paid', `${formatUSD(summary.rakePaidUC)} (${summary.rakeBbPer100.toFixed(2)} bb/100)`],
+
+  const title = document.createElement('h3');
+  title.className = 'summary-title';
+  title.textContent = 'Summary';
+  els.summary.appendChild(title);
+
+  // Two sections: BEFORE RAKE (gross results) and AFTER RAKE (net),
+  // plus rake-paid in between. Easier to compare at a glance.
+  const sections = [
+    {
+      heading: 'Hands',
+      rows: [
+        ['Total hands', summary.hands.toLocaleString()],
+      ],
+    },
+    {
+      heading: 'Before rake',
+      rows: [
+        ['Total', formatUSD(summary.totalBeforeUC)],
+        ['bb/100', summary.bbPer100Before.toFixed(2)],
+        ['All-in EV bb/100', summary.evBbPer100Before.toFixed(2)],
+      ],
+    },
+    {
+      heading: 'Rake',
+      rows: [
+        ['Rake paid', `${formatUSD(summary.rakePaidUC)}  (${summary.rakeBbPer100.toFixed(2)} bb/100)`],
+      ],
+    },
+    {
+      heading: 'After rake',
+      rows: [
+        ['Total', formatUSD(summary.totalAfterUC)],
+        ['bb/100', summary.bbPer100After.toFixed(2)],
+        ['All-in EV bb/100', summary.evBbPer100After.toFixed(2)],
+      ],
+    },
   ];
-  for (const [label, value] of rows) {
-    const row = document.createElement('div');
-    row.className = 'summary-row';
-    const l = document.createElement('span'); l.className = 'summary-label'; l.textContent = label;
-    const v = document.createElement('span'); v.className = 'summary-value'; v.textContent = value;
-    row.appendChild(l); row.appendChild(v);
-    els.summary.appendChild(row);
+
+  for (const sec of sections) {
+    const h = document.createElement('div');
+    h.className = 'summary-section-title';
+    h.textContent = sec.heading;
+    els.summary.appendChild(h);
+    for (const [label, value] of sec.rows) {
+      const row = document.createElement('div');
+      row.className = 'summary-row';
+      const l = document.createElement('span');
+      l.className = 'summary-label';
+      l.textContent = label;
+      const v = document.createElement('span');
+      v.className = 'summary-value';
+      v.textContent = value;
+      row.appendChild(l);
+      row.appendChild(v);
+      els.summary.appendChild(row);
+    }
   }
 }
 

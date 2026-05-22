@@ -229,6 +229,12 @@ function init() {
   watchTabActivation();
   onSessionChange(() => renderSaveButton());
 
+  // The sessions panel now lives inside the Settings drawer. When the user
+  // opens the drawer, refresh + render their session list.
+  window.addEventListener("settings:open", () => {
+    if (currentUser) maybeRenderSessions(true);
+  });
+
   onAuthStateChanged(auth, async (user) => {
     currentUser = user;
     sessionsRenderedFor = null;

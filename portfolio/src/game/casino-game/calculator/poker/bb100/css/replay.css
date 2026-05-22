@@ -9,6 +9,36 @@
   font-family: 'Rajdhani', sans-serif;
 }
 
+/* Critical: [hidden] must beat `display: flex` above so the modal truly
+   disappears when closed (otherwise stale layer can intercept clicks). */
+.replay-modal[hidden] { display: none !important; }
+
+/* BB/$ unit toggle in the modal header */
+.replay-unit-toggle {
+  display: inline-flex;
+  gap: 0;
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-right: 0.6rem;
+}
+.replay-unit-toggle button {
+  background: transparent;
+  border: 0;
+  color: #888;
+  padding: 4px 10px;
+  cursor: pointer;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  transition: all 0.12s;
+}
+.replay-unit-toggle button:hover { color: #c0c4cc; }
+.replay-unit-toggle button.active {
+  background: rgba(74,222,128,0.15);
+  color: #4ade80;
+}
+
 .replay-modal-backdrop {
   position: absolute;
   inset: 0;
