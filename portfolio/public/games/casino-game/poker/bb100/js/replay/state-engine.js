@@ -42,6 +42,10 @@ function makeInitialSnapshot({ meta, seats }) {
       committedStreet: 0,
       committedTotal: 0,
       cards: null,
+      // `dealt` flips true at the start of preflop (or when Hero is dealt)
+      // so the renderer can show card backs for every active villain —
+      // before this, the avatars look like the seats haven't been dealt in.
+      dealt: false,
       folded: false,
       allIn: false,
       lastAction: null,
@@ -104,15 +108,29 @@ function step(prev, ev, idx) {
       const p = s.players[ev.player];
       if (p) {
         p.cards = [...ev.cards];
+        p.dealt = true;
+      }
+      // The hand history only emits `Dealt to Hero …` — at that moment
+      // every other active player has also been dealt. Mark them so the
+      // renderer can show card backs for villains too.
+      for (const op of Object.values(s.players)) {
+        if (!op.folded) op.dealt = true;
       }
       s.eventDescription = `${ev.player} is dealt cards`;
       break;
     }
 
     case "street": {
-      // Move into new street — reset per-street counters.
-      resetStreetCommitments(s.players);
-      for (const p of Object.values(s.players)) p.lastAction = null;
+      // Move into a new street. Per-street bet/raise commitments reset
+      // at flop/turn/river/showdown so chip displays clear before the
+      // next round of action. Preflop is special: the blinds were just
+      // posted *for* preflop, so we keep them committed (and visible
+      // as chips in front of SB/BB) until the flop comes.
+      const isPreflopStart = ev.name === "preflop";
+      if (!isPreflopStart) {
+        resetStreetCommitments(s.players);
+        for (const p of Object.values(s.players)) p.lastAction = null;
+      }
       s.street = ev.name;
       if (ev.name === "flop" && ev.cards) {
         s.board = [...ev.cards];
@@ -125,6 +143,12 @@ function step(prev, ev, idx) {
         s.showdownReveal = true;
         s.eventDescription = "Showdown";
       } else if (ev.name === "preflop") {
+        // Mark every still-in player as dealt so card backs appear
+        // immediately — `*** HOLE CARDS ***` means the dealer just
+        // pitched cards to everyone.
+        for (const p of Object.values(s.players)) {
+          if (!p.folded) p.dealt = true;
+        }
         s.eventDescription = "Preflop";
       } else {
         s.eventDescription = ev.name;
