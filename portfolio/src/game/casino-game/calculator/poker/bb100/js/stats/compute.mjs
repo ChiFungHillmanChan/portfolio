@@ -4,6 +4,13 @@
 import { equity, equityMultiway } from '../equity/equity.mjs';
 import { encodeHand } from '../equity/cards.mjs';
 
+// Identifier for the current compute algorithm. Bump whenever the math
+// changes (rake-share formula, EV multi-way decomposition, banker rounding…).
+// Used as the cache-invalidation key for pre-computed cloud-session series:
+// when a saved series.json.gz has an older fingerprint, the client recomputes
+// from raw hands instead of trusting the stored chart.
+export const COMPUTE_FINGERPRINT = 'compute-v1-banker-rake-share-2026-05-22';
+
 // Street → number of board cards already out when all-in was made
 const STREET_BOARD_LEN = {
   preflop: 0,
@@ -12,36 +19,88 @@ const STREET_BOARD_LEN = {
   river: 5,
 };
 
+// ─── Fee helpers ──────────────────────────────────────────────────────────────
+// Total fees taken OUT of the pot. Rake + Jackpot are universal; Tax is the
+// EU regulatory fee (FR/IT/ES). Bingo & Fortune are GG promo BONUSES (money
+// added IN to the pot, like Cash Drop) so they go in bonusInjections, not fees.
+function totalFeesUC(hand) {
+  return (hand.rakeUC ?? 0n) + (hand.jackpotUC ?? 0n) + (hand.taxUC ?? 0n);
+}
+function bonusInjectionsUC(hand) {
+  return (hand.cashDropUC ?? 0n) + (hand.bingoUC ?? 0n) + (hand.fortuneUC ?? 0n);
+}
+
+// Banker's rounding (round-half-to-even) on BigInt division num / denom.
+// Matches GGPoker App's internal rounding — eliminates a systematic 1 micro-cent
+// drift per hand that compounds to several cents over 20K+ hands.
+function bankerRound(num, denom) {
+  if (denom === 0n) return 0n;
+  if (num === 0n) return 0n;
+  const negative = (num < 0n) !== (denom < 0n);
+  const absNum = num < 0n ? -num : num;
+  const absDen = denom < 0n ? -denom : denom;
+  const q = absNum / absDen;
+  const r = absNum % absDen;
+  const doubleR = r * 2n;
+  let out = q;
+  if (doubleR > absDen) out = q + 1n;
+  else if (doubleR === absDen) out = (q % 2n === 0n) ? q : q + 1n;
+  return negative ? -out : out;
+}
+
+/**
+ * Hero's pro-rata share of total fees by CONTRIBUTION — used for the "rake paid"
+ * stat (matches GG App's dashboard rake stat + Hand2Note + PokerTracker):
+ *
+ *   share = totalFees × heroContribution / (totalPot − bonusInjections)
+ *
+ * Counts on every hand Hero put chips in (win or lose), not just winning hands.
+ * Banker's-rounded. Use for `rakePaidUC` aggregation only.
+ */
+function heroRakeShareByContribution(hand) {
+  const heroContrib = hand.contributedUC - hand.uncalledUC;
+  if (heroContrib <= 0n) return 0n;
+  const fees = totalFeesUC(hand);
+  if (fees <= 0n) return 0n;
+  const sumContribs = hand.totalPotUC - bonusInjectionsUC(hand);
+  if (sumContribs <= 0n) return 0n;
+  return bankerRound(fees * heroContrib, sumContribs);
+}
+
+/**
+ * Hero's rake share by WIN (= how much rake comes "off Hero's winnings") — used
+ * to convert realized P&L into "before rake" P&L.
+ *
+ *   share = totalFees × heroWonFromPot / NET_pot
+ *   NET_pot = totalPot − totalFees − bonusInjections   (what was actually distributed)
+ *
+ * Why win-share, not contribution-share, for "before rake":
+ *   Rake is taken out of the pot before distribution. The winner is the one who
+ *   would have collected those chips if no rake existed; losing players' results
+ *   are unchanged whether rake exists or not (they paid what they paid). So
+ *   "before-rake P&L = realized P&L + (Hero's slice of what the winner got back)".
+ *
+ * Denominator = NET pot (chips actually distributed) so Hero's collected fraction
+ * is correct. Banker's-rounded — matches GGPoker App's "before rake" view to ≤±1¢
+ * on long samples.
+ */
+function heroRakeShareByWin(hand) {
+  const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
+  if (heroWonFromPot <= 0n) return 0n;
+  const fees = totalFeesUC(hand);
+  if (fees <= 0n) return 0n;
+  const denom = hand.totalPotUC - fees - bonusInjectionsUC(hand);
+  if (denom <= 0n) return 0n;
+  return bankerRound(fees * heroWonFromPot, denom);
+}
+
 /**
  * Compute Hero's per-hand result in micro-cents (BigInt).
- * If beforeRake=true and Hero won something, add back Hero's fee share (rake + jackpot).
+ * If beforeRake=true and Hero won something, add back Hero's win-share of fees.
  */
 function perHandResult(hand, beforeRake) {
-  let result = hand.collectedUC - hand.contributedUC;
-
-  if (beforeRake) {
-    // heroWonFromPot = amount Hero won from the contested pot (excluding uncalled returns)
-    const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
-    if (heroWonFromPot > 0n && hand.totalPotUC > hand.rakeUC) {
-      // grossPotDenom = totalPot - rake - cashDrop
-      // Cash Drop is GG bonus money injected into the pot that no player contributed,
-      // so it shouldn't be in the denominator when computing each player's rake share.
-      const cashDrop = hand.cashDropUC ?? 0n;
-      const grossPotDenom = hand.totalPotUC - hand.rakeUC - cashDrop;
-      // totalFees = rake + jackpot (all fees taken from the pot)
-      const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
-      if (grossPotDenom > 0n) {
-        // Round-half-up BigInt division: (a + c/2) / c instead of a / c
-        // Eliminates the systematic downward truncation that costs ~1¢ across many hands.
-        const num = totalFees * heroWonFromPot;
-        const rakeShare = (num + grossPotDenom / 2n) / grossPotDenom;
-        result += rakeShare;
-      }
-    }
-    // For losing hands: rakeShare = 0n (no change)
-  }
-
-  return result;
+  const result = hand.collectedUC - hand.contributedUC;
+  return beforeRake ? result + heroRakeShareByWin(hand) : result;
 }
 
 /**
@@ -68,9 +127,11 @@ function evResult(hand, result, beforeRake) {
   if (heroEffective <= 0n) return result;
 
   // Pot at risk:
-  //   beforeRake=true  → full pot (rake still inside)
-  //   beforeRake=false → net pot (rake removed)
-  const fees = hand.rakeUC + (hand.jackpotUC ?? 0n);
+  //   beforeRake=true  → full pot (fees still inside)
+  //   beforeRake=false → net pot (rake + jackpot + tax removed)
+  // Bonuses (Cash Drop / Bingo / Fortune) stay in BOTH views — they were really
+  // added to the pot and Hero's equity captures them.
+  const fees = totalFeesUC(hand);
   const potAtRiskUC = beforeRake
     ? hand.totalPotUC
     : hand.totalPotUC - fees;
@@ -296,18 +357,9 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     byPosition[pos].count++;
     byPosition[pos].totalUC += result;
 
-    // Rake paid (Hero's share on winning hands, always after-rake perspective)
-    // Same round-half-up formula as the per-hand result; same Cash Drop adjustment.
-    const heroWonFromPotRake = hand.collectedUC - hand.uncalledUC;
-    if (heroWonFromPotRake > 0n && hand.totalPotUC > hand.rakeUC) {
-      const cashDrop = hand.cashDropUC ?? 0n;
-      const grossPotDenom = hand.totalPotUC - hand.rakeUC - cashDrop;
-      const totalFees = hand.rakeUC + (hand.jackpotUC ?? 0n);
-      if (grossPotDenom > 0n) {
-        const num = totalFees * heroWonFromPotRake;
-        rakePaidUC += (num + grossPotDenom / 2n) / grossPotDenom;
-      }
-    }
+    // Rake paid — Hero's contribution share of all fees on EVERY hand Hero put
+    // chips in (winning or losing). Matches GG's "rake paid" dashboard stat.
+    rakePaidUC += heroRakeShareByContribution(hand);
 
     // Yield to event loop periodically so the browser stays responsive on
     // large datasets. The slow part is evResult()'s exhaustive equity enum

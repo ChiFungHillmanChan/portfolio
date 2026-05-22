@@ -18,6 +18,7 @@ const els = {
   position: document.getElementById('positionCard'),
   handBrowser: document.getElementById('handBrowser'),
   filterBar: document.getElementById('filterBar'),
+  replayFilterBar: document.getElementById('replayFilterBar'),
   uploadSummaryBanner: document.getElementById('uploadSummaryBanner'),
   chartSpinner: document.getElementById('chartSpinner'),
   chartSpinnerLabel: document.getElementById('chartSpinnerLabel'),
@@ -67,7 +68,9 @@ const COLORS = {
   red: '#ef4444',
   blue: '#3b82f6',
 };
-const POS_ORDER = ['BTN', 'SB', 'BB', 'UTG', 'LJ', 'HJ', 'CO'];
+// Display order for "By position" stats + position-filter chips.
+// Canonical pre-flop action order: earliest seat → latest. Blinds last.
+const POS_ORDER = ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
 const SESSION_KEY = 'poker-upload-session-v1';
 
 // Master store — keyed by hand.id so re-uploads dedupe naturally.
@@ -110,7 +113,15 @@ function notifyCloudSessionLoaded() {
   // Dynamic import keeps cloud code out of the critical path for logged-out users.
   import('./cloud/session-state.js')
     .then(({ setCurrentSession }) => {
-      setCurrentSession({ hands: parsedHands, files: originalFiles, summary: lastSummary });
+      setCurrentSession({
+        hands: parsedHands,
+        files: originalFiles,
+        summary: lastSummary,
+        // Pass the pre-computed chart series too — cloud/upload.js will save
+        // them alongside hands.txt.gz so re-opens skip the compute pipeline.
+        seriesBefore: lastCompute?.seriesBefore || null,
+        seriesAfter: lastCompute?.seriesAfter || null,
+      });
     })
     .catch(() => {}); // cloud module missing is fine — local-only mode still works
 }
@@ -177,7 +188,10 @@ function fileKey(f) {
   return `${f.name}|${f.size}|${f.lastModified}`;
 }
 
-async function handleFiles(files) {
+// Exported so cloud/load-session.js can feed it the un-gzipped hands.txt as
+// File objects when a saved session has no series cache (or a stale one) and
+// has to be recomputed locally.
+export async function handleFiles(files) {
   if (files.length === 0) return;
   const totalBefore = allHandsById.size;
   showStatus(`Reading ${files.length} files...`);
@@ -300,8 +314,13 @@ async function handleFiles(files) {
 
 // Clear all uploaded hands and reset state.
 export function clearAllUploads() {
-  if (allHandsById.size === 0) return;
-  if (!confirm(`Clear all ${allHandsById.size.toLocaleString()} uploaded hands?`)) return;
+  // A cached cloud-session is shown when parsedHands is empty but the chart
+  // is populated. Allow Clear in that case too — it just unloads the view.
+  const viewingCachedSession = !!(lastCompute && lastCompute.isCachedSession);
+  if (allHandsById.size === 0 && !viewingCachedSession) return;
+  if (!viewingCachedSession) {
+    if (!confirm(`Clear all ${allHandsById.size.toLocaleString()} uploaded hands?`)) return;
+  }
   allHandsById.clear();
   allFiles.clear();
   parsedHands = [];
@@ -312,6 +331,7 @@ export function clearAllUploads() {
   els.results.hidden = true;
   showStatus('Cleared. Upload hand-history files to start over.', 'info');
   if (els.filterBar) els.filterBar.replaceChildren();
+  if (els.replayFilterBar) { els.replayFilterBar.replaceChildren(); els.replayFilterBar.hidden = true; }
   if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
   // Restore the drop-zone view (collapse pill was hiding it post-upload)
   if (els.zone) els.zone.hidden = false;
@@ -347,17 +367,15 @@ function filterDateRange() {
   }
 }
 
+// Global filter — applies to chart, summary, by-position table, AND the hand
+// browser's input set. Date + stakes only. These are the filters that change
+// "what session am I looking at".
 function getFilteredHands() {
   if (parsedHands.length === 0) return parsedHands;
   const [start, end] = filterDateRange();
   const f = opts.filter;
   const stakeFilter = f.stakes;
-  const posFilter = f.positions;
-  const cardFilterActive = !!f.rank1 || !!f.rank2 || (f.kind && f.kind !== 'any');
-  if (!start && !end
-    && (!stakeFilter || stakeFilter.size === 0)
-    && (!posFilter || posFilter.size === 0)
-    && !cardFilterActive) {
+  if (!start && !end && (!stakeFilter || stakeFilter.size === 0)) {
     return parsedHands;
   }
   return parsedHands.filter((h) => {
@@ -370,12 +388,23 @@ function getFilteredHands() {
       const bbCents = Number(h.stake.bbUC / 10000n);
       if (!stakeFilter.has(bbCents)) return false;
     }
+    return true;
+  });
+}
+
+// Hand-browser-only filter applied AFTER getFilteredHands. Position + rank1
+// + rank2 + kind. These are the "what specific hands am I drilling into"
+// filters — they narrow the table view only, never the chart/summary.
+function applyReplayFilter(hands) {
+  const f = opts.filter;
+  const posFilter = f.positions;
+  const cardFilterActive = !!f.rank1 || !!f.rank2 || (f.kind && f.kind !== 'any');
+  if ((!posFilter || posFilter.size === 0) && !cardFilterActive) return hands;
+  return hands.filter((h) => {
     if (posFilter && posFilter.size > 0) {
       if (!posFilter.has(h.hero.position)) return false;
     }
-    if (cardFilterActive) {
-      if (!matchesCardFilter(h.hero.cards, f)) return false;
-    }
+    if (cardFilterActive && !matchesCardFilter(h.hero.cards, f)) return false;
     return true;
   });
 }
@@ -435,6 +464,10 @@ function renderFilterBar() {
     return;
   }
   els.filterBar.hidden = false;
+
+  // Global filter — Date + Stakes. Affects chart + summary + by-position
+  // table + the hand-browser's input set. (Position / rank / kind filters
+  // live in the Hand Replay tab's own filter bar — see renderReplayFilterBar.)
 
   // Row 1: date presets
   const dateRow = document.createElement('div');
@@ -537,7 +570,40 @@ function renderFilterBar() {
     els.filterBar.appendChild(stakeRow);
   }
 
-  // Row 3: position chips (multi-select; OR semantics)
+  // Row 3: result counter + clear-all button
+  const actionsRow = document.createElement('div');
+  actionsRow.className = 'filter-row filter-actions-row';
+  const filtered = getFilteredHands();
+  const counter = document.createElement('span');
+  counter.className = 'filter-counter';
+  counter.textContent = filtered.length === parsedHands.length
+    ? `Showing all ${parsedHands.length.toLocaleString()} hands`
+    : `Showing ${filtered.length.toLocaleString()} of ${parsedHands.length.toLocaleString()} hands`;
+  actionsRow.appendChild(counter);
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'filter-clear-btn';
+  clearBtn.textContent = 'Clear all uploaded hands';
+  clearBtn.addEventListener('click', clearAllUploads);
+  actionsRow.appendChild(clearBtn);
+
+  els.filterBar.appendChild(actionsRow);
+}
+
+// Replay-tab filter — Position + Rank 1 + Rank 2 + Kind. Narrows the hand
+// browser only. Does NOT trigger a recompute of the chart; just re-renders
+// the hand list. The chart-cache key intentionally excludes these fields.
+function renderReplayFilterBar() {
+  if (!els.replayFilterBar) return;
+  els.replayFilterBar.replaceChildren();
+  if (parsedHands.length === 0) {
+    els.replayFilterBar.hidden = true;
+    return;
+  }
+  els.replayFilterBar.hidden = false;
+
+  // Position chips (multi-select, OR semantics)
   const posRow = document.createElement('div');
   posRow.className = 'filter-row';
   const posLbl = document.createElement('span');
@@ -551,7 +617,7 @@ function renderFilterBar() {
   anyPosBtn.textContent = 'Any';
   anyPosBtn.addEventListener('click', () => {
     opts = { ...opts, filter: { ...opts.filter, positions: null } };
-    renderAll();
+    refreshReplay();
   });
   posRow.appendChild(anyPosBtn);
   for (const pos of POS_ORDER) {
@@ -564,13 +630,13 @@ function renderFilterBar() {
       const next = new Set(selectedPositions);
       if (isOn) next.delete(pos); else next.add(pos);
       opts = { ...opts, filter: { ...opts.filter, positions: next.size === 0 ? null : next } };
-      renderAll();
+      refreshReplay();
     });
     posRow.appendChild(btn);
   }
-  els.filterBar.appendChild(posRow);
+  els.replayFilterBar.appendChild(posRow);
 
-  // Rows 4-5: rank pickers (single-select). Row 6: kind (single-select).
+  // Rank pickers (single-select)
   function buildRankRow(label, currentValue, onPick) {
     const row = document.createElement('div');
     row.className = 'filter-row';
@@ -594,15 +660,16 @@ function renderFilterBar() {
     }
     return row;
   }
-  els.filterBar.appendChild(buildRankRow('Rank 1:', opts.filter.rank1, (r) => {
+  els.replayFilterBar.appendChild(buildRankRow('Rank 1:', opts.filter.rank1, (r) => {
     opts = { ...opts, filter: { ...opts.filter, rank1: r } };
-    renderAll();
+    refreshReplay();
   }));
-  els.filterBar.appendChild(buildRankRow('Rank 2:', opts.filter.rank2, (r) => {
+  els.replayFilterBar.appendChild(buildRankRow('Rank 2:', opts.filter.rank2, (r) => {
     opts = { ...opts, filter: { ...opts.filter, rank2: r } };
-    renderAll();
+    refreshReplay();
   }));
 
+  // Kind chips (single-select)
   const kindRow = document.createElement('div');
   kindRow.className = 'filter-row';
   const kindLbl = document.createElement('span');
@@ -616,31 +683,32 @@ function renderFilterBar() {
     btn.textContent = label;
     btn.addEventListener('click', () => {
       opts = { ...opts, filter: { ...opts.filter, kind: key } };
-      renderAll();
+      refreshReplay();
     });
     kindRow.appendChild(btn);
   }
-  els.filterBar.appendChild(kindRow);
+  els.replayFilterBar.appendChild(kindRow);
 
-  // Row 7: result counter + clear-all button
-  const actionsRow = document.createElement('div');
-  actionsRow.className = 'filter-row filter-actions-row';
-  const filtered = getFilteredHands();
-  const counter = document.createElement('span');
-  counter.className = 'filter-counter';
-  counter.textContent = filtered.length === parsedHands.length
-    ? `Showing all ${parsedHands.length.toLocaleString()} hands`
-    : `Showing ${filtered.length.toLocaleString()} of ${parsedHands.length.toLocaleString()} hands`;
-  actionsRow.appendChild(counter);
+  // Hand-browser counter
+  const counter = document.createElement('div');
+  counter.className = 'filter-row filter-actions-row';
+  const span = document.createElement('span');
+  span.className = 'filter-counter';
+  const globalFiltered = getFilteredHands();
+  const replayFiltered = applyReplayFilter(globalFiltered);
+  span.textContent = replayFiltered.length === globalFiltered.length
+    ? `${replayFiltered.length.toLocaleString()} hands in browser`
+    : `${replayFiltered.length.toLocaleString()} of ${globalFiltered.length.toLocaleString()} hands match`;
+  counter.appendChild(span);
+  els.replayFilterBar.appendChild(counter);
+}
 
-  const clearBtn = document.createElement('button');
-  clearBtn.type = 'button';
-  clearBtn.className = 'filter-clear-btn';
-  clearBtn.textContent = 'Clear all uploaded hands';
-  clearBtn.addEventListener('click', clearAllUploads);
-  actionsRow.appendChild(clearBtn);
-
-  els.filterBar.appendChild(actionsRow);
+// Re-render replay filter UI + hand browser without recomputing the chart.
+// Fast path for position/rank/kind chip clicks.
+function refreshReplay() {
+  renderReplayFilterBar();
+  const globalFiltered = getFilteredHands();
+  renderHandBrowserFiltered(applyReplayFilter(globalFiltered));
 }
 
 function toDatetimeLocalValue(d) {
@@ -657,17 +725,16 @@ function pickSeriesForMode(compute) {
 // (beforeRake is NOT in this key — both modes are computed in one pass and
 // cached together, so the toggle is a free pivot via pickSeriesForMode.)
 function computeCacheKey() {
+  // Only GLOBAL filter fields (date + stakes) feed the chart compute. Position
+  // and rank/kind filters narrow only the hand-browser display — they don't
+  // require a recompute, so they're absent from the key on purpose.
   return JSON.stringify({
     n: parsedHands.length,
-    parsedHandsRef: !!parsedHands,  // sentinel — actual identity check is below
+    parsedHandsRef: !!parsedHands,
     dateMode: opts.filter.dateMode,
     customStart: opts.filter.customStart instanceof Date ? opts.filter.customStart.getTime() : null,
     customEnd: opts.filter.customEnd instanceof Date ? opts.filter.customEnd.getTime() : null,
     stakes: opts.filter.stakes ? [...opts.filter.stakes].sort((a,b)=>a-b) : null,
-    positions: opts.filter.positions ? [...opts.filter.positions].sort() : null,
-    rank1: opts.filter.rank1 || null,
-    rank2: opts.filter.rank2 || null,
-    kind: opts.filter.kind || 'any',
   });
 }
 
@@ -680,15 +747,32 @@ function rerenderFromCache() {
   try { renderChart(series); } catch (e) { console.error('[poker] rerender chart failed:', e); return false; }
   renderControls();
   renderSummary(lastCompute.summary);
-  saveSession(series, lastCompute.summary);
+  // For a cached cloud-session view, `parsedHands` is empty — saveSession
+  // would write hands=0 + zeroed finals to localStorage, clobbering the real
+  // session snapshot. Skip the write; the cloud copy is the source of truth.
+  if (!lastCompute.isCachedSession) {
+    saveSession(series, lastCompute.summary);
+  }
   return true;
 }
 
 async function renderAll() {
+  // Cached-session view: a series.json.gz was downloaded into `lastCompute`
+  // and `parsedHands` is empty by design (no per-hand metadata available).
+  // Filtering, hand browser, replay are disabled in this mode — only the
+  // rake toggle and line-visibility checkboxes apply, and both are free
+  // pivots through rerenderFromCache().
+  if (lastCompute && lastCompute.isCachedSession) {
+    rerenderFromCache();
+    renderPosition(lastCompute.summary);
+    return;
+  }
+
   const filtered = getFilteredHands();
   if (filtered.length === 0) {
-    // Nothing to chart but still render the filter bar so user can change filter
+    // Nothing to chart but still render both filter bars so user can change filter
     renderFilterBar();
+    renderReplayFilterBar();
     if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
     els.summary.replaceChildren();
     els.position.replaceChildren();
@@ -699,15 +783,16 @@ async function renderAll() {
     return;
   }
 
-  // CACHE FAST-PATH: if the parsed-hand store + filter is the same as last
-  // compute, the cached seriesBefore/seriesAfter are still valid. The rake
-  // toggle becomes a free pivot — no recompute, no progress bar.
+  // CACHE FAST-PATH: if the parsed-hand store + GLOBAL filter is the same as
+  // last compute, the cached seriesBefore/seriesAfter are still valid. The
+  // rake toggle becomes a free pivot — no recompute, no progress bar.
   const cacheKey = computeCacheKey();
   if (lastCompute && lastCompute.parsedHandsRef === parsedHands && lastCompute.cacheKey === cacheKey) {
     rerenderFromCache();
     renderFilterBar();
+    renderReplayFilterBar();
     renderPosition(lastCompute.summary);
-    renderHandBrowserFiltered(filtered);
+    renderHandBrowserFiltered(applyReplayFilter(filtered));
     return;
   }
 
@@ -784,8 +869,9 @@ async function renderAll() {
   await nextFrame();
   renderPosition(summary);
   renderFilterBar();
+  renderReplayFilterBar();
   await nextFrame();
-  renderHandBrowserFiltered(filtered);
+  renderHandBrowserFiltered(applyReplayFilter(filtered));
   saveSession(series, summary);
   notifyCloudSessionLoaded();
   lastSummary = summary;
@@ -1328,4 +1414,71 @@ function saveSession(series, summary) {
   } catch (_) {
     // Quota — silently ignore
   }
+}
+
+// === Cached cloud-session rendering ===
+
+/**
+ * Populate the chart + summary + position panel from a pre-computed cloud
+ * session (series.json.gz) without parsing any hands. The drop zone is
+ * collapsed and the filter bar / hand browser are hidden because we don't
+ * have the per-hand metadata that filters or replays would need.
+ *
+ * Rake toggle and line-visibility checkboxes still work — both `seriesBefore`
+ * and `seriesAfter` are in the payload, so the toggle is a free pivot.
+ *
+ * @param {Object} args
+ * @param {Object} args.summary       Rehydrated summary (BigInts already cast back)
+ * @param {Object} args.seriesBefore  { winningsUC, evUC, redUC, blueUC } — BigInt[]
+ * @param {Object} args.seriesAfter   same shape
+ * @param {number} args.handCount     Total hands the session represented
+ * @param {Object} [args.sessionMeta] { sessionId, createdAt, fileNames }
+ */
+export async function loadCachedSession({ summary, seriesBefore, seriesAfter, handCount, sessionMeta }) {
+  if (!summary || !seriesBefore || !seriesAfter) {
+    throw new Error('loadCachedSession: missing summary or series');
+  }
+  // Drop any locally-parsed hands — the cached view replaces them so the
+  // chart, summary, and position card all refer to the same dataset.
+  allHandsById.clear();
+  allFiles.clear();
+  parsedHands = [];
+  originalFiles = [];
+  lastSummary = summary;
+
+  // Synthesize the cache record that rerenderFromCache + renderAll's
+  // short-circuit branch both read from.
+  lastCompute = {
+    parsedHandsRef: null,
+    cacheKey: `cached-session:${sessionMeta?.sessionId || 'unknown'}`,
+    seriesBefore,
+    seriesAfter,
+    summary,
+    isCachedSession: true,
+    sessionMeta: sessionMeta || null,
+    handCount,
+  };
+
+  // Show the results panel; hide both filter bars + hand browser (none has the
+  // per-hand metadata it needs in this cached-session view).
+  els.results.hidden = false;
+  if (els.filterBar) { els.filterBar.replaceChildren(); els.filterBar.hidden = true; }
+  if (els.replayFilterBar) { els.replayFilterBar.replaceChildren(); els.replayFilterBar.hidden = true; }
+  if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
+
+  // Collapse the drop-zone the same way a local upload does — keeps the chart
+  // the dominant element on screen.
+  collapseUploadZone();
+  updateCompactPillLabel();
+
+  // Status banner: cosmetic, mirrors what handleFiles writes after parse.
+  const fileLabel = sessionMeta?.fileNames?.length
+    ? `${sessionMeta.fileNames.length} file${sessionMeta.fileNames.length === 1 ? '' : 's'}`
+    : 'cloud session';
+  const idShort = sessionMeta?.sessionId ? ` · ${sessionMeta.sessionId.slice(-8)}` : '';
+  showStatus(`☁ Opened cached session${idShort} · ${handCount.toLocaleString()} hands · ${fileLabel}`, 'ok');
+
+  // Drive the actual draw via the existing renderAll path — its first guard
+  // hits the cached-session branch and re-uses rerenderFromCache + renderPosition.
+  await renderAll();
 }

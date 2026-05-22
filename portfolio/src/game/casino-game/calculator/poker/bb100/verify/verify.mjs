@@ -79,7 +79,7 @@ for (const beforeRake of [false, true]) {
   console.log(`Rake paid (absolute):       ${formatUSD(summary.rakePaidUC)} (${summary.rakeBbPer100.toFixed(2)} bb/100)`);
   console.log(`Position breakdown:`);
   // Sort positions in canonical order
-  const POS_ORDER = ['BTN', 'SB', 'BB', 'UTG', 'HJ', 'CO'];
+  const POS_ORDER = ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN', 'SB', 'BB'];
   const positions = Object.entries(summary.byPosition).sort((a, b) => {
     const ai = POS_ORDER.indexOf(a[0]); const bi = POS_ORDER.indexOf(b[0]);
     return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);

@@ -230,6 +230,9 @@
             <div class="upload-results" id="uploadResults" hidden>
                 <!-- Save-to-cloud injected here by bootstrap.js (#saveToCloudContainer, firstChild) -->
 
+                <!-- Global filter (date + stakes): applies to Board + Details + Hand Replay. -->
+                <div class="filter-bar" id="filterBar" hidden></div>
+
                 <div class="sub-tab-bar" id="resultsSubTabs" role="tablist">
                     <button type="button" class="sub-tab-btn active" data-sub-tab="board" role="tab" aria-selected="true">📈 Board</button>
                     <button type="button" class="sub-tab-btn" data-sub-tab="replay" role="tab" aria-selected="false">🎬 Hand Replay</button>
@@ -253,10 +256,10 @@
                 </div>
 
                 <div class="sub-tab-panel" data-sub-tab-panel="replay" hidden>
-                    <!-- Filter bar lives inside Hand Replay tab — keeps Board/Details
-                         uncluttered. Filter state still applies globally via
-                         getFilteredHands() so all tabs reflect the same subset. -->
-                    <div class="filter-bar" id="filterBar" hidden></div>
+                    <!-- Replay-only filter (position + rank1 + rank2 + kind): narrows the
+                         hand browser ONLY. Chart, summary, and by-position table stay
+                         driven by the global filter above. -->
+                    <div class="filter-bar" id="replayFilterBar" hidden></div>
                     <div class="hand-browser-card" id="handBrowser" hidden></div>
                 </div>
 
