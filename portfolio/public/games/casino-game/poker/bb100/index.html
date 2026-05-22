@@ -221,6 +221,11 @@
                     <div class="chart-wrap">
                         <button type="button" class="chart-zoom-out-btn" id="chartZoomOutBtn" aria-label="Reset zoom to full range" hidden>−</button>
                         <canvas id="evChart"></canvas>
+                        <div class="chart-spinner" id="chartSpinner" hidden role="status" aria-live="polite">
+                            <div class="chart-spinner-ring"></div>
+                            <div class="chart-spinner-label" id="chartSpinnerLabel">Computing chart…</div>
+                            <div class="chart-spinner-progress" id="chartSpinnerProgress"></div>
+                        </div>
                     </div>
                     <div class="chart-footer" id="chartFooter"></div>
                 </div>

@@ -19,7 +19,21 @@ const els = {
   handBrowser: document.getElementById('handBrowser'),
   filterBar: document.getElementById('filterBar'),
   uploadSummaryBanner: document.getElementById('uploadSummaryBanner'),
+  chartSpinner: document.getElementById('chartSpinner'),
+  chartSpinnerLabel: document.getElementById('chartSpinnerLabel'),
+  chartSpinnerProgress: document.getElementById('chartSpinnerProgress'),
 };
+
+function showChartSpinner(label, progressText) {
+  if (!els.chartSpinner) return;
+  els.chartSpinner.hidden = false;
+  if (els.chartSpinnerLabel && label) els.chartSpinnerLabel.textContent = label;
+  if (els.chartSpinnerProgress) els.chartSpinnerProgress.textContent = progressText || '';
+}
+
+function hideChartSpinner() {
+  if (els.chartSpinner) els.chartSpinner.hidden = true;
+}
 
 const COLORS = {
   winnings: '#4ade80',
@@ -461,6 +475,7 @@ async function renderAll() {
     els.position.replaceChildren();
     if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
     els.chartFooter.textContent = parsedHands.length > 0 ? 'No hands match the current filter.' : '';
+    hideChartSpinner();
     return;
   }
   // Yield-aware compute: every 10 hands the loop releases the event loop so
@@ -474,18 +489,31 @@ async function renderAll() {
   console.log(`[poker] renderAll start: ${filtered.length.toLocaleString()} hands, ${slowHandCount} potential all-in equity calcs`);
 
   showProgress({ stage: `Computing chart for ${filtered.length.toLocaleString()} hands`, current: 0, total: filtered.length });
+  showChartSpinner(`Computing chart for ${filtered.length.toLocaleString()} hands`, '0%');
   await nextFrame();
 
-  const { series, summary } = await computeSeries(filtered, opts, {
-    yieldEvery: 10,
-    onProgress: (i, n) => {
-      const now = performance.now();
-      const gap = now - lastTick;
-      if (gap > maxGapMs) maxGapMs = gap;
-      lastTick = now;
-      showProgress({ stage: `Computing chart — hand ${i.toLocaleString()} / ${n.toLocaleString()}`, current: i, total: n });
-    },
-  });
+  let series, summary;
+  try {
+    ({ series, summary } = await computeSeries(filtered, opts, {
+      yieldEvery: 10,
+      onProgress: (i, n) => {
+        const now = performance.now();
+        const gap = now - lastTick;
+        if (gap > maxGapMs) maxGapMs = gap;
+        lastTick = now;
+        const label = `Computing chart — hand ${i.toLocaleString()} / ${n.toLocaleString()}`;
+        showProgress({ stage: label, current: i, total: n });
+        const pct = n > 0 ? Math.round((i / n) * 100) : 0;
+        showChartSpinner(label, `${pct}%`);
+      },
+    }));
+  } catch (err) {
+    console.error('[poker] computeSeries failed:', err);
+    hideProgress();
+    hideChartSpinner();
+    showStatus(`Compute failed: ${err.message}`, 'error');
+    return;
+  }
   const computeMs = performance.now() - tStart;
   console.log(`[poker] compute done: ${computeMs.toFixed(0)}ms total, max gap ${maxGapMs.toFixed(0)}ms between yields`);
   if (maxGapMs > 4000) {
@@ -493,14 +521,23 @@ async function renderAll() {
   }
 
   hideProgress();
+  showChartSpinner('Drawing chart…', '');
   // Yield once more so the browser paints "compute done" before we start the
   // (synchronous) chart construction — Chart.js initializing 5000 stepped
   // points × 4 series can take 0.5–1.5s on its own.
   await nextFrame();
 
   const tChart = performance.now();
-  renderChart(series);
+  try {
+    renderChart(series);
+  } catch (err) {
+    console.error('[poker] renderChart failed:', err);
+    hideChartSpinner();
+    showStatus(`Chart render failed: ${err.message}`, 'error');
+    return;
+  }
   console.log(`[poker] renderChart: ${(performance.now() - tChart).toFixed(0)}ms`);
+  hideChartSpinner();
 
   // Spread the remaining renders across animation frames so none of them
   // compound onto the chart's heavy first paint.
