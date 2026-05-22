@@ -206,16 +206,23 @@ export async function computeSeries(hands, opts = {}, control = {}) {
   const yieldEvery = control.yieldEvery | 0;
   const onProgress = control.onProgress || null;
 
-  // --- Series accumulators ---
-  const winningsUC = [];
-  const redUC      = [];
-  const blueUC     = [];
-  const evUC       = [];
+  // --- Series accumulators (BOTH modes simultaneously) ---
+  // Storing both up-front means the rake toggle in the UI just swaps which
+  // pre-computed series the chart draws — no re-iteration, no progress bar.
+  // Memory cost: 8 BigInt arrays × N hands ≈ 5MB at 18K hands. Acceptable.
+  const winningsBeforeUC = [];
+  const redBeforeUC      = [];
+  const blueBeforeUC     = [];
+  const evBeforeUC       = [];
+  const winningsAfterUC = [];
+  const redAfterUC      = [];
+  const blueAfterUC     = [];
+  const evAfterUC       = [];
 
-  let cumWin = 0n;
-  let cumRed = 0n;
-  let cumBlue = 0n;
-  let cumEv  = 0n;
+  let cumWinBefore = 0n,  cumWinAfter = 0n;
+  let cumRedBefore = 0n,  cumRedAfter = 0n;
+  let cumBlueBefore = 0n, cumBlueAfter = 0n;
+  let cumEvBefore = 0n,   cumEvAfter = 0n;
 
   // --- Summary accumulators ---
   // We track BOTH "before rake" and "after rake" totals + bb/100 in one pass
@@ -243,24 +250,29 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     const evBefore     = evResult(hand, resultBefore, true);
     const evAfter      = evResult(hand, resultAfter, false);
 
-    // What goes on the chart (cumulative series) is the user-toggled mode.
-    const result = beforeRake ? resultBefore : resultAfter;
-    const ev     = beforeRake ? evBefore     : evAfter;
-
-    // Cumulative series
-    cumWin  += result;
-    cumEv   += ev;
-
+    // Build cumulative series for BOTH modes so the UI can toggle without recompute.
+    cumWinBefore += resultBefore;
+    cumWinAfter  += resultAfter;
+    cumEvBefore  += evBefore;
+    cumEvAfter   += evAfter;
     if (hand.reachedShowdown) {
-      cumBlue += result;
+      cumBlueBefore += resultBefore;
+      cumBlueAfter  += resultAfter;
     } else {
-      cumRed  += result;
+      cumRedBefore  += resultBefore;
+      cumRedAfter   += resultAfter;
     }
+    winningsBeforeUC.push(cumWinBefore);
+    redBeforeUC.push(cumRedBefore);
+    blueBeforeUC.push(cumBlueBefore);
+    evBeforeUC.push(cumEvBefore);
+    winningsAfterUC.push(cumWinAfter);
+    redAfterUC.push(cumRedAfter);
+    blueAfterUC.push(cumBlueAfter);
+    evAfterUC.push(cumEvAfter);
 
-    winningsUC.push(cumWin);
-    redUC.push(cumRed);
-    blueUC.push(cumBlue);
-    evUC.push(cumEv);
+    // Legacy "active mode" used for position breakdown total column
+    const result = beforeRake ? resultBefore : resultAfter;
 
     // Totals + bb-weighted sums for both modes
     totalBeforeUC  += resultBefore;
@@ -322,8 +334,10 @@ export async function computeSeries(hands, opts = {}, control = {}) {
 
   // --- Summary ---
   const n = hands.length;
-  const totalUC   = cumWin;          // matches the user-toggled mode (legacy)
-  const evTotalUC = cumEv;            // matches the user-toggled mode (legacy)
+  // Legacy fields: matches the user-toggled mode (kept for back-compat with
+  // older callers and tests).
+  const totalUC   = beforeRake ? cumWinBefore : cumWinAfter;
+  const evTotalUC = beforeRake ? cumEvBefore  : cumEvAfter;
 
   // bb/100 for both modes; bb/100 ≈ avg(result_i / bb_i) × 100
   const bbPer100Before = n > 0 ? (bbWeightedBefore / n) * 100 : 0;
@@ -363,7 +377,20 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     evBbPer100After,
   };
 
-  const series = { winningsUC, redUC, blueUC, evUC };
+  // Build both series objects; "series" key (legacy) points at the toggled mode.
+  const seriesBefore = {
+    winningsUC: winningsBeforeUC,
+    redUC: redBeforeUC,
+    blueUC: blueBeforeUC,
+    evUC:  evBeforeUC,
+  };
+  const seriesAfter = {
+    winningsUC: winningsAfterUC,
+    redUC: redAfterUC,
+    blueUC: blueAfterUC,
+    evUC:  evAfterUC,
+  };
+  const series = beforeRake ? seriesBefore : seriesAfter;
 
-  return { series, summary };
+  return { series, seriesBefore, seriesAfter, summary };
 }

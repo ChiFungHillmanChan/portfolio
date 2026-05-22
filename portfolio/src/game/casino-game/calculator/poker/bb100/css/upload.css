@@ -14,19 +14,95 @@
 @media (max-width: 768px) { #evChart { height: 320px !important; } }
 .series-toggle { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.9rem; user-select: none; }
 .series-toggle input { cursor: pointer; }
-.upload-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.08); }
-.summary-row { display: flex; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-.summary-row:last-child { border-bottom: none; }
-.summary-label { color: var(--text-secondary, #a0a0b0); }
-.summary-value { color: var(--text-primary, #e0e0ea); font-family: 'JetBrains Mono', monospace; }
+/* === Summary: header strip + side-by-side Before/After Rake cards ======= */
+.upload-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.summary-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.summary-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.summary-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.7rem;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.summary-card.stat-before { border-left: 3px solid rgba(74,222,128,0.45); }
+.summary-card.stat-after  { border-left: 3px solid rgba(251,146,60,0.45); }
+
+.summary-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8a8a96;
+}
+.summary-card.stat-before .summary-card-title { color: #4ade80; }
+.summary-card.stat-after  .summary-card-title { color: #fb923c; }
+
+.summary-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+/* Individual stat tile — used in both header row and cards */
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(15,15,23,0.5);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e6e6ee;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+.stat-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stat-block.stat-rake .stat-value { color: #fbbf24; }
 .position-card { padding: 1.5rem; background: rgba(255,255,255,0.03); border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.08); }
 .position-card h3 { margin-top: 0; }
 .pos-table { width: 100%; border-collapse: collapse; }
 .pos-table th, .pos-table td { padding: 0.5rem; text-align: left; border-bottom: 1px solid rgba(255,255,255,0.05); font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; }
 .pos-table th { color: var(--text-secondary, #a0a0b0); font-weight: 500; }
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .upload-zone { padding: 2rem 1rem; }
-  .upload-summary { grid-template-columns: 1fr; }
+  .upload-summary { padding: 1rem; gap: 0.7rem; }
+  .summary-header-row { grid-template-columns: 1fr; }
+  .summary-cards-row { grid-template-columns: 1fr; }
+  .summary-card { padding: 0.75rem 0.85rem; }
+  .stat-value { font-size: 0.9rem; }
   .chart-controls { gap: 0.5rem; font-size: 0.85rem; }
   .upload-card, .chart-card, .position-card { padding: 1rem; }
 }
@@ -384,25 +460,14 @@
 }
 .sub-tab-panel[hidden] { display: none !important; }
 
-/* === New summary layout ================================================= */
+/* === Summary title (.summary-cards-row + .stat-block et al. defined above) === */
 .summary-title {
-  margin: 0 0 0.5rem;
+  margin: 0;
   font-size: 1.05rem;
   font-weight: 600;
   color: #fff;
   letter-spacing: 0.02em;
 }
-.summary-section-title {
-  margin: 0.85rem 0 0.35rem;
-  font-size: 11px;
-  font-weight: 700;
-  color: #6f7080;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
-  padding-bottom: 0.2rem;
-}
-.summary-section-title:first-of-type { margin-top: 0; }
 
 /* === Settings button (top-right) ======================================== */
 .settings-btn {
