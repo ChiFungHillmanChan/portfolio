@@ -1,0 +1,284 @@
+// bootstrap.js — orchestrates cloud features once the user is signed in.
+//
+// On auth state change:
+//   signed-in  → show quota meter, show Save-to-cloud button (when a session is loaded),
+//                populate My Sessions tab
+//   signed-out → hide quota meter, hide Save button, clear sessions tab
+
+import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { auth } from "../auth/firebase-init.js";
+import { getQuota, renderQuotaMeter, invalidateQuotaCache } from "./quota.js";
+import { saveSessionToCloud } from "./upload.js";
+import { renderSessions } from "./list.js";
+import { getCurrentSession, onSessionChange } from "./session-state.js";
+import { showProgress, hideProgress } from "../progress-bar.js";
+import { renderTierBanner, maybeShowUpgradedToast } from "./tier-banner.js";
+
+const SAVE_BUTTON_ID = "saveToCloudBtn";
+const SAVE_STATUS_ID = "saveToCloudStatus";
+const QUOTA_METER_ID = "quotaMeter";
+const TIER_BANNER_ID = "tierBanner";
+const UPGRADE_TOAST_ID = "upgradeToast";
+const SESSIONS_PANEL_SELECTOR = '[data-tab-panel="sessions"]';
+const SAVE_CONTAINER_ID = "saveToCloudContainer";
+
+// Polling state for post-checkout return — webhook may take a few seconds
+let upgradePollingState = { active: false, timer: null, startTier: null };
+
+let currentUser = null;
+let sessionsRenderedFor = null; // uid we last rendered sessions for
+
+function el(tag, attrs = {}, children = []) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") node.className = v;
+    else if (k.startsWith("on")) node.addEventListener(k.slice(2), v);
+    else node.setAttribute(k, v);
+  }
+  for (const c of children) node.appendChild(typeof c === "string" ? document.createTextNode(c) : c);
+  return node;
+}
+
+function ensureSaveButtonSlot() {
+  if (document.getElementById(SAVE_CONTAINER_ID)) return;
+  const uploadResults = document.getElementById("uploadResults");
+  if (!uploadResults) return;
+  const wrap = el("div", { id: SAVE_CONTAINER_ID, class: "save-to-cloud-wrap" });
+  uploadResults.insertBefore(wrap, uploadResults.firstChild);
+}
+
+function ensureQuotaSlot() {
+  if (document.getElementById(QUOTA_METER_ID)) return;
+  const uploadResults = document.getElementById("uploadResults");
+  if (!uploadResults) return;
+  const wrap = el("div", { id: QUOTA_METER_ID, class: "quota-meter-wrap" });
+  uploadResults.insertBefore(wrap, uploadResults.firstChild);
+}
+
+function ensureTierBannerSlot() {
+  if (document.getElementById(TIER_BANNER_ID)) return;
+  const uploadResults = document.getElementById("uploadResults");
+  if (!uploadResults) return;
+  ensureQuotaSlot();
+  const meter = document.getElementById(QUOTA_METER_ID);
+  const wrap = el("div", { id: TIER_BANNER_ID, class: "tier-banner-wrap" });
+  // Insert right after the quota meter
+  if (meter && meter.parentNode === uploadResults) {
+    uploadResults.insertBefore(wrap, meter.nextSibling);
+  } else {
+    uploadResults.insertBefore(wrap, uploadResults.firstChild);
+  }
+}
+
+function ensureUpgradeToastSlot() {
+  if (document.getElementById(UPGRADE_TOAST_ID)) return;
+  const uploadResults = document.getElementById("uploadResults");
+  if (!uploadResults) return;
+  const wrap = el("div", { id: UPGRADE_TOAST_ID, class: "upgrade-toast-wrap" });
+  uploadResults.insertBefore(wrap, uploadResults.firstChild);
+}
+
+async function refreshQuotaMeter() {
+  if (!currentUser) {
+    const c = document.getElementById(QUOTA_METER_ID);
+    if (c) c.replaceChildren();
+    const tb = document.getElementById(TIER_BANNER_ID);
+    if (tb) tb.replaceChildren();
+    return;
+  }
+  ensureQuotaSlot();
+  ensureTierBannerSlot();
+  const q = await getQuota({ force: true });
+  renderQuotaMeter(document.getElementById(QUOTA_METER_ID), q);
+  renderTierBanner(document.getElementById(TIER_BANNER_ID), q);
+  return q;
+}
+
+// Poll quota repeatedly after a Stripe checkout return until the webhook has
+// upgraded the user's tier (or we time out). Webhook landing typically takes
+// 1-5s but allow 60s of polling.
+async function pollForTierUpgrade(startTier) {
+  if (upgradePollingState.active) return;
+  upgradePollingState = { active: true, timer: null, startTier };
+  const startMs = Date.now();
+  const POLL_MS = 2500;
+  const TIMEOUT_MS = 60_000;
+
+  const tick = async () => {
+    if (!upgradePollingState.active) return;
+    const q = await refreshQuotaMeter();
+    const newTier = q?.tier || "free";
+    if (newTier !== startTier && newTier !== "free") {
+      // Tier changed → done
+      console.log(`[poker upgrade] tier changed: ${startTier} → ${newTier}`);
+      upgradePollingState.active = false;
+      return;
+    }
+    if (Date.now() - startMs > TIMEOUT_MS) {
+      console.warn("[poker upgrade] poll timed out; user may need to refresh");
+      upgradePollingState.active = false;
+      return;
+    }
+    upgradePollingState.timer = setTimeout(tick, POLL_MS);
+  };
+  tick();
+}
+
+function renderSaveButton() {
+  ensureSaveButtonSlot();
+  const slot = document.getElementById(SAVE_CONTAINER_ID);
+  if (!slot) return;
+
+  if (!currentUser) {
+    slot.replaceChildren();
+    return;
+  }
+
+  const session = getCurrentSession();
+  if (!session || !session.hands || session.hands.length === 0) {
+    slot.replaceChildren();
+    return;
+  }
+
+  slot.replaceChildren();
+  const btn = el("button", {
+    id: SAVE_BUTTON_ID,
+    type: "button",
+    class: "save-to-cloud-btn",
+    onclick: async () => {
+      btn.disabled = true;
+      setStatus("Preparing upload…", "info");
+      const handCount = session.hands.length;
+      const stageLabel = {
+        reading: "Reading files",
+        bundling: "Bundling hands",
+        compressing: "Compressing",
+        signing: "Requesting upload URL",
+        "uploading-hands": "Uploading hands",
+        "uploading-index": "Uploading index",
+        committing: "Saving to cloud",
+        done: "Done",
+      };
+      try {
+        const r = await saveSessionToCloud({
+          hands: session.hands,
+          originalFiles: session.files,
+          summary: session.summary,
+          onProgress: ({ stage, progress }) => {
+            const label = stageLabel[stage] || stage;
+            showProgress({
+              stage: `${label} — ${handCount.toLocaleString()} hands`,
+              current: Math.round(progress * 1000),
+              total: 1000,
+            });
+            setStatus(`${label} (${Math.round(progress * 100)}%)`, "info");
+          },
+        });
+        hideProgress();
+        setStatus(`✓ Saved ${r.handCount.toLocaleString()} hands (session ${r.sessionId.slice(-8)})`, "ok");
+        refreshQuotaMeter();
+        // If My Sessions tab is currently visible, refresh it
+        if (isSessionsTabActive()) {
+          maybeRenderSessions(true);
+        }
+      } catch (err) {
+        hideProgress();
+        console.error("[poker cloud] save failed:", err);
+        setStatus(`✗ ${err.message}`, "err");
+      } finally {
+        btn.disabled = false;
+      }
+    },
+  }, [`☁️  Save ${session.hands.length.toLocaleString()} hands to cloud`]);
+  const status = el("div", { id: SAVE_STATUS_ID, class: "save-status" });
+  slot.appendChild(btn);
+  slot.appendChild(status);
+}
+
+function setStatus(text, kind = "info") {
+  const s = document.getElementById(SAVE_STATUS_ID);
+  if (!s) return;
+  s.className = "save-status " + kind;
+  s.textContent = text;
+}
+
+function isSessionsTabActive() {
+  const panel = document.querySelector(SESSIONS_PANEL_SELECTOR);
+  return panel && !panel.hidden;
+}
+
+async function maybeRenderSessions(force = false) {
+  if (!currentUser) return;
+  if (sessionsRenderedFor === currentUser.uid && !force) return;
+  const panel = document.querySelector(SESSIONS_PANEL_SELECTOR);
+  if (!panel) return;
+  await renderSessions(panel);
+  sessionsRenderedFor = currentUser.uid;
+}
+
+function watchTabActivation() {
+  // The tab buttons toggle hidden on panels. When the sessions panel becomes visible, render it.
+  const observer = new MutationObserver(() => {
+    if (isSessionsTabActive()) maybeRenderSessions();
+  });
+  const panel = document.querySelector(SESSIONS_PANEL_SELECTOR);
+  if (panel) observer.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
+}
+
+function init() {
+  watchTabActivation();
+  onSessionChange(() => renderSaveButton());
+
+  onAuthStateChanged(auth, async (user) => {
+    currentUser = user;
+    sessionsRenderedFor = null;
+    invalidateQuotaCache();
+    if (user) {
+      // Reveal the upload-results panel so the quota/tier slots can render
+      // even before the user uploads any files. (Otherwise quota/banner hide
+      // behind the still-hidden uploadResults element.)
+      const uploadResults = document.getElementById("uploadResults");
+      if (uploadResults) uploadResults.hidden = false;
+
+      ensureUpgradeToastSlot();
+      const toastSlot = document.getElementById(UPGRADE_TOAST_ID);
+      const cameFromCheckout = maybeShowUpgradedToast(toastSlot);
+
+      const q = await refreshQuotaMeter();
+      renderSaveButton();
+      if (isSessionsTabActive()) maybeRenderSessions();
+
+      // If user just returned from Stripe Checkout, poll until the webhook
+      // upgrades their tier in Firestore (1-5s typical, 60s timeout).
+      if (cameFromCheckout && q) {
+        pollForTierUpgrade(q.tier || "free");
+      }
+    } else {
+      // Clean up
+      const meter = document.getElementById(QUOTA_METER_ID);
+      if (meter) meter.replaceChildren();
+      const tb = document.getElementById(TIER_BANNER_ID);
+      if (tb) tb.replaceChildren();
+      const toast = document.getElementById(UPGRADE_TOAST_ID);
+      if (toast) toast.replaceChildren();
+      const slot = document.getElementById(SAVE_CONTAINER_ID);
+      if (slot) slot.replaceChildren();
+      const panel = document.querySelector(SESSIONS_PANEL_SELECTOR);
+      if (panel) {
+        panel.replaceChildren();
+        const ph = document.createElement("div");
+        ph.className = "sessions-placeholder";
+        ph.innerHTML = `
+          <p>Sign in to save your uploaded hand histories.</p>
+        `;
+        panel.appendChild(ph);
+      }
+    }
+  });
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
+} else {
+  init();
+}

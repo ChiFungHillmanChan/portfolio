@@ -15,6 +15,14 @@
     <link rel="stylesheet" href="../../css/main.css">
     <link rel="stylesheet" href="../../css/hamburger-menu.css">
     <link rel="stylesheet" href="css/bb100.css">
+    <link rel="stylesheet" href="css/upload.css">
+    <link rel="stylesheet" href="css/auth.css">
+    <link rel="stylesheet" href="css/cloud.css">
+    <link rel="stylesheet" href="css/progress-bar.css">
+    <link rel="stylesheet" href="css/replay.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" crossorigin="anonymous"></script>
 </head>
 <body>
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
@@ -67,6 +75,17 @@
             <p class="subtitle">Cash Game Win Rate</p>
         </header>
 
+        <div class="auth-row">
+            <div id="authSlot" class="auth-slot"></div>
+        </div>
+
+        <div class="tab-bar" role="tablist">
+            <button class="tab-btn active" data-tab="manual" role="tab" aria-selected="true">Manual Entry</button>
+            <button class="tab-btn" data-tab="upload" role="tab" aria-selected="false">Upload GG Hands</button>
+            <button class="tab-btn" data-tab="sessions" role="tab" aria-selected="false" hidden>My Sessions</button>
+        </div>
+
+        <div class="tab-panel" data-tab-panel="manual">
         <section class="bb100-grid">
             <div class="bb100-card inputs-card">
                 <h2 class="card-title">Inputs</h2>
@@ -181,6 +200,42 @@
                 mostly noise. Serious win-rate claims usually need 50,000–100,000+ hands.
             </p>
         </div>
+        </div>
+
+        <section class="tab-panel" data-tab-panel="upload" hidden>
+            <div class="upload-card">
+                <div class="upload-zone" id="uploadZone">
+                    <p class="upload-instr">Drop GGPoker hand-history files (.txt) here</p>
+                    <p class="upload-or">or</p>
+                    <button type="button" class="btn btn-primary" id="uploadPickBtn">Browse files</button>
+                    <input type="file" id="uploadFileInput" multiple accept=".txt,text/plain" hidden>
+                    <p class="upload-hint">Files are parsed in your browser. Nothing is uploaded anywhere. Folder drop supported in Chrome/Edge/Brave.</p>
+                </div>
+                <div class="upload-status" id="uploadStatus" hidden></div>
+            </div>
+
+            <div class="upload-results" id="uploadResults" hidden>
+                <div class="filter-bar" id="filterBar" hidden></div>
+                <div class="chart-card">
+                    <div class="chart-controls" id="chartControls"></div>
+                    <div class="chart-wrap">
+                        <button type="button" class="chart-zoom-out-btn" id="chartZoomOutBtn" aria-label="Reset zoom to full range" hidden>−</button>
+                        <canvas id="evChart"></canvas>
+                    </div>
+                    <div class="chart-footer" id="chartFooter"></div>
+                </div>
+                <div class="upload-summary" id="uploadSummary"></div>
+                <div class="position-card" id="positionCard"></div>
+                <div class="hand-browser-card" id="handBrowser" hidden></div>
+            </div>
+        </section>
+
+        <section class="tab-panel" data-tab-panel="sessions" hidden>
+            <div class="sessions-placeholder">
+                <p>Sign in to save and view your uploaded hand histories.</p>
+                <p class="placeholder-hint">Cloud storage launches with Phase 2 — Firebase Auth.</p>
+            </div>
+        </section>
 
         <footer>
             <p class="footer-text">For educational purposes only. Gamble responsibly.</p>
@@ -189,5 +244,9 @@
 
     <script src="../../js/hamburger-menu.js"></script>
     <script src="js/bb100.js"></script>
+    <script src="js/tabs.js"></script>
+    <script type="module" src="js/auth/auth-ui.js"></script>
+    <script type="module" src="js/cloud/bootstrap.js"></script>
+    <script type="module" src="js/upload.js"></script>
 </body>
 </html>

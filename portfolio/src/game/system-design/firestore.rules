@@ -43,5 +43,19 @@ service cloud.firestore {
 
       allow update, delete: if false;
     }
+
+    // Casino-game poker — per-user storage doc (single doc per user)
+    // tier, handCount, stripe subscription state, etc. Admin-SDK-only writes.
+    match /pokerStorage/{uid} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // Casino-game poker — per-user session docs (one per upload session)
+    // Created by cg-poker Lambda after S3 commit succeeds.
+    match /pokerSessions/{uid}/sessions/{sessionId} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
   }
 }

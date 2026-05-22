@@ -1,0 +1,356 @@
+// animated-replay.js — Modal that plays a hand's action sequence as an animated SVG table.
+//
+// Public API:
+//   showReplay(handText, { title }) — replaces the static-replay export of the same name.
+//   closeModal()
+//
+// Architecture:
+//   handText → extractActions() → buildSnapshots() → buildTable() → renderSnapshot per step
+//   Playback loop walks the snapshot[] driven by a setTimeout clock.
+
+import { extractActions } from "./action-extractor.js";
+import { buildSnapshots } from "./state-engine.js";
+import { buildTable, renderSnapshot } from "./table-renderer.js";
+
+const MODAL_ID = "animatedReplayModal";
+
+// Per-action durations (ms). Some actions are quick (folds/checks), others are
+// "weighty" (deals, all-ins, showdown). Speed multiplier scales these.
+const BASE_DURATION = {
+  "post-blind": 600,
+  "deal-hole": 800,
+  "street": 1100,
+  "action": 850,
+  "uncalled": 800,
+  "shows": 900,
+  "mucks": 500,
+  "collect": 1200,
+  "cash-drop": 600,
+};
+const DEFAULT_DURATION = 700;
+
+function durationForEvent(ev) {
+  return BASE_DURATION[ev?.type] ?? DEFAULT_DURATION;
+}
+
+// ── DOM template ────────────────────────────────────────────────────────────
+
+function ensureModal() {
+  let modal = document.getElementById(MODAL_ID);
+  if (modal) return modal;
+  modal = document.createElement("div");
+  modal.id = MODAL_ID;
+  modal.className = "replay-modal replay-modal-animated";
+  modal.hidden = true;
+  modal.innerHTML = `
+    <div class="replay-modal-backdrop"></div>
+    <div class="replay-modal-panel replay-modal-panel-wide" role="dialog" aria-modal="true">
+      <div class="replay-modal-header">
+        <h3 class="replay-modal-title">Hand Replay</h3>
+        <div class="replay-view-tabs" role="tablist">
+          <button type="button" class="replay-view-tab active" data-view="table" role="tab" aria-selected="true">Table</button>
+          <button type="button" class="replay-view-tab" data-view="log" role="tab" aria-selected="false">Text log</button>
+        </div>
+        <button type="button" class="replay-modal-close" aria-label="Close">✕</button>
+      </div>
+      <div class="replay-modal-body replay-modal-body-animated">
+        <div class="replay-table-mount" data-view-panel="table"></div>
+        <div class="replay-log-mount" data-view-panel="log" hidden></div>
+      </div>
+      <div class="replay-modal-footer">
+        <div class="replay-progress">
+          <span class="replay-progress-pos">—</span>
+          <div class="replay-scrubber" role="slider" aria-label="Replay position">
+            <div class="replay-scrubber-fill"></div>
+            <input type="range" min="0" max="0" value="0" class="replay-scrubber-input">
+          </div>
+          <span class="replay-progress-total">—</span>
+        </div>
+        <div class="replay-controls">
+          <button type="button" class="replay-ctl" data-act="prev" title="Previous (←)" aria-label="Previous step">◀</button>
+          <button type="button" class="replay-ctl replay-ctl-play" data-act="play" title="Play / Pause (Space)" aria-label="Play">▶</button>
+          <button type="button" class="replay-ctl" data-act="next" title="Next (→)" aria-label="Next step">▶</button>
+          <span class="replay-ctl-sep"></span>
+          <button type="button" class="replay-speed" data-speed="1">1×</button>
+          <button type="button" class="replay-speed active" data-speed="2">2×</button>
+          <button type="button" class="replay-speed" data-speed="4">4×</button>
+          <span class="replay-ctl-sep"></span>
+          <button type="button" class="replay-ctl" data-act="restart" title="Restart" aria-label="Restart">⟲</button>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+  modal.querySelector(".replay-modal-backdrop").addEventListener("click", closeModal);
+  modal.querySelector(".replay-modal-close").addEventListener("click", closeModal);
+  document.addEventListener("keydown", onKeyDown);
+  return modal;
+}
+
+// ── Playback state ──────────────────────────────────────────────────────────
+
+let state = null;
+
+function onKeyDown(e) {
+  const modal = document.getElementById(MODAL_ID);
+  if (!modal || modal.hidden) return;
+  if (e.key === "Escape") {
+    e.preventDefault();
+    closeModal();
+  } else if (e.key === " ") {
+    e.preventDefault();
+    togglePlay();
+  } else if (e.key === "ArrowLeft") {
+    e.preventDefault();
+    step(-1);
+  } else if (e.key === "ArrowRight") {
+    e.preventDefault();
+    step(+1);
+  } else if (e.key === "1") setSpeed(1);
+  else if (e.key === "2") setSpeed(2);
+  else if (e.key === "4") setSpeed(4);
+}
+
+function updateScrubber() {
+  if (!state) return;
+  const { modal, idx, snapshots } = state;
+  const total = snapshots.length - 1;
+  modal.querySelector(".replay-progress-pos").textContent = `Step ${idx} / ${total}`;
+  modal.querySelector(".replay-progress-total").textContent = `${total} steps`;
+  const input = modal.querySelector(".replay-scrubber-input");
+  input.max = String(total);
+  input.value = String(idx);
+  const fill = modal.querySelector(".replay-scrubber-fill");
+  fill.style.width = total > 0 ? `${(idx / total) * 100}%` : "0%";
+  // Update prev/next buttons
+  modal.querySelector('[data-act="prev"]').disabled = idx === 0;
+  modal.querySelector('[data-act="next"]').disabled = idx === total;
+}
+
+function applySnapshot(instant = false) {
+  if (!state) return;
+  const snap = state.snapshots[state.idx];
+  renderSnapshot(state.tableRefs, snap, { instant });
+  updateScrubber();
+  updateLogHighlight();
+}
+
+function step(delta) {
+  if (!state) return;
+  const total = state.snapshots.length - 1;
+  const next = Math.max(0, Math.min(total, state.idx + delta));
+  if (next === state.idx) return;
+  state.idx = next;
+  applySnapshot(false);
+}
+
+function jumpTo(idx) {
+  if (!state) return;
+  const total = state.snapshots.length - 1;
+  const clamped = Math.max(0, Math.min(total, idx));
+  state.idx = clamped;
+  applySnapshot(true);
+}
+
+function setPlaying(playing) {
+  if (!state) return;
+  state.playing = playing;
+  const btn = state.modal.querySelector('[data-act="play"]');
+  btn.textContent = playing ? "⏸" : "▶";
+  btn.setAttribute("aria-label", playing ? "Pause" : "Play");
+  if (playing) {
+    if (state.idx >= state.snapshots.length - 1) state.idx = 0;
+    scheduleNext();
+  } else {
+    if (state.timer) clearTimeout(state.timer);
+    state.timer = null;
+  }
+}
+
+function togglePlay() {
+  if (!state) return;
+  setPlaying(!state.playing);
+}
+
+function scheduleNext() {
+  if (!state || !state.playing) return;
+  const nextIdx = state.idx + 1;
+  if (nextIdx >= state.snapshots.length) {
+    setPlaying(false);
+    return;
+  }
+  const ev = state.extracted.events[state.idx]; // event we're about to apply
+  const dur = durationForEvent(ev) / state.speed;
+  state.timer = setTimeout(() => {
+    if (!state || !state.playing) return;
+    state.idx = nextIdx;
+    applySnapshot(false);
+    scheduleNext();
+  }, dur);
+}
+
+function setSpeed(mult) {
+  if (!state) return;
+  state.speed = mult;
+  state.modal.querySelectorAll(".replay-speed").forEach((b) => {
+    b.classList.toggle("active", parseInt(b.dataset.speed, 10) === mult);
+  });
+  if (state.playing) {
+    if (state.timer) clearTimeout(state.timer);
+    scheduleNext();
+  }
+}
+
+// ── Text log fallback (a11y view) ──────────────────────────────────────────
+
+function renderTextLog(mount, extracted) {
+  mount.replaceChildren();
+  const list = document.createElement("div");
+  list.className = "replay-log-list";
+  list.appendChild(makeLogLine(`Hand #${extracted.meta.handId}`, "log-header"));
+  list.appendChild(makeLogLine(
+    `${extracted.meta.gameType || "Hold'em"} · Blinds $${extracted.meta.stake.sb.toFixed(2)}/$${extracted.meta.stake.bb.toFixed(2)} · ${extracted.meta.date}`,
+    "log-meta"
+  ));
+  for (let i = 0; i < extracted.events.length; i++) {
+    const ev = extracted.events[i];
+    const line = makeLogLine(describeEvent(ev), "log-event");
+    line.dataset.eventIdx = String(i);
+    list.appendChild(line);
+  }
+  mount.appendChild(list);
+}
+
+function describeEvent(ev) {
+  switch (ev.type) {
+    case "street":
+      if (ev.name === "flop") return `*** FLOP *** [${(ev.cards || []).join(" ")}]`;
+      if (ev.name === "turn") return `*** TURN *** [${ev.card}]`;
+      if (ev.name === "river") return `*** RIVER *** [${ev.card}]`;
+      if (ev.name === "showdown") return `*** SHOWDOWN ***`;
+      return `*** ${ev.name.toUpperCase()} ***`;
+    case "deal-hole":
+      return `${ev.player} dealt [${(ev.cards || []).join(" ")}]`;
+    case "post-blind":
+      return `${ev.player} posts ${ev.blind} $${ev.amount.toFixed(2)}`;
+    case "action":
+      if (ev.verb === "folds") return `${ev.player} folds`;
+      if (ev.verb === "checks") return `${ev.player} checks`;
+      if (ev.verb === "calls") return `${ev.player} calls $${(ev.amount || 0).toFixed(2)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      if (ev.verb === "bets") return `${ev.player} bets $${(ev.amount || 0).toFixed(2)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      if (ev.verb === "raises") return `${ev.player} raises $${(ev.raiseBy || 0).toFixed(2)} to $${(ev.to || 0).toFixed(2)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      return `${ev.player} ${ev.verb}`;
+    case "uncalled": return `Uncalled bet ($${ev.amount.toFixed(2)}) returned to ${ev.player}`;
+    case "shows":    return `${ev.player} shows [${(ev.cards || []).join(" ")}]`;
+    case "mucks":    return `${ev.player} mucks`;
+    case "collect":  return `${ev.player} collected $${ev.amount.toFixed(2)} from ${ev.pot} pot`;
+    case "cash-drop":return `Cash Drop: +$${ev.amount.toFixed(2)} into pot`;
+    default: return `(${ev.type})`;
+  }
+}
+
+function makeLogLine(text, cls) {
+  const d = document.createElement("div");
+  d.className = "replay-log-line " + (cls || "");
+  d.textContent = text;
+  return d;
+}
+
+function updateLogHighlight() {
+  if (!state) return;
+  const log = state.modal.querySelector(".replay-log-list");
+  if (!log) return;
+  // The snapshot at idx=k corresponds to events[k-1] being the last applied event.
+  // So highlight the line with dataset.eventIdx === (state.idx - 1).
+  const targetIdx = state.idx - 1;
+  log.querySelectorAll(".replay-log-line.active").forEach((n) => n.classList.remove("active"));
+  if (targetIdx >= 0) {
+    const line = log.querySelector(`.replay-log-line[data-event-idx="${targetIdx}"]`);
+    if (line) {
+      line.classList.add("active");
+      line.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }
+}
+
+function switchView(view) {
+  if (!state) return;
+  state.modal.querySelectorAll(".replay-view-tab").forEach((t) => {
+    const active = t.dataset.view === view;
+    t.classList.toggle("active", active);
+    t.setAttribute("aria-selected", active ? "true" : "false");
+  });
+  state.modal.querySelectorAll("[data-view-panel]").forEach((p) => {
+    p.hidden = p.dataset.viewPanel !== view;
+  });
+  if (view === "log") updateLogHighlight();
+}
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
+export function showReplay(handText, { title } = {}) {
+  const modal = ensureModal();
+  const extracted = extractActions(handText);
+  const { snapshots } = buildSnapshots(extracted);
+
+  modal.querySelector(".replay-modal-title").textContent =
+    title || `Hand Replay — #${extracted.meta.handId || ""}`;
+
+  const tableMount = modal.querySelector(".replay-table-mount");
+  const tableRefs = buildTable(tableMount, snapshots[0]);
+
+  const logMount = modal.querySelector(".replay-log-mount");
+  renderTextLog(logMount, extracted);
+
+  // Initialize state
+  if (state?.timer) clearTimeout(state.timer);
+  state = {
+    modal,
+    extracted,
+    snapshots,
+    tableRefs,
+    idx: 0,
+    playing: false,
+    speed: 2,
+    timer: null,
+  };
+
+  // Wire controls (re-wire each open since DOM may be reused)
+  modal.querySelector('[data-act="prev"]').onclick = () => { setPlaying(false); step(-1); };
+  modal.querySelector('[data-act="next"]').onclick = () => { setPlaying(false); step(+1); };
+  modal.querySelector('[data-act="play"]').onclick = () => togglePlay();
+  modal.querySelector('[data-act="restart"]').onclick = () => { setPlaying(false); jumpTo(0); };
+  modal.querySelectorAll(".replay-speed").forEach((b) => {
+    b.onclick = () => setSpeed(parseInt(b.dataset.speed, 10));
+  });
+  modal.querySelectorAll(".replay-view-tab").forEach((t) => {
+    t.onclick = () => switchView(t.dataset.view);
+  });
+  const scrubber = modal.querySelector(".replay-scrubber-input");
+  scrubber.oninput = (e) => {
+    setPlaying(false);
+    jumpTo(parseInt(e.target.value, 10));
+  };
+
+  // Initial render
+  switchView("table");
+  setSpeed(2);
+  applySnapshot(true);
+
+  modal.hidden = false;
+  document.body.style.overflow = "hidden";
+
+  // Auto-play after a short pause so the user sees the initial frame
+  setTimeout(() => {
+    if (state && !state.playing) setPlaying(true);
+  }, 600);
+}
+
+export function closeModal() {
+  const modal = document.getElementById(MODAL_ID);
+  if (!modal) return;
+  if (state?.timer) clearTimeout(state.timer);
+  state = null;
+  modal.hidden = true;
+  document.body.style.overflow = "";
+}

@@ -371,3 +371,10 @@
         flex-direction: column;
     }
 }
+
+/* Tab switcher */
+.tab-bar { display: flex; gap: 0.5rem; margin: 1rem 0 1.5rem; }
+.tab-btn { padding: 0.75rem 1.5rem; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 0.5rem; color: inherit; font: inherit; cursor: pointer; transition: all 0.15s; }
+.tab-btn:hover { background: rgba(255,255,255,0.08); }
+.tab-btn.active { background: var(--accent-gold, #d4af37); color: #1a1306; border-color: var(--accent-gold, #d4af37); }
+@media (max-width: 640px) { .tab-btn { flex: 1; padding: 0.5rem 1rem; font-size: 0.9rem; } }
