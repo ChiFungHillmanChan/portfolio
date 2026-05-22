@@ -72,6 +72,9 @@ export function compareCheckpoints(fixture, seriesBefore) {
 // Compare final summary pins.
 // Returns { ok, mismatches: [{field, expected, actual}] }
 export function compareFinalPins(fixture, summary) {
+  if (fixture.finalBbPer100Before == null || fixture.finalBbPer100After == null || fixture.finalRakePaidUC == null) {
+    throw new Error(`compareFinalPins called on unpinned fixture "${fixture.label ?? '?'}" — run --pin first`);
+  }
   const mismatches = [];
   if (Math.abs(summary.bbPer100Before - fixture.finalBbPer100Before) >= 0.005) {
     mismatches.push({ field: 'bbPer100Before', expected: fixture.finalBbPer100Before, actual: summary.bbPer100Before });
