@@ -1,5 +1,5 @@
 // js/equity/equity.mjs
-import { evaluate5, evaluate7 } from './evaluator.mjs';
+import { evaluate5, evaluate7, evaluate7d } from './evaluator.mjs';
 import { allCards } from './cards.mjs';
 
 const ALL_CARDS = allCards();
@@ -132,31 +132,48 @@ export function equity(hero, villain, board) {
 }
 
 function resolveOne(hero, villain, board) {
-  const h = evaluate7([...hero, ...board]);
-  const v = evaluate7([...villain, ...board]);
+  // 5-card board (river): both hands are 7 cards total.
+  const h0 = hero[0], h1 = hero[1];
+  const v0 = villain[0], v1 = villain[1];
+  const b0 = board[0], b1 = board[1], b2 = board[2], b3 = board[3], b4 = board[4];
+  const h = evaluate7d(h0, h1, b0, b1, b2, b3, b4);
+  const v = evaluate7d(v0, v1, b0, b1, b2, b3, b4);
   if (h < v) return 1.0;
   if (h > v) return 0.0;
   return 0.5;
 }
 
 function enumerate1(hero, villain, board, deck) {
+  // 4-card board, enumerate the river card. ~46 iterations.
+  const h0 = hero[0], h1 = hero[1];
+  const v0 = villain[0], v1 = villain[1];
+  const b0 = board[0], b1 = board[1], b2 = board[2], b3 = board[3];
   let wins = 0, ties = 0, total = 0;
-  for (const c of deck) {
-    const r = resolveOne(hero, villain, [...board, c]);
-    if (r === 1.0) wins++;
-    else if (r === 0.5) ties++;
+  for (let k = 0; k < deck.length; k++) {
+    const c = deck[k];
+    const hRank = evaluate7d(h0, h1, b0, b1, b2, b3, c);
+    const vRank = evaluate7d(v0, v1, b0, b1, b2, b3, c);
+    if (hRank < vRank) wins++;
+    else if (hRank === vRank) ties++;
     total++;
   }
   return (wins + ties * 0.5) / total;
 }
 
 function enumerate2(hero, villain, board, deck) {
+  // 3-card board, enumerate turn+river. ~C(45,2)=990 iterations.
+  const h0 = hero[0], h1 = hero[1];
+  const v0 = villain[0], v1 = villain[1];
+  const b0 = board[0], b1 = board[1], b2 = board[2];
   let wins = 0, ties = 0, total = 0;
   for (let i = 0; i < deck.length; i++) {
+    const di = deck[i];
     for (let j = i + 1; j < deck.length; j++) {
-      const r = resolveOne(hero, villain, [...board, deck[i], deck[j]]);
-      if (r === 1.0) wins++;
-      else if (r === 0.5) ties++;
+      const dj = deck[j];
+      const hRank = evaluate7d(h0, h1, b0, b1, b2, di, dj);
+      const vRank = evaluate7d(v0, v1, b0, b1, b2, di, dj);
+      if (hRank < vRank) wins++;
+      else if (hRank === vRank) ties++;
       total++;
     }
   }
@@ -177,17 +194,27 @@ function enumerate5(hero, villain, deck) {
   const cached = PREFLOP_CACHE.get(key);
   if (cached !== undefined) return cached;
 
+  // Hot path: 1.7M board iterations. Direct-arg evaluators avoid the ~76M
+  // array allocations that were dominating the runtime (see PR notes).
+  // Hoist hero/villain cards into locals so they're loaded once, not per-board.
+  const h0 = hero[0], h1 = hero[1];
+  const v0 = villain[0], v1 = villain[1];
   let wins = 0, ties = 0, total = 0;
   const n = deck.length; // 48
   for (let a = 0; a < n; a++) {
+    const da = deck[a];
     for (let b = a + 1; b < n; b++) {
+      const db = deck[b];
       for (let c = b + 1; c < n; c++) {
+        const dc = deck[c];
         for (let d = c + 1; d < n; d++) {
+          const dd = deck[d];
           for (let e = d + 1; e < n; e++) {
-            const board = [deck[a], deck[b], deck[c], deck[d], deck[e]];
-            const r = resolveOne(hero, villain, board);
-            if (r === 1.0) wins++;
-            else if (r === 0.5) ties++;
+            const de = deck[e];
+            const hRank = evaluate7d(h0, h1, da, db, dc, dd, de);
+            const vRank = evaluate7d(v0, v1, da, db, dc, dd, de);
+            if (hRank < vRank) wins++;
+            else if (hRank === vRank) ties++;
             total++;
           }
         }
