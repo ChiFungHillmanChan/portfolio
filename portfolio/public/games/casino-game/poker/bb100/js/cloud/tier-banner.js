@@ -180,7 +180,15 @@ export function maybeShowUpgradedToast(container) {
   const params = new URLSearchParams(window.location.search);
   if (params.get("upgraded") !== "1") return false;
   const toast = el("div", { class: "upgrade-toast" }, [
-    el("strong", {}, ["✓ Payment succeeded."]),
+    el("strong", {}, [
+      // Inline check SVG built via createContextualFragment so the existing
+      // `el()` helper (which uses createTextNode for string children) doesn't
+      // render the markup as literal text.
+      document.createRange().createContextualFragment(
+        `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg>`
+      ),
+      " Payment succeeded.",
+    ]),
     el("span", {}, [" Your new plan is activating now. Quota will update in a few seconds."]),
   ]);
   container.appendChild(toast);

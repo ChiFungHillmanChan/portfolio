@@ -5,8 +5,12 @@
 let _state = null;
 const _listeners = new Set();
 
-export function setCurrentSession({ hands, files, summary }) {
-  _state = { hands, files, summary };
+// `seriesBefore`/`seriesAfter` are the pre-computed cumulative charts from
+// stats/compute.mjs (BigInt arrays). Captured here at compute time so the
+// "Save to cloud" button can upload them too, letting future opens skip the
+// 30-90s parse+equity+compute pipeline.
+export function setCurrentSession({ hands, files, summary, seriesBefore, seriesAfter }) {
+  _state = { hands, files, summary, seriesBefore, seriesAfter };
   for (const fn of _listeners) try { fn(_state); } catch {}
 }
 

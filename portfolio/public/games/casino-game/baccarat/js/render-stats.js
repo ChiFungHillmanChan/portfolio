@@ -124,7 +124,7 @@ function updateRecommendations() {
         const best = positiveEVBets[0];
         container.innerHTML = `
             <div class="alert-box positive">
-                <div class="alert-title">🎯 +EV OPPORTUNITY!</div>
+                <div class="alert-title"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg> +EV OPPORTUNITY!</div>
                 <div class="alert-bet" style="color:var(--accent-green)">${best.name.toUpperCase()}</div>
                 <div class="alert-ev positive">+${(best.ev*100).toFixed(2)}%</div>
             </div>

@@ -149,19 +149,26 @@ function determinePosition(heroSeat, buttonSeat, seats, actionLines) {
   if (heroIdx === 0) return 'SB';
   if (heroIdx === 1) return 'BB';
 
-  // After BB, positions from button counting back:
-  // totalSeats-1 = BTN, totalSeats-2 = CO, totalSeats-3 = HJ, etc.
-  const posFromBtn = totalSeats - 1 - heroIdx; // 0=BTN, 1=CO, 2=HJ, ...
-  if (posFromBtn === 0) return 'BTN';
-  if (posFromBtn === 1) return 'CO';
-  if (posFromBtn === 2) return 'HJ';
-  if (posFromBtn === 3) return 'LJ';
-  if (remainingAfterBlinds <= 2) return 'UTG'; // short-handed
-  if (heroIdx === 2) {
-    if (totalSeats <= 4) return 'UTG';
-    return 'UTG';
-  }
-  return 'UTG';
+  // GGPoker / Hand2Note position naming, table-size aware.
+  // `order` is [SB, BB, then seats clockwise to BTN]. heroIdx >= 2 means non-blind.
+  // Layout[heroIdx - 2] is the position of the (heroIdx - 1)-th seat past BB.
+  //
+  // GG hand histories only label BTN/SB/BB explicitly; all other positions are
+  // inferred. Standard conventions used by Hand2Note, PokerTracker, and GG's own
+  // session reports:
+  const POSITION_LAYOUTS = {
+    2: ['BTN'],                                              // heads-up: 2nd seat is BTN
+    3: ['UTG', 'BTN'],
+    4: ['UTG', 'CO', 'BTN'],
+    5: ['UTG', 'CO', 'BTN'],
+    6: ['UTG', 'HJ', 'CO', 'BTN'],
+    7: ['UTG', 'MP', 'HJ', 'CO', 'BTN'],
+    8: ['UTG', 'UTG+1', 'MP', 'HJ', 'CO', 'BTN'],
+    9: ['UTG', 'UTG+1', 'MP', 'LJ', 'HJ', 'CO', 'BTN'],
+  };
+  const layout = POSITION_LAYOUTS[totalSeats] || POSITION_LAYOUTS[9];
+  const layoutIdx = heroIdx - 2;
+  return layout[layoutIdx] || 'UTG';
 }
 
 // ─── Card parsing ──────────────────────────────────────────────────────────────
@@ -216,9 +223,18 @@ const HERO_SHOWS_INLINE_RE = /^Hero: shows \[([^\]]+)\]/;
 // Example line: "Cash Drop to Pot : total $0.2 " (note trailing space in GG output)
 const CASH_DROP_RE = /^Cash Drop to Pot : total \$([0-9.]+)/;
 
-// Summary parsing
-// Handles: "Total pot $X | Rake $Y | Jackpot $Z | Bingo $A | Fortune $B | Tax $C"
-const TOTAL_POT_RE = /^Total pot \$([0-9.]+) \| Rake \$([0-9.]+)(?:\s*\|\s*Jackpot \$([0-9.]+))?/;
+// Summary parsing — GGPoker's full fee/bonus breakdown:
+//   "Total pot $X | Rake $Y | Jackpot $Z | Bingo $A | Fortune $B | Tax $C"
+//
+// Field semantics (verified against GG's own docs/PokerListings/Hand2Note):
+//   Rake     → fee taken out of the pot (universal)
+//   Jackpot  → Big Hand Jackpot fee (1 BB at pot ≥ 30 BB; redistributed long-run)
+//   Tax      → regional government tax (FR/IT/ES) — pure fee, no refund
+//   Bingo    → "Bingo on the Flop" — GG promo money ADDED to the pot (bonus)
+//   Fortune  → "Fortune Spin" — bad-beat-style GG promo money ADDED (bonus)
+//
+// Each numeric is optional + each separator may have variable whitespace.
+const TOTAL_POT_RE = /^Total pot \$([0-9.]+)\s*\|\s*Rake \$([0-9.]+)(?:\s*\|\s*Jackpot \$([0-9.]+))?(?:\s*\|\s*Bingo \$([0-9.]+))?(?:\s*\|\s*Fortune \$([0-9.]+))?(?:\s*\|\s*Tax \$([0-9.]+))?/;
 const HERO_SUMMARY_RE = /^Seat \d+: Hero(?:\s+\([^)]+\))*\s+(showed|mucked|folded|collected|won)/;
 // More flexible hero summary to capture cards if shown
 const HERO_SUMMARY_SHOWED_RE = /^Seat \d+: Hero(?:\s+\([^)]+\))*\s+showed \[([^\]]+)\]/;
@@ -352,12 +368,16 @@ export function parseHand(text) {
 
     // ── SUMMARY section ──
     if (phase === 'summary') {
-      // Total pot + rake + jackpot
+      // Total pot + all fee/bonus fields. Order in the regex matches GG's output:
+      //   pot | Rake | Jackpot | Bingo | Fortune | Tax
       const potM = TOTAL_POT_RE.exec(line);
       if (potM) {
         hand.totalPotUC = dollarsToUC(potM[1]);
-        hand.rakeUC = dollarsToUC(potM[2]);
-        hand.jackpotUC = potM[3] ? dollarsToUC(potM[3]) : 0n;
+        hand.rakeUC     = dollarsToUC(potM[2]);
+        hand.jackpotUC  = potM[3] ? dollarsToUC(potM[3]) : 0n;
+        hand.bingoUC    = potM[4] ? dollarsToUC(potM[4]) : 0n;
+        hand.fortuneUC  = potM[5] ? dollarsToUC(potM[5]) : 0n;
+        hand.taxUC      = potM[6] ? dollarsToUC(potM[6]) : 0n;
         continue;
       }
 

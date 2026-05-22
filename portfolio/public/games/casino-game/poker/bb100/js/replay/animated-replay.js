@@ -64,7 +64,7 @@ function ensureModal() {
           <button type="button" class="replay-view-tab active" data-view="table" role="tab" aria-selected="true">Table</button>
           <button type="button" class="replay-view-tab" data-view="log" role="tab" aria-selected="false">Text log</button>
         </div>
-        <button type="button" class="replay-modal-close" data-replay-action="close" aria-label="Close">✕</button>
+        <button type="button" class="replay-modal-close" data-replay-action="close" aria-label="Close"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
       </div>
       <div class="replay-modal-body replay-modal-body-animated">
         <div class="replay-table-mount" data-view-panel="table"></div>
@@ -106,7 +106,7 @@ function onModalClick(e) {
   const target = e.target;
   if (!(target instanceof Element)) return;
 
-  // Close: anything tagged data-replay-action="close" (backdrop OR ✕ button)
+  // Close: anything tagged data-replay-action="close" (backdrop OR close button)
   if (target.matches('[data-replay-action="close"]') || target.closest('[data-replay-action="close"]')) {
     closeModal();
     return;
@@ -207,12 +207,17 @@ function jumpTo(idx) {
   applySnapshot(true);
 }
 
+const PAUSE_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>`;
+const PLAY_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><polygon points="7 4 20 12 7 20"/></svg>`;
+
 function setPlaying(playing) {
   if (!state) return;
   state.playing = playing;
   const btn = state.modal.querySelector('[data-act="play"]');
   if (btn) {
-    btn.textContent = playing ? "⏸" : "▶";
+    // Switched from textContent to innerHTML so the SVG icons render
+    // instead of appearing as literal markup.
+    btn.innerHTML = playing ? PAUSE_SVG : PLAY_SVG;
     btn.setAttribute("aria-label", playing ? "Pause" : "Play");
   }
   if (playing) {
@@ -282,6 +287,21 @@ function fmtMoney(amount, unit, bbDollars) {
   return `${amount < 0 ? "-" : ""}$${Math.abs(amount).toFixed(2)}`;
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Inline star icon for all-in markers. Trusted markup.
+const STAR_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><polygon points="12 2 14.85 8.5 22 9.27 16.5 14 18 21 12 17.5 6 21 7.5 14 2 9.27 9.15 8.5"/></svg>`;
+// Sentinel: emitted by describeEvent for all-in lines, replaced by the
+// trusted STAR_SVG markup inside makeLogLine (after txt is HTML-escaped).
+const ALLIN_TOKEN = "ALLIN";
+
 function renderTextLog(mount, extracted, unit = "dollars", bbDollars = 0) {
   mount.replaceChildren();
   const list = document.createElement("div");
@@ -316,9 +336,9 @@ function describeEvent(ev, unit, bbDollars) {
     case "action":
       if (ev.verb === "folds") return `${ev.player} folds`;
       if (ev.verb === "checks") return `${ev.player} checks`;
-      if (ev.verb === "calls") return `${ev.player} calls ${M(ev.amount || 0)}${ev.allIn ? " ★ ALL-IN" : ""}`;
-      if (ev.verb === "bets") return `${ev.player} bets ${M(ev.amount || 0)}${ev.allIn ? " ★ ALL-IN" : ""}`;
-      if (ev.verb === "raises") return `${ev.player} raises ${M(ev.raiseBy || 0)} to ${M(ev.to || 0)}${ev.allIn ? " ★ ALL-IN" : ""}`;
+      if (ev.verb === "calls") return `${ev.player} calls ${M(ev.amount || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} ALL-IN` : ""}`;
+      if (ev.verb === "bets") return `${ev.player} bets ${M(ev.amount || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} ALL-IN` : ""}`;
+      if (ev.verb === "raises") return `${ev.player} raises ${M(ev.raiseBy || 0)} to ${M(ev.to || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} ALL-IN` : ""}`;
       return `${ev.player} ${ev.verb}`;
     case "uncalled": return `Uncalled bet (${M(ev.amount)}) returned to ${ev.player}`;
     case "shows":    return `${ev.player} shows [${(ev.cards || []).join(" ")}]`;
@@ -332,7 +352,14 @@ function describeEvent(ev, unit, bbDollars) {
 function makeLogLine(text, cls) {
   const d = document.createElement("div");
   d.className = "replay-log-line " + (cls || "");
-  d.textContent = text;
+  // Escape user-derived text first, then swap the trusted sentinel for our
+  // inline star SVG. This lets describeEvent emit a plain string while
+  // letting the all-in marker render as an icon instead of literal HTML.
+  if (text.indexOf(ALLIN_TOKEN) !== -1) {
+    d.innerHTML = escapeHtml(text).split(ALLIN_TOKEN).join(STAR_SVG);
+  } else {
+    d.textContent = text;
+  }
   return d;
 }
 

@@ -223,7 +223,7 @@ const EasyMode = {
                 this.updateSpeedDisplay();
             }
 
-            this.showFeedback('correct', '✓ Correct!');
+            this.showFeedback('correct', '<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Correct!');
         } else {
             this.currentStreak = 0;
             this.consecutiveCorrect = 0;
@@ -236,7 +236,7 @@ const EasyMode = {
 
             const correctValue = this.currentCard.value > 0 ? '+1' :
                                  this.currentCard.value < 0 ? '-1' : '0';
-            this.showFeedback('wrong', `✗ Was ${correctValue}`);
+            this.showFeedback('wrong', `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg> Was ${correctValue}`);
         }
 
         this.updateScore();
@@ -248,7 +248,7 @@ const EasyMode = {
     },
 
     showFeedback(type, message) {
-        this.elements.feedbackDisplay.textContent = message;
+        this.elements.feedbackDisplay.innerHTML = message;
         this.elements.feedbackDisplay.className = 'feedback-display ' + type;
     },
 

@@ -58,22 +58,26 @@ test('computeSeries: blue + red = winnings invariant', async () => {
   assert.equal(series.redUC.at(-1) + series.blueUC.at(-1), series.winningsUC.at(-1));
 });
 
-test('computeSeries: beforeRake adds Hero rake share back on winning hands', async () => {
+test('computeSeries: beforeRake adds win-share rake back on winning hands', async () => {
+  // Win-share method (matches GG App's "before-rake" view):
+  //   rakeShare = fees × heroWonFromPot / (totalPot − rake − bonuses)   (banker-rounded)
+  // (Jackpot is in `fees` numerator but stays IN the denominator.)
+  // Losing hands (heroWonFromPot ≤ 0) get share = 0 — their P&L is unchanged.
   const hands = [
     h({ contributed: '0.02', collected: '0.10', totalPot: '0.20', rake: '0.02' }),
-    // result after-rake = +0.08
-    // grossPot = 0.20 - 0.02 = 0.18
-    // heroShareOfRake = 0.02 * 0.10 / 0.18 → UC: 20000n * 100000n / 180000n = 11111n
-    // before-rake result = 80000n + 11111n = 91111n
+    // heroWonFromPot=100000n, fees=20000n, denom=180000n
+    // share = bankerRound(20000n × 100000n / 180000n) = bankerRound(11111.11…) = 11111n
+    // after-rake = +80000n; before-rake = +91111n
     h({ contributed: '0.10', collected: '0.00', totalPot: '0.20', rake: '0.05' }),
-    // hero lost; rake unchanged: -0.10
+    // Hero lost — heroWonFromPot=0 → share=0
+    // after-rake = -100000n; before-rake = -100000n
   ];
   const after = await computeSeries(hands, { beforeRake: false });
   assert.equal(after.series.winningsUC.at(-1), dollarsToUC('-0.02'));  // 0.08 - 0.10 = -0.02
 
   const before = await computeSeries(hands, { beforeRake: true });
-  // First hand: +0.08 + 11111 UC = 91111 UC, second: -0.10 = -100000 UC, total = -8889 UC
-  assert.equal(before.series.winningsUC.at(-1), 91111n - 100000n);
+  // 91111n + (-100000n) = -8889n
+  assert.equal(before.series.winningsUC.at(-1), -8889n);
 });
 
 test('computeSummary: hands, totalDollars, bb/100', async () => {
@@ -102,15 +106,16 @@ test('computeSummary: position breakdown groups by Hero position', async () => {
   assert.equal(summary.byPosition.BB.totalUC, dollarsToUC('0.03'));
 });
 
-test('computeSummary: rakePaid = sum of Hero share on winning hands', async () => {
+test('computeSummary: rakePaid = sum of Hero contribution-share on EVERY hand', async () => {
   const hands = [
     h({ contributed: '0.02', collected: '0.10', totalPot: '0.20', rake: '0.02' }),
-    // shareOfRake = 0.02 * 0.10 / 0.18 → UC: 20000n * 100000n / 180000n = 11111n
+    // share = 20000n × 20000n / 200000n = 2000n
     h({ contributed: '0.10', collected: '0.00', totalPot: '0.20', rake: '0.05' }),
-    // hero lost; no rake share
+    // Hero LOST but still paid contribution-share:
+    // share = 50000n × 100000n / 200000n = 25000n
   ];
   const { summary } = await computeSeries(hands, { beforeRake: false });
-  assert.equal(summary.rakePaidUC, 11111n);
+  assert.equal(summary.rakePaidUC, 27000n);
 });
 
 test('computeSeries on empty input returns empty series', async () => {
@@ -120,13 +125,14 @@ test('computeSeries on empty input returns empty series', async () => {
   assert.equal(summary.totalUC, 0n);
 });
 
-test('computeSeries: beforeRake includes jackpot in fee total on winning hands', async () => {
-  // rake=$0.01, jackpot=$0.02 → totalFees=$0.03
-  // collected=$0.10 (all from pot, uncalled=$0), totalPot=$0.20
-  // grossPotDenom = 0.20 - 0.01 = 0.19
-  // heroWonFromPot = 0.10
-  // rakeShare = (30000n * 100000n) / 190000n = 15789n
-  // result after-rake = 100000n - <contributed>, before-rake = after + 15789n
+test('computeSeries: beforeRake includes jackpot in fee total (win-share)', async () => {
+  // rake=$0.01, jackpot=$0.02 → totalFees=$0.03 (30000n UC, both in numerator)
+  // contributed=$0.10, collected=$0.10, totalPot=$0.20 (no bonuses)
+  // heroWonFromPot=100000n
+  // denom = totalPot − rake − bonuses = 200000n − 10000n − 0 = 190000n
+  //   (jackpot stays IN the share-distribution denominator — empirically
+  //    matches GG App's "before rake" view; see heroRakeShareByWin.)
+  // rakeShare = bankerRound(30000n × 100000n / 190000n) = bankerRound(15789.47…) = 15789n
   const hands = [
     h({ contributed: '0.10', collected: '0.10', totalPot: '0.20', rake: '0.01', jackpot: '0.02' }),
   ];
@@ -134,11 +140,8 @@ test('computeSeries: beforeRake includes jackpot in fee total on winning hands',
   const before = await computeSeries(hands, { beforeRake: true });
   const afterResult = after.series.winningsUC.at(-1);
   const beforeResult = before.series.winningsUC.at(-1);
-  // Before-rake should be larger than after-rake (fee share added back)
   assert.ok(beforeResult > afterResult, 'before-rake result should be greater than after-rake');
-  // rakeShare = round((30000n * 100000n) / 190000n) = 15789n
-  const expectedRakeShare = (30000n * 100000n) / 190000n;
-  assert.equal(beforeResult - afterResult, expectedRakeShare);
+  assert.equal(beforeResult - afterResult, 15789n);
 });
 
 test('computeSeries: EV is NOT computed for hands with uncalled bet returned (falls back to actual)', async () => {

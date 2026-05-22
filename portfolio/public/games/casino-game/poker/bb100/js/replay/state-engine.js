@@ -173,7 +173,11 @@ function step(prev, ev, idx) {
       if (ev.allIn) {
         p.allIn = true;
         p.lastAction += " (all-in)";
-        s.eventDescription += " ★ ALL-IN";
+        // eventDescription renders into an SVG <text> via textContent
+        // (see table-renderer.js). SVG <text> doesn't parse HTML, so an
+        // inline icon would render as literal markup. Use a plain text
+        // marker instead — `p.lastAction` already gets " (all-in)" above.
+        s.eventDescription += " ALL-IN";
       }
       if (p.stack < 0.001) {
         p.stack = 0;

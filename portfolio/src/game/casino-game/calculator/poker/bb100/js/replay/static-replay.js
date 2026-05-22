@@ -9,6 +9,18 @@ function fmtMoney(amount) {
   return "$" + Number(amount).toFixed(2);
 }
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+// Inline star icon for all-in markers. Pre-escaped trusted markup.
+const STAR_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><polygon points="12 2 14.85 8.5 22 9.27 16.5 14 18 21 12 17.5 6 21 7.5 14 2 9.27 9.15 8.5"/></svg>`;
+
 function fmtCards(cards) {
   const span = document.createElement("span");
   span.className = "replay-cards";
@@ -83,11 +95,13 @@ function renderEvents(container, { meta, seats, events, summary }) {
         else if (ev.verb === "bets") txt = `${ev.player} bets ${fmtMoney(ev.amount || 0)}`;
         else if (ev.verb === "raises") txt = `${ev.player} raises ${fmtMoney(ev.raiseBy || 0)} to ${fmtMoney(ev.to || 0)}`;
         else txt = `${ev.player} ${ev.verb}`;
-        if (ev.allIn) txt += "  ★ ALL-IN";
         const line = document.createElement("div");
         line.className = "replay-line replay-action" + (ev.allIn ? " replay-allin" : "");
         if (ev.player === "Hero") line.classList.add("replay-hero");
-        line.textContent = txt;
+        // Switched from textContent to innerHTML so the all-in star icon
+        // renders. `txt` contains user-derived player names so it MUST be
+        // escaped; STAR_SVG is trusted markup.
+        line.innerHTML = escapeHtml(txt) + (ev.allIn ? `  ${STAR_SVG} ALL-IN` : "");
         container.appendChild(line);
         break;
       }
@@ -126,7 +140,7 @@ function ensureModal() {
     <div class="replay-modal-panel" role="dialog" aria-modal="true">
       <div class="replay-modal-header">
         <h3 class="replay-modal-title">Hand Replay</h3>
-        <button type="button" class="replay-modal-close" aria-label="Close">✕</button>
+        <button type="button" class="replay-modal-close" aria-label="Close"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
       </div>
       <div class="replay-modal-body"></div>
     </div>

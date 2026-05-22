@@ -1,0 +1,16 @@
+/* Shared baseline for inline SVG icons used across casino-game pages.
+   SVGs are sized in em so they inherit the surrounding font-size.
+   Use `currentColor` so they inherit text color from the parent. */
+
+.ui-svg-icon {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    vertical-align: -0.125em;
+    flex-shrink: 0;
+    line-height: 0;
+}
+
+/* Helper sizes (optional; em-scaling already works). */
+.ui-svg-icon.is-lg { width: 1.25em; height: 1.25em; }
+.ui-svg-icon.is-xl { width: 1.5em;  height: 1.5em;  }

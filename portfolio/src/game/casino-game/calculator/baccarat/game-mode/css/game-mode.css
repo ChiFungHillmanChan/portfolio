@@ -384,8 +384,13 @@
 }
 
 .card.face-down::after {
-    content: '🂠';
-    font-size: 2rem;
+    content: '';
+    display: block;
+    width: 60%;
+    height: 70%;
+    background-color: rgba(255, 255, 255, 0.55);
+    -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'><circle cx='12' cy='12' r='8'/><circle cx='12' cy='12' r='3.5'/><line x1='4' y1='4' x2='20' y2='20'/><line x1='20' y1='4' x2='4' y2='20'/></svg>") center/contain no-repeat;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'><circle cx='12' cy='12' r='8'/><circle cx='12' cy='12' r='3.5'/><line x1='4' y1='4' x2='20' y2='20'/><line x1='20' y1='4' x2='4' y2='20'/></svg>") center/contain no-repeat;
 }
 
 .card.face-up {
