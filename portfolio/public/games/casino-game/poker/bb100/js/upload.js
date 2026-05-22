@@ -1049,32 +1049,23 @@ function renderChart(rawSeries) {
         x: {
           ticks: {
             color: '#a0a0b0',
-            autoSkip: false,
+            // Chart.js picks ~maxTicksLimit evenly-spaced ticks from the
+            // visible index range and rotates labels as needed. Robust to
+            // downsampling because we no longer require labels to be exact
+            // multiples of a step — we just stamp whatever hand-number the
+            // label-array carries at each chosen index.
+            autoSkip: true,
+            maxRotation: 0,
+            minRotation: 0,
+            maxTicksLimit: 12,
             callback: function(value) {
-              // `value` is the absolute data index (0..n-1). The label at that
-              // index is the actual hand number (= index+1 when not downsampled,
-              // sparser when downsampled to <=5000 chart points).
+              // `value` is the absolute data index (0..n-1). The label at
+              // that index is the actual hand number (= index+1 when not
+              // downsampled, sparser when downsampled to <=5000 chart points).
               const labelArr = this.chart.data.labels;
               const handNum = labelArr ? labelArr[value] : value + 1;
               if (handNum == null) return '';
-              // Adapt tick label density to visible range so labels stay readable
-              // at all zoom levels (target ~10-20 visible labels).
-              const visible = (this.max ?? 0) - (this.min ?? 0) + 1;
-              let step;
-              if (visible > 50000)      step = 10000;
-              else if (visible > 20000) step = 5000;
-              else if (visible > 10000) step = 2500;
-              else if (visible > 5000)  step = 1000;
-              else if (visible > 2000)  step = 500;
-              else if (visible > 1000)  step = 200;
-              else if (visible > 400)   step = 100;
-              else if (visible > 200)   step = 50;
-              else if (visible > 100)   step = 25;
-              else if (visible > 40)    step = 10;
-              else if (visible > 15)    step = 5;
-              else if (visible > 8)     step = 2;
-              else                      step = 1;
-              return handNum % step === 0 ? handNum : '';
+              return handNum.toLocaleString();
             },
           },
           grid: { color: 'rgba(255,255,255,0.04)', drawTicks: true, tickColor: 'rgba(255,255,255,0.15)' },
