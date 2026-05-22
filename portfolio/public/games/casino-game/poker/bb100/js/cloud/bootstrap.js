@@ -13,6 +13,12 @@ import { renderSessions } from "./list.js";
 import { getCurrentSession, onSessionChange } from "./session-state.js";
 import { showProgress, hideProgress } from "../progress-bar.js";
 import { renderTierBanner, maybeShowUpgradedToast } from "./tier-banner.js";
+import {
+  mountInlineRestore,
+  unmountInlineRestore,
+  invalidateInlineRestoreCache,
+  refreshInlineRestore,
+} from "./inline-restore.js";
 
 const SAVE_BUTTON_ID = "saveToCloudBtn";
 const SAVE_STATUS_ID = "saveToCloudStatus";
@@ -182,6 +188,10 @@ function renderSaveButton() {
         hideProgress();
         setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Saved ${r.handCount.toLocaleString()} hands (session ${escapeHtml(r.sessionId.slice(-8))})`, "ok");
         refreshQuotaMeter();
+        // Refresh the inline restore dropdown so the newly-saved session is
+        // immediately reachable without a page reload.
+        invalidateInlineRestoreCache();
+        refreshInlineRestore().catch(() => {});
         // If My Sessions tab is currently visible, refresh it
         if (isSessionsTabActive()) {
           maybeRenderSessions(true);
@@ -276,6 +286,13 @@ function init() {
 
       const q = await refreshQuotaMeter();
       renderSaveButton();
+      // Mount the inline cloud-restore panel inside the Upload tab so the
+      // user can re-open a saved session in one click without navigating to
+      // Settings → My Sessions. Failure is non-fatal — the Settings panel
+      // remains the canonical session manager.
+      mountInlineRestore().catch((err) => {
+        console.warn("[poker cloud] inline restore mount failed:", err.message);
+      });
       if (isSessionsTabActive()) maybeRenderSessions();
 
       // If user just returned from Stripe Checkout, poll until the webhook
@@ -293,6 +310,7 @@ function init() {
       if (toast) toast.replaceChildren();
       const slot = document.getElementById(SAVE_CONTAINER_ID);
       if (slot) slot.replaceChildren();
+      unmountInlineRestore();
       const panel = document.querySelector(SESSIONS_PANEL_SELECTOR);
       if (panel) {
         panel.replaceChildren();

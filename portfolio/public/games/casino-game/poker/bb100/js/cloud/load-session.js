@@ -109,6 +109,50 @@ async function loadFromSeries(sessionMeta) {
   return { summary, seriesBefore, seriesAfter };
 }
 
+// After the cached fast-path renders the chart, fetch hands.txt.gz, parse
+// every hand (skipping unparseable ones tolerantly), and hand them off to
+// upload.js's `hydrateHandsForReplay` so the hand browser + replay modal
+// become available. Guarded by sessionId so racing a second "Open" click
+// can't clobber the live view with the previous session's hands.
+async function hydrateReplayAfterFastOpen(sessionMeta) {
+  const sign = await apiCall("sign-download", { sessionId: sessionMeta.sessionId, file: "hands" });
+  if (!sign.ok) {
+    // Old sessions saved before hands.txt.gz became mandatory, or backend
+    // hiccup — give up silently.
+    return;
+  }
+  const text = await fetchAndUngzipText(sign.url);
+  const splits = splitConcatenatedFiles(text);
+  if (splits.length === 0) return;
+
+  const { parseHand, splitIntoHands } = await import("../parser/gg-parser.mjs");
+  const hands = [];
+  for (const split of splits) {
+    const chunks = splitIntoHands(split.text);
+    for (const chunk of chunks) {
+      try {
+        const hand = parseHand(chunk);
+        hand.text = chunk;
+        hand.fileName = split.name;
+        hands.push(hand);
+      } catch (_) {
+        // Skip unparseable hands — same tolerant behaviour as upload.js.
+      }
+    }
+  }
+  if (hands.length === 0) return;
+
+  // Mirror upload.js's chronological sort so hand-browser ordering matches a
+  // fresh local upload of the same files.
+  hands.sort((a, b) => {
+    if (a.date !== b.date) return a.date.localeCompare(b.date);
+    return a.id.localeCompare(b.id);
+  });
+
+  const { hydrateHandsForReplay } = await import("../upload.js");
+  await hydrateHandsForReplay(hands, { sessionId: sessionMeta.sessionId });
+}
+
 async function recomputeFromHands(sessionMeta, onStatus) {
   onStatus?.("Series cache unavailable — downloading hands.txt for recompute…");
   const sign = await apiCall("sign-download", { sessionId: sessionMeta.sessionId, file: "hands" });
@@ -199,6 +243,15 @@ export async function openCloudSession(session, opts = {}) {
     });
     // onStatus is a console-log sink in current callers; keep text plain.
     onStatus(`Opened session ${sessionMeta.sessionId.slice(-8)} (${(session.handCount || 0).toLocaleString()} hands)`);
+
+    // Fire-and-forget: pull hands.txt.gz, parse, and feed it into the cached
+    // view so the hand browser + replay buttons work. The chart was already
+    // drawn from the cached series above — this pass only populates per-hand
+    // metadata (with raw `hand.text` for the replay modal). Failure here is
+    // non-fatal: the chart is correct, replay just won't be available.
+    hydrateReplayAfterFastOpen(sessionMeta).catch((err) => {
+      console.warn("[poker cloud] replay hydration failed:", err.message);
+    });
     return { mode: "cached" };
   }
 
