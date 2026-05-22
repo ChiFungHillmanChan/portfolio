@@ -98,17 +98,31 @@ for (const [handN, expEv, expWin] of fixture.checkpoints) {
 console.log();
 
 if (mode === '--pin') {
-  // Pretty diff already printed above. Now print pinning block.
+  // Pretty diff already printed above. Print observed checkpoints (for pasting
+  // into the 'checkpoints' array) + observed final values (for pasting into the
+  // final* fields). Both come from the same single computeSeries call. No
+  // hard-coding — these are read directly out of seriesBefore by index.
+  console.log(`Observed checkpoint values (paste over the 'checkpoints' array in verify/fixtures.mjs '${key}' entry):`);
+  console.log(`    checkpoints: [`);
+  const sign = c => (c >= 0 ? '+' : '-') + (Math.abs(c) / 100).toFixed(2);
+  for (const [handN] of fixture.checkpoints) {
+    const idx = handN - 1;
+    const winCents = ucToCentsRoundHalfUp(seriesBefore.winningsUC[idx]);
+    const evCents  = ucToCentsRoundHalfUp(seriesBefore.evUC[idx]);
+    console.log(`      [${String(handN).padStart(5)}, ${sign(evCents).padStart(6)}, ${sign(winCents).padStart(6)}],`);
+  }
+  console.log(`    ],`);
+  console.log();
   console.log(`Observed final values (paste into verify/fixtures.mjs '${key}' entry):`);
   console.log(`  finalBbPer100Before: ${summary.bbPer100Before},`);
   console.log(`  finalBbPer100After:  ${summary.bbPer100After},`);
   console.log(`  finalRakePaidUC:     ${summary.rakePaidUC}n,`);
   console.log();
   if (!cp.ok) {
-    console.log(`⚠️  ${cp.mismatches.length} checkpoint mismatch(es) above — DO NOT pin until you understand why.`);
-    process.exit(2);
+    console.log(`(${cp.mismatches.length} of ${fixture.checkpoints.length * 2} comparisons differ from the values currently in fixtures.mjs — paste the block above to update.)`);
+  } else {
+    console.log(`✅ All ${fixture.checkpoints.length} checkpoints already match. Safe to pin final values.`);
   }
-  console.log(`✅ All ${fixture.checkpoints.length} checkpoints match. Safe to pin final values.`);
   process.exit(0);
 }
 

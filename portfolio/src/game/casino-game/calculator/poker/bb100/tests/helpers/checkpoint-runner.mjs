@@ -27,7 +27,7 @@ export function usdToCents(usd) {
 // Returns the full computeSeries output — caller indexes into it. NEVER
 // receives checkpoint hand numbers.
 export async function loadAndCompute(fixture) {
-  const allHands = [];
+  const byId = new Map();
   for (const dir of fixture.folders) {
     const files = readdirSync(dir).filter(f => f.toLowerCase().endsWith('.txt'));
     for (const f of files) {
@@ -35,9 +35,16 @@ export async function loadAndCompute(fixture) {
       const r = parseFile(f, content);
       const validationError = r.errors && r.errors.find(e => e.startsWith('Validation failed:'));
       if (validationError) continue;
-      allHands.push(...r.hands);
+      for (const h of r.hands) {
+        // Dedup by hand.id across folders. GG can export the same session into
+        // multiple folders, so two-folder fixtures (like 23795) routinely have
+        // overlapping files. First occurrence wins; identical hands by ID are
+        // identical hands by content.
+        if (!byId.has(h.id)) byId.set(h.id, h);
+      }
     }
   }
+  const allHands = [...byId.values()];
   // Canonical sort — same as verify/verify.mjs. Stable across folder boundaries.
   allHands.sort((a, b) => {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
