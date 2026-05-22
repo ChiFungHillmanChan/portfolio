@@ -22,9 +22,10 @@
   height: 100%;
   transition: width 0.4s ease, background-color 0.3s;
 }
-.qm-fill.qm-green  { background: linear-gradient(90deg, #4ade80, #22c55e); }
-.qm-fill.qm-orange { background: linear-gradient(90deg, #fb923c, #f97316); }
-.qm-fill.qm-red    { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+.qm-fill.qm-green     { background: linear-gradient(90deg, #4ade80, #22c55e); }
+.qm-fill.qm-orange    { background: linear-gradient(90deg, #fb923c, #f97316); }
+.qm-fill.qm-red       { background: linear-gradient(90deg, #ef4444, #b91c1c); }
+.qm-fill.qm-unlimited { background: linear-gradient(90deg, #4ade80, #3b82f6, #a855f7); }
 
 /* Save-to-cloud button */
 .save-to-cloud-btn {
@@ -160,13 +161,14 @@
 
 .tier-card-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr;
   gap: 0.6rem;
 }
 
-@media (max-width: 720px) {
-  .tier-card-row { grid-template-columns: 1fr; }
-}
+/* Settings drawer is fixed at min(440px, 92vw) — keep cards in a single
+   column so the Subscribe monthly/yearly buttons fit on one row.
+   The 3-column layout was designed for the wider full-page banner that no
+   longer exists. */
 
 .tier-card {
   background: rgba(15,15,23,0.6);
