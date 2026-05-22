@@ -52,6 +52,10 @@ let parsedHands = [];
 const allFiles = new Map();
 let originalFiles = [];
 let lastSummary = null;
+// Cached compute result: { filteredHandsRef, seriesBefore, seriesAfter, summary }.
+// Reused when only the rake toggle changes — no recompute, just re-pick the
+// pre-built series array and re-render the chart.
+let lastCompute = null;
 // opts.filter: dateMode ∈ ['all','today','last-1h','last-3h','last-24h','custom'].
 let opts = {
   beforeRake: true,
@@ -257,6 +261,7 @@ export function clearAllUploads() {
   parsedHands = [];
   originalFiles = [];
   lastSummary = null;
+  lastCompute = null;  // drop the cached compute so a fresh upload recomputes
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
   els.results.hidden = true;
   showStatus('Cleared. Upload hand-history files to start over.', 'info');
@@ -465,6 +470,37 @@ function toDatetimeLocalValue(d) {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+function pickSeriesForMode(compute) {
+  return opts.beforeRake ? compute.seriesBefore : compute.seriesAfter;
+}
+
+// Stable hash of the inputs that affect what computeSeries returns.
+// (beforeRake is NOT in this key — both modes are computed in one pass and
+// cached together, so the toggle is a free pivot via pickSeriesForMode.)
+function computeCacheKey() {
+  return JSON.stringify({
+    n: parsedHands.length,
+    parsedHandsRef: !!parsedHands,  // sentinel — actual identity check is below
+    dateMode: opts.filter.dateMode,
+    customStart: opts.filter.customStart instanceof Date ? opts.filter.customStart.getTime() : null,
+    customEnd: opts.filter.customEnd instanceof Date ? opts.filter.customEnd.getTime() : null,
+    stakes: opts.filter.stakes ? [...opts.filter.stakes].sort((a,b)=>a-b) : null,
+  });
+}
+
+// Fast path: re-render chart/controls only, no compute. Used when the user
+// flips the rake toggle or changes a line-visibility checkbox; compute results
+// are cached in `lastCompute` for the current filter set.
+function rerenderFromCache() {
+  if (!lastCompute) return false;
+  const series = pickSeriesForMode(lastCompute);
+  try { renderChart(series); } catch (e) { console.error('[poker] rerender chart failed:', e); return false; }
+  renderControls();
+  renderSummary(lastCompute.summary);
+  saveSession(series, lastCompute.summary);
+  return true;
+}
+
 async function renderAll() {
   const filtered = getFilteredHands();
   if (filtered.length === 0) {
@@ -476,15 +512,27 @@ async function renderAll() {
     if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
     els.chartFooter.textContent = parsedHands.length > 0 ? 'No hands match the current filter.' : '';
     hideChartSpinner();
+    lastCompute = null;
     return;
   }
-  // Yield-aware compute: every 10 hands the loop releases the event loop so
-  // the browser stays responsive even when several preflop all-in matchups
-  // (each ~1.1s of uncached equity work) cluster together.
+
+  // CACHE FAST-PATH: if the parsed-hand store + filter is the same as last
+  // compute, the cached seriesBefore/seriesAfter are still valid. The rake
+  // toggle becomes a free pivot — no recompute, no progress bar.
+  const cacheKey = computeCacheKey();
+  if (lastCompute && lastCompute.parsedHandsRef === parsedHands && lastCompute.cacheKey === cacheKey) {
+    rerenderFromCache();
+    renderFilterBar();
+    renderPosition(lastCompute.summary);
+    renderHandBrowserFiltered(filtered);
+    return;
+  }
+
+  // Yield-aware compute path (cold or filter-changed).
   const tStart = performance.now();
   let maxGapMs = 0;
   let lastTick = tStart;
-  let slowHandCount = 0;  // hands with anyAllIn (likely equity work)
+  let slowHandCount = 0;
   for (const h of filtered) { if (h.anyAllIn) slowHandCount++; }
   console.log(`[poker] renderAll start: ${filtered.length.toLocaleString()} hands, ${slowHandCount} potential all-in equity calcs`);
 
@@ -492,9 +540,9 @@ async function renderAll() {
   showChartSpinner(`Computing chart for ${filtered.length.toLocaleString()} hands`, '0%');
   await nextFrame();
 
-  let series, summary;
+  let compute;
   try {
-    ({ series, summary } = await computeSeries(filtered, opts, {
+    compute = await computeSeries(filtered, opts, {
       yieldEvery: 10,
       onProgress: (i, n) => {
         const now = performance.now();
@@ -506,7 +554,7 @@ async function renderAll() {
         const pct = n > 0 ? Math.round((i / n) * 100) : 0;
         showChartSpinner(label, `${pct}%`);
       },
-    }));
+    });
   } catch (err) {
     console.error('[poker] computeSeries failed:', err);
     hideProgress();
@@ -514,6 +562,17 @@ async function renderAll() {
     showStatus(`Compute failed: ${err.message}`, 'error');
     return;
   }
+  // Cache for subsequent rake-toggle / line-visibility re-renders.
+  lastCompute = {
+    parsedHandsRef: parsedHands,
+    cacheKey: cacheKey,
+    seriesBefore: compute.seriesBefore,
+    seriesAfter:  compute.seriesAfter,
+    summary:      compute.summary,
+  };
+  const series = pickSeriesForMode(lastCompute);
+  const summary = compute.summary;
+
   const computeMs = performance.now() - tStart;
   console.log(`[poker] compute done: ${computeMs.toFixed(0)}ms total, max gap ${maxGapMs.toFixed(0)}ms between yields`);
   if (maxGapMs > 4000) {
@@ -522,9 +581,6 @@ async function renderAll() {
 
   hideProgress();
   showChartSpinner('Drawing chart…', '');
-  // Yield once more so the browser paints "compute done" before we start the
-  // (synchronous) chart construction — Chart.js initializing 5000 stepped
-  // points × 4 series can take 0.5–1.5s on its own.
   await nextFrame();
 
   const tChart = performance.now();
@@ -539,8 +595,6 @@ async function renderAll() {
   console.log(`[poker] renderChart: ${(performance.now() - tChart).toFixed(0)}ms`);
   hideChartSpinner();
 
-  // Spread the remaining renders across animation frames so none of them
-  // compound onto the chart's heavy first paint.
   await nextFrame();
   renderControls();
   renderSummary(summary);
@@ -678,6 +732,38 @@ async function openReplay(hand, index) {
   }
 }
 
+// Custom plugin: draw a thick, prominent horizontal line at y=0 so the
+// win/loss boundary is unambiguous. Renders BEFORE datasets so data lines
+// stay on top.
+const zeroLinePlugin = {
+  id: 'zeroLine',
+  beforeDatasetsDraw(chart) {
+    const yScale = chart.scales?.y;
+    if (!yScale) return;
+    // Skip if zero is outside the visible y-range
+    const yMin = yScale.min, yMax = yScale.max;
+    if (yMin > 0 || yMax < 0) return;
+    const y = yScale.getPixelForValue(0);
+    const { left, right } = chart.chartArea;
+    const ctx = chart.ctx;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+    ctx.stroke();
+    // Soft halo for extra emphasis without being garish
+    ctx.beginPath();
+    ctx.moveTo(left, y);
+    ctx.lineTo(right, y);
+    ctx.lineWidth = 6;
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.stroke();
+    ctx.restore();
+  },
+};
+
 // Custom plugin: draw a vertical crosshair line at the hovered hand position
 const crosshairPlugin = {
   id: 'crosshair',
@@ -742,7 +828,7 @@ function renderChart(rawSeries) {
   chartInstance = new Chart(els.chartCanvas.getContext('2d'), {
     type: 'line',
     data: { labels, datasets },
-    plugins: [crosshairPlugin],
+    plugins: [zeroLinePlugin, crosshairPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
@@ -760,16 +846,23 @@ function renderChart(rawSeries) {
               const labelArr = this.chart.data.labels;
               const handNum = labelArr ? labelArr[value] : value + 1;
               if (handNum == null) return '';
-              // Adapt tick label density to visible range so labels are useful when zoomed.
+              // Adapt tick label density to visible range so labels stay readable
+              // at all zoom levels (target ~10-20 visible labels).
               const visible = (this.max ?? 0) - (this.min ?? 0) + 1;
               let step;
-              if (visible > 1000)      step = 100;
-              else if (visible > 400)  step = 50;
-              else if (visible > 200)  step = 25;
-              else if (visible > 100)  step = 10;
-              else if (visible > 40)   step = 5;
-              else if (visible > 15)   step = 2;
-              else                     step = 1;
+              if (visible > 50000)      step = 10000;
+              else if (visible > 20000) step = 5000;
+              else if (visible > 10000) step = 2500;
+              else if (visible > 5000)  step = 1000;
+              else if (visible > 2000)  step = 500;
+              else if (visible > 1000)  step = 200;
+              else if (visible > 400)   step = 100;
+              else if (visible > 200)   step = 50;
+              else if (visible > 100)   step = 25;
+              else if (visible > 40)    step = 10;
+              else if (visible > 15)    step = 5;
+              else if (visible > 8)     step = 2;
+              else                      step = 1;
               return handNum % step === 0 ? handNum : '';
             },
           },
@@ -910,63 +1003,73 @@ function makeToggle(label, color, checked, onChange) {
 function renderSummary(summary) {
   els.summary.replaceChildren();
 
+  // Title at the top
   const title = document.createElement('h3');
   title.className = 'summary-title';
   title.textContent = 'Summary';
   els.summary.appendChild(title);
 
-  // Two sections: BEFORE RAKE (gross results) and AFTER RAKE (net),
-  // plus rake-paid in between. Easier to compare at a glance.
-  const sections = [
-    {
-      heading: 'Hands',
-      rows: [
-        ['Total hands', summary.hands.toLocaleString()],
-      ],
-    },
-    {
-      heading: 'Before rake',
-      rows: [
-        ['Total', formatUSD(summary.totalBeforeUC)],
-        ['bb/100', summary.bbPer100Before.toFixed(2)],
-        ['All-in EV bb/100', summary.evBbPer100Before.toFixed(2)],
-      ],
-    },
-    {
-      heading: 'Rake',
-      rows: [
-        ['Rake paid', `${formatUSD(summary.rakePaidUC)}  (${summary.rakeBbPer100.toFixed(2)} bb/100)`],
-      ],
-    },
-    {
-      heading: 'After rake',
-      rows: [
-        ['Total', formatUSD(summary.totalAfterUC)],
-        ['bb/100', summary.bbPer100After.toFixed(2)],
-        ['All-in EV bb/100', summary.evBbPer100After.toFixed(2)],
-      ],
-    },
-  ];
-
-  for (const sec of sections) {
-    const h = document.createElement('div');
-    h.className = 'summary-section-title';
-    h.textContent = sec.heading;
-    els.summary.appendChild(h);
-    for (const [label, value] of sec.rows) {
-      const row = document.createElement('div');
-      row.className = 'summary-row';
-      const l = document.createElement('span');
-      l.className = 'summary-label';
-      l.textContent = label;
-      const v = document.createElement('span');
-      v.className = 'summary-value';
-      v.textContent = value;
-      row.appendChild(l);
-      row.appendChild(v);
-      els.summary.appendChild(row);
-    }
+  // Helper to build one stat block
+  function statBlock(label, value, opts = {}) {
+    const block = document.createElement('div');
+    block.className = 'stat-block' + (opts.kind ? ` stat-${opts.kind}` : '');
+    const v = document.createElement('div');
+    v.className = 'stat-value';
+    v.textContent = value;
+    const l = document.createElement('div');
+    l.className = 'stat-label';
+    l.textContent = label;
+    block.appendChild(v);
+    block.appendChild(l);
+    return block;
   }
+
+  // Header strip: Hands + Rake paid as compact stat tiles
+  const header = document.createElement('div');
+  header.className = 'summary-header-row';
+  header.appendChild(statBlock('Total hands', summary.hands.toLocaleString()));
+  header.appendChild(statBlock(
+    'Rake paid',
+    `${formatUSD(summary.rakePaidUC)}  ·  ${summary.rakeBbPer100.toFixed(2)} bb/100`,
+    { kind: 'rake' },
+  ));
+  els.summary.appendChild(header);
+
+  // Comparison cards: Before rake | After rake (side by side on desktop)
+  const cards = document.createElement('div');
+  cards.className = 'summary-cards-row';
+
+  function buildCard(heading, kind, totalUC, bbPer100, evBbPer100) {
+    const card = document.createElement('div');
+    card.className = 'summary-card stat-' + kind;
+    const h = document.createElement('div');
+    h.className = 'summary-card-title';
+    h.textContent = heading;
+    card.appendChild(h);
+    const grid = document.createElement('div');
+    grid.className = 'summary-card-grid';
+    grid.appendChild(statBlock('Total', formatUSD(totalUC)));
+    grid.appendChild(statBlock('bb/100', bbPer100.toFixed(2)));
+    grid.appendChild(statBlock('All-in EV bb/100', evBbPer100.toFixed(2)));
+    card.appendChild(grid);
+    return card;
+  }
+
+  cards.appendChild(buildCard(
+    'Before rake',
+    'before',
+    summary.totalBeforeUC,
+    summary.bbPer100Before,
+    summary.evBbPer100Before,
+  ));
+  cards.appendChild(buildCard(
+    'After rake',
+    'after',
+    summary.totalAfterUC,
+    summary.bbPer100After,
+    summary.evBbPer100After,
+  ));
+  els.summary.appendChild(cards);
 }
 
 function renderPosition(summary) {
