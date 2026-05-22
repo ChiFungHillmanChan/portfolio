@@ -11,6 +11,7 @@ import { getQuota, renderQuotaMeter, invalidateQuotaCache } from "./quota.js";
 import { saveSessionToCloud } from "./upload.js";
 import { renderSessions } from "./list.js";
 import { getCurrentSession, onSessionChange } from "./session-state.js";
+import { showProgress, hideProgress } from "../progress-bar.js";
 
 const SAVE_BUTTON_ID = "saveToCloudBtn";
 const SAVE_STATUS_ID = "saveToCloudStatus";
@@ -83,15 +84,33 @@ function renderSaveButton() {
     onclick: async () => {
       btn.disabled = true;
       setStatus("Preparing upload…", "info");
+      const handCount = session.hands.length;
+      const stageLabel = {
+        reading: "Reading files",
+        bundling: "Bundling hands",
+        compressing: "Compressing",
+        signing: "Requesting upload URL",
+        "uploading-hands": "Uploading hands",
+        "uploading-index": "Uploading index",
+        committing: "Saving to cloud",
+        done: "Done",
+      };
       try {
         const r = await saveSessionToCloud({
           hands: session.hands,
           originalFiles: session.files,
           summary: session.summary,
           onProgress: ({ stage, progress }) => {
-            setStatus(`${stage} (${Math.round(progress * 100)}%)`, "info");
+            const label = stageLabel[stage] || stage;
+            showProgress({
+              stage: `${label} — ${handCount.toLocaleString()} hands`,
+              current: Math.round(progress * 1000),
+              total: 1000,
+            });
+            setStatus(`${label} (${Math.round(progress * 100)}%)`, "info");
           },
         });
+        hideProgress();
         setStatus(`✓ Saved ${r.handCount.toLocaleString()} hands (session ${r.sessionId.slice(-8)})`, "ok");
         refreshQuotaMeter();
         // If My Sessions tab is currently visible, refresh it
@@ -99,6 +118,7 @@ function renderSaveButton() {
           maybeRenderSessions(true);
         }
       } catch (err) {
+        hideProgress();
         console.error("[poker cloud] save failed:", err);
         setStatus(`✗ ${err.message}`, "err");
       } finally {

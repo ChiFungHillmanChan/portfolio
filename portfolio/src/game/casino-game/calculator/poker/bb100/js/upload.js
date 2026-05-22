@@ -2,6 +2,7 @@
 import { parseFile } from './parser/gg-parser.mjs';
 import { computeSeries } from './stats/compute.mjs';
 import { ucToDollars, formatUSD } from './stats/money.mjs';
+import { showProgress, hideProgress, nextFrame } from './progress-bar.js';
 
 const els = {
   zone: document.getElementById('uploadZone'),
@@ -96,25 +97,53 @@ async function handleFiles(files) {
   originalFiles = Array.from(files);
   const rejected = [];
   let skippedHands = 0;
-  for (const f of files) {
+
+  // Phase A: read all file texts (cheap, but yields per file so progress bar paints)
+  showProgress({ stage: 'Reading files', current: 0, total: files.length });
+  await nextFrame();
+  const fileTexts = [];
+  for (let i = 0; i < files.length; i++) {
     try {
-      const text = await f.text();
-      const r = parseFile(f.name, text);
+      fileTexts.push({ name: files[i].name, text: await files[i].text() });
+    } catch (e) {
+      rejected.push({ name: files[i].name, reason: `read error: ${e.message}` });
+      fileTexts.push(null);
+    }
+    showProgress({ stage: 'Reading files', current: i + 1, total: files.length });
+    await nextFrame();
+  }
+
+  // Phase B: parse each file, counting hands as we go
+  showProgress({ stage: 'Parsing hands', current: 0, total: 0, indeterminate: true });
+  await nextFrame();
+  for (let i = 0; i < fileTexts.length; i++) {
+    const ft = fileTexts[i];
+    if (!ft) continue;
+    try {
+      const r = parseFile(ft.name, ft.text);
       if (r.hands.length === 0 && r.errors && r.errors.length > 0) {
-        rejected.push({ name: f.name, reason: r.errors[0] });
+        rejected.push({ name: ft.name, reason: r.errors[0] });
         continue;
       }
       parsedHands.push(...r.hands);
       skippedHands += r.skipped;
+      showProgress({
+        stage: `Parsing hands — ${parsedHands.length.toLocaleString()} so far`,
+        indeterminate: true,
+      });
+      await nextFrame();
     } catch (e) {
-      rejected.push({ name: f.name, reason: `read error: ${e.message}` });
+      rejected.push({ name: ft.name, reason: `parse error: ${e.message}` });
     }
   }
+
   if (parsedHands.length === 0) {
+    hideProgress();
     const reasons = rejected.map(r => `• ${r.name}: ${r.reason}`).join('\n');
     showStatus(`No valid hands parsed.\n${reasons}`, 'error');
     return;
   }
+
   // Sort hands chronologically so the chart matches GGPoker's display
   // (overlapping time windows from multiple tables must be interleaved by timestamp).
   // Tiebreak by hand id when timestamps collide at second precision (~14% of NL2 hands).
@@ -122,14 +151,20 @@ async function handleFiles(files) {
     if (a.date !== b.date) return a.date.localeCompare(b.date);
     return a.id.localeCompare(b.id);
   });
+
+  // Phase C: compute series + render (compute is the slow bit; show indeterminate bar)
+  showProgress({ stage: `Computing chart for ${parsedHands.length.toLocaleString()} hands`, indeterminate: true });
+  await nextFrame();
+
   const skipMsg = skippedHands ? `, skipped ${skippedHands} malformed` : '';
   const rejMsg = rejected.length ? `, rejected ${rejected.length} files` : '';
   showStatus(`Parsed ${parsedHands.length.toLocaleString()} hands from ${files.length - rejected.length} files${skipMsg}${rejMsg}`);
-  // Defer render so the status message paints first (equity calc may take a few seconds)
-  setTimeout(() => {
-    renderAll();
-    els.results.hidden = false;
-  }, 16);
+
+  // Yield once more, then run the heavy work + render
+  await nextFrame();
+  renderAll();
+  els.results.hidden = false;
+  hideProgress();
 }
 
 function showStatus(msg, kind = 'info') {
