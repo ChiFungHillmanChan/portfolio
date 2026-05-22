@@ -22,7 +22,33 @@ const els = {
   chartSpinner: document.getElementById('chartSpinner'),
   chartSpinnerLabel: document.getElementById('chartSpinnerLabel'),
   chartSpinnerProgress: document.getElementById('chartSpinnerProgress'),
+  compactPill: document.getElementById('uploadCompactPill'),
+  pillLabel: document.getElementById('uploadPillLabel'),
+  zoneCollapseBtn: document.getElementById('uploadZoneCollapse'),
 };
+
+// Collapse the drop-zone to a compact "Add more files" pill once the user has
+// loaded at least one hand. Free up vertical space for the chart + tabs.
+function collapseUploadZone() {
+  if (els.zone) els.zone.hidden = true;
+  if (els.compactPill) els.compactPill.hidden = false;
+  if (els.zoneCollapseBtn) els.zoneCollapseBtn.hidden = true;
+}
+function expandUploadZone() {
+  if (els.zone) els.zone.hidden = false;
+  if (els.compactPill) els.compactPill.hidden = true;
+  // Show the in-zone collapse button once user has hands loaded
+  if (els.zoneCollapseBtn && allHandsById.size > 0) els.zoneCollapseBtn.hidden = false;
+}
+function updateCompactPillLabel() {
+  if (!els.pillLabel) return;
+  const n = allHandsById.size;
+  els.pillLabel.textContent = n > 0
+    ? `Add more files · ${n.toLocaleString()} hands loaded`
+    : 'Add more files';
+}
+if (els.compactPill) els.compactPill.addEventListener('click', expandUploadZone);
+if (els.zoneCollapseBtn) els.zoneCollapseBtn.addEventListener('click', collapseUploadZone);
 
 function showChartSpinner(label, progressText) {
   if (!els.chartSpinner) return;
@@ -259,6 +285,12 @@ async function handleFiles(files) {
     showStatus(summaryStatus, newHands > 0 ? 'ok' : 'info');
 
     els.results.hidden = false;
+    // Collapse the drop-zone to a compact pill so the chart/tabs get the
+    // vertical space. User clicks the pill to re-open and add more files.
+    if (allHandsById.size > 0) {
+      updateCompactPillLabel();
+      collapseUploadZone();
+    }
     await renderAll();
   } finally {
     // Guarantee the progress bar always clears even if compute throws.
@@ -281,6 +313,10 @@ export function clearAllUploads() {
   showStatus('Cleared. Upload hand-history files to start over.', 'info');
   if (els.filterBar) els.filterBar.replaceChildren();
   if (els.handBrowser) { els.handBrowser.replaceChildren(); els.handBrowser.hidden = true; }
+  // Restore the drop-zone view (collapse pill was hiding it post-upload)
+  if (els.zone) els.zone.hidden = false;
+  if (els.compactPill) els.compactPill.hidden = true;
+  if (els.zoneCollapseBtn) els.zoneCollapseBtn.hidden = true;
 }
 
 function showStatus(msg, kind = 'info') {

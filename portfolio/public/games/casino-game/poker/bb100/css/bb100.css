@@ -1,8 +1,21 @@
 /* bb/100 Calculator Page Styles */
 
+/* Container scales with viewport. Manual entry tab caps its internal form
+   width via the .bb100-grid layout so it stays readable on big screens,
+   while the chart + tabs fill the available width. */
 .bb100-container {
-    max-width: 1100px;
+    max-width: min(1600px, 96vw);
     position: relative; /* anchors .settings-btn (absolutely positioned top-right) */
+}
+
+/* On very wide monitors, give the chart canvas more vertical room too so it
+   doesn't look squashed compared to the wider horizontal space. */
+@media (min-width: 1400px) {
+    #evChart { height: 560px !important; }
+}
+@media (min-width: 1800px) {
+    .bb100-container { max-width: 1700px; }
+    #evChart { height: 620px !important; }
 }
 
 .bb100-header {
