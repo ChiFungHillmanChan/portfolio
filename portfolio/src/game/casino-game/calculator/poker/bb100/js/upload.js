@@ -57,11 +57,25 @@ let lastSummary = null;
 // pre-built series array and re-render the chart.
 let lastCompute = null;
 // opts.filter: dateMode ∈ ['all','today','last-1h','last-3h','last-24h','custom'].
+// positions: Set<string>|null  (null = any)
+// rank1/rank2: 'A'|'K'..'2'|null  (null = any)
+// kind: 'any'|'pair'|'suited'|'offsuit'
 let opts = {
   beforeRake: true,
   lines: { winnings: true, ev: true, red: true, blue: true },
-  filter: { dateMode: 'all', customStart: null, customEnd: null, stakes: null },
+  filter: {
+    dateMode: 'all', customStart: null, customEnd: null, stakes: null,
+    positions: null, rank1: null, rank2: null, kind: 'any',
+  },
 };
+
+const RANK_ORDER = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
+const HAND_KINDS = [
+  ['any',     'Any'],
+  ['pair',    'Pair'],
+  ['suited',  'Suited'],
+  ['offsuit', 'Offsuit'],
+];
 let chartInstance = null;
 
 // Notify cloud bootstrap when a session is loaded (no hard dependency — cloud module is loaded as a sibling script)
@@ -300,8 +314,16 @@ function filterDateRange() {
 function getFilteredHands() {
   if (parsedHands.length === 0) return parsedHands;
   const [start, end] = filterDateRange();
-  const stakeFilter = opts.filter.stakes;
-  if (!start && !end && (!stakeFilter || stakeFilter.size === 0)) return parsedHands;
+  const f = opts.filter;
+  const stakeFilter = f.stakes;
+  const posFilter = f.positions;
+  const cardFilterActive = !!f.rank1 || !!f.rank2 || (f.kind && f.kind !== 'any');
+  if (!start && !end
+    && (!stakeFilter || stakeFilter.size === 0)
+    && (!posFilter || posFilter.size === 0)
+    && !cardFilterActive) {
+    return parsedHands;
+  }
   return parsedHands.filter((h) => {
     if (start || end) {
       const d = new Date(h.date);
@@ -309,12 +331,48 @@ function getFilteredHands() {
       if (end && d > end) return false;
     }
     if (stakeFilter && stakeFilter.size > 0) {
-      // Stake key: bb amount in micro-cents (BigInt) → cents for comparison
       const bbCents = Number(h.stake.bbUC / 10000n);
       if (!stakeFilter.has(bbCents)) return false;
     }
+    if (posFilter && posFilter.size > 0) {
+      if (!posFilter.has(h.hero.position)) return false;
+    }
+    if (cardFilterActive) {
+      if (!matchesCardFilter(h.hero.cards, f)) return false;
+    }
     return true;
   });
+}
+
+// Return true if the hero's hand matches the rank/kind filter.
+// rank1/rank2: when both set, they describe a specific two-rank combo (e.g. AK).
+// When only rank1 is set, "any hand containing rank1".
+// kind: 'pair' | 'suited' | 'offsuit' | 'any'.
+function matchesCardFilter(cards, filter) {
+  if (!cards || cards.length < 2) return false;
+  const c1 = cards[0], c2 = cards[1];
+  if (c1.length < 2 || c2.length < 2) return false;
+  const r1 = c1.slice(0, -1).toUpperCase();
+  const r2 = c2.slice(0, -1).toUpperCase();
+  const s1 = c1[c1.length - 1];
+  const s2 = c2[c2.length - 1];
+  const isPair    = r1 === r2;
+  const isSuited  = !isPair && s1 === s2;
+  const isOffsuit = !isPair && s1 !== s2;
+
+  const kind = filter.kind || 'any';
+  if (kind === 'pair'    && !isPair)    return false;
+  if (kind === 'suited'  && !isSuited)  return false;
+  if (kind === 'offsuit' && !isOffsuit) return false;
+
+  const want = [];
+  if (filter.rank1) want.push(filter.rank1);
+  if (filter.rank2) want.push(filter.rank2);
+  if (want.length === 0) return true;
+  if (want.length === 1) return r1 === want[0] || r2 === want[0];
+  // Both ranks specified: need both present (order-independent).
+  if (want[0] === want[1]) return r1 === want[0] && r2 === want[0];
+  return (r1 === want[0] && r2 === want[1]) || (r1 === want[1] && r2 === want[0]);
 }
 
 // Build the list of unique stakes present in parsedHands, with hand-counts.
@@ -443,7 +501,92 @@ function renderFilterBar() {
     els.filterBar.appendChild(stakeRow);
   }
 
-  // Row 3: result counter + clear-all button
+  // Row 3: position chips (multi-select; OR semantics)
+  const posRow = document.createElement('div');
+  posRow.className = 'filter-row';
+  const posLbl = document.createElement('span');
+  posLbl.className = 'filter-row-label';
+  posLbl.textContent = 'Position:';
+  posRow.appendChild(posLbl);
+  const selectedPositions = opts.filter.positions || new Set();
+  const anyPosBtn = document.createElement('button');
+  anyPosBtn.type = 'button';
+  anyPosBtn.className = 'filter-chip' + (selectedPositions.size === 0 ? ' active' : '');
+  anyPosBtn.textContent = 'Any';
+  anyPosBtn.addEventListener('click', () => {
+    opts = { ...opts, filter: { ...opts.filter, positions: null } };
+    renderAll();
+  });
+  posRow.appendChild(anyPosBtn);
+  for (const pos of POS_ORDER) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    const isOn = selectedPositions.has(pos);
+    btn.className = 'filter-chip' + (isOn ? ' active' : '');
+    btn.textContent = pos;
+    btn.addEventListener('click', () => {
+      const next = new Set(selectedPositions);
+      if (isOn) next.delete(pos); else next.add(pos);
+      opts = { ...opts, filter: { ...opts.filter, positions: next.size === 0 ? null : next } };
+      renderAll();
+    });
+    posRow.appendChild(btn);
+  }
+  els.filterBar.appendChild(posRow);
+
+  // Rows 4-5: rank pickers (single-select). Row 6: kind (single-select).
+  function buildRankRow(label, currentValue, onPick) {
+    const row = document.createElement('div');
+    row.className = 'filter-row';
+    const lbl = document.createElement('span');
+    lbl.className = 'filter-row-label';
+    lbl.textContent = label;
+    row.appendChild(lbl);
+    const anyBtn = document.createElement('button');
+    anyBtn.type = 'button';
+    anyBtn.className = 'filter-chip' + (currentValue == null ? ' active' : '');
+    anyBtn.textContent = 'Any';
+    anyBtn.addEventListener('click', () => onPick(null));
+    row.appendChild(anyBtn);
+    for (const r of RANK_ORDER) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'filter-chip filter-chip-rank' + (currentValue === r ? ' active' : '');
+      btn.textContent = r;
+      btn.addEventListener('click', () => onPick(currentValue === r ? null : r));
+      row.appendChild(btn);
+    }
+    return row;
+  }
+  els.filterBar.appendChild(buildRankRow('Rank 1:', opts.filter.rank1, (r) => {
+    opts = { ...opts, filter: { ...opts.filter, rank1: r } };
+    renderAll();
+  }));
+  els.filterBar.appendChild(buildRankRow('Rank 2:', opts.filter.rank2, (r) => {
+    opts = { ...opts, filter: { ...opts.filter, rank2: r } };
+    renderAll();
+  }));
+
+  const kindRow = document.createElement('div');
+  kindRow.className = 'filter-row';
+  const kindLbl = document.createElement('span');
+  kindLbl.className = 'filter-row-label';
+  kindLbl.textContent = 'Kind:';
+  kindRow.appendChild(kindLbl);
+  for (const [key, label] of HAND_KINDS) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'filter-chip' + ((opts.filter.kind || 'any') === key ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      opts = { ...opts, filter: { ...opts.filter, kind: key } };
+      renderAll();
+    });
+    kindRow.appendChild(btn);
+  }
+  els.filterBar.appendChild(kindRow);
+
+  // Row 7: result counter + clear-all button
   const actionsRow = document.createElement('div');
   actionsRow.className = 'filter-row filter-actions-row';
   const filtered = getFilteredHands();
@@ -485,6 +628,10 @@ function computeCacheKey() {
     customStart: opts.filter.customStart instanceof Date ? opts.filter.customStart.getTime() : null,
     customEnd: opts.filter.customEnd instanceof Date ? opts.filter.customEnd.getTime() : null,
     stakes: opts.filter.stakes ? [...opts.filter.stakes].sort((a,b)=>a-b) : null,
+    positions: opts.filter.positions ? [...opts.filter.positions].sort() : null,
+    rank1: opts.filter.rank1 || null,
+    rank2: opts.filter.rank2 || null,
+    kind: opts.filter.kind || 'any',
   });
 }
 
@@ -618,6 +765,30 @@ function handResultUC(h) {
   return h.collectedUC - h.contributedUC;
 }
 
+const SUIT_GLYPH = { h: '♥', d: '♦', s: '♠', c: '♣' };
+
+function renderMiniCards(cards) {
+  const wrap = document.createElement('span');
+  wrap.className = 'mini-cards';
+  for (const card of cards) {
+    if (!card || card.length < 2) continue;
+    const suit = card[card.length - 1];
+    const rank = card.slice(0, -1);
+    const c = document.createElement('span');
+    c.className = 'mini-card suit-' + suit;
+    const r = document.createElement('span');
+    r.className = 'mini-card-rank';
+    r.textContent = rank;
+    const s = document.createElement('span');
+    s.className = 'mini-card-suit';
+    s.textContent = SUIT_GLYPH[suit] || suit;
+    c.appendChild(r);
+    c.appendChild(s);
+    wrap.appendChild(c);
+  }
+  return wrap;
+}
+
 function renderHandBrowserFiltered(filtered) {
   const el = els.handBrowser;
   if (!el) return;
@@ -695,7 +866,11 @@ function renderHandBrowserFiltered(filtered) {
 
       const cardsCell = document.createElement('span');
       cardsCell.className = 'hand-cards';
-      cardsCell.textContent = h.hero.cards ? h.hero.cards.join(' ') : '— —';
+      if (h.hero.cards && h.hero.cards.length > 0) {
+        cardsCell.appendChild(renderMiniCards(h.hero.cards));
+      } else {
+        cardsCell.textContent = '—';
+      }
 
       const resultCell = document.createElement('span');
       resultCell.className = 'hand-result ' + resultCls;
