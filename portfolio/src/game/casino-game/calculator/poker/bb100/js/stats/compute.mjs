@@ -9,7 +9,7 @@ import { encodeHand } from '../equity/cards.mjs';
 // Used as the cache-invalidation key for pre-computed cloud-session series:
 // when a saved series.json.gz has an older fingerprint, the client recomputes
 // from raw hands instead of trusting the stored chart.
-export const COMPUTE_FINGERPRINT = 'compute-v1-banker-rake-share-2026-05-22';
+export const COMPUTE_FINGERPRINT = 'compute-v2-rake-only-denom-2026-05-22';
 
 // Street → number of board cards already out when all-in was made
 const STREET_BOARD_LEN = {
@@ -71,8 +71,19 @@ function heroRakeShareByContribution(hand) {
  * Hero's rake share by WIN (= how much rake comes "off Hero's winnings") — used
  * to convert realized P&L into "before rake" P&L.
  *
- *   share = totalFees × heroWonFromPot / NET_pot
- *   NET_pot = totalPot − totalFees − bonusInjections   (what was actually distributed)
+ *   share = totalFees × heroWonFromPot / SHARE_DENOM
+ *   SHARE_DENOM = totalPot − rake − bonusInjections
+ *
+ * Empirically matches GGPoker App's "before rake" P&L view to ≤±1¢ on long
+ * samples (1815 + 23795-hand fixtures, fixture A drift is within the ±1¢
+ * rendering noise of GG's chart). The semantic peculiarity:
+ *
+ * Why subtract ONLY rake from the denominator (not jackpot + tax)?
+ *   GG App's "before rake" view treats Jackpot money as still being inside the
+ *   pot for share-allocation purposes, even though it's a fee in the numerator.
+ *   Subtracting all fees from the denominator (NET pot semantics) produced a
+ *   systematic +3¢/1815-hand drift vs GG's reading. Keeping jackpot in the
+ *   denominator matches GG.
  *
  * Why win-share, not contribution-share, for "before rake":
  *   Rake is taken out of the pot before distribution. The winner is the one who
@@ -80,16 +91,14 @@ function heroRakeShareByContribution(hand) {
  *   are unchanged whether rake exists or not (they paid what they paid). So
  *   "before-rake P&L = realized P&L + (Hero's slice of what the winner got back)".
  *
- * Denominator = NET pot (chips actually distributed) so Hero's collected fraction
- * is correct. Banker's-rounded — matches GGPoker App's "before rake" view to ≤±1¢
- * on long samples.
+ * Banker's-rounded.
  */
 function heroRakeShareByWin(hand) {
   const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
   if (heroWonFromPot <= 0n) return 0n;
   const fees = totalFeesUC(hand);
   if (fees <= 0n) return 0n;
-  const denom = hand.totalPotUC - fees - bonusInjectionsUC(hand);
+  const denom = hand.totalPotUC - (hand.rakeUC ?? 0n) - bonusInjectionsUC(hand);
   if (denom <= 0n) return 0n;
   return bankerRound(fees * heroWonFromPot, denom);
 }

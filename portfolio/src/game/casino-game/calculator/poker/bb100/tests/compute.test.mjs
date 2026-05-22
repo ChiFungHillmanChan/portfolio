@@ -60,7 +60,8 @@ test('computeSeries: blue + red = winnings invariant', async () => {
 
 test('computeSeries: beforeRake adds win-share rake back on winning hands', async () => {
   // Win-share method (matches GG App's "before-rake" view):
-  //   rakeShare = fees × heroWonFromPot / (totalPot − fees − bonuses)   (banker-rounded)
+  //   rakeShare = fees × heroWonFromPot / (totalPot − rake − bonuses)   (banker-rounded)
+  // (Jackpot is in `fees` numerator but stays IN the denominator.)
   // Losing hands (heroWonFromPot ≤ 0) get share = 0 — their P&L is unchanged.
   const hands = [
     h({ contributed: '0.02', collected: '0.10', totalPot: '0.20', rake: '0.02' }),
@@ -125,10 +126,13 @@ test('computeSeries on empty input returns empty series', async () => {
 });
 
 test('computeSeries: beforeRake includes jackpot in fee total (win-share)', async () => {
-  // rake=$0.01, jackpot=$0.02 → totalFees=$0.03 (30000n UC)
+  // rake=$0.01, jackpot=$0.02 → totalFees=$0.03 (30000n UC, both in numerator)
   // contributed=$0.10, collected=$0.10, totalPot=$0.20 (no bonuses)
-  // heroWonFromPot=100000n, denom = 200000n − 30000n − 0 = 170000n
-  // rakeShare = bankerRound(30000n × 100000n / 170000n) = bankerRound(17647.06…) = 17647n
+  // heroWonFromPot=100000n
+  // denom = totalPot − rake − bonuses = 200000n − 10000n − 0 = 190000n
+  //   (jackpot stays IN the share-distribution denominator — empirically
+  //    matches GG App's "before rake" view; see heroRakeShareByWin.)
+  // rakeShare = bankerRound(30000n × 100000n / 190000n) = bankerRound(15789.47…) = 15789n
   const hands = [
     h({ contributed: '0.10', collected: '0.10', totalPot: '0.20', rake: '0.01', jackpot: '0.02' }),
   ];
@@ -137,7 +141,7 @@ test('computeSeries: beforeRake includes jackpot in fee total (win-share)', asyn
   const afterResult = after.series.winningsUC.at(-1);
   const beforeResult = before.series.winningsUC.at(-1);
   assert.ok(beforeResult > afterResult, 'before-rake result should be greater than after-rake');
-  assert.equal(beforeResult - afterResult, 17647n);
+  assert.equal(beforeResult - afterResult, 15789n);
 });
 
 test('computeSeries: EV is NOT computed for hands with uncalled bet returned (falls back to actual)', async () => {
