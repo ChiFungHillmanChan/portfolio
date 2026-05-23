@@ -169,11 +169,27 @@ async function recomputeFromHands(sessionMeta, onStatus) {
   if (splits.length === 0) throw new Error("session had no files");
 
   // Reconstruct File objects so upload.js#handleFiles handles them through
-  // its normal parse + compute + render pipeline.
-  const files = splits.map((s) => new File([s.text], s.name, { type: "text/plain" }));
-  const { handleFiles } = await import("../upload.js");
+  // its normal parse + compute + render pipeline. Use the session createdAt
+  // as a stable File.lastModified so re-opening this same session won't
+  // double-count its own files against the name|size|lastModified dedup.
+  const stableMs = Number(sessionMeta.createdAt) || 0;
+  const files = splits.map((s) => new File([s.text], s.name, {
+    type: "text/plain",
+    lastModified: stableMs,
+  }));
+  const { handleFiles, setSourceCloudSessionId } = await import("../upload.js");
   onStatus?.(`Recomputing chart from ${splits.length} file${splits.length === 1 ? "" : "s"}…`);
   await handleFiles(files);
+
+  // Mark the current view as having come from this cloud session so the next
+  // "Save to cloud" merges back into the same session record (replaces it
+  // server-side) instead of creating a duplicate. The fast path sets this in
+  // loadCachedSession; the slow path used to leave sourceCloudSessionId
+  // dangling, which caused duplicate sessions to accumulate when a user
+  // recomputed + uploaded more files on top of an existing session.
+  if (typeof setSourceCloudSessionId === "function") {
+    setSourceCloudSessionId(sessionMeta.sessionId);
+  }
 
   // Auto-refresh the cloud cache: silently write the freshly-computed
   // series.json.gz back to this same session so the next open takes the

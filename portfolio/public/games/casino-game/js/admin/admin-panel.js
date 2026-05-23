@@ -4,8 +4,7 @@
 // call, so this UI-side gate is just to hide the controls from non-admins.
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { doc, getDoc } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { auth, db } from "../auth/firebase-init.js";
+import { auth } from "../auth/firebase-init.js";
 import { fetchAdminStats, fetchAdminUsers, setUserPlan } from "./admin-api.js";
 import { GAME_PLANS } from "./games-registry.js";
 
@@ -403,14 +402,18 @@ async function recheckSuperadminThenMount() {
     isSuperadmin = false;
     return;
   }
-  // Authoritative check: read users/{uid}.superadmin from Firestore.
-  // The server ALSO re-verifies on every admin-* API call, so this is the
-  // belt; that is the braces.
+  // Probe the admin-stats endpoint to test superadmin status. The Lambda
+  // re-verifies superadmin from Firestore on every request and returns 403
+  // for non-admins; that doubles as our gating signal here. Going through
+  // the API (instead of opening a Firestore connection from the client)
+  // avoids the "Could not reach Cloud Firestore backend" SDK noise on
+  // pages that never otherwise touch Firestore.
   try {
-    const snap = await getDoc(doc(db, "users", currentUser.uid));
-    isSuperadmin = snap.exists() && snap.data().superadmin === true;
+    const res = await fetchAdminStats();
+    isSuperadmin = !!res?.ok;
+    if (res?.ok && res.stats) statsCache = res.stats;
   } catch (err) {
-    console.warn("[admin] superadmin lookup failed:", err.message);
+    console.warn("[admin] superadmin probe failed:", err.message);
     isSuperadmin = false;
   }
 
