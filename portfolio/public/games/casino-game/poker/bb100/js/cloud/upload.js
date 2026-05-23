@@ -27,9 +27,18 @@ async function gzipBlob(text) {
 }
 
 async function readFilesAsText(files) {
-  // Read all File objects into strings (preserves the exact bytes the user dropped).
+  // Callers pass `{file, text}` records captured at intake — using the cached
+  // text avoids re-reading from disk on Save, which would throw NotFoundError
+  // if the user deleted/moved the source file or the browser revoked the File
+  // handle (Safari) between upload and save.
   return Promise.all(
-    Array.from(files).map(async (f) => ({ name: f.name, text: await f.text() }))
+    Array.from(files).map(async (item) => {
+      if (item && typeof item.text === "string" && item.file) {
+        return { name: item.file.name, text: item.text };
+      }
+      // Fallback: a raw File slipped through (e.g. older caller path).
+      return { name: item.name, text: await item.text() };
+    })
   );
 }
 
