@@ -125,6 +125,14 @@ async function hydrateReplayAfterFastOpen(sessionMeta) {
   const splits = splitConcatenatedFiles(text);
   if (splits.length === 0) return;
 
+  // Seed `allFiles` BEFORE parsing so that even if the user starts adding new
+  // local files in parallel with this background fetch, a subsequent "Save to
+  // cloud" includes the cloud-side files in the new snapshot. Stable
+  // lastModified (= session createdAt) makes the fileKey deterministic so
+  // re-opening the same session won't double-count its own files.
+  const { seedFilesForCachedSession, hydrateHandsForReplay } = await import("../upload.js");
+  seedFilesForCachedSession(splits, Number(sessionMeta.createdAt) || 0);
+
   const { parseHand, splitIntoHands } = await import("../parser/gg-parser.mjs");
   const hands = [];
   for (const split of splits) {
@@ -149,7 +157,6 @@ async function hydrateReplayAfterFastOpen(sessionMeta) {
     return a.id.localeCompare(b.id);
   });
 
-  const { hydrateHandsForReplay } = await import("../upload.js");
   await hydrateHandsForReplay(hands, { sessionId: sessionMeta.sessionId });
 }
 

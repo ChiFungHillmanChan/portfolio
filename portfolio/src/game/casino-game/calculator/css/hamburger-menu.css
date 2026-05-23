@@ -72,7 +72,7 @@
 }
 
 .dropdown-menu.open {
-    max-height: 400px;
+    max-height: 480px;
     opacity: 1;
 }
 

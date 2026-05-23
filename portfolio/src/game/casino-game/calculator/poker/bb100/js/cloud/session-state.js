@@ -9,8 +9,13 @@ const _listeners = new Set();
 // stats/compute.mjs (BigInt arrays). Captured here at compute time so the
 // "Save to cloud" button can upload them too, letting future opens skip the
 // 30-90s parse+equity+compute pipeline.
-export function setCurrentSession({ hands, files, summary, seriesBefore, seriesAfter }) {
-  _state = { hands, files, summary, seriesBefore, seriesAfter };
+//
+// `sourceSessionId`: when the current view originated from (or last saved to)
+// a cloud session, this carries that sessionId. The bootstrap save handler
+// uses it to delete the previous session after a successful re-save so the
+// cloud holds a single combined snapshot rather than accumulating duplicates.
+export function setCurrentSession({ hands, files, summary, seriesBefore, seriesAfter, sourceSessionId = null }) {
+  _state = { hands, files, summary, seriesBefore, seriesAfter, sourceSessionId };
   for (const fn of _listeners) try { fn(_state); } catch {}
 }
 
