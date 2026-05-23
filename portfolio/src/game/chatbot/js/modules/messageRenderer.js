@@ -25,15 +25,20 @@ class MessageRenderer {
         }
         const messageDiv = Helpers.createElement('div', `message ${type}`);
         const bubbleDiv = Helpers.createElement('div', 'message-bubble');
-        bubbleDiv.innerHTML = content;
+        // User-typed text is never trusted as HTML. Only curated AI/system content may render markup.
+        if (type === 'user') {
+            bubbleDiv.textContent = content;
+        } else {
+            bubbleDiv.innerHTML = content;
+        }
         messageDiv.appendChild(bubbleDiv);
         this.chatMessages.appendChild(messageDiv);
         this.scrollToBottomSmooth();
 
-        this.conversationHistory.push({ 
-            role: type === 'user' ? 'user' : 'assistant', 
-            content: content, 
-            timestamp: new Date() 
+        this.conversationHistory.push({
+            role: type === 'user' ? 'user' : 'assistant',
+            content: content,
+            timestamp: new Date()
         });
     }
 
@@ -46,6 +51,20 @@ class MessageRenderer {
         messageDiv.appendChild(bubbleDiv);
         this.chatMessages.appendChild(messageDiv);
         this.scrollToBottomSmooth();
+
+        // User messages bypass HTML rendering entirely — render as plain text and skip the typing animation's
+        // tag-reconstruction path (which assumes trusted markup).
+        if (type === 'user') {
+            bubbleDiv.textContent = content;
+            bubbleDiv.classList.remove('typing-effect');
+            this.scrollToBottomSmooth();
+            this.conversationHistory.push({
+                role: 'user',
+                content: content,
+                timestamp: new Date()
+            });
+            return;
+        }
 
         const plainContent = Helpers.extractTextFromHTML(content);
         let displayContent = '';
