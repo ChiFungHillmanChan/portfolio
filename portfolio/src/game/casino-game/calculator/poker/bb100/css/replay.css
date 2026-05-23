@@ -109,7 +109,7 @@
 .replay-share-dialog {
   position: fixed;
   inset: 0;
-  z-index: 1010; /* above the parent replay modal (which sits ~1000) */
+  z-index: 10000; /* parent .replay-modal sits at 9999 — must beat it */
   display: flex;
   align-items: center;
   justify-content: center;
