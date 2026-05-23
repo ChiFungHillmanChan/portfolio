@@ -72,14 +72,23 @@ function renderStatsCard(container) {
   }
 
   const total = statsCache.total;
+  const anonymous = statsCache.anonymous || 0;
   const byPlan = statsCache.byPlan || {};
 
   card.appendChild(
     el("div", { class: "admin-stat-row admin-stat-total" }, [
-      el("div", { class: "admin-stat-label" }, ["Total users signed in"]),
+      el("div", { class: "admin-stat-label" }, ["Real users (Google sign-in)"]),
       el("div", { class: "admin-stat-value" }, [fmtNumber(total)]),
     ])
   );
+  if (anonymous > 0) {
+    card.appendChild(
+      el("div", { class: "admin-stat-row admin-stat-anon" }, [
+        el("div", { class: "admin-stat-label" }, ["Anonymous (excluded from list)"]),
+        el("div", { class: "admin-stat-value admin-stat-value-muted" }, [fmtNumber(anonymous)]),
+      ])
+    );
+  }
 
   for (const game of GAME_PLANS) {
     const counts = byPlan[game.id] || {};
@@ -361,18 +370,26 @@ function mountSection(modalBody) {
   }, [
     el("h3", { class: "global-settings-section-title" }, ["Admin"]),
     el("div", { class: "admin-section-blurb" }, [
-      "Superadmin dashboard. Plans here are server-enforced — clients cannot self-upgrade.",
+      "Superadmin dashboard for the casino-game. Plans are server-enforced — clients cannot self-upgrade.",
     ]),
     el("div", { class: "admin-subsection" }, [
       el("h4", { class: "admin-subsection-title" }, ["Stats"]),
       el("div", { "data-admin-stats": "" }),
     ]),
     el("div", { class: "admin-subsection" }, [
-      el("h4", { class: "admin-subsection-title" }, ["Users & plans"]),
+      el("h4", { class: "admin-subsection-title", "data-admin-users-title": "" }, ["Users & plans"]),
       el("div", { "data-admin-users": "" }),
     ]),
   ]);
   modalBody.appendChild(section);
+}
+
+function updateUserListTitle() {
+  const titleEl = document.querySelector("[data-admin-users-title]");
+  if (!titleEl) return;
+  const count = userListState.users.length;
+  const suffix = userListState.hasMore ? "+" : "";
+  titleEl.textContent = count > 0 ? `Users & plans (${count}${suffix})` : "Users & plans";
 }
 
 function unmountSection() {

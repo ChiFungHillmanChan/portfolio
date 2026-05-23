@@ -68,6 +68,20 @@
   color: #ffdd00;
 }
 
+.admin-stat-anon .admin-stat-label {
+  font-size: 0.7rem;
+  text-transform: none;
+  color: #666;
+  font-style: italic;
+  letter-spacing: 0;
+}
+
+.admin-stat-value-muted {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+  color: #666;
+}
+
 .admin-stat-game-name {
   font-size: 0.85rem;
   font-weight: 600;

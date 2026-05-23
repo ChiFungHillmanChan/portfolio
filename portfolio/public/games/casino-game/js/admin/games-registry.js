@@ -3,6 +3,10 @@
 // matching server-side mapping in cg-poker writePlanForGame(). The admin
 // dashboard renders one panel per entry automatically.
 
+// Casino-game scope only. System Design 教室 lives in its own admin panel —
+// listing it here would imply this dashboard manages it, which it doesn't.
+// Future casino games (blackjack/roulette/baccarat plans, etc.) drop in here
+// AND need a matching writePlanForGame() branch in lambda/poker/index.mjs.
 export const GAME_PLANS = [
   {
     id: "poker",
@@ -15,18 +19,6 @@ export const GAME_PLANS = [
       { id: "ultra",    label: "Ultra",    limit: "5,000,000 hands" },
     ],
   },
-  {
-    id: "systemDesign",
-    label: "System Design 教室",
-    blurb: "AI chat + premium topic access. Tier sets daily AI call budget.",
-    tiers: [
-      { id: "free",     label: "Free",     limit: "5 AI calls/day" },
-      { id: "standard", label: "Standard", limit: "20 AI calls/day" },
-      { id: "pro",      label: "Pro",      limit: "80 AI calls/day" },
-    ],
-  },
-  // Future games: drop a new entry here AND extend writePlanForGame() in
-  // lambda/poker/index.mjs to know how to persist the new game's tier.
 ];
 
 export function getGame(id) {
