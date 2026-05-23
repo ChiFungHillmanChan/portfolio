@@ -351,7 +351,11 @@ export async function handleFiles(files) {
       }
       if (fileHadAnyHand) {
         const key = fileKey(ft.file);
-        if (!allFiles.has(key)) allFiles.set(key, ft.file);
+        // Cache the text alongside the File so cloud-save never has to re-read
+        // the underlying disk file — which can be gone (deleted/moved) or have
+        // its handle revoked (Safari) by the time the user clicks Save, raising
+        // NotFoundError from f.text().
+        if (!allFiles.has(key)) allFiles.set(key, { file: ft.file, text: ft.text });
       } else {
         rejected.push({ name: ft.name, reason: 'no Hero hands parsed from file' });
       }
@@ -1762,7 +1766,7 @@ export function seedFilesForCachedSession(splits, stableLastModified = 0) {
       lastModified: stableLastModified,
     });
     const key = fileKey(file);
-    if (!allFiles.has(key)) allFiles.set(key, file);
+    if (!allFiles.has(key)) allFiles.set(key, { file, text: s.text });
   }
   originalFiles = Array.from(allFiles.values());
 }

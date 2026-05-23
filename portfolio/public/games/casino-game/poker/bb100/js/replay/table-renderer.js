@@ -7,6 +7,11 @@
 
 const VIEW_W = 720;
 const VIEW_H = 460;
+// Hero (bottom seat) sits at cy + ry ≈ y=414 and its name/stack label is
+// rendered +50 below that with a 32px-tall background — the bottom edge lands
+// near y=480. We extend the SVG viewBox vertically so this label stays
+// inside the visible area; seat layout math still uses VIEW_H unchanged.
+const VIEWBOX_PAD_BOTTOM = 30;
 
 // Build seat positions clockwise from Hero. ordered[i] is i+1 clockwise
 // steps away from Hero (who sits at the bottom). With this convention the
@@ -170,7 +175,7 @@ export function buildTable(mountEl, snap0) {
   const positionLabels = computePositionLabels(ordered);
 
   const svg = svgEl("svg", {
-    viewBox: `0 0 ${VIEW_W} ${VIEW_H}`,
+    viewBox: `0 0 ${VIEW_W} ${VIEW_H + VIEWBOX_PAD_BOTTOM}`,
     class: "poker-table",
     preserveAspectRatio: "xMidYMid meet",
     width: "100%",
