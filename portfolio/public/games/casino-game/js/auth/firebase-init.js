@@ -10,7 +10,6 @@ import {
   getAuth,
   GoogleAuthProvider,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
-import { getFirestore } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyC2wBCjM1c8bX8VQP4vQbE_q-KoBrRY_vc",
@@ -24,9 +23,11 @@ const firebaseConfig = {
 export const POKER_API_BASE = "https://api.system-design.hillmanchan.com";
 
 // Guard against double-init when bb100 (which re-exports this) and the global
-// settings modal both load it on the same page.
+// settings modal both load it on the same page. Firestore is intentionally
+// NOT initialized here — the poker app reaches Firestore only via backend
+// Lambda calls. Importing getFirestore() would make the SDK try to open a
+// long-poll connection that logs "Could not reach Cloud Firestore backend".
 export const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 export const googleProvider = new GoogleAuthProvider();
 googleProvider.setCustomParameters({ prompt: "select_account" });

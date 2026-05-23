@@ -102,8 +102,20 @@ let opts = {
   filter: {
     dateMode: 'all', customStart: null, customEnd: null, stakes: null,
     positions: null, rank1: null, rank2: null, kind: 'any',
+    // Highlight mode for the hand browser: 'all' keeps chronological order;
+    // 'wins'/'losses'/'pots' re-sort the filtered list to bring the most
+    // interesting hands to page 1. Affects display order only — does not
+    // change the chart or summary.
+    highlight: 'all',
   },
 };
+
+const HIGHLIGHT_MODES = [
+  ['all',    'All'],
+  ['wins',   'Hero wins most'],
+  ['losses', 'Hero lost most'],
+  ['pots',   'Biggest pots'],
+];
 
 const RANK_ORDER = ['A', 'K', 'Q', 'J', 'T', '9', '8', '7', '6', '5', '4', '3', '2'];
 const HAND_KINDS = [
@@ -688,6 +700,31 @@ function renderReplayFilterBar() {
   }
   els.replayFilterBar.hidden = false;
 
+  // Highlight pills (single-select) — quick way to find the most interesting
+  // hands. Re-sorts the hand browser (display-only); does NOT alter the chart
+  // or summary, both of which respect chronological order via the global
+  // filter. Sits at the top so it acts like a "preset" for the table view.
+  const highlightRow = document.createElement('div');
+  highlightRow.className = 'filter-row';
+  const highlightLbl = document.createElement('span');
+  highlightLbl.className = 'filter-row-label';
+  highlightLbl.textContent = 'Show:';
+  highlightRow.appendChild(highlightLbl);
+  const currentHighlight = opts.filter.highlight || 'all';
+  for (const [key, label] of HIGHLIGHT_MODES) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'filter-chip' + (currentHighlight === key ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => {
+      opts = { ...opts, filter: { ...opts.filter, highlight: key } };
+      handPage = 0;
+      refreshReplay();
+    });
+    highlightRow.appendChild(btn);
+  }
+  els.replayFilterBar.appendChild(highlightRow);
+
   // Position chips (multi-select, OR semantics)
   const posRow = document.createElement('div');
   posRow.className = 'filter-row';
@@ -978,6 +1015,12 @@ function handResultUC(h) {
   return h.collectedUC - h.contributedUC;
 }
 
+function bigIntCmp(a, b) {
+  if (a < b) return -1;
+  if (a > b) return 1;
+  return 0;
+}
+
 const SUIT_GLYPH = { h: '♥', d: '♦', s: '♠', c: '♣' };
 
 function renderMiniCards(cards) {
@@ -1011,12 +1054,25 @@ function renderHandBrowserFiltered(filtered) {
     return;
   }
   el.hidden = false;
-  handPage = Math.min(handPage, Math.floor((filtered.length - 1) / HAND_PAGE_SIZE));
-  // Use `filtered` instead of the global `parsedHands` so the browser respects filters.
-  const hands = filtered;
+  // `filtered` arrives in chronological order. Re-sort a copy when the user
+  // picked a highlight preset so page 1 leads with the most interesting hands.
+  // `bigIntSign` keeps the comparator working on BigInt UC values.
+  const mode = opts.filter.highlight || 'all';
+  const hands = mode === 'all' ? filtered : filtered.slice();
+  if (mode === 'wins') {
+    hands.sort((a, b) => bigIntCmp(handResultUC(b), handResultUC(a)));
+  } else if (mode === 'losses') {
+    hands.sort((a, b) => bigIntCmp(handResultUC(a), handResultUC(b)));
+  } else if (mode === 'pots') {
+    hands.sort((a, b) => bigIntCmp(b.totalPotUC ?? 0n, a.totalPotUC ?? 0n));
+  }
+  handPage = Math.min(handPage, Math.max(0, Math.floor((hands.length - 1) / HAND_PAGE_SIZE)));
 
   const title = document.createElement('h3');
-  title.textContent = `Hand browser — click any hand to replay`;
+  const titleLabel = mode === 'all'
+    ? 'Hand browser — click any hand to replay'
+    : `Hand browser — ${HIGHLIGHT_MODES.find(([k]) => k === mode)?.[1] || mode} (click any hand to replay)`;
+  title.textContent = titleLabel;
   el.appendChild(title);
 
   const pager = document.createElement('div');

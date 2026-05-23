@@ -41,5 +41,8 @@ lambda/*/node_modules/
 lambda/data/users.json
 *.zip
 
+# Cloudflare Wrangler local cache
+.wrangler/
+
 # OS files
 .DS_Store
