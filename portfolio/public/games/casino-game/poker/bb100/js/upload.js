@@ -87,6 +87,11 @@ let lastSummary = null;
 // Reused when only the rake toggle changes — no recompute, just re-pick the
 // pre-built series array and re-render the chart.
 let lastCompute = null;
+// When the current view originated from a cloud session (opened from cache or
+// just saved), remember its sessionId so the next "Save to cloud" can delete
+// the previous version and replace it with the new combined snapshot —
+// avoiding duplicate cloud sessions for the same dataset.
+let sourceCloudSessionId = null;
 // opts.filter: dateMode ∈ ['all','today','last-1h','last-3h','last-24h','custom'].
 // positions: Set<string>|null  (null = any)
 // rank1/rank2: 'A'|'K'..'2'|null  (null = any)
@@ -123,6 +128,10 @@ function notifyCloudSessionLoaded() {
         // them alongside hands.txt.gz so re-opens skip the compute pipeline.
         seriesBefore: lastCompute?.seriesBefore || null,
         seriesAfter: lastCompute?.seriesAfter || null,
+        // If this view started from (or last saved to) a cloud session, the
+        // bootstrap save handler uses this to delete the old session after a
+        // successful save — keeping the cloud to a single combined snapshot.
+        sourceSessionId: sourceCloudSessionId,
       });
     })
     .catch(() => {}); // cloud module missing is fine — local-only mode still works
@@ -245,6 +254,11 @@ export async function handleFiles(files) {
   // hands + new local files). If hydration hadn't completed yet, allHandsById
   // is empty so this is effectively a fresh upload.
   if (lastCompute && lastCompute.isCachedSession) {
+    // Preserve the source session id across the cache → live-compute switch so
+    // the next save can still replace the cloud session this view came from.
+    if (lastCompute.sessionMeta?.sessionId) {
+      sourceCloudSessionId = lastCompute.sessionMeta.sessionId;
+    }
     lastCompute = null;
   }
   const totalBefore = allHandsById.size;
@@ -385,6 +399,7 @@ export function clearAllUploads() {
   originalFiles = [];
   lastSummary = null;
   lastCompute = null;  // drop the cached compute so a fresh upload recomputes
+  sourceCloudSessionId = null;
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
   els.results.hidden = true;
   showStatus('Cleared. Upload hand-history files to start over.', 'info');
@@ -1158,6 +1173,61 @@ const crosshairPlugin = {
   },
 };
 
+// Round a positive integer span to a "nice" step (1, 2, 5 × 10^k). Returns
+// the step that yields roughly `targetTicks` evenly-spaced labels — matches
+// how PokerTracker/GG label their X-axis (5000, 10000, 15000…) instead of
+// 26609/12-spaced ugly numbers.
+function niceStep(range, targetTicks = 7) {
+  if (!Number.isFinite(range) || range <= 0 || targetTicks <= 0) return 1;
+  const rough = range / targetTicks;
+  const mag = Math.pow(10, Math.floor(Math.log10(rough)));
+  const norm = rough / mag;
+  let nice;
+  if (norm < 1.5) nice = 1;
+  else if (norm < 3.5) nice = 2;
+  else if (norm < 7.5) nice = 5;
+  else nice = 10;
+  return Math.max(1, nice * mag);
+}
+
+// For a labels array (hand-numbers, monotonically increasing) return an array
+// of `{value: chartIndex, displayLabel: '5,000'}` ticks aligned to round hand
+// numbers. `labels[chartIndex]` is the hand number at that downsampled chart
+// position; we binary-search the closest index for each round target, but
+// render the round number itself so the axis reads 5,000 / 10,000 (matching
+// PokerTracker/GG) instead of the off-by-N artifact of downsampling.
+function pickNiceXTicks(labels, targetTicks = 7) {
+  if (!Array.isArray(labels) || labels.length === 0) return [];
+  const lastHand = labels[labels.length - 1];
+  if (!Number.isFinite(lastHand) || lastHand <= 1) return [{ value: 0, displayLabel: '1' }];
+  const step = niceStep(lastHand, targetTicks);
+  if (step <= 0) return [{ value: 0, displayLabel: '1' }];
+  const ticks = [];
+  const firstHand = labels[0] || 1;
+  // First multiple of step >= firstHand. Skip 0 — hand numbers start at 1.
+  let hand = Math.max(step, Math.ceil(firstHand / step) * step);
+  while (hand <= lastHand) {
+    // Pick the chart index whose label is CLOSEST to this round hand number,
+    // so the gridline sits in the right horizontal place even after the
+    // 5000-point downsample re-samples the labels array.
+    let lo = 0, hi = labels.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >>> 1;
+      if (labels[mid] < hand) lo = mid + 1;
+      else hi = mid;
+    }
+    let idx = lo;
+    if (idx > 0 && Math.abs(labels[idx - 1] - hand) < Math.abs(labels[idx] - hand)) {
+      idx = idx - 1;
+    }
+    if (ticks.length === 0 || ticks[ticks.length - 1].value !== idx) {
+      ticks.push({ value: idx, displayLabel: hand.toLocaleString() });
+    }
+    hand += step;
+  }
+  return ticks;
+}
+
 // Downsample a BigInt[] series + index labels to at most MAX_CHART_POINTS,
 // always preserving the final point so the cumulative end value stays exact.
 // 'min-max' style: bucket the series and pick one representative per bucket.
@@ -1209,21 +1279,30 @@ function renderChart(rawSeries) {
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
+          // Replace Chart.js's evenly-spaced auto-ticks with hand-number-aligned
+          // round ticks (5000, 10000, …). Chart.js's defaults pick indices
+          // `n / maxTicksLimit` apart, which for downsampled series produces
+          // labels like 2,220 / 4,439 / 6,658. Our nice-step ticks mirror what
+          // PokerTracker/GG show.
+          afterBuildTicks: (scale) => {
+            const labels = scale.chart.data.labels;
+            const niceTicks = pickNiceXTicks(labels, 7);
+            if (niceTicks.length > 0) scale.ticks = niceTicks;
+          },
           ticks: {
             color: '#a0a0b0',
-            // Chart.js picks ~maxTicksLimit evenly-spaced ticks from the
-            // visible index range and rotates labels as needed. Robust to
-            // downsampling because we no longer require labels to be exact
-            // multiples of a step — we just stamp whatever hand-number the
-            // label-array carries at each chosen index.
-            autoSkip: true,
+            // We control ticks via afterBuildTicks — autoSkip would re-thin
+            // them and re-introduce odd labels.
+            autoSkip: false,
             maxRotation: 0,
             minRotation: 0,
-            maxTicksLimit: 12,
-            callback: function(value) {
-              // `value` is the absolute data index (0..n-1). The label at
-              // that index is the actual hand number (= index+1 when not
-              // downsampled, sparser when downsampled to <=5000 chart points).
+            callback: function(value, index, allTicks) {
+              // Prefer the round display label stamped on our custom ticks
+              // (5,000 / 10,000 …) so downsample drift doesn't show up.
+              const t = allTicks && allTicks[index];
+              if (t && typeof t.displayLabel === 'string') return t.displayLabel;
+              // Fallback for older code paths: look up the hand number at
+              // this chart index (= index+1 when not downsampled).
               const labelArr = this.chart.data.labels;
               const handNum = labelArr ? labelArr[value] : value + 1;
               if (handNum == null) return '';
@@ -1521,6 +1600,11 @@ export async function loadCachedSession({ summary, seriesBefore, seriesAfter, ha
   parsedHands = [];
   originalFiles = [];
   lastSummary = summary;
+  // Remember which cloud session this view came from. The bootstrap save
+  // handler reads this through session-state.sourceSessionId and deletes the
+  // previous session after a successful re-save — so a save+re-save cycle
+  // doesn't leave duplicate cloud snapshots behind.
+  sourceCloudSessionId = sessionMeta?.sessionId || null;
 
   // Synthesize the cache record that rerenderFromCache + renderAll's
   // short-circuit branch both read from.
@@ -1595,4 +1679,47 @@ export async function hydrateHandsForReplay(hands, opts = {}) {
 
   renderReplayFilterBar();
   renderHandBrowserFiltered(applyReplayFilter(parsedHands));
+}
+
+/**
+ * Seed `allFiles` from a cloud session's downloaded hands.txt so a follow-up
+ * "Save to cloud" includes the original cloud-side files in the new snapshot.
+ *
+ * Without this, the fast-open path leaves allFiles empty; if the user then
+ * imports more local files and re-saves, the uploaded hands.txt would only
+ * contain the new files (the original 23k+ hands of cloud text are lost),
+ * leaving the new session's handCount inflated relative to the actual stored
+ * hand histories. By materialising the cloud splits as File objects with a
+ * stable lastModified (the session createdAt), they participate in the same
+ * name|size|lastModified dedup as locally-picked files.
+ *
+ * @param {Array<{name:string, text:string}>} splits  per-file splits from hands.txt
+ * @param {number} [stableLastModified]  used as File.lastModified so re-seeding
+ *                                       the same session produces the same fileKey
+ */
+export function seedFilesForCachedSession(splits, stableLastModified = 0) {
+  if (!Array.isArray(splits) || splits.length === 0) return;
+  for (const s of splits) {
+    if (!s || !s.name || typeof s.text !== 'string') continue;
+    const file = new File([s.text], s.name, {
+      type: 'text/plain',
+      lastModified: stableLastModified,
+    });
+    const key = fileKey(file);
+    if (!allFiles.has(key)) allFiles.set(key, file);
+  }
+  originalFiles = Array.from(allFiles.values());
+}
+
+/**
+ * Called by cloud/bootstrap.js after a successful "Save to cloud" so the next
+ * save (within the same browser session) deletes the just-saved snapshot
+ * instead of letting the user accumulate duplicate cloud sessions.
+ */
+export function setSourceCloudSessionId(id) {
+  sourceCloudSessionId = id || null;
+}
+
+export function getSourceCloudSessionId() {
+  return sourceCloudSessionId;
 }

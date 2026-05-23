@@ -166,6 +166,9 @@ function renderSaveButton() {
         committing: "Saving to cloud",
         done: "Done",
       };
+      // Capture before save so a delete-after-save can target the right id
+      // even if the user navigated away or session state updated mid-flight.
+      const previousCloudSessionId = session.sourceSessionId || null;
       try {
         const r = await saveSessionToCloud({
           hands: session.hands,
@@ -186,7 +189,35 @@ function renderSaveButton() {
           },
         });
         hideProgress();
-        setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Saved ${r.handCount.toLocaleString()} hands (session ${escapeHtml(r.sessionId.slice(-8))})`, "ok");
+
+        // If this view came from a previous cloud session, delete it now that
+        // the combined snapshot is committed — the new session is a strict
+        // superset, so keeping the old one would just leave a duplicate.
+        // Best-effort: the new save is already safe in S3 so a transient
+        // delete failure isn't fatal; we surface it as a soft warning.
+        let replacedPreviousNote = "";
+        if (previousCloudSessionId && previousCloudSessionId !== r.sessionId) {
+          try {
+            const { deleteSession } = await import("./delete.js");
+            await deleteSession(previousCloudSessionId);
+            replacedPreviousNote = ` · replaced previous version (${escapeHtml(previousCloudSessionId.slice(-8))})`;
+          } catch (delErr) {
+            console.warn("[poker cloud] previous session delete failed:", delErr.message);
+            replacedPreviousNote = ` · previous version (${escapeHtml(previousCloudSessionId.slice(-8))}) could not be deleted — remove it manually from My Sessions`;
+          }
+        }
+
+        // Point the in-memory source at the just-saved session so a follow-up
+        // save (without re-opening anything) also replaces rather than
+        // accumulates. Mirrors what loadCachedSession would do.
+        try {
+          const { setSourceCloudSessionId } = await import("../upload.js");
+          setSourceCloudSessionId(r.sessionId);
+        } catch (_) {
+          // upload.js may have been hot-reloaded / older — non-fatal.
+        }
+
+        setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Saved ${r.handCount.toLocaleString()} hands (session ${escapeHtml(r.sessionId.slice(-8))})${replacedPreviousNote}`, "ok");
         refreshQuotaMeter();
         // Refresh the inline restore dropdown so the newly-saved session is
         // immediately reachable without a page reload.
