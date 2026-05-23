@@ -154,7 +154,6 @@ function renderSaveButton() {
     onclick: async () => {
       btn.disabled = true;
       setStatus("Preparing upload…", "info");
-      const handCount = session.hands.length;
       const stageLabel = {
         reading: "Reading files",
         bundling: "Bundling hands",
@@ -165,19 +164,58 @@ function renderSaveButton() {
         "uploading-series": "Uploading series cache",
         committing: "Saving to cloud",
         done: "Done",
+        "downloading-previous": "Downloading previous cloud session",
+        "merging-parse": "Parsing combined hand history",
+        "merging-compute": "Recomputing combined chart",
       };
-      // Capture before save so a delete-after-save can target the right id
-      // even if the user navigated away or session state updated mid-flight.
-      const previousCloudSessionId = session.sourceSessionId || null;
+
+      // Auto-merge: if the in-memory session is not linked to a cloud session
+      // AND the user has prior cloud sessions, transparently combine the two
+      // before uploading so the cloud holds one growing snapshot per user
+      // instead of accumulating small per-upload sessions. Returns null when
+      // no merge applies; in that case we save the unmerged session as-is.
+      let mergeResult = null;
+      try {
+        if (!session.sourceSessionId) {
+          const { mergeWithLatestIfNeeded } = await import("./auto-merge.js");
+          mergeResult = await mergeWithLatestIfNeeded(session, {
+            onStatus: (msg) => setStatus(escapeHtml(msg), "info"),
+            onProgress: ({ stage, progress }) => {
+              const label = stageLabel[stage] || stage;
+              showProgress({
+                stage: label,
+                current: Math.round(progress * 1000),
+                total: 1000,
+              });
+            },
+          });
+        }
+      } catch (err) {
+        // A merge failure must NOT block the save — fall back to the
+        // unmerged path so the user's new hands still land in the cloud.
+        console.warn("[poker cloud] auto-merge failed, saving as-is:", err.message);
+        mergeResult = null;
+      }
+
+      const dataToSave = mergeResult || session;
+      const handCount = dataToSave.hands.length;
+      const mergedFromHandCount = mergeResult?.mergedFromHandCount || 0;
+      const newHandsDelta = mergeResult ? handCount - mergedFromHandCount : 0;
+
+      // `sourceSessionId` on the merged data points at the previous cloud
+      // session that we're about to supersede. Capture it now so the
+      // existing delete-after-save logic still works unchanged.
+      const previousCloudSessionId = dataToSave.sourceSessionId || null;
       try {
         const r = await saveSessionToCloud({
-          hands: session.hands,
-          originalFiles: session.files,
-          summary: session.summary,
+          hands: dataToSave.hands,
+          originalFiles: dataToSave.files,
+          summary: dataToSave.summary,
           // Forward the pre-computed BigInt series so re-opens can render
-          // instantly. session-state.js captured these from `lastCompute`.
-          seriesBefore: session.seriesBefore || null,
-          seriesAfter: session.seriesAfter || null,
+          // instantly. session-state.js captured these from `lastCompute`,
+          // OR auto-merge.js just recomputed them on the combined set.
+          seriesBefore: dataToSave.seriesBefore || null,
+          seriesAfter: dataToSave.seriesAfter || null,
           onProgress: ({ stage, progress }) => {
             const label = stageLabel[stage] || stage;
             showProgress({
@@ -217,7 +255,46 @@ function renderSaveButton() {
           // upload.js may have been hot-reloaded / older — non-fatal.
         }
 
-        setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Saved ${r.handCount.toLocaleString()} hands (session ${escapeHtml(r.sessionId.slice(-8))})${replacedPreviousNote}`, "ok");
+        // When a merge happened: rebind the local chart + state to the
+        // combined dataset, so the user sees the merged chart (not just the
+        // 4K they uploaded) AND the next save's auto-merge sees this session
+        // as already-linked via setCurrentSession.sourceSessionId.
+        if (mergeResult) {
+          try {
+            const [{ loadCachedSession }, { setCurrentSession }] = await Promise.all([
+              import("../upload.js"),
+              import("./session-state.js"),
+            ]);
+            await loadCachedSession({
+              summary: mergeResult.summary,
+              seriesBefore: mergeResult.seriesBefore,
+              seriesAfter: mergeResult.seriesAfter,
+              handCount: mergeResult.hands.length,
+              sessionMeta: {
+                sessionId: r.sessionId,
+                createdAt: Date.now(),
+                fileNames: mergeResult.files.map((f) => f.file?.name || f.name || ""),
+              },
+            });
+            setCurrentSession({
+              hands: mergeResult.hands,
+              files: mergeResult.files,
+              summary: mergeResult.summary,
+              seriesBefore: mergeResult.seriesBefore,
+              seriesAfter: mergeResult.seriesAfter,
+              sourceSessionId: r.sessionId,
+            });
+          } catch (rerenderErr) {
+            console.warn("[poker cloud] post-merge UI sync failed (non-fatal):", rerenderErr.message);
+          }
+        }
+
+        const mergeNote = mergeResult && newHandsDelta > 0
+          ? ` · combined ${newHandsDelta.toLocaleString()} new hands with ${mergedFromHandCount.toLocaleString()} previously saved`
+          : mergeResult
+            ? ` · combined with ${mergedFromHandCount.toLocaleString()} previously saved hands`
+            : "";
+        setStatus(`<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Saved ${r.handCount.toLocaleString()} hands (session ${escapeHtml(r.sessionId.slice(-8))})${mergeNote}${replacedPreviousNote}`, "ok");
         refreshQuotaMeter();
         // Refresh the inline restore dropdown so the newly-saved session is
         // immediately reachable without a page reload.
