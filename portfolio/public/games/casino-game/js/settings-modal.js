@@ -10,6 +10,8 @@
 // the bb100 settings drawer) signs you in across every page on this origin.
 
 import "./auth/auth-ui.js";
+import "./auth/signin-recorder.js";
+import "./admin/admin-panel.js";
 import { refreshAuthSlots } from "./auth/auth-ui.js";
 
 const MODAL_ID = "globalSettingsModal";

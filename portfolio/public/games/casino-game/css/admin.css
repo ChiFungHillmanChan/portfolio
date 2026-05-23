@@ -1,0 +1,342 @@
+/* =====================================================
+   ADMIN PANEL — extends global-settings-modal styles
+   Only mounted when users/{uid}.superadmin === true.
+   ===================================================== */
+
+.admin-section {
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+.admin-section-blurb {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  color: #888;
+  font-style: italic;
+}
+
+.admin-subsection {
+  margin-bottom: 1.25rem;
+}
+
+.admin-subsection:last-child {
+  margin-bottom: 0;
+}
+
+.admin-subsection-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #d0d0d8;
+}
+
+/* ── Stats card ───────────────────────────────────── */
+.admin-stats-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.85rem;
+}
+
+.admin-stat-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+.admin-stat-row:last-child {
+  border-bottom: 0;
+}
+
+.admin-stat-total {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.admin-stat-total .admin-stat-label {
+  font-size: 0.85rem;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.admin-stat-total .admin-stat-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #ffdd00;
+}
+
+.admin-stat-game-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #d0d0d8;
+}
+
+.admin-stat-tiers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-tier-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.75rem;
+}
+
+.admin-tier-pill-label {
+  color: #aaa;
+  text-transform: capitalize;
+}
+
+.admin-tier-pill-count {
+  font-weight: 700;
+  color: #fff;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-tier-pill.tier-free { border-color: rgba(150, 150, 160, 0.25); }
+.admin-tier-pill.tier-standard { border-color: rgba(74, 222, 128, 0.35); }
+.admin-tier-pill.tier-standard .admin-tier-pill-label { color: #4ade80; }
+.admin-tier-pill.tier-pro { border-color: rgba(96, 165, 250, 0.4); }
+.admin-tier-pill.tier-pro .admin-tier-pill-label { color: #60a5fa; }
+.admin-tier-pill.tier-ultra { border-color: rgba(212, 175, 55, 0.55); }
+.admin-tier-pill.tier-ultra .admin-tier-pill-label { color: #d4af37; }
+
+.admin-stats-loading,
+.admin-stats-error,
+.admin-user-loading,
+.admin-user-empty {
+  padding: 0.75rem;
+  font-size: 0.85rem;
+  color: #888;
+  text-align: center;
+}
+.admin-stats-error {
+  color: #f87171;
+}
+
+/* ── Search bar ──────────────────────────────────── */
+.admin-search-bar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.admin-search-input {
+  flex: 1;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.85rem;
+}
+.admin-search-input:focus {
+  outline: 0;
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+.admin-search-btn,
+.admin-search-clear {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ccc;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.8rem;
+}
+.admin-search-btn:hover,
+.admin-search-clear:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+/* ── User list ───────────────────────────────────── */
+.admin-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-user-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  padding: 0.75rem;
+}
+
+.admin-user-id {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.admin-user-id img,
+.admin-user-avatar-fallback {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: #1f1f2a;
+}
+
+.admin-user-avatar-fallback {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2c6fd4;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.admin-user-name-block {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.admin-user-name {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-superadmin-badge {
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(212, 175, 55, 0.18);
+  color: #d4af37;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+}
+
+.admin-user-email {
+  font-size: 0.75rem;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-user-meta {
+  font-size: 0.7rem;
+  color: #666;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.admin-user-plans {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.admin-plan-block {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+}
+
+.admin-plan-game {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #888;
+  margin-bottom: 0.35rem;
+}
+
+.admin-plan-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.admin-plan-btn {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #ccc;
+  padding: 4px 12px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.12s;
+  text-transform: capitalize;
+}
+
+.admin-plan-btn:hover:not(:disabled) {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.4);
+  color: #d4af37;
+}
+
+.admin-plan-btn.is-current {
+  background: rgba(212, 175, 55, 0.18);
+  border-color: rgba(212, 175, 55, 0.5);
+  color: #d4af37;
+  cursor: default;
+}
+
+.admin-plan-btn:disabled:not(.is-current) {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.admin-plan-current-hint {
+  margin-top: 0.3rem;
+  font-size: 0.65rem;
+  color: #666;
+}
+
+.admin-load-more-btn {
+  margin-top: 0.6rem;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px dashed rgba(255, 255, 255, 0.18);
+  color: #aaa;
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.admin-load-more-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.07);
+  color: #fff;
+}
+.admin-load-more-btn:disabled {
+  cursor: progress;
+  opacity: 0.6;
+}
+
+/* Widen the modal panel slightly when the admin section is mounted so
+   user rows + tier buttons don't get cramped. The selector is
+   :has() based; falls back gracefully on browsers that don't support it. */
+.global-settings-modal:has(#globalAdminSection) .global-settings-panel {
+  width: min(640px, 94vw);
+  max-height: 88vh;
+}
