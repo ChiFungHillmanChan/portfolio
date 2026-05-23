@@ -4,8 +4,17 @@
 // Mounted/unmounted by cloud/bootstrap.js on auth state change. The full
 // session manager (delete / archival restore / bulk migrate) still lives in
 // the Settings drawer; this panel is the one-click shortcut.
+//
+// Cost model: opening a session pays a Lambda + R2 GET for the small
+// series.json.gz (chart cache). The big hands.txt.gz download — multi-MB on
+// 20K+ hand sessions — is gated behind an opt-in "Load replay data" button
+// rendered after the chart appears. All in-flight fetches are tied to per-
+// panel AbortControllers and cancelled when the user navigates away
+// (pagehide/visibilitychange) or starts a new open before the previous one
+// finishes.
 
 import { apiCall } from "../auth/api-client.js";
+import { CLOUD_SESSION_OPENED_EVENT } from "./load-session.js";
 
 const PANEL_ID = "uploadCloudRestore";
 
@@ -15,11 +24,36 @@ let cacheLoadedAt = 0;
 let listExpanded = false;
 let inFlight = null;
 
+// In-flight controllers — exactly one of each at a time, owned by this panel.
+// `openController` covers chart load (series.json.gz). `replayController`
+// covers the opt-in hands.txt.gz download triggered by the user.
+let openController = null;
+let replayController = null;
+let currentOpenedMeta = null;     // { sessionMeta, handCount, bytesCompressed } of last successful open
+let openedEventBound = false;     // window-level listeners are mounted once
+
 function fmtDate(ms) {
   if (!ms) return "—";
   const d = new Date(ms);
   if (isNaN(d.getTime())) return "—";
   return d.toLocaleString();
+}
+
+function fmtBytes(n) {
+  if (!n || n <= 0) return null;
+  if (n < 1024) return `${n} B`;
+  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+  return `${(n / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function abortIfActive(controller) {
+  if (controller && !controller.signal.aborted) {
+    try { controller.abort(); } catch (_) { /* noop */ }
+  }
+}
+
+function isAbortError(err) {
+  return err?.name === "AbortError";
 }
 
 function escapeHtml(str) {
@@ -58,11 +92,31 @@ function renderShell() {
       </button>
     </div>
     <div class="cloud-restore-status" data-kind="info">Loading saved sessions…</div>
+    <div class="cloud-restore-replay" data-role="replay-row" hidden></div>
     <ul class="cloud-restore-list" hidden></ul>
   `;
 
   panelEl.querySelector('[data-action="open-latest"]').addEventListener("click", onOpenLatest);
   panelEl.querySelector('[data-action="toggle-list"]').addEventListener("click", onToggleList);
+}
+
+// Bind once per page lifetime. Aborting in-flight fetches when the tab is
+// hidden saves bandwidth + R2 egress when users open then immediately switch
+// tabs. The listeners stay bound across mount/unmount cycles — they only act
+// when a controller is live, so binding more than once is a leak risk.
+function ensureLifecycleListenersBound() {
+  if (openedEventBound) return;
+  openedEventBound = true;
+  window.addEventListener(CLOUD_SESSION_OPENED_EVENT, onSessionOpenedEvent);
+  window.addEventListener("pagehide", abortAllInFlight);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") abortAllInFlight();
+  });
+}
+
+function abortAllInFlight() {
+  abortIfActive(openController);
+  abortIfActive(replayController);
 }
 
 async function loadSessions(force = false) {
@@ -172,23 +226,137 @@ async function onOpenSession(session) {
 
 async function openSessionRow(session) {
   if (!session?.sessionId) return;
+  // Cancel any open / replay still in flight from a previous click before
+  // starting fresh — saves bandwidth and prevents the previous session's
+  // late-arriving data from clobbering the new view.
+  abortAllInFlight();
+  const controller = new AbortController();
+  openController = controller;
+
+  // Clear the replay slot — even if the previous session had its replay
+  // loaded, this new open invalidates that state.
+  renderReplayRow(null);
+  currentOpenedMeta = null;
+
   const buttons = panelEl?.querySelectorAll("button");
   buttons?.forEach((b) => (b.disabled = true));
   setStatus(`Opening session ${escapeHtml(session.sessionId.slice(-8))}…`, "info");
   try {
     const { openCloudSession } = await import("./load-session.js");
     await openCloudSession(session, {
+      signal: controller.signal,
       onStatus: (msg) => console.log("[poker inline restore]", msg),
     });
+    // Success status is rendered by `onSessionOpenedEvent` — fired from
+    // load-session.js once the chart is up. That keeps a single code path
+    // regardless of who triggered the open (this panel, the Settings drawer
+    // list, or any future caller).
+  } catch (err) {
+    if (isAbortError(err)) {
+      setStatus("Open cancelled.", "info");
+    } else {
+      console.error("[poker inline restore] open failed:", err);
+      setStatus(`Open failed: ${escapeHtml(err.message)}`, "err");
+    }
+  } finally {
+    if (openController === controller) openController = null;
+    buttons?.forEach((b) => (b.disabled = false));
+  }
+}
+
+// Listener for the `poker:cloud-session-opened` window event. Fires whenever a
+// session opens successfully — from this panel OR from the Settings drawer
+// list. Updates the status banner and renders the opt-in "Load replay data"
+// button when replay data hasn't been pulled yet.
+function onSessionOpenedEvent(evt) {
+  if (!panelEl) return;
+  const { sessionMeta, handCount = 0, bytesCompressed = 0, replayPending } = evt.detail || {};
+  if (!sessionMeta?.sessionId) return;
+
+  currentOpenedMeta = { sessionMeta, handCount, bytesCompressed };
+
+  if (replayPending) {
     setStatus(
-      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Opened ${(session.handCount || 0).toLocaleString()} hands · scroll down for the chart and replay browser.`,
+      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Chart ready · ${handCount.toLocaleString()} hands · scroll down to view it.`,
+      "ok",
+    );
+    renderReplayRow(currentOpenedMeta);
+  } else {
+    // Slow-path opens already include replay data — nothing extra to offer.
+    setStatus(
+      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Opened ${handCount.toLocaleString()} hands · chart and replay browser ready below.`,
+      "ok",
+    );
+    renderReplayRow(null);
+  }
+}
+
+function renderReplayRow(meta) {
+  const row = panelEl?.querySelector('[data-role="replay-row"]');
+  if (!row) return;
+  row.replaceChildren();
+  if (!meta) {
+    row.hidden = true;
+    return;
+  }
+  row.hidden = false;
+  const sizeLabel = fmtBytes(meta.bytesCompressed);
+  const sizeHint = sizeLabel ? ` · ~${escapeHtml(sizeLabel)} download` : "";
+  row.innerHTML = `
+    <span class="cloud-restore-replay-hint">
+      Per-hand replays are not loaded yet${sizeHint}.
+    </span>
+    <button type="button" class="cloud-restore-btn" data-action="load-replays">
+      <svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+      Load replay data
+    </button>
+  `;
+  row.querySelector('[data-action="load-replays"]').addEventListener("click", onLoadReplays);
+}
+
+function renderReplayRowLoading() {
+  const row = panelEl?.querySelector('[data-role="replay-row"]');
+  if (!row) return;
+  row.hidden = false;
+  row.replaceChildren();
+  row.innerHTML = `
+    <span class="cloud-restore-replay-hint">Loading replay data…</span>
+    <button type="button" class="cloud-restore-btn cloud-restore-btn--ghost" data-action="cancel-replays">
+      Cancel
+    </button>
+  `;
+  row.querySelector('[data-action="cancel-replays"]').addEventListener("click", () => abortIfActive(replayController));
+}
+
+async function onLoadReplays() {
+  if (!currentOpenedMeta?.sessionMeta) return;
+  abortIfActive(replayController);
+  const controller = new AbortController();
+  replayController = controller;
+  renderReplayRowLoading();
+  setStatus("Downloading replay data…", "info");
+  try {
+    const { hydrateReplayForSession } = await import("./load-session.js");
+    const result = await hydrateReplayForSession(currentOpenedMeta.sessionMeta, {
+      signal: controller.signal,
+    });
+    // Replay browser is now live; clear the row + reflect in status banner.
+    renderReplayRow(null);
+    setStatus(
+      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Replay ready · ${(result?.handCount || currentOpenedMeta.handCount || 0).toLocaleString()} hands available below.`,
       "ok",
     );
   } catch (err) {
-    console.error("[poker inline restore] open failed:", err);
-    setStatus(`Open failed: ${escapeHtml(err.message)}`, "err");
+    if (isAbortError(err)) {
+      setStatus("Replay download cancelled.", "info");
+    } else {
+      console.error("[poker inline restore] replay load failed:", err);
+      setStatus(`Replay load failed: ${escapeHtml(err.message)}`, "err");
+    }
+    // Keep the button available so the user can retry.
+    renderReplayRow(currentOpenedMeta);
   } finally {
-    buttons?.forEach((b) => (b.disabled = false));
+    if (replayController === controller) replayController = null;
   }
 }
 
@@ -199,14 +367,18 @@ async function openSessionRow(session) {
 export async function mountInlineRestore() {
   panelEl = document.getElementById(PANEL_ID);
   if (!panelEl) return;
+  ensureLifecycleListenersBound();
   renderShell();
   await refresh(true);
 }
 
 /**
  * Hide the panel and clear cached sessions (called on sign-out).
+ * Any in-flight chart or replay fetch is aborted so the user doesn't pay
+ * for downloads that have no UI to land in.
  */
 export function unmountInlineRestore() {
+  abortAllInFlight();
   panelEl = document.getElementById(PANEL_ID);
   if (!panelEl) return;
   panelEl.hidden = true;
@@ -214,6 +386,7 @@ export function unmountInlineRestore() {
   cachedSessions = null;
   cacheLoadedAt = 0;
   listExpanded = false;
+  currentOpenedMeta = null;
 }
 
 /**

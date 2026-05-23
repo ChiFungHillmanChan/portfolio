@@ -86,7 +86,19 @@ export async function renderSessions(container) {
   container.appendChild(list);
 }
 
+// Module-level controller for the Settings-drawer Open click. Cancelled when
+// the user opens a different row OR closes the drawer mid-load — saves the
+// multi-MB hands.txt.gz download in the slow-path recompute case.
+let drawerOpenController = null;
+
 async function onOpen(session, itemEl) {
+  // Cancel any previous in-flight drawer open before starting a new one.
+  if (drawerOpenController && !drawerOpenController.signal.aborted) {
+    try { drawerOpenController.abort(); } catch (_) {}
+  }
+  const controller = new AbortController();
+  drawerOpenController = controller;
+
   const { openCloudSession } = await import("./load-session.js");
   const openBtn = itemEl.querySelector('[data-action="open"]');
   // Preserve the full innerHTML (including the inline icon SVG) so we can
@@ -102,21 +114,42 @@ async function onOpen(session, itemEl) {
     // Close the Settings drawer so the chart isn't behind the overlay.
     // settings.js wires any `[data-settings-action="close"]` child of the
     // drawer to close it — easier to click that than to plumb a new event.
+    // The close event itself aborts the controller (see DOMContentLoaded
+    // listener below), so any user who closes mid-download stops paying.
     const closeBtn = document.querySelector('#settingsDrawer [data-settings-action="close"]');
     if (closeBtn) closeBtn.click();
     await openCloudSession(session, {
+      signal: controller.signal,
       onStatus: (msg) => console.log("[poker cloud open]", msg),
     });
+    // Replay-row UI is rendered by inline-restore.js via the
+    // `poker:cloud-session-opened` event — nothing to do here.
   } catch (err) {
-    console.error("[poker cloud open] failed:", err);
-    alert("Open failed: " + err.message);
+    if (err?.name === "AbortError") {
+      console.log("[poker cloud open] cancelled");
+    } else {
+      console.error("[poker cloud open] failed:", err);
+      alert("Open failed: " + err.message);
+    }
   } finally {
+    if (drawerOpenController === controller) drawerOpenController = null;
     if (openBtn) {
       openBtn.disabled = false;
       // Re-inject the trusted SVG-containing label.
       openBtn.innerHTML = prevLabel || `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="20" x2="6" y2="11"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="18" y1="20" x2="18" y2="14"/></svg> Open`;
     }
   }
+}
+
+// Abort the drawer's in-flight open when the user navigates away from the
+// tab — saves bandwidth + R2 egress when somebody clicks Open then closes
+// the tab before the slow-path recompute finishes downloading hands.txt.gz.
+if (typeof window !== "undefined") {
+  window.addEventListener("pagehide", () => {
+    if (drawerOpenController && !drawerOpenController.signal.aborted) {
+      try { drawerOpenController.abort(); } catch (_) {}
+    }
+  });
 }
 
 async function onRestore(sessionId) {
