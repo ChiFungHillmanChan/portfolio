@@ -87,11 +87,11 @@
         </button>
 
         <div class="tab-bar" role="tablist">
-            <button class="tab-btn active" data-tab="manual" role="tab" aria-selected="true">Manual Entry</button>
-            <button class="tab-btn" data-tab="upload" role="tab" aria-selected="false">Upload GG Hands</button>
+            <button class="tab-btn active" data-tab="upload" role="tab" aria-selected="true">Online Poker Records</button>
+            <button class="tab-btn" data-tab="manual" role="tab" aria-selected="false">Manual Entry</button>
         </div>
 
-        <div class="tab-panel" data-tab-panel="manual">
+        <div class="tab-panel" data-tab-panel="manual" hidden>
         <section class="bb100-grid">
             <div class="bb100-card inputs-card">
                 <h2 class="card-title">Inputs</h2>
@@ -208,7 +208,7 @@
         </div>
         </div>
 
-        <section class="tab-panel" data-tab-panel="upload" hidden>
+        <section class="tab-panel" data-tab-panel="upload">
             <div class="upload-card" id="uploadCard">
                 <!-- Compact pill — shown after the first upload, click to re-open the drop-zone -->
                 <button type="button" class="upload-compact-pill" id="uploadCompactPill" hidden>
@@ -235,9 +235,27 @@
                     <p class="upload-hint">Files are parsed in your browser — nothing is uploaded. Drag multiple folders at once, or click <strong>Pick folder</strong> repeatedly to add more.</p>
                 </div>
                 <div class="upload-status" id="uploadStatus" hidden></div>
-                <!-- Inline cloud-restore panel: filled by cloud/inline-restore.js when the user is signed in.
-                     Lets you reopen a saved session without leaving the Upload tab (also reachable via Settings → My Sessions). -->
-                <div class="upload-cloud-restore" id="uploadCloudRestore" hidden></div>
+                <!-- Inline cloud-restore panel. The static markup below is the
+                     loading skeleton: it paints on first frame so signed-in
+                     returning users see "saved sessions are coming" without
+                     waiting for Firebase auth to resolve (which can take 1-3s
+                     on cold loads). cloud/inline-restore.js#mountInlineRestore
+                     overwrites this skeleton with the real UI when the user is
+                     signed in; #unmountInlineRestore hides the panel entirely
+                     when the user is signed out so signed-out visitors don't
+                     stay staring at a loading state forever. -->
+                <div class="upload-cloud-restore" id="uploadCloudRestore">
+                    <div class="cloud-restore-header">
+                        <span class="cloud-restore-title">
+                            <svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M18 19H6a4 4 0 0 1 0-8 6 6 0 0 1 11.66-2A4 4 0 0 1 18 19z"/></svg>
+                            Restore from cloud
+                        </span>
+                    </div>
+                    <div class="cloud-restore-status" data-kind="info" data-role="skeleton">
+                        <span class="cloud-restore-spinner" aria-hidden="true"></span>
+                        Checking saved sessions…
+                    </div>
+                </div>
             </div>
 
             <div class="upload-results" id="uploadResults" hidden>
