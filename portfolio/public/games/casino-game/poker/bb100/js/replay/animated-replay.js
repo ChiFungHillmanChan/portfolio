@@ -17,8 +17,36 @@
 import { extractActions } from "./action-extractor.js";
 import { buildSnapshots } from "./state-engine.js";
 import { buildTable, renderSnapshot } from "./table-renderer.js";
+import { openShareDialog, closeShareDialog } from "./share-dialog.js";
 
 const MODAL_ID = "animatedReplayModal";
+const PREFS_KEY = "poker-replay-prefs-v1";
+const VALID_SPEEDS = [1, 2, 4];
+const VALID_UNITS = ["dollars", "bb"];
+const DEFAULT_PREFS = { speed: 2, unit: "dollars" };
+
+function loadPrefs() {
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return { ...DEFAULT_PREFS };
+    const parsed = JSON.parse(raw);
+    return {
+      speed: VALID_SPEEDS.includes(parsed.speed) ? parsed.speed : DEFAULT_PREFS.speed,
+      unit: VALID_UNITS.includes(parsed.unit) ? parsed.unit : DEFAULT_PREFS.unit,
+    };
+  } catch {
+    return { ...DEFAULT_PREFS };
+  }
+}
+
+function savePrefs(patch) {
+  try {
+    const next = { ...loadPrefs(), ...patch };
+    localStorage.setItem(PREFS_KEY, JSON.stringify(next));
+  } catch {
+    // Quota / disabled storage — sticky prefs are nice-to-have, not load-bearing.
+  }
+}
 
 // Per-action durations (ms). Some actions are quick (folds/checks), others are
 // "weighty" (deals, all-ins, showdown). Speed multiplier scales these.
@@ -64,6 +92,7 @@ function ensureModal() {
           <button type="button" class="replay-view-tab active" data-view="table" role="tab" aria-selected="true">Table</button>
           <button type="button" class="replay-view-tab" data-view="log" role="tab" aria-selected="false">Text log</button>
         </div>
+        <button type="button" class="replay-modal-share" data-replay-action="share" aria-label="Share as video" title="Share as video"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
         <button type="button" class="replay-modal-close" data-replay-action="close" aria-label="Close"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
       </div>
       <div class="replay-modal-body replay-modal-body-animated">
@@ -109,6 +138,26 @@ function onModalClick(e) {
   // Close: anything tagged data-replay-action="close" (backdrop OR close button)
   if (target.matches('[data-replay-action="close"]') || target.closest('[data-replay-action="close"]')) {
     closeModal();
+    return;
+  }
+  // Share as video — opens sub-dialog. Pauses live playback so the
+  // user's chosen speed/unit are stable while they pick options.
+  if (target.closest('[data-replay-action="share"]')) {
+    setPlaying(false);
+    if (state) {
+      openShareDialog({
+        host: state.modal,
+        durationFn: durationForEvent,
+        getState: () => ({
+          snapshots: state.snapshots,
+          extracted: state.extracted,
+          speed: state.speed,
+          unit: state.unit,
+          bbDollars: state.bbDollars,
+          title: state.modal.querySelector(".replay-modal-title")?.textContent || "Poker Hand Replay",
+        }),
+      });
+    }
     return;
   }
   // Tab switch
@@ -257,6 +306,7 @@ function setSpeed(mult) {
   state.modal.querySelectorAll(".replay-speed").forEach((b) => {
     b.classList.toggle("active", parseInt(b.dataset.speed, 10) === mult);
   });
+  savePrefs({ speed: mult });
   if (state.playing) {
     if (state.timer) clearTimeout(state.timer);
     scheduleNext();
@@ -270,6 +320,7 @@ function setUnit(unit) {
   state.modal.querySelectorAll(".replay-unit-toggle button").forEach((b) => {
     b.classList.toggle("active", b.dataset.unit === unit);
   });
+  savePrefs({ unit });
   // Re-render current snapshot AND text log with new unit
   applySnapshot(true);
   const logMount = state.modal.querySelector(".replay-log-mount");
@@ -302,17 +353,75 @@ const STAR_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0
 // trusted STAR_SVG markup inside makeLogLine (after txt is HTML-escaped).
 const ALLIN_TOKEN = "ALLIN";
 
+const STREET_TITLES = {
+  preflop: "Preflop",
+  flop: "Flop",
+  turn: "Turn",
+  river: "River",
+  showdown: "Showdown",
+};
+
+// Format a GG-style timestamp ("2026/05/20 02:00:04" or ISO) as
+// "May 20, 2026 at 02:00:04". Falls back to the raw string on parse failure
+// so we never lose information. Parses with a regex first because Safari is
+// fussy about non-ISO strings.
+const MONTH_NAMES = [
+  "January","February","March","April","May","June",
+  "July","August","September","October","November","December",
+];
+function formatHandDate(raw) {
+  if (!raw) return "";
+  const s = String(raw).trim();
+  const m = s.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})[T\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+  let y, mo, d, hh, mm, ss;
+  if (m) {
+    [, y, mo, d, hh, mm, ss] = m;
+  } else {
+    const parsed = new Date(s);
+    if (isNaN(parsed.getTime())) return s;
+    y = parsed.getFullYear();
+    mo = parsed.getMonth() + 1;
+    d = parsed.getDate();
+    hh = parsed.getHours();
+    mm = parsed.getMinutes();
+    ss = parsed.getSeconds();
+  }
+  const pad = (n) => String(n).padStart(2, "0");
+  const monthName = MONTH_NAMES[Number(mo) - 1] || mo;
+  return `${monthName} ${Number(d)}, ${y} at ${pad(hh)}:${pad(mm)}:${pad(ss ?? 0)}`;
+}
+
 function renderTextLog(mount, extracted, unit = "dollars", bbDollars = 0) {
   mount.replaceChildren();
   const list = document.createElement("div");
   list.className = "replay-log-list";
   list.appendChild(makeLogLine(`Hand #${extracted.meta.handId}`, "log-header"));
   list.appendChild(makeLogLine(
-    `${extracted.meta.gameType || "Hold'em"} · Blinds $${extracted.meta.stake.sb.toFixed(2)}/$${extracted.meta.stake.bb.toFixed(2)} · ${extracted.meta.date}`,
+    `${extracted.meta.gameType || "Hold'em"}, Blinds $${extracted.meta.stake.sb.toFixed(2)}/$${extracted.meta.stake.bb.toFixed(2)}`,
     "log-meta"
   ));
+  const formattedDate = formatHandDate(extracted.meta.date);
+  if (formattedDate) {
+    list.appendChild(makeLogLine(formattedDate, "log-meta"));
+  }
   for (let i = 0; i < extracted.events.length; i++) {
     const ev = extracted.events[i];
+    if (ev.type === "street") {
+      list.appendChild(makeLogLine("", "log-spacer"));
+      const title = STREET_TITLES[ev.name] || (ev.name.charAt(0).toUpperCase() + ev.name.slice(1));
+      const header = makeLogLine(title, "log-section");
+      header.dataset.eventIdx = String(i);
+      list.appendChild(header);
+      // Render the dealt board cards on a follow-up line so the section header stays clean
+      if (ev.name === "flop" && Array.isArray(ev.cards) && ev.cards.length) {
+        list.appendChild(makeLogLine(`Board: ${ev.cards.join(" ")}`, "log-board"));
+      } else if (ev.name === "turn" && ev.card) {
+        list.appendChild(makeLogLine(`Turn card: ${ev.card}`, "log-board"));
+      } else if (ev.name === "river" && ev.card) {
+        list.appendChild(makeLogLine(`River card: ${ev.card}`, "log-board"));
+      }
+      continue;
+    }
     const line = makeLogLine(describeEvent(ev, unit, bbDollars), "log-event");
     line.dataset.eventIdx = String(i);
     list.appendChild(line);
@@ -323,28 +432,22 @@ function renderTextLog(mount, extracted, unit = "dollars", bbDollars = 0) {
 function describeEvent(ev, unit, bbDollars) {
   const M = (a) => fmtMoney(a, unit, bbDollars);
   switch (ev.type) {
-    case "street":
-      if (ev.name === "flop") return `*** FLOP *** [${(ev.cards || []).join(" ")}]`;
-      if (ev.name === "turn") return `*** TURN *** [${ev.card}]`;
-      if (ev.name === "river") return `*** RIVER *** [${ev.card}]`;
-      if (ev.name === "showdown") return `*** SHOWDOWN ***`;
-      return `*** ${ev.name.toUpperCase()} ***`;
     case "deal-hole":
-      return `${ev.player} dealt [${(ev.cards || []).join(" ")}]`;
+      return `${ev.player} is dealt ${(ev.cards || []).join(" ")}`;
     case "post-blind":
-      return `${ev.player} posts ${ev.blind} ${M(ev.amount)}`;
+      return `${ev.player} posts ${ev.blind} (${M(ev.amount)})`;
     case "action":
       if (ev.verb === "folds") return `${ev.player} folds`;
       if (ev.verb === "checks") return `${ev.player} checks`;
-      if (ev.verb === "calls") return `${ev.player} calls ${M(ev.amount || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} ALL-IN` : ""}`;
-      if (ev.verb === "bets") return `${ev.player} bets ${M(ev.amount || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} ALL-IN` : ""}`;
-      if (ev.verb === "raises") return `${ev.player} raises ${M(ev.raiseBy || 0)} to ${M(ev.to || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} ALL-IN` : ""}`;
+      if (ev.verb === "calls") return `${ev.player} calls ${M(ev.amount || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} all-in` : ""}`;
+      if (ev.verb === "bets") return `${ev.player} bets ${M(ev.amount || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} all-in` : ""}`;
+      if (ev.verb === "raises") return `${ev.player} raises to ${M(ev.to || 0)}${ev.allIn ? ` ${ALLIN_TOKEN} all-in` : ""}`;
       return `${ev.player} ${ev.verb}`;
     case "uncalled": return `Uncalled bet (${M(ev.amount)}) returned to ${ev.player}`;
-    case "shows":    return `${ev.player} shows [${(ev.cards || []).join(" ")}]`;
+    case "shows":    return `${ev.player} shows ${(ev.cards || []).join(" ")}`;
     case "mucks":    return `${ev.player} mucks`;
-    case "collect":  return `${ev.player} collected ${M(ev.amount)} from ${ev.pot} pot`;
-    case "cash-drop":return `Cash Drop: +${M(ev.amount)} into pot`;
+    case "collect":  return `${ev.player} collects ${M(ev.amount)} from the ${ev.pot} pot`;
+    case "cash-drop":return `Cash Drop adds ${M(ev.amount)} to the pot`;
     default: return `(${ev.type})`;
   }
 }
@@ -405,8 +508,10 @@ export function showReplay(handText, { title } = {}) {
   const tableMount = modal.querySelector(".replay-table-mount");
   const tableRefs = buildTable(tableMount, snapshots[0]);
 
+  const prefs = loadPrefs();
+
   const logMount = modal.querySelector(".replay-log-mount");
-  renderTextLog(logMount, extracted, "dollars", bbDollars);
+  renderTextLog(logMount, extracted, prefs.unit, bbDollars);
 
   // Reset state (kills any previous timer first)
   if (state?.timer) clearTimeout(state.timer);
@@ -417,16 +522,17 @@ export function showReplay(handText, { title } = {}) {
     tableRefs,
     idx: 0,
     playing: false,
-    speed: 2,
+    speed: prefs.speed,
     timer: null,
-    unit: "dollars",  // user-toggleable via $/BB pill
+    unit: prefs.unit,  // user-toggleable via $/BB pill, persisted across opens
     bbDollars,        // for BB conversion
   };
 
-  // Reset UI to defaults via the same code paths the buttons use
+  // Restore saved prefs (speed + $/BB unit). setSpeed/setUnit also persist,
+  // which is a no-op write when the value already matches what was loaded.
   switchView("table");
-  setSpeed(2);
-  setUnit("dollars");
+  setSpeed(prefs.speed);
+  setUnit(prefs.unit);
   applySnapshot(true);
 
   modal.hidden = false;
@@ -445,4 +551,6 @@ export function closeModal() {
   state = null;
   modal.hidden = true;
   document.body.style.overflow = "";
+  // Make sure the share sub-dialog doesn't outlive the parent modal.
+  closeShareDialog();
 }
