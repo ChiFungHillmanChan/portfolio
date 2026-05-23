@@ -8,11 +8,26 @@
 // the series file): download hands.txt.gz, ungzip, split into the original
 // per-file blobs, construct File objects, and feed them to upload.js#handleFiles
 // — same path as a fresh local upload, just with the files pre-fetched.
+//
+// Replay hydration (downloading hands.txt.gz so the per-hand replay browser
+// works) is a SEPARATE opt-in step. The fast-path open returns once the chart
+// is rendered; callers fire the `poker:cloud-session-opened` event listener in
+// the UI layer (inline-restore.js) and the user clicks "Load replay data" if
+// they want it. This avoids paying the multi-MB hands.txt.gz GET on every
+// open — material when sessions are 20K+ hands.
 
 import { apiCall } from "../auth/api-client.js";
 import { COMPUTE_FINGERPRINT } from "../stats/compute.mjs";
 import { showProgress, hideProgress } from "../progress-bar.js";
 import { getCurrentSession } from "./session-state.js";
+
+export const CLOUD_SESSION_OPENED_EVENT = "poker:cloud-session-opened";
+
+function throwIfAborted(signal) {
+  if (signal?.aborted) {
+    throw new DOMException("aborted", "AbortError");
+  }
+}
 
 // Per-key signal that this string value should be rehydrated to BigInt. The
 // JSON shape mirrors stats/compute.mjs's summary + the gzipped series — both
@@ -42,10 +57,12 @@ function rehydrateBigInts(node) {
   return node;
 }
 
-async function fetchAndUngzipText(url) {
-  const res = await fetch(url);
+async function fetchAndUngzipText(url, { signal } = {}) {
+  const res = await fetch(url, { signal });
   if (!res.ok) throw new Error(`download failed: HTTP ${res.status}`);
   const ds = new DecompressionStream("gzip");
+  // The piped stream inherits cancellation: aborting `signal` rejects the
+  // underlying fetch which propagates through DecompressionStream.
   return new Response(res.body.pipeThrough(ds)).text();
 }
 
@@ -64,8 +81,9 @@ function splitConcatenatedFiles(text) {
   return files;
 }
 
-async function loadFromSeries(sessionMeta) {
+async function loadFromSeries(sessionMeta, { signal } = {}) {
   // 1. Ask the Lambda for a presigned GET on series.json.gz.
+  throwIfAborted(signal);
   const sign = await apiCall("sign-download", { sessionId: sessionMeta.sessionId, file: "series" });
   if (!sign.ok) {
     // Either an older session (no series stored) or backend hasn't shipped
@@ -74,7 +92,8 @@ async function loadFromSeries(sessionMeta) {
   }
 
   // 2. Download + ungzip + parse.
-  const text = await fetchAndUngzipText(sign.url);
+  throwIfAborted(signal);
+  const text = await fetchAndUngzipText(sign.url, { signal });
   let payload;
   try {
     payload = JSON.parse(text);
@@ -109,21 +128,34 @@ async function loadFromSeries(sessionMeta) {
   return { summary, seriesBefore, seriesAfter };
 }
 
-// After the cached fast-path renders the chart, fetch hands.txt.gz, parse
-// every hand (skipping unparseable ones tolerantly), and hand them off to
-// upload.js's `hydrateHandsForReplay` so the hand browser + replay modal
-// become available. Guarded by sessionId so racing a second "Open" click
-// can't clobber the live view with the previous session's hands.
-async function hydrateReplayAfterFastOpen(sessionMeta) {
+/**
+ * Pull hands.txt.gz for an already-chart-opened session, parse every hand
+ * (skipping unparseable ones tolerantly), and hand them off to upload.js's
+ * `hydrateHandsForReplay` so the hand browser + replay modal become available.
+ *
+ * Cancellable: pass an AbortSignal in `opts.signal` and the in-flight network
+ * fetch / parse loop bails out cleanly. Aborts surface as DOMException
+ * (`name: 'AbortError'`) so the UI layer can distinguish "user cancelled"
+ * from "real failure".
+ *
+ * Guarded by sessionId — the matching guard inside `hydrateHandsForReplay`
+ * drops the result if the user has since opened a different session, so
+ * racing two Opens never crosses replay data.
+ */
+export async function hydrateReplayForSession(sessionMeta, { signal } = {}) {
+  throwIfAborted(signal);
   const sign = await apiCall("sign-download", { sessionId: sessionMeta.sessionId, file: "hands" });
   if (!sign.ok) {
     // Old sessions saved before hands.txt.gz became mandatory, or backend
-    // hiccup — give up silently.
-    return;
+    // hiccup — surface to caller so the UI can show a clear message.
+    throw new Error(sign.error || "no hands.txt.gz stored for this session");
   }
-  const text = await fetchAndUngzipText(sign.url);
+
+  throwIfAborted(signal);
+  const text = await fetchAndUngzipText(sign.url, { signal });
+  throwIfAborted(signal);
   const splits = splitConcatenatedFiles(text);
-  if (splits.length === 0) return;
+  if (splits.length === 0) return { handCount: 0 };
 
   // Seed `allFiles` BEFORE parsing so that even if the user starts adding new
   // local files in parallel with this background fetch, a subsequent "Save to
@@ -135,6 +167,7 @@ async function hydrateReplayAfterFastOpen(sessionMeta) {
 
   const { parseHand, splitIntoHands } = await import("../parser/gg-parser.mjs");
   const hands = [];
+  let parseLoopCounter = 0;
   for (const split of splits) {
     const chunks = splitIntoHands(split.text);
     for (const chunk of chunks) {
@@ -146,9 +179,15 @@ async function hydrateReplayAfterFastOpen(sessionMeta) {
       } catch (_) {
         // Skip unparseable hands — same tolerant behaviour as upload.js.
       }
+      // Yield + abort-check every ~500 hands so cancellation feels instant
+      // even on 30K-hand sessions where parsing dominates the runtime.
+      if (++parseLoopCounter % 500 === 0) {
+        throwIfAborted(signal);
+        await new Promise((r) => setTimeout(r, 0));
+      }
     }
   }
-  if (hands.length === 0) return;
+  if (hands.length === 0) return { handCount: 0 };
 
   // Mirror upload.js's chronological sort so hand-browser ordering matches a
   // fresh local upload of the same files.
@@ -157,14 +196,19 @@ async function hydrateReplayAfterFastOpen(sessionMeta) {
     return a.id.localeCompare(b.id);
   });
 
+  throwIfAborted(signal);
   await hydrateHandsForReplay(hands, { sessionId: sessionMeta.sessionId });
+  return { handCount: hands.length };
 }
 
-async function recomputeFromHands(sessionMeta, onStatus) {
+async function recomputeFromHands(sessionMeta, onStatus, { signal } = {}) {
   onStatus?.("Series cache unavailable — downloading hands.txt for recompute…");
+  throwIfAborted(signal);
   const sign = await apiCall("sign-download", { sessionId: sessionMeta.sessionId, file: "hands" });
   if (!sign.ok) throw new Error(sign.error || "sign-download-hands-failed");
-  const text = await fetchAndUngzipText(sign.url);
+  throwIfAborted(signal);
+  const text = await fetchAndUngzipText(sign.url, { signal });
+  throwIfAborted(signal);
   const splits = splitConcatenatedFiles(text);
   if (splits.length === 0) throw new Error("session had no files");
 
@@ -229,11 +273,24 @@ async function recomputeFromHands(sessionMeta, onStatus) {
 /**
  * Open a saved cloud session and render its chart.
  *
- * @param {Object} session  Row from list-sessions: { sessionId, fileNames, handCount, createdAt, ... }
+ * Does NOT download per-hand data for the replay browser — that's a separate
+ * opt-in step via `hydrateReplayForSession`. After the chart renders, this
+ * function dispatches the `poker:cloud-session-opened` window event with
+ * `{ sessionMeta, handCount, replayPending, bytesCompressed }` in `event.detail`
+ * so the UI layer can render a "Load replay data" affordance.
+ *
+ * `replayPending` is `true` for the fast (cached) path — replay data hasn't
+ * been downloaded yet. It's `false` for the slow recompute path — that path
+ * already pulled hands.txt.gz to recompute the chart, so the replay browser
+ * is populated as a side-effect of upload.js#handleFiles.
+ *
+ * @param {Object} session  Row from list-sessions: { sessionId, fileNames, handCount, bytesCompressed, createdAt, ... }
  * @param {Object} [opts]
- * @param {Function} [opts.onStatus]  (msg: string) => void, for status banner updates
+ * @param {AbortSignal} [opts.signal]  Cancels in-flight Lambda/R2 fetches. Throws DOMException(name='AbortError').
+ * @param {Function}    [opts.onStatus]  (msg: string) => void, for status banner updates
  */
 export async function openCloudSession(session, opts = {}) {
+  const { signal } = opts;
   const onStatus = opts.onStatus || (() => {});
   const sessionMeta = {
     sessionId: session.sessionId,
@@ -243,19 +300,25 @@ export async function openCloudSession(session, opts = {}) {
 
   // Fast path. If anything goes wrong (no series object, fingerprint
   // mismatch, network glitch on the series GET) we drop through to the
-  // recompute fallback rather than failing the open.
+  // recompute fallback rather than failing the open. We do NOT swallow
+  // AbortError here — that's the user cancelling, not a missing series.
   let cached = null;
   try {
     onStatus("Loading cached chart…");
     showProgress({ stage: "Loading cached chart", current: 1, total: 2 });
-    cached = await loadFromSeries(sessionMeta);
+    cached = await loadFromSeries(sessionMeta, { signal });
   } catch (err) {
+    if (err?.name === "AbortError") {
+      hideProgress();
+      throw err;
+    }
     console.warn("[poker cloud] series fast-path failed, will recompute:", err.message);
   } finally {
     hideProgress();
   }
 
   if (cached) {
+    throwIfAborted(signal);
     const { loadCachedSession } = await import("../upload.js");
     await loadCachedSession({
       summary: cached.summary,
@@ -267,19 +330,34 @@ export async function openCloudSession(session, opts = {}) {
     // onStatus is a console-log sink in current callers; keep text plain.
     onStatus(`Opened session ${sessionMeta.sessionId.slice(-8)} (${(session.handCount || 0).toLocaleString()} hands)`);
 
-    // Fire-and-forget: pull hands.txt.gz, parse, and feed it into the cached
-    // view so the hand browser + replay buttons work. The chart was already
-    // drawn from the cached series above — this pass only populates per-hand
-    // metadata (with raw `hand.text` for the replay modal). Failure here is
-    // non-fatal: the chart is correct, replay just won't be available.
-    hydrateReplayAfterFastOpen(sessionMeta).catch((err) => {
-      console.warn("[poker cloud] replay hydration failed:", err.message);
+    dispatchOpenedEvent({
+      sessionMeta,
+      handCount: session.handCount || 0,
+      bytesCompressed: session.bytesCompressed || 0,
+      replayPending: true,
     });
-    return { mode: "cached" };
+    return { mode: "cached", sessionMeta, replayPending: true };
   }
 
-  // Slow path: pull raw hands and re-run parse + compute.
-  await recomputeFromHands(sessionMeta, onStatus);
+  // Slow path: pull raw hands and re-run parse + compute. Replay data ends up
+  // populated as a side effect of handleFiles, so no separate hydration step.
+  await recomputeFromHands(sessionMeta, onStatus, { signal });
   onStatus(`Recomputed session ${sessionMeta.sessionId.slice(-8)}`);
-  return { mode: "recomputed" };
+
+  dispatchOpenedEvent({
+    sessionMeta,
+    handCount: session.handCount || 0,
+    bytesCompressed: session.bytesCompressed || 0,
+    replayPending: false,
+  });
+  return { mode: "recomputed", sessionMeta, replayPending: false };
+}
+
+function dispatchOpenedEvent(detail) {
+  try {
+    window.dispatchEvent(new CustomEvent(CLOUD_SESSION_OPENED_EVENT, { detail }));
+  } catch (err) {
+    // Headless test environments may not have CustomEvent; non-fatal.
+    console.warn("[poker cloud] dispatchOpenedEvent failed:", err.message);
+  }
 }
