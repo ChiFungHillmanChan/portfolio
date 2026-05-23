@@ -1,28 +1,28 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // ── User profile doc ────────────────────────────────────────────────
+    // Read: only the user themselves. Listing other users requires
+    // superadmin which is enforced by the Lambda (admin-list-users).
+    //
+    // Write: NONE from clients. All writes happen via the Admin SDK from:
+    //   - cg-poker record-signin (lastSeen, signInCount, displayName, photoURL,
+    //     firstSeen)
+    //   - cg-poker admin-set-plan (systemDesign tier)
+    //   - sa-auth code-login / confirm-session (premium, tier, activatedAt,
+    //     sessionId for system-design)
+    //   - sa-webhook (Stripe payment)
+    //   - set-superadmin.mjs script (superadmin flag — one allowed email)
+    //
+    // Closing client writes entirely prevents any frontend manipulation of
+    // tier/premium/superadmin — the user cannot self-upgrade by writing
+    // Firestore directly, only via Stripe + the webhook.
     match /users/{userId} {
-      // Anyone can read their own doc
-      allow read: if request.auth != null && request.auth.uid == userId;
-
-      // Users can write their own doc, but CANNOT set sensitive premium fields.
-      // Only the backend (Admin SDK, which bypasses rules) can write these.
-      allow create: if request.auth != null
-        && request.auth.uid == userId
-        && !('premium' in request.resource.data)
-        && !('activatedAt' in request.resource.data)
-        && !('sessionId' in request.resource.data)
-        && !('superadmin' in request.resource.data);
-
-      allow update: if request.auth != null
-        && request.auth.uid == userId
-        // premium field must not change (or not exist in the write)
-        && (!('premium' in request.resource.data) || request.resource.data.premium == resource.data.premium)
-        && (!('activatedAt' in request.resource.data) || request.resource.data.activatedAt == resource.data.activatedAt)
-        && (!('sessionId' in request.resource.data) || request.resource.data.sessionId == resource.data.sessionId)
-        && (!('superadmin' in request.resource.data) || request.resource.data.superadmin == resource.data.superadmin);
+      allow read:  if request.auth != null && request.auth.uid == userId;
+      allow write: if false;
     }
 
+    // ── Connect-4 leaderboard (unchanged) ──────────────────────────────
     match /connect4Leaderboard/{entryId} {
       allow read: if true;
 
@@ -44,17 +44,36 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Casino-game poker — per-user storage doc (single doc per user)
-    // tier, handCount, stripe subscription state, etc. Admin-SDK-only writes.
+    // ── Poker storage doc (read-own-only, Admin-SDK writes) ────────────
+    // Contains the user's poker tier + cumulative storage stats. The user
+    // sees their own quota in the bb100 settings drawer; everything else
+    // (tier upgrades, Stripe state) is server-managed.
     match /pokerStorage/{uid} {
       allow read:  if request.auth != null && request.auth.uid == uid;
       allow write: if false;
     }
 
-    // Casino-game poker — per-user session docs (one per upload session)
-    // Created by cg-poker Lambda after S3 commit succeeds.
+    // ── Poker session docs (one per upload session) ────────────────────
     match /pokerSessions/{uid}/sessions/{sessionId} {
       allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
+    // ── Admin dashboard metrics ─────────────────────────────────────────
+    // metrics/userCounts holds the cumulative-sign-ups counter the admin
+    // dashboard reads. Even superadmins read it through the Lambda (which
+    // re-verifies superadmin from users/{uid}.superadmin) so the doc is
+    // entirely server-controlled.
+    match /metrics/{docId} {
+      allow read:  if false;
+      allow write: if false;
+    }
+
+    // ── AI usage counters (server-only) ─────────────────────────────────
+    // sa-chat increments these on each AI call. The frontend reads the
+    // returned remaining-quota in the API response — never directly.
+    match /aiUsage/{docId} {
+      allow read:  if false;
       allow write: if false;
     }
   }
