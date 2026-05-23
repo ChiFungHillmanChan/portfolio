@@ -98,6 +98,24 @@
   font-size: 12.5px;
   color: #8a8a96;
   font-family: 'JetBrains Mono', monospace;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.cloud-restore-spinner {
+  width: 0.85rem;
+  height: 0.85rem;
+  border-radius: 50%;
+  border: 2px solid rgba(74, 222, 128, 0.25);
+  border-top-color: #4ade80;
+  animation: cloud-restore-spin 0.9s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes cloud-restore-spin {
+  to { transform: rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cloud-restore-spinner { animation-duration: 2.4s; }
 }
 .cloud-restore-status[data-kind="err"] { color: #ef4444; }
 .cloud-restore-status[data-kind="ok"] { color: #4ade80; }
