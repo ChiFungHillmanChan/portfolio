@@ -18,6 +18,19 @@
   --blue: #3b82f6;
 }
 
+/* Inline SVG icon helper — sized 1em by default, scales with font-size. */
+.ui-svg-icon {
+  width: 1em;
+  height: 1em;
+  display: inline-block;
+  flex-shrink: 0;
+  vertical-align: -0.125em;
+}
+
+/* Touch-friendly targets per Apple HIG / Material — applied where it matters
+   (toggles + buttons). All clickable elements should hit at least 44×44px on
+   touch screens. */
+
 * { box-sizing: border-box; }
 
 html, body {
@@ -52,8 +65,26 @@ body.share-page {
   text-decoration: none;
   font-size: 14px;
   font-weight: 500;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
+.share-brand .ui-svg-icon { width: 14px; height: 14px; }
 .share-brand:hover { color: var(--text); }
+
+/* ── Password lock icon (gate state) ────────────────────────────────── */
+.share-lock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 211, 77, 0.1);
+  color: #ffd34d;
+  margin: 0 auto 16px;
+}
+.share-lock-icon svg { width: 28px; height: 28px; }
 
 .share-watermark {
   color: var(--text-dimmer);
@@ -325,13 +356,18 @@ body.share-page {
   background: var(--bg-card-2);
   border: 1px solid var(--border-strong);
   color: var(--text-dim);
-  padding: 6px 12px;
+  padding: 8px 12px;
   border-radius: 6px;
   font-family: inherit;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
 }
+.share-zoom-btn .ui-svg-icon { width: 14px; height: 14px; }
 .share-zoom-btn:hover {
   color: var(--text);
   border-color: rgba(74,222,128,0.4);
@@ -430,7 +466,11 @@ body.share-page {
   color: var(--accent);
   text-decoration: none;
   font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
+.share-footer-cta a .ui-svg-icon { width: 14px; height: 14px; }
 .share-footer-cta a:hover { text-decoration: underline; }
 
 .share-footer-disclaimer {
@@ -441,19 +481,113 @@ body.share-page {
   line-height: 1.5;
 }
 
-/* ── Mobile ─────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────────────
+   RESPONSIVE BREAKPOINTS
+   • Default (above 1024px) — desktop / iPad landscape
+   • 768-1024px              — iPad portrait
+   • 481-767px               — large phones / small tablets
+   • ≤ 480px                 — phones (compact)
+   The recorder uses the same dark theme on all devices.
+   ───────────────────────────────────────────────────────────────────── */
 
-@media (max-width: 720px) {
+/* iPad portrait + small laptops (768-1024px). One-column-ish layout with
+   slightly tighter padding, but summary cards still side-by-side. */
+@media (max-width: 1024px) {
+  .share-root { padding: 20px 18px 64px; }
+  .share-title { font-size: 28px; }
+  .share-chart-wrap { height: clamp(280px, 55vh, 480px); }
+}
+
+/* Tablet narrow + large phone (481-767px). Chart controls stack to a
+   column, summary cards still try to fit two-up if space allows. */
+@media (max-width: 767px) {
   .share-header { padding: 12px 16px; }
   .share-watermark { display: none; }
   .share-root { padding: 16px 14px 64px; }
-  .share-title { font-size: 24px; }
-  .share-chart-controls { flex-direction: column; align-items: stretch; }
-  .share-toggle-actions { margin-left: 0; justify-content: flex-end; }
-  .share-summary-card-grid { grid-template-columns: 1fr 1fr; }
+  .share-title { font-size: 24px; line-height: 1.25; }
+
+  /* Chart controls become a column on narrow screens so each fieldset gets
+     full width. The fieldsets themselves wrap their labels naturally. */
+  .share-chart-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .share-toggle-group {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  .share-toggle-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: space-between;
+  }
+  .share-zoom-btn {
+    flex: 1;
+    justify-content: center;
+    min-height: 44px;  /* touch target */
+  }
+
+  /* Summary cards: 2-up grid for stat tiles, last one spans full width */
+  .share-summary-card-grid {
+    grid-template-columns: 1fr 1fr;
+  }
   .share-summary-card-grid .share-stat-tile:last-child {
     grid-column: span 2;
   }
-  .share-password-form { flex-direction: column; max-width: 100%; }
-  .share-state { padding: 64px 16px; }
+
+  /* Larger label touch targets */
+  .share-toggle-group label {
+    padding: 6px 4px;
+    min-height: 32px;
+  }
+
+  /* Password gate: stacked input + button */
+  .share-password-form {
+    flex-direction: column;
+    max-width: 100%;
+    gap: 8px;
+  }
+  .share-password-form .share-cta { width: 100%; min-height: 44px; }
+
+  .share-state { padding: 56px 16px; }
+
+  /* Chart shorter on phones — preserves room for controls + summary */
+  .share-chart-wrap { height: clamp(240px, 45vh, 400px); }
+
+  /* Position table — let it scroll horizontally if needed rather than
+     crush column widths into illegibility. */
+  .share-position-card { overflow-x: auto; }
+  .share-pos-table th,
+  .share-pos-table td {
+    padding: 8px 10px;
+    font-size: 12px;
+    white-space: nowrap;
+  }
+}
+
+/* Compact phones (≤ 480px). Single-column everywhere, big touch targets. */
+@media (max-width: 480px) {
+  .share-header { padding: 10px 14px; }
+  .share-root { padding: 14px 12px 56px; }
+  .share-title { font-size: 22px; }
+
+  .share-summary-header { grid-template-columns: 1fr; }
+  .share-summary-card-grid { grid-template-columns: 1fr; }
+  .share-summary-card-grid .share-stat-tile:last-child { grid-column: auto; }
+  .share-summary-card { padding: 14px 14px; }
+  .share-summary-card-grid .share-stat-value { font-size: 18px; }
+
+  .share-chart-card { padding: 14px 12px; }
+  .share-chart-wrap { height: clamp(220px, 40vh, 360px); padding: 4px; }
+  .share-chart-footer { font-size: 11px; line-height: 1.5; }
+
+  .share-position-card { padding: 14px 14px; }
+
+  .share-footer { padding-top: 18px; }
+  .share-footer-cta { font-size: 14px; }
+
+  /* Wrap the metadata chips so they don't push horizontal-scroll */
+  .share-meta { gap: 6px; }
+  .share-chip { font-size: 11px; padding: 4px 10px; }
 }

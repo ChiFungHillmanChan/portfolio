@@ -1,37 +1,30 @@
-// share-dialog.js — Sub-dialog with two tabs:
+// share-dialog.js — Single-purpose dialog for sharing a session's graphs.
 //
-//   • Graphs  Snapshot of session stats (summary + before/after series) to a
-//             public URL on casino-game.hillmanchan.com/p/{id}. No hand data
-//             leaves the browser. Owner picks title, expiry, and (paid only)
-//             a password. Snapshot is IMMUTABLE — later edits/deletes don't
-//             touch the shared payload.
+// Opens from the main chart card's "Share session" button. Lets the owner:
+//   • Create a new public link to /p/{shareId}
+//   • See their existing active shares (title, dates, password flag, views)
+//   • Copy a link, open it, or delete it (revoke + remove from server)
 //
-//   • Hands   Existing per-hand video export. Records the live replay canvas
-//             via MediaRecorder, hands the blob to Web Share API or downloads.
-//             Free users see this tab locked with an upgrade nudge — gating
-//             matches the user's spec ("share hands for paid or superadmin").
-//
-// Entry points:
-//   • Main chart → openShareDialog({ defaultTab: "graphs", getGraphsState })
-//   • Replay modal → openShareDialog({ defaultTab: "hands", getReplayState, durationFn })
-//
-// Either state can be omitted; the dialog disables tabs whose state is missing
-// and explains why in-panel.
+// Everything renders ONLY after the initial network calls (quota + my-shares)
+// resolve — no flash of optimistic state when the user re-opens the dialog
+// after creating a share. SVG icons used throughout; no emoji.
 
-import { getShareQuota, recordVideoShare, isUnlimited } from "../cloud/share-quota.js";
-import { exportReplayVideo, listOrientations, pickSupportedMimeType } from "./video-export.js";
-import { buildSharePayload, createStatsShare } from "../cloud/share-stats.js";
+import {
+  buildSharePayload,
+  createStatsShare,
+  listMyShares,
+  revokeStatsShare,
+} from "../cloud/share-stats.js";
 
 const DIALOG_ID = "replayShareDialog";
 
-// Mirrors backend SHARE_LIMITS in share-stats.mjs. Used for dropdown choices
-// and locking the password toggle — backend re-validates so this is purely UX.
+// Mirrors backend SHARE_LIMITS in share-stats.mjs — UX only; backend re-validates.
 const PLAN_OPTS = {
-  free:       { graphs: { perMonth: 4,    expireDays: 7,   passwordAllowed: false } },
-  standard:   { graphs: { perMonth: 30,   expireDays: 90,  passwordAllowed: true  } },
-  pro:        { graphs: { perMonth: 100,  expireDays: 365, passwordAllowed: true  } },
-  ultra:      { graphs: { perMonth: Infinity, expireDays: 0, passwordAllowed: true } },
-  superadmin: { graphs: { perMonth: Infinity, expireDays: 0, passwordAllowed: true } },
+  free:       { perMonth: 4,                       expireDays: 7,   passwordAllowed: false },
+  standard:   { perMonth: 30,                      expireDays: 90,  passwordAllowed: true  },
+  pro:        { perMonth: 100,                     expireDays: 365, passwordAllowed: true  },
+  ultra:      { perMonth: Number.POSITIVE_INFINITY, expireDays: 0,   passwordAllowed: true },
+  superadmin: { perMonth: Number.POSITIVE_INFINITY, expireDays: 0,   passwordAllowed: true },
 };
 
 function planFor(quota) {
@@ -40,11 +33,30 @@ function planFor(quota) {
   return PLAN_OPTS[quota.tier] || PLAN_OPTS.free;
 }
 
+// ── Inline SVG icons (matches the codebase's `ui-svg-icon` convention) ──────
+
+const ICON = {
+  close:      `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg>`,
+  send:       `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`,
+  check:      `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5 12 10 17 19 7"/></svg>`,
+  copy:       `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="11" height="11" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>`,
+  open:       `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3h7v7"/><path d="M10 14L21 3"/><path d="M19 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h6"/></svg>`,
+  share:      `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>`,
+  trash:      `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>`,
+  refresh:    `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/><path d="M20.49 15a9 9 0 0 1-14.85 3.36L1 14"/></svg>`,
+  lock:       `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>`,
+  warn:       `<svg class="ui-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>`,
+};
+
+// ── Module state ────────────────────────────────────────────────────────────
+
 let dialogEl = null;
-let ctx = null;       // { getReplayState?, durationFn?, getGraphsState?, defaultTab }
-let activeTab = "graphs";
-let exporting = false;     // true while a video export is mid-encode
-let creatingGraph = false; // true while waiting on create-stats-share
+let ctx = null;          // { getGraphsState }
+let cachedQuota = null;  // Refreshed every dialog open
+let creatingShare = false;
+let revokingShareId = null;
+
+// ── Dialog mount ────────────────────────────────────────────────────────────
 
 function ensureDialog() {
   if (dialogEl) return dialogEl;
@@ -56,23 +68,21 @@ function ensureDialog() {
     <div class="replay-share-backdrop" data-share-action="close"></div>
     <div class="replay-share-panel" role="dialog" aria-modal="true" aria-labelledby="replayShareTitle">
       <div class="replay-share-header">
-        <h4 id="replayShareTitle">Share</h4>
-        <button type="button" class="replay-share-close" data-share-action="close" aria-label="Close">×</button>
-      </div>
-      <div class="replay-share-tabs" role="tablist">
-        <button type="button" class="replay-share-tab active" data-tab="graphs" role="tab" aria-selected="true">
-          Share Graphs
-        </button>
-        <button type="button" class="replay-share-tab" data-tab="hands" role="tab" aria-selected="false">
-          Share Hands
-          <span class="replay-share-tab-badge" data-badge="hands"></span>
-        </button>
+        <h4 id="replayShareTitle">Share session</h4>
+        <button type="button" class="replay-share-close" data-share-action="close" aria-label="Close">${ICON.close}</button>
       </div>
 
-      <!-- ── Graphs tab ─────────────────────────────────────────────────── -->
-      <div class="replay-share-body" data-tab-panel="graphs">
+      <!-- Single full-panel loading state shown until quota + my-shares both resolve -->
+      <div class="replay-share-loading" data-loading>
+        <div class="replay-share-spinner" aria-hidden="true"></div>
+        <p>Loading…</p>
+      </div>
+
+      <!-- Main content — hidden until both fetches resolve so the user never
+           sees a flash of optimistic/stale state when re-opening the dialog. -->
+      <div class="replay-share-body" data-content hidden>
         <section class="replay-share-row">
-          <span class="replay-share-row-label">Title</span>
+          <label class="replay-share-row-label" for="shareTitleInput">Title</label>
           <input
             type="text"
             class="replay-share-input replay-share-title-input"
@@ -84,11 +94,13 @@ function ensureDialog() {
         </section>
 
         <section class="replay-share-row" data-row="expire">
-          <span class="replay-share-row-label">Expires in</span>
+          <label class="replay-share-row-label" for="shareExpireSelect">Expires in</label>
           <div class="replay-share-expire" data-expire-container></div>
         </section>
 
-        <section class="replay-share-row" data-row="password">
+        <!-- Password gate field — wrapped in a form for browser warning compliance -->
+        <form class="replay-share-row replay-share-pw-row" data-row="password" autocomplete="off"
+              onsubmit="return false;">
           <label class="replay-share-toggle">
             <input type="checkbox" id="sharePasswordToggle" />
             <span>Protect with a password</span>
@@ -100,218 +112,186 @@ function ensureDialog() {
             placeholder="4–64 characters"
             minlength="4"
             maxlength="64"
+            autocomplete="new-password"
             hidden
           />
-        </section>
+        </form>
 
-        <div class="replay-share-quota" data-quota="graphs">
+        <div class="replay-share-quota" data-quota>
           <span class="replay-share-quota-label">Monthly quota</span>
-          <span class="replay-share-quota-value">Loading…</span>
+          <span class="replay-share-quota-value">—</span>
         </div>
 
-        <div class="replay-share-progress" data-progress="graphs" hidden>
+        <div class="replay-share-progress" data-progress hidden>
           <div class="replay-share-progress-bar"><div class="replay-share-progress-fill" style="width:0%"></div></div>
           <span class="replay-share-progress-label">Creating share…</span>
         </div>
 
-        <div class="replay-share-error" data-error="graphs" hidden></div>
+        <div class="replay-share-error" data-error hidden></div>
 
-        <!-- Result panel shown after a share is created -->
-        <div class="replay-share-result" data-result="graphs" hidden>
-          <div class="replay-share-result-success">
-            ✓ Share link created
-          </div>
+        <!-- Created-share result panel -->
+        <div class="replay-share-result" data-result hidden>
+          <div class="replay-share-result-success">${ICON.check}<span>Share link created</span></div>
           <div class="replay-share-result-url-row">
             <input type="text" readonly class="replay-share-input replay-share-result-url" data-result-url />
-            <button type="button" class="replay-share-result-copy" data-share-action="copy-url">Copy</button>
+            <button type="button" class="replay-share-icon-btn" data-share-action="copy-url" aria-label="Copy link">${ICON.copy}<span>Copy</span></button>
           </div>
           <div class="replay-share-result-actions">
-            <button type="button" class="replay-share-result-open" data-share-action="open-url">Open ↗</button>
-            <button type="button" class="replay-share-result-native" data-share-action="native-share">Share via…</button>
+            <button type="button" class="replay-share-icon-btn" data-share-action="open-url" aria-label="Open link">${ICON.open}<span>Open</span></button>
+            <button type="button" class="replay-share-icon-btn" data-share-action="native-share" aria-label="Share via system">${ICON.share}<span>Share via…</span></button>
           </div>
           <div class="replay-share-result-meta" data-result-meta></div>
         </div>
-      </div>
 
-      <!-- ── Hands tab (existing video export flow) ────────────────────── -->
-      <div class="replay-share-body" data-tab-panel="hands" hidden>
-        <div class="replay-share-locked" data-hands-locked hidden>
-          <p>
-            🔒 <strong>Share Hands</strong> is available on paid plans (Standard, Pro, Ultra).
-            Upgrade in Settings → Storage to enable hand-replay video sharing.
-          </p>
-        </div>
-        <div class="replay-share-needs-state" data-hands-needs-state hidden>
-          <p>
-            Pick a specific hand from the <em>Hand Replay</em> tab and press <kbd>Share</kbd>
-            inside the replay modal — that's where hand-video sharing lives.
-          </p>
-        </div>
-        <div data-hands-content>
-          <section class="replay-share-row" aria-label="Orientation">
-            <span class="replay-share-row-label">Orientation</span>
-            <div class="replay-share-orient" role="group"></div>
-          </section>
-          <section class="replay-share-row" aria-label="Current settings">
-            <span class="replay-share-row-label">Settings</span>
-            <div class="replay-share-current">
-              <span class="replay-share-chip" data-chip="speed">Speed: —</span>
-              <span class="replay-share-chip" data-chip="unit">Unit: —</span>
-            </div>
-          </section>
-          <p class="replay-share-hint">
-            Uses your current speed and $/BB toggle — change those first if needed.
-            <br>
-            <strong>4:3</strong> shows the table largest (best for reading on phone).
-            <strong>9:16</strong> is for Reels / TikTok.
-          </p>
-          <div class="replay-share-quota" data-quota="hands">
-            <span class="replay-share-quota-label">Daily video-share quota</span>
-            <span class="replay-share-quota-value">Loading…</span>
-          </div>
-          <div class="replay-share-progress" data-progress="hands" hidden>
-            <div class="replay-share-progress-bar"><div class="replay-share-progress-fill" style="width:0%"></div></div>
-            <span class="replay-share-progress-label">Preparing…</span>
-          </div>
-          <div class="replay-share-error" data-error="hands" hidden></div>
-        </div>
+        <!-- Existing shares list -->
+        <section class="replay-share-list-section" data-shares-section>
+          <header class="replay-share-list-header">
+            <h5>Your shares <span class="replay-share-list-count" data-shares-count></span></h5>
+            <button type="button" class="replay-share-icon-btn replay-share-icon-btn--ghost" data-share-action="refresh-shares" aria-label="Refresh shares list">${ICON.refresh}</button>
+          </header>
+          <div class="replay-share-list" data-shares-list></div>
+        </section>
       </div>
 
       <div class="replay-share-footer">
         <button type="button" class="replay-share-cancel" data-share-action="close">Close</button>
-        <button type="button" class="replay-share-primary" data-share-action="primary" disabled>Create share link</button>
+        <button type="button" class="replay-share-primary" data-share-action="create" disabled>
+          ${ICON.send}<span>Create share link</span>
+        </button>
       </div>
     </div>
   `;
   document.body.appendChild(dialogEl);
 
-  // Populate orientation pills once (Hands tab).
-  const orientWrap = dialogEl.querySelector(".replay-share-orient");
-  for (const o of listOrientations()) {
-    const btn = document.createElement("button");
-    btn.type = "button";
-    btn.className = "replay-share-orient-btn";
-    btn.dataset.orient = o.key;
-    btn.textContent = o.label;
-    if (o.key === "9:16") btn.classList.add("active");
-    orientWrap.appendChild(btn);
-  }
-
   dialogEl.addEventListener("click", onDialogClick);
   document.addEventListener("keydown", onKeyDown);
 
-  // Title input — live update of preview default in the placeholder.
-  const titleInput = dialogEl.querySelector("#shareTitleInput");
-  titleInput.addEventListener("input", () => clearError("graphs"));
-
-  // Password toggle wiring.
-  const pwToggle = dialogEl.querySelector("#sharePasswordToggle");
-  pwToggle.addEventListener("change", () => {
+  dialogEl.querySelector("#sharePasswordToggle").addEventListener("change", () => {
+    const cb = dialogEl.querySelector("#sharePasswordToggle");
     const input = dialogEl.querySelector("#sharePasswordInput");
-    input.hidden = !pwToggle.checked;
-    if (pwToggle.checked) input.focus();
-    clearError("graphs");
+    input.hidden = !cb.checked;
+    if (cb.checked) input.focus();
+    clearError();
   });
+
+  dialogEl.querySelector("#shareTitleInput").addEventListener("input", clearError);
 
   return dialogEl;
 }
 
+// ── Event handlers ──────────────────────────────────────────────────────────
+
 function onDialogClick(e) {
   const target = e.target;
   if (!(target instanceof Element)) return;
-  const busy = exporting || creatingGraph;
 
-  // Block close while a long-running export is in flight.
+  // Block close while a share is being created or revoked.
+  const busy = creatingShare || !!revokingShareId;
   if (busy && target.closest('[data-share-action="close"]')) return;
 
-  const closeTarget = target.closest('[data-share-action="close"]');
-  if (closeTarget) { closeShareDialog(); return; }
+  const action = target.closest("[data-share-action]")?.getAttribute("data-share-action")
+              || target.closest("[data-row-action]")?.getAttribute("data-row-action");
+  if (!action) return;
 
-  const tabBtn = target.closest(".replay-share-tab");
-  if (tabBtn && !busy) {
-    switchTab(tabBtn.dataset.tab);
-    return;
+  switch (action) {
+    case "close":
+      closeShareDialog();
+      return;
+    case "create":
+      if (!busy) onCreateShare();
+      return;
+    case "copy-url":
+      copyShareUrl();
+      return;
+    case "open-url":
+      openShareUrl();
+      return;
+    case "native-share":
+      nativeShareUrl();
+      return;
+    case "refresh-shares":
+      if (!busy) refreshSharesList();
+      return;
+    case "row-open":
+    case "row-copy":
+    case "row-delete": {
+      if (busy) return;
+      const row = target.closest("[data-share-row]");
+      const id = row?.getAttribute("data-share-row");
+      const url = row?.getAttribute("data-share-url");
+      if (!id || !url) return;
+      if (action === "row-open") window.open(url, "_blank", "noopener");
+      if (action === "row-copy") copyToClipboard(url, target.closest("button"));
+      if (action === "row-delete") confirmDeleteShare(id);
+      return;
+    }
   }
-
-  const primary = target.closest('[data-share-action="primary"]');
-  if (primary && !busy) {
-    if (activeTab === "graphs") onCreateShare();
-    else onExportVideo();
-    return;
-  }
-
-  const orientBtn = target.closest(".replay-share-orient-btn");
-  if (orientBtn && !busy) {
-    dialogEl.querySelectorAll(".replay-share-orient-btn").forEach((b) =>
-      b.classList.toggle("active", b === orientBtn)
-    );
-    return;
-  }
-
-  if (target.closest('[data-share-action="copy-url"]')) { copyShareUrl(); return; }
-  if (target.closest('[data-share-action="open-url"]')) { openShareUrl(); return; }
-  if (target.closest('[data-share-action="native-share"]')) { nativeShareUrl(); return; }
 }
 
 function onKeyDown(e) {
   if (!dialogEl || dialogEl.hidden) return;
-  if (e.key === "Escape" && !(exporting || creatingGraph)) {
+  if (e.key === "Escape" && !(creatingShare || revokingShareId)) {
     e.preventDefault();
     closeShareDialog();
   }
 }
 
-// ── Tabs ────────────────────────────────────────────────────────────────────
+// ── State setters ───────────────────────────────────────────────────────────
 
-function switchTab(tab) {
-  if (tab !== "graphs" && tab !== "hands") return;
-  activeTab = tab;
-  dialogEl.querySelectorAll(".replay-share-tab").forEach((b) => {
-    const isActive = b.dataset.tab === tab;
-    b.classList.toggle("active", isActive);
-    b.setAttribute("aria-selected", isActive ? "true" : "false");
-  });
-  dialogEl.querySelectorAll("[data-tab-panel]").forEach((p) => {
-    p.hidden = p.getAttribute("data-tab-panel") !== tab;
-  });
-  // Footer primary-button label changes per tab.
-  const primary = dialogEl.querySelector('[data-share-action="primary"]');
-  if (tab === "graphs") {
-    primary.textContent = "Create share link";
-    refreshGraphsPrimaryEnabled();
-  } else {
-    primary.textContent = "Export video";
-    refreshHandsPrimaryEnabled();
-  }
+function showLoading() {
+  dialogEl.querySelector("[data-loading]").hidden = false;
+  dialogEl.querySelector("[data-content]").hidden = true;
+  // Disable primary button while loading
+  dialogEl.querySelector('[data-share-action="create"]').disabled = true;
 }
 
-// ── Render: Graphs tab quota + expire + password availability ───────────────
+function showContent() {
+  dialogEl.querySelector("[data-loading]").hidden = true;
+  dialogEl.querySelector("[data-content]").hidden = false;
+}
 
-function renderGraphsQuota(quota, currentUsed) {
-  const box = dialogEl.querySelector('[data-quota="graphs"]');
+function setError(msg) {
+  const box = dialogEl.querySelector("[data-error]");
+  if (!box) return;
+  if (!msg) { box.hidden = true; box.textContent = ""; return; }
+  box.hidden = false;
+  box.innerHTML = `${ICON.warn}<span>${escapeHtml(msg)}</span>`;
+}
+
+function clearError() { setError(""); }
+
+function setProgress(visible, pct, label) {
+  const wrap = dialogEl.querySelector("[data-progress]");
+  if (!wrap) return;
+  wrap.hidden = !visible;
+  if (!visible) return;
+  wrap.querySelector(".replay-share-progress-fill").style.width = `${Math.round((pct || 0) * 100)}%`;
+  wrap.querySelector(".replay-share-progress-label").textContent = label || "";
+}
+
+// ── Render: quota + expire dropdown + password row ──────────────────────────
+
+function renderQuota(quota, usedOverride) {
+  const box = dialogEl.querySelector("[data-quota]");
   const value = box.querySelector(".replay-share-quota-value");
   if (!quota || !quota.ok) {
-    value.textContent = "Sign in to create a share link.";
+    value.textContent = "Sign in to create a share.";
     value.dataset.state = "spent";
     return;
   }
   const plan = planFor(quota);
-  const limit = plan.graphs.perMonth;
-  if (!Number.isFinite(limit) || limit >= 1e9) {
+  if (!Number.isFinite(plan.perMonth) || plan.perMonth >= 1e9) {
     value.textContent = "Unlimited";
     value.dataset.state = "ok";
+    return;
+  }
+  if (typeof usedOverride === "number") {
+    const remaining = Math.max(0, plan.perMonth - usedOverride);
+    value.textContent = `${remaining} / ${plan.perMonth} left this month`;
+    value.dataset.state = remaining > 0 ? "ok" : "spent";
   } else {
-    // `currentUsed` is optional; once the user creates a share we know the
-    // freshly-incremented count and update the label live. Before that we
-    // only know "≤ limit" — render as the limit until we hear otherwise.
-    if (typeof currentUsed === "number") {
-      const remaining = Math.max(0, limit - currentUsed);
-      value.textContent = `${remaining} / ${limit} left this month`;
-      value.dataset.state = remaining > 0 ? "ok" : "spent";
-    } else {
-      value.textContent = `${limit} / month`;
-      value.dataset.state = "ok";
-    }
+    value.textContent = `${plan.perMonth} / month`;
+    value.dataset.state = "ok";
   }
 }
 
@@ -319,15 +299,13 @@ function renderExpireDropdown(quota) {
   const wrap = dialogEl.querySelector("[data-expire-container]");
   wrap.replaceChildren();
   const plan = planFor(quota);
-  const maxDays = plan.graphs.expireDays;
+  const isFree = !quota?.ok || (quota.tier === "free" && !quota.superadmin);
 
-  if (!quota || !quota.ok || quota.tier === "free") {
-    // Free tier (or unauthenticated) is locked to 7 days with an upgrade nudge.
+  if (isFree) {
     const fixed = document.createElement("div");
     fixed.className = "replay-share-static-value";
-    fixed.innerHTML = `<strong>7 days</strong> <span class="replay-share-static-hint">(Free tier — paid plans get longer / forever)</span>`;
+    fixed.innerHTML = `<strong>7 days</strong> <span class="replay-share-static-hint">(Free tier — paid plans get longer)</span>`;
     wrap.appendChild(fixed);
-    // Hidden control to read on submit.
     const hidden = document.createElement("input");
     hidden.type = "hidden";
     hidden.id = "shareExpireSelect";
@@ -340,8 +318,8 @@ function renderExpireDropdown(quota) {
   select.id = "shareExpireSelect";
   select.className = "replay-share-input";
   const choices = [7, 30, 90];
-  if (maxDays === 0 || maxDays >= 365) choices.push(365);
-  if (maxDays === 0) choices.push(0); // Forever
+  if (plan.expireDays === 0 || plan.expireDays >= 365) choices.push(365);
+  if (plan.expireDays === 0) choices.push(0); // 0 = forever
   for (const d of choices) {
     const opt = document.createElement("option");
     opt.value = String(d);
@@ -355,133 +333,91 @@ function renderExpireDropdown(quota) {
 function renderPasswordRow(quota) {
   const row = dialogEl.querySelector('[data-row="password"]');
   const plan = planFor(quota);
-  const allowed = !!plan.graphs.passwordAllowed && !!quota?.ok;
+  const allowed = !!plan.passwordAllowed && !!quota?.ok;
   row.hidden = !allowed;
   if (!allowed) {
-    const cb = dialogEl.querySelector("#sharePasswordToggle");
-    cb.checked = false;
+    dialogEl.querySelector("#sharePasswordToggle").checked = false;
     dialogEl.querySelector("#sharePasswordInput").hidden = true;
+    dialogEl.querySelector("#sharePasswordInput").value = "";
   }
 }
 
-// ── Render: Hands tab — quota + lock state ──────────────────────────────────
+// ── Render: shares list ─────────────────────────────────────────────────────
 
-function renderHandsAvailability(quota) {
-  const lockedBox = dialogEl.querySelector("[data-hands-locked]");
-  const needsState = dialogEl.querySelector("[data-hands-needs-state]");
-  const content = dialogEl.querySelector("[data-hands-content]");
-  const badge = dialogEl.querySelector('[data-badge="hands"]');
+function renderSharesList(items) {
+  const list = dialogEl.querySelector("[data-shares-list]");
+  const count = dialogEl.querySelector("[data-shares-count]");
+  list.replaceChildren();
 
-  const tier = quota?.tier || "free";
-  const isPaid = tier !== "free" && quota?.ok;
-  const isSuper = !!quota?.superadmin;
-  const hasReplay = !!ctx?.getReplayState;
+  const active = (items || []).filter((s) => !s.revoked);
+  count.textContent = active.length > 0 ? `(${active.length})` : "";
 
-  // Tier lock first (free user — no path to hands sharing).
-  if (!isPaid && !isSuper) {
-    lockedBox.hidden = false;
-    needsState.hidden = true;
-    content.hidden = true;
-    badge.textContent = "🔒";
+  if (active.length === 0) {
+    const empty = document.createElement("div");
+    empty.className = "replay-share-list-empty";
+    empty.textContent = "No active shares yet.";
+    list.appendChild(empty);
     return;
   }
 
-  // Paid but didn't open from a replay modal → friendly nudge.
-  if (!hasReplay) {
-    lockedBox.hidden = true;
-    needsState.hidden = false;
-    content.hidden = true;
-    badge.textContent = "";
-    return;
-  }
-
-  // All good — show the full export controls.
-  lockedBox.hidden = true;
-  needsState.hidden = true;
-  content.hidden = false;
-  badge.textContent = "";
-  renderHandsCurrentSettings(ctx.getReplayState());
-  renderHandsQuota(quota);
-}
-
-function renderHandsCurrentSettings(state) {
-  const speedChip = dialogEl.querySelector('[data-chip="speed"]');
-  const unitChip = dialogEl.querySelector('[data-chip="unit"]');
-  if (speedChip) speedChip.textContent = `Speed: ${state.speed}×`;
-  if (unitChip) unitChip.textContent = `Unit: ${state.unit === "bb" ? "BB" : "$"}`;
-}
-
-function renderHandsQuota(quota) {
-  const box = dialogEl.querySelector('[data-quota="hands"]');
-  const value = box.querySelector(".replay-share-quota-value");
-  if (!quota || !quota.ok) {
-    value.textContent = "Sign in to share a video.";
-    value.dataset.state = "spent";
-    return;
-  }
-  if (isUnlimited(quota)) {
-    value.textContent = "Unlimited";
-    value.dataset.state = "ok";
-  } else {
-    value.textContent = `${quota.remaining} / ${quota.limit} left today`;
-    value.dataset.state = quota.remaining > 0 ? "ok" : "spent";
+  for (const item of active) {
+    list.appendChild(buildShareRow(item));
   }
 }
 
-// ── Primary button enable logic ──────────────────────────────────────────────
+function buildShareRow(item) {
+  const row = document.createElement("div");
+  row.className = "replay-share-list-row";
+  row.setAttribute("data-share-row", item.shareId);
+  row.setAttribute("data-share-url", item.url);
 
-function refreshGraphsPrimaryEnabled() {
-  const primary = dialogEl.querySelector('[data-share-action="primary"]');
-  if (activeTab !== "graphs") return;
-  // Disabled when not signed in OR no graphs state OR result already shown.
-  const hasState = !!ctx?.getGraphsState && !!ctx.getGraphsState();
-  const resultShown = !dialogEl.querySelector('[data-result="graphs"]').hidden;
-  primary.disabled = !hasState || resultShown || creatingGraph;
-  primary.title = !hasState
-    ? "Load a session first (Online Poker Records tab)."
-    : "";
+  const createdStr = item.createdAt ? formatRelativeDate(item.createdAt) : "—";
+  const expiresStr = item.expiresAt ? `expires ${formatRelativeDate(item.expiresAt, true)}` : "no expiry";
+  const viewsStr = (item.views || 0) > 0 ? `${item.views} view${item.views === 1 ? "" : "s"}` : "0 views";
+
+  row.innerHTML = `
+    <div class="replay-share-list-row-main">
+      <div class="replay-share-list-row-title">
+        <span class="replay-share-list-row-name">${escapeHtml(item.title || `${item.handsTotal?.toLocaleString?.() || "—"} hands recorder`)}</span>
+        ${item.passwordProtected ? `<span class="replay-share-list-row-lock" title="Password protected">${ICON.lock}</span>` : ""}
+      </div>
+      <div class="replay-share-list-row-meta">
+        Created ${escapeHtml(createdStr)} · ${escapeHtml(expiresStr)} · ${escapeHtml(viewsStr)}
+      </div>
+    </div>
+    <div class="replay-share-list-row-actions">
+      <button type="button" class="replay-share-icon-btn replay-share-icon-btn--ghost" data-row-action="row-open" aria-label="Open share">${ICON.open}</button>
+      <button type="button" class="replay-share-icon-btn replay-share-icon-btn--ghost" data-row-action="row-copy" aria-label="Copy link">${ICON.copy}</button>
+      <button type="button" class="replay-share-icon-btn replay-share-icon-btn--danger" data-row-action="row-delete" aria-label="Delete share">${ICON.trash}</button>
+    </div>
+  `;
+  return row;
 }
 
-function refreshHandsPrimaryEnabled() {
-  const primary = dialogEl.querySelector('[data-share-action="primary"]');
-  if (activeTab !== "hands") return;
-  const hasState = !!ctx?.getReplayState;
-  const lockedHidden = dialogEl.querySelector("[data-hands-locked]").hidden;
-  const needsHidden = dialogEl.querySelector("[data-hands-needs-state]").hidden;
-  primary.disabled = !hasState || !lockedHidden || !needsHidden || exporting;
+function formatRelativeDate(iso, isFuture) {
+  const d = new Date(iso);
+  const diffMs = d.getTime() - Date.now();
+  const abs = Math.abs(diffMs);
+  const minutes = Math.round(abs / 60_000);
+  const hours = Math.round(abs / 3_600_000);
+  const days = Math.round(abs / 86_400_000);
+
+  if (minutes < 60) return isFuture ? `in ${minutes}m` : `${minutes}m ago`;
+  if (hours < 24)   return isFuture ? `in ${hours}h`   : `${hours}h ago`;
+  if (days < 7)     return isFuture ? `in ${days}d`    : `${days}d ago`;
+  // For longer ranges, use locale date — still relative-ish but unambiguous.
+  return d.toLocaleDateString();
 }
 
-// ── Error / progress helpers ────────────────────────────────────────────────
-
-function setError(tab, msg) {
-  const box = dialogEl.querySelector(`[data-error="${tab}"]`);
-  if (!box) return;
-  if (!msg) { box.hidden = true; box.textContent = ""; return; }
-  box.hidden = false;
-  box.textContent = msg;
-}
-
-function clearError(tab) { setError(tab, ""); }
-
-function setProgress(tab, visible, pct, label) {
-  const wrap = dialogEl.querySelector(`[data-progress="${tab}"]`);
-  if (!wrap) return;
-  wrap.hidden = !visible;
-  if (!visible) return;
-  wrap.querySelector(".replay-share-progress-fill").style.width = `${Math.round((pct || 0) * 100)}%`;
-  wrap.querySelector(".replay-share-progress-label").textContent = label || "";
-}
-
-// ── Graphs: create share ────────────────────────────────────────────────────
+// ── Actions ─────────────────────────────────────────────────────────────────
 
 async function onCreateShare() {
-  if (creatingGraph) return;
-  clearError("graphs");
+  if (creatingShare) return;
+  clearError();
 
-  const getState = ctx?.getGraphsState;
-  const state = typeof getState === "function" ? getState() : null;
+  const state = typeof ctx?.getGraphsState === "function" ? ctx.getGraphsState() : null;
   if (!state || !state.summary) {
-    setError("graphs", "No session loaded — upload or restore one first.");
+    setError("No session loaded — upload or restore one first.");
     return;
   }
 
@@ -492,14 +428,8 @@ async function onCreateShare() {
   const password = usePassword ? dialogEl.querySelector("#sharePasswordInput").value : null;
 
   if (usePassword) {
-    if (!password || password.length < 4) {
-      setError("graphs", "Password must be at least 4 characters.");
-      return;
-    }
-    if (password.length > 64) {
-      setError("graphs", "Password must be 64 characters or fewer.");
-      return;
-    }
+    if (!password || password.length < 4) { setError("Password must be at least 4 characters."); return; }
+    if (password.length > 64)              { setError("Password must be 64 characters or fewer."); return; }
   }
 
   let payload;
@@ -515,45 +445,68 @@ async function onCreateShare() {
       meta: state.meta || null,
     });
   } catch (err) {
-    setError("graphs", `Could not prepare snapshot: ${err.message}`);
+    setError(`Could not prepare snapshot: ${err.message}`);
     return;
   }
 
-  creatingGraph = true;
-  refreshGraphsPrimaryEnabled();
-  setProgress("graphs", true, 0.4, "Uploading snapshot…");
+  creatingShare = true;
+  refreshPrimaryEnabled();
+  setProgress(true, 0.4, "Uploading snapshot…");
 
   let result;
   try {
     result = await createStatsShare(payload);
   } catch (err) {
-    creatingGraph = false;
-    setProgress("graphs", false, 0, "");
-    refreshGraphsPrimaryEnabled();
-    // Log the raw API error + a structural summary of the payload that was
-    // sent so we can debug failed shares without seeing the actual stats.
-    // (Privacy-safe — just key names, array lengths, and a hands count.)
-    console.error("[share-dialog] createStatsShare failed:", err?.message || err, {
-      summaryKeys: Object.keys(payload?.summary || {}),
-      sbKeys: Object.keys(payload?.seriesBefore || {}),
-      saKeys: Object.keys(payload?.seriesAfter || {}),
-      sbWinLen: Array.isArray(payload?.seriesBefore?.winningsUC) ? payload.seriesBefore.winningsUC.length : null,
-      saWinLen: Array.isArray(payload?.seriesAfter?.winningsUC) ? payload.seriesAfter.winningsUC.length : null,
-      summaryHands: payload?.summary?.hands,
-    });
-    setError("graphs", explainCreateError(err));
+    creatingShare = false;
+    setProgress(false, 0, "");
+    refreshPrimaryEnabled();
+    console.error("[share-dialog] createStatsShare failed:", err?.message || err);
+    setError(explainCreateError(err));
     return;
   }
 
-  creatingGraph = false;
-  setProgress("graphs", false, 0, "");
+  creatingShare = false;
+  setProgress(false, 0, "");
   showShareResult(result);
-  // Refresh the quota line so the user sees the new remaining count.
-  // Re-using getShareQuota would only refresh VIDEO quota — for graphs we
-  // already have the authoritative count in the response.
+
   if (Number.isFinite(result.quotaUsed) && result.quotaLimit) {
-    renderGraphsQuota({ ok: true, tier: cachedQuota?.tier, superadmin: cachedQuota?.superadmin }, result.quotaUsed);
+    renderQuota(cachedQuota, result.quotaUsed);
   }
+
+  // Refresh the shares list so the new share appears at the top immediately.
+  refreshSharesList().catch(() => {});
+}
+
+function refreshPrimaryEnabled() {
+  const primary = dialogEl.querySelector('[data-share-action="create"]');
+  const hasState = !!ctx?.getGraphsState && !!ctx.getGraphsState();
+  const resultShown = !dialogEl.querySelector("[data-result]").hidden;
+  primary.disabled = !hasState || resultShown || creatingShare;
+}
+
+function showShareResult(res) {
+  const result = dialogEl.querySelector("[data-result]");
+  result.hidden = false;
+  result.querySelector("[data-result-url]").value = res.url;
+  const meta = result.querySelector("[data-result-meta]");
+  const parts = [];
+  if (res.expiresAt) parts.push(`Expires ${new Date(res.expiresAt).toLocaleDateString()}`);
+  else               parts.push("No expiry");
+  if (res.passwordProtected) parts.push("Password protected");
+  if (typeof res.quotaUsed === "number" && res.quotaLimit) {
+    parts.push(`${res.quotaUsed}/${res.quotaLimit} used this month`);
+  }
+  meta.textContent = parts.join(" · ");
+
+  dialogEl.querySelector("#shareTitleInput").disabled = true;
+  const exp = dialogEl.querySelector("#shareExpireSelect");
+  if (exp) exp.disabled = true;
+  dialogEl.querySelector("#sharePasswordToggle").disabled = true;
+  dialogEl.querySelector("#sharePasswordInput").disabled = true;
+
+  refreshPrimaryEnabled();
+
+  setTimeout(() => result.querySelector("[data-result-url]").select(), 80);
 }
 
 function explainCreateError(err) {
@@ -563,58 +516,82 @@ function explainCreateError(err) {
   let body = {};
   try { body = JSON.parse(m[2]); } catch {}
   if (status === "401") return "Sign in to create a share link.";
-  if (body.error === "quota_exceeded_graphs") return "You've used all your share-graphs slots this month. Upgrade for more.";
-  if (body.error === "quota_exceeded_hands")  return "You've used all your share-hands slots this month.";
-  if (body.error === "hands_share_requires_paid") return "Hands sharing is paid-only.";
+  if (body.error === "quota_exceeded_graphs") return "You've used all your share slots this month. Upgrade for more.";
   if (body.error === "password_requires_paid") return "Password protection is paid-only.";
-  if (body.error === "forever_requires_paid") return "Forever expiry needs Ultra. Pick 7/30/90/365 days instead.";
+  if (body.error === "forever_requires_paid") return "Forever expiry needs Ultra. Pick 7 / 30 / 90 / 365 days instead.";
   if (body.error === "expire_too_long")       return `Pick a shorter expiry — your plan caps at ${body.maxDays || 30} days.`;
   if (body.error === "invalid_password_length") return "Password must be 4–64 characters.";
   if (body.error?.startsWith?.("invalid_payload")) return "Snapshot data was invalid. Recompute your chart and try again.";
   return body.error || "Could not create share link. Try again.";
 }
 
-function showShareResult(res) {
-  const result = dialogEl.querySelector('[data-result="graphs"]');
-  result.hidden = false;
-  result.querySelector("[data-result-url]").value = res.url;
-  const meta = result.querySelector("[data-result-meta]");
-  const parts = [];
-  if (res.expiresAt) parts.push(`Expires ${new Date(res.expiresAt).toLocaleDateString()}`);
-  else parts.push("No expiry");
-  if (res.passwordProtected) parts.push("Password protected");
-  if (typeof res.quotaUsed === "number" && res.quotaLimit) {
-    parts.push(`${res.quotaUsed}/${res.quotaLimit} used this month`);
+async function refreshSharesList() {
+  try {
+    const res = await listMyShares({ pageSize: 50 });
+    renderSharesList(res?.items || []);
+  } catch (err) {
+    console.warn("[share-dialog] listMyShares failed:", err?.message || err);
+    // Don't error-toast for the list — it's not critical. Just show empty.
+    renderSharesList([]);
   }
-  meta.textContent = parts.join(" · ");
-
-  // Lock the form to make it clear the share is created. The Close button
-  // is the way out; another share would re-open the dialog.
-  dialogEl.querySelector("#shareTitleInput").disabled = true;
-  const exp = dialogEl.querySelector("#shareExpireSelect");
-  if (exp) exp.disabled = true;
-  dialogEl.querySelector("#sharePasswordToggle").disabled = true;
-  dialogEl.querySelector("#sharePasswordInput").disabled = true;
-
-  refreshGraphsPrimaryEnabled();
-
-  // Focus the URL so screen readers announce it.
-  setTimeout(() => result.querySelector("[data-result-url]").select(), 80);
 }
+
+function confirmDeleteShare(shareId) {
+  // Inline confirm — simpler than a separate modal, matches existing toast feel.
+  if (!confirm("Delete this share link? Anyone with the URL will see a 'gone' page.")) return;
+  doDeleteShare(shareId);
+}
+
+async function doDeleteShare(shareId) {
+  if (revokingShareId) return;
+  revokingShareId = shareId;
+  const row = dialogEl.querySelector(`[data-share-row="${cssEscape(shareId)}"]`);
+  if (row) row.classList.add("replay-share-list-row--deleting");
+
+  try {
+    await revokeStatsShare(shareId);
+    // Remove from DOM immediately + refresh the list to update count + free
+    // up a quota slot in the displayed monthly counter.
+    if (row) row.remove();
+    const list = dialogEl.querySelector("[data-shares-list]");
+    if (list.children.length === 0) renderSharesList([]);
+    refreshSharesList().catch(() => {});
+  } catch (err) {
+    console.error("[share-dialog] revokeStatsShare failed:", err?.message || err);
+    if (row) row.classList.remove("replay-share-list-row--deleting");
+    alert("Could not delete that share. Please try again.");
+  } finally {
+    revokingShareId = null;
+  }
+}
+
+// ── Copy / open / native share ──────────────────────────────────────────────
 
 async function copyShareUrl() {
   const input = dialogEl.querySelector("[data-result-url]");
   const url = input?.value;
   if (!url) return;
+  await copyToClipboard(url, dialogEl.querySelector('[data-share-action="copy-url"]'));
+}
+
+async function copyToClipboard(text, button) {
   try {
-    await navigator.clipboard.writeText(url);
-    const btn = dialogEl.querySelector('[data-share-action="copy-url"]');
-    const orig = btn.textContent;
-    btn.textContent = "Copied!";
-    setTimeout(() => { btn.textContent = orig; }, 1200);
+    await navigator.clipboard.writeText(text);
+    if (button) {
+      const labelEl = button.querySelector("span");
+      if (labelEl) {
+        const orig = labelEl.textContent;
+        labelEl.textContent = "Copied!";
+        setTimeout(() => { labelEl.textContent = orig; }, 1200);
+      } else {
+        button.classList.add("replay-share-copied");
+        setTimeout(() => button.classList.remove("replay-share-copied"), 1200);
+      }
+    }
   } catch {
-    // Fall back to selecting the input so the user can ⌘C.
-    input.select();
+    // Older Safari fallback — select the input so the user can ⌘C.
+    const input = dialogEl.querySelector("[data-result-url]");
+    if (input) input.select();
   }
 }
 
@@ -639,195 +616,109 @@ async function nativeShareUrl() {
     }
     return;
   }
-  // Desktop fallback: copy to clipboard.
   copyShareUrl();
 }
 
-// ── Hands: video export (preserved from previous implementation) ─────────────
+// ── Helpers ─────────────────────────────────────────────────────────────────
 
-async function onExportVideo() {
-  if (exporting) return;
-  setError("hands", "");
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
 
-  if (!pickSupportedMimeType()) {
-    setError("hands", "This browser can't record video. Try the latest Chrome, Edge, Safari, or Firefox.");
-    return;
-  }
-
-  const getState = ctx?.getReplayState;
-  const state = typeof getState === "function" ? getState() : null;
-  if (!state || !state.snapshots?.length) {
-    setError("hands", "No replay loaded.");
-    return;
-  }
-  const orient = dialogEl.querySelector(".replay-share-orient-btn.active")?.dataset.orient || "9:16";
-
-  exporting = true;
-  refreshHandsPrimaryEnabled();
-  setProgress("hands", true, 0, "Reserving share slot…");
-
-  let reservation;
-  try {
-    reservation = await recordVideoShare();
-  } catch (err) {
-    exporting = false;
-    setProgress("hands", false, 0, "");
-    refreshHandsPrimaryEnabled();
-    if (err.message === "not-signed-in") {
-      setError("hands", "Sign in to share a video.");
-    } else {
-      setError("hands", "Could not reserve a share slot. Check your connection and try again.");
-    }
-    return;
-  }
-  if (!reservation?.ok) {
-    exporting = false;
-    setProgress("hands", false, 0, "");
-    refreshHandsPrimaryEnabled();
-    if (reservation?.error === "quota-exceeded") {
-      setError("hands", "You've used today's free share. Upgrade for unlimited.");
-    } else {
-      setError("hands", "Could not reserve a share slot. Try again.");
-    }
-    getShareQuota().then((q) => renderHandsQuota(q)).catch(() => {});
-    return;
-  }
-
-  setProgress("hands", true, 0, "Rendering frames…");
-
-  let result;
-  try {
-    result = await exportReplayVideo({
-      snapshots: state.snapshots,
-      extracted: state.extracted,
-      durationFn: ctx.durationFn,
-      orientation: orient,
-      speed: state.speed,
-      unit: state.unit,
-      bbDollars: state.bbDollars,
-      title: state.title || "Poker Hand Replay",
-      onProgress: (p) => setProgress("hands", true, p, `Rendering frames… ${Math.round(p * 100)}%`),
-    });
-  } catch (err) {
-    console.error("[share-dialog] export failed:", err);
-    exporting = false;
-    setProgress("hands", false, 0, "");
-    refreshHandsPrimaryEnabled();
-    setError("hands", "Video export failed. Try a different orientation or browser.");
-    return;
-  }
-
-  setProgress("hands", true, 1, "Done. Opening share sheet…");
-
-  const filename = `poker-replay-${Date.now()}.${result.extension}`;
-  const file = new File([result.blob], filename, { type: result.mimeType });
-
-  let shared = false;
-  if (
-    typeof navigator !== "undefined" &&
-    typeof navigator.share === "function" &&
-    typeof navigator.canShare === "function" &&
-    navigator.canShare({ files: [file] })
-  ) {
-    try {
-      await navigator.share({ files: [file], title: "Poker Hand Replay", text: "Watch this hand replay" });
-      shared = true;
-    } catch (err) {
-      if (err && err.name !== "AbortError") console.warn("[share-dialog] navigator.share failed:", err);
-    }
-  }
-
-  if (!shared) {
-    const a = document.createElement("a");
-    const url = URL.createObjectURL(result.blob);
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    setTimeout(() => URL.revokeObjectURL(url), 5_000);
-  }
-
-  exporting = false;
-  setProgress("hands", false, 0, "");
-  refreshHandsPrimaryEnabled();
-
-  const refreshed = await getShareQuota();
-  renderHandsQuota(refreshed);
+function cssEscape(s) {
+  // Mirror CSS.escape() with a small polyfill for older Safari. Used so we
+  // can construct a [data-share-row="…"] selector from an untrusted shareId.
+  if (typeof CSS !== "undefined" && typeof CSS.escape === "function") return CSS.escape(s);
+  return String(s).replace(/[^a-zA-Z0-9_-]/g, (c) => `\\${c}`);
 }
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-let cachedQuota = null;
-
-export function openShareDialog({ host, defaultTab, getReplayState, durationFn, getGraphsState } = {}) {
+export function openShareDialog({ getGraphsState } = {}) {
   ensureDialog();
-  ctx = { host, getReplayState, durationFn, getGraphsState };
+  ctx = { getGraphsState };
 
-  // Reset all transient UI state from any previous open.
-  exporting = false;
-  creatingGraph = false;
-  setError("graphs", "");
-  setError("hands", "");
-  setProgress("graphs", false, 0, "");
-  setProgress("hands", false, 0, "");
-  dialogEl.querySelector('[data-result="graphs"]').hidden = true;
-  dialogEl.querySelector("#shareTitleInput").value = "";
-  dialogEl.querySelector("#shareTitleInput").disabled = false;
-  dialogEl.querySelector("#sharePasswordToggle").checked = false;
-  dialogEl.querySelector("#sharePasswordToggle").disabled = false;
+  // Show the dialog immediately with the loading state so the user gets a
+  // visible response to their click. Content stays hidden until both the
+  // quota AND the shares list resolve — this prevents the "old state for
+  // 1 frame then refresh" flash the user observed.
+  resetForm();
+  showLoading();
+  dialogEl.hidden = false;
+
+  // Default placeholder uses the current session's hand count if available.
+  const gs = typeof getGraphsState === "function" ? getGraphsState() : null;
+  if (gs?.summary?.hands) {
+    const n = Number(gs.summary.hands) || 0;
+    dialogEl.querySelector("#shareTitleInput").placeholder = `${n.toLocaleString()} hands recorder`;
+  } else {
+    dialogEl.querySelector("#shareTitleInput").placeholder = "e.g. 100,000 hands recorder";
+  }
+
+  // Parallel fetch — both must resolve before we reveal the form.
+  Promise.all([
+    fetchQuota(),
+    listMyShares({ pageSize: 50 }).catch(() => ({ items: [] })),
+  ]).then(([quota, sharesRes]) => {
+    cachedQuota = quota;
+    renderQuota(quota);
+    renderExpireDropdown(quota);
+    renderPasswordRow(quota);
+    renderSharesList(sharesRes?.items || []);
+    refreshPrimaryEnabled();
+    showContent();
+  }).catch((err) => {
+    console.error("[share-dialog] init fetch failed:", err);
+    // Even on failure, reveal the content so the user can read the error.
+    renderQuota(null);
+    renderExpireDropdown(null);
+    renderPasswordRow(null);
+    renderSharesList([]);
+    showContent();
+    setError("Could not load your account info. Sign in and try again.");
+  });
+}
+
+// Wraps the existing get-share-quota endpoint so we can render the quota
+// without exposing share-quota.js (now deleted) as a separate module.
+async function fetchQuota() {
+  try {
+    // Lazy-import the auth client so the module-load cost is paid only when
+    // the user actually opens the share dialog (consistent with the
+    // dynamic-import entry point in upload.js).
+    const { apiCall } = await import("../auth/api-client.js");
+    return await apiCall("get-share-quota", {});
+  } catch (err) {
+    console.warn("[share-dialog] get-share-quota failed:", err?.message || err);
+    return null;
+  }
+}
+
+function resetForm() {
+  creatingShare = false;
+  revokingShareId = null;
+  clearError();
+  setProgress(false, 0, "");
+  dialogEl.querySelector("[data-result]").hidden = true;
+  const titleEl = dialogEl.querySelector("#shareTitleInput");
+  titleEl.value = "";
+  titleEl.disabled = false;
+  const pwToggle = dialogEl.querySelector("#sharePasswordToggle");
+  pwToggle.checked = false;
+  pwToggle.disabled = false;
   const pwInput = dialogEl.querySelector("#sharePasswordInput");
   pwInput.value = "";
   pwInput.disabled = false;
   pwInput.hidden = true;
-  dialogEl.querySelectorAll(".replay-share-orient-btn").forEach((b) => {
-    b.classList.toggle("active", b.dataset.orient === "9:16");
-    b.disabled = false;
-  });
-
-  // Default the title placeholder to the current session's hand count.
-  const graphsState = typeof getGraphsState === "function" ? getGraphsState() : null;
-  if (graphsState?.summary?.hands) {
-    const n = Number(graphsState.summary.hands) || 0;
-    dialogEl.querySelector("#shareTitleInput").placeholder =
-      `${n.toLocaleString()} hands recorder`;
-  }
-
-  // Initial tab — caller's request, OR sensible default per available state.
-  const wantsTab = defaultTab === "graphs" || defaultTab === "hands"
-    ? defaultTab
-    : (getReplayState ? "hands" : "graphs");
-  switchTab(wantsTab);
-
-  dialogEl.hidden = false;
-
-  // Show loading placeholders, then fetch the quota+tier and re-render.
-  const v = dialogEl.querySelector('[data-quota="graphs"] .replay-share-quota-value');
-  v.textContent = "Loading…";
-  renderExpireDropdown(null);
-  renderPasswordRow(null);
-
-  getShareQuota()
-    .then((q) => {
-      cachedQuota = q;
-      renderGraphsQuota(q);
-      renderExpireDropdown(q);
-      renderPasswordRow(q);
-      renderHandsAvailability(q);
-      refreshGraphsPrimaryEnabled();
-      refreshHandsPrimaryEnabled();
-    })
-    .catch(() => {
-      cachedQuota = null;
-      renderGraphsQuota(null);
-      renderExpireDropdown(null);
-      renderPasswordRow(null);
-      renderHandsAvailability(null);
-    });
 }
 
 export function closeShareDialog() {
-  if (exporting || creatingGraph) return;
+  if (creatingShare || revokingShareId) return;
   if (dialogEl) dialogEl.hidden = true;
   ctx = null;
 }

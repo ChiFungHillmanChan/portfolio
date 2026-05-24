@@ -1175,9 +1175,6 @@ async function openReplay(hand, index) {
     const { showReplay } = await import('./replay/animated-replay.js');
     showReplay(hand.text, {
       title: `Hand #${(index + 1).toLocaleString()} — ${hand.id}`,
-      // Lets the share-dialog's Graphs tab pull the session-wide series even
-      // when the dialog is opened from inside the per-hand replay modal.
-      getGraphsState: () => getCurrentGraphsState(),
     });
   } catch (err) {
     console.error('replay open failed', err);
@@ -1503,12 +1500,13 @@ function renderControls() {
   shareBtn.type = 'button';
   shareBtn.className = 'chart-share-btn';
   shareBtn.title = 'Share these stats as a public link (no hand details).';
-  shareBtn.innerHTML = '<span aria-hidden="true">📤</span> Share session';
+  shareBtn.innerHTML = `
+    <svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
+    <span>Share session</span>`;
   shareBtn.addEventListener('click', async () => {
     try {
       const mod = await import('./replay/share-dialog.js');
       mod.openShareDialog({
-        defaultTab: 'graphs',
         getGraphsState: () => getCurrentGraphsState(),
       });
     } catch (err) {

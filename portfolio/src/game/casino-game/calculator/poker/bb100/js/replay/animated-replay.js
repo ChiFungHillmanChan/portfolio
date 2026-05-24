@@ -17,7 +17,7 @@
 import { extractActions } from "./action-extractor.js";
 import { buildSnapshots } from "./state-engine.js";
 import { buildTable, renderSnapshot } from "./table-renderer.js";
-import { openShareDialog, closeShareDialog } from "./share-dialog.js";
+import { openVideoShareDialog, closeVideoShareDialog } from "./video-share-dialog.js";
 
 const MODAL_ID = "animatedReplayModal";
 const PREFS_KEY = "poker-replay-prefs-v1";
@@ -92,7 +92,7 @@ function ensureModal() {
           <button type="button" class="replay-view-tab active" data-view="table" role="tab" aria-selected="true">Table</button>
           <button type="button" class="replay-view-tab" data-view="log" role="tab" aria-selected="false">Text log</button>
         </div>
-        <button type="button" class="replay-modal-share" data-replay-action="share" aria-label="Share as video" title="Share as video"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
+        <button type="button" class="replay-modal-share" data-replay-action="share" aria-label="Share hand as video" title="Share hand as video"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg></button>
         <button type="button" class="replay-modal-close" data-replay-action="close" aria-label="Close"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/></svg></button>
       </div>
       <div class="replay-modal-body replay-modal-body-animated">
@@ -140,18 +140,17 @@ function onModalClick(e) {
     closeModal();
     return;
   }
-  // Share — opens the tabbed share dialog. Pauses live playback so the
-  // user's chosen speed/unit are stable while they pick options. The dialog
-  // defaults to the Hands tab (existing video flow) but exposes the Graphs
-  // tab too, in case the user wants to share session stats instead.
+  // Per-hand video share — strictly scoped to THIS hand. Opens a separate
+  // dialog (video-share-dialog.js) that drives MediaRecorder via the live
+  // replay canvas. Completely independent of the chart card's "Share
+  // session" button which only deals with anonymised session graphs.
   if (target.closest('[data-replay-action="share"]')) {
     setPlaying(false);
     if (state) {
-      openShareDialog({
+      openVideoShareDialog({
         host: state.modal,
-        defaultTab: "hands",
         durationFn: durationForEvent,
-        getReplayState: () => ({
+        getState: () => ({
           snapshots: state.snapshots,
           extracted: state.extracted,
           speed: state.speed,
@@ -159,7 +158,6 @@ function onModalClick(e) {
           bbDollars: state.bbDollars,
           title: state.modal.querySelector(".replay-modal-title")?.textContent || "Poker Hand Replay",
         }),
-        getGraphsState: state.getGraphsState || null,
       });
     }
     return;
@@ -500,7 +498,7 @@ function switchView(view) {
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-export function showReplay(handText, { title, getGraphsState } = {}) {
+export function showReplay(handText, { title } = {}) {
   const modal = ensureModal();
   const extracted = extractActions(handText);
   const { snapshots } = buildSnapshots(extracted);
@@ -530,10 +528,6 @@ export function showReplay(handText, { title, getGraphsState } = {}) {
     timer: null,
     unit: prefs.unit,  // user-toggleable via $/BB pill, persisted across opens
     bbDollars,        // for BB conversion
-    // Optional callback the caller supplies so the share-dialog's Graphs tab
-    // can build a session-wide snapshot from inside the replay modal. When
-    // omitted, the Graphs tab in the share dialog shows "load a session first".
-    getGraphsState: typeof getGraphsState === "function" ? getGraphsState : null,
   };
 
   // Restore saved prefs (speed + $/BB unit). setSpeed/setUnit also persist,
