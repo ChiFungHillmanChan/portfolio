@@ -262,9 +262,9 @@ function renderPlanControl(user, game) {
             if (!user.plans[game.id]) user.plans[game.id] = {};
             user.plans[game.id].tier = t.id;
             user.plans[game.id].tierSource = "admin";
-            const card = block.parentNode;
-            if (card && card.parentNode) {
-              card.parentNode.replaceChild(renderPlanControl(user, game), block);
+            const parent = block.parentNode;
+            if (parent) {
+              parent.replaceChild(renderPlanControl(user, game), block);
             }
             // Stats may have shifted — invalidate cache so next open refetches.
             statsCache = null;

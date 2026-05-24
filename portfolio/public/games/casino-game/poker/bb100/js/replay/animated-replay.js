@@ -554,5 +554,5 @@ export function closeModal() {
   modal.hidden = true;
   document.body.style.overflow = "";
   // Make sure the share sub-dialog doesn't outlive the parent modal.
-  closeShareDialog();
+  closeVideoShareDialog();
 }
