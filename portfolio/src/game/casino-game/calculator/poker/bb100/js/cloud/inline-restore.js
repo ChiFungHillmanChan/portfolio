@@ -277,10 +277,19 @@ function onSessionOpenedEvent(evt) {
 
   if (replayPending) {
     setStatus(
-      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Chart ready · ${handCount.toLocaleString()} hands · scroll down to view it.`,
+      `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polyline points="5 12 10 17 19 7"/></svg> Chart ready · ${handCount.toLocaleString()} hands · loading replay data…`,
       "ok",
     );
     renderReplayRow(currentOpenedMeta);
+    // Auto-trigger replay download so users don't have to click an extra
+    // button before they can scrub through individual hands. The chart is
+    // already up at this point, so the extra MB download happens in the
+    // background while the user looks at the curves. If it fails (network,
+    // user aborts), onLoadReplays re-renders the manual button so they
+    // can retry without reloading the session.
+    onLoadReplays().catch((err) =>
+      console.warn("[poker inline restore] auto-load replays failed:", err)
+    );
   } else {
     // Slow-path opens already include replay data — nothing extra to offer.
     setStatus(
