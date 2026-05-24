@@ -1,0 +1,23 @@
+name = "share-router"
+main = "src/index.js"
+compatibility_date = "2025-05-15"
+
+# Route this Worker on the casino-game subdomain. Cloudflare runs it BEFORE
+# the Pages project, so /p/{id} is rewritten with OG meta and any other path
+# falls through to PAGES_ORIGIN below.
+routes = [
+  { pattern = "casino-game.hillmanchan.com/*", custom_domain = false }
+]
+
+[vars]
+# Origin to forward all non-/p/* requests + the page request itself. If the
+# casino-game subdomain is served by a Pages project, set PAGES_ORIGIN to a
+# DIFFERENT hostname that points at the same project (e.g. the *.pages.dev
+# URL), otherwise the Worker route will loop. Common pattern:
+#
+#   casino-game.hillmanchan.com   → Worker route (this file)
+#   casino-game-pages.hillmanchan.com → Pages project direct URL
+#
+PAGES_ORIGIN = "https://casino-game-pages.hillmanchan.com"
+POKER_API_BASE = "https://api.system-design.hillmanchan.com"
+OG_IMAGE_DEFAULT = "https://hillmanchan.com/games/casino-game/poker/bb100/share/og-default.png"

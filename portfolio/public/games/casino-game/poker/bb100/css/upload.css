@@ -200,6 +200,33 @@
 @media (max-width: 768px) { #evChart { height: 320px !important; } }
 .series-toggle { display: inline-flex; align-items: center; gap: 0.35rem; cursor: pointer; font-size: 0.9rem; user-select: none; }
 .series-toggle input { cursor: pointer; }
+/* "Share session" button — sits at the end of .chart-controls; opens the
+   share dialog defaulting to the Graphs tab. Pushed to the far right so it
+   stays out of the way of the line/rake toggles on desktop while remaining
+   the obvious next action.  */
+.chart-share-btn {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.35);
+  color: #4ade80;
+  padding: 0.4rem 0.9rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+.chart-share-btn:hover {
+  background: rgba(74, 222, 128, 0.2);
+  color: #5eea96;
+}
+@media (max-width: 720px) {
+  .chart-share-btn { margin-left: 0; width: 100%; justify-content: center; }
+}
 /* === Summary: header strip + side-by-side Before/After Rake cards ======= */
 .upload-summary {
   display: flex;

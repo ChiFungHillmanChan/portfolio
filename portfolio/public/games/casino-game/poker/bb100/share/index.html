@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0a0f">
+  <title id="pageTitle">Poker Stats Share — hillmanchan.com</title>
+
+  <!--
+    OG / Twitter meta. Crawlers (WhatsApp / IG DM / Slack / Twitter) do NOT run
+    JavaScript — these tags must be in the initial HTML response. The
+    Cloudflare Worker at /p/{id} rewrites these via HTMLRewriter using values
+    from /poker/get-share-meta. The defaults below are the fallback when the
+    worker is unavailable; they are intentionally generic so password-protected
+    shares don't leak stats to crawlers.
+  -->
+  <meta property="og:type"        content="website">
+  <meta property="og:title"       id="ogTitle"       content="Poker stats share — hillmanchan.com">
+  <meta property="og:description" id="ogDesc"        content="A shared snapshot of poker session stats — no hand details included.">
+  <meta property="og:image"       id="ogImage"       content="https://hillmanchan.com/games/casino-game/poker/bb100/share/og-default.png">
+  <meta property="og:url"         id="ogUrl"         content="https://casino-game.hillmanchan.com/">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="Poker stats share">
+  <meta name="twitter:description" content="A shared snapshot of poker session stats — no hand details included.">
+  <meta name="twitter:image"      content="https://hillmanchan.com/games/casino-game/poker/bb100/share/og-default.png">
+
+  <link rel="stylesheet" href="./share.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" crossorigin="anonymous"></script>
+</head>
+<body class="share-page">
+  <header class="share-header">
+    <a class="share-brand" href="https://hillmanchan.com" rel="noopener">← hillmanchan.com</a>
+    <span class="share-watermark">Poker Hand Recorder · Shared snapshot</span>
+  </header>
+
+  <main class="share-root">
+    <!-- Loading state -->
+    <div class="share-state" id="loadingState" role="status" aria-live="polite">
+      <div class="share-spinner"></div>
+      <p>Loading shared stats…</p>
+    </div>
+
+    <!-- Error state -->
+    <div class="share-state" id="errorState" hidden role="alert">
+      <h1 class="share-error-title" id="errorTitle">Could not load share</h1>
+      <p class="share-error-msg" id="errorMsg"></p>
+      <a class="share-cta" href="https://casino-game.hillmanchan.com">Open Hand Recorder →</a>
+    </div>
+
+    <!-- Password gate -->
+    <div class="share-state" id="passwordState" hidden>
+      <h1 class="share-error-title">🔒 Password protected</h1>
+      <p class="share-error-msg" id="passwordTitle"></p>
+      <form id="passwordForm" class="share-password-form">
+        <input type="password" id="passwordInput" class="share-input" placeholder="Enter password" autocomplete="current-password" required minlength="4" maxlength="64" />
+        <button type="submit" class="share-cta">Unlock</button>
+      </form>
+      <p class="share-error-msg" id="passwordError" hidden></p>
+    </div>
+
+    <!-- Content -->
+    <section class="share-content" id="content" hidden>
+      <header class="share-title-block">
+        <h1 class="share-title" id="title"></h1>
+        <div class="share-meta">
+          <span class="share-chip" id="handsChip"></span>
+          <span class="share-chip" id="periodChip"></span>
+          <span class="share-chip" id="stakesChip"></span>
+        </div>
+      </header>
+
+      <!-- Summary cards (Before / After rake + Rake paid) -->
+      <div class="share-summary" id="summary"></div>
+
+      <!-- Chart with controls (toggles match main app) -->
+      <div class="share-chart-card">
+        <div class="share-chart-controls" id="chartControls">
+          <fieldset class="share-toggle-group">
+            <legend>Series</legend>
+            <label><input type="checkbox" data-line="winnings" checked /> <span class="dot" style="--c:#4ade80"></span> Winnings</label>
+            <label><input type="checkbox" data-line="ev" checked /> <span class="dot" style="--c:#fb923c"></span> All-in EV</label>
+            <label><input type="checkbox" data-line="red" /> <span class="dot" style="--c:#ef4444"></span> Red (non-SD)</label>
+            <label><input type="checkbox" data-line="blue" /> <span class="dot" style="--c:#3b82f6"></span> Blue (SD)</label>
+          </fieldset>
+          <fieldset class="share-toggle-group">
+            <legend>Rake</legend>
+            <label><input type="radio" name="rake" value="after" checked /> After rake</label>
+            <label><input type="radio" name="rake" value="before" /> Before rake</label>
+          </fieldset>
+          <fieldset class="share-toggle-group">
+            <legend>Unit</legend>
+            <label><input type="radio" name="unit" value="bb" checked /> BB</label>
+            <label><input type="radio" name="unit" value="usd" /> $</label>
+          </fieldset>
+          <div class="share-toggle-actions">
+            <button type="button" id="zoomOutBtn" class="share-zoom-btn" hidden aria-label="Reset zoom">⤺ Reset zoom</button>
+            <button type="button" id="fullscreenBtn" class="share-zoom-btn" aria-label="Enlarge chart">⤢ Enlarge</button>
+          </div>
+        </div>
+        <div class="share-chart-wrap" id="chartWrap">
+          <canvas id="evChart"></canvas>
+        </div>
+        <div class="share-chart-footer" id="chartFooter"></div>
+      </div>
+
+      <!-- By-position table -->
+      <div class="share-position-card" id="positionCard"></div>
+
+      <footer class="share-footer">
+        <p class="share-footer-meta" id="footerMeta"></p>
+        <p class="share-footer-cta">
+          Want to record your own?
+          <a href="https://casino-game.hillmanchan.com" rel="noopener">Open Hand Recorder →</a>
+        </p>
+        <p class="share-footer-disclaimer">
+          This snapshot is frozen at the moment it was shared. Edits or deletions by the
+          owner after that don't affect what you see here.
+        </p>
+      </footer>
+    </section>
+  </main>
+
+  <script type="module" src="./share.js"></script>
+</body>
+</html>
