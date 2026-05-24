@@ -92,7 +92,7 @@ function onDialogClick(e) {
   if (exporting && target.closest('[data-share-action="close"]')) return; // can't bail mid-encode
 
   const closeTarget = target.closest('[data-share-action="close"]');
-  if (closeTarget) { closeShareDialog(); return; }
+  if (closeTarget) { closeVideoShareDialog(); return; }
 
   const exportBtn = target.closest('[data-share-action="export"]');
   if (exportBtn) { startExport(); return; }
@@ -109,7 +109,7 @@ function onKeyDown(e) {
   if (!dialogEl || dialogEl.hidden) return;
   if (e.key === "Escape" && !exporting) {
     e.preventDefault();
-    closeShareDialog();
+    closeVideoShareDialog();
   }
 }
 

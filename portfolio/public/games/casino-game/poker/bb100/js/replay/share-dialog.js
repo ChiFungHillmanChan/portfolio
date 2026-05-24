@@ -98,9 +98,24 @@ function ensureDialog() {
           <div class="replay-share-expire" data-expire-container></div>
         </section>
 
-        <!-- Password gate field — wrapped in a form for browser warning compliance -->
+        <!-- Password gate field — wrapped in a form for browser warning
+             compliance. The visually-hidden username field is required by
+             accessibility heuristics (browsers + password managers expect
+             every password input to have an associated username). It's
+             never submitted (the form is onsubmit=return false) and is
+             tab-skipped via aria-hidden + tabindex="-1". -->
         <form class="replay-share-row replay-share-pw-row" data-row="password" autocomplete="off"
               onsubmit="return false;">
+          <input
+            type="text"
+            class="replay-share-pw-username"
+            name="username"
+            autocomplete="username"
+            aria-hidden="true"
+            tabindex="-1"
+            value="share-owner"
+            readonly
+          />
           <label class="replay-share-toggle">
             <input type="checkbox" id="sharePasswordToggle" />
             <span>Protect with a password</span>

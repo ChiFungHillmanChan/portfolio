@@ -230,6 +230,22 @@
   padding: 0;
 }
 
+/* Visually-hidden username input — present only to satisfy browser /
+   password-manager heuristics that warn when a password field has no
+   associated username. We never submit or display this value. */
+.replay-share-pw-username {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .replay-share-row-label {
   flex: 0 0 100%;
   font-size: 12px;

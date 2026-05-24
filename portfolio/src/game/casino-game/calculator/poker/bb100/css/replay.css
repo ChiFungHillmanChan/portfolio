@@ -230,6 +230,22 @@
   padding: 0;
 }
 
+/* Visually-hidden username input — present only to satisfy browser /
+   password-manager heuristics that warn when a password field has no
+   associated username. We never submit or display this value. */
+.replay-share-pw-username {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
 .replay-share-row-label {
   flex: 0 0 100%;
   font-size: 12px;
@@ -1039,6 +1055,18 @@
   font-family: 'JetBrains Mono', monospace;
   font-weight: 700;
   font-size: 12px;
+}
+
+/* Check chip — same shape/position as bet chip but no money in pot, so
+   render in a muted slate tone instead of the yellow money-chip fill. */
+.poker-table .bet-chip.check-chip .chip-bg {
+  fill: #cbd5e1;
+  stroke: rgba(0,0,0,0.45);
+}
+.poker-table .bet-chip.check-chip .chip-text {
+  fill: #0f172a;
+  font-size: 11px;
+  letter-spacing: 0.5px;
 }
 
 /* Dealer button */

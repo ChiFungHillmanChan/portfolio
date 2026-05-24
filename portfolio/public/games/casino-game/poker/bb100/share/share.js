@@ -35,8 +35,15 @@ const state = {
 
 // ── Boot ────────────────────────────────────────────────────────────────────
 
+// The share viewer is reached via CloudFront URL rewrite: /p/{id} is
+// transparently rewritten to /games/casino-game/poker/bb100/share/index.html
+// ON THE ORIGIN. The browser still sees /p/{id} as its location, so
+// location.search is EMPTY in production — we must read the id from the
+// pathname. Older builds used ?id= so we keep that as a fallback for
+// developer testing and any other entry point.
 const params = new URLSearchParams(location.search);
-state.shareId = params.get("id");
+const pathMatch = /^\/p\/([A-Za-z0-9_-]{8,32})\/?$/.exec(location.pathname);
+state.shareId = pathMatch ? pathMatch[1] : params.get("id");
 
 if (!state.shareId || !/^[A-Za-z0-9_-]{8,32}$/.test(state.shareId)) {
   showError("Invalid share link", "The URL doesn't look like a real share ID.");
