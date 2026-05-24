@@ -13,7 +13,9 @@
 import { apiCall } from "../auth/api-client.js";
 
 const SERIES_KEYS = ["winningsUC", "redUC", "blueUC", "evUC"];
-// Matches MAX_POINTS in backend share-stats.mjs — keep in sync.
+// Target points after downsampling. We always append the exact final value
+// after the stride loop (so the cumulative end stays correct), which can
+// push the output to MAX_POINTS+1 — the backend cap is 5500 to absorb that.
 const MAX_POINTS = 5000;
 
 // ── Payload prep ─────────────────────────────────────────────────────────────

@@ -530,6 +530,17 @@ async function onCreateShare() {
     creatingGraph = false;
     setProgress("graphs", false, 0, "");
     refreshGraphsPrimaryEnabled();
+    // Log the raw API error + a structural summary of the payload that was
+    // sent so we can debug failed shares without seeing the actual stats.
+    // (Privacy-safe — just key names, array lengths, and a hands count.)
+    console.error("[share-dialog] createStatsShare failed:", err?.message || err, {
+      summaryKeys: Object.keys(payload?.summary || {}),
+      sbKeys: Object.keys(payload?.seriesBefore || {}),
+      saKeys: Object.keys(payload?.seriesAfter || {}),
+      sbWinLen: Array.isArray(payload?.seriesBefore?.winningsUC) ? payload.seriesBefore.winningsUC.length : null,
+      saWinLen: Array.isArray(payload?.seriesAfter?.winningsUC) ? payload.seriesAfter.winningsUC.length : null,
+      summaryHands: payload?.summary?.hands,
+    });
     setError("graphs", explainCreateError(err));
     return;
   }
