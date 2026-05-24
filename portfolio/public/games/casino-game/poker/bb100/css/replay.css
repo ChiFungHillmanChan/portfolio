@@ -194,6 +194,7 @@
 
 .replay-share-orient {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 

@@ -96,6 +96,13 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
   // derived). We use the AFTER-rake bb/100 + totalAfterUC pair as anchor.
   const rakePaidBb = ucToBb(summary.rakePaidUC, summary.bbPer100After, hands, summary.totalAfterUC);
 
+  // $ value of 1 BB in this session. We try BEFORE-rake first because it
+  // can't be zero (your gross winrate must be non-zero if you've actually
+  // played hands — even pure flat-line is zero net of variance). Falls back
+  // to after-rake then to the meta-supplied stake. Bounded so a malformed
+  // session can't break the share page chart.
+  const bbValueUsd = computeBbValueUsd(summary, hands, meta);
+
   const sanitisedSummary = {
     hands,
     bbPer100Before: Number(summary.bbPer100Before) || 0,
@@ -104,6 +111,7 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
     evBbPer100After:  Number(summary.evBbPer100After)  || 0,
     rakeBbPer100:   Number(summary.rakeBbPer100)   || 0,
     rakePaidBb,
+    bbValueUsd,
     totalBefore: ucToNumber(summary.totalBeforeUC) / 1e6,
     totalAfter:  ucToNumber(summary.totalAfterUC)  / 1e6,
     byPosition: flattenPositionMap(summary.byPosition),
@@ -122,6 +130,30 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
     seriesBefore: downsampleForShare(seriesBefore),
     seriesAfter:  downsampleForShare(seriesAfter),
   };
+}
+
+function computeBbValueUsd(summary, hands, meta) {
+  // Anchor on whichever bb/100 + total pair is non-zero. Both before and
+  // after rake should give the same answer (they reference the same BB),
+  // so we just need ONE that doesn't divide by zero.
+  const totalBeforeUsd = ucToNumber(summary.totalBeforeUC) / 1e6;
+  const totalAfterUsd  = ucToNumber(summary.totalAfterUC)  / 1e6;
+  const bb100Before = Number(summary.bbPer100Before) || 0;
+  const bb100After  = Number(summary.bbPer100After)  || 0;
+
+  const tryPair = (total, bb100) => {
+    if (!hands || Math.abs(bb100) < 0.001) return null;
+    const v = total / (bb100 * hands / 100);
+    if (!Number.isFinite(v) || v <= 0) return null;
+    return v;
+  };
+
+  return (
+    tryPair(totalBeforeUsd, bb100Before) ??
+    tryPair(totalAfterUsd, bb100After) ??
+    Number(meta?.bbValueUsd) ||
+    1                                  // Safe default; share page will treat as NL100-equivalent
+  );
 }
 
 function flattenPositionMap(byPos) {

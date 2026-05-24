@@ -160,8 +160,10 @@ function ensureDialog() {
             </div>
           </section>
           <p class="replay-share-hint">
-            The video uses your current speed and $/BB toggle. Change them in the
-            main controls before exporting if you want the recording to differ.
+            Uses your current speed and $/BB toggle — change those first if needed.
+            <br>
+            <strong>4:3</strong> shows the table largest (best for reading on phone).
+            <strong>9:16</strong> is for Reels / TikTok.
           </p>
           <div class="replay-share-quota" data-quota="hands">
             <span class="replay-share-quota-label">Daily video-share quota</span>

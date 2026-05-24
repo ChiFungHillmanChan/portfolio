@@ -11,7 +11,8 @@
 //   1. Apply the snapshot to a hidden copy of the live table SVG.
 //   2. Serialize the SVG (with inlined .poker-table CSS rules) → blob URL.
 //   3. Load that blob as an <img>, drawImage() onto an off-screen canvas
-//      at the target orientation (16:9 = 1920×1080, 9:16 = 1080×1920).
+//      at the target orientation (16:9 = 1920×1080, 9:16 = 1080×1920,
+//      4:3 = 1440×1080, 3:4 = 1080×1440).
 //   4. canvas.captureStream(30) is attached to a MediaRecorder; the stream
 //      samples the canvas as we hold each frame for the user's chosen
 //      per-event duration (matches the live playback at the same speed).
@@ -24,12 +25,23 @@
 
 import { buildTable, renderSnapshot } from "./table-renderer.js";
 
+// Match the SVG viewBox produced by table-renderer.js — VIEW_W=720 and
+// VIEW_H=460 + VIEWBOX_PAD_BOTTOM=30. Getting this aspect ratio right is
+// what keeps the felt circular instead of squashed when we drawImage().
 const SOURCE_W = 720;
-const SOURCE_H = 460;
+const SOURCE_H = 490;
 
+// Listed widest-landscape → tallest-portrait so the share dialog renders
+// the orientation pills in a visually progressive order. Adding 4:3 / 3:4
+// because pure 16:9 / 9:16 leaves the landscape poker table either too
+// narrow (16:9) or surrounded by huge letterbox bands (9:16). 4:3 gives
+// the table 80–90% of the frame; 3:4 nearly doubles the table area
+// compared to 9:16 on a phone-portrait screen.
 const ORIENTATIONS = {
-  "16:9": { width: 1920, height: 1080, label: "Landscape (16:9)" },
-  "9:16": { width: 1080, height: 1920, label: "Portrait (9:16)"  },
+  "16:9": { width: 1920, height: 1080, label: "16:9" },
+  "4:3":  { width: 1440, height: 1080, label: "4:3"  },
+  "3:4":  { width: 1080, height: 1440, label: "3:4"  },
+  "9:16": { width: 1080, height: 1920, label: "9:16" },
 };
 
 // Cap individual-frame holds so a single deal/showdown can't blow past
@@ -170,59 +182,72 @@ function paintBackground(ctx, w, h) {
   ctx.fillRect(0, 0, w, h);
 }
 
-function paintHeader(ctx, { width, title, subtitle }) {
+function paintHeader(ctx, { width, headerH, title, subtitle }) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.92)";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
-  // Title — scales with width so the same code works at 1080 and 1920.
-  const titleSize = Math.round(width * 0.034);
+  // Sizes are proportional to the *reserved* band, not the canvas width.
+  // That keeps the title from spilling into the table when reserves shrink
+  // (which they do — see computeLayout — to give the felt more room).
+  const padTop = Math.round(headerH * 0.18);
+  const titleSize = subtitle
+    ? Math.round(headerH * 0.38)
+    : Math.round(headerH * 0.46);
+  const gap = subtitle ? Math.round(headerH * 0.06) : 0;
+  const subSize = subtitle ? Math.round(headerH * 0.22) : 0;
   ctx.font = `700 ${titleSize}px "Inter","Segoe UI",system-ui,sans-serif`;
-  ctx.fillText(title, width / 2, Math.round(width * 0.025));
+  ctx.fillText(title, width / 2, padTop);
   if (subtitle) {
-    const subSize = Math.round(width * 0.022);
     ctx.font = `500 ${subSize}px "Inter","Segoe UI",system-ui,sans-serif`;
     ctx.fillStyle = "rgba(180, 220, 195, 0.85)";
-    ctx.fillText(
-      subtitle,
-      width / 2,
-      Math.round(width * 0.025) + titleSize + 8
-    );
+    ctx.fillText(subtitle, width / 2, padTop + titleSize + gap);
   }
   ctx.restore();
 }
 
-function paintFooter(ctx, { width, height, speed, unit }) {
+function paintFooter(ctx, { width, height, footerH, speed, unit }) {
   ctx.save();
   ctx.fillStyle = "rgba(255, 255, 255, 0.65)";
   ctx.textAlign = "center";
   ctx.textBaseline = "bottom";
-  const size = Math.round(width * 0.02);
+  const size = Math.round(footerH * 0.40);
+  const padBottom = Math.round(footerH * 0.30);
   ctx.font = `500 ${size}px "Inter","Segoe UI",system-ui,sans-serif`;
   const speedLabel = `${speed}× speed`;
   const unitLabel = unit === "bb" ? "BB" : "$";
   ctx.fillText(
     `${speedLabel} • ${unitLabel} • hillmanchan.com`,
     width / 2,
-    height - Math.round(width * 0.02)
+    height - padBottom
   );
   ctx.restore();
 }
 
-// Compute the table's drawing rect inside the target canvas. Both
-// orientations letterbox the source SVG (16:9 with side bars because the
-// SVG is slightly taller than 16:9; 9:16 with big top/bottom bars). We
-// leave reserve space for header + footer so they don't clip the table.
-function computeTableRect(orientation) {
+// Compute the canvas layout — chrome reserves + the table's drawing rect.
+//
+// Earlier this routine reserved 12% of the *width* for the header and 6%
+// for the footer, which silently dominated portrait frames: a 9:16 canvas
+// (1080×1920) burned 195 px to chrome but the table still only filled
+// ~35% of the visible height because the landscape SVG can't grow past
+// the canvas width. The current rule keeps chrome proportional to the
+// shorter dimension and clamps to readable minima — so portrait now has
+// tight 80-ish-px bands and the table can grow into the freed space.
+function computeLayout(orientation) {
   const { width, height } = ORIENTATIONS[orientation];
-  // Vertical reserve for header + footer (proportional to width so it
-  // tracks the text sizes we paint).
-  const headerReserve = Math.round(width * 0.12);
-  const footerReserve = Math.round(width * 0.06);
-  const availH = height - headerReserve - footerReserve;
-  const availW = width - Math.round(width * 0.04); // small side padding
+  const headerH = Math.max(
+    80,
+    Math.min(Math.round(width * 0.10), Math.round(height * 0.12))
+  );
+  const footerH = Math.max(
+    40,
+    Math.min(Math.round(width * 0.05), Math.round(height * 0.06))
+  );
+  const sidePad = Math.max(14, Math.round(width * 0.015));
+  const availH = height - headerH - footerH;
+  const availW = width - sidePad * 2;
 
-  const srcRatio = SOURCE_W / SOURCE_H;     // ≈ 1.565
+  const srcRatio = SOURCE_W / SOURCE_H; // ≈ 1.469 (landscape)
   let dW = availW;
   let dH = dW / srcRatio;
   if (dH > availH) {
@@ -230,10 +255,16 @@ function computeTableRect(orientation) {
     dW = dH * srcRatio;
   }
   return {
-    x: Math.round((width - dW) / 2),
-    y: headerReserve + Math.round((availH - dH) / 2),
-    w: Math.round(dW),
-    h: Math.round(dH),
+    width,
+    height,
+    headerH,
+    footerH,
+    tableRect: {
+      x: Math.round((width - dW) / 2),
+      y: headerH + Math.round((availH - dH) / 2),
+      w: Math.round(dW),
+      h: Math.round(dH),
+    },
   };
 }
 
@@ -284,8 +315,8 @@ export async function exportReplayVideo({
     throw new Error("no snapshots");
   }
 
-  const { width, height } = ORIENTATIONS[orientation];
-  const tableRect = computeTableRect(orientation);
+  const layout = computeLayout(orientation);
+  const { width, height, headerH, footerH, tableRect } = layout;
 
   // Build off-screen DOM
   const { wrap, refs, svg } = buildOffscreenTable(snapshots[0]);
@@ -313,7 +344,8 @@ export async function exportReplayVideo({
 
   // Tiny opening hold so the very first state reads before the first action.
   await drawFrame({
-    ctx, svg, refs, snap: snapshots[0], width, height, tableRect,
+    ctx, svg, refs, snap: snapshots[0],
+    width, height, headerH, footerH, tableRect,
     title, subtitle, speed, unit, bbDollars,
   });
   await sleep(700);
@@ -323,7 +355,8 @@ export async function exportReplayVideo({
   // the event the snapshot represents (i.e. event index = i - 1).
   for (let i = 0; i < snapshots.length; i++) {
     await drawFrame({
-      ctx, svg, refs, snap: snapshots[i], width, height, tableRect,
+      ctx, svg, refs, snap: snapshots[i],
+      width, height, headerH, footerH, tableRect,
       title, subtitle, speed, unit, bbDollars,
     });
 
@@ -372,7 +405,7 @@ function buildSubtitle(extracted) {
 }
 
 async function drawFrame({
-  ctx, svg, refs, snap, width, height, tableRect,
+  ctx, svg, refs, snap, width, height, headerH, footerH, tableRect,
   title, subtitle, speed, unit, bbDollars,
 }) {
   // Apply snapshot to the hidden SVG, then rasterize.
@@ -382,7 +415,7 @@ async function drawFrame({
   const img = await svgToImage(svg);
 
   paintBackground(ctx, width, height);
-  paintHeader(ctx, { width, title, subtitle });
+  paintHeader(ctx, { width, headerH, title, subtitle });
   ctx.drawImage(img, tableRect.x, tableRect.y, tableRect.w, tableRect.h);
-  paintFooter(ctx, { width, height, speed, unit });
+  paintFooter(ctx, { width, height, footerH, speed, unit });
 }

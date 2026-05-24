@@ -291,17 +291,11 @@ function renderChart() {
   // for the x-axis labels, so the gridlines read "10,000 / 20,000" like the
   // main recorder.
 
-  // Pick a sensible BB anchor:
-  //   total$ = bbPer100 * hands / 100 * bbValue  →  bbValue = total$ / (bbPer100 * hands / 100)
-  // We use After-rake totals as the anchor; if user toggles Before-rake the
-  // line values shift but the BB axis stays calibrated to the same "1 BB =
-  // $X" assumption — that mirrors how the main recorder behaves.
-  const anchorTotal = p.summary.totalAfter || 1;
-  const anchorBbPer100 = p.summary.bbPer100After || 1;
-  const handsTotal = p.summary.hands || n;
-  const bbValueUsd = anchorBbPer100 !== 0
-    ? anchorTotal / (anchorBbPer100 * handsTotal / 100)
-    : 0.01;
+  // BB anchor is included in the payload directly (computed by the frontend
+  // at share-create time from the raw stakes). Falling back to deriving it
+  // from bb/100 + totals is brittle — a break-even session has bb/100=0
+  // which would divide by zero — so the server now stores the explicit value.
+  const bbValueUsd = Number(p.summary.bbValueUsd) > 0 ? Number(p.summary.bbValueUsd) : 1;
 
   const toY = (uc) => {
     const dollars = (uc || 0) / 1e6;
