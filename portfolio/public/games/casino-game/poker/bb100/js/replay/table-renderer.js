@@ -400,17 +400,12 @@ export function renderSnapshot(refs, snap, opts = {}) {
     }
   }
 
-  // Pot — show only chips already swept to the center. Chips still sitting
-  // in front of players on the CURRENT street (tracked as p.committedStreet)
-  // belong to the player visually until the street ends; the state engine's
-  // running `snap.pot` adds them eagerly for accounting correctness, so we
-  // subtract them back out here at render time. On a street transition the
-  // engine resets committedStreet to 0, so the pot label naturally absorbs
-  // the previous street's commitments at exactly the right moment.
-  const committedInFront = Object.values(snap.players || {})
-    .reduce((sum, p) => sum + (p.committedStreet || 0), 0);
-  const displayedPot = Math.max(0, (snap.pot || 0) - committedInFront);
-  potText.textContent = `Pot ${fmtAmount(displayedPot, unit, bbDollars)}`;
+  // Pot — total committed including chips still in front of players on the
+  // current street. Matches real-world poker UIs (PokerStars, GG) where the
+  // pot label reads what's actually at stake. Per-player chips remain visible
+  // in front of their seats so you still see who bet what; the apparent
+  // "double count" is the convention every live table follows.
+  potText.textContent = `Pot ${fmtAmount(snap.pot || 0, unit, bbDollars)}`;
 
   // Players
   for (const [name, ref] of Object.entries(seatRefs)) {

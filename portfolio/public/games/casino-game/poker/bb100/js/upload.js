@@ -1337,7 +1337,10 @@ function renderChart(rawSeries) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      // Brief tween on chart recreate (line toggle, rake toggle, fresh
+      // upload) so series appear/disappear smoothly. Short enough not to
+      // feel laggy on zoom/pan, which use Chart.js's separate update path.
+      animation: { duration: 250, easing: 'easeOutQuart' },
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
