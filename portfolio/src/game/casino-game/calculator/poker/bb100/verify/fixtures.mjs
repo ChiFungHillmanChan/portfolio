@@ -15,48 +15,17 @@
 // editing this file.
 
 export const FIXTURES = {
-  '1815': {
-    label: '1815 hands (Desktop, single folder)',
+  '30125': {
+    label: '30125 hands (Downloads, two folders combined) — user-provided GGpoker checkpoints',
     folders: [
-      process.env.POKER_FIXTURE_1815
-        ?? '/Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8',
+      process.env.POKER_FIXTURE_30125_A
+        ?? '/Users/hillmanchan/Downloads/0000019e-5ad9-b554-0000-0000280dc4e8',
+      process.env.POKER_FIXTURE_30125_B
+        ?? '/Users/hillmanchan/Downloads/0000019e-5ada-9f72-0000-0000280dc4e8',
     ],
-    expectedHands: 1815,
-    checkpoints: [
-      [  100,  +0.81,  +0.81],
-      [  200,  +1.31,  +1.31],
-      [  300,  -0.28,  +0.15],
-      [  400,  +0.61,  +0.27],
-      [  500,  -0.33,  -2.17],
-      [  600,  -0.84,  -1.46],
-      [  700,  -1.22,  -3.25],
-      [  800,  +1.15,  -0.88],
-      [  900,  +1.04,  -0.99],
-      [ 1000,  +1.13,  -3.55],
-      [ 1100,  +2.35,  -1.33],
-      [ 1200,  +1.01,  -2.67],
-      [ 1300,  +0.17,  -3.51],
-      [ 1400,  +2.30,  -1.38],
-      [ 1500,  +1.10,  -1.41],
-      [ 1600,  +1.83,  -0.68],
-      [ 1700,  +8.82,  +6.31],
-      [ 1800, +11.04,  +8.53],
-      [ 1815, +11.23,  +8.72],
-    ],
-    finalBbPer100Before: null,
-    finalBbPer100After:  null,
-    finalRakePaidUC:     null,
-  },
-
-  '23795': {
-    label: '23795 hands (Desktop, two folders combined)',
-    folders: [
-      process.env.POKER_FIXTURE_23795_A
-        ?? '/Users/hillmanchan/Desktop/0000019e-4e65-4d50-0000-0000280dc4e8',
-      process.env.POKER_FIXTURE_23795_B
-        ?? '/Users/hillmanchan/Desktop/0000019e-4eed-7dc3-0000-0000280dc4e8',
-    ],
-    expectedHands: 23795,
+    // We parse 30,122 unique hands; GG dashboard reports 30,125 (3 missing in our parse).
+    // The user wants us to focus on the 30k checkpoints — final at 30,125 is informational.
+    expectedHands: 30122,
     checkpoints: [
       [ 1000,  -0.44,  +0.47],
       [ 2000,  +4.46,  +5.27],
@@ -81,7 +50,13 @@ export const FIXTURES = {
       [21000, +46.50, +53.73],
       [22000, +57.30, +67.79],
       [23000, +65.39, +76.44],
-      [23795, +65.28, +78.59],
+      [24000, +61.11, +73.26],
+      [25000, +66.32, +76.54],
+      [26000, +64.86, +76.47],
+      [27000, +76.20, +87.09],
+      [28000, +69.61, +71.85],
+      [29000, +76.40, +82.43],
+      [30000, +71.99, +82.08],
     ],
     finalBbPer100Before: null,
     finalBbPer100After:  null,
