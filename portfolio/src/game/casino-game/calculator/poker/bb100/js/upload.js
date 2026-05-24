@@ -1258,6 +1258,37 @@ function niceStep(range, targetTicks = 7) {
 // position; we binary-search the closest index for each round target, but
 // render the round number itself so the axis reads 5,000 / 10,000 (matching
 // PokerTracker/GG) instead of the off-by-N artifact of downsampling.
+// Bug guard: Chart.js + chartjs-plugin-zoom + a custom `afterBuildTicks`
+// that returns ticks at indices outside the current visible scale range
+// collapses the plot area to a tiny sliver (the layout engine tries to
+// fit out-of-range ticks within the canvas). Always scope ticks to the
+// currently visible portion of the labels array — initial render uses
+// the full array, after zoom/pan it's the sub-range.
+function applyNiceXTicksToScale(scale) {
+  const labels = scale.chart?.data?.labels;
+  if (!Array.isArray(labels) || labels.length === 0) return;
+  const lo = Math.max(0, Math.floor(scale.min ?? 0));
+  const hi = Math.min(labels.length - 1, Math.ceil(scale.max ?? labels.length - 1));
+  if (hi < lo) return;
+  const visibleSlice = labels.slice(lo, hi + 1);
+  const nice = pickNiceXTicks(visibleSlice, 7);
+  if (nice.length > 0) {
+    scale.ticks = nice.map((t) => ({ value: t.value + lo, displayLabel: t.displayLabel }));
+  }
+}
+
+// Chart.js does NOT re-run afterBuildTicks when the zoom plugin merely
+// shifts scale.min/max — only on full layout rebuild. So after a user
+// zoom/pan we have to recompute ticks for the new visible range and
+// trigger a paint. `update('none')` skips animation so the action feels
+// instant (zoom/pan should never lerp the chart).
+function rebuildXTicksOnVisibleRange(chart) {
+  const xScale = chart?.scales?.x;
+  if (!xScale) return;
+  applyNiceXTicksToScale(xScale);
+  chart.update('none');
+}
+
 function pickNiceXTicks(labels, targetTicks = 7) {
   if (!Array.isArray(labels) || labels.length === 0) return [];
   const lastHand = labels[labels.length - 1];
@@ -1372,11 +1403,7 @@ function renderChart(rawSeries) {
           // `n / maxTicksLimit` apart, which for downsampled series produces
           // labels like 2,220 / 4,439 / 6,658. Our nice-step ticks mirror what
           // PokerTracker/GG show.
-          afterBuildTicks: (scale) => {
-            const labels = scale.chart.data.labels;
-            const niceTicks = pickNiceXTicks(labels, 7);
-            if (niceTicks.length > 0) scale.ticks = niceTicks;
-          },
+          afterBuildTicks: applyNiceXTicksToScale,
           ticks: {
             color: '#a0a0b0',
             // We control ticks via afterBuildTicks — autoSkip would re-thin
@@ -1435,13 +1462,19 @@ function renderChart(rawSeries) {
             wheel: { enabled: true, modifierKey: 'shift' },
             pinch: { enabled: true },
             mode: 'x',
-            onZoomComplete: ({ chart }) => updateZoomOutButton(chart),
+            onZoomComplete: ({ chart }) => {
+              updateZoomOutButton(chart);
+              rebuildXTicksOnVisibleRange(chart);
+            },
           },
           pan: {
             enabled: true,
             mode: 'x',
             modifierKey: 'alt',
-            onPanComplete: ({ chart }) => updateZoomOutButton(chart),
+            onPanComplete: ({ chart }) => {
+              updateZoomOutButton(chart);
+              rebuildXTicksOnVisibleRange(chart);
+            },
           },
           limits: { x: { min: 'original', max: 'original', minRange: 5 } },
         },
