@@ -1,12 +1,17 @@
 /* share.css — Stylesheet for casino-game.hillmanchan.com/p/{id} share viewer.
-   Designed to read well on phone DM previews (WhatsApp/IG opens the link in
-   their in-app browser) AND on desktop tweets. Dark theme matches the main
-   recorder so visitors who already use the app feel at home. */
+   Mirrors the main recorder's results layout (.chart-card + .upload-summary
+   + .position-card) so the public viewer reads pixel-for-pixel like the
+   owner's own results page. The relevant rules are duplicated from
+   upload.css (rather than @import'd) so the share page stays self-
+   contained — no cross-page CSS dependencies.
+
+   The share-* classes are reserved for the share-page CHROME (header,
+   password gate, error states, footer). Everything inside the chart/
+   summary/position area uses the same class names as the main app. */
 
 :root {
   --bg-page: #0a0d14;
   --bg-card: #11161f;
-  --bg-card-2: #161c27;
   --border: rgba(255,255,255,0.08);
   --border-strong: rgba(255,255,255,0.15);
   --text: #e5e9f0;
@@ -15,10 +20,10 @@
   --accent: #4ade80;
   --orange: #fb923c;
   --red: #ef4444;
-  --blue: #3b82f6;
 }
 
-/* Inline SVG icon helper — sized 1em by default, scales with font-size. */
+* { box-sizing: border-box; }
+
 .ui-svg-icon {
   width: 1em;
   height: 1em;
@@ -26,12 +31,6 @@
   flex-shrink: 0;
   vertical-align: -0.125em;
 }
-
-/* Touch-friendly targets per Apple HIG / Material — applied where it matters
-   (toggles + buttons). All clickable elements should hit at least 44×44px on
-   touch screens. */
-
-* { box-sizing: border-box; }
 
 html, body {
   margin: 0;
@@ -71,20 +70,6 @@ body.share-page {
 }
 .share-brand .ui-svg-icon { width: 14px; height: 14px; }
 .share-brand:hover { color: var(--text); }
-
-/* ── Password lock icon (gate state) ────────────────────────────────── */
-.share-lock-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: rgba(255, 211, 77, 0.1);
-  color: #ffd34d;
-  margin: 0 auto 16px;
-}
-.share-lock-icon svg { width: 28px; height: 28px; }
 
 .share-watermark {
   color: var(--text-dimmer);
@@ -169,6 +154,19 @@ body.share-page {
   box-shadow: 0 0 0 3px rgba(74,222,128,0.2);
 }
 
+.share-lock-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: rgba(255, 211, 77, 0.1);
+  color: #ffd34d;
+  margin: 0 auto 16px;
+}
+.share-lock-icon svg { width: 28px; height: 28px; }
+
 /* ── Content ────────────────────────────────────────────────────────── */
 
 .share-content { display: block; }
@@ -200,248 +198,236 @@ body.share-page {
   letter-spacing: 0.02em;
 }
 
-/* ── Summary ────────────────────────────────────────────────────────── */
+/* ═════════════════════════════════════════════════════════════════════
+   ↓↓↓ MAIN-APP-MATCHING STYLES BELOW ↓↓↓
+   These class names + rules are mirrored from upload.css so the share
+   viewer's chart card + summary + position table look pixel-for-pixel
+   identical to the owner's own page in the recorder.
+   ═════════════════════════════════════════════════════════════════════ */
 
-.share-summary {
+/* === Chart card ========================================================== */
+
+.chart-card {
+  padding: 1.5rem;
+  background: #0a0a0f;
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 1.5rem;
+  cursor: crosshair;
+}
+
+.chart-controls {
   display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-bottom: 28px;
-}
-
-.share-summary-header {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.share-stat-tile {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 14px 16px;
-}
-
-.share-stat-rake {
-  border-color: rgba(251, 146, 60, 0.25);
-  background: rgba(251, 146, 60, 0.06);
-}
-
-.share-stat-value {
-  font-size: 22px;
-  font-weight: 700;
-  color: var(--text);
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  line-height: 1.2;
-}
-
-.share-stat-rake .share-stat-value { color: var(--orange); }
-
-.share-stat-label {
-  font-size: 11px;
-  color: var(--text-dimmer);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-top: 4px;
-}
-
-.share-summary-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 12px;
-}
-
-.share-summary-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 16px 18px;
-}
-
-.share-summary-before { border-left: 3px solid #60a5fa; }
-.share-summary-after  { border-left: 3px solid var(--accent); }
-
-.share-summary-card-title {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
-  margin-bottom: 12px;
-  font-weight: 600;
-}
-
-.share-summary-card-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
-
-.share-summary-card-grid .share-stat-tile {
-  padding: 10px 12px;
-  background: var(--bg-card-2);
-  border: 1px solid transparent;
-}
-
-.share-summary-card-grid .share-stat-value { font-size: 16px; }
-
-/* ── Chart ──────────────────────────────────────────────────────────── */
-
-.share-chart-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 28px;
-}
-
-.share-chart-controls {
-  display: flex;
+  gap: 1rem;
   flex-wrap: wrap;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 1rem;
 }
 
-.share-toggle-group {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 6px 10px;
-  display: inline-flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  margin: 0;
-  background: var(--bg-card-2);
+.chart-footer {
+  text-align: center;
+  color: #a0a0b0;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
-.share-toggle-group legend {
-  color: var(--text-dimmer);
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  padding: 0 4px;
+#evChart {
+  width: 100% !important;
+  height: 480px !important;
 }
 
-.share-toggle-group label {
+.series-toggle {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-dim);
+  gap: 0.35rem;
   cursor: pointer;
+  font-size: 0.9rem;
+  user-select: none;
 }
+.series-toggle input { cursor: pointer; }
 
-.share-toggle-group input[type="checkbox"],
-.share-toggle-group input[type="radio"] {
-  accent-color: var(--accent);
-  cursor: pointer;
-}
-
-.share-toggle-group label:hover { color: var(--text); }
-
-.share-toggle-group .dot {
-  width: 9px;
-  height: 9px;
-  background: var(--c, var(--accent));
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.share-toggle-actions {
-  margin-left: auto;
-  display: inline-flex;
-  gap: 8px;
-}
-
-.share-zoom-btn {
-  background: var(--bg-card-2);
-  border: 1px solid var(--border-strong);
-  color: var(--text-dim);
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-family: inherit;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.12s;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 36px;
-}
-.share-zoom-btn .ui-svg-icon { width: 14px; height: 14px; }
-.share-zoom-btn:hover {
-  color: var(--text);
-  border-color: rgba(74,222,128,0.4);
-  background: rgba(74,222,128,0.08);
-}
-
-.share-chart-wrap {
-  height: clamp(280px, 50vh, 540px);
-  position: relative;
-  background: var(--bg-card-2);
-  border-radius: 8px;
-  padding: 8px;
-}
-
-.share-chart-wrap:fullscreen {
+.chart-wrap { position: relative; }
+.chart-wrap:fullscreen {
   background: #06080d;
   padding: 24px;
 }
 
-.share-chart-footer {
-  margin-top: 10px;
-  font-size: 11.5px;
-  color: var(--text-dimmer);
-  text-align: center;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
+.chart-zoom-out-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 3rem;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: rgba(10,10,15,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: #e0e0ea;
+  font: 600 1.4rem/1 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.chart-zoom-out-btn:hover {
+  background: rgba(74,222,128,0.18);
+  border-color: rgba(74,222,128,0.6);
+  color: #4ade80;
+}
+.chart-zoom-out-btn:active { transform: scale(0.95); }
+.chart-zoom-out-btn[hidden] { display: none; }
+
+.chart-fullscreen-btn {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  z-index: 5;
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  background: rgba(10,10,15,0.85);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 6px;
+  color: #e0e0ea;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+}
+.chart-fullscreen-btn:hover {
+  background: rgba(74,222,128,0.18);
+  border-color: rgba(74,222,128,0.6);
+  color: #4ade80;
+}
+.chart-fullscreen-btn .ui-svg-icon { width: 16px; height: 16px; }
+
+/* === Summary: header strip + side-by-side Before/After Rake cards ======= */
+
+.upload-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 1.25rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 0.85rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 1.5rem;
 }
 
-/* ── Position table ─────────────────────────────────────────────────── */
-
-.share-position-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 18px;
-  margin-bottom: 28px;
-}
-
-.share-section-title {
-  font-size: 13px;
+.summary-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-dim);
-  margin: 0 0 12px;
-  font-weight: 600;
+  letter-spacing: 0.12em;
+  color: #c0c4cc;
 }
 
-.share-pos-table {
+.summary-header-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+}
+
+.summary-cards-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.summary-card {
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 0.7rem;
+  padding: 0.9rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+.summary-card.stat-before { border-left: 3px solid rgba(74,222,128,0.45); }
+.summary-card.stat-after  { border-left: 3px solid rgba(251,146,60,0.45); }
+
+.summary-card-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #8a8a96;
+}
+.summary-card.stat-before .summary-card-title { color: #4ade80; }
+.summary-card.stat-after  .summary-card-title { color: #fb923c; }
+
+.summary-card-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+/* Individual stat tile — used in both header row and cards */
+.stat-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.65rem;
+  background: rgba(15,15,23,0.5);
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+.stat-value {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #e6e6ee;
+  line-height: 1.25;
+  letter-spacing: 0.01em;
+}
+.stat-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.stat-block.stat-rake .stat-value { color: #fbbf24; }
+
+/* === Position table ==================================================== */
+
+.position-card {
+  padding: 1.5rem;
+  background: rgba(255,255,255,0.03);
+  border-radius: 0.75rem;
+  border: 1px solid rgba(255,255,255,0.08);
+  margin-bottom: 1.5rem;
+}
+.position-card h3 {
+  margin: 0 0 1rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #c0c4cc;
+}
+.pos-table {
   width: 100%;
   border-collapse: collapse;
 }
-
-.share-pos-table th,
-.share-pos-table td {
-  padding: 8px 12px;
+.pos-table th, .pos-table td {
+  padding: 0.5rem;
   text-align: left;
-  font-family: 'JetBrains Mono', ui-monospace, monospace;
-  font-size: 13px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.9rem;
+}
+.pos-table th {
+  color: #a0a0b0;
+  font-weight: 500;
 }
 
-.share-pos-table th {
-  font-size: 11px;
-  color: var(--text-dimmer);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 600;
-}
-
-.share-pos-table td:first-child { color: var(--text); font-weight: 600; }
-.share-pos-table td:last-child  { text-align: right; }
-.share-pos-positive { color: var(--accent); }
-.share-pos-negative { color: var(--red); }
-
-/* ── Footer ─────────────────────────────────────────────────────────── */
+/* === Share-page footer ================================================= */
 
 .share-footer {
   text-align: center;
@@ -482,112 +468,49 @@ body.share-page {
 }
 
 /* ─────────────────────────────────────────────────────────────────────
-   RESPONSIVE BREAKPOINTS
-   • Default (above 1024px) — desktop / iPad landscape
-   • 768-1024px              — iPad portrait
-   • 481-767px               — large phones / small tablets
-   • ≤ 480px                 — phones (compact)
-   The recorder uses the same dark theme on all devices.
+   RESPONSIVE BREAKPOINTS — match the main recorder's 768px breakpoint
    ───────────────────────────────────────────────────────────────────── */
 
-/* iPad portrait + small laptops (768-1024px). One-column-ish layout with
-   slightly tighter padding, but summary cards still side-by-side. */
-@media (max-width: 1024px) {
-  .share-root { padding: 20px 18px 64px; }
-  .share-title { font-size: 28px; }
-  .share-chart-wrap { height: clamp(280px, 55vh, 480px); }
+/* iPad / small laptop — same as main app's media query for the chart. */
+@media (max-width: 768px) {
+  #evChart { height: 320px !important; }
 }
 
-/* Tablet narrow + large phone (481-767px). Chart controls stack to a
-   column, summary cards still try to fit two-up if space allows. */
+/* Tablet narrow + large phone */
 @media (max-width: 767px) {
   .share-header { padding: 12px 16px; }
   .share-watermark { display: none; }
   .share-root { padding: 16px 14px 64px; }
   .share-title { font-size: 24px; line-height: 1.25; }
 
-  /* Chart controls become a column on narrow screens so each fieldset gets
-     full width. The fieldsets themselves wrap their labels naturally. */
-  .share-chart-controls {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .share-toggle-group {
-    width: 100%;
-    justify-content: flex-start;
-  }
-  .share-toggle-actions {
-    margin-left: 0;
-    width: 100%;
-    justify-content: space-between;
-  }
-  .share-zoom-btn {
-    flex: 1;
-    justify-content: center;
-    min-height: 44px;  /* touch target */
-  }
+  .upload-summary { padding: 1rem; gap: 0.7rem; }
+  .summary-header-row { grid-template-columns: 1fr; }
+  .summary-cards-row { grid-template-columns: 1fr; }
+  .summary-card { padding: 0.75rem 0.85rem; }
+  .stat-value { font-size: 0.9rem; }
+  .chart-controls { gap: 0.5rem; font-size: 0.85rem; }
+  .chart-card, .position-card { padding: 1rem; }
 
-  /* Summary cards: 2-up grid for stat tiles, last one spans full width */
-  .share-summary-card-grid {
-    grid-template-columns: 1fr 1fr;
-  }
-  .share-summary-card-grid .share-stat-tile:last-child {
-    grid-column: span 2;
-  }
+  .position-card { overflow-x: auto; }
+  .pos-table th, .pos-table td { padding: 8px 10px; font-size: 12px; white-space: nowrap; }
 
-  /* Larger label touch targets */
-  .share-toggle-group label {
-    padding: 6px 4px;
-    min-height: 32px;
-  }
-
-  /* Password gate: stacked input + button */
-  .share-password-form {
-    flex-direction: column;
-    max-width: 100%;
-    gap: 8px;
-  }
+  .share-password-form { flex-direction: column; max-width: 100%; gap: 8px; }
   .share-password-form .share-cta { width: 100%; min-height: 44px; }
-
   .share-state { padding: 56px 16px; }
-
-  /* Chart shorter on phones — preserves room for controls + summary */
-  .share-chart-wrap { height: clamp(240px, 45vh, 400px); }
-
-  /* Position table — let it scroll horizontally if needed rather than
-     crush column widths into illegibility. */
-  .share-position-card { overflow-x: auto; }
-  .share-pos-table th,
-  .share-pos-table td {
-    padding: 8px 10px;
-    font-size: 12px;
-    white-space: nowrap;
-  }
 }
 
-/* Compact phones (≤ 480px). Single-column everywhere, big touch targets. */
+/* Compact phones */
 @media (max-width: 480px) {
   .share-header { padding: 10px 14px; }
   .share-root { padding: 14px 12px 56px; }
   .share-title { font-size: 22px; }
 
-  .share-summary-header { grid-template-columns: 1fr; }
-  .share-summary-card-grid { grid-template-columns: 1fr; }
-  .share-summary-card-grid .share-stat-tile:last-child { grid-column: auto; }
-  .share-summary-card { padding: 14px 14px; }
-  .share-summary-card-grid .share-stat-value { font-size: 18px; }
+  #evChart { height: 280px !important; }
+  .chart-card, .position-card, .upload-summary { padding: 1rem 0.85rem; }
 
-  .share-chart-card { padding: 14px 12px; }
-  .share-chart-wrap { height: clamp(220px, 40vh, 360px); padding: 4px; }
-  .share-chart-footer { font-size: 11px; line-height: 1.5; }
-
-  .share-position-card { padding: 14px 14px; }
+  .share-meta { gap: 6px; }
+  .share-chip { font-size: 11px; padding: 4px 10px; }
 
   .share-footer { padding-top: 18px; }
   .share-footer-cta { font-size: 14px; }
-
-  /* Wrap the metadata chips so they don't push horizontal-scroll */
-  .share-meta { gap: 6px; }
-  .share-chip { font-size: 11px; padding: 4px 10px; }
 }
