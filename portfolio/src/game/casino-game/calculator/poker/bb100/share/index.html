@@ -24,7 +24,14 @@
   <meta name="twitter:description" content="A shared snapshot of poker session stats — no hand details included.">
   <meta name="twitter:image"      content="https://hillmanchan.com/games/casino-game/poker/bb100/share/og-default.png">
 
-  <link rel="stylesheet" href="./share.css">
+  <!-- Absolute paths matter here: the share-viewer HTML is served at
+       /games/casino-game/poker/bb100/share/index.html via the CloudFront
+       Function rewrite, but the URL the BROWSER sees is /p/{shareId}.
+       Relative paths (./share.css) resolve against /p/, hit /p/share.css
+       which doesn't exist → CloudFront 404→/index.html fallback returns
+       text/html → MIME-type module load fails. Absolute paths sidestep
+       the URL discrepancy entirely. -->
+  <link rel="stylesheet" href="/games/casino-game/poker/bb100/share/share.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8/hammer.min.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js" crossorigin="anonymous"></script>
@@ -122,6 +129,6 @@
     </section>
   </main>
 
-  <script type="module" src="./share.js"></script>
+  <script type="module" src="/games/casino-game/poker/bb100/share/share.js"></script>
 </body>
 </html>
