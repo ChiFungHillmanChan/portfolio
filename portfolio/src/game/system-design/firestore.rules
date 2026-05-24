@@ -76,5 +76,17 @@ service cloud.firestore {
       allow read:  if false;
       allow write: if false;
     }
+
+    // ── Poker stats-share metadata (server-only) ────────────────────────
+    // cg-poker writes one doc per shared snapshot. The PUBLIC read of a
+    // share goes through the Lambda (which fetches the actual payload
+    // from R2 and password-gates if needed) — clients NEVER read or write
+    // these docs directly. Closing all client access here means even if a
+    // malicious client knew a shareId, they couldn't bypass the password
+    // gate or revocation flag by talking to Firestore directly.
+    match /pokerShares/{shareId} {
+      allow read:  if false;
+      allow write: if false;
+    }
   }
 }

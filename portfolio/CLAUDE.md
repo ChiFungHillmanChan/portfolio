@@ -175,6 +175,62 @@ A collection of casino game training tools and calculators built with vanilla Ja
 - Game mode with statistics
 - Banker/Player/Tie betting
 
+### 4. Poker — Hand Recorder (bb100)
+
+**Location:** `poker/bb100/`
+**Embed URL:** `casino-game.hillmanchan.com/calculator/poker/bb100/`
+**Stack:** Vanilla JS + Chart.js + Firebase Auth (shared with system-design) + cg-poker Lambda
+
+Drag-and-drop GGPoker hand histories → parses in-browser, plots cumulative winnings + EV curves, computes bb/100 + by-position breakdown. Cloud save via Firebase Auth → Lambda → Cloudflare R2.
+
+**Per-tier storage limits** (cumulative hands stored):
+
+| Tier | Hands | Daily AI / Video shares |
+|---|---|---|
+| Free | 10,000 | 1 video/day |
+| Standard | 100,000 | unlimited |
+| Pro | 500,000 | unlimited |
+| Ultra | 5,000,000 | unlimited |
+
+**Share session graphs feature** (added 2026-05-24):
+
+Public URL: `https://casino-game.hillmanchan.com/p/{shareId}` — opens an immutable snapshot of the session's summary + Chart.js curves. Contains ZERO hand-level data (raw stakes / dates / hole cards all stripped or bucketed).
+
+| Layer | Where |
+|---|---|
+| Share dialog | `bb100/js/replay/share-dialog.js` (two tabs: Graphs / Hands) |
+| Entry: chart card | "📤 Share session" button in `bb100/js/upload.js#renderControls` |
+| Entry: replay modal | Existing "Share" button → defaults to Hands tab (video export) |
+| API wrapper | `bb100/js/cloud/share-stats.js` |
+| Viewer page | `bb100/share/{index.html,share.js,share.css}` |
+| URL routing | CloudFront Function `portfolio-subdomain-rewrite` rewrites `/p/{id}` → `share/index.html?id={id}` |
+| Backend Lambda actions | `cg-poker`: create-stats-share, get-stats-share, get-share-meta, list-my-shares, revoke-stats-share |
+| R2 storage | bucket `casino-poker-hands`, prefix `shared-stats/{shareId}.json` (immutable) |
+| Metadata | Firestore `pokerShares/{shareId}` (Admin SDK only — clients never read/write) |
+| Monthly counters | `pokerStorage/{uid}.shareGraphs` + `.shareHands` (UTC-month reset) |
+
+**Quotas:**
+
+| Tier | Graphs/month | Hands/month | Expiry | Password |
+|---|---|---|---|---|
+| Free | 4 | ❌ | 7 days locked | ❌ |
+| Standard | 30 | 30 | 7/30/90 days | ✅ |
+| Pro | 100 | 100 | 7/30/90/365 days | ✅ |
+| Ultra | unlimited | unlimited | + Forever | ✅ |
+| Superadmin | unlimited | unlimited | + Forever | ✅ |
+
+**Snapshot semantics:** R2 object is written once, never modified. Owner deleting / re-uploading their session does NOT affect the shared payload. Revocation flips Firestore `revoked: true` + deletes R2 object → readers get HTTP 410. Daily cleanup script GC's expired shares (`lambda/poker/scripts/cleanup-expired-shares.mjs`, not yet on a schedule — invoke manually or wire EventBridge).
+
+**Password gate:** scrypt hash + per-share salt stored in Firestore. `get-stats-share` returns `{requiresPassword: true, title}` before the payload (so the viewer can prompt without leaking stats). Wrong attempts → 403. The Lambda uses `timingSafeEqual`.
+
+**Privacy by design:**
+- Sanitiser allowlist drops anything not on the public schema, even if client tries.
+- Stakes anonymised to "Micro/Low/Mid/High" buckets, dates to "Last week" … "Over a year".
+- X-axis labels = hand index (1, 2, …N), never timestamps.
+- Cloudfront Function `portfolio-subdomain-rewrite` enforces the URL format `/p/{base64url 12-32}` — invalid IDs fall through to the SPA 404 fallback rather than hitting the Lambda.
+
+**Deploy:** see `docs/casino-game/poker-share-setup.md` for the full deploy checklist (Lambda, API Gateway, Firestore rules, S3, CloudFront Function).
+
 ## Shared Components
 
 ### Hamburger Navigation Menu
