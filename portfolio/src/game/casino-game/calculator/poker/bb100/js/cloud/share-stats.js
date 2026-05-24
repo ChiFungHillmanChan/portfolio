@@ -148,11 +148,14 @@ function computeBbValueUsd(summary, hands, meta) {
     return v;
   };
 
+  // Parens are required around the (?? ...) chain when the final fallback
+  // expression itself uses ||. ECMAScript rejects mixing ?? with || / && at
+  // the same precedence — must be explicit. Without them: SyntaxError at
+  // module import time, which kills the whole share-dialog open.
   return (
     tryPair(totalBeforeUsd, bb100Before) ??
     tryPair(totalAfterUsd, bb100After) ??
-    Number(meta?.bbValueUsd) ||
-    1                                  // Safe default; share page will treat as NL100-equivalent
+    (Number(meta?.bbValueUsd) || 1)    // Safe default; share page treats as NL100-equivalent
   );
 }
 
