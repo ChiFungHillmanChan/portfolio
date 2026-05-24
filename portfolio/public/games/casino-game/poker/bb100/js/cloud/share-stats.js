@@ -58,11 +58,16 @@ function downsampleForShare(series) {
     const idx = Math.min(len - 1, Math.floor(i * stride));
     for (const k of SERIES_KEYS) out[k].push(flat[k][idx] ?? 0);
   }
-  // Always include the final point so cumulative end is exact.
-  for (const k of SERIES_KEYS) {
-    if (out[k].length && out[k][out[k].length - 1] !== flat[k][len - 1]) {
-      out[k].push(flat[k][len - 1]);
-    }
+  // Always include the final point so cumulative end is exact. Append for
+  // ALL keys uniformly — a per-key conditional ("only if last sample !=
+  // actual final") diverges lengths when one series's last sample happens
+  // to equal its final and the others don't, and the Lambda sanitiseSeries
+  // zero-fills any series whose length doesn't match the first key's.
+  // That silently wiped blueUC on steady-state showdown sessions, e.g. the
+  // user's 30,122-hand share that rendered Blue (SD) flat at $0.
+  const sampledFinalIdx = Math.min(len - 1, Math.floor((MAX_POINTS - 1) * stride));
+  if (sampledFinalIdx !== len - 1) {
+    for (const k of SERIES_KEYS) out[k].push(flat[k][len - 1]);
   }
   return out;
 }
