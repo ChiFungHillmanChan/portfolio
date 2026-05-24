@@ -447,6 +447,18 @@ async function onCreateShare() {
     if (password.length > 64)              { setError("Password must be 64 characters or fewer."); return; }
   }
 
+  // Show progress IMMEDIATELY so the user sees feedback within one frame.
+  // Building the payload (downsampling 30k+ point series, BigInt → Number
+  // conversions across 4 series) is synchronous and can take ~500ms on a
+  // typical laptop — without an explicit yield Chrome warns about the
+  // click handler exceeding 100ms and the UI freezes silently.
+  creatingShare = true;
+  refreshPrimaryEnabled();
+  setProgress(true, 0.1, "Preparing snapshot…");
+  // Yield to the renderer so the progress bar actually paints before we
+  // start the heavy CPU work.
+  await new Promise((r) => requestAnimationFrame(r));
+
   let payload;
   try {
     payload = buildSharePayload({
@@ -460,13 +472,14 @@ async function onCreateShare() {
       meta: state.meta || null,
     });
   } catch (err) {
+    creatingShare = false;
+    setProgress(false, 0, "");
+    refreshPrimaryEnabled();
     setError(`Could not prepare snapshot: ${err.message}`);
     return;
   }
 
-  creatingShare = true;
-  refreshPrimaryEnabled();
-  setProgress(true, 0.4, "Uploading snapshot…");
+  setProgress(true, 0.5, "Uploading snapshot…");
 
   let result;
   try {

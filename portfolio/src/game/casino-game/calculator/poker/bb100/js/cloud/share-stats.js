@@ -116,7 +116,7 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
     bbValueUsd,
     totalBefore: ucToNumber(summary.totalBeforeUC) / 1e6,
     totalAfter:  ucToNumber(summary.totalAfterUC)  / 1e6,
-    byPosition: flattenPositionMap(summary.byPosition),
+    byPosition: flattenPositionMap(summary.byPosition, bbValueUsd),
     // raw fields for backend to bucket — never written to the public payload
     stakes:       meta?.stakes ?? null,
     firstHandAt:  meta?.firstHandAt ?? null,
@@ -161,14 +161,32 @@ function computeBbValueUsd(summary, hands, meta) {
   );
 }
 
-function flattenPositionMap(byPos) {
+// compute.mjs stores byPosition as { count, totalUC } per position. The
+// share schema expects { hands, bbPer100 } so the public viewer doesn't
+// need to know about UC math. We translate here, using bbValueUsd to
+// convert the UC running total into a bb/100 winrate.
+function flattenPositionMap(byPos, bbValueUsd) {
   if (!byPos || typeof byPos !== "object") return {};
   const out = {};
   for (const [pos, v] of Object.entries(byPos)) {
     if (!v || typeof v !== "object") continue;
+    // Prefer existing flat shape (.hands/.bbPer100), fall back to the
+    // compute.mjs shape (.count/.totalUC).
+    const hands = Number(v.hands ?? v.count) || 0;
+    let bbPer100 = Number(v.bbPer100);
+    if (!Number.isFinite(bbPer100) || bbPer100 === 0) {
+      const totalUC = ucToNumber(v.totalUC);
+      if (hands > 0 && Number.isFinite(bbValueUsd) && bbValueUsd > 0) {
+        const totalUsd = totalUC / 1e6;
+        const totalBb = totalUsd / bbValueUsd;
+        bbPer100 = (totalBb / hands) * 100;
+      } else {
+        bbPer100 = 0;
+      }
+    }
     out[pos] = {
-      hands: Number(v.hands) || 0,
-      bbPer100: Number(v.bbPer100) || 0,
+      hands,
+      bbPer100: Number.isFinite(bbPer100) ? bbPer100 : 0,
     };
   }
   return out;

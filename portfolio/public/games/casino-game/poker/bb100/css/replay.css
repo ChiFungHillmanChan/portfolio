@@ -122,6 +122,12 @@
   display: none !important;
 }
 
+/* Custom display rules (flex / inline-flex / grid) below override the
+   user-agent [hidden] default. Force everything inside the dialog to
+   obey [hidden] so empty progress bars / error chips / result panels
+   don't render before they get real content. */
+.replay-share-dialog [hidden] { display: none !important; }
+
 .replay-share-backdrop {
   position: absolute;
   inset: 0;
