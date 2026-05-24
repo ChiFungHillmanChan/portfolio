@@ -322,9 +322,11 @@
 
 .chart-wrap { position: relative; }
 .chart-zoom-out-btn {
+  /* Pinned top-LEFT so it never overlaps the right-side Y-axis labels
+     on narrow viewports (mobile / iPad portrait). */
   position: absolute;
   top: 0.5rem;
-  right: 0.5rem;
+  left: 0.5rem;
   z-index: 5;
   width: 32px;
   height: 32px;
@@ -336,7 +338,7 @@
   border: 1px solid rgba(255,255,255,0.2);
   border-radius: 6px;
   color: var(--text-primary, #e0e0ea);
-  font: 600 1.4rem/1 var(--font-mono, 'JetBrains Mono', monospace);
+  font-size: 1rem;
   cursor: pointer;
   transition: all 0.15s;
   box-shadow: 0 2px 8px rgba(0,0,0,0.4);

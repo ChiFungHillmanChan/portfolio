@@ -347,7 +347,9 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: false,
+      // Matches the main recorder — short tween on chart recreate so line
+      // toggles + rake toggle fade in/out smoothly.
+      animation: { duration: 250, easing: "easeOutQuart" },
       interaction: { mode: "index", intersect: false },
       scales: {
         x: {
