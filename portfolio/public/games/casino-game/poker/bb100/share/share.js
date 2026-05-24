@@ -384,11 +384,7 @@ function renderChart() {
       interaction: { mode: "index", intersect: false },
       scales: {
         x: {
-          afterBuildTicks: (scale) => {
-            const labelArr = scale.chart.data.labels;
-            const nice = pickNiceXTicks(labelArr, 7);
-            if (nice.length > 0) scale.ticks = nice;
-          },
+          afterBuildTicks: applyNiceXTicksToScale,
           ticks: {
             color: "#a0a0b0",
             autoSkip: false,
@@ -430,13 +426,19 @@ function renderChart() {
             wheel: { enabled: true, modifierKey: "shift" },
             pinch: { enabled: true },
             mode: "x",
-            onZoomComplete: ({ chart }) => updateZoomBtn(chart),
+            onZoomComplete: ({ chart }) => {
+              updateZoomBtn(chart);
+              rebuildXTicksOnVisibleRange(chart);
+            },
           },
           pan: {
             enabled: true,
             mode: "x",
             modifierKey: "alt",
-            onPanComplete: ({ chart }) => updateZoomBtn(chart),
+            onPanComplete: ({ chart }) => {
+              updateZoomBtn(chart);
+              rebuildXTicksOnVisibleRange(chart);
+            },
           },
           limits: { x: { min: "original", max: "original", minRange: 5 } },
         },
@@ -505,6 +507,37 @@ function niceStep(range, targetTicks = 7) {
   else if (norm < 7.5) nice = 5;
   else nice = 10;
   return Math.max(1, nice * mag);
+}
+
+// Bug guard: Chart.js + chartjs-plugin-zoom + a custom `afterBuildTicks`
+// that returns ticks at indices outside the current visible scale range
+// collapses the plot area to a tiny sliver (the layout engine tries to
+// fit out-of-range ticks within the canvas). Always scope ticks to the
+// currently visible portion of the labels array — for the initial render
+// the visible range is the full array, after zoom/pan it's the sub-range.
+function applyNiceXTicksToScale(scale) {
+  const labels = scale.chart?.data?.labels;
+  if (!Array.isArray(labels) || labels.length === 0) return;
+  const lo = Math.max(0, Math.floor(scale.min ?? 0));
+  const hi = Math.min(labels.length - 1, Math.ceil(scale.max ?? labels.length - 1));
+  if (hi < lo) return;
+  const visibleSlice = labels.slice(lo, hi + 1);
+  const nice = pickNiceXTicks(visibleSlice, 7);
+  if (nice.length > 0) {
+    scale.ticks = nice.map((t) => ({ value: t.value + lo, displayLabel: t.displayLabel }));
+  }
+}
+
+// Chart.js does NOT re-run afterBuildTicks when the zoom plugin merely
+// shifts scale.min/max — only on full layout rebuild. So after a user
+// zoom/pan we have to recompute ticks for the new visible range
+// explicitly, then trigger a paint. `update('none')` skips animation so
+// the action feels instant.
+function rebuildXTicksOnVisibleRange(chart) {
+  const xScale = chart?.scales?.x;
+  if (!xScale) return;
+  applyNiceXTicksToScale(xScale);
+  chart.update("none");
 }
 
 function pickNiceXTicks(labels, targetTicks = 7) {
