@@ -66,11 +66,15 @@ function computeSeatLayout(n) {
       betX = x;
       betY = cardsY + dir * offset;
     } else {
-      // Side seat: a fraction of the seat→pot vector keeps the chip on
-      // the inside of the seat (between cards and the table middle) and
-      // clearly to the side of the cards.
-      betX = x + (cx - x) * 0.35;
-      betY = y + (POT_CENTER_Y - y) * 0.35;
+      // Side seat: place chip horizontally next to the cards on the inside
+      // (pot-facing) edge, vertically aligned with the cards. Earlier this
+      // used a 35% seat→pot interpolation that visually fused the chip with
+      // the hole cards in short-handed layouts (e.g. 3-max upper-left seat).
+      // Sitting beside the cards keeps the chip legible and mirrors how live
+      // tables stack a player's bet next to their cards.
+      const sign = x < cx ? 1 : -1;
+      betX = x + sign * 58;
+      betY = cardsY;
     }
     layout.push({ x, y, betX, betY });
   }
@@ -424,8 +428,14 @@ export function renderSnapshot(refs, snap, opts = {}) {
     // Stack text
     ref.stackText.textContent = fmtAmount(p.stack || 0, unit, bbDollars);
 
-    // Action text — last action of this street
-    ref.actionText.textContent = p.lastAction || "";
+    // Action text was the legacy per-seat verb label ("checks", "raises to $X").
+    // It used to live at y=-36 from the avatar — which for lower-side seats
+    // (cards above avatar) landed right at the bottom edge of the hole cards,
+    // visually reading as "under the cards". Now the bet chip below carries
+    // the same info (amount for bets/calls/raises, "Check" for checks), and
+    // the event ribbon at top describes the action verbosely. Clear this
+    // element so it doesn't compete with the chip for the user's attention.
+    ref.actionText.textContent = "";
 
     // Hole cards: visible (face-down) for any dealt player. Hero always
     // shows face; villains show face only after their `shows` event.
@@ -456,11 +466,13 @@ export function renderSnapshot(refs, snap, opts = {}) {
     }
 
     // Bet chip — visible iff the player has a current-street commitment, OR
-    // the player's last action this street was a check. The check chip uses
-    // the same shape/position as a bet chip but a "check" modifier class so
-    // CSS can tone it down (no money on the line). It persists until the
-    // player acts again (lastAction overwritten) or the street advances
-    // (state engine clears lastAction in resetStreetCommitments).
+    // the player's last action this street was a check. Checks share the
+    // same yellow chip style as bets/calls/raises so they read as part of
+    // the same row of indicators around the table; the .check-chip modifier
+    // only adjusts the text size since "Check" is wider than "$5.00". The
+    // check chip persists until the player acts again (lastAction
+    // overwritten) or the street advances (resetStreetCommitments clears
+    // lastAction in state-engine).
     if (p.committedStreet > 0) {
       ref.chipGroup.setAttribute("opacity", "1");
       ref.chipGroup.classList.remove("check-chip");
