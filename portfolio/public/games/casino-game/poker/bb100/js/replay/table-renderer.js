@@ -455,12 +455,23 @@ export function renderSnapshot(refs, snap, opts = {}) {
       ref.cardsGroup.setAttribute("opacity", "0");
     }
 
-    // Bet chip — visible iff the player has a current-street commitment
+    // Bet chip — visible iff the player has a current-street commitment, OR
+    // the player's last action this street was a check. The check chip uses
+    // the same shape/position as a bet chip but a "check" modifier class so
+    // CSS can tone it down (no money on the line). It persists until the
+    // player acts again (lastAction overwritten) or the street advances
+    // (state engine clears lastAction in resetStreetCommitments).
     if (p.committedStreet > 0) {
       ref.chipGroup.setAttribute("opacity", "1");
+      ref.chipGroup.classList.remove("check-chip");
       ref.chipText.textContent = fmtAmount(p.committedStreet, unit, bbDollars);
+    } else if (p.lastAction === "checks") {
+      ref.chipGroup.setAttribute("opacity", "1");
+      ref.chipGroup.classList.add("check-chip");
+      ref.chipText.textContent = "Check";
     } else {
       ref.chipGroup.setAttribute("opacity", "0");
+      ref.chipGroup.classList.remove("check-chip");
     }
   }
 

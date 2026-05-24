@@ -1057,6 +1057,18 @@
   font-size: 12px;
 }
 
+/* Check chip — same shape/position as bet chip but no money in pot, so
+   render in a muted slate tone instead of the yellow money-chip fill. */
+.poker-table .bet-chip.check-chip .chip-bg {
+  fill: #cbd5e1;
+  stroke: rgba(0,0,0,0.45);
+}
+.poker-table .bet-chip.check-chip .chip-text {
+  fill: #0f172a;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
 /* Dealer button */
 .poker-table .dealer-btn-bg {
   fill: #fff;
