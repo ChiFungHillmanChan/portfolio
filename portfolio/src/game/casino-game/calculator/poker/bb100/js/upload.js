@@ -1173,7 +1173,12 @@ async function openReplay(hand, index) {
   try {
     // Phase 5b: animated SVG viewer (with a text-log tab as fallback).
     const { showReplay } = await import('./replay/animated-replay.js');
-    showReplay(hand.text, { title: `Hand #${(index + 1).toLocaleString()} — ${hand.id}` });
+    showReplay(hand.text, {
+      title: `Hand #${(index + 1).toLocaleString()} — ${hand.id}`,
+      // Lets the share-dialog's Graphs tab pull the session-wide series even
+      // when the dialog is opened from inside the per-hand replay modal.
+      getGraphsState: () => getCurrentGraphsState(),
+    });
   } catch (err) {
     console.error('replay open failed', err);
     alert('Could not open replay: ' + err.message);
@@ -1488,6 +1493,52 @@ function renderControls() {
     opts = { ...opts, beforeRake: checked };
     renderAll();
   }));
+
+  // Share-session button — opens the share dialog defaulted to the Graphs
+  // tab. We lazy-import share-dialog.js the first time it's needed so the
+  // critical-path bundle (parse + chart + summary) stays lean. Dialog access
+  // requires a logged-in user with a computed session; we surface that via
+  // disabling the primary button inside the dialog, not by hiding the entry.
+  const shareBtn = document.createElement('button');
+  shareBtn.type = 'button';
+  shareBtn.className = 'chart-share-btn';
+  shareBtn.title = 'Share these stats as a public link (no hand details).';
+  shareBtn.innerHTML = '<span aria-hidden="true">📤</span> Share session';
+  shareBtn.addEventListener('click', async () => {
+    try {
+      const mod = await import('./replay/share-dialog.js');
+      mod.openShareDialog({
+        defaultTab: 'graphs',
+        getGraphsState: () => getCurrentGraphsState(),
+      });
+    } catch (err) {
+      console.error('[poker] share-dialog open failed:', err);
+      alert('Could not open Share dialog. Please refresh and try again.');
+    }
+  });
+  els.chartControls.appendChild(shareBtn);
+}
+
+// Snapshot of the current session's computed series + summary, for the
+// share-graphs flow. Returns null when no session is loaded — the share
+// dialog uses that to disable its primary button. Safe to call repeatedly;
+// callers should re-call (rather than cache) to pick up filter changes.
+export function getCurrentGraphsState() {
+  if (!lastCompute) return null;
+  const meta = lastCompute.summary || {};
+  // The backend can bucket raw stake strings into "Micro/Low/Mid/High".
+  // We pull whatever the compute pipeline put on the summary; if it isn't
+  // there, leave it null and the backend will record `null`.
+  return {
+    summary: lastCompute.summary || null,
+    seriesBefore: lastCompute.seriesBefore || null,
+    seriesAfter: lastCompute.seriesAfter || null,
+    meta: {
+      stakes: meta.stakes || null,
+      firstHandAt: meta.firstHandAt || null,
+      lastHandAt: meta.lastHandAt || null,
+    },
+  };
 }
 
 function makeToggle(label, color, checked, onChange) {

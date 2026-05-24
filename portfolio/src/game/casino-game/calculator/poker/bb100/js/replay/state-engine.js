@@ -276,5 +276,15 @@ export function buildSnapshots(extracted) {
     cur = step(cur, events[i], i);
     snapshots.push(cur);
   }
+  // GG's "Player collected $X from pot" line reports NET winnings (after
+  // rake / jackpot / fortune / bingo / tax). The engine only subtracts that
+  // net amount, so the running pot ends each hand with a residual equal to
+  // the house fees — e.g. the rake stays "floating" on the table forever.
+  // Once any collect event has fired, the hand is over and chips have been
+  // awarded; clear the final-frame pot so the closing frame reads Pot 0
+  // instead of leaving the rake stranded.
+  if (snapshots.length > 0 && events.some((e) => e.type === "collect")) {
+    snapshots[snapshots.length - 1].pot = 0;
+  }
   return { snapshots, meta, summary };
 }

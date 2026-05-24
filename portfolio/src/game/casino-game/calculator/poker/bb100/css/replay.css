@@ -194,6 +194,7 @@
 
 .replay-share-orient {
   display: inline-flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
 
@@ -301,6 +302,206 @@
   font-size: 12.5px;
   padding: 8px 10px;
   border-radius: 6px;
+}
+
+/* ── Tabs inside the share dialog (Graphs / Hands) ─────────────────── */
+
+.replay-share-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 0 18px;
+}
+
+.replay-share-tab {
+  background: transparent;
+  border: 0;
+  color: #8c97a0;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 14px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.12s, border-color 0.12s;
+}
+.replay-share-tab:hover { color: #c8ced3; }
+.replay-share-tab.active {
+  color: #4ade80;
+  border-bottom-color: #4ade80;
+}
+.replay-share-tab-badge {
+  font-size: 10px;
+  opacity: 0.8;
+}
+
+/* ── Inputs (title + password) inside share dialog ─────────────────── */
+
+.replay-share-input {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #d9dde2;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+}
+.replay-share-input:focus {
+  outline: none;
+  border-color: rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.18);
+}
+.replay-share-input:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.replay-share-title-input { flex: 1; }
+
+.replay-share-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #c8ced3;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+.replay-share-toggle input { accent-color: #4ade80; cursor: pointer; }
+
+.replay-share-static-value {
+  font-size: 13px;
+  color: #d9dde2;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  width: 100%;
+}
+.replay-share-static-hint { color: #8c97a0; margin-left: 6px; }
+
+.replay-share-expire select {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #d9dde2;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* ── Locked / needs-state messages (Hands tab gate) ────────────────── */
+
+.replay-share-locked,
+.replay-share-needs-state {
+  background: rgba(255, 211, 77, 0.06);
+  border: 1px solid rgba(255, 211, 77, 0.2);
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin: 0 0 4px;
+  color: #d9dde2;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.replay-share-locked strong { color: #ffd34d; }
+.replay-share-locked p,
+.replay-share-needs-state p { margin: 0; }
+
+.replay-share-needs-state kbd {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11.5px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+
+/* ── Result panel (Graphs tab — after share is created) ────────────── */
+
+.replay-share-result {
+  background: rgba(74, 222, 128, 0.06);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 10px;
+  padding: 14px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.replay-share-result-success {
+  color: #5acf94;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.replay-share-result-url-row {
+  display: flex;
+  gap: 8px;
+}
+
+.replay-share-result-url {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(74, 222, 128, 0.25);
+}
+
+.replay-share-result-copy,
+.replay-share-result-open,
+.replay-share-result-native {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d9dde2;
+  padding: 8px 14px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.replay-share-result-copy:hover,
+.replay-share-result-open:hover,
+.replay-share-result-native:hover {
+  background: rgba(74, 222, 128, 0.15);
+  border-color: rgba(74, 222, 128, 0.35);
+  color: #4ade80;
+}
+
+.replay-share-result-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.replay-share-result-meta {
+  color: #8c97a0;
+  font-size: 11.5px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Primary footer button uses the same green-fill the existing export
+   button uses — renamed for the new tabbed flow but visually identical. */
+.replay-share-primary {
+  background: #1f6f4a;
+  border: 1px solid #2a8d5e;
+  color: #fff;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.replay-share-primary:hover:not(:disabled) {
+  background: #257f56;
+}
+.replay-share-primary:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 
 .replay-share-footer {

@@ -140,15 +140,18 @@ function onModalClick(e) {
     closeModal();
     return;
   }
-  // Share as video — opens sub-dialog. Pauses live playback so the
-  // user's chosen speed/unit are stable while they pick options.
+  // Share — opens the tabbed share dialog. Pauses live playback so the
+  // user's chosen speed/unit are stable while they pick options. The dialog
+  // defaults to the Hands tab (existing video flow) but exposes the Graphs
+  // tab too, in case the user wants to share session stats instead.
   if (target.closest('[data-replay-action="share"]')) {
     setPlaying(false);
     if (state) {
       openShareDialog({
         host: state.modal,
+        defaultTab: "hands",
         durationFn: durationForEvent,
-        getState: () => ({
+        getReplayState: () => ({
           snapshots: state.snapshots,
           extracted: state.extracted,
           speed: state.speed,
@@ -156,6 +159,7 @@ function onModalClick(e) {
           bbDollars: state.bbDollars,
           title: state.modal.querySelector(".replay-modal-title")?.textContent || "Poker Hand Replay",
         }),
+        getGraphsState: state.getGraphsState || null,
       });
     }
     return;
@@ -496,7 +500,7 @@ function switchView(view) {
 
 // ── Public API ──────────────────────────────────────────────────────────────
 
-export function showReplay(handText, { title } = {}) {
+export function showReplay(handText, { title, getGraphsState } = {}) {
   const modal = ensureModal();
   const extracted = extractActions(handText);
   const { snapshots } = buildSnapshots(extracted);
@@ -526,6 +530,10 @@ export function showReplay(handText, { title } = {}) {
     timer: null,
     unit: prefs.unit,  // user-toggleable via $/BB pill, persisted across opens
     bbDollars,        // for BB conversion
+    // Optional callback the caller supplies so the share-dialog's Graphs tab
+    // can build a session-wide snapshot from inside the replay modal. When
+    // omitted, the Graphs tab in the share dialog shows "load a session first".
+    getGraphsState: typeof getGraphsState === "function" ? getGraphsState : null,
   };
 
   // Restore saved prefs (speed + $/BB unit). setSpeed/setUnit also persist,

@@ -1,0 +1,459 @@
+/* share.css — Stylesheet for casino-game.hillmanchan.com/p/{id} share viewer.
+   Designed to read well on phone DM previews (WhatsApp/IG opens the link in
+   their in-app browser) AND on desktop tweets. Dark theme matches the main
+   recorder so visitors who already use the app feel at home. */
+
+:root {
+  --bg-page: #0a0d14;
+  --bg-card: #11161f;
+  --bg-card-2: #161c27;
+  --border: rgba(255,255,255,0.08);
+  --border-strong: rgba(255,255,255,0.15);
+  --text: #e5e9f0;
+  --text-dim: #9aa3b2;
+  --text-dimmer: #677082;
+  --accent: #4ade80;
+  --orange: #fb923c;
+  --red: #ef4444;
+  --blue: #3b82f6;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg-page);
+  color: var(--text);
+  font-family: 'Rajdhani', system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+body.share-page {
+  background: radial-gradient(ellipse at top, #0f1623 0%, #06080d 60%);
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+
+.share-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8, 11, 18, 0.65);
+  backdrop-filter: blur(6px);
+}
+
+.share-brand {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+.share-brand:hover { color: var(--text); }
+
+.share-watermark {
+  color: var(--text-dimmer);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────── */
+
+.share-root {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 20px 80px;
+}
+
+.share-state {
+  text-align: center;
+  padding: 96px 20px;
+  color: var(--text-dim);
+}
+
+.share-spinner {
+  width: 48px;
+  height: 48px;
+  border: 3px solid var(--border-strong);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: spin 0.9s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.share-error-title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0 0 8px;
+  color: var(--text);
+}
+.share-error-msg { margin: 0 0 24px; }
+
+.share-cta {
+  display: inline-block;
+  background: var(--accent);
+  color: #0a1015;
+  font-weight: 700;
+  text-decoration: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  cursor: pointer;
+  font-size: 15px;
+  font-family: inherit;
+}
+.share-cta:hover { filter: brightness(1.08); }
+
+/* ── Password gate ──────────────────────────────────────────────────── */
+
+.share-password-form {
+  display: inline-flex;
+  gap: 10px;
+  margin-top: 12px;
+  max-width: 320px;
+  width: 100%;
+}
+
+.share-input {
+  flex: 1;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 15px;
+  min-width: 0;
+}
+
+.share-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(74,222,128,0.2);
+}
+
+/* ── Content ────────────────────────────────────────────────────────── */
+
+.share-content { display: block; }
+
+.share-title-block { margin-bottom: 24px; }
+
+.share-title {
+  font-size: 32px;
+  margin: 0 0 12px;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+
+.share-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.share-chip {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  letter-spacing: 0.02em;
+}
+
+/* ── Summary ────────────────────────────────────────────────────────── */
+
+.share-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 28px;
+}
+
+.share-summary-header {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.share-stat-tile {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+.share-stat-rake {
+  border-color: rgba(251, 146, 60, 0.25);
+  background: rgba(251, 146, 60, 0.06);
+}
+
+.share-stat-value {
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--text);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  line-height: 1.2;
+}
+
+.share-stat-rake .share-stat-value { color: var(--orange); }
+
+.share-stat-label {
+  font-size: 11px;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: 4px;
+}
+
+.share-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.share-summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+}
+
+.share-summary-before { border-left: 3px solid #60a5fa; }
+.share-summary-after  { border-left: 3px solid var(--accent); }
+
+.share-summary-card-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+.share-summary-card-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.share-summary-card-grid .share-stat-tile {
+  padding: 10px 12px;
+  background: var(--bg-card-2);
+  border: 1px solid transparent;
+}
+
+.share-summary-card-grid .share-stat-value { font-size: 16px; }
+
+/* ── Chart ──────────────────────────────────────────────────────────── */
+
+.share-chart-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 28px;
+}
+
+.share-chart-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.share-toggle-group {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  background: var(--bg-card-2);
+}
+
+.share-toggle-group legend {
+  color: var(--text-dimmer);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 4px;
+}
+
+.share-toggle-group label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+  cursor: pointer;
+}
+
+.share-toggle-group input[type="checkbox"],
+.share-toggle-group input[type="radio"] {
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.share-toggle-group label:hover { color: var(--text); }
+
+.share-toggle-group .dot {
+  width: 9px;
+  height: 9px;
+  background: var(--c, var(--accent));
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.share-toggle-actions {
+  margin-left: auto;
+  display: inline-flex;
+  gap: 8px;
+}
+
+.share-zoom-btn {
+  background: var(--bg-card-2);
+  border: 1px solid var(--border-strong);
+  color: var(--text-dim);
+  padding: 6px 12px;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.12s;
+}
+.share-zoom-btn:hover {
+  color: var(--text);
+  border-color: rgba(74,222,128,0.4);
+  background: rgba(74,222,128,0.08);
+}
+
+.share-chart-wrap {
+  height: clamp(280px, 50vh, 540px);
+  position: relative;
+  background: var(--bg-card-2);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+.share-chart-wrap:fullscreen {
+  background: #06080d;
+  padding: 24px;
+}
+
+.share-chart-footer {
+  margin-top: 10px;
+  font-size: 11.5px;
+  color: var(--text-dimmer);
+  text-align: center;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ── Position table ─────────────────────────────────────────────────── */
+
+.share-position-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 18px;
+  margin-bottom: 28px;
+}
+
+.share-section-title {
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-dim);
+  margin: 0 0 12px;
+  font-weight: 600;
+}
+
+.share-pos-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.share-pos-table th,
+.share-pos-table td {
+  padding: 8px 12px;
+  text-align: left;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 13px;
+  border-bottom: 1px solid var(--border);
+}
+
+.share-pos-table th {
+  font-size: 11px;
+  color: var(--text-dimmer);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+
+.share-pos-table td:first-child { color: var(--text); font-weight: 600; }
+.share-pos-table td:last-child  { text-align: right; }
+.share-pos-positive { color: var(--accent); }
+.share-pos-negative { color: var(--red); }
+
+/* ── Footer ─────────────────────────────────────────────────────────── */
+
+.share-footer {
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--border);
+}
+
+.share-footer-meta {
+  color: var(--text-dim);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 12px;
+  margin: 0 0 12px;
+}
+
+.share-footer-cta {
+  color: var(--text);
+  font-size: 15px;
+  margin: 0 0 12px;
+}
+
+.share-footer-cta a {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+.share-footer-cta a:hover { text-decoration: underline; }
+
+.share-footer-disclaimer {
+  color: var(--text-dimmer);
+  font-size: 11.5px;
+  max-width: 520px;
+  margin: 0 auto;
+  line-height: 1.5;
+}
+
+/* ── Mobile ─────────────────────────────────────────────────────────── */
+
+@media (max-width: 720px) {
+  .share-header { padding: 12px 16px; }
+  .share-watermark { display: none; }
+  .share-root { padding: 16px 14px 64px; }
+  .share-title { font-size: 24px; }
+  .share-chart-controls { flex-direction: column; align-items: stretch; }
+  .share-toggle-actions { margin-left: 0; justify-content: flex-end; }
+  .share-summary-card-grid { grid-template-columns: 1fr 1fr; }
+  .share-summary-card-grid .share-stat-tile:last-child {
+    grid-column: span 2;
+  }
+  .share-password-form { flex-direction: column; max-width: 100%; }
+  .share-state { padding: 64px 16px; }
+}
