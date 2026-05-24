@@ -114,9 +114,14 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
     rakeBbPer100:   Number(summary.rakeBbPer100)   || 0,
     rakePaidBb,
     bbValueUsd,
-    totalBefore: ucToNumber(summary.totalBeforeUC) / 1e6,
-    totalAfter:  ucToNumber(summary.totalAfterUC)  / 1e6,
-    byPosition: flattenPositionMap(summary.byPosition, bbValueUsd),
+    // CRITICAL: pass through the EXACT $ totals from the compute pipeline
+    // (compute.mjs#summary uses these). The share viewer must display what
+    // the user sees in their recorder — no derivation that drifts off by
+    // half-cents because of rounding or rake-bucketing differences.
+    totalBefore:  ucToNumber(summary.totalBeforeUC) / 1e6,
+    totalAfter:   ucToNumber(summary.totalAfterUC)  / 1e6,
+    rakePaidUsd:  ucToNumber(summary.rakePaidUC)    / 1e6,
+    byPosition: flattenPositionMap(summary.byPosition),
     // raw fields for backend to bucket — never written to the public payload
     stakes:       meta?.stakes ?? null,
     firstHandAt:  meta?.firstHandAt ?? null,
@@ -161,32 +166,20 @@ function computeBbValueUsd(summary, hands, meta) {
   );
 }
 
-// compute.mjs stores byPosition as { count, totalUC } per position. The
-// share schema expects { hands, bbPer100 } so the public viewer doesn't
-// need to know about UC math. We translate here, using bbValueUsd to
-// convert the UC running total into a bb/100 winrate.
-function flattenPositionMap(byPos, bbValueUsd) {
+// Convert compute.mjs's byPosition shape — { count, totalUC } per position
+// — into the share schema. We KEEP the exact same field names (`count`,
+// `totalUsd`) so the share viewer can render the table identically to
+// what the main recorder shows: no derivation, no rounding drift.
+function flattenPositionMap(byPos) {
   if (!byPos || typeof byPos !== "object") return {};
   const out = {};
   for (const [pos, v] of Object.entries(byPos)) {
     if (!v || typeof v !== "object") continue;
-    // Prefer existing flat shape (.hands/.bbPer100), fall back to the
-    // compute.mjs shape (.count/.totalUC).
-    const hands = Number(v.hands ?? v.count) || 0;
-    let bbPer100 = Number(v.bbPer100);
-    if (!Number.isFinite(bbPer100) || bbPer100 === 0) {
-      const totalUC = ucToNumber(v.totalUC);
-      if (hands > 0 && Number.isFinite(bbValueUsd) && bbValueUsd > 0) {
-        const totalUsd = totalUC / 1e6;
-        const totalBb = totalUsd / bbValueUsd;
-        bbPer100 = (totalBb / hands) * 100;
-      } else {
-        bbPer100 = 0;
-      }
-    }
     out[pos] = {
-      hands,
-      bbPer100: Number.isFinite(bbPer100) ? bbPer100 : 0,
+      // Accept either the live shape (.count/.totalUC) or a pre-flattened
+      // {hands, totalUsd} payload (e.g. when callers pass already-derived data).
+      count:    Number(v.count ?? v.hands) || 0,
+      totalUsd: ucToNumber(v.totalUC) / 1e6 || Number(v.totalUsd) || 0,
     };
   }
   return out;

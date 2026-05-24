@@ -182,9 +182,16 @@ function renderSummary(summary) {
   const header = document.createElement("div");
   header.className = "summary-header-row";
   header.appendChild(statBlock("Total hands", (summary.hands || 0).toLocaleString()));
+  // Rake paid: use the exact dollar amount from the owner's recorder. Older
+  // snapshots (created before this field was added) fall back to the derived
+  // totalBefore - totalAfter, which can drift a few cents but is still
+  // better than showing $0 for legacy shares.
+  const rakePaidUsd = Number.isFinite(Number(summary.rakePaidUsd)) && summary.rakePaidUsd !== 0
+    ? Number(summary.rakePaidUsd)
+    : (Number(summary.totalBefore) || 0) - (Number(summary.totalAfter) || 0);
   header.appendChild(statBlock(
     "Rake paid",
-    `${formatUsd(summary.totalAfter && summary.totalBefore ? summary.totalBefore - summary.totalAfter : 0)}  ·  ${(summary.rakeBbPer100 || 0).toFixed(2)} bb/100`,
+    `${formatUsd(rakePaidUsd)}  ·  ${(summary.rakeBbPer100 || 0).toFixed(2)} bb/100`,
     { kind: "rake" },
   ));
   root.appendChild(header);
@@ -251,25 +258,22 @@ function renderPosition(byPos) {
   });
   table.appendChild(head);
 
-  // Convert the share payload's { hands, bbPer100 } shape into the main
-  // app's { count, total$ } so the rendered table reads the same as the
-  // owner's page. Since the snapshot stores winrate-per-position (not
-  // dollar totals), we derive Total $ from bbPer100 * hands * bbValueUsd.
-  const bbValueUsd = Number(state.payload?.summary?.bbValueUsd) > 0
-    ? Number(state.payload.summary.bbValueUsd) : 0;
-
+  // Use the EXACT { count, totalUsd } the owner's recorder sees. The share
+  // payload carries those numbers unchanged from compute.mjs — no derivation
+  // on this end, so the table reads identically to the main app.
   const entries = Object.entries(byPos).sort((a, b) => {
     const ai = POS_ORDER.indexOf(a[0]); const bi = POS_ORDER.indexOf(b[0]);
     return (ai < 0 ? 99 : ai) - (bi < 0 ? 99 : bi);
   });
 
   for (const [pos, row] of entries) {
-    const hands = Number(row.hands) || 0;
-    const bbPer100 = Number(row.bbPer100) || 0;
-    // Total $ = (bbPer100 / 100) * hands * bbValueUsd
-    const totalUsd = bbValueUsd > 0 ? (bbPer100 / 100) * hands * bbValueUsd : 0;
+    // Accept either the current shape ({count, totalUsd}) or the legacy
+    // {hands, bbPer100} from earlier snapshots (no perfect $ recovery for
+    // those — they were never sent — so totalUsd falls back to 0).
+    const count = Number(row.count ?? row.hands) || 0;
+    const totalUsd = Number(row.totalUsd) || 0;
     const tr = document.createElement("tr");
-    [pos, hands.toLocaleString(), formatUsd(totalUsd)].forEach((t) => {
+    [pos, count.toLocaleString(), formatUsd(totalUsd)].forEach((t) => {
       const td = document.createElement("td");
       td.textContent = t;
       tr.appendChild(td);
@@ -325,16 +329,15 @@ function renderChart() {
   // Chart always renders in $ to match the main app. UC → $ is just /1e6.
   const toY = (uc) => (uc || 0) / 1e6;
 
-  // Drop series whose snapshot is entirely zero (e.g. older snapshots
-  // that didn't populate showdown winnings). Avoids drawing misleading
-  // flat zero lines that just look like the chart is broken.
-  const allZero = (arr) => !arr || arr.length === 0 || arr.every((v) => v === 0);
-
+  // Show every toggled-on series, even if its values are all zero — the
+  // main recorder behaves the same way. The owner's view IS the source
+  // of truth; if Blue (SD) is flat at 0 there because the snapshot didn't
+  // detect showdowns, the share should reflect exactly that.
   const datasets = [];
-  if (state.lines.winnings)                            datasets.push(mkDataset("Winnings",     series.winningsUC.map(toY), COLORS.winnings));
-  if (state.lines.ev       && !allZero(series.evUC))   datasets.push(mkDataset("All-in EV",    series.evUC.map(toY),       COLORS.ev));
-  if (state.lines.red      && !allZero(series.redUC))  datasets.push(mkDataset("Red (non-SD)", series.redUC.map(toY),      COLORS.red));
-  if (state.lines.blue     && !allZero(series.blueUC)) datasets.push(mkDataset("Blue (SD)",    series.blueUC.map(toY),     COLORS.blue));
+  if (state.lines.winnings) datasets.push(mkDataset("Winnings",     (series.winningsUC || []).map(toY), COLORS.winnings));
+  if (state.lines.ev)       datasets.push(mkDataset("All-in EV",    (series.evUC       || []).map(toY), COLORS.ev));
+  if (state.lines.red)      datasets.push(mkDataset("Red (non-SD)", (series.redUC      || []).map(toY), COLORS.red));
+  if (state.lines.blue)     datasets.push(mkDataset("Blue (SD)",    (series.blueUC     || []).map(toY), COLORS.blue));
 
   if (state.chart) state.chart.destroy();
   state.chart = new Chart(document.getElementById("evChart").getContext("2d"), {
