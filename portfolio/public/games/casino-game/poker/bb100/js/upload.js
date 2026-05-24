@@ -1319,28 +1319,51 @@ function downsampleSeries(series, n) {
 }
 
 function renderChart(rawSeries) {
-  if (chartInstance) chartInstance.destroy();
   const rawN = rawSeries.winningsUC.length;
   const { labels, series, downsampled } = downsampleSeries(rawSeries, rawN);
   const n = labels.length;
 
-  const datasets = [];
-  if (opts.lines.winnings) datasets.push(mkDataset('Winnings', series.winningsUC, COLORS.winnings));
-  if (opts.lines.ev)       datasets.push(mkDataset('All-in EV', series.evUC, COLORS.ev));
-  if (opts.lines.red)      datasets.push(mkDataset('Red (non-SD)', series.redUC, COLORS.red));
-  if (opts.lines.blue)     datasets.push(mkDataset('Blue (SD)', series.blueUC, COLORS.blue));
+  // Always build all FOUR datasets in stable order. Visibility is driven by
+  // the `hidden` flag, not by adding/removing entries — this is what makes
+  // toggle animations actually tween (Chart.js matches datasets by index,
+  // so a length-changing array makes it tween mismatched series and look
+  // janky). For the rake toggle, all four .data arrays shift together →
+  // every point lerps from before-rake to after-rake in one motion.
+  const allDatasets = [
+    { ...mkDataset('Winnings',     series.winningsUC, COLORS.winnings), hidden: !opts.lines.winnings },
+    { ...mkDataset('All-in EV',    series.evUC,       COLORS.ev),       hidden: !opts.lines.ev },
+    { ...mkDataset('Red (non-SD)', series.redUC,      COLORS.red),      hidden: !opts.lines.red },
+    { ...mkDataset('Blue (SD)',    series.blueUC,     COLORS.blue),     hidden: !opts.lines.blue },
+  ];
+
+  // Update in place when the x-axis is unchanged (rake / line toggle on the
+  // same session). Destroy + recreate only when labels actually change
+  // (fresh upload, different filter, different downsample bucket count).
+  if (chartInstance && chartInstance.data.labels.length === labels.length) {
+    chartInstance.data.labels = labels;
+    chartInstance.data.datasets.forEach((ds, i) => {
+      const next = allDatasets[i];
+      ds.data = next.data;
+      ds.hidden = next.hidden;
+    });
+    chartInstance.update();
+    setChartFooter(rawN, n, downsampled);
+    return;
+  }
+  if (chartInstance) chartInstance.destroy();
 
   chartInstance = new Chart(els.chartCanvas.getContext('2d'), {
     type: 'line',
-    data: { labels, datasets },
+    data: { labels, datasets: allDatasets },
     plugins: [zeroLinePlugin, crosshairPlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      // Brief tween on chart recreate (line toggle, rake toggle, fresh
-      // upload) so series appear/disappear smoothly. Short enough not to
-      // feel laggy on zoom/pan, which use Chart.js's separate update path.
-      animation: { duration: 250, easing: 'easeOutQuart' },
+      // Smooth tween for rake / line toggles. 450ms easeInOutCubic gives
+      // the eye time to follow each point shifting from before-rake to
+      // after-rake without feeling laggy on zoom/pan (those use Chart.js's
+      // separate update path and stay snappy).
+      animation: { duration: 450, easing: 'easeInOutCubic' },
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
@@ -1426,9 +1449,13 @@ function renderChart(rawSeries) {
     },
   });
 
+  setChartFooter(rawN, n, downsampled);
+}
+
+function setChartFooter(rawN, sampleCount, downsampled) {
   const handCountRaw = rawN.toLocaleString();
   const downsampleNote = downsampled
-    ? `  •  showing ${n.toLocaleString()} sample points (auto-downsampled from ${handCountRaw} for performance — final value exact)`
+    ? `  •  showing ${sampleCount.toLocaleString()} sample points (auto-downsampled from ${handCountRaw} for performance — final value exact)`
     : '';
   els.chartFooter.textContent = `${handCountRaw} of ${handCountRaw} Hands${downsampleNote}  •  drag to zoom range  •  shift+wheel to zoom  •  alt+drag to pan`;
 }
