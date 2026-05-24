@@ -91,6 +91,19 @@ async function loadShare(passwordAttempt) {
     }
     return showError("Access denied", "You don't have access to this share.");
   }
+  if (res.status === 429) {
+    // Lambda locks the share after 5 wrong password attempts. Surface the
+    // remaining wait so the visitor knows it's not their network.
+    const body = await safeJson(res);
+    const wait = Math.max(1, Number(body?.retryAfter) || 60);
+    $("#passwordError").hidden = false;
+    $("#passwordError").textContent =
+      `Too many wrong attempts. Try again in ${wait} second${wait === 1 ? "" : "s"}.`;
+    showPasswordGate();
+    $("#passwordInput").value = "";
+    $("#passwordInput").focus();
+    return;
+  }
   if (!res.ok) return showError("Could not load", "Server returned an error. Try again later.");
 
   const data = await res.json();
