@@ -342,27 +342,45 @@ function renderChart() {
   // Chart always renders in $ to match the main app. UC → $ is just /1e6.
   const toY = (uc) => (uc || 0) / 1e6;
 
-  // Show every toggled-on series, even if its values are all zero — the
-  // main recorder behaves the same way. The owner's view IS the source
-  // of truth; if Blue (SD) is flat at 0 there because the snapshot didn't
-  // detect showdowns, the share should reflect exactly that.
-  const datasets = [];
-  if (state.lines.winnings) datasets.push(mkDataset("Winnings",     (series.winningsUC || []).map(toY), COLORS.winnings));
-  if (state.lines.ev)       datasets.push(mkDataset("All-in EV",    (series.evUC       || []).map(toY), COLORS.ev));
-  if (state.lines.red)      datasets.push(mkDataset("Red (non-SD)", (series.redUC      || []).map(toY), COLORS.red));
-  if (state.lines.blue)     datasets.push(mkDataset("Blue (SD)",    (series.blueUC     || []).map(toY), COLORS.blue));
+  // Build all FOUR datasets in a stable order — visibility flips via the
+  // `hidden` flag instead of removing entries. This is what lets Chart.js
+  // tween in place: the rake toggle keeps all four indices populated so
+  // every point lerps from before-rake to after-rake smoothly. Dropping
+  // entries would make Chart.js (index-matched) tween mismatched series.
+  const allDatasets = [
+    { ...mkDataset("Winnings",     (series.winningsUC || []).map(toY), COLORS.winnings), hidden: !state.lines.winnings },
+    { ...mkDataset("All-in EV",    (series.evUC       || []).map(toY), COLORS.ev),       hidden: !state.lines.ev },
+    { ...mkDataset("Red (non-SD)", (series.redUC      || []).map(toY), COLORS.red),      hidden: !state.lines.red },
+    { ...mkDataset("Blue (SD)",    (series.blueUC     || []).map(toY), COLORS.blue),     hidden: !state.lines.blue },
+  ];
 
+  // Update in place when the x-axis is unchanged (rake / line toggle).
+  // Destroy + recreate only on first render — the share payload is frozen
+  // so subsequent toggles always reuse the same chart.
+  if (state.chart && state.chart.data.labels.length === labels.length) {
+    state.chart.data.labels = labels;
+    state.chart.data.datasets.forEach((ds, i) => {
+      const next = allDatasets[i];
+      ds.data = next.data;
+      ds.hidden = next.hidden;
+    });
+    state.chart.update();
+    document.getElementById("chartFooter").textContent =
+      `${handsTotal.toLocaleString()} hands · ${n.toLocaleString()} sample points · drag to zoom · shift+wheel to zoom · alt+drag to pan`;
+    return;
+  }
   if (state.chart) state.chart.destroy();
+
   state.chart = new Chart(document.getElementById("evChart").getContext("2d"), {
     type: "line",
-    data: { labels, datasets },
+    data: { labels, datasets: allDatasets },
     plugins: [zeroLinePlugin],
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      // Matches the main recorder — short tween on chart recreate so line
-      // toggles + rake toggle fade in/out smoothly.
-      animation: { duration: 250, easing: "easeOutQuart" },
+      // Smooth tween for rake / line toggles. 450ms easeInOutCubic lets the
+      // eye follow each point shifting from before-rake to after-rake.
+      animation: { duration: 450, easing: "easeInOutCubic" },
       interaction: { mode: "index", intersect: false },
       scales: {
         x: {
