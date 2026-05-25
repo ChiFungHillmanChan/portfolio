@@ -368,3 +368,20 @@
   border: 1px solid rgba(255,255,255,0.18);
 }
 .sessions-stale-banner__actions .btn-secondary:hover { color: #fff; border-color: rgba(255,255,255,0.35); }
+
+/* "Consolidate all into one" banner — re-skins .sessions-stale-banner with a
+   cool accent so the two banners (refresh-cache vs combine-sessions) read as
+   distinct when they stack. Layout/structure is inherited from the parent
+   class; only colors are overridden here. */
+.sessions-consolidate-banner {
+  background: rgba(56, 189, 248, 0.10);
+  border-color: rgba(56, 189, 248, 0.35);
+}
+.sessions-consolidate-banner .sessions-stale-banner__icon { color: #38bdf8; }
+.sessions-consolidate-banner .sessions-stale-banner__title { color: #38bdf8; }
+.sessions-consolidate-banner .sessions-stale-banner__fill {
+  background: linear-gradient(90deg, #38bdf8, #0ea5e9);
+}
+.sessions-consolidate-banner .sessions-stale-banner__actions .btn-primary {
+  background: linear-gradient(180deg, #38bdf8 0%, #0ea5e9 100%);
+}

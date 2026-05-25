@@ -1,0 +1,289 @@
+/* live-share.css — Settings drawer "Live share" card.
+   Matches the visual language of `.cloud-restore-*` and `.tier-banner` from
+   cloud.css. The card is mounted by cloud/live-share-ui.js into a single slot
+   inside the Settings drawer (created by bootstrap.js when the user signs in). */
+
+.live-share-card-mount {
+  margin: 0 0 12px;
+}
+
+.live-share-card {
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.04), rgba(59, 130, 246, 0.04));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 0.85rem 1rem;
+  font-family: 'Rajdhani', sans-serif;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.live-share-card--free {
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.04), rgba(168, 85, 247, 0.04));
+}
+
+.live-share-card--frozen {
+  background: linear-gradient(135deg, rgba(251, 146, 60, 0.06), rgba(255, 255, 255, 0.02));
+  border-color: rgba(251, 146, 60, 0.30);
+}
+
+.live-share-card__title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.02em;
+}
+
+.live-share-card__subtitle {
+  font-size: 0.9rem;
+  color: #b0b4bc;
+  line-height: 1.4;
+}
+
+.live-share-card__row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.live-share-card__row--end {
+  justify-content: flex-end;
+}
+
+.live-share-card__meta {
+  font-size: 12.5px;
+  color: #888;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.live-share-card__upgrade-cta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.live-share-card__frozen-banner {
+  background: rgba(251, 146, 60, 0.12);
+  border: 1px solid rgba(251, 146, 60, 0.35);
+  border-radius: 8px;
+  padding: 0.55rem 0.75rem;
+  color: #fbbf24;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.live-share-card__frozen-banner strong {
+  color: #fb923c;
+  font-weight: 700;
+}
+
+/* URL row */
+.live-share-card__url-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.live-share-card__url-input {
+  flex: 1 1 200px;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #d0d0d8;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12.5px;
+  user-select: all;
+}
+
+.live-share-card__url-input:focus {
+  outline: none;
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Buttons */
+.live-share-card__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: filter 0.15s, background 0.15s, border-color 0.15s, color 0.15s;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.live-share-card__btn--small {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.live-share-card__btn--primary {
+  background: linear-gradient(180deg, #4ade80 0%, #22c55e 100%);
+  color: #0a0a0f;
+  border-color: transparent;
+}
+
+.live-share-card__btn--primary:hover:not(:disabled) {
+  filter: brightness(1.1);
+}
+
+.live-share-card__btn--secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ddd;
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.live-share-card__btn--secondary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.32);
+  color: #fff;
+}
+
+.live-share-card__btn--danger {
+  background: rgba(239, 68, 68, 0.14);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.32);
+}
+
+.live-share-card__btn--danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.24);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #fff;
+}
+
+.live-share-card__btn:disabled,
+.live-share-card__btn[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+  filter: none;
+}
+
+/* Inline text-style links (Add password / Change / Remove / Cancel) */
+.live-share-card__link {
+  background: transparent;
+  border: 0;
+  color: #93c5fd;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 4px 6px;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.live-share-card__link:hover:not(:disabled) {
+  color: #bfdbfe;
+}
+
+.live-share-card__link--danger {
+  color: #fca5a5;
+}
+
+.live-share-card__link--danger:hover:not(:disabled) {
+  color: #fecaca;
+}
+
+.live-share-card__link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Password row */
+.live-share-card__password-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.live-share-card__password-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #b0b4bc;
+  font-size: 13px;
+}
+
+.live-share-card__badge {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(74, 222, 128, 0.12);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.live-share-card__password-inline {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.live-share-card__password-input {
+  flex: 1 1 160px;
+  min-width: 0;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 6px 10px;
+  color: #d0d0d8;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px;
+}
+
+.live-share-card__password-input:focus {
+  outline: none;
+  border-color: rgba(74, 222, 128, 0.45);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+/* Inline status (success / error) */
+.live-share-card__status {
+  font-size: 12.5px;
+  font-family: 'Rajdhani', sans-serif;
+  line-height: 1.4;
+  min-height: 0;
+}
+
+.live-share-card__success {
+  color: #4ade80;
+}
+
+.live-share-card__error {
+  color: #ef4444;
+}
+
+@media (max-width: 480px) {
+  .live-share-card__url-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .live-share-card__url-input {
+    flex: 1 1 100%;
+  }
+  .live-share-card__row--end {
+    justify-content: stretch;
+  }
+  .live-share-card__row--end > .live-share-card__btn {
+    width: 100%;
+  }
+}

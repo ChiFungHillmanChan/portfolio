@@ -46,6 +46,15 @@ function flattenSeries(series) {
 // Downsample to MAX_POINTS so the backend doesn't reject + the share-page
 // loads fast. Mirrors upload.js's downsampleSeries() shape but lives here so
 // the share-pipeline doesn't depend on upload.js internals.
+//
+// Exported as `downsampleShareSeries` so the live-share wrapper can call the
+// same sanitiser without depending on snapshot-specific buildSharePayload
+// fields (type/title/expireDays). Kept as a named alias so existing internal
+// callers (buildSharePayload) don't have to change.
+export function downsampleShareSeries(series) {
+  return downsampleForShare(series);
+}
+
 function downsampleForShare(series) {
   if (!series) return null;
   const flat = flattenSeries(series);
@@ -87,15 +96,12 @@ function ucToBb(uc, bbPer100, hands, totalUC) {
   return total / bbValueUC;
 }
 
-// Build the payload for create-stats-share.
-//
-//   src: { summary, seriesBefore, seriesAfter } — the same shapes that
-//        upload.js stores in `lastCompute`.
-//   meta: { stakes?, firstHandAt?, lastHandAt? } — optional context the
-//         backend will bucket into "Mid"/"Last 6 months" labels.
-export function buildSharePayload({ type, title, expireDays, password, summary, seriesBefore, seriesAfter, meta }) {
+// Build just the sanitised summary object — the part of the payload that's
+// identical between snapshot shares (`create-stats-share`) and live shares
+// (`enable-live-share` / `update-live-share`). Snapshot-only fields (type,
+// title, expireDays, password) live in `buildSharePayload`.
+export function buildShareSummary({ summary, meta }) {
   if (!summary) throw new Error("summary-missing");
-  if (!seriesAfter && !seriesBefore) throw new Error("series-missing");
 
   const hands = Number(summary.hands) || 0;
 
@@ -110,7 +116,7 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
   // session can't break the share page chart.
   const bbValueUsd = computeBbValueUsd(summary, hands, meta);
 
-  const sanitisedSummary = {
+  return {
     hands,
     bbPer100Before: Number(summary.bbPer100Before) || 0,
     bbPer100After:  Number(summary.bbPer100After)  || 0,
@@ -132,6 +138,19 @@ export function buildSharePayload({ type, title, expireDays, password, summary, 
     firstHandAt:  meta?.firstHandAt ?? null,
     lastHandAt:   meta?.lastHandAt ?? null,
   };
+}
+
+// Build the payload for create-stats-share.
+//
+//   src: { summary, seriesBefore, seriesAfter } — the same shapes that
+//        upload.js stores in `lastCompute`.
+//   meta: { stakes?, firstHandAt?, lastHandAt? } — optional context the
+//         backend will bucket into "Mid"/"Last 6 months" labels.
+export function buildSharePayload({ type, title, expireDays, password, summary, seriesBefore, seriesAfter, meta }) {
+  if (!summary) throw new Error("summary-missing");
+  if (!seriesAfter && !seriesBefore) throw new Error("series-missing");
+
+  const sanitisedSummary = buildShareSummary({ summary, meta });
 
   return {
     type,                                 // "graphs" | "hands"
