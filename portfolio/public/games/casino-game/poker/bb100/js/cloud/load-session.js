@@ -197,8 +197,12 @@ export async function hydrateReplayForSession(sessionMeta, { signal } = {}) {
   });
 
   throwIfAborted(signal);
-  await hydrateHandsForReplay(hands, { sessionId: sessionMeta.sessionId });
-  return { handCount: hands.length };
+  // hydrateHandsForReplay dedupes by hand.id — the cloud hands.txt.gz often
+  // contains the same hand across multiple files (GG splits sessions when
+  // tables/buy-ins change). Return the post-dedup count so the cloud-restore
+  // status banner matches the number of hands actually rendered in the chart.
+  const dedupedCount = await hydrateHandsForReplay(hands, { sessionId: sessionMeta.sessionId });
+  return { handCount: dedupedCount || hands.length };
 }
 
 async function recomputeFromHands(sessionMeta, onStatus, { signal } = {}) {
