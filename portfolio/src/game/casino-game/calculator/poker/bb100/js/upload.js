@@ -126,9 +126,16 @@ const HAND_KINDS = [
 ];
 let chartInstance = null;
 
-// Notify cloud bootstrap when a session is loaded (no hard dependency — cloud module is loaded as a sibling script)
+// Notify cloud bootstrap when a session is loaded (no hard dependency — cloud module is loaded as a sibling script).
+// Called from BOTH paths:
+//   (a) renderAll's cold compute path — parsedHands populated, full state.
+//   (b) loadCachedSession — chart up from cached series, parsedHands still empty
+//       (replay hydration runs later). We push state anyway so live-share +
+//       "Save to cloud" can detect the loaded summary/series. Once
+//       hydrateHandsForReplay runs, it calls this again with hands populated.
+// Requires at minimum a summary so consumers never see a half-built state.
 function notifyCloudSessionLoaded() {
-  if (parsedHands.length === 0) return;
+  if (!lastSummary) return;
   // Dynamic import keeps cloud code out of the critical path for logged-out users.
   import('./cloud/session-state.js')
     .then(({ setCurrentSession }) => {
@@ -1813,6 +1820,13 @@ export async function loadCachedSession({ summary, seriesBefore, seriesAfter, ha
   // Drive the actual draw via the existing renderAll path — its first guard
   // hits the cached-session branch and re-uses rerenderFromCache + renderPosition.
   await renderAll();
+
+  // Push state to session-state.js so live-share + "Save to cloud" can see
+  // the loaded session even before replay data hydrates. Hands are empty at
+  // this point (hydrateHandsForReplay fills them in a background pass); save
+  // button will stay hidden until then, but live-share's enable button —
+  // which only needs summary + series — becomes available immediately.
+  notifyCloudSessionLoaded();
 }
 
 /**
@@ -1832,9 +1846,9 @@ export async function loadCachedSession({ summary, seriesBefore, seriesAfter, ha
  *                                   current cached session no longer matches.
  */
 export async function hydrateHandsForReplay(hands, opts = {}) {
-  if (!lastCompute || !lastCompute.isCachedSession) return;
-  if (!Array.isArray(hands) || hands.length === 0) return;
-  if (opts.sessionId && lastCompute.sessionMeta?.sessionId !== opts.sessionId) return;
+  if (!lastCompute || !lastCompute.isCachedSession) return 0;
+  if (!Array.isArray(hands) || hands.length === 0) return 0;
+  if (opts.sessionId && lastCompute.sessionMeta?.sessionId !== opts.sessionId) return 0;
 
   allHandsById.clear();
   for (const h of hands) {
@@ -1851,6 +1865,15 @@ export async function hydrateHandsForReplay(hands, opts = {}) {
 
   renderReplayFilterBar();
   renderHandBrowserFiltered(applyReplayFilter(parsedHands));
+
+  // Re-push to session-state so the "Save to cloud" button (which requires
+  // hands.length > 0) becomes available now that replay data is in memory.
+  notifyCloudSessionLoaded();
+
+  // Return the deduped count so callers (cloud/load-session.js) can show a
+  // status banner that matches the chart's hand count, not the raw pre-dedup
+  // count from the downloaded hands.txt.gz.
+  return parsedHands.length;
 }
 
 /**
