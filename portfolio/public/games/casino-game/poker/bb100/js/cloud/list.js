@@ -56,6 +56,16 @@ export async function renderSessions(container) {
     container.appendChild(buildStaleBanner(staleSessions, container));
   }
 
+  // Consolidate banner: when the user has 2+ cloud sessions (typically legacy
+  // multi-snapshot users from before the multi-merge auto-fold), surface an
+  // explicit one-click "combine them all into one" affordance. The flow
+  // mirrors the stale-cache banner: it owns its own progress UI and re-renders
+  // the list when done so the banner disappears and the new single session
+  // shows in place of the originals.
+  if (listResp.sessions.length >= 2) {
+    container.appendChild(buildConsolidateBanner(listResp.sessions, container));
+  }
+
   const list = document.createElement("ul");
   list.className = "sessions-list";
 
@@ -271,4 +281,124 @@ function buildStaleBanner(staleSessions, sessionsContainer) {
   });
 
   return wrap;
+}
+
+// ─── "Consolidate all into one" banner ────────────────────────────────────
+// Shown when the user has 2+ cloud sessions. Clicking "Combine all" downloads
+// + parses + dedups every prior cloud session into a single combined dataset
+// via consolidateAllSessions(), uploads the result, then best-effort deletes
+// the source sessions. The DOM/style pattern mirrors buildStaleBanner so the
+// two banners look consistent when they stack above the list.
+
+function buildConsolidateBanner(allSessions, sessionsContainer) {
+  const totalHands = allSessions.reduce((sum, s) => sum + (s.handCount || 0), 0);
+
+  const wrap = document.createElement("div");
+  wrap.className = "sessions-stale-banner sessions-consolidate-banner";
+  // innerHTML is built from trusted literals + numeric counts only.
+  wrap.innerHTML = `
+    <div class="sessions-stale-banner__icon" aria-hidden="true">
+      <svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="8 17 12 21 16 17"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.88 18.09A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.29"/></svg>
+    </div>
+    <div class="sessions-stale-banner__body">
+      <div class="sessions-stale-banner__title">You have ${allSessions.length} cloud sessions. Combine them into one growing snapshot so future opens are simpler.</div>
+      <div class="sessions-stale-banner__sub">Combine ${allSessions.length} sessions (${totalHands.toLocaleString()} hands)</div>
+      <div class="sessions-stale-banner__progress" hidden>
+        <div class="sessions-stale-banner__bar"><div class="sessions-stale-banner__fill"></div></div>
+        <div class="sessions-stale-banner__status">Preparing…</div>
+      </div>
+    </div>
+    <div class="sessions-stale-banner__actions">
+      <button type="button" class="btn-primary" data-consolidate-action="run">Combine all</button>
+    </div>
+  `;
+
+  const runBtn = wrap.querySelector('[data-consolidate-action="run"]');
+  runBtn.addEventListener("click", () => runConsolidation(allSessions, wrap, sessionsContainer));
+
+  return wrap;
+}
+
+async function runConsolidation(allSessions, banner, sessionsContainer) {
+  const confirmText = `Combine all ${allSessions.length} sessions into one? This downloads + recomputes them locally and replaces all of them with a single new session. The originals are deleted only after the new save succeeds.`;
+  if (!confirm(confirmText)) return;
+
+  const runBtn = banner.querySelector('[data-consolidate-action="run"]');
+  const progressWrap = banner.querySelector(".sessions-stale-banner__progress");
+  const fill = banner.querySelector(".sessions-stale-banner__fill");
+  const status = banner.querySelector(".sessions-stale-banner__status");
+  const sub = banner.querySelector(".sessions-stale-banner__sub");
+
+  if (runBtn) { runBtn.disabled = true; runBtn.hidden = true; }
+  if (progressWrap) progressWrap.hidden = false;
+
+  const { consolidateAllSessions } = await import("./auto-merge.js");
+  let merged;
+  try {
+    merged = await consolidateAllSessions({
+      onStatus: (msg) => { status.textContent = msg; },
+      onProgress: ({ progress }) => {
+        const pct = Math.round((progress || 0) * 100);
+        fill.style.width = `${pct}%`;
+      },
+    });
+  } catch (err) {
+    status.textContent = `Failed: ${err.message}`;
+    return;
+  }
+  if (!merged) {
+    status.textContent = "Nothing to consolidate.";
+    return;
+  }
+
+  const { saveSessionToCloud } = await import("./upload.js");
+  const { deleteSession } = await import("./delete.js");
+
+  let saved;
+  try {
+    saved = await saveSessionToCloud({
+      hands: merged.hands,
+      originalFiles: merged.files,
+      summary: merged.summary,
+      seriesBefore: merged.seriesBefore,
+      seriesAfter: merged.seriesAfter,
+      onProgress: ({ progress }) => {
+        const pct = Math.round((progress || 0) * 100);
+        fill.style.width = `${pct}%`;
+        status.textContent = `Uploading combined session… ${pct}%`;
+      },
+    });
+  } catch (err) {
+    status.textContent = `Upload failed: ${err.message}`;
+    return;
+  }
+
+  // Best-effort: delete the now-superseded source sessions. We never delete
+  // the freshly-uploaded combined session (defensive — saveSessionToCloud
+  // generates a brand-new id so the saved.sessionId won't appear in
+  // mergedFromSessionIds in practice, but the check is cheap).
+  let deleted = 0;
+  let failed = 0;
+  for (const id of merged.mergedFromSessionIds || []) {
+    if (!id || id === saved.sessionId) continue;
+    try {
+      await deleteSession(id);
+      deleted++;
+    } catch (delErr) {
+      failed++;
+      console.warn("[poker consolidate] delete failed for", id, ":", delErr.message);
+    }
+  }
+
+  if (failed === 0) {
+    sub.textContent = `Done. ${deleted} sessions consolidated into one (${saved.handCount.toLocaleString()} hands).`;
+    status.textContent = "Done.";
+  } else {
+    sub.textContent = `Combined into one (${saved.handCount.toLocaleString()} hands). ${failed} old session(s) could not be deleted — remove them manually.`;
+    status.textContent = "Done with errors.";
+  }
+
+  // Re-render the list so the banner disappears and the new single session
+  // shows in place of the originals.
+  setTimeout(() => renderSessions(sessionsContainer), 1500);
 }

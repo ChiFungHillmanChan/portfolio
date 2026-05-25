@@ -7,6 +7,7 @@
 
 import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { auth } from "../auth/firebase-init.js";
+import { apiCall } from "../auth/api-client.js";
 import { getQuota, renderQuotaMeter, invalidateQuotaCache } from "./quota.js";
 import { saveSessionToCloud } from "./upload.js";
 import { renderSessions } from "./list.js";
@@ -19,6 +20,11 @@ import {
   invalidateInlineRestoreCache,
   refreshInlineRestore,
 } from "./inline-restore.js";
+import {
+  mountLiveShareCard,
+  unmountLiveShareCard,
+  refreshLiveShareCard,
+} from "./live-share-ui.js";
 
 const SAVE_BUTTON_ID = "saveToCloudBtn";
 const SAVE_STATUS_ID = "saveToCloudStatus";
@@ -27,6 +33,8 @@ const TIER_BANNER_ID = "tierBanner";
 const UPGRADE_TOAST_ID = "upgradeToast";
 const SESSIONS_PANEL_SELECTOR = '[data-tab-panel="sessions"]';
 const SAVE_CONTAINER_ID = "saveToCloudContainer";
+const LIVE_SHARE_CARD_ID = "liveShareCard";
+const LIVE_SHARE_SECTION_ID = "settingsLiveShareSection";
 
 // Polling state for post-checkout return — webhook may take a few seconds
 let upgradePollingState = { active: false, timer: null, startTier: null };
@@ -98,6 +106,17 @@ async function refreshQuotaMeter() {
   renderQuotaMeter(document.getElementById(QUOTA_METER_ID), q);
   renderTierBanner(document.getElementById(TIER_BANNER_ID), q);
   return q;
+}
+
+// Mount the Settings drawer "Live share" card. Free users see an upsell;
+// paid users see the toggle / URL / password controls. Safe to call multiple
+// times — the card's own mountLiveShareCard() handles re-mount cleanup.
+function mountLiveShareForTier(tier) {
+  const section = document.getElementById(LIVE_SHARE_SECTION_ID);
+  const slot = document.getElementById(LIVE_SHARE_CARD_ID);
+  if (!section || !slot) return;
+  section.hidden = false;
+  mountLiveShareCard(slot, { tier: tier || "free", getCurrentSession });
 }
 
 // Poll quota repeatedly after a Stripe checkout return until the webhook has
@@ -202,10 +221,19 @@ function renderSaveButton() {
       const mergedFromHandCount = mergeResult?.mergedFromHandCount || 0;
       const newHandsDelta = mergeResult ? handCount - mergedFromHandCount : 0;
 
-      // `sourceSessionId` on the merged data points at the previous cloud
-      // session that we're about to supersede. Capture it now so the
-      // existing delete-after-save logic still works unchanged.
+      // `sourceSessionId` on the merged data points at the most-recent cloud
+      // session that we're about to supersede. `mergedFromSessionIds` carries
+      // the FULL list of superseded sessions (multi-merge fold). Both are
+      // captured now so the existing delete-after-save logic can remove every
+      // one of them. We dedup defensively in case the merge step ever emits
+      // overlapping ids.
       const previousCloudSessionId = dataToSave.sourceSessionId || null;
+      const mergedFromSessionIds = Array.isArray(mergeResult?.mergedFromSessionIds)
+        ? mergeResult.mergedFromSessionIds.filter(Boolean)
+        : previousCloudSessionId
+          ? [previousCloudSessionId]
+          : [];
+      const idsToDelete = Array.from(new Set(mergedFromSessionIds));
       try {
         const r = await saveSessionToCloud({
           hands: dataToSave.hands,
@@ -228,20 +256,37 @@ function renderSaveButton() {
         });
         hideProgress();
 
-        // If this view came from a previous cloud session, delete it now that
-        // the combined snapshot is committed — the new session is a strict
-        // superset, so keeping the old one would just leave a duplicate.
-        // Best-effort: the new save is already safe in S3 so a transient
-        // delete failure isn't fatal; we surface it as a soft warning.
+        // If this view folded together one or more previous cloud sessions,
+        // delete each of them now that the combined snapshot is committed —
+        // the new session is a strict superset, so keeping the old ones
+        // would just leave duplicates. Best-effort: the new save is already
+        // safe in S3 so a transient delete failure isn't fatal; we surface
+        // it as a soft warning and continue with any remaining ids.
         let replacedPreviousNote = "";
-        if (previousCloudSessionId && previousCloudSessionId !== r.sessionId) {
-          try {
-            const { deleteSession } = await import("./delete.js");
-            await deleteSession(previousCloudSessionId);
-            replacedPreviousNote = ` · replaced previous version (${escapeHtml(previousCloudSessionId.slice(-8))})`;
-          } catch (delErr) {
-            console.warn("[poker cloud] previous session delete failed:", delErr.message);
-            replacedPreviousNote = ` · previous version (${escapeHtml(previousCloudSessionId.slice(-8))}) could not be deleted — remove it manually from My Sessions`;
+        const idsActuallyDeleted = [];
+        const idsFailedToDelete = [];
+        const idsToReplace = idsToDelete.filter((id) => id && id !== r.sessionId);
+        if (idsToReplace.length > 0) {
+          const { deleteSession } = await import("./delete.js");
+          for (const id of idsToReplace) {
+            try {
+              await deleteSession(id);
+              idsActuallyDeleted.push(id);
+            } catch (delErr) {
+              console.warn(`[poker cloud] previous session ${id} delete failed:`, delErr.message);
+              idsFailedToDelete.push(id);
+            }
+          }
+          if (idsActuallyDeleted.length > 0) {
+            if (idsToReplace.length === 1) {
+              replacedPreviousNote = ` · replaced previous version (${escapeHtml(idsActuallyDeleted[0].slice(-8))})`;
+            } else {
+              replacedPreviousNote = ` · replaced previous version (${idsActuallyDeleted.length} sessions consolidated)`;
+            }
+          }
+          if (idsFailedToDelete.length > 0) {
+            const failedShort = idsFailedToDelete.map((id) => escapeHtml(id.slice(-8))).join(", ");
+            replacedPreviousNote += ` · ${idsFailedToDelete.length} previous version(s) could not be deleted (${failedShort}) — remove them manually from My Sessions`;
           }
         }
 
@@ -254,6 +299,49 @@ function renderSaveButton() {
         } catch (_) {
           // upload.js may have been hot-reloaded / older — non-fatal.
         }
+
+        // Fire-and-forget: if the user has live share enabled, push the
+        // newly-saved summary + series so public viewers see the latest.
+        // Failure is non-fatal — the save itself already succeeded, and a
+        // missed update just means the live page is one snapshot behind.
+        //
+        // Wrapped in an IIFE so the outer save flow returns immediately;
+        // we do NOT await this. The save success status is set above and
+        // must not be overwritten unless the live-share Lambda explicitly
+        // tells us the share is frozen (paid→free downgrade).
+        (async () => {
+          try {
+            const live = await import("./live-share.js");
+            const status = await live.getMyLiveShare().catch(() => null);
+            if (!status?.enabled) return;
+            await live.updateLiveShare({
+              summary: dataToSave.summary,
+              seriesBefore: dataToSave.seriesBefore,
+              seriesAfter: dataToSave.seriesAfter,
+              meta: {
+                stakes: dataToSave.summary?.stakesBucket ?? null,
+                firstHandAt: dataToSave.summary?.firstHandAt ?? null,
+                lastHandAt: dataToSave.summary?.lastHandAt ?? null,
+              },
+            });
+            console.log("[poker live-share] refreshed");
+          } catch (err) {
+            // apiCall throws "poker-api-403: <body>" — match both the
+            // status prefix and the body keyword so we surface the
+            // upgrade prompt regardless of which side of the colon the
+            // marker lands on.
+            const msg = String(err?.message || "");
+            if (msg.includes("live_share_frozen") || msg.includes("poker-api-403")) {
+              const s = document.getElementById(SAVE_STATUS_ID);
+              if (s) {
+                s.className = "save-status warn";
+                s.innerHTML = "Live share frozen — upgrade to resume updates.";
+              }
+            } else {
+              console.warn("[poker live-share] update failed:", msg);
+            }
+          }
+        })();
 
         // When a merge happened: rebind the local chart + state to the
         // combined dataset, so the user sees the merged chart (not just the
@@ -300,6 +388,9 @@ function renderSaveButton() {
         // immediately reachable without a page reload.
         invalidateInlineRestoreCache();
         refreshInlineRestore().catch(() => {});
+        // Also refresh the Settings drawer "Live share" card so the
+        // "Last updated" line reflects the just-pushed snapshot.
+        refreshLiveShareCard().catch(() => {});
         // If My Sessions tab is currently visible, refresh it
         if (isSessionsTabActive()) {
           maybeRenderSessions(true);
@@ -367,14 +458,71 @@ function watchTabActivation() {
   if (panel) observer.observe(panel, { attributes: true, attributeFilter: ["hidden"] });
 }
 
+// On login, if the user already has cloud sessions saved AND their newest one
+// has a cached series.json.gz (the cheap re-open path), automatically open it
+// into the chart so the recorder feels "remembering" rather than a blank
+// slate. Skips silently when:
+//   - the user is mid-upload (an in-memory session already exists)
+//   - they have zero sessions
+//   - the newest session is legacy (no hasSeries) — opening would force an
+//     expensive recompute on every page load
+// Aborts cleanly on tab close so a long fetch doesn't hold the page alive.
+async function maybeAutoLoadLatestSession() {
+  if (getCurrentSession()) return; // user already has a session in memory; don't override
+  let list;
+  try {
+    list = await apiCall("list-sessions", {});
+  } catch (err) {
+    console.warn("[poker auto-load] list-sessions failed:", err.message);
+    return;
+  }
+  if (!list?.ok || !Array.isArray(list.sessions) || list.sessions.length === 0) return;
+
+  const latest = list.sessions
+    .slice()
+    .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))[0];
+  if (!latest?.sessionId) return;
+  // Cheap-path requires the cached series.json.gz. If the session was saved
+  // before the series cache existed, fall through — the user can click Open
+  // from inline-restore.
+  if (!latest.hasSeries) return;
+
+  // Second guard against the race where files are mid-parse: by the time we
+  // got here the user may have populated the in-memory session.
+  if (getCurrentSession()) return;
+
+  const { openCloudSession } = await import("./load-session.js");
+  const controller = new AbortController();
+  const onHide = () => { try { controller.abort(); } catch (_) {} };
+  window.addEventListener("pagehide", onHide, { once: true });
+
+  try {
+    await openCloudSession(latest, {
+      signal: controller.signal,
+      onStatus: (msg) => console.log("[poker auto-load]", msg),
+    });
+  } catch (err) {
+    if (err?.name !== "AbortError") {
+      console.warn("[poker auto-load] failed:", err.message);
+    }
+  } finally {
+    window.removeEventListener("pagehide", onHide);
+  }
+}
+
 function init() {
   watchTabActivation();
   onSessionChange(() => renderSaveButton());
 
   // The sessions panel now lives inside the Settings drawer. When the user
-  // opens the drawer, refresh + render their session list.
+  // opens the drawer, refresh + render their session list AND refresh the
+  // live-share card so "Last updated" and views counts are fresh.
   window.addEventListener("settings:open", () => {
-    if (currentUser) maybeRenderSessions(true);
+    if (!currentUser) return;
+    maybeRenderSessions(true);
+    refreshLiveShareCard().catch((err) => {
+      console.warn("[poker live-share-ui] settings-open refresh failed:", err.message);
+    });
   });
 
   onAuthStateChanged(auth, async (user) => {
@@ -394,6 +542,14 @@ function init() {
 
       const q = await refreshQuotaMeter();
       renderSaveButton();
+      // Mount the Settings drawer "Live share" card. Free tier renders the
+      // upsell; paid tiers render the toggle / URL / password controls.
+      // The card refreshes itself in the background when mounted.
+      try {
+        mountLiveShareForTier(q?.tier || "free");
+      } catch (err) {
+        console.warn("[poker live-share-ui] mount failed:", err.message);
+      }
       // Mount the inline cloud-restore panel inside the Upload tab so the
       // user can re-open a saved session in one click without navigating to
       // Settings → My Sessions. Failure is non-fatal — the Settings panel
@@ -401,6 +557,15 @@ function init() {
       mountInlineRestore().catch((err) => {
         console.warn("[poker cloud] inline restore mount failed:", err.message);
       });
+
+      // Auto-open the user's latest cloud session into the chart so the
+      // recorder feels "remembering" rather than a blank slate. Runs in
+      // parallel with inline-restore mounting — both share the list-sessions
+      // call but the Lambda handles concurrent requests fine.
+      maybeAutoLoadLatestSession().catch((err) => {
+        console.warn("[poker auto-load] outer error:", err.message);
+      });
+
       if (isSessionsTabActive()) maybeRenderSessions();
 
       // If user just returned from Stripe Checkout, poll until the webhook
@@ -419,6 +584,9 @@ function init() {
       const slot = document.getElementById(SAVE_CONTAINER_ID);
       if (slot) slot.replaceChildren();
       unmountInlineRestore();
+      unmountLiveShareCard();
+      const lsSection = document.getElementById(LIVE_SHARE_SECTION_ID);
+      if (lsSection) lsSection.hidden = true;
       const panel = document.querySelector(SESSIONS_PANEL_SELECTOR);
       if (panel) {
         panel.replaceChildren();
