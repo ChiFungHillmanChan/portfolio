@@ -252,12 +252,12 @@ body.share-page {
 }
 
 .chart-zoom-out-btn {
-  /* Pinned top-LEFT so it never overlaps the right-side Y-axis labels
-     on narrow viewports (mobile / iPad portrait). Fullscreen button
-     stays at top-right. */
+  /* Lifted above the canvas (top: -2.25rem) so it sits in the chart-controls
+     strip area, clear of the right-side Y-axis labels. Placed to the LEFT of
+     the fullscreen button on the right edge — both buttons cluster top-right. */
   position: absolute;
-  top: 0.5rem;
-  left: 0.5rem;
+  top: -2.25rem;
+  right: 3rem;
   z-index: 5;
   width: 32px;
   height: 32px;
@@ -284,7 +284,7 @@ body.share-page {
 
 .chart-fullscreen-btn {
   position: absolute;
-  top: 0.5rem;
+  top: -2.25rem;
   right: 0.5rem;
   z-index: 5;
   width: 32px;
