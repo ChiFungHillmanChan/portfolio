@@ -179,3 +179,25 @@ export function extractActions(text) {
 
   return { meta, seats, events, summary };
 }
+
+// Sum of blinds + antes + Cash Drop before any voluntary action — the dead
+// money sitting in the pot when UTG faces a decision. On GGPoker, a Cash
+// Drop pushing this past 10bb marks a "red pocket" / lucky table; the
+// replay paints the felt orange in that case as a visual flag.
+export function initialDeadPot(extracted) {
+  if (!extracted || !Array.isArray(extracted.events)) return 0;
+  let dead = 0;
+  for (const ev of extracted.events) {
+    if (ev.type === 'action') break;
+    if (ev.type === 'cash-drop' || ev.type === 'post-blind') {
+      dead += Number(ev.amount) || 0;
+    }
+  }
+  return dead;
+}
+
+export function isRedPocketHand(extracted) {
+  const bb = Number(extracted?.meta?.stake?.bb) || 0;
+  if (bb <= 0) return false;
+  return initialDeadPot(extracted) >= 10 * bb - 1e-9;
+}

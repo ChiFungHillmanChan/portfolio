@@ -171,16 +171,19 @@ function cardSuitGlyph(card) {
  *
  * @param {HTMLElement} mountEl  Element to mount the SVG into.
  * @param {Object}      snap0    Initial snapshot (uses meta-derived seats).
+ * @param {{redPocket?:boolean}} [opts]
+ *   redPocket: paint the felt orange/shiny to flag a GGPoker "red pocket"
+ *   table (initial dead pot ≥ 10bb, typically from Cash Drop).
  * @returns {Object}             Refs keyed by element role.
  */
-export function buildTable(mountEl, snap0) {
+export function buildTable(mountEl, snap0, opts = {}) {
   const ordered = orderPlayersHeroLast(snap0.players);
   const layout = layoutForSeats(ordered.length);
   const positionLabels = computePositionLabels(ordered);
 
   const svg = svgEl("svg", {
     viewBox: `0 0 ${VIEW_W} ${VIEW_H + VIEWBOX_PAD_BOTTOM}`,
-    class: "poker-table",
+    class: "poker-table" + (opts.redPocket ? " red-pocket" : ""),
     preserveAspectRatio: "xMidYMid meet",
     width: "100%",
   });
