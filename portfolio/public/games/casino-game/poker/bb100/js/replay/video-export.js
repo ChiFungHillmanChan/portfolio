@@ -24,6 +24,7 @@
 // being smeared across the frame.
 
 import { buildTable, renderSnapshot } from "./table-renderer.js";
+import { isRedPocketHand } from "./action-extractor.js";
 
 // Match the SVG viewBox produced by table-renderer.js — VIEW_W=720 and
 // VIEW_H=460 + VIEWBOX_PAD_BOTTOM=30. Getting this aspect ratio right is
@@ -277,7 +278,7 @@ function sleep(ms) {
 // Build a hidden off-screen container hosting its own copy of the table.
 // We never disturb the live modal's SVG — closing the modal mid-export
 // would otherwise tear the source out from under us.
-function buildOffscreenTable(snap0) {
+function buildOffscreenTable(snap0, opts = {}) {
   const wrap = document.createElement("div");
   wrap.setAttribute("aria-hidden", "true");
   wrap.style.cssText = [
@@ -290,7 +291,7 @@ function buildOffscreenTable(snap0) {
     "opacity:0",
   ].join(";");
   document.body.appendChild(wrap);
-  const refs = buildTable(wrap, snap0);
+  const refs = buildTable(wrap, snap0, opts);
   const svg = wrap.querySelector("svg");
   return { wrap, refs, svg };
 }
@@ -319,7 +320,9 @@ export async function exportReplayVideo({
   const { width, height, headerH, footerH, tableRect } = layout;
 
   // Build off-screen DOM
-  const { wrap, refs, svg } = buildOffscreenTable(snapshots[0]);
+  const { wrap, refs, svg } = buildOffscreenTable(snapshots[0], {
+    redPocket: isRedPocketHand(extracted),
+  });
   const cssText = collectTableCss();
   inlineSvgStyles(svg, cssText);
 

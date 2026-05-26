@@ -902,6 +902,30 @@
   stroke-width: 1.5;
 }
 
+/* Red Pocket table — GGPoker Cash Drop pushes the initial dead pot to
+   ≥ 10bb. We swap the felt to a lucky-envelope orange and add a slow
+   shimmer on the inner ellipse so the table reads as "bonus" at a glance.
+   The outer shadow keeps the same lift but tinted amber. */
+.poker-table.red-pocket .felt {
+  fill: #9a3412;
+  stroke: rgba(255, 213, 128, 0.35);
+  stroke-width: 2.5;
+  filter: drop-shadow(0 8px 22px rgba(234, 88, 12, 0.55));
+}
+.poker-table.red-pocket .felt-inner {
+  fill: #ea580c;
+  stroke: rgba(255, 224, 160, 0.45);
+  stroke-width: 1.8;
+  animation: red-pocket-shine 3.2s ease-in-out infinite;
+}
+@keyframes red-pocket-shine {
+  0%, 100% { fill: #ea580c; }
+  50%      { fill: #fb923c; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .poker-table.red-pocket .felt-inner { animation: none; }
+}
+
 /* Pot */
 .poker-table .pot-bg {
   fill: rgba(0,0,0,0.55);

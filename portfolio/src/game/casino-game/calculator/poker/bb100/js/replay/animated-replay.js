@@ -14,7 +14,7 @@
 // in `ensureModal` (one-time setup) and the close button silently failed
 // when DOM ordering / [hidden] attribute interactions left a stale layer.
 
-import { extractActions } from "./action-extractor.js";
+import { extractActions, isRedPocketHand } from "./action-extractor.js";
 import { buildSnapshots } from "./state-engine.js";
 import { buildTable, renderSnapshot } from "./table-renderer.js";
 import { openVideoShareDialog, closeVideoShareDialog } from "./video-share-dialog.js";
@@ -508,7 +508,9 @@ export function showReplay(handText, { title } = {}) {
     title || `Hand Replay — #${extracted.meta.handId || ""}`;
 
   const tableMount = modal.querySelector(".replay-table-mount");
-  const tableRefs = buildTable(tableMount, snapshots[0]);
+  const tableRefs = buildTable(tableMount, snapshots[0], {
+    redPocket: isRedPocketHand(extracted),
+  });
 
   const prefs = loadPrefs();
 
