@@ -9,7 +9,7 @@ import { encodeHand } from '../equity/cards.mjs';
 // Used as the cache-invalidation key for pre-computed cloud-session series:
 // when a saved series.json.gz has an older fingerprint, the client recomputes
 // from raw hands instead of trusting the stored chart.
-export const COMPUTE_FINGERPRINT = 'compute-v1-banker-rake-share-2026-05-22';
+export const COMPUTE_FINGERPRINT = 'compute-v2-rake-only-denom-2026-05-22';
 
 // Street → number of board cards already out when all-in was made
 const STREET_BOARD_LEN = {
@@ -71,8 +71,19 @@ function heroRakeShareByContribution(hand) {
  * Hero's rake share by WIN (= how much rake comes "off Hero's winnings") — used
  * to convert realized P&L into "before rake" P&L.
  *
- *   share = totalFees × heroWonFromPot / NET_pot
- *   NET_pot = totalPot − totalFees − bonusInjections   (what was actually distributed)
+ *   share = totalFees × heroWonFromPot / SHARE_DENOM
+ *   SHARE_DENOM = totalPot − rake − bonusInjections
+ *
+ * Empirically matches GGPoker App's "before rake" P&L view to ≤±1¢ on long
+ * samples (1815 + 23795-hand fixtures, fixture A drift is within the ±1¢
+ * rendering noise of GG's chart). The semantic peculiarity:
+ *
+ * Why subtract ONLY rake from the denominator (not jackpot + tax)?
+ *   GG App's "before rake" view treats Jackpot money as still being inside the
+ *   pot for share-allocation purposes, even though it's a fee in the numerator.
+ *   Subtracting all fees from the denominator (NET pot semantics) produced a
+ *   systematic +3¢/1815-hand drift vs GG's reading. Keeping jackpot in the
+ *   denominator matches GG.
  *
  * Why win-share, not contribution-share, for "before rake":
  *   Rake is taken out of the pot before distribution. The winner is the one who
@@ -80,16 +91,14 @@ function heroRakeShareByContribution(hand) {
  *   are unchanged whether rake exists or not (they paid what they paid). So
  *   "before-rake P&L = realized P&L + (Hero's slice of what the winner got back)".
  *
- * Denominator = NET pot (chips actually distributed) so Hero's collected fraction
- * is correct. Banker's-rounded — matches GGPoker App's "before rake" view to ≤±1¢
- * on long samples.
+ * Banker's-rounded.
  */
 function heroRakeShareByWin(hand) {
   const heroWonFromPot = hand.collectedUC - hand.uncalledUC;
   if (heroWonFromPot <= 0n) return 0n;
   const fees = totalFeesUC(hand);
   if (fees <= 0n) return 0n;
-  const denom = hand.totalPotUC - fees - bonusInjectionsUC(hand);
+  const denom = hand.totalPotUC - (hand.rakeUC ?? 0n) - bonusInjectionsUC(hand);
   if (denom <= 0n) return 0n;
   return bankerRound(fees * heroWonFromPot, denom);
 }
@@ -239,127 +248,53 @@ function evResult(hand, result, beforeRake) {
 }
 
 /**
- * computeSeries(hands, opts, control?) → Promise<{ series, summary }>
+ * prepareHands(hands, control?) → Promise<{ hands, records }>
  *
- * opts.beforeRake: boolean
- *   true  → add Hero's rake share back on winning hands (gross view)
- *   false → report net-of-rake results (default)
+ * Runs the slow per-hand work once — `perHandResult` and `evResult` (which
+ * may invoke an exhaustive equity enumeration on all-in showdowns) — and
+ * returns a per-hand record array aligned with `hands`. Filter changes can
+ * then call `foldPrepared` to produce series + summary without redoing any
+ * equity work; only blind addition over the kept records.
  *
  * control: { yieldEvery?: number, onProgress?: (i, total) => void }
- *   When yieldEvery > 0, the function yields to the event loop after that
- *   many hands so the browser stays responsive on large datasets. Each yield
- *   first calls onProgress(i, total). When yieldEvery = 0 (default), no
- *   yielding happens — the function returns a resolved Promise immediately.
- *   Useful for Node scripts that don't need to share the event loop.
+ *   Same semantics as computeSeries — yields the event loop so the browser
+ *   stays responsive on large datasets.
  *
- * series: {
- *   winningsUC: BigInt[]   cumulative total result
- *   redUC:      BigInt[]   cumulative non-showdown result
- *   blueUC:     BigInt[]   cumulative showdown result
- *   evUC:       BigInt[]   cumulative EV-adjusted result
- * }
- *
- * summary: { hands, totalUC, evTotalUC, evMinusWinUC, bbPer100,
- *            byPosition, rakePaidUC, rakeBbPer100 }
+ * Returns:
+ *   hands:   reference-preserved copy of the input array (identity used as
+ *            a cache key by callers).
+ *   records: Array<{
+ *     resultBeforeUC, resultAfterUC, evBeforeUC, evAfterUC: BigInt
+ *     reachedShowdown: boolean
+ *     bbUC: BigInt
+ *     position: string
+ *     rakeShareUC: BigInt
+ *   }>
  */
-export async function computeSeries(hands, opts = {}, control = {}) {
-  const beforeRake = Boolean(opts.beforeRake);
+export async function prepareHands(hands, control = {}) {
   const yieldEvery = control.yieldEvery | 0;
   const onProgress = control.onProgress || null;
-
-  // --- Series accumulators (BOTH modes simultaneously) ---
-  // Storing both up-front means the rake toggle in the UI just swaps which
-  // pre-computed series the chart draws — no re-iteration, no progress bar.
-  // Memory cost: 8 BigInt arrays × N hands ≈ 5MB at 18K hands. Acceptable.
-  const winningsBeforeUC = [];
-  const redBeforeUC      = [];
-  const blueBeforeUC     = [];
-  const evBeforeUC       = [];
-  const winningsAfterUC = [];
-  const redAfterUC      = [];
-  const blueAfterUC     = [];
-  const evAfterUC       = [];
-
-  let cumWinBefore = 0n,  cumWinAfter = 0n;
-  let cumRedBefore = 0n,  cumRedAfter = 0n;
-  let cumBlueBefore = 0n, cumBlueAfter = 0n;
-  let cumEvBefore = 0n,   cumEvAfter = 0n;
-
-  // --- Summary accumulators ---
-  // We track BOTH "before rake" and "after rake" totals + bb/100 in one pass
-  // so the UI can show both side-by-side without a second compute call.
-  // The equity work inside evResult is shared via the cache, so calling
-  // evResult twice per hand is essentially the same cost as once.
-  const byPosition = {};  // { [pos]: { count, totalUC } } — uses requested mode
-  let bbWeightedBefore = 0;
-  let bbWeightedAfter = 0;
-  let evBbWeightedBefore = 0;
-  let evBbWeightedAfter = 0;
-  let totalBeforeUC = 0n;
-  let totalAfterUC = 0n;
-  let evTotalBeforeUC = 0n;
-  let evTotalAfterUC = 0n;
-  let rakePaidUC   = 0n;
-
   const total = hands.length;
+  const records = new Array(total);
+
   for (let i = 0; i < total; i++) {
     const hand = hands[i];
     // Compute both modes — equity work inside evResult is cache-shared so
     // the second pair is ~free.
-    const resultBefore = perHandResult(hand, true);
-    const resultAfter  = perHandResult(hand, false);
-    const evBefore     = evResult(hand, resultBefore, true);
-    const evAfter      = evResult(hand, resultAfter, false);
-
-    // Build cumulative series for BOTH modes so the UI can toggle without recompute.
-    cumWinBefore += resultBefore;
-    cumWinAfter  += resultAfter;
-    cumEvBefore  += evBefore;
-    cumEvAfter   += evAfter;
-    if (hand.reachedShowdown) {
-      cumBlueBefore += resultBefore;
-      cumBlueAfter  += resultAfter;
-    } else {
-      cumRedBefore  += resultBefore;
-      cumRedAfter   += resultAfter;
-    }
-    winningsBeforeUC.push(cumWinBefore);
-    redBeforeUC.push(cumRedBefore);
-    blueBeforeUC.push(cumBlueBefore);
-    evBeforeUC.push(cumEvBefore);
-    winningsAfterUC.push(cumWinAfter);
-    redAfterUC.push(cumRedAfter);
-    blueAfterUC.push(cumBlueAfter);
-    evAfterUC.push(cumEvAfter);
-
-    // Legacy "active mode" used for position breakdown total column
-    const result = beforeRake ? resultBefore : resultAfter;
-
-    // Totals + bb-weighted sums for both modes
-    totalBeforeUC  += resultBefore;
-    totalAfterUC   += resultAfter;
-    evTotalBeforeUC += evBefore;
-    evTotalAfterUC  += evAfter;
-    const bbUC = hand.stake.bbUC;
-    if (bbUC > 0n) {
-      const bbF = Number(bbUC);
-      bbWeightedBefore += Number(resultBefore) / bbF;
-      bbWeightedAfter  += Number(resultAfter)  / bbF;
-      evBbWeightedBefore += Number(evBefore) / bbF;
-      evBbWeightedAfter  += Number(evAfter)  / bbF;
-    }
-
-    // Position breakdown — uses the user-toggled mode for the dollar column
-    const pos = hand.hero.position;
-    if (!byPosition[pos]) {
-      byPosition[pos] = { count: 0, totalUC: 0n };
-    }
-    byPosition[pos].count++;
-    byPosition[pos].totalUC += result;
-
-    // Rake paid — Hero's contribution share of all fees on EVERY hand Hero put
-    // chips in (winning or losing). Matches GG's "rake paid" dashboard stat.
-    rakePaidUC += heroRakeShareByContribution(hand);
+    const resultBeforeUC = perHandResult(hand, true);
+    const resultAfterUC  = perHandResult(hand, false);
+    const evBeforeUC     = evResult(hand, resultBeforeUC, true);
+    const evAfterUC      = evResult(hand, resultAfterUC, false);
+    records[i] = {
+      resultBeforeUC,
+      resultAfterUC,
+      evBeforeUC,
+      evAfterUC,
+      reachedShowdown: hand.reachedShowdown,
+      bbUC: hand.stake.bbUC,
+      position: hand.hero.position,
+      rakeShareUC: heroRakeShareByContribution(hand),
+    };
 
     // Yield to event loop periodically so the browser stays responsive on
     // large datasets. The slow part is evResult()'s exhaustive equity enum
@@ -383,9 +318,113 @@ export async function computeSeries(hands, opts = {}, control = {}) {
     }
   }
   if (onProgress) onProgress(total, total);
+  return { hands, records };
+}
+
+/**
+ * foldPrepared(prepared, opts?, predicate?) → { series, seriesBefore, seriesAfter, summary }
+ *
+ * Synchronous fold over a `prepareHands` result. Pure addition over the
+ * subset of records where `predicate(hand)` returns true (or all records
+ * if predicate is null). Producing the chart for 30k hands here is ~10ms;
+ * the slow work was paid for in prepareHands.
+ *
+ * Output shape is identical to computeSeries — the chart code and tests
+ * see no difference.
+ */
+export function foldPrepared(prepared, opts = {}, predicate = null) {
+  const beforeRake = Boolean(opts.beforeRake);
+  const { hands, records } = prepared;
+  const total = records.length;
+
+  // --- Series accumulators (BOTH modes simultaneously) ---
+  // Storing both up-front means the rake toggle in the UI just swaps which
+  // pre-computed series the chart draws — no re-iteration, no progress bar.
+  const winningsBeforeUC = [];
+  const redBeforeUC      = [];
+  const blueBeforeUC     = [];
+  const evBeforeUC       = [];
+  const winningsAfterUC = [];
+  const redAfterUC      = [];
+  const blueAfterUC     = [];
+  const evAfterUC       = [];
+
+  let cumWinBefore = 0n,  cumWinAfter = 0n;
+  let cumRedBefore = 0n,  cumRedAfter = 0n;
+  let cumBlueBefore = 0n, cumBlueAfter = 0n;
+  let cumEvBefore = 0n,   cumEvAfter = 0n;
+
+  // --- Summary accumulators ---
+  const byPosition = {};  // { [pos]: { count, totalUC } } — uses requested mode
+  let bbWeightedBefore = 0;
+  let bbWeightedAfter = 0;
+  let evBbWeightedBefore = 0;
+  let evBbWeightedAfter = 0;
+  let totalBeforeUC = 0n;
+  let totalAfterUC = 0n;
+  let evTotalBeforeUC = 0n;
+  let evTotalAfterUC = 0n;
+  let rakePaidUC   = 0n;
+  let keptCount = 0;
+  let bbUCSum = 0n;
+
+  for (let i = 0; i < total; i++) {
+    if (predicate && !predicate(hands[i])) continue;
+    const r = records[i];
+    const resultBefore = r.resultBeforeUC;
+    const resultAfter  = r.resultAfterUC;
+    const evBefore     = r.evBeforeUC;
+    const evAfter      = r.evAfterUC;
+
+    cumWinBefore += resultBefore;
+    cumWinAfter  += resultAfter;
+    cumEvBefore  += evBefore;
+    cumEvAfter   += evAfter;
+    if (r.reachedShowdown) {
+      cumBlueBefore += resultBefore;
+      cumBlueAfter  += resultAfter;
+    } else {
+      cumRedBefore  += resultBefore;
+      cumRedAfter   += resultAfter;
+    }
+    winningsBeforeUC.push(cumWinBefore);
+    redBeforeUC.push(cumRedBefore);
+    blueBeforeUC.push(cumBlueBefore);
+    evBeforeUC.push(cumEvBefore);
+    winningsAfterUC.push(cumWinAfter);
+    redAfterUC.push(cumRedAfter);
+    blueAfterUC.push(cumBlueAfter);
+    evAfterUC.push(cumEvAfter);
+
+    // Legacy "active mode" used for position breakdown total column
+    const result = beforeRake ? resultBefore : resultAfter;
+
+    totalBeforeUC  += resultBefore;
+    totalAfterUC   += resultAfter;
+    evTotalBeforeUC += evBefore;
+    evTotalAfterUC  += evAfter;
+    if (r.bbUC > 0n) {
+      const bbF = Number(r.bbUC);
+      bbWeightedBefore += Number(resultBefore) / bbF;
+      bbWeightedAfter  += Number(resultAfter)  / bbF;
+      evBbWeightedBefore += Number(evBefore) / bbF;
+      evBbWeightedAfter  += Number(evAfter)  / bbF;
+    }
+
+    const pos = r.position;
+    if (!byPosition[pos]) {
+      byPosition[pos] = { count: 0, totalUC: 0n };
+    }
+    byPosition[pos].count++;
+    byPosition[pos].totalUC += result;
+
+    rakePaidUC += r.rakeShareUC;
+    bbUCSum    += r.bbUC;
+    keptCount++;
+  }
 
   // --- Summary ---
-  const n = hands.length;
+  const n = keptCount;
   // Legacy fields: matches the user-toggled mode (kept for back-compat with
   // older callers and tests).
   const totalUC   = beforeRake ? cumWinBefore : cumWinAfter;
@@ -400,10 +439,7 @@ export async function computeSeries(hands, opts = {}, control = {}) {
   const bbPer100 = beforeRake ? bbPer100Before : bbPer100After;
 
   // Rake bb/100 — same denominator (avg bb across hands), numerator = rake paid
-  let avgBbUC = 0;
-  if (n > 0) {
-    avgBbUC = Number(hands.reduce((s, h) => s + h.stake.bbUC, 0n)) / n;
-  }
+  const avgBbUC = n > 0 ? Number(bbUCSum) / n : 0;
   const rakeBbPer100 = avgBbUC > 0
     ? (Number(rakePaidUC) / avgBbUC / n) * 100
     : 0;
@@ -445,4 +481,20 @@ export async function computeSeries(hands, opts = {}, control = {}) {
   const series = beforeRake ? seriesBefore : seriesAfter;
 
   return { series, seriesBefore, seriesAfter, summary };
+}
+
+/**
+ * computeSeries(hands, opts, control?) → Promise<{ series, seriesBefore, seriesAfter, summary }>
+ *
+ * Composition of prepareHands + foldPrepared. Kept as a stable entry point
+ * for callers that compute once and don't need to swap filters
+ * (auto-merge.js post-merge recompute, migrate-stale-cache.js cache rebuild,
+ * tests). The UI uses prepareHands + foldPrepared directly so filter
+ * changes don't pay for the per-hand equity work twice.
+ *
+ * Output shape is unchanged.
+ */
+export async function computeSeries(hands, opts = {}, control = {}) {
+  const prepared = await prepareHands(hands, control);
+  return foldPrepared(prepared, opts);
 }

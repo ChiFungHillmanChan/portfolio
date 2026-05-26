@@ -1,7 +1,7 @@
 // js/upload.js
 import { parseFile, splitIntoHands, parseHand } from './parser/gg-parser.mjs';
 import { validateFile } from './parser/validator.mjs';
-import { computeSeries } from './stats/compute.mjs';
+import { computeSeries, prepareHands, foldPrepared } from './stats/compute.mjs';
 import { ucToDollars, formatUSD } from './stats/money.mjs';
 import { showProgress, hideProgress, nextFrame } from './progress-bar.js';
 
@@ -87,6 +87,12 @@ let lastSummary = null;
 // Reused when only the rake toggle changes — no recompute, just re-pick the
 // pre-built series array and re-render the chart.
 let lastCompute = null;
+// Cached per-hand records from prepareHands(parsedHands). Survives filter
+// changes — only invalidated when `parsedHands` is reassigned (new upload,
+// merge, clear). Filter switches re-fold against this without paying for
+// any equity work, so today / last-1h / all swap in ~10–50ms instead of
+// seconds.
+let lastPrepared = null;
 // When the current view originated from a cloud session (opened from cache or
 // just saved), remember its sessionId so the next "Save to cloud" can delete
 // the previous version and replace it with the new combined snapshot —
@@ -422,6 +428,7 @@ export function clearAllUploads() {
   originalFiles = [];
   lastSummary = null;
   lastCompute = null;  // drop the cached compute so a fresh upload recomputes
+  lastPrepared = null; // drop per-hand records too so memory is freed
   sourceCloudSessionId = null;
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
   els.results.hidden = true;
@@ -475,18 +482,16 @@ function filterDateRange() {
   }
 }
 
-// Global filter — applies to chart, summary, by-position table, AND the hand
-// browser's input set. Date + stakes only. These are the filters that change
-// "what session am I looking at".
-function getFilteredHands() {
-  if (parsedHands.length === 0) return parsedHands;
+// Current GLOBAL filter as a (hand) → boolean predicate. Closes over a
+// snapshot of opts.filter so subsequent flips don't change behaviour mid-pass.
+// Returns null when no filter is active — callers can short-circuit on null
+// and treat every hand as kept.
+function currentFilterPredicate() {
   const [start, end] = filterDateRange();
   const f = opts.filter;
   const stakeFilter = f.stakes;
-  if (!start && !end && (!stakeFilter || stakeFilter.size === 0)) {
-    return parsedHands;
-  }
-  return parsedHands.filter((h) => {
+  if (!start && !end && (!stakeFilter || stakeFilter.size === 0)) return null;
+  return (h) => {
     if (start || end) {
       const d = new Date(h.date);
       if (start && d < start) return false;
@@ -497,7 +502,17 @@ function getFilteredHands() {
       if (!stakeFilter.has(bbCents)) return false;
     }
     return true;
-  });
+  };
+}
+
+// Global filter — applies to chart, summary, by-position table, AND the hand
+// browser's input set. Date + stakes only. These are the filters that change
+// "what session am I looking at".
+function getFilteredHands() {
+  if (parsedHands.length === 0) return parsedHands;
+  const predicate = currentFilterPredicate();
+  if (!predicate) return parsedHands;
+  return parsedHands.filter(predicate);
 }
 
 // Hand-browser-only filter applied AFTER getFilteredHands. Position + rank1
@@ -935,40 +950,62 @@ async function renderAll() {
     return;
   }
 
-  // Yield-aware compute path (cold or filter-changed).
+  // Prepare-once / fold-many. The slow per-hand equity work is done in
+  // `prepareHands(parsedHands, …)` exactly once per loaded session and
+  // cached in `lastPrepared`. Filter switches then call `foldPrepared`
+  // synchronously — pure addition over the kept records, no equity, no
+  // yields, no progress bar.
   const tStart = performance.now();
-  let maxGapMs = 0;
-  let lastTick = tStart;
-  let slowHandCount = 0;
-  for (const h of filtered) { if (h.anyAllIn) slowHandCount++; }
-  console.log(`[poker] renderAll start: ${filtered.length.toLocaleString()} hands, ${slowHandCount} potential all-in equity calcs`);
+  const predicate = currentFilterPredicate();
+  const needsPrep = !lastPrepared || lastPrepared.parsedHandsRef !== parsedHands;
 
-  showProgress({ stage: `Computing chart for ${filtered.length.toLocaleString()} hands`, current: 0, total: filtered.length });
-  showChartSpinner(`Computing chart for ${filtered.length.toLocaleString()} hands`, '0%');
-  await nextFrame();
+  if (needsPrep) {
+    let maxGapMs = 0;
+    let lastTick = tStart;
+    let slowHandCount = 0;
+    for (const h of parsedHands) { if (h.anyAllIn) slowHandCount++; }
+    console.log(`[poker] prepareHands start: ${parsedHands.length.toLocaleString()} hands, ${slowHandCount} potential all-in equity calcs`);
 
-  let compute;
-  try {
-    compute = await computeSeries(filtered, opts, {
-      yieldEvery: 10,
-      onProgress: (i, n) => {
-        const now = performance.now();
-        const gap = now - lastTick;
-        if (gap > maxGapMs) maxGapMs = gap;
-        lastTick = now;
-        const label = `Computing chart — hand ${i.toLocaleString()} / ${n.toLocaleString()}`;
-        showProgress({ stage: label, current: i, total: n });
-        const pct = n > 0 ? Math.round((i / n) * 100) : 0;
-        showChartSpinner(label, `${pct}%`);
-      },
-    });
-  } catch (err) {
-    console.error('[poker] computeSeries failed:', err);
-    hideProgress();
-    hideChartSpinner();
-    showStatus(`Compute failed: ${escapeHtml(err.message)}`, 'error');
-    return;
+    showProgress({ stage: `Computing chart for ${parsedHands.length.toLocaleString()} hands`, current: 0, total: parsedHands.length });
+    showChartSpinner(`Computing chart for ${parsedHands.length.toLocaleString()} hands`, '0%');
+    await nextFrame();
+
+    let prepared;
+    try {
+      prepared = await prepareHands(parsedHands, {
+        yieldEvery: 10,
+        onProgress: (i, n) => {
+          const now = performance.now();
+          const gap = now - lastTick;
+          if (gap > maxGapMs) maxGapMs = gap;
+          lastTick = now;
+          const label = `Computing chart — hand ${i.toLocaleString()} / ${n.toLocaleString()}`;
+          showProgress({ stage: label, current: i, total: n });
+          const pct = n > 0 ? Math.round((i / n) * 100) : 0;
+          showChartSpinner(label, `${pct}%`);
+        },
+      });
+    } catch (err) {
+      console.error('[poker] prepareHands failed:', err);
+      hideProgress();
+      hideChartSpinner();
+      showStatus(`Compute failed: ${escapeHtml(err.message)}`, 'error');
+      return;
+    }
+    lastPrepared = { parsedHandsRef: parsedHands, hands: prepared.hands, records: prepared.records };
+
+    const prepMs = performance.now() - tStart;
+    console.log(`[poker] prepareHands done: ${prepMs.toFixed(0)}ms total, max gap ${maxGapMs.toFixed(0)}ms between yields`);
+    if (maxGapMs > 4000) {
+      console.warn(`[poker] long single-block detected (${maxGapMs.toFixed(0)}ms). One hand had heavy uncached equity work — investigate hand range near hand ${Math.floor((maxGapMs / prepMs) * parsedHands.length)} / ${parsedHands.length}`);
+    }
   }
+
+  // Cheap synchronous fold against the cached records.
+  const tFold = performance.now();
+  const compute = foldPrepared(lastPrepared, opts, predicate);
+  console.log(`[poker] foldPrepared: ${(performance.now() - tFold).toFixed(1)}ms for ${filtered.length.toLocaleString()} hands`);
+
   // Cache for subsequent rake-toggle / line-visibility re-renders.
   lastCompute = {
     parsedHandsRef: parsedHands,
@@ -979,12 +1016,6 @@ async function renderAll() {
   };
   const series = pickSeriesForMode(lastCompute);
   const summary = compute.summary;
-
-  const computeMs = performance.now() - tStart;
-  console.log(`[poker] compute done: ${computeMs.toFixed(0)}ms total, max gap ${maxGapMs.toFixed(0)}ms between yields`);
-  if (maxGapMs > 4000) {
-    console.warn(`[poker] long single-block detected (${maxGapMs.toFixed(0)}ms). One hand had heavy uncached equity work — investigate hand range near hand ${Math.floor((maxGapMs / computeMs) * filtered.length)} / ${filtered.length}`);
-  }
 
   hideProgress();
   showChartSpinner('Drawing chart…', '');
@@ -1778,6 +1809,7 @@ export async function loadCachedSession({ summary, seriesBefore, seriesAfter, ha
   allFiles.clear();
   parsedHands = [];
   originalFiles = [];
+  lastPrepared = null; // free per-hand records — cached view bypasses fold
   lastSummary = summary;
   // Remember which cloud session this view came from. The bootstrap save
   // handler reads this through session-state.sourceSessionId and deletes the
