@@ -17,6 +17,7 @@ import CardGame from './game/card-game/CardGame';
 import CasinoGame from './game/casino-game/CasinoGame';
 import SystemDesignGame from './game/system-design/SystemDesignGame';
 import Connect4Game from './game/connect4/Connect4Game';
+import MathMemoryGame from './game/math-memory/MathMemoryGame';
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
@@ -25,6 +26,7 @@ const GAME_SUBDOMAIN_COMPONENTS = {
   'casino-game': CasinoGame,
   'system-design': SystemDesignGame,
   'connect4': Connect4Game,
+  'math-memory': MathMemoryGame,
 };
 
 const getGameComponentFromHostname = () => {
