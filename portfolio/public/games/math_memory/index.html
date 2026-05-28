@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0e1014">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="description" content="Maths Memory — memorise five ahead, answer five behind. A working-memory drill that times you.">
+<title>Maths Memory</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,900&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0e1014;--panel:#171a21;--panel-2:#1f2530;--ink:#f4f1ea;
+    --muted:#8b94a3;--accent:#f5c542;--accent-2:#5ad1c5;--bad:#ff6b6b;--line:#2a313d;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;overscroll-behavior:none}
+  body{
+    background:
+      radial-gradient(1200px 600px at 80% -10%, #1b2230 0%, transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, #1a2420 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);font-family:"Spline Sans Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+    min-height:100vh;min-height:100dvh;
+    display:flex;align-items:center;justify-content:center;
+    padding:max(20px,env(safe-area-inset-top)) max(16px,env(safe-area-inset-right)) max(20px,env(safe-area-inset-bottom)) max(16px,env(safe-area-inset-left));
+    -webkit-text-size-adjust:100%;
+  }
+  .wrap{width:100%;max-width:560px}
+  header{margin-bottom:22px}
+  .title{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(36px,8vw,62px);line-height:.92;letter-spacing:-0.02em}
+  .title span{color:var(--accent)}
+  .tag{color:var(--muted);margin-top:8px;font-size:13px;letter-spacing:.02em}
+  .card{background:linear-gradient(180deg,var(--panel),#13161c);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,4vw,26px);box-shadow:0 30px 60px -30px rgba(0,0,0,.7)}
+  .menu-row{display:flex;gap:10px;margin:18px 0 8px}
+  button{font:inherit;color:inherit;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+  .seg{flex:1;border:1px solid var(--line);background:var(--panel-2);color:var(--muted);padding:14px 0;border-radius:12px;font-size:15px;cursor:pointer;transition:.15s;min-height:48px}
+  .seg:hover{color:var(--ink);border-color:#3a4452}
+  .seg.active{background:var(--accent);color:#1a1407;border-color:var(--accent);font-weight:600}
+  .start{width:100%;margin-top:16px;padding:16px;border:none;border-radius:12px;background:var(--accent-2);color:#06201d;font-family:"Fraunces",serif;font-weight:600;font-size:18px;cursor:pointer;transition:.15s;min-height:52px}
+  .start:hover{filter:brightness(1.08)}
+  .start:active{transform:scale(.99)}
+  .how{margin-top:20px;color:var(--muted);font-size:12.5px;line-height:1.7}
+  .how b{color:var(--ink)}
+  .hidden{display:none}
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;font-size:13px;color:var(--muted);gap:12px}
+  .timer{font-variant-numeric:tabular-nums;color:var(--accent-2);font-size:20px;font-weight:600}
+  .progress{height:6px;background:var(--panel-2);border-radius:99px;overflow:hidden;margin-bottom:24px}
+  .bar{height:100%;width:0;background:linear-gradient(90deg,var(--accent-2),var(--accent));transition:width .25s}
+  .phase{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);margin-bottom:14px;text-align:center}
+  .phase.recall{color:var(--accent)}
+  .square{width:100%;border:2px solid var(--line);border-radius:16px;background:var(--panel-2);display:flex;align-items:center;justify-content:center;font-family:"Fraunces",serif;font-weight:900;font-variant-numeric:tabular-nums;min-height:120px;padding:12px}
+  .square.q{font-size:clamp(40px,11vw,64px)}
+  .answer-square{margin-top:14px;border-color:#3a4452}
+  .answer-square.active{border-color:var(--accent-2);box-shadow:0 0 0 3px rgba(90,209,197,.15)}
+  .answer-square.flash-bad{border-color:var(--bad);animation:shake .3s}
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+  .answer-square .val{font-size:clamp(40px,11vw,64px);color:var(--ink);line-height:1}
+  .answer-square .val.empty{color:#4a5462}
+  .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:18px}
+  .key{padding:16px 0;border:1px solid var(--line);background:var(--panel-2);color:var(--ink);border-radius:12px;font-size:22px;cursor:pointer;transition:.1s;min-height:56px}
+  .key:hover{background:#272f3c}
+  .key:active{transform:scale(.96);background:#2f3744}
+  .key.go{background:var(--accent);color:#1a1407;font-weight:600;border-color:var(--accent)}
+  .key.go:hover{background:#f7cd5b}
+  .next-wide{width:100%;margin-top:14px;padding:18px;border:none;border-radius:12px;background:var(--accent-2);color:#06201d;font-family:"Fraunces",serif;font-weight:600;font-size:18px;cursor:pointer;min-height:56px}
+  .next-wide:active{transform:scale(.99)}
+  .result-num{font-family:"Fraunces",serif;font-weight:900;font-size:clamp(48px,12vw,64px);text-align:center;color:var(--accent);line-height:1}
+  .result-label{text-align:center;color:var(--muted);font-size:13px;margin:8px 0 18px}
+  .best{color:var(--accent-2);font-size:12px;text-align:center;margin-bottom:14px;min-height:16px}
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+  .stat{background:var(--panel-2);border:1px solid var(--line);border-radius:12px;padding:14px}
+  .stat .k{color:var(--muted);font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+  .stat .v{font-family:"Fraunces",serif;font-weight:600;font-size:26px;margin-top:4px;font-variant-numeric:tabular-nums}
+  .records{margin-top:20px;border-top:1px solid var(--line);padding-top:16px}
+  .records h3{font-family:"Fraunces",serif;font-size:16px;margin-bottom:10px}
+  .rec-row{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);padding:6px 0;border-bottom:1px dashed var(--line)}
+  .rec-row span:last-child{color:var(--accent-2);font-variant-numeric:tabular-nums}
+
+  @media (max-width:380px){
+    .seg{font-size:14px;padding:12px 0}
+    .key{font-size:20px;padding:14px 0;min-height:52px}
+    .stat .v{font-size:22px}
+    .square{min-height:100px}
+  }
+  @media (hover:none){
+    .seg:hover{color:var(--muted);border-color:var(--line)}
+    .key:hover{background:var(--panel-2)}
+    .start:hover{filter:none}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="title">Maths<br><span>Memory</span></div>
+    <div class="tag">Memorise five ahead. Answer five behind.</div>
+  </header>
+
+  <div class="card" id="menu">
+    <div class="phase" style="text-align:left;margin-bottom:4px">Choose length</div>
+    <div class="menu-row" id="lengthRow">
+      <button class="seg active" data-len="10" type="button">10</button>
+      <button class="seg" data-len="20" type="button">20</button>
+      <button class="seg" data-len="30" type="button">30</button>
+    </div>
+    <button class="start" id="startBtn" type="button">Start</button>
+    <div class="how">
+      <b>How it works.</b> The first 5 questions only need to be <b>memorised</b> — no answer box, just press Next.
+      From question 6 on, a new sum appears to memorise, and the answer box asks for the sum from
+      <b>5 questions ago</b>. At Q6 you answer Q1, at Q7 you answer Q2, and so on. After the last sum is shown,
+      the final 5 answers are collected from memory. Total time is recorded.
+    </div>
+  </div>
+
+  <div class="card hidden" id="game">
+    <div class="topbar">
+      <div id="qcount">Question 1 / 10</div>
+      <div class="timer" id="timer">0.0s</div>
+    </div>
+    <div class="progress"><div class="bar" id="bar"></div></div>
+
+    <div class="phase" id="phase">Memorise this</div>
+    <div class="square q" id="topSquare">1 + 2</div>
+
+    <div class="square answer-square hidden" id="answerSquare">
+      <div class="val empty" id="answerVal">?</div>
+    </div>
+
+    <button class="next-wide hidden" id="nextBtn" type="button">Next</button>
+
+    <div class="keypad hidden" id="keypad">
+      <button class="key" data-k="1" type="button">1</button><button class="key" data-k="2" type="button">2</button><button class="key" data-k="3" type="button">3</button>
+      <button class="key" data-k="4" type="button">4</button><button class="key" data-k="5" type="button">5</button><button class="key" data-k="6" type="button">6</button>
+      <button class="key" data-k="7" type="button">7</button><button class="key" data-k="8" type="button">8</button><button class="key" data-k="9" type="button">9</button>
+      <button class="key" data-k="clear" type="button" aria-label="Delete">&#9003;</button><button class="key" data-k="0" type="button">0</button><button class="key go" data-k="enter" type="button">Go</button>
+    </div>
+  </div>
+
+  <div class="card hidden" id="results">
+    <div class="result-num" id="finalTime">0.0s</div>
+    <div class="result-label" id="finalLabel">10 questions complete</div>
+    <div class="best" id="bestNote"></div>
+    <div class="stat-grid">
+      <div class="stat"><div class="k">Correct</div><div class="v" id="statCorrect">0</div></div>
+      <div class="stat"><div class="k">Mistakes</div><div class="v" id="statWrong">0</div></div>
+      <div class="stat"><div class="k">Avg / answer</div><div class="v" id="statAvg">0.0s</div></div>
+      <div class="stat"><div class="k">Length</div><div class="v" id="statLen">10</div></div>
+    </div>
+    <button class="start" id="againBtn" type="button">Play again</button>
+    <div class="records">
+      <h3>Best times</h3>
+      <div class="rec-row"><span>10 questions</span><span id="best10">--</span></div>
+      <div class="rec-row"><span>20 questions</span><span id="best20">--</span></div>
+      <div class="rec-row"><span>30 questions</span><span id="best30">--</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const DELAY=5;
+  let length=10, questions=[], answersGiven=0, correct=0, wrong=0;
+  let startTime=0, timerInt=null, current="";
+  let step=0, tailIdx=0, mode='A';
+  const best={10:null,20:null,30:null};
+
+  const menu=document.getElementById('menu'),game=document.getElementById('game'),results=document.getElementById('results');
+  const lengthRow=document.getElementById('lengthRow'),qcount=document.getElementById('qcount'),timerEl=document.getElementById('timer'),bar=document.getElementById('bar');
+  const phase=document.getElementById('phase'),topSquare=document.getElementById('topSquare');
+  const answerSquare=document.getElementById('answerSquare'),answerVal=document.getElementById('answerVal');
+  const nextBtn=document.getElementById('nextBtn'),keypad=document.getElementById('keypad');
+
+  lengthRow.addEventListener('click',e=>{const b=e.target.closest('.seg');if(!b)return;[...lengthRow.children].forEach(c=>c.classList.remove('active'));b.classList.add('active');length=parseInt(b.dataset.len,10);});
+  const rnd=()=>Math.floor(Math.random()*9)+1;
+  function buildQuestions(){questions=[];for(let i=0;i<length;i++){const a=rnd(),b=rnd();questions.push({a,b,sum:a+b});}}
+
+  function startGame(){
+    buildQuestions();step=0;tailIdx=0;mode='A';answersGiven=0;correct=0;wrong=0;current="";
+    menu.classList.add('hidden');results.classList.add('hidden');game.classList.remove('hidden');
+    startTime=performance.now();clearInterval(timerInt);timerInt=setInterval(updateTimer,100);render();
+  }
+  function updateTimer(){timerEl.textContent=((performance.now()-startTime)/1000).toFixed(1)+'s';}
+  function showAnswerUI(show){answerSquare.classList.toggle('hidden',!show);keypad.classList.toggle('hidden',!show);nextBtn.classList.toggle('hidden',show);}
+  function setAnswerVal(){if(current===""){answerVal.textContent="?";answerVal.classList.add('empty');}else{answerVal.textContent=current;answerVal.classList.remove('empty');}}
+
+  function render(){
+    bar.style.width=(answersGiven/length*100)+'%';current="";setAnswerVal();answerSquare.classList.remove('active');
+    if(mode==='A'){
+      qcount.textContent=`Question ${step+1} / ${length}`;
+      phase.textContent='Memorise this';phase.classList.remove('recall');
+      topSquare.textContent=`${questions[step].a} + ${questions[step].b}`;showAnswerUI(false);
+    }else if(mode==='B'){
+      qcount.textContent=`Question ${step+1} / ${length}`;
+      phase.innerHTML='Memorise new &bull; answer from 5 ago';phase.classList.add('recall');
+      topSquare.textContent=`${questions[step].a} + ${questions[step].b}`;showAnswerUI(true);answerSquare.classList.add('active');
+    }else{
+      qcount.textContent=`Recall ${tailIdx+1} / ${length}`;
+      phase.textContent='Answer from memory';phase.classList.add('recall');
+      topSquare.textContent='= ?';showAnswerUI(true);answerSquare.classList.add('active');
+    }
+  }
+
+  function targetSum(){if(mode==='B')return questions[step-DELAY].sum;if(mode==='C')return questions[tailIdx].sum;return null;}
+
+  function advance(){
+    if(mode!=='A')return;
+    step++;
+    if(step>=DELAY){ if(step<length)mode='B'; else {mode='C';tailIdx=0;} }
+    render();
+  }
+
+  function submit(){
+    if(current==="")return;
+    const val=parseInt(current,10),tgt=targetSum();
+    if(val===tgt)correct++;else{wrong++;answerSquare.classList.add('flash-bad');setTimeout(()=>answerSquare.classList.remove('flash-bad'),320);}
+    answersGiven++;
+    if(mode==='B'){
+      step++;
+      if(step>=length){mode='C';tailIdx=length-DELAY;if(tailIdx<0)tailIdx=0;}
+      render();
+    }else if(mode==='C'){
+      tailIdx++;
+      if(tailIdx>=length)finish();else render();
+    }
+  }
+
+  function finish(){
+    clearInterval(timerInt);const total=(performance.now()-startTime)/1000;
+    game.classList.add('hidden');results.classList.remove('hidden');
+    document.getElementById('finalTime').textContent=total.toFixed(1)+'s';
+    document.getElementById('finalLabel').textContent=`${length} questions complete`;
+    document.getElementById('statCorrect').textContent=correct;
+    document.getElementById('statWrong').textContent=wrong;
+    document.getElementById('statAvg').textContent=(total/length).toFixed(2)+'s';
+    document.getElementById('statLen').textContent=length;
+    const noteEl=document.getElementById('bestNote');
+    if(best[length]===null||total<best[length]){best[length]=total;noteEl.textContent='New best time for '+length+' questions.';}
+    else noteEl.textContent='Best for '+length+': '+best[length].toFixed(1)+'s';
+    renderRecords();
+  }
+  function renderRecords(){
+    document.getElementById('best10').textContent=best[10]?best[10].toFixed(1)+'s':'--';
+    document.getElementById('best20').textContent=best[20]?best[20].toFixed(1)+'s':'--';
+    document.getElementById('best30').textContent=best[30]?best[30].toFixed(1)+'s':'--';
+  }
+
+  nextBtn.addEventListener('click',advance);
+  keypad.addEventListener('click',e=>{const b=e.target.closest('.key');if(!b)return;const k=b.dataset.k;
+    if(k==='enter'){submit();return;}if(k==='clear'){current=current.slice(0,-1);setAnswerVal();return;}
+    if(current.length<2){current+=k;setAnswerVal();}});
+  document.addEventListener('keydown',e=>{
+    if(game.classList.contains('hidden'))return;
+    if(mode==='A'){if(e.key==='Enter'||e.key===' ')advance();return;}
+    if(e.key>='0'&&e.key<='9'){if(current.length<2){current+=e.key;setAnswerVal();}}
+    else if(e.key==='Backspace'){current=current.slice(0,-1);setAnswerVal();}
+    else if(e.key==='Enter'){submit();}
+  });
+  document.getElementById('startBtn').addEventListener('click',startGame);
+  document.getElementById('againBtn').addEventListener('click',()=>{results.classList.add('hidden');menu.classList.remove('hidden');});
+})();
+</script>
+</body>
+</html>
