@@ -1,7 +1,16 @@
 // uth-api.js — Firebase-ID-token-bearing fetch wrapper for /uth/* actions.
 // Mirrors ../../js/auth/api-client.js but targets the cg-uth Lambda routes.
+//
+// UTH is real-time: every action is a Firestore transaction the UI waits on,
+// so the Lambda MUST sit next to the database. Firestore lives in asia-east1
+// (Taiwan); this endpoint is the cg-uth Lambda in ap-northeast-1 (Tokyo),
+// ~35 ms from Firestore. Routing writes through the London sa-api gateway
+// instead cost ~600-850 ms per action (two intercontinental hops) — this
+// direct regional endpoint brings it to ~90-100 ms server-side.
 
-import { auth, POKER_API_BASE } from "../../../js/auth/firebase-init.js";
+import { auth } from "../../../js/auth/firebase-init.js";
+
+const UTH_API_BASE = "https://841ze82i0b.execute-api.ap-northeast-1.amazonaws.com";
 
 export async function uthCall(action, payload = {}) {
   const user = auth.currentUser;
@@ -11,7 +20,7 @@ export async function uthCall(action, payload = {}) {
     throw err;
   }
   const token = await user.getIdToken();
-  const res = await fetch(`${POKER_API_BASE}/uth/${action}`, {
+  const res = await fetch(`${UTH_API_BASE}/uth/${action}`, {
     method: "POST",
     headers: {
       "Authorization": `Bearer ${token}`,
