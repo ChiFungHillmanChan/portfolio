@@ -259,10 +259,9 @@
     font-size: 0.8rem;
     letter-spacing: 0.1em;
     padding: 6px 12px;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    border-radius: var(--radius-md);
     background: var(--bg-card);
     border: 1px solid var(--border-subtle);
-    border-bottom: none;
     color: var(--text-secondary);
     cursor: pointer;
     display: inline-flex;
