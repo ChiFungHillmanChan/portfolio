@@ -75,7 +75,11 @@ function newSeat(user, seatIndex) {
     acted: false,
     timeoutsInARow: 0,
     holeCards: null,
+    revealed: false,
     result: null,
+    sessionNet: 0,
+    handsWon: 0,
+    handsPlayed: 0,
   };
 }
 
@@ -231,6 +235,7 @@ function maybeDeal(table, now, rng) {
     seat.playBet = 0;
     seat.playStage = null;
     seat.holeCards = null;
+    seat.revealed = false;
     seat.result = null;
     seat.ready = false;
   }
@@ -325,7 +330,12 @@ function showdown(table, dealerDoc, now) {
     const staked = ante + blind + trips + holeCard + badBeat + seat.playBet;
     seat.stack += staked + result.net;
     seat.result = { ...result, hand: seat.folded ? null : playerEval.name };
-    seat.holeCards = seat.folded ? null : hole;
+    // a folded player's cards stay hidden — unless they chose to show them
+    seat.holeCards = seat.folded && !seat.revealed ? null : hole;
+    // session leaderboard (|| 0 keeps tables dealt before this field existed working)
+    seat.sessionNet = (seat.sessionNet || 0) + result.net;
+    seat.handsPlayed = (seat.handsPlayed || 0) + 1;
+    if (result.net > 0) seat.handsWon = (seat.handsWon || 0) + 1;
   }
 
   table.community = community5.slice(0, 5);
@@ -337,6 +347,29 @@ function showdown(table, dealerDoc, now) {
   table.phase = PHASE.SHOWDOWN;
   table.actionDeadline = now + SHOWDOWN_MS;
   table.lastActivityAt = now;
+}
+
+// ── Show your cards ──────────────────────────────────────────────────────────
+
+// A player may voluntarily expose their own hole cards to the whole table for
+// the rest of the hand (one-way, like turning cards face-up on a real felt).
+// Copies the private hole cards into the PUBLIC seat, which every seated
+// player's snapshot listener already reads. Never touches the dealer's cards.
+export function revealCards(table, dealerDoc, uid, now) {
+  const seat = findSeat(table, uid);
+  if (!seat) throw new UthError("not-seated");
+  if (!DECISION_PHASES.has(table.phase) && table.phase !== PHASE.SHOWDOWN) {
+    throw new UthError("bad-phase");
+  }
+  if (!seat.inHand) throw new UthError("bad-move");
+  const hole = dealerDoc?.holes?.[uid];
+  if (!hole) throw new UthError("bad-phase");
+  if (!seat.revealed) {
+    seat.revealed = true;
+    seat.holeCards = hole;
+    table.lastActivityAt = now;
+  }
+  return { table, dealerDoc };
 }
 
 // ── Tick (timeout driver) ────────────────────────────────────────────────────
@@ -392,6 +425,7 @@ function resetRound(table) {
     seat.folded = false;
     seat.acted = false;
     seat.holeCards = null;
+    seat.revealed = false;
     seat.result = null;
     if (seat.timeoutsInARow >= TIMEOUT_LIMIT) seat.sittingOut = true;
     if (seat.stack < table.minAnte * 2) seat.sittingOut = true; // must rebuy
