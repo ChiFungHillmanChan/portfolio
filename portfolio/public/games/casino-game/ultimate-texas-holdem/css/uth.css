@@ -3,6 +3,12 @@
    (design tokens from ../css/variables.css)
    ===================================================== */
 
+/* The `hidden` attribute only maps to UA `display: none`, which any author
+   `display` (flex/grid) silently overrides — force it to always win. */
+[hidden] {
+    display: none !important;
+}
+
 /* ── Shared buttons ─────────────────────────────────── */
 
 .uth-btn {
