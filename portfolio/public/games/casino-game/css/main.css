@@ -241,6 +241,7 @@ h1 {
 .game-card.blackjack { --card-accent: #2ecc71; }
 .game-card.baccarat { --card-accent: #d4af37; }
 .game-card.poker { --card-accent: #3498db; }
+.game-card.uth { --card-accent: #9b59b6; }
 
 /* Info Section */
 .info-section {

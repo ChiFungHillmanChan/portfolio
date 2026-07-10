@@ -77,6 +77,24 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Ultimate Texas Hold'em tables (read: seated players · write: NONE) ──
+    // The public table doc is readable only while your uid is in seatUids
+    // (the cg-uth Lambda seats you). Hole cards live in private/{uid},
+    // readable by that player alone. private/_dealer holds the undealt deck
+    // and the dealer's hole cards — '_dealer' is never a Firebase uid, so the
+    // uid==doc-id rule below makes it unreadable by every client. All writes
+    // go through the cg-uth Lambda (Admin SDK) — clients cannot touch chips,
+    // cards, or phase.
+    match /uthTables/{code} {
+      allow read:  if request.auth != null && request.auth.uid in resource.data.seatUids;
+      allow write: if false;
+
+      match /private/{uid} {
+        allow read:  if request.auth != null && request.auth.uid == uid;
+        allow write: if false;
+      }
+    }
+
     // ── Poker stats-share metadata (server-only) ────────────────────────
     // cg-poker writes one doc per shared snapshot. The PUBLIC read of a
     // share goes through the Lambda (which fetches the actual payload

@@ -1,0 +1,676 @@
+/* =====================================================
+   ULTIMATE TEXAS HOLD'EM — lobby + live table styles
+   (design tokens from ../css/variables.css)
+   ===================================================== */
+
+/* ── Shared buttons ─────────────────────────────────── */
+
+.uth-btn {
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    padding: 12px 22px;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-active);
+    background: var(--bg-card);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    min-height: 44px;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+.uth-btn:hover:not(:disabled) {
+    background: var(--bg-card-hover);
+    box-shadow: var(--glow-gold);
+}
+
+.uth-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.uth-btn-primary {
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim));
+    color: #0a0a0f;
+    border: none;
+}
+
+.uth-btn-ghost {
+    background: transparent;
+    border-color: var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.uth-btn-act {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+}
+
+.uth-btn-raise {
+    background: linear-gradient(135deg, var(--accent-gold), var(--accent-gold-dim));
+    color: #0a0a0f;
+    border: none;
+}
+
+.uth-btn-fold {
+    border-color: var(--accent-red);
+    color: var(--accent-red);
+}
+
+.uth-muted {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+/* ── Lobby ──────────────────────────────────────────── */
+
+.uth-auth-gate,
+.uth-play-panel {
+    margin: var(--spacing-lg) 0;
+}
+
+.uth-auth-gate {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: center;
+}
+
+.uth-panel-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+.uth-panel-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: flex-start;
+}
+
+.uth-panel-title {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    color: var(--accent-gold);
+    letter-spacing: 0.06em;
+}
+
+.uth-join-form {
+    display: flex;
+    gap: var(--spacing-sm);
+    width: 100%;
+}
+
+.uth-code-input {
+    flex: 1;
+    min-width: 0;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 1.2rem;
+    letter-spacing: 0.35em;
+    text-transform: uppercase;
+    padding: 10px 14px;
+    text-align: center;
+}
+
+.uth-code-input:focus {
+    outline: none;
+    border-color: var(--border-active);
+    box-shadow: var(--glow-gold);
+}
+
+.uth-error {
+    margin-top: var(--spacing-md);
+    color: var(--accent-red);
+    font-weight: 600;
+}
+
+.uth-paytable {
+    margin-top: var(--spacing-md);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    overflow: hidden;
+}
+
+.uth-paytable summary {
+    cursor: pointer;
+    padding: 12px 16px;
+    font-family: var(--font-display);
+    font-size: 0.85rem;
+    letter-spacing: 0.05em;
+    color: var(--accent-gold);
+    background: var(--bg-card);
+}
+
+.uth-paytable table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+}
+
+.uth-paytable td {
+    padding: 8px 16px;
+    border-top: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.uth-paytable td:last-child {
+    text-align: right;
+    color: var(--accent-gold);
+}
+
+/* ── Table page frame ───────────────────────────────── */
+
+.uth-table-body {
+    overflow: hidden;
+}
+
+.uth-table-page {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
+}
+
+.uth-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--spacing-sm);
+    padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.uth-room-code {
+    font-family: var(--font-mono);
+    font-size: 1.05rem;
+    letter-spacing: 0.2em;
+    color: var(--accent-gold);
+    background: var(--bg-card);
+    border: 1px dashed var(--border-active);
+    border-radius: var(--radius-md);
+    padding: 8px 16px;
+    cursor: copy;
+}
+
+.uth-round-label {
+    font-family: var(--font-body);
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    min-width: 110px;
+    text-align: right;
+}
+
+/* ── Felt ───────────────────────────────────────────── */
+
+.uth-felt {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    margin: 0 var(--spacing-md);
+    border-radius: 46% 46% var(--radius-lg) var(--radius-lg) / 24% 24% var(--radius-lg) var(--radius-lg);
+    background:
+        radial-gradient(ellipse at 50% 20%, rgba(212, 175, 55, 0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 50% 45%, #14532d 0%, #0d3320 65%, #092416 100%);
+    border: 2px solid var(--border-active);
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.55);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--spacing-md);
+    overflow: hidden;
+}
+
+.uth-zone-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    letter-spacing: 0.35em;
+    color: rgba(240, 240, 240, 0.45);
+    text-align: center;
+    margin-bottom: 6px;
+}
+
+.uth-dealer-zone {
+    text-align: center;
+}
+
+.uth-dealer-status {
+    min-height: 22px;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+}
+
+.uth-dealer-hand {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: var(--accent-gold);
+    letter-spacing: 0.08em;
+}
+
+.uth-noqualify {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.uth-community-zone {
+    margin-top: var(--spacing-md);
+}
+
+.uth-cards-row {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+/* ── Cards ──────────────────────────────────────────── */
+
+.uth-card {
+    width: 48px;
+    height: 68px;
+    border-radius: 7px;
+    background: #f4f1e8;
+    color: #16161c;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 1.15rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+    user-select: none;
+}
+
+.uth-card.red {
+    color: #c0392b;
+}
+
+.uth-card-back {
+    background:
+        repeating-linear-gradient(45deg, #7a1420 0 6px, #5d0f18 6px 12px);
+    border: 2px solid #f4f1e8;
+}
+
+.uth-card-slot {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1.5px dashed rgba(240, 240, 240, 0.22);
+    box-shadow: none;
+}
+
+/* ── Seats ──────────────────────────────────────────── */
+
+.uth-seats {
+    width: 100%;
+    margin-top: auto;
+    display: flex;
+    gap: var(--spacing-sm);
+    justify-content: center;
+    flex-wrap: wrap;
+    padding-bottom: var(--spacing-sm);
+}
+
+.uth-seat {
+    background: rgba(10, 10, 15, 0.72);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+    min-width: 108px;
+    text-align: center;
+    backdrop-filter: blur(3px);
+}
+
+.uth-seat.me {
+    border-color: var(--accent-gold);
+    box-shadow: var(--glow-gold);
+}
+
+.uth-seat-name {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 0.06em;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+}
+
+.uth-seat-stack {
+    font-family: var(--font-mono);
+    color: var(--accent-gold);
+    font-size: 0.95rem;
+}
+
+.uth-seat-bets {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.uth-seat-cards {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin: 6px 0 2px;
+}
+
+.uth-seat-cards .uth-card {
+    width: 30px;
+    height: 42px;
+    font-size: 0.78rem;
+    border-radius: 5px;
+}
+
+.uth-seat-result {
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+
+.uth-seat-result.pos { color: var(--accent-green); }
+.uth-seat-result.neg { color: var(--accent-red); }
+
+.uth-seat-badges {
+    display: flex;
+    gap: 4px;
+    justify-content: center;
+    margin-top: 4px;
+    min-height: 18px;
+    flex-wrap: wrap;
+}
+
+.uth-badge {
+    font-family: var(--font-display);
+    font-size: 0.58rem;
+    letter-spacing: 0.08em;
+    padding: 2px 7px;
+    border-radius: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.uth-badge.ok { color: var(--accent-green); border-color: rgba(46, 204, 113, 0.4); }
+.uth-badge.bad { color: var(--accent-red); border-color: rgba(230, 57, 70, 0.4); }
+.uth-badge.gold { color: var(--accent-gold); border-color: var(--border-active); }
+
+/* Desktop: pin the seats along the lower arc of the felt */
+@media (min-width: 900px) {
+    .uth-seats {
+        position: absolute;
+        inset: 0;
+        margin: 0;
+        display: block;
+    }
+
+    .uth-seat {
+        position: absolute;
+        transform: translate(-50%, -50%);
+    }
+
+    .uth-seat-pos-0 { left: 50%; top: 84%; }
+    .uth-seat-pos-1 { left: 76%; top: 78%; }
+    .uth-seat-pos-2 { left: 93%; top: 55%; }
+    .uth-seat-pos-3 { left: 7%;  top: 55%; }
+    .uth-seat-pos-4 { left: 24%; top: 78%; }
+    .uth-seat-pos-5 { left: 88%; top: 30%; }
+}
+
+/* ── Dock ───────────────────────────────────────────── */
+
+.uth-dock {
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-subtle);
+    padding-bottom: env(safe-area-inset-bottom);
+}
+
+.uth-timer {
+    height: 4px;
+    background: var(--bg-card);
+}
+
+.uth-timer-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-gold);
+    transition: width 0.4s linear;
+}
+
+.uth-timer-fill.urgent {
+    background: var(--accent-red);
+}
+
+.uth-dock-content {
+    padding: var(--spacing-md);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--spacing-sm);
+    min-height: 132px;
+    justify-content: center;
+    text-align: center;
+}
+
+.uth-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.uth-my-cards {
+    display: flex;
+    gap: 8px;
+}
+
+.uth-my-cards .uth-card {
+    width: 56px;
+    height: 78px;
+    font-size: 1.35rem;
+}
+
+.uth-hint {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.uth-hint strong {
+    color: var(--accent-gold);
+}
+
+/* Betting builder */
+
+.uth-bet-circles {
+    display: flex;
+    gap: var(--spacing-sm);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.uth-bet-circle {
+    width: 82px;
+    height: 82px;
+    border-radius: 50%;
+    border: 2px dashed rgba(240, 240, 240, 0.28);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    transition: all var(--transition-fast);
+}
+
+.uth-bet-circle.required {
+    border-color: var(--border-active);
+}
+
+.uth-bet-circle.has-bet {
+    border-style: solid;
+    border-color: var(--accent-gold);
+    color: var(--text-primary);
+    box-shadow: var(--glow-gold);
+}
+
+.uth-bet-label {
+    font-family: var(--font-display);
+    font-size: 0.55rem;
+    letter-spacing: 0.08em;
+}
+
+.uth-bet-amount {
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    color: var(--accent-gold);
+}
+
+.uth-bet-note {
+    font-size: 0.8rem;
+}
+
+.uth-chip-rack {
+    display: flex;
+    gap: var(--spacing-sm);
+}
+
+.uth-chip {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.8rem;
+    color: #fff;
+    cursor: pointer;
+    border: 3px dashed rgba(255, 255, 255, 0.75);
+    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+    transition: transform var(--transition-fast);
+}
+
+.uth-chip:hover { transform: translateY(-3px); }
+
+.uth-chip.selected {
+    outline: 3px solid var(--accent-gold);
+    outline-offset: 2px;
+    transform: translateY(-3px);
+}
+
+.uth-chip-25 { background: radial-gradient(circle, #2ecc71 62%, #1b7a43 63%); }
+.uth-chip-100 { background: radial-gradient(circle, #3498db 62%, #1f618d 63%); }
+.uth-chip-500 { background: radial-gradient(circle, #9b59b6 62%, #6c3483 63%); }
+.uth-chip-1000 { background: radial-gradient(circle, #d4af37 62%, #8a6d1d 63%); color: #16161c; }
+
+/* Showdown */
+
+.uth-result-banner {
+    font-family: var(--font-display);
+    letter-spacing: 0.15em;
+    font-size: 1.05rem;
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.uth-result-banner strong {
+    font-size: 1.5rem;
+    font-family: var(--font-mono);
+}
+
+.uth-result-banner.pos { color: var(--accent-green); text-shadow: var(--glow-green); }
+.uth-result-banner.neg { color: var(--accent-red); }
+
+.uth-paylines {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+}
+
+.uth-payline.pos { color: var(--accent-green); }
+.uth-payline.neg { color: var(--accent-red); }
+
+/* ── Toast & overlay ────────────────────────────────── */
+
+.uth-toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(150px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    background: var(--bg-card);
+    border: 1px solid var(--border-active);
+    color: var(--text-primary);
+    border-radius: var(--radius-md);
+    padding: 10px 18px;
+    font-size: 0.9rem;
+    z-index: 60;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+    max-width: min(92vw, 420px);
+    text-align: center;
+}
+
+.uth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 8, 0.82);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 70;
+    padding: var(--spacing-lg);
+}
+
+.uth-overlay-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-xl);
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-md);
+    align-items: center;
+    max-width: 420px;
+}
+
+.uth-overlay-card h2 {
+    font-family: var(--font-display);
+    font-size: 1.1rem;
+    letter-spacing: 0.06em;
+    color: var(--accent-gold);
+}
+
+/* ── Small screens ──────────────────────────────────── */
+
+@media (max-width: 520px) {
+    .uth-card { width: 40px; height: 56px; font-size: 0.95rem; }
+    .uth-my-cards .uth-card { width: 48px; height: 66px; font-size: 1.1rem; }
+    .uth-bet-circle { width: 72px; height: 72px; }
+    .uth-chip { width: 46px; height: 46px; }
+    .uth-round-label { display: none; }
+}

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a0f">
+    <title>Ultimate Texas Hold'em — Table</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="css/uth.css">
+</head>
+<body class="uth-table-body">
+    <div class="uth-table-page">
+        <div class="uth-topbar">
+            <button class="uth-btn uth-btn-ghost" id="leaveBtn">← Leave</button>
+            <button class="uth-room-code" id="roomCode" title="Copy invite code">UTH-····</button>
+            <div class="uth-round-label" id="roundLabel"></div>
+        </div>
+
+        <div class="uth-felt">
+            <div class="uth-dealer-zone">
+                <div class="uth-zone-label">DEALER</div>
+                <div class="uth-cards-row" id="dealerCards"></div>
+                <div class="uth-dealer-status" id="dealerStatus"></div>
+            </div>
+            <div class="uth-community-zone">
+                <div class="uth-cards-row" id="communityCards"></div>
+            </div>
+            <div class="uth-seats" id="seatsArc"></div>
+        </div>
+
+        <div class="uth-dock" id="dock">
+            <div class="uth-timer"><div class="uth-timer-fill" id="timerFill"></div></div>
+            <div class="uth-dock-content" id="dockContent"></div>
+        </div>
+
+        <div class="uth-toast" id="toast" hidden></div>
+        <div class="uth-overlay" id="overlay" hidden>
+            <div class="uth-overlay-card" id="overlayCard"></div>
+        </div>
+    </div>
+
+    <script type="module" src="js/ui/table-main.js"></script>
+</body>
+</html>
