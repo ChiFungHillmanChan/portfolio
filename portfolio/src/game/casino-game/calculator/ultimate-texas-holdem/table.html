@@ -36,13 +36,9 @@
             <div class="uth-community-zone">
                 <div class="uth-cards-row" id="communityCards"><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div></div>
             </div>
-            <div class="uth-seats" id="seatsArc"></div>
-        </div>
-
-        <div class="uth-dock" id="dock">
-            <div class="uth-timer"><div class="uth-timer-fill" id="timerFill"></div></div>
-            <!-- static skeleton = instant first paint; render() replaces it -->
-            <div class="uth-dock-content" id="dockContent">
+            <!-- betting spots live ON the felt, like a real table layout;
+                 static skeleton = instant first paint; render() replaces it -->
+            <div class="uth-board-zone" id="boardZone">
                 <div class="uth-bet-board locked uth-skel">
                     <div class="uth-bet-row uth-bet-row-sides">
                         <button class="uth-bet-circle locked" tabindex="-1"><span class="uth-bet-label">TRIPS</span><span class="uth-bet-amount">—</span></button>
@@ -58,6 +54,13 @@
                         <button class="uth-bet-circle uth-play-spot locked" tabindex="-1"><span class="uth-bet-label">PLAY</span><span class="uth-bet-amount">—</span><span class="uth-bet-sub">4x·3x / 2x / 1x</span></button>
                     </div>
                 </div>
+            </div>
+            <div class="uth-seats" id="seatsArc"></div>
+        </div>
+
+        <div class="uth-dock" id="dock">
+            <div class="uth-timer"><div class="uth-timer-fill" id="timerFill"></div></div>
+            <div class="uth-dock-content" id="dockContent">
                 <p class="uth-muted">Connecting…</p>
             </div>
         </div>

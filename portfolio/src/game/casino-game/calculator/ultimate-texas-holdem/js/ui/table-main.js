@@ -50,6 +50,7 @@ const el = {
   dealerCards: $("dealerCards"),
   dealerStatus: $("dealerStatus"),
   communityCards: $("communityCards"),
+  boardZone: $("boardZone"),
   seatsArc: $("seatsArc"),
   dock: $("dock"),
   dockContent: $("dockContent"),
@@ -59,9 +60,10 @@ const el = {
   overlayCard: $("overlayCard"),
 };
 
-// table.html ships a static skeleton in the dock for instant first paint —
-// reuse it as the "connecting" state so there's no layout jump.
+// table.html ships static skeletons for instant first paint — reuse them as
+// the "connecting" state so there's no layout jump.
 const DOCK_SKELETON = el.dockContent.innerHTML;
+const BOARD_SKELETON = el.boardZone.innerHTML;
 
 let myUid = null; // online identity (Firebase uid) — local tables use LOCAL_UID
 let activeCode = null;
@@ -579,6 +581,7 @@ function render() {
   domCode = activeCode;
 
   if (!info?.table) {
+    el.boardZone.innerHTML = BOARD_SKELETON;
     el.dockContent.innerHTML = DOCK_SKELETON;
     return;
   }
@@ -593,6 +596,7 @@ function render() {
   renderDealer(info, freshDom);
   renderCommunity(info, freshDom);
   renderSeats(info, table.phase);
+  el.boardZone.innerHTML = seat ? renderBoard(info, seat, table.phase) : BOARD_SKELETON;
   renderDock(info, seat, table.phase);
 }
 
@@ -652,9 +656,11 @@ function renderSeats(info, phase) {
       else if (["preflop", "flop", "river"].includes(phase) && s.inHand && s.acted)
         badges.push(`<span class="uth-badge ok">✓</span>`);
 
+      // my own cards + result live in the dock, bigger — the pill stays
+      // compact so it never crowds the felt spots
       let cardsHtml = "";
       let resultHtml = "";
-      if (phase === "showdown" && s.inHand && s.result && resultsShown) {
+      if (phase === "showdown" && s.inHand && s.result && resultsShown && !isMe) {
         if (s.holeCards) cardsHtml = `<div class="uth-seat-cards">${s.holeCards.map((c) => cardHtml(c)).join("")}</div>`;
         const net = s.result.net;
         resultHtml = `<div class="uth-seat-result ${net >= 0 ? "pos" : "neg"}">${net >= 0 ? "+" : "−"}${fmt(Math.abs(net))}${s.result.hand ? ` · ${esc(s.result.hand)}` : ""}</div>`;
@@ -732,8 +738,6 @@ function renderDock(info, seat, phase) {
       </div>`);
   }
 
-  parts.push(renderBoard(info, seat, phase));
-
   if (phase === "betting") {
     if (seat.ready) {
       parts.push(`<p class="uth-muted">${info.local ? "Bets locked — dealing…" : "Bets locked — waiting for the other players…"}</p>`);
@@ -756,6 +760,24 @@ function renderDock(info, seat, phase) {
   } else if (["preflop", "flop", "river"].includes(phase)) {
     if (seat.folded) {
       parts.push(`<p class="uth-muted">Folded — waiting for showdown.</p>`);
+    } else if (needsMyAction(info) && revealCaughtUp(info)) {
+      // decision buttons live here, in the thumb zone — never mid-felt
+      let buttons = "";
+      if (phase === "preflop") {
+        buttons = `
+          <button class="uth-btn uth-btn-act" data-action="act" data-move="check">CHECK</button>
+          <button class="uth-btn uth-btn-raise" data-action="act" data-move="3x">BET 3x</button>
+          <button class="uth-btn uth-btn-raise" data-action="act" data-move="4x">BET 4x</button>`;
+      } else if (phase === "flop") {
+        buttons = `
+          <button class="uth-btn uth-btn-act" data-action="act" data-move="check">CHECK</button>
+          <button class="uth-btn uth-btn-raise" data-action="act" data-move="2x">BET 2x</button>`;
+      } else {
+        buttons = `
+          <button class="uth-btn uth-btn-fold" data-action="act" data-move="fold">FOLD</button>
+          <button class="uth-btn uth-btn-raise" data-action="act" data-move="1x">BET 1x</button>`;
+      }
+      parts.push(`<div class="uth-actions uth-play-actions">${buttons}</div>`);
     } else if (!needsMyAction(info)) {
       parts.push(`<p class="uth-muted">${seat.playBet > 0 ? `Play bet ${fmt(seat.playBet)} placed.` : "Checked."}${info.local ? "" : " Waiting for other players…"}</p>`);
     }
@@ -772,10 +794,10 @@ function renderDock(info, seat, phase) {
   if (coreJustChanged) coreJustChanged = false;
 }
 
-// The casino-style bet board, persistent across phases:
+// The casino-style bet board painted on the felt, persistent across phases:
 //   row 1 — side bets:      TRIPS · HOLE CARD · BAD BEAT
 //   row 2 — core (equal):   ANTE = BLIND
-//   row 3 — play spot:      CHECK / 3x·4x buttons, or the placed Play bet
+//   row 3 — play spot:      the Play bet (decision buttons live in the dock)
 function renderBoard(info, seat, phase) {
   const editing = phase === "betting" && !seat.ready && !seat.sittingOut;
   const src = editing ? info.pending : seat.bets;
@@ -813,46 +835,27 @@ function renderBoard(info, seat, phase) {
     <span class="uth-bet-link" title="Ante and Blind are always equal">=</span>
     ${circle("blind", "BLIND", src.ante, { core: true, sub: "= ANTE" })}`;
 
-  // Play row: action buttons while it's my turn, else the play spot itself.
-  // Buttons wait for the reveal to catch up so cards land before decisions.
-  let playRow;
+  // Play spot: lights up while a decision is owed; the buttons themselves
+  // render in the dock so they always sit in the thumb zone.
   const pendingMe = needsMyAction(info) && phase !== "betting" && revealCaughtUp(info);
-  if (pendingMe) {
-    let buttons = "";
-    if (phase === "preflop") {
-      buttons = `
-        <button class="uth-btn uth-btn-act" data-action="act" data-move="check">CHECK</button>
-        <button class="uth-btn uth-btn-raise" data-action="act" data-move="3x">BET 3x</button>
-        <button class="uth-btn uth-btn-raise" data-action="act" data-move="4x">BET 4x</button>`;
-    } else if (phase === "flop") {
-      buttons = `
-        <button class="uth-btn uth-btn-act" data-action="act" data-move="check">CHECK</button>
-        <button class="uth-btn uth-btn-raise" data-action="act" data-move="2x">BET 2x</button>`;
-    } else {
-      buttons = `
-        <button class="uth-btn uth-btn-fold" data-action="act" data-move="fold">FOLD</button>
-        <button class="uth-btn uth-btn-raise" data-action="act" data-move="1x">BET 1x</button>`;
-    }
-    playRow = `<div class="uth-actions uth-play-actions">${buttons}</div>`;
-  } else {
-    const stageBadge = seat.playStage ? `<span class="uth-bet-sub">${{ preflop: "4x·3x", flop: "2x", river: "1x" }[seat.playStage] || ""}</span>` : "";
-    let cls = "uth-bet-circle uth-play-spot locked";
-    let resultHtml = "";
-    if (seat.playBet) cls += " has-bet";
-    if (results) {
-      const delta = results.play;
-      const cat = delta > 0 ? "pos" : delta < 0 ? "neg" : seat.playBet ? "push" : "";
-      if (cat) cls += ` res-${cat}`;
-      if (seat.playBet) resultHtml = `<span class="uth-bet-delta ${cat}">${delta > 0 ? "+" + fmt(delta) : delta < 0 ? "−" + fmt(-delta) : "PUSH"}</span>`;
-    }
-    playRow = `
-      <button class="${cls}" tabindex="-1">
-        <span class="uth-bet-label">PLAY</span>
-        <span class="uth-bet-amount">${seat.playBet ? fmt(seat.playBet) : "—"}</span>
-        ${seat.playBet ? stageBadge : `<span class="uth-bet-sub">4x·3x / 2x / 1x</span>`}
-        ${resultHtml}
-      </button>`;
+  const stageBadge = seat.playStage ? `<span class="uth-bet-sub">${{ preflop: "4x·3x", flop: "2x", river: "1x" }[seat.playStage] || ""}</span>` : "";
+  let cls = "uth-bet-circle uth-play-spot locked";
+  let playResultHtml = "";
+  if (seat.playBet) cls += " has-bet";
+  if (pendingMe) cls += " awaiting";
+  if (results) {
+    const delta = results.play;
+    const cat = delta > 0 ? "pos" : delta < 0 ? "neg" : seat.playBet ? "push" : "";
+    if (cat) cls += ` res-${cat}`;
+    if (seat.playBet) playResultHtml = `<span class="uth-bet-delta ${cat}">${delta > 0 ? "+" + fmt(delta) : delta < 0 ? "−" + fmt(-delta) : "PUSH"}</span>`;
   }
+  const playRow = `
+    <button class="${cls}" tabindex="-1">
+      <span class="uth-bet-label">PLAY</span>
+      <span class="uth-bet-amount">${seat.playBet ? fmt(seat.playBet) : "—"}</span>
+      ${seat.playBet ? stageBadge : `<span class="uth-bet-sub">4x·3x / 2x / 1x</span>`}
+      ${playResultHtml}
+    </button>`;
 
   return `
     <div class="uth-bet-board${editing ? "" : " locked"}">
