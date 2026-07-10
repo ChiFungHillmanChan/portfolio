@@ -228,6 +228,69 @@
     text-align: right;
 }
 
+/* ── Multi-table tab strip ──────────────────────────── */
+
+.uth-tabsbar {
+    display: flex;
+    gap: 6px;
+    padding: 0 var(--spacing-md) var(--spacing-sm);
+    overflow-x: auto;
+}
+
+.uth-tab {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    letter-spacing: 0.12em;
+    padding: 6px 14px;
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-bottom: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+}
+
+.uth-tab.active {
+    color: var(--accent-gold);
+    border-color: var(--border-active);
+    background: var(--bg-card-hover);
+}
+
+.uth-tab-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-dim);
+}
+
+.uth-tab.attention .uth-tab-dot {
+    background: var(--accent-gold);
+    box-shadow: 0 0 8px var(--accent-gold);
+    animation: uth-dot-pulse 1.2s ease-in-out infinite;
+}
+
+.uth-tab.urgent .uth-tab-dot {
+    background: var(--accent-red);
+    box-shadow: 0 0 8px var(--accent-red);
+    animation: uth-dot-pulse 0.5s ease-in-out infinite;
+}
+
+@keyframes uth-dot-pulse {
+    50% { opacity: 0.35; }
+}
+
+.uth-tab-add {
+    font-family: var(--font-display);
+    color: var(--accent-gold);
+    min-width: 38px;
+    justify-content: center;
+}
+
 /* ── Felt ───────────────────────────────────────────── */
 
 .uth-felt {
@@ -450,6 +513,8 @@
     background: var(--bg-secondary);
     border-top: 1px solid var(--border-subtle);
     padding-bottom: env(safe-area-inset-bottom);
+    max-height: 60dvh;
+    overflow-y: auto;
 }
 
 .uth-timer {
@@ -506,18 +571,30 @@
     color: var(--accent-gold);
 }
 
-/* Betting builder */
+/* Betting board — casino felt layout:
+     TRIPS · HOLE CARD · BAD BEAT
+          ANTE  =  BLIND
+             PLAY                      */
 
-.uth-bet-circles {
+.uth-bet-board {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    padding: 6px 0 2px;
+}
+
+.uth-bet-row {
     display: flex;
     gap: var(--spacing-sm);
-    flex-wrap: wrap;
+    align-items: center;
     justify-content: center;
+    flex-wrap: nowrap;
 }
 
 .uth-bet-circle {
-    width: 82px;
-    height: 82px;
+    width: 76px;
+    height: 76px;
     border-radius: 50%;
     border: 2px dashed rgba(240, 240, 240, 0.28);
     background: rgba(255, 255, 255, 0.03);
@@ -527,11 +604,14 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 2px;
-    transition: all var(--transition-fast);
+    gap: 1px;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+    position: relative;
 }
 
-.uth-bet-circle.required {
+.uth-bet-circle.core {
+    width: 88px;
+    height: 88px;
     border-color: var(--border-active);
 }
 
@@ -542,6 +622,33 @@
     box-shadow: var(--glow-gold);
 }
 
+.uth-bet-circle.locked {
+    cursor: default;
+}
+
+.uth-bet-circle.editable:hover {
+    border-color: var(--accent-gold);
+}
+
+/* ante+blind flash together whenever either changes */
+.uth-bet-circle.just-changed {
+    animation: uth-core-pulse 0.45s ease-out;
+}
+
+@keyframes uth-core-pulse {
+    0% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.7); }
+    100% { box-shadow: 0 0 0 16px rgba(212, 175, 55, 0); }
+}
+
+.uth-bet-link {
+    font-family: var(--font-display);
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--accent-gold);
+    text-shadow: var(--glow-gold);
+    user-select: none;
+}
+
 .uth-bet-label {
     font-family: var(--font-display);
     font-size: 0.55rem;
@@ -550,12 +657,49 @@
 
 .uth-bet-amount {
     font-family: var(--font-mono);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     color: var(--accent-gold);
+}
+
+.uth-bet-sub {
+    font-family: var(--font-body);
+    font-size: 0.6rem;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+}
+
+.uth-bet-delta {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 600;
+}
+
+.uth-bet-delta.pos { color: var(--accent-green); }
+.uth-bet-delta.neg { color: var(--accent-red); }
+.uth-bet-delta.push { color: var(--text-secondary); }
+
+/* per-bet win/lose/push coloring at showdown */
+.uth-bet-circle.res-pos { border-color: var(--accent-green); box-shadow: var(--glow-green); }
+.uth-bet-circle.res-neg { border-color: var(--accent-red); box-shadow: none; opacity: 0.85; }
+.uth-bet-circle.res-push { border-color: var(--text-dim); box-shadow: none; }
+
+.uth-play-spot {
+    width: 96px;
+    height: 76px;
+    border-radius: var(--radius-lg);
+}
+
+.uth-play-actions {
+    min-height: 76px;
+    align-items: center;
 }
 
 .uth-bet-note {
     font-size: 0.8rem;
+}
+
+.uth-room-code.pulse-invite {
+    animation: uth-core-pulse 1.4s ease-out infinite;
 }
 
 .uth-chip-rack {
@@ -676,7 +820,10 @@
 @media (max-width: 520px) {
     .uth-card { width: 40px; height: 56px; font-size: 0.95rem; }
     .uth-my-cards .uth-card { width: 48px; height: 66px; font-size: 1.1rem; }
-    .uth-bet-circle { width: 72px; height: 72px; }
+    .uth-bet-circle { width: 62px; height: 62px; }
+    .uth-bet-circle.core { width: 74px; height: 74px; }
+    .uth-play-spot { width: 84px; height: 64px; }
+    .uth-bet-amount { font-size: 0.8rem; }
     .uth-chip { width: 46px; height: 46px; }
     .uth-round-label { display: none; }
 }
