@@ -1325,7 +1325,7 @@
 .uth-lb-solo.neg { color: var(--accent-red); }
 
 /* strategy guide overlay */
-.uth-tab-guide {
+.uth-tab-settings {
     margin-left: auto;
     color: var(--accent-gold);
 }
@@ -1365,3 +1365,177 @@
 }
 
 .uth-overlay-card:has(.uth-guide) { max-width: 560px; }
+
+/* ── Settings panel: coach switch + 4X raise chart ──── */
+
+.uth-ic {
+    vertical-align: -0.15em;
+}
+
+.uth-settings {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    text-align: left;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+}
+
+.uth-settings-block {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+}
+
+.uth-settings-block h3 {
+    font-family: var(--font-display);
+    font-size: 0.74rem;
+    letter-spacing: 0.12em;
+    color: var(--accent-gold);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.uth-settings-block ul {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.uth-settings-block p {
+    margin: 0;
+}
+
+.uth-settings .uth-num {
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.uth-switch-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.uth-switch {
+    position: relative;
+    width: 46px;
+    height: 26px;
+    flex-shrink: 0;
+    border-radius: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.uth-switch-knob {
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--text-dim);
+    transition: all var(--transition-fast);
+}
+
+.uth-switch.on {
+    background: rgba(212, 175, 55, 0.22);
+    border-color: var(--border-active);
+}
+
+.uth-switch.on .uth-switch-knob {
+    left: 23px;
+    background: var(--accent-gold);
+}
+
+/* Wizard-of-Odds style Y/S/N matrix, generated from strategy.js */
+.uth-chart-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.uth-chart {
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 0.66rem;
+    margin: 0 auto;
+}
+
+.uth-chart th {
+    color: var(--text-dim);
+    font-weight: 500;
+    padding: 2px 3px;
+    min-width: 20px;
+    text-align: center;
+}
+
+.uth-chart-corner {
+    font-size: 0.54rem;
+    white-space: nowrap;
+}
+
+.uth-chart td {
+    width: 22px;
+    height: 20px;
+    text-align: center;
+    border: 1px solid rgba(0, 0, 0, 0.4);
+    font-weight: 700;
+}
+
+.uth-chart-y { background: #1e7e45; color: #eafff2; }
+.uth-chart-s { background: #d4af37; color: #16161c; }
+.uth-chart-n { background: #8c2f39; color: #ffdfe3; }
+.uth-chart-void { border: none; background: transparent; }
+
+.uth-chart-pairs {
+    text-align: center;
+    font-size: 0.82rem;
+}
+
+.uth-chart-legend {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+    font-size: 0.78rem;
+}
+
+.uth-chart-key {
+    display: inline-flex;
+    width: 16px;
+    height: 16px;
+    align-items: center;
+    justify-content: center;
+    font-style: normal;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    border-radius: 3px;
+    margin-right: 5px;
+}
+
+.uth-chart-source {
+    text-align: center;
+    font-size: 0.72rem;
+    color: var(--text-dim);
+}
+
+.uth-lb-ic svg { vertical-align: -0.12em; }
+.uth-lb-ic.pos { color: var(--accent-gold); }
+.uth-lb-ic.neg { color: var(--accent-red); }
+
+.uth-badge svg { vertical-align: -0.12em; }
+
+.uth-coach-toggle svg,
+.uth-coach-off svg { vertical-align: -0.15em; }
+
+.uth-odds-link svg { display: block; margin: auto; }
+
+.uth-tab-settings svg { margin-right: 2px; }

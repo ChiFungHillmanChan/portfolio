@@ -20,6 +20,17 @@
 import { cardLabel, cardSuit, evaluate5, evaluate7 } from "../core/engine.js";
 import { adviceFor } from "../core/strategy.js";
 import {
+  strategyPanelHtml,
+  isCoachOn,
+  setCoachOn,
+  CAP_SVG,
+  CROWN_SVG,
+  TREND_DOWN_SVG,
+  CHECK_SVG,
+  GEAR_SVG,
+  EYE_SVG,
+} from "./strategy-panel.js";
+import {
   localCall,
   watchLocalTable,
   isLocalCode,
@@ -69,7 +80,7 @@ const BOARD_SKELETON = el.boardZone.innerHTML;
 let myUid = null; // online identity (Firebase uid) — local tables use LOCAL_UID
 let activeCode = null;
 let selChip = 100;
-let coachOn = localStorage.getItem("uthCoach") !== "0"; // strategy coach, default on
+let coachOn = isCoachOn(); // strategy coach, default on (toggled in Settings)
 let sendingReady = false;
 let coreJustChanged = false; // pulse ante+blind together on change
 let toastTimer = null;
@@ -143,7 +154,6 @@ const esc = (s) =>
   String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 const zeroBets = () => ({ ante: 0, trips: 0, holeCard: 0, badBeat: 0 });
 
-const EYE_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
 const EYE_BADGE = `<span class="uth-eye" title="Cards shown to the table">${EYE_SVG}</span>`;
 
 function cardHtml(c, { back = false, slot = false, flip = -1 } = {}) {
@@ -562,7 +572,7 @@ function renderTabs() {
   if (tables.size < MAX_TABLES) {
     html += `<button class="uth-tab uth-tab-add" data-action="tab-add" title="Open another table">+</button>`;
   }
-  html += `<button class="uth-tab uth-tab-guide" data-action="guide" title="Perfect strategy guide">🎓 STRATEGY</button>`;
+  html += `<button class="uth-tab uth-tab-settings" data-action="settings" title="Settings & perfect strategy">${GEAR_SVG} SETTINGS</button>`;
   el.tabsBar.innerHTML = html;
   const anyAttention = [...tables.entries()].some(([code, i]) => needsMyAction(i) && code !== activeCode);
   document.title = `${anyAttention ? "● " : ""}Ultimate Texas Hold'em — Table`;
@@ -674,7 +684,7 @@ function renderSeats(info, phase) {
       else if (s.inHand && s.folded) badges.push(`<span class="uth-badge bad">FOLDED</span>`);
       else if (s.inHand && s.playBet > 0) badges.push(`<span class="uth-badge gold">BET ${fmt(s.playBet)}</span>`);
       else if (["preflop", "flop", "river"].includes(phase) && s.inHand && s.acted)
-        badges.push(`<span class="uth-badge ok">✓</span>`);
+        badges.push(`<span class="uth-badge ok">${CHECK_SVG}</span>`);
 
       // my own cards + result live in the dock, bigger — the pill stays
       // compact so it never crowds the felt spots. A player who chose to
@@ -855,12 +865,12 @@ const MOVE_LABELS = { "4x": "BET 4x", "3x": "BET 3x", "2x": "BET 2x", "1x": "BET
 
 function coachHtml(advice) {
   if (!coachOn) {
-    return `<button class="uth-coach-off" data-action="coach-toggle" title="Turn the strategy coach on">🎓 Coach off</button>`;
+    return `<button class="uth-coach-off" data-action="coach-toggle" title="Turn the strategy coach on">${CAP_SVG} Coach off</button>`;
   }
   if (!advice) return "";
   return `
     <div class="uth-coach">
-      <button class="uth-coach-toggle" data-action="coach-toggle" title="Turn the strategy coach off">🎓</button>
+      <button class="uth-coach-toggle" data-action="coach-toggle" title="Turn the strategy coach off">${CAP_SVG}</button>
       <span class="uth-coach-text">Coach says <strong>${MOVE_LABELS[advice.move]}</strong> — ${esc(advice.reason)}</span>
     </div>`;
 }
@@ -881,7 +891,12 @@ function renderLeaderboard(info) {
   const rowHtml = rows
     .map((s, i) => {
       const net = s.sessionNet || 0;
-      const tag = i === 0 && net > 0 ? "👑 " : i === last && net < 0 ? "📉 " : "";
+      const tag =
+        i === 0 && net > 0
+          ? `<span class="uth-lb-ic pos" title="Biggest winner">${CROWN_SVG}</span> `
+          : i === last && net < 0
+            ? `<span class="uth-lb-ic neg" title="Biggest loser">${TREND_DOWN_SVG}</span> `
+            : "";
       return `
         <div class="uth-lb-row${s.uid === uid ? " me" : ""}">
           <span class="uth-lb-rank">${i + 1}</span>
@@ -898,46 +913,10 @@ function renderLeaderboard(info) {
     </div>`;
 }
 
-function guideHtml() {
+function settingsOverlayHtml() {
   return `
-    <h2>🎓 Perfect Strategy</h2>
-    <div class="uth-guide">
-      <p>The mathematically best way to play, per <strong>Wizard of Odds</strong>. The in-game
-      coach applies these rules to your cards automatically.</p>
-      <h3>Pre-flop — raise 4x with…</h3>
-      <ul>
-        <li>Any pair <span class="uth-num">3-3</span> or better (only 2-2 checks)</li>
-        <li>Any <span class="uth-num">Ace</span></li>
-        <li>Any suited King · <span class="uth-num">K-5</span> offsuit or better</li>
-        <li><span class="uth-num">Q-6</span> suited+ · <span class="uth-num">Q-8</span> offsuit+</li>
-        <li><span class="uth-num">J-8</span> suited · <span class="uth-num">J-T</span> offsuit</li>
-      </ul>
-      <p>Everything else: <strong>check</strong>. The 3x raise is never correct — it's 4x or wait.</p>
-      <h3>Flop — bet 2x with…</h3>
-      <ul>
-        <li>Two pair or better</li>
-        <li>A hidden pair — a pair using one of YOUR cards (except pocket 2-2)</li>
-        <li>Four to a flush with a hole card <span class="uth-num">T</span> or higher of that suit</li>
-      </ul>
-      <h3>River — bet 1x or fold</h3>
-      <ul>
-        <li>A hidden pair or better → always bet</li>
-        <li>Otherwise: count the "dealer outs" — single cards that would beat you.
-            Fewer than <span class="uth-num">21</span> of the 45 unseen cards → bet; else fold.
-            (The coach counts them for you.)</li>
-      </ul>
-      <h3>Your expected win rate</h3>
-      <p>Played perfectly, the house keeps <span class="uth-num">2.19%</span> of your Ante per hand
-      (this chart ≈ <span class="uth-num">2.4%</span>) — about <span class="uth-num">0.5%</span> of
-      all money you put on the table. Short-term swings are huge (±5 antes per hand is normal);
-      the Blind's big bonuses arrive rarely but pay for many small losses.</p>
-      <h3>Sharing hands with 6 players — does it beat the house?</h3>
-      <p><strong>No.</strong> Wizard of Odds simulated a full 6-player table where you see all
-      <span class="uth-num">10</span> other hole cards and play computer-perfect: the house still
-      wins <span class="uth-num">≈ 0.64%</span> of the Ante. A real player edge only appears from
-      about <span class="uth-num">16</span> known cards — impossible at a 6-max table. So use the
-      👁 card-share feature for the table talk, not for profit.</p>
-    </div>
+    <h2>${GEAR_SVG} Settings &amp; Strategy</h2>
+    <div class="uth-guide">${strategyPanelHtml(coachOn)}</div>
     <button class="uth-btn uth-btn-primary" data-action="close-overlay">GOT IT</button>`;
 }
 
@@ -1184,11 +1163,15 @@ document.addEventListener("click", async (e) => {
         break;
       case "coach-toggle":
         coachOn = !coachOn;
-        try { localStorage.setItem("uthCoach", coachOn ? "1" : "0"); } catch {}
+        setCoachOn(coachOn);
         render();
+        // live-refresh the settings overlay if the toggle was flipped there
+        if (!el.overlay.hidden && el.overlayCard.querySelector(".uth-settings")) {
+          showOverlay(settingsOverlayHtml());
+        }
         break;
-      case "guide":
-        showOverlay(guideHtml());
+      case "settings":
+        showOverlay(settingsOverlayHtml());
         break;
       case "reveal-ask":
         showOverlay(`

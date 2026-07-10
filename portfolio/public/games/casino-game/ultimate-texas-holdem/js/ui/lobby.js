@@ -10,6 +10,34 @@ import {
   signInWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { uthCall } from "../net/uth-api.js";
+import { strategyPanelHtml, isCoachOn, setCoachOn } from "./strategy-panel.js";
+
+// ── UTH section inside the global casino Settings modal ─────────────────────
+// (hamburger → Settings). settings-modal.js injects the modal before this
+// module evaluates; the DOMContentLoaded fallback covers a slow path.
+
+function injectSettingsSection() {
+  const body = document.querySelector("#globalSettingsModal .global-settings-body");
+  if (!body || body.querySelector(".uth-settings")) return;
+  const section = document.createElement("section");
+  section.className = "global-settings-section";
+  section.innerHTML = `
+    <h3 class="global-settings-section-title">Ultimate Texas Hold'em</h3>
+    ${strategyPanelHtml(isCoachOn())}
+  `;
+  body.appendChild(section);
+  section.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="coach-toggle"]');
+    if (!btn) return;
+    const on = !isCoachOn();
+    setCoachOn(on);
+    btn.classList.toggle("on", on);
+    btn.setAttribute("aria-checked", String(on));
+  });
+}
+
+injectSettingsSection();
+document.addEventListener("DOMContentLoaded", injectSettingsSection);
 
 const createBtn = document.getElementById("createBtn");
 const joinForm = document.getElementById("joinForm");
