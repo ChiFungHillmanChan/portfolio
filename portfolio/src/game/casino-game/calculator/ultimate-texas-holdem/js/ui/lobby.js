@@ -10,6 +10,7 @@ import { uthCall } from "../net/uth-api.js";
 const authGate = document.getElementById("authGate");
 const playPanel = document.getElementById("playPanel");
 const signInBtn = document.getElementById("signInBtn");
+const soloBtn = document.getElementById("soloBtn");
 const createBtn = document.getElementById("createBtn");
 const joinForm = document.getElementById("joinForm");
 const joinCode = document.getElementById("joinCode");
@@ -45,19 +46,22 @@ signInBtn.addEventListener("click", async () => {
   }
 });
 
-createBtn.addEventListener("click", async () => {
+async function createAndGo(btn, idleLabel, invite) {
   clearError();
-  createBtn.disabled = true;
-  createBtn.textContent = "Creating…";
+  btn.disabled = true;
+  btn.textContent = "Creating…";
   try {
     const { code } = await uthCall("create-table");
-    location.href = `table.html?code=${encodeURIComponent(code)}`;
+    location.href = `table.html?code=${encodeURIComponent(code)}${invite ? "&invite=1" : ""}`;
   } catch (err) {
     showError(err.code || err.message);
-    createBtn.disabled = false;
-    createBtn.textContent = "Create Table";
+    btn.disabled = false;
+    btn.textContent = idleLabel;
   }
-});
+}
+
+soloBtn.addEventListener("click", () => createAndGo(soloBtn, "Play Solo", false));
+createBtn.addEventListener("click", () => createAndGo(createBtn, "Create & Invite", true));
 
 joinCode.addEventListener("input", () => {
   joinCode.value = joinCode.value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
