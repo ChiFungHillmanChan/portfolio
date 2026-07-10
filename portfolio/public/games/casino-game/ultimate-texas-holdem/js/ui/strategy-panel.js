@@ -9,6 +9,7 @@
 // picture can never drift from what the coach actually recommends.
 
 import { preflopAdvice } from "../core/strategy.js";
+import { CAT, CAT_NAMES, BLIND_PAYS, TRIPS_PAYS, BBB_PAYS } from "../core/engine.js";
 
 // ── SVG icons (suite style: stroke currentColor, 24-box, 1em) ────────────────
 
@@ -108,6 +109,101 @@ export function coachSwitchHtml(on) {
             role="switch" aria-checked="${on}" aria-label="Strategy coach">
       <span class="uth-switch-knob"></span>
     </button>`;
+}
+
+// ── Info subpage: payouts & odds (pay tables generated from the engine) ──────
+
+const payRatio = (mult) => (Number.isInteger(mult) ? `${mult} : 1` : `${mult * 2} : 2`);
+
+// rows for a {CAT: multiplier} pay table, best hand first
+function payTableHtml(pays, { belowLabel = null } = {}) {
+  const cats = Object.keys(pays).map(Number).sort((a, b) => b - a);
+  const rows = cats
+    .map((cat) => `<tr><td>${CAT_NAMES[cat]}</td><td class="uth-num-cell">${payRatio(pays[cat])}</td></tr>`)
+    .join("");
+  return `<table class="uth-info-table">${rows}${belowLabel ? `<tr><td>${belowLabel}</td><td class="uth-num-cell">Push</td></tr>` : ""}</table>`;
+}
+
+export function infoPanelHtml() {
+  // Bad Beat shows a single straight-flush row (royal pays the same 7500)
+  const bbbPays = { ...BBB_PAYS };
+  delete bbbPays[CAT.ROYAL];
+  return `
+    <section class="uth-settings-block">
+      <h3>HOW EACH BET SETTLES</h3>
+      <ul>
+        <li><strong>Ante</strong> — even money vs the dealer; pushes when the dealer doesn't open with a pair (dealer qualifies <span class="uth-num">82.6%</span> of hands)</li>
+        <li><strong>Play</strong> — even money, always in action</li>
+        <li><strong>Blind</strong> — wins only when you beat the dealer; pays the table below with a straight or better, pushes on smaller wins</li>
+      </ul>
+    </section>
+    <section class="uth-settings-block">
+      <h3>BLIND PAY TABLE</h3>
+      ${payTableHtml(BLIND_PAYS, { belowLabel: "Less than a straight (win)" })}
+    </section>
+    <section class="uth-settings-block">
+      <h3>TRIPS (your hand only)</h3>
+      ${payTableHtml(TRIPS_PAYS)}
+    </section>
+    <section class="uth-settings-block">
+      <h3>HOLE CARD BONUS (your two hole cards)</h3>
+      <table class="uth-info-table">
+        <tr><td>You &amp; dealer both pocket Aces</td><td class="uth-num-cell">1000 : 1</td></tr>
+        <tr><td>Pocket Aces</td><td class="uth-num-cell">30 : 1</td></tr>
+        <tr><td>A-K suited</td><td class="uth-num-cell">25 : 1</td></tr>
+        <tr><td>A-Q / A-J suited</td><td class="uth-num-cell">20 : 1</td></tr>
+        <tr><td>A-K offsuit</td><td class="uth-num-cell">15 : 1</td></tr>
+        <tr><td>Pair J-J to K-K</td><td class="uth-num-cell">10 : 1</td></tr>
+        <tr><td>A-Q / A-J offsuit</td><td class="uth-num-cell">5 : 1</td></tr>
+        <tr><td>Pair 2-2 to T-T</td><td class="uth-num-cell">3 : 1</td></tr>
+      </table>
+    </section>
+    <section class="uth-settings-block">
+      <h3>BAD BEAT BONUS (lose at showdown with…)</h3>
+      ${payTableHtml(bbbPays)}
+    </section>
+    <section class="uth-settings-block">
+      <h3>HOUSE EDGE PER BET</h3>
+      <table class="uth-info-table">
+        <tr><td>Main game (Ante + Blind + Play)</td><td class="uth-num-cell">2.19% of Ante</td></tr>
+        <tr><td>&nbsp;&nbsp;…per chip wagered</td><td class="uth-num-cell">0.53%</td></tr>
+        <tr><td>Trips (wins 15.3% of hands)</td><td class="uth-num-cell">0.90%</td></tr>
+        <tr><td>Hole Card Bonus (hits 9.5%)</td><td class="uth-num-cell">8.54%</td></tr>
+        <tr><td>Bad Beat Bonus (hits 2.0%)</td><td class="uth-num-cell">57.1%</td></tr>
+      </table>
+      <p><a class="uth-info-more" href="odds.html">Full odds, win frequencies &amp; hand distribution →</a></p>
+    </section>`;
+}
+
+// ── Tabbed settings: COACH | INFO sub-pages with a horizontal slide ─────────
+
+export function settingsPanelHtml(coachOn, activeTab = "coach") {
+  const info = activeTab === "info";
+  return `
+    <div class="uth-settings-wrap">
+      <div class="uth-settings-tabs" role="tablist">
+        <button type="button" class="uth-settings-tab${info ? "" : " active"}" data-action="settings-tab" data-tab="coach" role="tab" aria-selected="${!info}">${CAP_SVG} COACH</button>
+        <button type="button" class="uth-settings-tab${info ? " active" : ""}" data-action="settings-tab" data-tab="info" role="tab" aria-selected="${info}">${INFO_SVG} INFO</button>
+      </div>
+      <div class="uth-subpages-clip">
+        <div class="uth-subpages${info ? " show-info" : ""}">
+          <div class="uth-subpage">${strategyPanelHtml(coachOn)}</div>
+          <div class="uth-subpage"><div class="uth-settings">${infoPanelHtml()}</div></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Slide an already-rendered panel to a tab (no re-render → CSS transition runs).
+export function switchSettingsTab(rootEl, tab) {
+  const wrap = rootEl.querySelector(".uth-settings-wrap");
+  if (!wrap) return;
+  wrap.querySelector(".uth-subpages")?.classList.toggle("show-info", tab === "info");
+  for (const btn of wrap.querySelectorAll(".uth-settings-tab")) {
+    const active = btn.dataset.tab === tab;
+    btn.classList.toggle("active", active);
+    btn.setAttribute("aria-selected", String(active));
+  }
 }
 
 export function strategyPanelHtml(coachOn) {

@@ -10,7 +10,7 @@ import {
   signInWithPopup,
 } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { uthCall } from "../net/uth-api.js";
-import { strategyPanelHtml, isCoachOn, setCoachOn } from "./strategy-panel.js";
+import { settingsPanelHtml, switchSettingsTab, isCoachOn, setCoachOn } from "./strategy-panel.js";
 
 // ── UTH section inside the global casino Settings modal ─────────────────────
 // (hamburger → Settings). settings-modal.js injects the modal before this
@@ -23,10 +23,15 @@ function injectSettingsSection() {
   section.className = "global-settings-section";
   section.innerHTML = `
     <h3 class="global-settings-section-title">Ultimate Texas Hold'em</h3>
-    ${strategyPanelHtml(isCoachOn())}
+    ${settingsPanelHtml(isCoachOn(), "coach")}
   `;
   body.appendChild(section);
   section.addEventListener("click", (e) => {
+    const tabBtn = e.target.closest('[data-action="settings-tab"]');
+    if (tabBtn) {
+      switchSettingsTab(section, tabBtn.dataset.tab);
+      return;
+    }
     const btn = e.target.closest('[data-action="coach-toggle"]');
     if (!btn) return;
     const on = !isCoachOn();

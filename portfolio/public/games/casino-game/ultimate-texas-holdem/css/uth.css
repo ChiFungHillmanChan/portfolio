@@ -1539,3 +1539,159 @@
 .uth-odds-link svg { display: block; margin: auto; }
 
 .uth-tab-settings svg { margin-right: 2px; }
+
+/* ── Tabbed settings: COACH | INFO sub-pages ─────────── */
+
+.uth-settings-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+}
+
+.uth-settings-tabs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+}
+
+.uth-settings-tab {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    padding: 7px 18px;
+    border-radius: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    min-height: 34px;
+    transition: all var(--transition-fast);
+    -webkit-tap-highlight-color: transparent;
+}
+
+.uth-settings-tab.active {
+    color: var(--accent-gold);
+    border-color: var(--border-active);
+    background: var(--bg-card-hover);
+}
+
+.uth-subpages-clip {
+    overflow: hidden;
+    width: 100%;
+}
+
+.uth-subpages {
+    display: flex;
+    width: 200%;
+    transition: transform 0.32s ease;
+}
+
+.uth-subpages.show-info {
+    transform: translateX(-50%);
+}
+
+.uth-subpage {
+    width: 50%;
+    flex: none;
+    box-sizing: border-box;
+    padding: 0 2px;
+}
+
+/* payout tables on the INFO sub-page */
+.uth-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+
+.uth-info-table td {
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--border-subtle);
+    color: var(--text-secondary);
+}
+
+.uth-info-table tr:last-child td {
+    border-bottom: none;
+}
+
+.uth-num-cell {
+    text-align: right;
+    font-family: var(--font-mono);
+    color: var(--accent-gold);
+    white-space: nowrap;
+}
+
+.uth-info-more {
+    color: var(--accent-gold);
+    font-size: 0.82rem;
+}
+
+/* ── Portrait phones: showdown payouts must never clip ─
+   The dock grows at showdown (cards + banner + leaderboard), squeezing the
+   felt. Two defences: the bet spots wrap into TWO compact rows (sides ·
+   ante = blind play), and the felt itself scrolls if a tiny screen still
+   can't fit everything (stepReveal auto-scrolls the spots into view). */
+
+@media (max-width: 640px) and (orientation: portrait) {
+    .uth-felt {
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    .uth-bet-row { display: contents; }
+
+    .uth-bet-board {
+        flex-direction: row;
+        flex-wrap: wrap;
+        column-gap: 10px;
+        row-gap: 8px;
+        justify-content: center;
+        max-width: 100%;
+        padding: 2px 4px;
+    }
+
+    .uth-bet-circle { width: 52px; height: 52px; }
+    .uth-bet-circle.core { width: 60px; height: 60px; }
+    .uth-play-spot { width: 78px; height: 52px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .uth-subpages { transition: none; }
+}
+
+/* at results the sub-caption is redundant — make room for the delta */
+.uth-bet-circle.res-pos .uth-bet-sub,
+.uth-bet-circle.res-neg .uth-bet-sub,
+.uth-bet-circle.res-push .uth-bet-sub {
+    display: none;
+}
+
+@media (max-width: 640px) and (orientation: portrait) {
+    /* my own bets are on the felt spots right below — the pill line only collides */
+    .uth-seat.me .uth-seat-bets { display: none; }
+}
+
+/* the slider must size from the card, never from its widest content */
+.uth-guide {
+    width: 100%;
+}
+
+.uth-subpage {
+    min-width: 0;
+}
+
+.uth-subpage .uth-info-table {
+    table-layout: fixed;
+}
+
+.uth-subpage .uth-info-table td {
+    overflow-wrap: break-word;
+}
+
+.uth-subpage .uth-num-cell {
+    width: 34%;
+}
