@@ -8,6 +8,10 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- online tables only (solo never uses these) — warm the sockets early -->
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://841ze82i0b.execute-api.ap-northeast-1.amazonaws.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
     <link rel="stylesheet" href="../css/variables.css">
@@ -26,18 +30,36 @@
         <div class="uth-felt">
             <div class="uth-dealer-zone">
                 <div class="uth-zone-label">DEALER</div>
-                <div class="uth-cards-row" id="dealerCards"></div>
+                <div class="uth-cards-row" id="dealerCards"><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div></div>
                 <div class="uth-dealer-status" id="dealerStatus"></div>
             </div>
             <div class="uth-community-zone">
-                <div class="uth-cards-row" id="communityCards"></div>
+                <div class="uth-cards-row" id="communityCards"><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div><div class="uth-card uth-card-slot"></div></div>
             </div>
             <div class="uth-seats" id="seatsArc"></div>
         </div>
 
         <div class="uth-dock" id="dock">
             <div class="uth-timer"><div class="uth-timer-fill" id="timerFill"></div></div>
-            <div class="uth-dock-content" id="dockContent"></div>
+            <!-- static skeleton = instant first paint; render() replaces it -->
+            <div class="uth-dock-content" id="dockContent">
+                <div class="uth-bet-board locked uth-skel">
+                    <div class="uth-bet-row uth-bet-row-sides">
+                        <button class="uth-bet-circle locked" tabindex="-1"><span class="uth-bet-label">TRIPS</span><span class="uth-bet-amount">—</span></button>
+                        <button class="uth-bet-circle locked" tabindex="-1"><span class="uth-bet-label">HOLE CARD</span><span class="uth-bet-amount">—</span></button>
+                        <button class="uth-bet-circle locked" tabindex="-1"><span class="uth-bet-label">BAD BEAT</span><span class="uth-bet-amount">—</span></button>
+                    </div>
+                    <div class="uth-bet-row uth-bet-row-core">
+                        <button class="uth-bet-circle core locked" tabindex="-1"><span class="uth-bet-label">ANTE</span><span class="uth-bet-amount">—</span></button>
+                        <span class="uth-bet-link" title="Ante and Blind are always equal">=</span>
+                        <button class="uth-bet-circle core locked" tabindex="-1"><span class="uth-bet-label">BLIND</span><span class="uth-bet-amount">—</span><span class="uth-bet-sub">= ANTE</span></button>
+                    </div>
+                    <div class="uth-bet-row uth-bet-row-play">
+                        <button class="uth-bet-circle uth-play-spot locked" tabindex="-1"><span class="uth-bet-label">PLAY</span><span class="uth-bet-amount">—</span><span class="uth-bet-sub">4x·3x / 2x / 1x</span></button>
+                    </div>
+                </div>
+                <p class="uth-muted">Connecting…</p>
+            </div>
         </div>
 
         <div class="uth-toast" id="toast" hidden></div>

@@ -84,29 +84,23 @@
             Virtual chips only — every seat gets a 10,000 buy-in.
         </p>
 
-        <!-- Signed-out gate -->
-        <section class="uth-auth-gate" id="authGate" hidden>
-            <h2 class="uth-panel-title">Sign in to play</h2>
-            <p class="uth-muted">Online tables need a Google sign-in so your seat and chips follow you.</p>
-            <button class="uth-btn uth-btn-primary" id="signInBtn">Sign in with Google</button>
-        </section>
-
-        <!-- Create / Join -->
-        <section class="uth-play-panel" id="playPanel" hidden>
+        <!-- Create / Join — always visible; solo is a plain link so it works
+             instantly, before (and without) any JavaScript or sign-in -->
+        <section class="uth-play-panel" id="playPanel">
             <div class="uth-panel-row">
                 <div class="uth-panel-card uth-panel-solo">
                     <h2 class="uth-panel-title">▶ Play solo</h2>
-                    <p class="uth-muted">Jump straight in — just you against the dealer. Open up to 4 tables at once from inside the game.</p>
-                    <button class="uth-btn uth-btn-primary" id="soloBtn">Play Solo</button>
+                    <p class="uth-muted">Jump straight in — just you against the dealer. Runs entirely on your device, no sign-in needed; your chips are saved here. Open up to 4 tables at once from inside the game.</p>
+                    <a class="uth-btn uth-btn-primary" id="soloBtn" href="table.html?code=SOLO">Play Solo</a>
                 </div>
                 <div class="uth-panel-card">
                     <h2 class="uth-panel-title">Create a table with friends</h2>
-                    <p class="uth-muted">You get a room code — share it and up to 6 players sit together.</p>
+                    <p class="uth-muted">You get a room code — share it and up to 6 players sit together. Google sign-in, so your seat and chips follow you.</p>
                     <button class="uth-btn uth-btn-primary" id="createBtn">Create &amp; Invite</button>
                 </div>
                 <div class="uth-panel-card">
                     <h2 class="uth-panel-title">Join a table</h2>
-                    <p class="uth-muted">Enter the 4-character room code from your friend.</p>
+                    <p class="uth-muted">Enter the 4-character room code from your friend. Google sign-in.</p>
                     <form id="joinForm" class="uth-join-form" autocomplete="off">
                         <input id="joinCode" class="uth-code-input" maxlength="8" placeholder="e.g. 8K3F"
                                aria-label="Room code" spellcheck="false">

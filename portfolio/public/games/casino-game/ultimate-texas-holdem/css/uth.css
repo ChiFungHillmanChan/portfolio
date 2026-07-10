@@ -353,6 +353,7 @@
     display: flex;
     gap: 8px;
     justify-content: center;
+    perspective: 700px;
 }
 
 /* ── Cards ──────────────────────────────────────────── */
@@ -387,6 +388,21 @@
     background: rgba(255, 255, 255, 0.04);
     border: 1.5px dashed rgba(240, 240, 240, 0.22);
     box-shadow: none;
+}
+
+/* Staged reveal: cards flip in as each street lands (flop → turn+river →
+   dealer). `backwards` keeps a delayed card hidden until its turn. */
+.uth-card-flip {
+    animation: uth-card-flip 0.5s cubic-bezier(0.25, 1.2, 0.5, 1) backwards;
+}
+
+@keyframes uth-card-flip {
+    0% { transform: rotateY(88deg) scale(0.92); opacity: 0.4; }
+    100% { transform: rotateY(0deg) scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .uth-card-flip { animation: none; }
 }
 
 /* ── Seats ──────────────────────────────────────────── */
@@ -554,6 +570,7 @@
 .uth-my-cards {
     display: flex;
     gap: 8px;
+    perspective: 700px;
 }
 
 .uth-my-cards .uth-card {
@@ -743,6 +760,16 @@
     display: flex;
     align-items: baseline;
     gap: 12px;
+    animation: uth-banner-pop 0.45s cubic-bezier(0.2, 1.5, 0.4, 1) backwards;
+}
+
+@keyframes uth-banner-pop {
+    0% { transform: scale(0.6); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .uth-result-banner { animation: none; }
 }
 
 .uth-result-banner strong {
@@ -782,6 +809,12 @@
     box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
     max-width: min(92vw, 420px);
     text-align: center;
+}
+
+/* Pre-data skeleton (static markup in table.html, swapped out on first render) */
+.uth-skel {
+    opacity: 0.5;
+    pointer-events: none;
 }
 
 .uth-overlay {
