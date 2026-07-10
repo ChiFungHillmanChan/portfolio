@@ -20,7 +20,8 @@
 import { cardLabel, cardSuit, evaluate5, evaluate7 } from "../core/engine.js";
 import { adviceFor } from "../core/strategy.js";
 import {
-  strategyPanelHtml,
+  settingsPanelHtml,
+  switchSettingsTab,
   isCoachOn,
   setCoachOn,
   CAP_SVG,
@@ -302,6 +303,7 @@ function stepReveal(code) {
   if (!info?.table || info.revealTimer) return;
   const tgt = targetShown(info.table);
   const s = info.shown;
+  let resultsJustShown = false;
   if (s.community < tgt.community) {
     // flop flips as a group of 3, then turn+river together
     s.community = s.community < 3 ? Math.min(3, tgt.community) : tgt.community;
@@ -309,10 +311,15 @@ function stepReveal(code) {
     s.dealer = true;
   } else if (tgt.results && !s.results) {
     s.results = true;
+    resultsJustShown = true;
   } else {
     return; // caught up
   }
-  if (code === activeCode) render();
+  if (code === activeCode) {
+    render();
+    // small screens: the felt scrolls — bring the per-bet payouts into view
+    if (resultsJustShown) el.boardZone.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  }
   renderTabs();
   info.revealTimer = setTimeout(() => {
     info.revealTimer = null;
@@ -913,10 +920,10 @@ function renderLeaderboard(info) {
     </div>`;
 }
 
-function settingsOverlayHtml() {
+function settingsOverlayHtml(tab = "coach") {
   return `
-    <h2>${GEAR_SVG} Settings &amp; Strategy</h2>
-    <div class="uth-guide">${strategyPanelHtml(coachOn)}</div>
+    <h2>${GEAR_SVG} Settings</h2>
+    <div class="uth-guide">${settingsPanelHtml(coachOn, tab)}</div>
     <button class="uth-btn uth-btn-primary" data-action="close-overlay">GOT IT</button>`;
 }
 
@@ -1161,17 +1168,26 @@ document.addEventListener("click", async (e) => {
       case "next-round":
         await tableCall(activeCode, "next-round");
         break;
-      case "coach-toggle":
+      case "coach-toggle": {
         coachOn = !coachOn;
         setCoachOn(coachOn);
-        render();
-        // live-refresh the settings overlay if the toggle was flipped there
-        if (!el.overlay.hidden && el.overlayCard.querySelector(".uth-settings")) {
-          showOverlay(settingsOverlayHtml());
+        // update the overlay switch in place (keeps tab + scroll position)
+        const sw = el.overlayCard.querySelector(".uth-switch");
+        if (sw) {
+          sw.classList.toggle("on", coachOn);
+          sw.setAttribute("aria-checked", String(coachOn));
         }
+        render();
         break;
+      }
       case "settings":
-        showOverlay(settingsOverlayHtml());
+        showOverlay(settingsOverlayHtml("coach"));
+        break;
+      case "settings-info":
+        showOverlay(settingsOverlayHtml("info"));
+        break;
+      case "settings-tab":
+        switchSettingsTab(el.overlayCard, btn.dataset.tab);
         break;
       case "reveal-ask":
         showOverlay(`
