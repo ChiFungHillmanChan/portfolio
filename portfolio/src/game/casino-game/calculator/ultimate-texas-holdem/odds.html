@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0a0a0f">
+    <meta name="description" content="Ultimate Texas Hold'em — full pay tables, house edge and win rates for every bet.">
+    <title>Ultimate Texas Hold'em — Payouts &amp; Odds</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Rajdhani:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="../css/variables.css">
+    <link rel="stylesheet" href="css/uth.css">
+    <style>
+        .odds-page {
+            max-width: 860px;
+            margin: 0 auto;
+            padding: var(--spacing-lg) var(--spacing-md) calc(var(--spacing-xl) + env(safe-area-inset-bottom));
+        }
+
+        .odds-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .odds-page h1 {
+            font-family: var(--font-display);
+            font-size: 1.15rem;
+            letter-spacing: 0.12em;
+            color: var(--accent-gold);
+            text-align: center;
+        }
+
+        .odds-page h2 {
+            font-family: var(--font-display);
+            font-size: 0.95rem;
+            letter-spacing: 0.08em;
+            color: var(--accent-gold);
+            margin: var(--spacing-xl) 0 var(--spacing-sm);
+        }
+
+        .odds-page p {
+            color: var(--text-secondary);
+            font-family: var(--font-body);
+            font-size: 1rem;
+            line-height: 1.55;
+            margin: var(--spacing-sm) 0;
+        }
+
+        .odds-page strong { color: var(--text-primary); }
+
+        .odds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-md);
+            align-items: start;
+        }
+
+        .odds-grid .uth-paytable { margin-top: 0; }
+        .odds-grid .uth-paytable[open] summary { border-bottom: 1px solid var(--border-subtle); }
+
+        .odds-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 0.85rem;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+        }
+
+        .odds-table th {
+            font-family: var(--font-display);
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            color: var(--accent-gold);
+            background: var(--bg-card);
+            padding: 10px 12px;
+            text-align: left;
+        }
+
+        .odds-table td {
+            padding: 9px 12px;
+            border-top: 1px solid var(--border-subtle);
+            color: var(--text-secondary);
+        }
+
+        .odds-table td:first-child { color: var(--text-primary); font-family: var(--font-body); font-weight: 600; }
+        .odds-table td.num { text-align: right; color: var(--accent-gold); white-space: nowrap; }
+
+        .odds-scroll { overflow-x: auto; }
+
+        .odds-fine {
+            font-size: 0.82rem !important;
+            color: var(--text-dim) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="odds-page">
+        <div class="odds-topbar">
+            <a class="uth-btn uth-btn-ghost" href="index.html">← Lobby</a>
+            <h1>PAYOUTS &amp; ODDS</h1>
+            <span style="min-width:92px"></span>
+        </div>
+
+        <p>
+            Everything on this page is for the exact pay tables used at these tables.
+            Virtual chips only — no real money. <strong>House edge</strong> is the average share
+            of a bet the casino keeps over the long run: a 2% edge means that for every
+            1,000 wagered, you'd expect to end about 20 down after many, many hands.
+            Any single session can of course swing far either way.
+        </p>
+
+        <h2>HOW EACH BET SETTLES</h2>
+        <p>
+            <strong>Ante</strong> pays even money when you beat the dealer — but only if the dealer
+            <em>qualifies</em> with a pair or better (82.6% of hands); otherwise it pushes.
+            <strong>Blind</strong> always stays in action: it pays the table below when you win with a
+            straight or better, pushes on smaller wins, and loses when the dealer wins.
+            <strong>Play</strong> is your raise — even money, no qualification needed.
+            The earlier you raise, the more you can bet: 4x or 3x before the flop, 2x on the
+            flop, or 1x at the river. <strong>Trips</strong> looks only at your final hand.
+            <strong>Hole Card Bonus</strong> is decided the moment you're dealt (it even pays on a fold).
+            <strong>Bad Beat Bonus</strong> is consolation insurance: it pays when you <em>lose</em> the
+            showdown holding three of a kind or better.
+        </p>
+
+        <h2>PAY TABLES</h2>
+        <div class="odds-grid">
+            <details class="uth-paytable" open>
+                <summary>Blind (win with straight or better)</summary>
+                <table>
+                    <tr><td>Royal Flush</td><td>500 : 1</td></tr>
+                    <tr><td>Straight Flush</td><td>50 : 1</td></tr>
+                    <tr><td>Four of a Kind</td><td>10 : 1</td></tr>
+                    <tr><td>Full House</td><td>3 : 1</td></tr>
+                    <tr><td>Flush</td><td>3 : 2</td></tr>
+                    <tr><td>Straight</td><td>1 : 1</td></tr>
+                    <tr><td>Lesser win</td><td>Push</td></tr>
+                </table>
+            </details>
+            <details class="uth-paytable" open>
+                <summary>Trips (your hand only)</summary>
+                <table>
+                    <tr><td>Royal Flush</td><td>50 : 1</td></tr>
+                    <tr><td>Straight Flush</td><td>40 : 1</td></tr>
+                    <tr><td>Four of a Kind</td><td>30 : 1</td></tr>
+                    <tr><td>Full House</td><td>9 : 1</td></tr>
+                    <tr><td>Flush</td><td>7 : 1</td></tr>
+                    <tr><td>Straight</td><td>4 : 1</td></tr>
+                    <tr><td>Three of a Kind</td><td>3 : 1</td></tr>
+                </table>
+            </details>
+            <details class="uth-paytable" open>
+                <summary>Hole Card Bonus (your two hole cards)</summary>
+                <table>
+                    <tr><td>You &amp; dealer both pocket Aces</td><td>1000 : 1</td></tr>
+                    <tr><td>Pocket Aces</td><td>30 : 1</td></tr>
+                    <tr><td>A-K suited</td><td>25 : 1</td></tr>
+                    <tr><td>A-Q / A-J suited</td><td>20 : 1</td></tr>
+                    <tr><td>A-K offsuit</td><td>15 : 1</td></tr>
+                    <tr><td>Pair J-J to K-K</td><td>10 : 1</td></tr>
+                    <tr><td>A-Q / A-J offsuit</td><td>5 : 1</td></tr>
+                    <tr><td>Pair 2-2 to T-T</td><td>3 : 1</td></tr>
+                </table>
+            </details>
+            <details class="uth-paytable" open>
+                <summary>Bad Beat Bonus (lose with a monster)</summary>
+                <table>
+                    <tr><td>Lose with Straight Flush</td><td>7500 : 1</td></tr>
+                    <tr><td>Lose with Four of a Kind</td><td>500 : 1</td></tr>
+                    <tr><td>Lose with Full House</td><td>50 : 1</td></tr>
+                    <tr><td>Lose with Flush</td><td>30 : 1</td></tr>
+                    <tr><td>Lose with Straight</td><td>20 : 1</td></tr>
+                    <tr><td>Lose with Three of a Kind</td><td>9 : 1</td></tr>
+                </table>
+            </details>
+        </div>
+
+        <h2>YOUR ODDS AGAINST THE CASINO</h2>
+        <div class="odds-scroll">
+            <table class="odds-table">
+                <tr><th>Bet</th><th style="text-align:right">House edge</th><th style="text-align:right">How often it wins</th><th>Notes</th></tr>
+                <tr>
+                    <td>Ante + Blind + Play</td>
+                    <td class="num">2.19% of Ante</td>
+                    <td class="num">—</td>
+                    <td>With optimal strategy. Spread across everything you wager in a hand (~4.15 Antes on average) that's ≈0.53% per chip — one of the best games on any floor.</td>
+                </tr>
+                <tr>
+                    <td>Trips</td>
+                    <td class="num">0.90%</td>
+                    <td class="num">15.3% of hands</td>
+                    <td>Exact for this pay table. Unusually player-friendly for a side bet.</td>
+                </tr>
+                <tr>
+                    <td>Hole Card Bonus</td>
+                    <td class="num">8.54%</td>
+                    <td class="num">9.5% of deals</td>
+                    <td>Exact. Long droughts between hits — a fun-money bet, not a value bet.</td>
+                </tr>
+                <tr>
+                    <td>Bad Beat Bonus</td>
+                    <td class="num">57.1%</td>
+                    <td class="num">2.0% of hands</td>
+                    <td>Simulated over 10 million dealt hands with this game's engine. Losing with a monster is rare — treat this as drama insurance, not a value bet.</td>
+                </tr>
+            </table>
+        </div>
+        <p class="odds-fine">
+            Main-game figure is the standard published analysis of Ultimate Texas Hold'em under
+            optimal play; raising 4x with strong hands preflop is where most of the value lives.
+            Playing too passively (always checking) roughly doubles the house edge.
+        </p>
+
+        <h2>USEFUL FREQUENCIES</h2>
+        <div class="odds-scroll">
+            <table class="odds-table">
+                <tr><th>Event</th><th style="text-align:right">Chance</th></tr>
+                <tr><td>Dealer qualifies (pair or better)</td><td class="num">82.6%</td></tr>
+                <tr><td>Your 7 cards beat the dealer's (raw showdown)</td><td class="num">48.0%</td></tr>
+                <tr><td>Exact tie with the dealer</td><td class="num">4.1%</td></tr>
+            </table>
+        </div>
+
+        <h2>HOW OFTEN EACH HAND SHOWS UP (BEST 5 OF 7)</h2>
+        <div class="odds-scroll">
+            <table class="odds-table">
+                <tr><th>Hand</th><th style="text-align:right">Frequency</th><th style="text-align:right">About once every</th></tr>
+                <tr><td>Royal Flush</td><td class="num">0.0032%</td><td class="num">30,940 hands</td></tr>
+                <tr><td>Straight Flush</td><td class="num">0.0279%</td><td class="num">3,590 hands</td></tr>
+                <tr><td>Four of a Kind</td><td class="num">0.168%</td><td class="num">595 hands</td></tr>
+                <tr><td>Full House</td><td class="num">2.60%</td><td class="num">39 hands</td></tr>
+                <tr><td>Flush</td><td class="num">3.03%</td><td class="num">33 hands</td></tr>
+                <tr><td>Straight</td><td class="num">4.62%</td><td class="num">22 hands</td></tr>
+                <tr><td>Three of a Kind</td><td class="num">4.83%</td><td class="num">21 hands</td></tr>
+                <tr><td>Two Pair</td><td class="num">23.5%</td><td class="num">4.3 hands</td></tr>
+                <tr><td>One Pair</td><td class="num">43.8%</td><td class="num">2.3 hands</td></tr>
+                <tr><td>High Card</td><td class="num">17.4%</td><td class="num">5.7 hands</td></tr>
+            </table>
+        </div>
+        <p class="odds-fine">
+            Exact combinatorics over all 133,784,560 seven-card deals. The same distribution
+            applies to you and to the dealer — the house edge comes from the betting rules,
+            not the cards.
+        </p>
+
+        <footer>
+            <p class="footer-text">For entertainment only. Virtual chips — no real money. Gamble responsibly.</p>
+        </footer>
+    </div>
+</body>
+</html>

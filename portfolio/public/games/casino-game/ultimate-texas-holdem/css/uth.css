@@ -232,12 +232,32 @@
     -webkit-tap-highlight-color: transparent;
 }
 
+.uth-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
 .uth-round-label {
     font-family: var(--font-body);
     color: var(--text-secondary);
     font-size: 0.85rem;
     text-align: right;
     white-space: nowrap;
+}
+
+.uth-odds-link {
+    min-height: 36px;
+    min-width: 36px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 1rem;
+}
+
+@media (max-width: 480px) {
+    .uth-round-label { display: none; }
 }
 
 /* ── Multi-table tab strip ──────────────────────────── */
@@ -783,6 +803,18 @@
     font-size: 0.78rem;
 }
 
+/* ante affordability: amber = reminder, red = blocking */
+.uth-bet-warning {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--accent-gold);
+    max-width: 460px;
+}
+
+.uth-bet-warning.block {
+    color: var(--accent-red);
+}
+
 /* ── Showdown ───────────────────────────────────────── */
 
 .uth-result-banner {
@@ -964,6 +996,12 @@
         display: block;
         overflow: visible;
         order: 0;
+        /* full-felt overlay — must not swallow clicks meant for the board */
+        pointer-events: none;
+    }
+
+    .uth-seat {
+        pointer-events: auto;
     }
 
     .uth-seat {
@@ -972,33 +1010,23 @@
         min-width: 108px;
     }
 
-    /* rail order: me bottom-center, neighbours flank along the rail,
-       others up the sides — keeps the spot row clear */
-    .uth-seat-pos-0 { left: 50%; top: 86%; }
-    .uth-seat-pos-1 { left: 72%; top: 88%; }
-    .uth-seat-pos-2 { left: 93%; top: 42%; }
-    .uth-seat-pos-3 { left: 7%;  top: 42%; }
-    .uth-seat-pos-4 { left: 28%; top: 88%; }
-    .uth-seat-pos-5 { left: 88%; top: 18%; }
+    /* corners + sides are seat territory — the bottom-center column is
+       reserved for the bet board (same stacked order as mobile) */
+    .uth-seat-pos-0 { left: 13%; top: 84%; }
+    .uth-seat-pos-1 { left: 87%; top: 84%; }
+    .uth-seat-pos-2 { left: 93%; top: 45%; }
+    .uth-seat-pos-3 { left: 7%;  top: 45%; }
+    .uth-seat-pos-4 { left: 15%; top: 20%; }
+    .uth-seat-pos-5 { left: 85%; top: 20%; }
 
     .uth-felt {
         border-radius: 46% 46% var(--radius-lg) var(--radius-lg) / 24% 24% var(--radius-lg) var(--radius-lg);
     }
 
-    /* spots flow in ONE row in front of your seat, like real table cloth —
-       anchored just above the bottom-center seat at any felt height */
+    /* same stacked order as mobile — side bets, ANTE = BLIND, PLAY —
+       centered in the space between the community cards and the rail */
     .uth-board-zone {
-        position: absolute;
-        left: 50%;
-        transform: translateX(-50%);
-        bottom: calc(12% + 96px);
-        margin: 0;
-        max-width: 96%;
-    }
-
-    .uth-bet-board {
-        flex-direction: row;
-        gap: 14px;
+        margin: auto 0;
     }
 
     .uth-dock {
@@ -1018,12 +1046,10 @@
     .uth-my-cards .uth-card { width: 56px; height: 78px; font-size: 1.3rem; }
     .uth-dealer-status { min-height: 16px; margin-top: 3px; }
     .uth-community-zone { margin-top: 8px; }
-    .uth-bet-board { gap: 10px; }
-    .uth-bet-circle { width: 60px; height: 60px; }
-    .uth-bet-circle.core { width: 72px; height: 72px; }
-    .uth-play-spot { width: 88px; height: 58px; }
-    .uth-board-zone { bottom: calc(10% + 84px); }
-    .uth-seat-pos-0 { top: 90%; }
+    .uth-bet-board { gap: 6px; }
+    .uth-bet-circle { width: 58px; height: 58px; }
+    .uth-bet-circle.core { width: 68px; height: 68px; }
+    .uth-play-spot { width: 86px; height: 54px; }
     .uth-dock { max-height: 34dvh; }
 }
 
@@ -1127,3 +1153,215 @@
         animation: none;
     }
 }
+
+/* ── Strategy coach, card reveal & session leaderboard ─ */
+
+.uth-coach {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-md);
+    padding: 6px 12px;
+    max-width: 520px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    text-align: left;
+}
+
+.uth-coach-text strong {
+    color: var(--accent-gold);
+    font-family: var(--font-display);
+    letter-spacing: 0.06em;
+}
+
+.uth-coach-toggle,
+.uth-coach-off {
+    background: none;
+    border: 1px solid var(--border-subtle);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    padding: 2px 10px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    min-height: 28px;
+    white-space: nowrap;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.uth-btn.coach-pick {
+    outline: 2px solid var(--accent-gold);
+    outline-offset: 2px;
+}
+
+/* eye badge on shared (face-up by choice) cards */
+.uth-my-cards { position: relative; }
+
+.uth-my-cards.can-reveal { cursor: pointer; }
+
+.uth-eye {
+    position: absolute;
+    top: -9px;
+    right: -9px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--accent-gold);
+    color: #16161c;
+    border-radius: 50%;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    z-index: 2;
+    pointer-events: none;
+}
+
+.uth-seat-cards { position: relative; }
+
+.uth-seat-cards .uth-eye {
+    width: 17px;
+    height: 17px;
+    font-size: 10px;
+    top: -7px;
+    right: -7px;
+}
+
+.uth-reveal-link {
+    background: none;
+    border: 1px dashed var(--border-subtle);
+    border-radius: 20px;
+    color: var(--text-secondary);
+    font-size: 0.78rem;
+    padding: 4px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 30px;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.uth-reveal-link:hover {
+    color: var(--accent-gold);
+    border-color: var(--border-active);
+}
+
+.uth-reveal-note {
+    font-size: 0.78rem;
+    color: var(--accent-gold);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* session leaderboard (dock, showdown) */
+.uth-leaderboard {
+    width: 100%;
+    max-width: 460px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-md);
+    padding: 8px 12px;
+}
+
+.uth-lb-title {
+    font-family: var(--font-display);
+    font-size: 0.6rem;
+    letter-spacing: 0.14em;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 4px;
+}
+
+.uth-lb-row {
+    display: flex;
+    gap: 8px;
+    align-items: baseline;
+    font-size: 0.85rem;
+    padding: 2px 0;
+}
+
+.uth-lb-row.me .uth-lb-name { color: var(--accent-gold); }
+
+.uth-lb-rank {
+    font-family: var(--font-mono);
+    color: var(--text-dim);
+    min-width: 16px;
+}
+
+.uth-lb-name {
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.uth-lb-hands {
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    white-space: nowrap;
+}
+
+.uth-lb-net {
+    font-family: var(--font-mono);
+    min-width: 64px;
+    text-align: right;
+}
+
+.uth-lb-net.pos { color: var(--accent-green); }
+.uth-lb-net.neg { color: var(--accent-red); }
+
+.uth-lb-solo {
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.uth-lb-solo.pos { color: var(--accent-green); }
+.uth-lb-solo.neg { color: var(--accent-red); }
+
+/* strategy guide overlay */
+.uth-tab-guide {
+    margin-left: auto;
+    color: var(--accent-gold);
+}
+
+.uth-guide {
+    text-align: left;
+    max-height: min(62vh, 560px);
+    overflow-y: auto;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-right: 4px;
+    -webkit-overflow-scrolling: touch;
+}
+
+.uth-guide h3 {
+    font-family: var(--font-display);
+    font-size: 0.76rem;
+    letter-spacing: 0.12em;
+    color: var(--accent-gold);
+    margin-top: 4px;
+}
+
+.uth-guide ul {
+    margin: 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.uth-guide .uth-num {
+    font-family: var(--font-mono);
+    color: var(--text-primary);
+}
+
+.uth-overlay-card:has(.uth-guide) { max-width: 560px; }

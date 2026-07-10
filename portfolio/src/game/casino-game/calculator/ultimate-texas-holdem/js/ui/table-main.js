@@ -18,6 +18,7 @@
 // flop (3 cards), then turn+river, then the dealer's hand, then results.
 
 import { cardLabel, cardSuit, evaluate5, evaluate7 } from "../core/engine.js";
+import { adviceFor } from "../core/strategy.js";
 import {
   localCall,
   watchLocalTable,
@@ -68,6 +69,7 @@ const BOARD_SKELETON = el.boardZone.innerHTML;
 let myUid = null; // online identity (Firebase uid) — local tables use LOCAL_UID
 let activeCode = null;
 let selChip = 100;
+let coachOn = localStorage.getItem("uthCoach") !== "0"; // strategy coach, default on
 let sendingReady = false;
 let coreJustChanged = false; // pulse ante+blind together on change
 let toastTimer = null;
@@ -141,6 +143,9 @@ const esc = (s) =>
   String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
 const zeroBets = () => ({ ante: 0, trips: 0, holeCard: 0, badBeat: 0 });
 
+const EYE_SVG = `<svg viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_BADGE = `<span class="uth-eye" title="Cards shown to the table">${EYE_SVG}</span>`;
+
 function cardHtml(c, { back = false, slot = false, flip = -1 } = {}) {
   const anim = flip >= 0 ? ` uth-card-flip" style="animation-delay:${flip * 130}ms` : "";
   if (slot) return `<div class="uth-card uth-card-slot"></div>`;
@@ -175,6 +180,7 @@ const ERROR_COPY = {
   "cannot-rebuy": "Rebuy is only available when you're broke, between hands.",
   "not-solo": "The next hand starts when the shared timer ends.",
   "not-signed-in": "Please sign in first.",
+  "bad-phase": "You can't do that right now.",
 };
 const errMsg = (err) => ERROR_COPY[err.code] || `Error: ${err.code || err.message}`;
 
@@ -211,6 +217,19 @@ function myHole(info) {
   return info?.myCards && info.myCards.roundNo === info.table?.roundNo && seat?.inHand
     ? info.myCards.holeCards
     : null;
+}
+
+// What raises can the stack still cover after posting these bets?
+// The river 1x is the minimum the game requires (fold-only otherwise), so a
+// bet that can't cover it is blocked; missing 3x/4x is only worth a warning.
+function raiseAffordability(seat, p) {
+  const remaining = seat.stack - (p.ante * 2 + p.trips + p.holeCard + p.badBeat);
+  return {
+    remaining,
+    can1x: remaining >= p.ante,
+    can3x: remaining >= p.ante * 3,
+    can4x: remaining >= p.ante * 4,
+  };
 }
 
 // Community cards currently *presented* (reveal pacing may lag the server).
@@ -543,6 +562,7 @@ function renderTabs() {
   if (tables.size < MAX_TABLES) {
     html += `<button class="uth-tab uth-tab-add" data-action="tab-add" title="Open another table">+</button>`;
   }
+  html += `<button class="uth-tab uth-tab-guide" data-action="guide" title="Perfect strategy guide">🎓 STRATEGY</button>`;
   el.tabsBar.innerHTML = html;
   const anyAttention = [...tables.entries()].some(([code, i]) => needsMyAction(i) && code !== activeCode);
   document.title = `${anyAttention ? "● " : ""}Ultimate Texas Hold'em — Table`;
@@ -657,21 +677,33 @@ function renderSeats(info, phase) {
         badges.push(`<span class="uth-badge ok">✓</span>`);
 
       // my own cards + result live in the dock, bigger — the pill stays
-      // compact so it never crowds the felt spots
+      // compact so it never crowds the felt spots. A player who chose to
+      // SHOW their cards (revealed flag) is face-up for everyone, eye-badged.
       let cardsHtml = "";
       let resultHtml = "";
-      if (phase === "showdown" && s.inHand && s.result && resultsShown && !isMe) {
-        if (s.holeCards) cardsHtml = `<div class="uth-seat-cards">${s.holeCards.map((c) => cardHtml(c)).join("")}</div>`;
-        const net = s.result.net;
-        resultHtml = `<div class="uth-seat-result ${net >= 0 ? "pos" : "neg"}">${net >= 0 ? "+" : "−"}${fmt(Math.abs(net))}${s.result.hand ? ` · ${esc(s.result.hand)}` : ""}</div>`;
-      } else if (s.inHand && !s.folded && phase !== "betting" && !isMe) {
-        cardsHtml = `<div class="uth-seat-cards">${cardHtml(0, { back: true })}${cardHtml(0, { back: true })}</div>`;
+      if (!isMe && s.inHand && phase !== "betting") {
+        const faceUp = s.holeCards && (s.revealed || (phase === "showdown" && resultsShown));
+        if (faceUp) {
+          cardsHtml = `<div class="uth-seat-cards">${s.holeCards.map((c) => cardHtml(c)).join("")}${s.revealed ? EYE_BADGE : ""}</div>`;
+        } else if (!s.folded) {
+          cardsHtml = `<div class="uth-seat-cards">${cardHtml(0, { back: true })}${cardHtml(0, { back: true })}</div>`;
+        }
+        if (phase === "showdown" && s.result && resultsShown) {
+          const net = s.result.net;
+          resultHtml = `<div class="uth-seat-result ${net >= 0 ? "pos" : "neg"}">${net >= 0 ? "+" : "−"}${fmt(Math.abs(net))}${s.result.hand ? ` · ${esc(s.result.hand)}` : ""}</div>`;
+        }
       }
 
-      const staked = s.bets.ante + s.bets.blind + s.bets.trips + s.bets.holeCard + s.bets.badBeat + (s.playBet || 0);
+      // everyone sees everyone's bets: ante+blind · play · side bets
+      const sides = s.bets.trips + s.bets.holeCard + s.bets.badBeat;
+      const betBits = [];
+      if (s.bets.ante) betBits.push(`A+B ${fmt(s.bets.ante + s.bets.blind)}`);
+      if (s.playBet) betBits.push(`PLAY ${fmt(s.playBet)}`);
+      if (sides) betBits.push(`SIDE ${fmt(sides)}`);
+      const betTitle = `Ante ${s.bets.ante} · Blind ${s.bets.blind} · Play ${s.playBet || 0} · Trips ${s.bets.trips} · Hole Card ${s.bets.holeCard} · Bad Beat ${s.bets.badBeat}`;
       const betLine =
-        s.inHand || (phase === "betting" && s.ready)
-          ? `<div class="uth-seat-bets">staked ${fmt(staked)}</div>`
+        (s.inHand || (phase === "betting" && s.ready)) && betBits.length
+          ? `<div class="uth-seat-bets" title="${betTitle}">${betBits.join(" · ")}</div>`
           : "";
 
       return `
@@ -717,12 +749,24 @@ function renderDock(info, seat, phase) {
 
   const parts = [];
 
-  // my cards + hint on decision streets and showdown
+  // my cards + hint on decision streets and showdown; online, tapping your
+  // own cards offers to SHOW them to the whole table (eye badge once shared)
   const hole = myHole(info);
   if (hole && phase !== "betting") {
     const freshDeal = info.domHoleRound !== info.table.roundNo;
     info.domHoleRound = info.table.roundNo;
-    parts.push(`<div class="uth-my-cards">${hole.map((c, i) => cardHtml(c, { flip: freshDeal ? i : -1 })).join("")}</div>`);
+    const shared = !info.local && seat.revealed;
+    const canReveal = !info.local && !seat.revealed && (phase !== "showdown" || seat.folded);
+    parts.push(`
+      <div class="uth-my-cards${canReveal ? " can-reveal" : ""}"${canReveal ? ` data-action="reveal-ask" role="button" title="Show your cards to the table"` : ""}>
+        ${hole.map((c, i) => cardHtml(c, { flip: freshDeal ? i : -1 })).join("")}
+        ${shared ? EYE_BADGE : ""}
+      </div>`);
+    if (canReveal) {
+      parts.push(`<button class="uth-reveal-link" data-action="reveal-ask">${EYE_SVG} Show my cards to the table</button>`);
+    } else if (shared) {
+      parts.push(`<div class="uth-reveal-note">${EYE_SVG} Your cards are face-up for everyone this hand</div>`);
+    }
     const visCC = visCommunity(info);
     if (visCC.length && !seat.folded) {
       parts.push(`<div class="uth-hint">You have: <strong>${esc(handName([...hole, ...visCC]) || "")}</strong></div>`);
@@ -750,10 +794,21 @@ function renderDock(info, seat, phase) {
       parts.push(`<div class="uth-chip-rack">${chips}</div>`);
       parts.push(`<div class="uth-bet-note uth-muted">Click a spot to add the selected chip · hold or right-click to remove</div>`);
       const p = info.pending;
+      const afford = raiseAffordability(seat, p);
+      if (p.ante > 0) {
+        if (!afford.can1x) {
+          parts.push(`<p class="uth-bet-warning block">Not enough chips left for the required 1x Play bet (${fmt(p.ante)}) — lower your Ante or side bets.</p>`);
+        } else if (!afford.can3x) {
+          parts.push(`<p class="uth-bet-warning">Heads up: after these bets you can't afford a 3x or 4x raise — only check, 2x or 1x.</p>`);
+        } else if (!afford.can4x) {
+          parts.push(`<p class="uth-bet-warning">Heads up: you can afford a 3x raise, but not 4x.</p>`);
+        }
+      }
+      const readyOk = p.ante >= info.table.minAnte && afford.can1x;
       parts.push(`
         <div class="uth-actions">
           <button class="uth-btn uth-btn-ghost" data-action="clear-bets">CLEAR</button>
-          <button class="uth-btn uth-btn-primary" data-action="ready" ${p.ante >= info.table.minAnte ? "" : "disabled"}>${info.local ? "DEAL" : "READY"}${p.ante ? ` · ${fmt(p.ante * 2 + p.trips + p.holeCard + p.badBeat)}` : ""}</button>
+          <button class="uth-btn uth-btn-primary" data-action="ready" ${readyOk ? "" : "disabled"}>${info.local ? "DEAL" : "READY"}${p.ante ? ` · ${fmt(p.ante * 2 + p.trips + p.holeCard + p.badBeat)}` : ""}</button>
           <button class="uth-btn uth-btn-ghost" data-action="sit-out">SIT OUT</button>
         </div>`);
     }
@@ -761,27 +816,27 @@ function renderDock(info, seat, phase) {
     if (seat.folded) {
       parts.push(`<p class="uth-muted">Folded — waiting for showdown.</p>`);
     } else if (needsMyAction(info) && revealCaughtUp(info)) {
+      // strategy coach: recommend the Wizard-of-Odds play for MY cards only
+      const advice = hole ? adviceFor(phase, hole, visCommunity(info)) : null;
+      parts.push(coachHtml(advice));
+      const pick = coachOn && advice ? advice.move : null;
+      const btn = (move, label, cls) =>
+        `<button class="uth-btn ${cls}${pick === move ? " coach-pick" : ""}" data-action="act" data-move="${move}">${label}</button>`;
       // decision buttons live here, in the thumb zone — never mid-felt
       let buttons = "";
       if (phase === "preflop") {
-        buttons = `
-          <button class="uth-btn uth-btn-act" data-action="act" data-move="check">CHECK</button>
-          <button class="uth-btn uth-btn-raise" data-action="act" data-move="3x">BET 3x</button>
-          <button class="uth-btn uth-btn-raise" data-action="act" data-move="4x">BET 4x</button>`;
+        buttons = btn("check", "CHECK", "uth-btn-act") + btn("3x", "BET 3x", "uth-btn-raise") + btn("4x", "BET 4x", "uth-btn-raise");
       } else if (phase === "flop") {
-        buttons = `
-          <button class="uth-btn uth-btn-act" data-action="act" data-move="check">CHECK</button>
-          <button class="uth-btn uth-btn-raise" data-action="act" data-move="2x">BET 2x</button>`;
+        buttons = btn("check", "CHECK", "uth-btn-act") + btn("2x", "BET 2x", "uth-btn-raise");
       } else {
-        buttons = `
-          <button class="uth-btn uth-btn-fold" data-action="act" data-move="fold">FOLD</button>
-          <button class="uth-btn uth-btn-raise" data-action="act" data-move="1x">BET 1x</button>`;
+        buttons = btn("fold", "FOLD", "uth-btn-fold") + btn("1x", "BET 1x", "uth-btn-raise");
       }
       parts.push(`<div class="uth-actions uth-play-actions">${buttons}</div>`);
     } else if (!needsMyAction(info)) {
       parts.push(`<p class="uth-muted">${seat.playBet > 0 ? `Play bet ${fmt(seat.playBet)} placed.` : "Checked."}${info.local ? "" : " Waiting for other players…"}</p>`);
     }
   } else if (phase === "showdown" && resultsShown) {
+    parts.push(renderLeaderboard(info));
     const soloActive = info.table.seats.filter((s) => !s.sittingOut).length === 1;
     parts.push(
       soloActive
@@ -792,6 +847,98 @@ function renderDock(info, seat, phase) {
 
   el.dockContent.innerHTML = parts.join("");
   if (coreJustChanged) coreJustChanged = false;
+}
+
+// ── Strategy coach, guide & leaderboard ─────────────────────────────────────
+
+const MOVE_LABELS = { "4x": "BET 4x", "3x": "BET 3x", "2x": "BET 2x", "1x": "BET 1x", check: "CHECK", fold: "FOLD" };
+
+function coachHtml(advice) {
+  if (!coachOn) {
+    return `<button class="uth-coach-off" data-action="coach-toggle" title="Turn the strategy coach on">🎓 Coach off</button>`;
+  }
+  if (!advice) return "";
+  return `
+    <div class="uth-coach">
+      <button class="uth-coach-toggle" data-action="coach-toggle" title="Turn the strategy coach off">🎓</button>
+      <span class="uth-coach-text">Coach says <strong>${MOVE_LABELS[advice.move]}</strong> — ${esc(advice.reason)}</span>
+    </div>`;
+}
+
+// Ranked session net (wins − losses) across every hand played at this table.
+function renderLeaderboard(info) {
+  const uid = uidFor(info);
+  const rows = info.table.seats
+    .filter((s) => (s.handsPlayed || 0) > 0)
+    .sort((a, b) => (b.sessionNet || 0) - (a.sessionNet || 0) || a.seatIndex - b.seatIndex);
+  if (rows.length === 0) return "";
+  if (rows.length === 1) {
+    const s = rows[0];
+    const net = s.sessionNet || 0;
+    return `<div class="uth-lb-solo ${net >= 0 ? "pos" : "neg"}">Session: ${net >= 0 ? "+" : "−"}${fmt(Math.abs(net))} over ${s.handsPlayed} hand${s.handsPlayed === 1 ? "" : "s"} · won ${s.handsWon || 0}</div>`;
+  }
+  const last = rows.length - 1;
+  const rowHtml = rows
+    .map((s, i) => {
+      const net = s.sessionNet || 0;
+      const tag = i === 0 && net > 0 ? "👑 " : i === last && net < 0 ? "📉 " : "";
+      return `
+        <div class="uth-lb-row${s.uid === uid ? " me" : ""}">
+          <span class="uth-lb-rank">${i + 1}</span>
+          <span class="uth-lb-name">${tag}${esc(s.uid === uid ? "You" : s.name)}</span>
+          <span class="uth-lb-hands">won ${s.handsWon || 0}/${s.handsPlayed || 0}</span>
+          <span class="uth-lb-net ${net > 0 ? "pos" : net < 0 ? "neg" : ""}">${net >= 0 ? "+" : "−"}${fmt(Math.abs(net))}</span>
+        </div>`;
+    })
+    .join("");
+  return `
+    <div class="uth-leaderboard">
+      <div class="uth-lb-title">SESSION LEADERBOARD — MOST WON &amp; LOST</div>
+      ${rowHtml}
+    </div>`;
+}
+
+function guideHtml() {
+  return `
+    <h2>🎓 Perfect Strategy</h2>
+    <div class="uth-guide">
+      <p>The mathematically best way to play, per <strong>Wizard of Odds</strong>. The in-game
+      coach applies these rules to your cards automatically.</p>
+      <h3>Pre-flop — raise 4x with…</h3>
+      <ul>
+        <li>Any pair <span class="uth-num">3-3</span> or better (only 2-2 checks)</li>
+        <li>Any <span class="uth-num">Ace</span></li>
+        <li>Any suited King · <span class="uth-num">K-5</span> offsuit or better</li>
+        <li><span class="uth-num">Q-6</span> suited+ · <span class="uth-num">Q-8</span> offsuit+</li>
+        <li><span class="uth-num">J-8</span> suited · <span class="uth-num">J-T</span> offsuit</li>
+      </ul>
+      <p>Everything else: <strong>check</strong>. The 3x raise is never correct — it's 4x or wait.</p>
+      <h3>Flop — bet 2x with…</h3>
+      <ul>
+        <li>Two pair or better</li>
+        <li>A hidden pair — a pair using one of YOUR cards (except pocket 2-2)</li>
+        <li>Four to a flush with a hole card <span class="uth-num">T</span> or higher of that suit</li>
+      </ul>
+      <h3>River — bet 1x or fold</h3>
+      <ul>
+        <li>A hidden pair or better → always bet</li>
+        <li>Otherwise: count the "dealer outs" — single cards that would beat you.
+            Fewer than <span class="uth-num">21</span> of the 45 unseen cards → bet; else fold.
+            (The coach counts them for you.)</li>
+      </ul>
+      <h3>Your expected win rate</h3>
+      <p>Played perfectly, the house keeps <span class="uth-num">2.19%</span> of your Ante per hand
+      (this chart ≈ <span class="uth-num">2.4%</span>) — about <span class="uth-num">0.5%</span> of
+      all money you put on the table. Short-term swings are huge (±5 antes per hand is normal);
+      the Blind's big bonuses arrive rarely but pay for many small losses.</p>
+      <h3>Sharing hands with 6 players — does it beat the house?</h3>
+      <p><strong>No.</strong> Wizard of Odds simulated a full 6-player table where you see all
+      <span class="uth-num">10</span> other hole cards and play computer-perfect: the house still
+      wins <span class="uth-num">≈ 0.64%</span> of the Ante. A real player edge only appears from
+      about <span class="uth-num">16</span> known cards — impossible at a 6-max table. So use the
+      👁 card-share feature for the table talk, not for profit.</p>
+    </div>
+    <button class="uth-btn uth-btn-primary" data-action="close-overlay">GOT IT</button>`;
 }
 
 // The casino-style bet board painted on the felt, persistent across phases:
@@ -876,7 +1023,9 @@ function reconcileOptimistic(info) {
   const seat = seatOf(info);
   const o = info.optimistic;
   if (!seat || !o) return;
-  if ((o.ready && seat.ready) || (o.acted && seat.acted)) info.optimistic = null;
+  if ((o.ready && seat.ready) || (o.acted && seat.acted) || (o.revealed && seat.revealed)) {
+    info.optimistic = null;
+  }
 }
 
 // ── Bet editing ──────────────────────────────────────────────────────────────
@@ -985,6 +1134,11 @@ document.addEventListener("click", async (e) => {
         break;
       case "ready": {
         if (sendingReady || !info) break;
+        const seatNow = viewSeat(info);
+        if (seatNow && !raiseAffordability(seatNow, info.pending).can1x) {
+          showToast("Not enough chips left for the required 1x Play bet — lower your Ante or side bets.");
+          break;
+        }
         sendingReady = true;
         const bets = { ...info.pending };
         setOptimistic(info, { ready: true, bets: { ...bets, blind: bets.ante } });
@@ -1028,6 +1182,41 @@ document.addEventListener("click", async (e) => {
       case "next-round":
         await tableCall(activeCode, "next-round");
         break;
+      case "coach-toggle":
+        coachOn = !coachOn;
+        try { localStorage.setItem("uthCoach", coachOn ? "1" : "0"); } catch {}
+        render();
+        break;
+      case "guide":
+        showOverlay(guideHtml());
+        break;
+      case "reveal-ask":
+        showOverlay(`
+          <h2>${EYE_SVG} Show your cards?</h2>
+          <p class="uth-muted">Everyone at this table will see your two hole cards for the
+          rest of this hand. You can't hide them again once shown.</p>
+          <div class="uth-actions">
+            <button class="uth-btn uth-btn-primary" data-action="reveal-confirm">SHOW MY CARDS</button>
+            <button class="uth-btn uth-btn-ghost" data-action="close-overlay">CANCEL</button>
+          </div>`);
+        break;
+      case "reveal-confirm": {
+        hideOverlay();
+        if (!info) break;
+        const hole = myHole(info);
+        if (hole) {
+          setOptimistic(info, { revealed: true, holeCards: hole });
+          render();
+        }
+        try {
+          await tableCall(activeCode, "reveal-cards");
+        } catch (err) {
+          info.optimistic = null;
+          render();
+          throw err;
+        }
+        break;
+      }
       case "sit-out":
         await tableCall(activeCode, "sit-out", { sittingOut: true });
         break;

@@ -145,6 +145,8 @@ export async function localCall(code, action, payload = {}) {
       break;
     case "leave-table": // keep the bankroll — reopening SOLO resumes it
       break;
+    case "reveal-cards": // nobody else at a solo table — nothing to show
+      break;
     case "tick": // no shared clock in solo
       break;
     default:
