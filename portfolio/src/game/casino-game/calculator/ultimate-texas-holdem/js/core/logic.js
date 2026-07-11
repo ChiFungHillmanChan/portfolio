@@ -68,7 +68,7 @@ function newSeat(user, seatIndex) {
     sittingOut: false,
     ready: false,
     inHand: false,
-    bets: { ante: 0, blind: 0, trips: 0, holeCard: 0, badBeat: 0 },
+    bets: { ante: 0, blind: 0, trips: 0, holeCard: 0, badBeat: 0, jackpot: 0 },
     playBet: 0,
     playStage: null,
     folded: false,
@@ -182,6 +182,7 @@ export function placeBets(table, uid, bets, now, rng = defaultRng) {
   const trips = bets.trips || 0;
   const holeCard = bets.holeCard || 0;
   const badBeat = bets.badBeat || 0;
+  const jackpot = bets.jackpot ? 1 : 0;
   if (!Number.isInteger(ante) || ante < table.minAnte || ante > table.maxAnte || ante % CHIP_STEP !== 0) {
     throw new UthError("bad-bet");
   }
@@ -189,10 +190,10 @@ export function placeBets(table, uid, bets, now, rng = defaultRng) {
   for (const side of [trips, holeCard, badBeat]) {
     if (!validAmount(side, ante)) throw new UthError("bad-bet");
   }
-  const total = ante * 2 + trips + holeCard + badBeat;
+  const total = ante * 2 + trips + holeCard + badBeat + jackpot;
   if (total > seat.stack) throw new UthError("insufficient-stack");
 
-  seat.bets = { ante, blind: ante, trips, holeCard, badBeat };
+  seat.bets = { ante, blind: ante, trips, holeCard, badBeat, jackpot };
   seat.ready = true;
   seat.sittingOut = false;
   seat.timeoutsInARow = 0;
@@ -227,8 +228,8 @@ function maybeDeal(table, now, rng) {
     const hole = [deck[top++], deck[top++]];
     privateWrites[seat.uid] = hole;
     holes[seat.uid] = hole;
-    const { ante, blind, trips, holeCard, badBeat } = seat.bets;
-    seat.stack -= ante + blind + trips + holeCard + badBeat;
+    const { ante, blind, trips, holeCard, badBeat, jackpot = 0 } = seat.bets;
+    seat.stack -= ante + blind + trips + holeCard + badBeat + jackpot;
     seat.inHand = true;
     seat.folded = false;
     seat.acted = false;
@@ -325,9 +326,9 @@ function showdown(table, dealerDoc, now) {
     if (!seat.inHand) continue;
     const hole = holes[seat.uid];
     const playerEval = evaluate7([...hole, ...community5]);
-    const result = settleSeat(seat, playerEval, dealerEval, hole, dealerHole);
-    const { ante, blind, trips, holeCard, badBeat } = seat.bets;
-    const staked = ante + blind + trips + holeCard + badBeat + seat.playBet;
+    const result = settleSeat(seat, playerEval, dealerEval, hole, dealerHole, community5.slice(0, 3));
+    const { ante, blind, trips, holeCard, badBeat, jackpot = 0 } = seat.bets;
+    const staked = ante + blind + trips + holeCard + badBeat + jackpot + seat.playBet;
     seat.stack += staked + result.net;
     seat.result = { ...result, hand: seat.folded ? null : playerEval.name };
     // a folded player's cards stay hidden — unless they chose to show them
@@ -417,7 +418,7 @@ function resetRound(table) {
   table.community = [];
   table.dealer = { holeCards: null, name: null, qualifies: null };
   for (const seat of table.seats) {
-    seat.bets = { ante: 0, blind: 0, trips: 0, holeCard: 0, badBeat: 0 };
+    seat.bets = { ante: 0, blind: 0, trips: 0, holeCard: 0, badBeat: 0, jackpot: 0 };
     seat.ready = false;
     seat.inHand = false;
     seat.playBet = 0;

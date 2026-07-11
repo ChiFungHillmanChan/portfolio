@@ -122,6 +122,7 @@ export async function localCall(code, action, payload = {}) {
         trips: payload.trips || 0,
         holeCard: payload.holeCard || 0,
         badBeat: payload.badBeat || 0,
+        jackpot: payload.jackpot ? 1 : 0,
       }, now);
       if (out.dealt) {
         g.dealerDoc = out.dealerDoc;
