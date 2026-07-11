@@ -664,6 +664,17 @@
 .uth-bet-circle.res-neg { border-color: var(--accent-red); box-shadow: none; opacity: 0.85; }
 .uth-bet-circle.res-push { border-color: var(--text-dim); box-shadow: none; }
 
+/* Jackpot spot — always gold, a flat $1 toggle (not chip-scaled) */
+.uth-jackpot-spot {
+    border-color: var(--accent-gold);
+    background: radial-gradient(circle at 50% 28%, rgba(212, 175, 55, 0.20), rgba(212, 175, 55, 0.04));
+}
+.uth-jackpot-spot .uth-bet-label { color: var(--accent-gold); }
+.uth-jackpot-spot.has-bet {
+    border-style: solid;
+    box-shadow: var(--glow-gold);
+}
+
 .uth-play-spot {
     width: 86px;
     height: 58px;

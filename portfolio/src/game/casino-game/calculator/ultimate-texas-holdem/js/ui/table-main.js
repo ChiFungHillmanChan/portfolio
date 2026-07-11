@@ -153,7 +153,7 @@ function tableCall(code, action, payload = {}) {
 const fmt = (n) => n.toLocaleString("en-US");
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-const zeroBets = () => ({ ante: 0, trips: 0, holeCard: 0, badBeat: 0 });
+const zeroBets = () => ({ ante: 0, trips: 0, holeCard: 0, badBeat: 0, jackpot: 0 });
 
 const EYE_BADGE = `<span class="uth-eye" title="Cards shown to the table">${EYE_SVG}</span>`;
 
@@ -234,7 +234,7 @@ function myHole(info) {
 // The river 1x is the minimum the game requires (fold-only otherwise), so a
 // bet that can't cover it is blocked; missing 3x/4x is only worth a warning.
 function raiseAffordability(seat, p) {
-  const remaining = seat.stack - (p.ante * 2 + p.trips + p.holeCard + p.badBeat);
+  const remaining = seat.stack - (p.ante * 2 + p.trips + p.holeCard + p.badBeat + p.jackpot);
   return {
     remaining,
     can1x: remaining >= p.ante,
@@ -712,12 +712,12 @@ function renderSeats(info, phase) {
       }
 
       // everyone sees everyone's bets: ante+blind · play · side bets
-      const sides = s.bets.trips + s.bets.holeCard + s.bets.badBeat;
+      const sides = s.bets.trips + s.bets.holeCard + s.bets.badBeat + (s.bets.jackpot || 0);
       const betBits = [];
       if (s.bets.ante) betBits.push(`A+B ${fmt(s.bets.ante + s.bets.blind)}`);
       if (s.playBet) betBits.push(`PLAY ${fmt(s.playBet)}`);
       if (sides) betBits.push(`SIDE ${fmt(sides)}`);
-      const betTitle = `Ante ${s.bets.ante} · Blind ${s.bets.blind} · Play ${s.playBet || 0} · Trips ${s.bets.trips} · Hole Card ${s.bets.holeCard} · Bad Beat ${s.bets.badBeat}`;
+      const betTitle = `Ante ${s.bets.ante} · Blind ${s.bets.blind} · Play ${s.playBet || 0} · Trips ${s.bets.trips} · Hole Card ${s.bets.holeCard} · Bad Beat ${s.bets.badBeat} · Jackpot ${s.bets.jackpot || 0 ? "$1" : "—"}`;
       const betLine =
         (s.inHand || (phase === "betting" && s.ready)) && betBits.length
           ? `<div class="uth-seat-bets" title="${betTitle}">${betBits.join(" · ")}</div>`
@@ -825,7 +825,7 @@ function renderDock(info, seat, phase) {
       parts.push(`
         <div class="uth-actions">
           <button class="uth-btn uth-btn-ghost" data-action="clear-bets">CLEAR</button>
-          <button class="uth-btn uth-btn-primary" data-action="ready" ${readyOk ? "" : "disabled"}>${info.local ? "DEAL" : "READY"}${p.ante ? ` · ${fmt(p.ante * 2 + p.trips + p.holeCard + p.badBeat)}` : ""}</button>
+          <button class="uth-btn uth-btn-primary" data-action="ready" ${readyOk ? "" : "disabled"}>${info.local ? "DEAL" : "READY"}${p.ante ? ` · ${fmt(p.ante * 2 + p.trips + p.holeCard + p.badBeat + p.jackpot)}` : ""}</button>
           <button class="uth-btn uth-btn-ghost" data-action="sit-out">SIT OUT</button>
         </div>`);
     }
@@ -990,9 +990,26 @@ function renderBoard(info, seat, phase) {
       ${playResultHtml}
     </button>`;
 
+  // Jackpot: flat $1, gold, distinct from the chip-scaled side bets.
+  const jp = editing ? info.pending.jackpot : seat.bets.jackpot || 0;
+  let jpCls = "uth-bet-circle uth-jackpot-spot" + (jp ? " has-bet" : "") + (editing ? " editable" : " locked");
+  let jpDelta = "";
+  if (results) {
+    const d = results.jackpot || 0;
+    const cat = d > 0 ? "pos" : jp ? "neg" : "";
+    if (cat) jpCls += ` res-${cat}`;
+    if (jp || d > 0) jpDelta = `<span class="uth-bet-delta ${cat}">${d > 0 ? "+" + fmt(d) : "−1"}</span>`;
+  }
+  const jackpotCircle = `
+    <button class="${jpCls}" ${editing ? 'data-action="toggle-jackpot"' : 'tabindex="-1"'}>
+      <span class="uth-bet-label">JACKPOT</span>
+      <span class="uth-bet-amount">${jp ? "$1" : "—"}</span>
+      ${jpDelta}
+    </button>`;
+
   return `
     <div class="uth-bet-board${editing ? "" : " locked"}">
-      <div class="uth-bet-row uth-bet-row-sides">${sides}</div>
+      <div class="uth-bet-row uth-bet-row-sides">${sides}${jackpotCircle}</div>
       <div class="uth-bet-row uth-bet-row-core">${core}</div>
       <div class="uth-bet-row uth-bet-row-play">${playRow}</div>
     </div>`;
@@ -1042,7 +1059,7 @@ function addBet(key) {
     }
     p[key] = next;
   }
-  const total = p.ante * 2 + p.trips + p.holeCard + p.badBeat;
+  const total = p.ante * 2 + p.trips + p.holeCard + p.badBeat + p.jackpot;
   if (total > seat.stack) {
     showToast("Not enough chips (Blind matches your Ante).");
     return;
@@ -1062,6 +1079,25 @@ function removeBet(key) {
     coreJustChanged = true;
     // side bets can never exceed the (new) ante
     for (const { key: sk } of SIDE_BETS) p[sk] = Math.min(p[sk], p.ante);
+  }
+  info.pending = p;
+  render();
+}
+
+// The jackpot is a flat $1 bonus — a plain on/off toggle, not chip-scaled.
+function toggleJackpot() {
+  const info = activeInfo();
+  const seat = viewSeat(info);
+  if (!info || !seat) return;
+  const p = { ...info.pending };
+  if (p.jackpot) {
+    p.jackpot = 0;
+  } else {
+    if (p.ante * 2 + p.trips + p.holeCard + p.badBeat + 1 > seat.stack) {
+      showToast("Not enough chips for the $1 jackpot.");
+      return;
+    }
+    p.jackpot = 1;
   }
   info.pending = p;
   render();
@@ -1114,6 +1150,9 @@ document.addEventListener("click", async (e) => {
       case "add-bet":
         if (lpFired) { lpFired = false; break; } // long-press already removed
         addBet(btn.dataset.bet);
+        break;
+      case "toggle-jackpot":
+        toggleJackpot();
         break;
       case "clear-bets":
         if (info) { info.pending = zeroBets(); coreJustChanged = true; render(); }
