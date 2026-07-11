@@ -84,6 +84,20 @@ export const BBB_PAYS = {
   [CAT.TRIPS]: 9,
 };
 
+// Jackpot — a flat $1 wager settled on the player's two hole cards + the flop
+// (a 5-card hand). Only a flush or better pays; the Royal is the MEGA jackpot.
+export const JACKPOT_BET = 1;
+
+export const JACKPOT_PAYS = {
+  [CAT.ROYAL]: 400000,
+  [CAT.STRAIGHT_FLUSH]: 20000,
+  [CAT.QUADS]: 1500,
+  [CAT.FULL_HOUSE]: 500,
+  [CAT.FLUSH]: 50,
+};
+
+export const JACKPOT_MEGA_CAT = CAT.ROYAL;
+
 // ── Hand evaluation ──────────────────────────────────────────────────────────
 
 // evaluate5: exact 5 cards → { cat, value }.
@@ -188,15 +202,24 @@ export function holeCardBonusMult(playerHole, dealerHole) {
 //   seat: { bets: {ante, blind, trips, holeCard, badBeat}, playBet, folded }
 //   → per-bet deltas (+profit / 0 push / -stake lost) + net.
 // Stack credit for the caller = totalStaked + net (losing bets contribute 0).
-export function settleSeat(seat, playerEval, dealerEval, playerHole, dealerHole) {
-  const { ante, blind, trips, holeCard, badBeat } = seat.bets;
+export function settleSeat(seat, playerEval, dealerEval, playerHole, dealerHole, flop) {
+  const { ante, blind, trips, holeCard, badBeat, jackpot = 0 } = seat.bets;
   const playBet = seat.playBet || 0;
-  const r = { ante: 0, blind: 0, play: 0, trips: 0, holeCard: 0, badBeat: 0 };
+  const r = { ante: 0, blind: 0, play: 0, trips: 0, holeCard: 0, badBeat: 0, jackpot: 0, jackpotCat: null };
 
   // Hole Card Bonus is fixed at the deal — resolves even on a fold.
   if (holeCard > 0) {
     const m = holeCardBonusMult(playerHole, dealerHole);
     r.holeCard = m > 0 ? holeCard * m : -holeCard;
+  }
+
+  // Jackpot: fixed the instant the flop is known, so like the Hole Card bonus
+  // it resolves even on a fold. Only a flush or better pays.
+  if (jackpot > 0 && Array.isArray(flop) && flop.length === 3) {
+    const jEval = evaluate5([...playerHole, ...flop]);
+    const pay = JACKPOT_PAYS[jEval.cat];
+    r.jackpot = pay ? pay : -jackpot;
+    if (pay) r.jackpotCat = jEval.cat;
   }
 
   if (seat.folded) {
@@ -237,6 +260,6 @@ export function settleSeat(seat, playerEval, dealerEval, playerHole, dealerHole)
     }
   }
 
-  r.net = r.ante + r.blind + r.play + r.trips + r.holeCard + r.badBeat;
+  r.net = r.ante + r.blind + r.play + r.trips + r.holeCard + r.badBeat + r.jackpot;
   return r;
 }
