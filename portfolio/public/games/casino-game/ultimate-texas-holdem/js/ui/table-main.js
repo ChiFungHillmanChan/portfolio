@@ -1183,9 +1183,6 @@ document.addEventListener("click", async (e) => {
       case "settings":
         showOverlay(settingsOverlayHtml("coach"));
         break;
-      case "settings-info":
-        showOverlay(settingsOverlayHtml("info"));
-        break;
       case "settings-tab":
         switchSettingsTab(el.overlayCard, btn.dataset.tab);
         break;
