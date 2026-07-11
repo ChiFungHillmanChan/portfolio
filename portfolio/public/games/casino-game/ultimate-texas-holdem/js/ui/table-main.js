@@ -17,7 +17,7 @@
 // straight to showdown in one snapshot), so presentation is staged here —
 // flop (3 cards), then turn+river, then the dealer's hand, then results.
 
-import { cardLabel, cardSuit, evaluate5, evaluate7 } from "../core/engine.js";
+import { cardLabel, cardSuit, evaluate5, evaluate7, JACKPOT_PAYS, JACKPOT_MEGA_CAT } from "../core/engine.js";
 import { adviceFor } from "../core/strategy.js";
 import {
   settingsPanelHtml,
@@ -71,6 +71,10 @@ const el = {
   toast: $("toast"),
   overlay: $("overlay"),
   overlayCard: $("overlayCard"),
+  megaOverlay: $("megaOverlay"),
+  megaCards: $("megaCards"),
+  megaAmount: $("megaAmount"),
+  megaConfetti: $("megaConfetti"),
 };
 
 // table.html ships static skeletons for instant first paint — reuse them as
@@ -179,6 +183,45 @@ function showOverlay(html) {
 
 function hideOverlay() {
   el.overlay.hidden = true;
+}
+
+function showMega(cards, amount) {
+  el.megaCards.innerHTML = cards.map((c) => cardHtml(c)).join("");
+  el.megaConfetti.innerHTML = Array.from({ length: 64 }, () => {
+    const left = Math.floor(Math.random() * 100);
+    const delay = (Math.random() * 2.4).toFixed(2);
+    const dur = (2.6 + Math.random() * 1.8).toFixed(2);
+    const light = 52 + Math.floor(Math.random() * 24);
+    return `<i style="left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;background:hsl(46 90% ${light}%)"></i>`;
+  }).join("");
+  el.megaOverlay.hidden = false;
+  const start = performance.now();
+  const DUR = 1600;
+  const tick = (t) => {
+    const p = Math.min(1, (t - start) / DUR);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.megaAmount.textContent = fmt(Math.floor(eased * amount));
+    if (p < 1) requestAnimationFrame(tick);
+    else el.megaAmount.textContent = fmt(amount);
+  };
+  requestAnimationFrame(tick);
+}
+
+function hideMega() {
+  el.megaOverlay.hidden = true;
+  el.megaConfetti.innerHTML = "";
+}
+
+// Fire the full-screen celebration once when MY seat lands the MEGA (Royal) jackpot.
+function maybeMega(info) {
+  const seat = seatOf(info);
+  const r = seat?.result;
+  if (!r || r.jackpotCat !== JACKPOT_MEGA_CAT) return;
+  if (info.megaShownRound === info.table.roundNo) return;
+  info.megaShownRound = info.table.roundNo;
+  const hole = info.myCards?.holeCards || seat.holeCards || [];
+  const flop = (info.table.community || []).slice(0, 3);
+  showMega([...hole, ...flop], JACKPOT_PAYS[JACKPOT_MEGA_CAT]);
 }
 
 const ERROR_COPY = {
@@ -317,8 +360,11 @@ function stepReveal(code) {
   }
   if (code === activeCode) {
     render();
-    // small screens: the felt scrolls — bring the per-bet payouts into view
-    if (resultsJustShown) el.boardZone.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (resultsJustShown) {
+      // small screens: the felt scrolls — bring the per-bet payouts into view
+      el.boardZone.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      maybeMega(info);
+    }
   }
   renderTabs();
   info.revealTimer = setTimeout(() => {
@@ -1300,6 +1346,9 @@ document.addEventListener("click", async (e) => {
       }
       case "close-overlay":
         hideOverlay();
+        break;
+      case "mega-collect":
+        hideMega();
         break;
     }
   } catch (err) {
