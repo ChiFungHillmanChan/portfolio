@@ -195,6 +195,10 @@ function showMega(cards, amount) {
     return `<i style="left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;background:hsl(46 90% ${light}%)"></i>`;
   }).join("");
   el.megaOverlay.hidden = false;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.megaAmount.textContent = fmt(amount);
+    return;
+  }
   const start = performance.now();
   const DUR = 1600;
   const tick = (t) => {

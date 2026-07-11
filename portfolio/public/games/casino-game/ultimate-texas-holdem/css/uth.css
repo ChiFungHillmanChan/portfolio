@@ -1791,5 +1791,6 @@
 @media (prefers-reduced-motion: reduce) {
     .uth-mega-rays,
     .uth-mega-confetti i,
-    .uth-mega-card { animation: none; }
+    .uth-mega-card,
+    .uth-mega-cards .uth-card { animation: none; }
 }
