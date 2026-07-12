@@ -1409,7 +1409,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
         ctx.rotate(Math.PI / 2);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 32px Georgia, serif';
+        ctx.font = 'bold 44px Georgia, serif';   // legible at the POSE_WHEEL camera distance (~1.2m)
         ctx.fillText(String(n), 0, 0);
         ctx.restore();
       }
@@ -1434,28 +1434,41 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
     base.castShadow = true; base.receiveShadow = true;
     group.add(base);
 
-    const hub = new THREE.Mesh(new THREE.SphereGeometry(0.09, 20, 16), gold);
-    hub.position.y = 0.2;
-    hub.castShadow = true;
-    group.add(hub);
+    // Classic low turned-cone spinner (not an oversized dome): a small
+    // truncated cone plus a finial sphere on top, both sitting on the ring
+    // surface (y=0.161).
+    const RING_Y = 0.161;
+    const hubCone = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.10, 0.06, 24), gold);
+    hubCone.position.y = RING_Y + 0.03;
+    hubCone.castShadow = true;
+    group.add(hubCone);
+
+    const hubFinial = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), gold);
+    hubFinial.position.y = RING_Y + 0.06 + 0.03;
+    hubFinial.castShadow = true;
+    group.add(hubFinial);
 
     const ringMat = new THREE.MeshStandardMaterial({ map: makeNumberRingTexture(), roughness: 0.4, metalness: 0.1 });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.30, 0.52, 148), ringMat);
     ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.161;
+    ring.position.y = RING_Y;
     ring.receiveShadow = true;
     group.add(ring);
 
-    const sepGeo = new THREE.BoxGeometry(0.22, 0.035, 0.018);
+    // Pocket-boundary separators: small nubs sitting on the ring surface,
+    // between pockets (at (i+0.5)*STEP) rather than on top of the numbers.
+    const SEP_RADIUS = 0.44, SEP_H = 0.014;
+    const sepGeo = new THREE.BoxGeometry(0.10, SEP_H, 0.008);
     for (let i = 0; i < 37; i++) {
-      // pivot.rotation.y = -i*STEP places a box offset along local +X at
-      // group-local angle +i*STEP AND orients its long axis (also local +X)
+      // pivot.rotation.y = -angle places a box offset along local +X at
+      // group-local angle +angle AND orients its long axis (also local +X)
       // radially outward — both position and orientation ride the same
       // rotation, so they can't disagree. Verified empirically, see report.
+      const angle = (i + 0.5) * STEP;
       const pivot = new THREE.Group();
-      pivot.rotation.y = -i * STEP;
+      pivot.rotation.y = -angle;
       const box = new THREE.Mesh(sepGeo, gold);
-      box.position.set(0.38, 0.18, 0);
+      box.position.set(SEP_RADIUS, RING_Y + SEP_H / 2, 0);
       box.castShadow = true;
       pivot.add(box);
       group.add(pivot);
