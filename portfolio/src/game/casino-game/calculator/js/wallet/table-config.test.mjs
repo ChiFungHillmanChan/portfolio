@@ -13,14 +13,14 @@ test("GAME_TABLES mirrors the four server gameIds", () => {
   assert.deepEqual(Object.keys(GAME_TABLES).sort(), ["baccarat", "blackjack", "blackjack-shoe", "roulette"]);
 });
 
-test("GAME_TABLES numbers match the Plan-1 server mirror exactly", () => {
-  assert.deepEqual(GAME_TABLES.roulette.betTypes.straight, { min: 100, max: 5000, maxReturn: 36, mergeFactor: 1 });
+test("GAME_TABLES numbers match the Plan-3 server mirror exactly", () => {
+  assert.deepEqual(GAME_TABLES.roulette.betTypes.straight, { min: 100, max: 20000, maxReturn: 36, mergeFactor: 1 });
   assert.equal(GAME_TABLES.roulette.maxTotalBet, 20000);
   assert.deepEqual(GAME_TABLES.blackjack.betTypes.main, { min: 500, max: 10000, maxReturn: 2.5, mergeFactor: 8 });
   assert.deepEqual(GAME_TABLES.blackjack.betTypes.twentyOnePlus3, { min: 100, max: 2500, maxReturn: 101, mergeFactor: 1 });
   assert.deepEqual(GAME_TABLES["blackjack-shoe"].betTypes.main, { min: 100, max: 2000, maxReturn: 2.5, mergeFactor: 8 });
   assert.equal(GAME_TABLES.baccarat.betTypes.banker.maxReturn, 1.95);
-  assert.deepEqual(GAME_TABLES.baccarat.betTypes.egalite, { min: 100, max: 1000, maxReturn: 226, mergeFactor: 1 });
+  assert.deepEqual(GAME_TABLES.baccarat.betTypes.egalite, { min: 100, max: 10000, maxReturn: 226, mergeFactor: 1 });
 });
 
 test("getTable returns the table or null", () => {
@@ -56,4 +56,20 @@ test("PRACTICE_GAMES lists the non-game tools with hrefs", () => {
   for (const g of PRACTICE_GAMES) {
     assert.ok(g.name && g.href, `${g.name} fields`);
   }
+});
+
+test("roulette mirror uses aggregate caps (max = total)", () => {
+  for (const bt of Object.values(GAME_TABLES.roulette.betTypes)) {
+    assert.equal(bt.max, 20000);
+    assert.equal(bt.min, 100);
+  }
+  assert.equal(GAME_TABLES.roulette.betTypes.straight.maxReturn, 36);
+  assert.equal(GAME_TABLES.roulette.betTypes.evenMoney.maxReturn, 2);
+  assert.equal(GAME_TABLES.roulette.maxTotalBet, 20000);
+});
+
+test("baccarat mirror matches the server aggregate caps", () => {
+  assert.deepEqual(GAME_TABLES.baccarat.betTypes.dragonBonus, { min: 100, max: 2000, maxReturn: 31, mergeFactor: 1 });
+  assert.deepEqual(GAME_TABLES.baccarat.betTypes.egalite, { min: 100, max: 10000, maxReturn: 226, mergeFactor: 1 });
+  assert.equal(GAME_TABLES.baccarat.maxTotalBet, 25000);
 });

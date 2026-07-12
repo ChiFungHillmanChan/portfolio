@@ -173,3 +173,35 @@ test("openRound survives a fresh client (crash recovery via storage)", async () 
   await c2.payout("roulette", 4100);
   assert.equal(c2.openRound("roulette"), null);
 });
+
+test("load() adopts a server open round the client didn't know about", async () => {
+  const storage = fakeStorage(); // client has no local round
+  const post = fakePost([{ status: 200, body: {
+    ok: true, balance: 99400, canReset: false, resetAvailableAt: null,
+    openRounds: { roulette: { roundId: "r9", bets: { straight: 100, evenMoney: 500 } } },
+  }}]);
+  const c = createWalletClient(deps(post, storage));
+  await c.load();
+  assert.deepEqual(c.openRound("roulette"), { roundId: "r9", bets: { straight: 100, evenMoney: 500 } });
+});
+
+test("load() clears a local round the server no longer has open", async () => {
+  const storage = fakeStorage();
+  storage.setItem("casinoWallet:round:roulette", JSON.stringify({ roundId: "stale", bets: { straight: 100 } }));
+  const post = fakePost([{ status: 200, body: {
+    ok: true, balance: 100000, canReset: false, resetAvailableAt: null, openRounds: {},
+  }}]);
+  const c = createWalletClient(deps(post, storage));
+  await c.load();
+  assert.equal(c.openRound("roulette"), null);
+});
+
+test("load() tolerates a wallet-get without openRounds (back-compat)", async () => {
+  const storage = fakeStorage();
+  storage.setItem("casinoWallet:round:roulette", JSON.stringify({ roundId: "keep", bets: { straight: 100 } }));
+  const post = fakePost([{ status: 200, body: { ok: true, balance: 100000, canReset: false, resetAvailableAt: null } }]);
+  const c = createWalletClient(deps(post, storage));
+  await c.load();
+  // no openRounds key → don't touch local rounds
+  assert.deepEqual(c.openRound("roulette"), { roundId: "keep", bets: { straight: 100 } });
+});

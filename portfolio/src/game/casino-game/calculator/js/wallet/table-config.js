@@ -8,14 +8,14 @@ export const GAME_TABLES = {
   roulette: {
     maxTotalBet: 20000,
     betTypes: {
-      straight:  { min: 100, max: 5000, maxReturn: 36, mergeFactor: 1 },
-      split:     { min: 100, max: 5000, maxReturn: 18, mergeFactor: 1 },
-      street:    { min: 100, max: 5000, maxReturn: 12, mergeFactor: 1 },
-      corner:    { min: 100, max: 5000, maxReturn: 9,  mergeFactor: 1 },
-      sixline:   { min: 100, max: 5000, maxReturn: 6,  mergeFactor: 1 },
-      column:    { min: 100, max: 5000, maxReturn: 3,  mergeFactor: 1 },
-      dozen:     { min: 100, max: 5000, maxReturn: 3,  mergeFactor: 1 },
-      evenMoney: { min: 100, max: 5000, maxReturn: 2,  mergeFactor: 1 },
+      straight:  { min: 100, max: 20000, maxReturn: 36, mergeFactor: 1 },
+      split:     { min: 100, max: 20000, maxReturn: 18, mergeFactor: 1 },
+      street:    { min: 100, max: 20000, maxReturn: 12, mergeFactor: 1 },
+      corner:    { min: 100, max: 20000, maxReturn: 9,  mergeFactor: 1 },
+      sixline:   { min: 100, max: 20000, maxReturn: 6,  mergeFactor: 1 },
+      column:    { min: 100, max: 20000, maxReturn: 3,  mergeFactor: 1 },
+      dozen:     { min: 100, max: 20000, maxReturn: 3,  mergeFactor: 1 },
+      evenMoney: { min: 100, max: 20000, maxReturn: 2,  mergeFactor: 1 },
     },
   },
   blackjack: {
@@ -34,15 +34,15 @@ export const GAME_TABLES = {
     },
   },
   baccarat: {
-    maxTotalBet: 14000,
+    maxTotalBet: 25000,
     betTypes: {
       player:      { min: 500, max: 10000, maxReturn: 2,    mergeFactor: 1 },
       banker:      { min: 500, max: 10000, maxReturn: 1.95, mergeFactor: 1 },
       tie:         { min: 100, max: 1000,  maxReturn: 9,    mergeFactor: 1 },
       playerPair:  { min: 100, max: 1000,  maxReturn: 12,   mergeFactor: 1 },
       bankerPair:  { min: 100, max: 1000,  maxReturn: 12,   mergeFactor: 1 },
-      dragonBonus: { min: 100, max: 1000,  maxReturn: 31,   mergeFactor: 1 },
-      egalite:     { min: 100, max: 1000,  maxReturn: 226,  mergeFactor: 1 },
+      dragonBonus: { min: 100, max: 2000,  maxReturn: 31,   mergeFactor: 1 },
+      egalite:     { min: 100, max: 10000, maxReturn: 226,  mergeFactor: 1 },
     },
   },
 };

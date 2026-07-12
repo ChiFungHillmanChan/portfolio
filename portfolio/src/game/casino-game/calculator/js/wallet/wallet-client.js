@@ -73,6 +73,22 @@ export function createWalletClient({ post, storage, now, randomId }) {
       balance = body.balance;
       canReset = !!body.canReset;
       resetAvailableAt = body.resetAvailableAt || null;
+      // Reconcile local open rounds with the server (authoritative): adopt any
+      // round the server has open (e.g. a bet whose response we lost), and drop
+      // any local round the server no longer has (settled/forfeited elsewhere).
+      // Only when the server actually sends openRounds (back-compat guard).
+      if (body.openRounds && typeof body.openRounds === "object") {
+        const serverGames = new Set(Object.keys(body.openRounds));
+        for (const [gameId, round] of Object.entries(body.openRounds)) {
+          if (round && typeof round.roundId === "string" && round.bets) {
+            writeRound(gameId, { roundId: round.roundId, bets: round.bets });
+          }
+        }
+        // Drop stale local rounds for known wallet games not in the server set.
+        for (const gameId of ["roulette", "baccarat", "blackjack"]) {
+          if (!serverGames.has(gameId) && readRound(gameId)) clearRound(gameId);
+        }
+      }
       notify();
       return { balance, canReset, resetAvailableAt };
     },
