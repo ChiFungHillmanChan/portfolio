@@ -378,14 +378,174 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 // ===== src/engine/tween.js =====
 (() => {
   const C = (globalThis.CASINO ??= {});
-  // implemented in a later task
+  const easings = {
+    linear: (t) => t,
+    inOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+    outCubic: (t) => 1 - Math.pow(1 - t, 3),
+    outQuart: (t) => 1 - Math.pow(1 - t, 4),
+  };
+  C.tween = {
+    easings,
+    to(obj, props, ms, ease = 'inOutCubic', onDone) {
+      const from = {};
+      for (const k in props) from[k] = obj[k];
+      const fn = easings[ease];
+      const t0 = performance.now();
+      const entry = { cancel: false };
+      const tick = (now) => {
+        if (entry.cancel) return;
+        const t = Math.min(1, (now - t0) / ms);
+        const e = fn(t);
+        for (const k in props) obj[k] = from[k] + (props[k] - from[k]) * e;
+        if (t < 1) requestAnimationFrame(tick);
+        else if (onDone) onDone();
+      };
+      requestAnimationFrame(tick);
+      return entry;
+    },
+  };
 })();
 
 
 // ===== src/engine/app.js =====
 (() => {
   const C = (globalThis.CASINO ??= {});
-  // implemented in a later task
+  const frameHooks = new Set();
+  const pickables = [];   // { mesh, onClick }
+  let currentRoom = null;
+
+  const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
+
+  C.app = {
+    scene: null, camera: null, camTarget: null, renderer: null,
+
+    init() {
+      const canvas = document.getElementById('stage');
+      const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+      renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2));
+      renderer.setSize(innerWidth, innerHeight);
+      renderer.shadowMap.enabled = true;
+      renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+      renderer.outputEncoding = THREE.sRGBEncoding;
+      const scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x080604);
+      const camera = new THREE.PerspectiveCamera(55, innerWidth / innerHeight, 0.05, 100);
+      const camTarget = new THREE.Vector3(0, 1.5, 0);
+      Object.assign(C.app, { renderer, scene, camera, camTarget });
+
+      addEventListener('resize', () => {
+        camera.aspect = innerWidth / innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(innerWidth, innerHeight);
+      });
+
+      // picking
+      const ray = new THREE.Raycaster();
+      const ptr = new THREE.Vector2();
+      canvas.addEventListener('pointerup', (e) => {
+        ptr.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
+        ray.setFromCamera(ptr, camera);
+        const meshes = pickables.map((p) => p.mesh);
+        const hit = ray.intersectObjects(meshes, true)[0];
+        if (!hit) return;
+        let obj = hit.object;
+        while (obj) {
+          const found = pickables.find((p) => p.mesh === obj);
+          if (found) return found.onClick();
+          obj = obj.parent;
+        }
+      });
+
+      // wallet HUD
+      const amt = document.getElementById('walletAmt');
+      const pill = document.getElementById('walletPill');
+      C.wallet.onChange((balance, delta) => {
+        amt.textContent = balance.toLocaleString('en-US');
+        pill.classList.remove('flash-up', 'flash-down');
+        void pill.offsetWidth;   // restart animation
+        pill.classList.add(delta >= 0 ? 'flash-up' : 'flash-down');
+      });
+
+      document.getElementById('backBtn').addEventListener('click', () => {
+        if (currentRoom !== 'lobby') C.app.fade(() => C.app.switchRoom('lobby'));
+      });
+
+      let last = performance.now();
+      const loop = (now) => {
+        const dt = Math.min(0.05, (now - last) / 1000);
+        last = now;
+        frameHooks.forEach((fn) => fn(dt, now / 1000));
+        camera.lookAt(camTarget);
+        renderer.render(scene, camera);
+        requestAnimationFrame(loop);
+      };
+      requestAnimationFrame(loop);
+    },
+
+    onFrame: (fn) => frameHooks.add(fn),
+    offFrame: (fn) => frameHooks.delete(fn),
+    addPickable: (mesh, onClick) => pickables.push({ mesh, onClick }),
+    clearPickables: () => (pickables.length = 0),
+
+    jumpTo({ pos, look }) {
+      C.app.camera.position.set(...pos);
+      C.app.camTarget.set(...look);
+    },
+    flyTo({ pos, look }, ms, onDone) {
+      const dur = REDUCED ? Math.min(ms, 250) : ms;
+      const p = C.app.camera.position, t = C.app.camTarget;
+      C.tween.to(p, { x: pos[0], y: pos[1], z: pos[2] }, dur, 'inOutCubic');
+      C.tween.to(t, { x: look[0], y: look[1], z: look[2] }, dur, 'inOutCubic', onDone);
+    },
+
+    switchRoom(name) {
+      if (currentRoom && C.rooms[currentRoom].exit) C.rooms[currentRoom].exit();
+      C.app.clearPickables();
+      C.app.setOverlay(null);
+      // dispose everything
+      const { scene } = C.app;
+      while (scene.children.length) {
+        const obj = scene.children[0];
+        scene.remove(obj);
+        obj.traverse?.((o) => {
+          o.geometry?.dispose();
+          const mats = Array.isArray(o.material) ? o.material : [o.material];
+          mats.forEach((m) => { m?.map?.dispose(); m?.dispose(); });
+        });
+      }
+      currentRoom = name;
+      document.getElementById('roomTitle').textContent = C.rooms[name].title;
+      document.getElementById('backBtn').hidden = name === 'lobby';
+      C.rooms[name].enter(C.app);
+    },
+
+    banner(title, sub = '', ms = 2200) {
+      const el = document.getElementById('banner');
+      el.innerHTML = `<h2>${title}</h2>` + (sub ? `<p>${sub}</p>` : '');
+      el.hidden = false;
+      return new Promise((res) => setTimeout(() => { el.hidden = true; res(); }, ms));
+    },
+
+    fade(midFn) {
+      const el = document.getElementById('fader');
+      el.classList.add('on');
+      return new Promise((res) => setTimeout(async () => {
+        await midFn();
+        el.classList.remove('on');
+        res();
+      }, 200));
+    },
+
+    setOverlay(el) {
+      const root = document.getElementById('overlay-root');
+      root.innerHTML = '';
+      if (el) root.appendChild(el);
+    },
+
+    REDUCED, IS_MOBILE,
+  };
+  C.rooms = C.rooms || {};
 })();
 
 
@@ -437,7 +597,20 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   document.getElementById('enterBtn').addEventListener('click', () => {
     document.getElementById('splash').remove();
     document.getElementById('hud').hidden = false;
-    console.log('CASINO boot ok, THREE r' + THREE.REVISION);
+    C.app.init();
+    if (C.rooms.lobby) C.app.switchRoom('lobby');
+    else {
+      // pre-lobby smoke content (removed once Task 6 lands)
+      const s = C.app.scene;
+      s.add(new THREE.AmbientLight(0xffe9c4, 0.4));
+      const key = new THREE.PointLight(0xffe9c4, 1.2); key.position.set(2, 4, 2); s.add(key);
+      const cube = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1),
+        new THREE.MeshStandardMaterial({ color: 0xc9a227, metalness: 0.6, roughness: 0.3 }));
+      cube.position.y = 1.2; s.add(cube);
+      C.app.jumpTo({ pos: [0, 1.7, 4], look: [0, 1.2, 0] });
+      C.app.onFrame((dt) => (cube.rotation.y += dt));
+      C.app.addPickable(cube, () => C.app.banner('PICKING WORKS', 'raycast OK'));
+    }
   });
 })();
 </script>
