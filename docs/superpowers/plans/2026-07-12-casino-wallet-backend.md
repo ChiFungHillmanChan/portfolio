@@ -1141,6 +1141,27 @@ npm run deploy
 
 Expected: JSON output with `"LastUpdateStatus": "InProgress"` (or Successful) and no errors.
 
+- [ ] **Step 2b: Create the five API Gateway routes** ⚠️ REQUIRED — the `sa-api`
+HTTP API uses EXPLICIT per-action routes (`POST /poker/<action>`), NOT a
+`/poker/{action}` catch-all (the aws-production.md table is misleading here). A
+new Lambda action is unreachable — API Gateway returns 404 before the Lambda
+runs — until its route exists. All poker routes share integration `ovboson`
+(the cg-poker Lambda) with `AuthorizationType NONE` (the Lambda verifies the
+Firebase token itself). HTTP APIs auto-deploy to `$default`, so no separate
+deploy step:
+
+```bash
+for action in wallet-get wallet-bet wallet-payout wallet-reset admin-adjust-wallet; do
+  aws apigatewayv2 create-route --api-id zniganhfcg --region eu-west-2 \
+    --route-key "POST /poker/$action" \
+    --target "integrations/ovboson" \
+    --authorization-type NONE
+done
+```
+
+Idempotency: re-running errors on already-existing routes (harmless). Verify:
+`aws apigatewayv2 get-routes --api-id zniganhfcg --region eu-west-2 --query 'Items[?contains(RouteKey,\`wallet\`)].RouteKey'` should list all five.
+
 - [ ] **Step 3: Smoke test — unauthenticated calls are rejected, action is routed**
 
 ```bash
