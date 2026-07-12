@@ -119,6 +119,28 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .bac-tag.player { left: 39%; top: 64%; }
 .bac-tag.banker { left: 61%; top: 64%; }
 
+/* UTH betting spots */
+.uth-spots { display: flex; align-items: center; justify-content: center; gap: 1.4rem;
+  margin: .6rem 0 1rem; user-select: none; }
+.uth-circle { position: relative; border-radius: 50%; border: 2px dashed rgba(240,216,120,.6);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  color: #f0d878; font-size: .82rem; letter-spacing: .06em; cursor: pointer; }
+.uth-circle:hover { outline: 2px solid #f0d878; }
+.uth-circle.ante { width: 150px; height: 150px; font-size: 1rem; background: rgba(46,109,180,.35); }
+.uth-circle.trips { width: 108px; height: 108px; background: rgba(163,22,33,.35); }
+.uth-circle .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 30px; padding: 1px 6px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; white-space: nowrap; }
+.uth-jackpot { position: relative; width: 84px; height: 84px; border-radius: 50%;
+  border: 3px dashed rgba(240,216,120,.6); display: flex; align-items: center; justify-content: center;
+  text-align: center; color: #f0d878; font-size: .72rem; letter-spacing: .05em; cursor: pointer;
+  background: rgba(0,0,0,.28); }
+.uth-jackpot:hover { outline: 2px solid #f0d878; }
+.uth-jackpot.on { background: rgba(184,134,11,.55); outline: 3px solid #f0d878; }
+.uth-jackpot .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 26px; padding: 1px 6px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; }
+
 /* Roulette betting grid */
 .rgrid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; user-select: none; }
 .rspot { position: relative; padding: .55rem 0; text-align: center; font-size: .85rem;
