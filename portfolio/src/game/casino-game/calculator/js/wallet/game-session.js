@@ -62,6 +62,14 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
 
   const core = sessionCore({ gameId, mapBets, walletClient });
 
+  // One reset handler shared by the gate's bust button and the HUD's reset
+  // button. Declared before mountGameGate so it is initialized when the gate's
+  // onReset reads it (a const referenced before its declaration would throw).
+  const doReset = () => walletClient.reset().catch((e) => {
+    const when = e && e.retryAt ? ` (try again after ${new Date(e.retryAt).toLocaleTimeString()})` : "";
+    alert("Reset unavailable" + when);
+  });
+
   // NOTE: wallet-bootstrap.js already calls walletClient.load() on sign-in and
   // walletClient.clear() on sign-out internally (see onAuthStateChanged there).
   // This function only DRIVES the gate/HUD off onAuth + walletClient.subscribe
@@ -81,11 +89,6 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
   let signedIn = false;
   let hudMounted = false;
   let readyFired = false;
-
-  const doReset = () => walletClient.reset().catch((e) => {
-    const when = e && e.retryAt ? ` (try again after ${new Date(e.retryAt).toLocaleTimeString()})` : "";
-    alert("Reset unavailable" + when);
-  });
 
   const refresh = () => {
     const state = computeGateState({
