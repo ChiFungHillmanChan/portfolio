@@ -62,8 +62,7 @@ export function formatChips(n) {
   return Math.trunc(n).toLocaleString("en-US");
 }
 
-// Lobby cards — playable games (credits). blackjack-shoe is a second blackjack
-// entry per the design. UTH links to its own online lobby (buy-in escrow is
+// Lobby cards — playable games (credits). UTH links to its own online lobby (buy-in escrow is
 // Plan 4); it carries no fixed-bet table here.
 export const LOBBY_GAMES = [
   { id: "roulette", name: "Roulette", href: "roulette/index.html",
@@ -72,9 +71,6 @@ export const LOBBY_GAMES = [
   { id: "blackjack", name: "Blackjack", href: "blackjack/game-mode/index.html",
     blurb: "Dealt hands with Perfect Pair, 21+3 and Top-3 side bets.",
     limitsText: "500 – 10,000", tags: ["Side Bets", "Double / Split"] },
-  { id: "blackjack-shoe", name: "Blackjack — Normal Shoe", href: "blackjack/normal-shoe/index.html",
-    blurb: "Realistic shoe dealing for card-counting play.",
-    limitsText: "100 – 2,000", tags: ["Full Shoe"] },
   { id: "baccarat", name: "Baccarat", href: "baccarat/game-mode/index.html",
     blurb: "Player / Banker / Tie with pairs, Dragon Bonus and Egalité.",
     limitsText: "500 – 10,000", tags: ["Side Bets", "Egalité"] },
@@ -89,6 +85,8 @@ export const PRACTICE_GAMES = [
     blurb: "Practice calculating dealer payouts, four difficulties." },
   { name: "Blackjack Card Counting", href: "blackjack/index.html",
     blurb: "Hi-Lo counting trainers, easy → hard, with progress tracking." },
+  { name: "Blackjack Normal Shoe", href: "blackjack/normal-shoe/index.html",
+    blurb: "Full-shoe card-counting trainer — Hi-Lo count, true count, optimal play." },
   { name: "Baccarat Card Counting", href: "baccarat/card-counting/index.html",
     blurb: "Road maps and an EV calculator for baccarat counting." },
   { name: "Poker Hand Recorder", href: "poker/bb100/index.html",

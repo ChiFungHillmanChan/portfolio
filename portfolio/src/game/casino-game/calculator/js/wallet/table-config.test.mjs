@@ -42,9 +42,9 @@ test("formatChips groups thousands, rejects non-finite", () => {
   assert.equal(formatChips(NaN), "0");
 });
 
-test("LOBBY_GAMES has the 5 playable lobby entries with hrefs + limit text", () => {
+test("LOBBY_GAMES has the 4 playable lobby entries with hrefs + limit text", () => {
   const ids = LOBBY_GAMES.map((g) => g.id);
-  assert.deepEqual(ids, ["roulette", "blackjack", "blackjack-shoe", "baccarat", "uth"]);
+  assert.deepEqual(ids, ["roulette", "blackjack", "baccarat", "uth"]);
   for (const g of LOBBY_GAMES) {
     assert.ok(g.name && g.href && g.blurb && g.limitsText, `${g.id} fields`);
     assert.ok(Array.isArray(g.tags) && g.tags.length > 0);
@@ -56,6 +56,10 @@ test("PRACTICE_GAMES lists the non-game tools with hrefs", () => {
   for (const g of PRACTICE_GAMES) {
     assert.ok(g.name && g.href, `${g.name} fields`);
   }
+});
+
+test("PRACTICE_GAMES includes the normal-shoe counting trainer", () => {
+  assert.ok(PRACTICE_GAMES.some((g) => /normal shoe/i.test(g.name)));
 });
 
 test("roulette mirror uses aggregate caps (max = total)", () => {
