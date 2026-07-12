@@ -429,6 +429,14 @@ function handlePlayAgain() {
  * does not touch the server balance.
  */
 function handleRestart() {
+    // A wallet round is mid-flight if we're dealing or awaiting the debit
+    // response — restarting now would forfeit the debited stake or strand the
+    // open round (round-in-progress) forever. Only allow restart when idle.
+    if (betCommitInFlight || getGamePhase() === GAME_PHASES.DEALING) {
+        showBetError("Finish the current hand first");
+        return;
+    }
+
     if (confirm('Are you sure you want to restart? All progress will be lost.')) {
         hideResultOverlay();
         hideGameOverOverlay();
