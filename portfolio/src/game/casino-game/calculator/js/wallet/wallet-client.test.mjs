@@ -135,6 +135,32 @@ test("reset() success updates balance and reset info", async () => {
   assert.equal(c.getBalance(), 5000);
 });
 
+test("clear() resets balance to null and notifies subscribers", async () => {
+  const post = fakePost([{ status: 200, body: { ok: true, balance: 100000, canReset: true, resetAvailableAt: null } }]);
+  const c = createWalletClient(deps(post));
+  await c.load();
+  const seen = [];
+  c.subscribe((b) => seen.push(b));
+  c.clear();
+  assert.equal(c.getBalance(), null);
+  assert.deepEqual(c.getResetInfo(), { canReset: false, resetAvailableAt: null });
+  assert.deepEqual(seen, [null]);
+});
+
+test("bet() surfaces forfeited chips from a stale round replacement", async () => {
+  const post = fakePost([{ status: 200, body: { ok: true, balance: 99400, roundId: "rid-fixed", forfeited: 100 } }]);
+  const c = createWalletClient(deps(post));
+  const r = await c.bet("roulette", { straight: 100 });
+  assert.equal(r.forfeited, 100);
+});
+
+test("reset() cooldown stores retryAt before rejecting", async () => {
+  const post = fakePost([{ status: 403, body: { ok: false, error: "cooldown", retryAt: "2027-01-15T14:00:00.000Z" } }]);
+  const c = createWalletClient(deps(post));
+  await assert.rejects(() => c.reset(), (e) => e instanceof WalletError && e.code === "cooldown");
+  assert.deepEqual(c.getResetInfo(), { canReset: false, resetAvailableAt: "2027-01-15T14:00:00.000Z" });
+});
+
 test("openRound survives a fresh client (crash recovery via storage)", async () => {
   const storage = fakeStorage();
   const post1 = fakePost([{ status: 200, body: { ok: true, balance: 99400, roundId: "rid-fixed" } }]);

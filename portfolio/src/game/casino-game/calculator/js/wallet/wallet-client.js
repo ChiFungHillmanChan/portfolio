@@ -58,6 +58,16 @@ export function createWalletClient({ post, storage, now, randomId }) {
     getResetInfo() { return { canReset, resetAvailableAt }; },
     openRound(gameId) { return readRound(gameId); },
 
+    // Wipes in-memory state on sign-out so a second user on the same
+    // un-reloaded page never sees the previous user's balance. Does NOT
+    // touch stored rounds — the caller clears those separately.
+    clear() {
+      balance = null;
+      canReset = false;
+      resetAvailableAt = null;
+      notify();
+    },
+
     async load() {
       const body = settleResponse(await post("wallet-get", {}));
       balance = body.balance;
@@ -73,7 +83,7 @@ export function createWalletClient({ post, storage, now, randomId }) {
       const body = settleResponse(await post("wallet-bet", { gameId, roundId, bets }));
       writeRound(gameId, { roundId, bets: { ...bets } });
       applyBalance(body);
-      return { balance, roundId };
+      return { balance, roundId, forfeited: body.forfeited };
     },
 
     async topUp(gameId, bets) {
@@ -97,7 +107,18 @@ export function createWalletClient({ post, storage, now, randomId }) {
     },
 
     async reset() {
-      const body = settleResponse(await post("wallet-reset", {}));
+      const res = await post("wallet-reset", {});
+      let body;
+      try {
+        body = settleResponse(res);
+      } catch (err) {
+        if (err instanceof WalletError && err.code === "cooldown" && err.retryAt) {
+          resetAvailableAt = err.retryAt;
+          canReset = false;
+          notify();
+        }
+        throw err;
+      }
       balance = body.balance;
       canReset = false;
       resetAvailableAt = null;

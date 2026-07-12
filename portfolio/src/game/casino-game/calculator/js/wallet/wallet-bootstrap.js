@@ -62,6 +62,7 @@ onAuthStateChanged(auth, (user) => {
   if (!user) {
     lastUid = null;
     clearLocalRounds();
+    walletClient.clear();
   }
   for (const cb of authSubs) cb({ signedIn, user: user || null });
 });

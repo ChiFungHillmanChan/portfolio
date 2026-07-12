@@ -15,7 +15,10 @@ function init() {
   let unmountHud = null;
 
   const signInBtn = zone.querySelector(".lobby-signin-btn");
-  if (signInBtn) signInBtn.addEventListener("click", () => bootstrap.signIn().catch((e) => console.error(e)));
+  if (signInBtn) signInBtn.addEventListener("click", () => bootstrap.signIn().catch((e) => {
+    console.error(e);
+    alert("Sign-in failed: " + (e?.code || e?.message || "please try again"));
+  }));
 
   bootstrap.onAuth(({ signedIn }) => {
     if (signedOut) signedOut.hidden = signedIn;
