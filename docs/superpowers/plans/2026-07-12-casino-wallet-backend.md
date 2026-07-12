@@ -689,7 +689,7 @@ git commit -m "feat(cg-poker): wallet reset with cooldown + admin adjust pure lo
 - Consumes: all Task 1–3 exports; cg-poker's existing `respond/badRequest/forbidden/serverError`, `db`, `assertSuperadmin` (injected via ctx, mirroring `liveShareCtx()` at `index.mjs:1712`).
 - Produces HTTP actions: `wallet-get`, `wallet-bet`, `wallet-payout`, `wallet-reset`, `admin-adjust-wallet`. Response shapes (consumed by Plan 2's `wallet-client.js`):
   - `wallet-get` → `{ok, balance, canReset, resetAvailableAt}`
-  - `wallet-bet` → `{ok, balance, roundId, forfeited?}` | 400/402-style errors as `{ok:false, error}` (409 for `too-fast` with `retryAt`)
+  - `wallet-bet` → `{ok, balance, roundId, forfeited?}` | errors as `{ok:false, error}` (429 for `too-fast` with `retryAt`)
   - `wallet-payout` → `{ok, balance, duplicate?}`
   - `wallet-reset` → `{ok, balance}` | 403 `{ok:false, error:"cooldown", retryAt}`
   - `admin-adjust-wallet` → `{ok, balance}`
