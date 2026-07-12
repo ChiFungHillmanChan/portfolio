@@ -1250,7 +1250,9 @@ function spinTo(pocket) {
     const ms = C.app.REDUCED ? 2200 : 4200 + Math.random() * 1600;
     const w0 = group.rotation.y % (Math.PI * 2);
     // ball parks at world angle 0; pocket idx must end under it:
-    const w1 = w0 + wheelTurns * Math.PI * 2 + ((-idx * step - w0) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    const w1 = w0 + wheelTurns * Math.PI * 2 + ((idx * step - w0) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+    // THREE rotation.y is CCW-positive (opposite the CSS convention in wheel-physics.js):
+    // a point at local angle a ends at world angle a - rotation.y, so pocket idx needs rotation ≡ +idx*step.
     const b0 = 0;
     const b1 = b0 - ballTurns * Math.PI * 2;   // counter-rotation, ends at world angle 0
     const t0 = performance.now();
