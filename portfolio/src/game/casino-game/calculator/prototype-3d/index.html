@@ -956,7 +956,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   // ---------- room shell ----------
   function makeRoomShell({
     w = 12, d = 12, h = 4, wallColor = '#e8e0d0', floorMat,
-    ceilingColor = '#2a2118', coveColor = '#ffe9c4', coveEmissiveIntensity = 0.6,
+    ceilingColor = '#2a2118', coveColor = '#ffe9c4', coveEmissive = '#ffcf8a', coveEmissiveIntensity = 0.6,
     ambientIntensity = 0.35, p1Intensity = 0.9, p2Intensity = 0.7, pointDistance,
   } = {}) {
     const group = new THREE.Group();
@@ -990,7 +990,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
     group.add(ceiling);
 
     const cove = new THREE.Mesh(new THREE.BoxGeometry(w * 0.96, 0.05, d * 0.96),
-      new THREE.MeshStandardMaterial({ color: coveColor, emissive: coveColor, emissiveIntensity: coveEmissiveIntensity, roughness: 1 }));
+      new THREE.MeshStandardMaterial({ color: coveColor, emissive: coveEmissive, emissiveIntensity: coveEmissiveIntensity, roughness: 1 }));
     cove.position.y = h - 0.1;
     group.add(cove);
 
