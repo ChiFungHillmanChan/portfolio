@@ -88,10 +88,9 @@
 
     const glow = new THREE.Mesh(
       new THREE.PlaneGeometry(1.25, 1.8),
-      new THREE.MeshStandardMaterial({
-        color: '#241608', emissive: '#ffd27f', emissiveIntensity: 0.4,
-        transparent: true, opacity: 0.85, roughness: 1,
-      }),
+      // unlit, like the main doors, but a dimmer/muted tone + lower opacity since this
+      // salon is minor (MeshBasicMaterial has no emissiveIntensity to dial down instead)
+      new THREE.MeshBasicMaterial({ color: '#a9773f', transparent: true, opacity: 0.55, fog: false }),
     );
     glow.rotation.y = -Math.PI / 2; // faces -X, into the hall, matching the right wall's own orientation
     glow.position.set(wallX - 0.02, 1.15, 0);
@@ -112,23 +111,26 @@
   function buildChandelier(scene, x, goldMat, candleMat) {
     const group = new THREE.Group();
 
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.5, 0.045, 8, 20), goldMat);
+    const ringR = 0.6;
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(ringR, 0.055, 8, 20), goldMat);
     ring.rotation.x = Math.PI / 2;
     ring.castShadow = true;
     group.add(ring);
 
     for (let i = 0; i < 6; i++) {
       const a = (i / 6) * Math.PI * 2;
-      const candle = new THREE.Mesh(new THREE.SphereGeometry(0.06, 10, 8), candleMat);
-      candle.position.set(Math.cos(a) * 0.5, 0.12, Math.sin(a) * 0.5);
+      const candle = new THREE.Mesh(new THREE.SphereGeometry(0.07, 10, 8), candleMat);
+      candle.position.set(Math.cos(a) * ringR, 0.14, Math.sin(a) * ringR);
       group.add(candle);
     }
 
-    const chain = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.85, 6), goldMat);
-    chain.position.y = 0.5;
-    group.add(chain);
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.9, 6), goldMat);
+    stem.position.y = 0.52;
+    group.add(stem);
 
-    const light = new THREE.PointLight(0xffe9c4, 0.55, 11, 2);
+    // tight, local pool of light rather than a flood -- the chandeliers themselves
+    // (unlit candle spheres above) are what reads as "the light", not this PointLight
+    const light = new THREE.PointLight(0xffe9c4, 0.3, 7, 2);
     light.castShadow = false; // makeRoomShell's p1 is the hall's one shadow-caster
     group.add(light);
 
@@ -164,20 +166,21 @@
       const A = C.assets;
       const scene = app.scene;
 
-      scene.add(A.makeRoomShell({ w: 24, d: 16, h: 6, wallColor: '#3a2418', floorMat: A.carpetMaterial() }));
+      scene.fog = new THREE.Fog(0x120b06, 8, 26);
+      scene.add(A.makeRoomShell({
+        w: 24, d: 16, h: 6, wallColor: '#3a2418', floorMat: A.carpetMaterial(),
+        ceilingColor: '#241610', coveColor: '#2a1a10', coveEmissiveIntensity: 0.15,
+        ambientIntensity: 0.15, p1Intensity: 0.35, p2Intensity: 0.28, pointDistance: 14,
+      }));
 
       const mats = {
         wood: A.woodMaterial('#4a2c17'),
         gold: A.goldMaterial(),
-        glow: new THREE.MeshStandardMaterial({
-          color: '#2a1608', emissive: '#ffd27f', emissiveIntensity: 1.1,
-          transparent: true, opacity: 0.85, roughness: 1,
-        }),
+        // unlit so the doors read as glowing portals regardless of the hall's dim, foggy lighting
+        glow: new THREE.MeshBasicMaterial({ color: '#ffd27f', transparent: true, opacity: 0.85, fog: false }),
       };
       const marbleMat = new THREE.MeshStandardMaterial({ color: '#d8d2c4', roughness: 0.4 });
-      const candleMat = new THREE.MeshStandardMaterial({
-        color: '#fff2c8', emissive: '#ffd27f', emissiveIntensity: 1.3, roughness: 0.6,
-      });
+      const candleMat = new THREE.MeshBasicMaterial({ color: '#ffdf9e', fog: false });
 
       DOORS.forEach((door) => buildArchway(app, scene, door, mats));
       buildPracticeDoor(app, scene, mats);
@@ -208,6 +211,7 @@
     exit() {
       if (driftHook) { C.app.offFrame(driftHook); driftHook = null; }
       if (pointerHandler) { window.removeEventListener('pointermove', pointerHandler); pointerHandler = null; }
+      C.app.scene.fog = null; // switchRoom only disposes scene.children, not scene-level state
     },
   };
 })();

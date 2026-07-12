@@ -379,8 +379,13 @@
   }
 
   // ---------- room shell ----------
-  function makeRoomShell({ w = 12, d = 12, h = 4, wallColor = '#e8e0d0', floorMat } = {}) {
+  function makeRoomShell({
+    w = 12, d = 12, h = 4, wallColor = '#e8e0d0', floorMat,
+    ceilingColor = '#2a2118', coveColor = '#ffe9c4', coveEmissiveIntensity = 0.6,
+    ambientIntensity = 0.35, p1Intensity = 0.9, p2Intensity = 0.7, pointDistance,
+  } = {}) {
     const group = new THREE.Group();
+    const dist = pointDistance ?? w * 1.5;
 
     const floor = new THREE.Mesh(new THREE.PlaneGeometry(w, d), floorMat || carpetMaterial());
     floor.rotation.x = -Math.PI / 2;
@@ -403,26 +408,26 @@
     }
 
     const ceiling = new THREE.Mesh(new THREE.PlaneGeometry(w, d),
-      new THREE.MeshStandardMaterial({ color: '#2a2118', roughness: 1 }));
+      new THREE.MeshStandardMaterial({ color: ceilingColor, roughness: 1 }));
     ceiling.position.y = h;
     ceiling.rotation.x = Math.PI / 2;
     ceiling.receiveShadow = true;
     group.add(ceiling);
 
     const cove = new THREE.Mesh(new THREE.BoxGeometry(w * 0.96, 0.05, d * 0.96),
-      new THREE.MeshStandardMaterial({ color: '#ffe9c4', emissive: '#ffcf8a', emissiveIntensity: 0.6, roughness: 1 }));
+      new THREE.MeshStandardMaterial({ color: coveColor, emissive: coveColor, emissiveIntensity: coveEmissiveIntensity, roughness: 1 }));
     cove.position.y = h - 0.1;
     group.add(cove);
 
-    group.add(new THREE.AmbientLight(0xffe9c4, 0.35));
+    group.add(new THREE.AmbientLight(0xffe9c4, ambientIntensity));
 
-    const p1 = new THREE.PointLight(0xffe9c4, 0.9, w * 1.5, 2);
+    const p1 = new THREE.PointLight(0xffe9c4, p1Intensity, dist, 2);
     p1.position.set(-w * 0.25, h - 0.4, -d * 0.25);
     p1.castShadow = true;
     p1.shadow.mapSize.set(1024, 1024);
     group.add(p1);
 
-    const p2 = new THREE.PointLight(0xffe9c4, 0.7, w * 1.5, 2);
+    const p2 = new THREE.PointLight(0xffe9c4, p2Intensity, dist, 2);
     p2.position.set(w * 0.25, h - 0.4, d * 0.25);
     group.add(p2);
 
@@ -431,15 +436,24 @@
 
   // ---------- sign ----------
   function makeSign(text) {
+    const upper = text.toUpperCase();
     const tx = canvasTexture(560, 144, (ctx) => {
       ctx.fillStyle = '#1a1208'; ctx.fillRect(0, 0, 560, 144);
       ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 5;
       ctx.strokeRect(8, 8, 544, 128);
       ctx.fillStyle = '#f0d878';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 60px Georgia, serif';
+      let fontSize = 60;
+      ctx.font = `bold ${fontSize}px Georgia, serif`;
+      // shrink until it fits the plate, with a floor so a pathological string can't spin forever.
+      // ctx.font must be re-applied inside the loop -- measureText reads the CURRENT font,
+      // so re-measuring without updating it first would just re-check the original size forever.
+      while (ctx.measureText(upper).width > 560 - 40 && fontSize > 16) {
+        fontSize -= 4;
+        ctx.font = `bold ${fontSize}px Georgia, serif`;
+      }
       ctx.shadowColor = '#f0d878'; ctx.shadowBlur = 18;
-      ctx.fillText(text.toUpperCase(), 280, 76);
+      ctx.fillText(upper, 280, 76);
     });
     const mat = new THREE.MeshStandardMaterial({
       map: tx, emissive: '#c9a227', emissiveMap: tx, emissiveIntensity: 0.9,
