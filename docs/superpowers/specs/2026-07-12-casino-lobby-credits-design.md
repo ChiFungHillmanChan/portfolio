@@ -24,7 +24,7 @@ server-authoritative so purchases are meaningful when they arrive.
 | Decision | Choice |
 |---|---|
 | Wallet authority | Server wallet (Firestore via Lambda) + client-computed game outcomes with server-side caps. Full server engines rejected (too large); client-only wallet rejected (DevTools-editable chips make purchases meaningless). |
-| Lobby contents | 5 playable entries: Roulette, Blackjack, Blackjack Normal Shoe, Baccarat, Ultimate Hold'em. Poker bb100 is a stats tool → Practice. A playable poker game is a future project. |
+| Lobby contents | 4 playable entries: Roulette, Blackjack (game-mode), Baccarat, Ultimate Hold'em. Blackjack Normal Shoe → Practice (no betting loop; see Plan-3 note). Poker bb100 → Practice. A playable poker game is a future project. |
 | Stakes | ONE fixed table per game (no custom bankroll/limits, setup panels removed). Tiered tables possible later. |
 | Bust reset | Free 5,000 top-up when balance < 100 (lowest table min), cooldown 6h, server-enforced, env-tunable. |
 | Login scope | Lobby games only. Practice stays open (free funnel). bb100 keeps its existing on-demand sign-in for cloud saves. |
@@ -39,13 +39,22 @@ server-authoritative so purchases are meaningful when they arrive.
 
 Two zones on one page:
 
-1. **GAME LOBBY** — 5 cards (Roulette, Blackjack, Blackjack Normal Shoe,
-   Baccarat, Ultimate Hold'em), each showing its fixed limits. Signed in: a
-   wallet HUD (chip balance) heads the zone. Signed out: "Sign in to play"
-   state; clicking a card triggers the Google popup.
+1. **GAME LOBBY** — 4 cards (Roulette, Blackjack, Baccarat, Ultimate Hold'em),
+   each showing its fixed limits. Signed in: a wallet HUD (chip balance) heads
+   the zone. Signed out: "Sign in to play" state; clicking a card triggers the
+   Google popup.
 2. **PRACTICE** — cards for Roulette Dealer Trainer, Blackjack Card Counting
-   (easy/medium/hard + progress), Baccarat Card Counting, Poker Hand Recorder
-   (bb100), UTH Odds & Strategy.
+   (easy/medium/hard + progress), **Blackjack Normal Shoe** (a card-counting
+   trainer — it has no wagering loop, so it lives here, not in the wallet
+   lobby), Baccarat Card Counting, Poker Hand Recorder (bb100), UTH Odds &
+   Strategy.
+
+> **Revised during Plan 3 (2026-07-12):** Blackjack Normal Shoe was originally
+> slated for the lobby, but exploration found it is a counting/decision trainer
+> with no in-app betting loop (no debit, no settlement, split unimplemented).
+> Converting it would mean building a betting game from scratch, so it moves to
+> Practice as the trainer it already is. The wallet lobby is Roulette,
+> Blackjack (game-mode), Baccarat, and UTH.
 
 Hamburger menu regrouped into the same two sections.
 
