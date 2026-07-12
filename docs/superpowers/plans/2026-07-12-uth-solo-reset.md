@@ -117,7 +117,7 @@ test("reset-session on an online code rejects with bad-code", async () => {
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio/portfolio/src/game/casino-game/calculator/ultimate-texas-holdem
-node --test tests/
+node --test tests/*.test.mjs
 ```
 
 Expected: test 1 FAILS (rejects with `bad-move` — the switch's `default`), test 2 passes (existing `ensureGame` guard).
@@ -158,7 +158,7 @@ to:
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio/portfolio/src/game/casino-game/calculator/ultimate-texas-holdem
-node --test tests/
+node --test tests/*.test.mjs
 ```
 
 Expected: 2 pass, 0 fail.
@@ -402,7 +402,7 @@ Expected: red "Only 60 chips left — a hand needs at least 75 (Ante + Blind + 1
 
 ```bash
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio/portfolio/src/game/casino-game/calculator/ultimate-texas-holdem
-node --test tests/
+node --test tests/*.test.mjs
 ```
 
 Expected: 2 pass.

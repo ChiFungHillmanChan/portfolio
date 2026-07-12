@@ -150,11 +150,23 @@ export async function localCall(code, action, payload = {}) {
       break;
     case "tick": // no shared clock in solo
       break;
+    case "reset-session": {
+      // Full wipe — chips, stats and deal — as if this SOLO code were opened fresh.
+      const fresh = newTable({
+        code,
+        host: { uid: LOCAL_UID, name: "You", photoURL: null },
+        now,
+      });
+      g.table = fresh.table;
+      g.dealerDoc = null;
+      g.myCards = null;
+      break;
+    }
     default:
       throw new UthError("bad-move");
   }
 
-  freezeClock(table);
+  freezeClock(g.table);
   save(code);
   notify(code);
   return { ok: true, code };
