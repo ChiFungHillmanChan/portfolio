@@ -6,6 +6,7 @@
   let camTweens = [];
   const cancelCamTweens = () => { camTweens.forEach((t) => (t.cancel = true)); camTweens = []; };
   let bannerTimer = null;
+  let fadeGen = 0;
 
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
@@ -134,8 +135,10 @@
 
     fade(midFn) {
       const el = document.getElementById('fader');
+      const gen = ++fadeGen;
       el.classList.add('on');
       return new Promise((res) => setTimeout(async () => {
+        if (gen !== fadeGen) return res();   // superseded by a newer fade — it owns the fader now
         try { await midFn(); } catch (err) { console.error('fade midFn failed:', err); }
         el.classList.remove('on');
         res();
