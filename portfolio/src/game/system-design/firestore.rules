@@ -59,6 +59,16 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // ── Casino chip wallet (Game Lobby credits) ──────────────────────────
+    // casinoWallet/{uid} — shared casino chip wallet (Game Lobby credits).
+    // Client may read its OWN balance (wallet HUD); every mutation goes
+    // through cg-poker wallet-* actions or cg-uth escrow (Admin SDK bypasses
+    // these rules). Client writes are never allowed — chips would be forgeable.
+    match /casinoWallet/{uid} {
+      allow read:  if request.auth != null && request.auth.uid == uid;
+      allow write: if false;
+    }
+
     // ── Admin dashboard metrics ─────────────────────────────────────────
     // metrics/userCounts holds the cumulative-sign-ups counter the admin
     // dashboard reads. Even superadmins read it through the Lambda (which
