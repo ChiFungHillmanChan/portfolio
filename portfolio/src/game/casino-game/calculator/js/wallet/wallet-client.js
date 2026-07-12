@@ -7,6 +7,8 @@
 // One open round per game is enforced locally (the server forfeits a second),
 // so the UI blocks a new bet until the current round settles.
 
+import { GAME_TABLES } from "./table-config.js";
+
 export class WalletError extends Error {
   constructor(code, { status = 0, retryAt = null } = {}) {
     super(code);
@@ -85,7 +87,8 @@ export function createWalletClient({ post, storage, now, randomId }) {
           }
         }
         // Drop stale local rounds for known wallet games not in the server set.
-        for (const gameId of ["roulette", "baccarat", "blackjack"]) {
+        // Game set derived from GAME_TABLES to prevent drift when new games are added.
+        for (const gameId of Object.keys(GAME_TABLES)) {
           if (!serverGames.has(gameId) && readRound(gameId)) clearRound(gameId);
         }
       }

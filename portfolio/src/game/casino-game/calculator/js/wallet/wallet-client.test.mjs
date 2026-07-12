@@ -205,3 +205,13 @@ test("load() tolerates a wallet-get without openRounds (back-compat)", async () 
   // no openRounds key → don't touch local rounds
   assert.deepEqual(c.openRound("roulette"), { roundId: "keep", bets: { straight: 100 } });
 });
+
+test("load() skips a malformed round (missing roundId) and does not throw", async () => {
+  const post = fakePost([{ status: 200, body: {
+    ok: true, balance: 100000, canReset: false, resetAvailableAt: null,
+    openRounds: { roulette: { bets: { straight: 100 } } }, // missing roundId
+  }}]);
+  const c = createWalletClient(deps(post));
+  await c.load(); // should not throw
+  assert.equal(c.openRound("roulette"), null); // malformed round was skipped, not written
+});
