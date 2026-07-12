@@ -3,6 +3,9 @@
   const frameHooks = new Set();
   const pickables = [];   // { mesh, onClick }
   let currentRoom = null;
+  let camTweens = [];
+  const cancelCamTweens = () => { camTweens.forEach((t) => (t.cancel = true)); camTweens = []; };
+  let bannerTimer = null;
 
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
@@ -79,17 +82,21 @@
     clearPickables: () => (pickables.length = 0),
 
     jumpTo({ pos, look }) {
+      cancelCamTweens();
       C.app.camera.position.set(...pos);
       C.app.camTarget.set(...look);
     },
     flyTo({ pos, look }, ms, onDone) {
+      cancelCamTweens();
       const dur = REDUCED ? Math.min(ms, 250) : ms;
       const p = C.app.camera.position, t = C.app.camTarget;
-      C.tween.to(p, { x: pos[0], y: pos[1], z: pos[2] }, dur, 'inOutCubic');
-      C.tween.to(t, { x: look[0], y: look[1], z: look[2] }, dur, 'inOutCubic', onDone);
+      const e1 = C.tween.to(p, { x: pos[0], y: pos[1], z: pos[2] }, dur, 'inOutCubic');
+      const e2 = C.tween.to(t, { x: look[0], y: look[1], z: look[2] }, dur, 'inOutCubic', onDone);
+      camTweens = [e1, e2];
     },
 
     switchRoom(name) {
+      cancelCamTweens();
       if (currentRoom && C.rooms[currentRoom].exit) C.rooms[currentRoom].exit();
       C.app.clearPickables();
       C.app.setOverlay(null);
@@ -101,7 +108,11 @@
         obj.traverse?.((o) => {
           o.geometry?.dispose();
           const mats = Array.isArray(o.material) ? o.material : [o.material];
-          mats.forEach((m) => { m?.map?.dispose(); m?.dispose(); });
+          mats.forEach((m) => {
+            if (!m) return;
+            for (const k of ['map', 'normalMap', 'roughnessMap', 'metalnessMap', 'emissiveMap', 'envMap', 'alphaMap', 'aoMap']) m[k]?.dispose?.();
+            m.dispose();
+          });
         });
       }
       currentRoom = name;
@@ -112,16 +123,20 @@
 
     banner(title, sub = '', ms = 2200) {
       const el = document.getElementById('banner');
+      if (bannerTimer) { clearTimeout(bannerTimer.id); bannerTimer.res(); bannerTimer = null; }
       el.innerHTML = `<h2>${title}</h2>` + (sub ? `<p>${sub}</p>` : '');
       el.hidden = false;
-      return new Promise((res) => setTimeout(() => { el.hidden = true; res(); }, ms));
+      return new Promise((res) => {
+        const id = setTimeout(() => { el.hidden = true; bannerTimer = null; res(); }, ms);
+        bannerTimer = { id, res };
+      });
     },
 
     fade(midFn) {
       const el = document.getElementById('fader');
       el.classList.add('on');
       return new Promise((res) => setTimeout(async () => {
-        await midFn();
+        try { await midFn(); } catch (err) { console.error('fade midFn failed:', err); }
         el.classList.remove('on');
         res();
       }, 200));
