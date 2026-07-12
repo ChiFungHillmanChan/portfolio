@@ -23,6 +23,18 @@ let autoRepeatState = {
 let resultDismissTimeout = null;
 let resultProgressInterval = null;
 
+// Friendly copy for wallet-backend error codes surfaced from commitBet/settle
+// (see js/wallet/game-session.js). Anything not in this map falls back to a
+// generic "Bet rejected" message rather than showing the raw code to the user.
+const WALLET_ERR_MSG = {
+    "insufficient-balance": "Not enough chips for that bet",
+    "too-fast": "Slow down — wait a moment before the next round",
+    "round-in-progress": "Finish the current round first",
+    "over-table-max": "That bet is over the table limit",
+    "bad-bets": "That bet isn't allowed here",
+    "empty-bet": "Place a bet first",
+};
+
 // True while a wallet bet-commit request is awaiting the server's response.
 // isSpinning() only flips true once the commit resolves and the phase moves
 // to SPINNING, leaving a gap where a rapid double-click on Spin could fire a
@@ -425,7 +437,7 @@ async function handleSpinClick() {
         } catch (err) {
             // insufficient-balance / too-fast / over-table-max / round-in-progress
             // → stay in BETTING, do not transition to SPINNING.
-            showBetError(err.code || 'bet-rejected');
+            showBetError(WALLET_ERR_MSG[err.code] || 'Bet rejected');
             betCommitInFlight = false;
             updateButtonStates(); // phase is still BETTING — re-enable Spin
             return;
@@ -793,7 +805,18 @@ function handleBetPlacement(betType, betValue, e) {
     const totalWagered = getTotalWagered();
     const currentBankroll = getCurrentBankroll();
     const remainingBankroll = currentBankroll - totalWagered;
-    
+
+    // Enforce the per-spot max bet limit (client-side UX guard; the server
+    // also caps, but a friendly message here beats a silent server reject).
+    // Only the MAX is enforced at placement time — the MIN (100) is not,
+    // since players build a spot up chip by chip starting from 0.
+    const maxBet = gameState.config.maxBet;
+    const spotTotal = getBetAmount(betType, betValue) + chipValue;
+    if (spotTotal > maxBet) {
+        showBetError(`Max ${maxBet.toLocaleString()} per spot`);
+        return;
+    }
+
     // Check if can afford this bet
     if (!canAffordBet(chipValue, currentBankroll, totalWagered)) {
         // Try to find a smaller chip that we can afford
