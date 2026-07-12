@@ -119,6 +119,7 @@
         });
       }
       C.app.roomGen++;
+      frameHooks.forEach((fn) => fn.cancel?.());   // let transient hooks resolve their promises
       frameHooks.clear();
       currentRoom = name;
       document.getElementById('roomTitle').textContent = C.rooms[name].title;

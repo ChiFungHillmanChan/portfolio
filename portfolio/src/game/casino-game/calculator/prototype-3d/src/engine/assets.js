@@ -472,6 +472,7 @@
             else resolve();
           }
         };
+        hook.cancel = () => { app.offFrame(hook); resolve(); };
         app.onFrame(hook);
       };
       if (delay > 0) setTimeout(start, delay);

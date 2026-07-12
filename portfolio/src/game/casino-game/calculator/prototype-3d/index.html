@@ -529,6 +529,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
         });
       }
       C.app.roomGen++;
+      frameHooks.forEach((fn) => fn.cancel?.());   // let transient hooks resolve their promises
       frameHooks.clear();
       currentRoom = name;
       document.getElementById('roomTitle').textContent = C.rooms[name].title;
@@ -1046,6 +1047,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
             else resolve();
           }
         };
+        hook.cancel = () => { app.offFrame(hook); resolve(); };
         app.onFrame(hook);
       };
       if (delay > 0) setTimeout(start, delay);
