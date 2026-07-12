@@ -108,3 +108,32 @@ test('UTH settle', () => {
   const loss = O.settleUTH({ ante: 100, blind: 100, trips: 0, jackpot: false }, board, dealerPair, playerRoyal);
   assert.equal(loss.ret, 0);
 });
+
+test('UTH trips pays even when the main hand loses', () => {
+  // player: trips of 2s (cat 3). dealer: 9-K straight (cat 4) → player LOSES main.
+  const board = [c(2, 0), c(2, 1), c(9, 2), c(10, 3), c(11, 0)];
+  const playerHole = [c(2, 2), c(3, 3)];
+  const dealerHole = [c(12, 1), c(13, 2)];
+  const r = O.settleUTH({ ante: 100, blind: 100, trips: 100, jackpot: false }, board, playerHole, dealerHole);
+  assert.ok(r.cmp < 0);
+  assert.equal(r.ret, 400);   // ante+blind lost; trips 3:1 → 100×(3+1)
+});
+
+test('blackjack dealer stands on soft 17', () => {
+  const hand = [c(14), c(6)];          // A+6 = soft 17
+  O.dealerPlay(hand, [c(10)]);         // shoe available but must not be drawn
+  assert.equal(hand.length, 2);
+  assert.deepEqual(O.handValue(hand), { total: 17, soft: true });
+});
+
+test('baccarat banker on 6 draws only against player third card 6 or 7', () => {
+  // Shoe pops from the END. Deal order: P1, B1, P2, B2, then player third, then banker third.
+  // Case 1: player 4 draws a 6 → banker 6 must DRAW.
+  const draws = O.playBaccarat([c(9, 1), c(6, 2), c(4, 0), c(2, 2), c(2, 1), c(2, 0)]);
+  // pops: P1=2, B1=2, P2=2, B2=4 → pT=4 draws c(6); v3=6, bT=6 → banker draws c(9).
+  assert.equal(draws.B.length, 3);
+  // Case 2: identical except player third is 5 → banker 6 must STAND.
+  const stands = O.playBaccarat([c(9, 1), c(5, 2), c(4, 0), c(2, 2), c(2, 1), c(2, 0)]);
+  assert.equal(stands.B.length, 2);
+  assert.equal(stands.bT, 6);
+});
