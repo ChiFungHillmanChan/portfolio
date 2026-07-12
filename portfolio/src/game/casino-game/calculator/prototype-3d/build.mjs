@@ -9,6 +9,7 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 export const SRC_ORDER = [
   'src/logic/wallet.js',
   'src/logic/tables.js',
+  'src/logic/layouts.js',
   'src/logic/outcomes.js',
   'src/engine/tween.js',
   'src/engine/app.js',

@@ -1,0 +1,65 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+await import('../src/logic/layouts.js');
+const L = globalThis.CASINO.layouts;
+
+test('card dimensions are poker-ratio and ~1.55x the old size', () => {
+  assert.equal(L.CARD_W, 0.14);
+  assert.equal(L.CARD_H, 0.196);
+  assert.ok(Math.abs(L.CARD_W / L.CARD_H - 0.714) < 0.01);
+});
+
+test('chipBreakdown is greedy, rounds remainders up to one 100, caps at 20 chips', () => {
+  assert.deepEqual(L.chipBreakdown(1600), [1000, 500, 100]);
+  assert.deepEqual(L.chipBreakdown(100), [100]);
+  assert.deepEqual(L.chipBreakdown(750), [500, 100, 100, 100]);   // 50 remainder -> one extra 100
+  assert.deepEqual(L.chipBreakdown(475), [100, 100, 100, 100, 100]); // banker 0.95 on 500
+  assert.deepEqual(L.chipBreakdown(0), []);
+  assert.ok(L.chipBreakdown(1e9).length <= 20);
+});
+
+test('blackjack slots + spots sit on the half-disc table (radius 1.6, +Z side)', () => {
+  const bj = L.blackjack;
+  const onTable = ([x, , z]) => Math.hypot(x, z) < 1.6 - L.CARD_H / 2;
+  bj.playerSlots.forEach((p) => assert.ok(onTable(p)));
+  bj.dealerSlots.forEach((p) => assert.ok(onTable(p)));
+  Object.values(bj.spots).forEach(({ pos, r }) =>
+    assert.ok(Math.hypot(pos[0], pos[2]) + r < 1.6));
+  // hit cards keep fanning right and must stay on the felt up to 7 cards
+  const x7 = bj.playerSlots[1][0] + 5 * bj.fanDx;
+  assert.ok(Math.hypot(x7 + L.CARD_W / 2, bj.playerSlots[1][2]) < 1.6);
+});
+
+test('baccarat + uth slots/spots sit inside their felt ellipses', () => {
+  const inEllipse = (rx, rz) => ([x, , z], pad = 0) =>
+    (x / (rx - pad)) ** 2 + (z / (rz - pad)) ** 2 < 1;
+  const bacIn = inEllipse(1.8 * 0.94, 0.85 * 0.94);
+  L.baccarat.playerSlots.forEach((p) => assert.ok(bacIn(p)));
+  L.baccarat.bankerSlots.forEach((p) => assert.ok(bacIn(p)));
+  Object.values(L.baccarat.spots).forEach(({ pos }) => assert.ok(bacIn(pos)));
+  const uthIn = inEllipse(1.6 * 0.94, 0.9 * 0.94);
+  L.uth.playerSlots.forEach((p) => assert.ok(uthIn(p)));
+  L.uth.dealerSlots.forEach((p) => assert.ok(uthIn(p)));
+  L.uth.boardSlots.forEach((p) => assert.ok(uthIn(p)));
+  Object.values(L.uth.spots).forEach(({ pos }) => assert.ok(uthIn(pos)));
+});
+
+test('rouletteSpotPos maps every overlay spot id onto the felt box', () => {
+  const ids = ['n0', ...Array.from({ length: 36 }, (_, i) => 'n' + (i + 1)),
+    'c1', 'c2', 'c3', 'd1', 'd2', 'd3', 'low', 'even', 'red', 'black', 'odd', 'high'];
+  const seen = new Set();
+  for (const id of ids) {
+    const [x, z] = L.rouletteSpotPos(id);
+    assert.ok(Math.abs(x) < 3.28 / 2 && Math.abs(z) < 1.48 / 2, id + ' on felt');
+    const key = x.toFixed(3) + ',' + z.toFixed(3);
+    assert.ok(!seen.has(key), id + ' distinct');
+    seen.add(key);
+  }
+  // x ordering is unambiguous (texture u runs along +x): 0 column left of numbers,
+  // number columns increase with column index, column bets right of numbers.
+  assert.ok(L.rouletteSpotPos('n0')[0] < L.rouletteSpotPos('n1')[0]);
+  assert.ok(L.rouletteSpotPos('n1')[0] < L.rouletteSpotPos('n4')[0]);
+  assert.ok(L.rouletteSpotPos('c1')[0] > L.rouletteSpotPos('n36')[0]);
+  // rows within one column share x
+  assert.equal(L.rouletteSpotPos('n1')[0], L.rouletteSpotPos('n3')[0]);
+});
