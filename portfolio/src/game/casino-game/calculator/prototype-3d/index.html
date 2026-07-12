@@ -2060,7 +2060,11 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
         }
       });
       const v = C.validate.blackjack(bets);
-      if (v.ok) {
+      const allZero = bets.main === 0 && bets.perfectPair === 0 && bets.twentyOnePlusThree === 0;
+      if (allZero) {
+        dealBtn.disabled = true;
+        totalLine.textContent = 'Total: 0';
+      } else if (v.ok) {
         dealBtn.disabled = false;
         totalLine.textContent = 'Total: ' + v.total.toLocaleString();
       } else {
@@ -3110,7 +3114,11 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
       setBadge(jackpotEl, bets.jackpot ? String(C.tables.uth.jackpot) : null);
 
       const v = C.validate.uth({ ante: bets.ante, trips: bets.trips, jackpot: bets.jackpot });
-      if (v.ok) {
+      const allZero = bets.ante === 0 && bets.trips === 0 && !bets.jackpot;
+      if (allZero) {
+        dealBtn.disabled = true;
+        totalLine.textContent = 'Total: 0';
+      } else if (v.ok) {
         dealBtn.disabled = false;
         totalLine.textContent = 'Total: ' + v.total.toLocaleString();
       } else {
@@ -3336,7 +3344,8 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 
         const title = result.cmp > 0 ? 'YOU WIN' : result.cmp === 0 ? 'PUSH' : 'DEALER WINS';
         const sub = O.HAND_NAMES[result.p.cat] + ' vs ' + O.HAND_NAMES[result.d.cat] +
-          (bets.jackpot ? ' · Jackpot: no hit' : '');
+          (bets.jackpot ? ' · Jackpot: no hit' : '') + ' — ' +
+          (result.ret > 0 ? 'You win ' + result.ret.toLocaleString('en-US') : 'No win');
         await app.banner(title, sub);
         if (app.roomGen !== gen) return;
 

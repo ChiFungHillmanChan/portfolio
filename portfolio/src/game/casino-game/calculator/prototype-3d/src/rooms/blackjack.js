@@ -163,7 +163,11 @@
         }
       });
       const v = C.validate.blackjack(bets);
-      if (v.ok) {
+      const allZero = bets.main === 0 && bets.perfectPair === 0 && bets.twentyOnePlusThree === 0;
+      if (allZero) {
+        dealBtn.disabled = true;
+        totalLine.textContent = 'Total: 0';
+      } else if (v.ok) {
         dealBtn.disabled = false;
         totalLine.textContent = 'Total: ' + v.total.toLocaleString();
       } else {
