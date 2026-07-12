@@ -42,6 +42,23 @@
     return [base[0] + idx * FAN_DX, base[1], base[2]];
   }
 
+  // Reveal the hole card: rotation.x stays fixed at -PI/2 throughout (never
+  // touched), so the existing userData.flip() (which only ever tweens
+  // rotation.y) sweeps the flat card face-down -> up-on-edge -> face-up in
+  // place -- verified empirically against real THREE.js output (see report).
+  // Layered on top: a brief lift (+0.05 y, up then back down) purely as a
+  // cheap visual flourish; it doesn't touch rotation and can't affect where
+  // the card ends up.
+  function flipFlatCard(mesh, ms) {
+    return new Promise((resolve) => {
+      const baseY = mesh.position.y;
+      C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
+        C.tween.to(mesh.position, { y: baseY }, ms / 2, 'outQuart');
+      });
+      mesh.userData.flip(ms, resolve);
+    });
+  }
+
   // ---------- betting overlay ----------
   function makeOverlay(onDeal) {
     const bets = { main: 0, perfectPair: 0, twentyOnePlusThree: 0 };
@@ -324,6 +341,7 @@
           hitBtn.disabled = true; standBtn.disabled = true;
           const card = shoe.pop();
           const mesh = A.makeCard(card);
+          mesh.rotation.x = -Math.PI / 2; // lie flat, face up
           const idx = playerHand.length;
           playerHand.push({ card, mesh });
           dealtMeshes.push(mesh);
@@ -354,7 +372,11 @@
       async function dealInitial() {
         const pc1 = shoe.pop(), dc1 = shoe.pop(), pc2 = shoe.pop(), dc2 = shoe.pop();
         const pm1 = A.makeCard(pc1), dm1 = A.makeCard(dc1), pm2 = A.makeCard(pc2), dm2 = A.makeCard(dc2);
-        dm2.rotation.y = Math.PI; // hole card: dealt face-down, revealed later via .flip()
+        // lie flat on the felt, face up -- same rotation.x used by the static
+        // ghost cards (verified empirically: rotation.x=-PI/2 alone puts the
+        // face-mesh normal at world (0,1,0), matching the felt's own "up").
+        [pm1, dm1, pm2, dm2].forEach((m) => { m.rotation.x = -Math.PI / 2; });
+        dm2.rotation.y = Math.PI; // hole card: dealt face-down (still flat), revealed later via .flip()
 
         playerHand.push({ card: pc1, mesh: pm1 }, { card: pc2, mesh: pm2 });
         dealerHand.push({ card: dc1, mesh: dm1 }, { card: dc2, mesh: dm2 });
@@ -370,7 +392,7 @@
       }
 
       async function resolveDealer() {
-        await new Promise((resolve) => dealerHand[1].mesh.userData.flip(350, resolve));
+        await flipFlatCard(dealerHand[1].mesh, 350);
         if (app.roomGen !== gen) return;
 
         const dealerRaw = dealerHand.map((h) => h.card);
@@ -379,6 +401,7 @@
         const newCards = dealerRaw.slice(before);
         const flights = newCards.map((card, i) => {
           const mesh = A.makeCard(card);
+          mesh.rotation.x = -Math.PI / 2; // lie flat, face up
           dealerHand.push({ card, mesh });
           dealtMeshes.push(mesh);
           return A.dealCardTo(app, mesh, SHOE_POS, cardPos(DEALER_BASE, before + i), { ms: 420, delay: i * 500 });
