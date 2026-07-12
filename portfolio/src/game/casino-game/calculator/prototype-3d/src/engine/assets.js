@@ -210,20 +210,30 @@
   // ---------- stool ----------
   function makeStool() {
     const group = new THREE.Group();
+    const seatH = 0.05;
     const seatMat = new THREE.MeshStandardMaterial({ color: '#5a1f1a', roughness: 0.6, metalness: 0.05 });
-    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.06, 24), seatMat);
-    seat.position.y = 0.72;
+    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, seatH, 24), seatMat);
+    seat.position.y = 0.75 - seatH / 2; // top surface at 0.75
     seat.castShadow = true; seat.receiveShadow = true;
     group.add(seat);
 
+    // Each leg is built to its own exact top/foot points (rather than a fixed
+    // geometry rotated by a guessed angle), so it always spans exactly from
+    // the seat underside down to the floor with no gap or overshoot.
     const legMat = woodMaterial();
-    const legHeight = 0.69;
-    const legGeo = new THREE.CylinderGeometry(0.02, 0.024, legHeight, 10);
-    for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
-      const leg = new THREE.Mesh(legGeo, legMat);
-      leg.position.set(sx * 0.15, legHeight / 2, sz * 0.15);
-      leg.rotation.x = sz * 0.12;
-      leg.rotation.z = -sx * 0.12;
+    const topY = 0.7, topR = 0.15, footR = 0.19; // topY == seat underside (0.75 - seatH)
+    for (let i = 0; i < 4; i++) {
+      const angle = Math.PI / 4 + i * Math.PI / 2;
+      const cos = Math.cos(angle), sin = Math.sin(angle);
+      const top = new THREE.Vector3(topR * cos, topY, topR * sin);
+      const foot = new THREE.Vector3(footR * cos, 0, footR * sin);
+      const dir = new THREE.Vector3().subVectors(foot, top);
+      const len = dir.length();
+      const mid = new THREE.Vector3().addVectors(top, foot).multiplyScalar(0.5);
+
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, len, 10), legMat);
+      leg.position.copy(mid);
+      leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
       leg.castShadow = true; leg.receiveShadow = true;
       group.add(leg);
     }
@@ -238,13 +248,23 @@
     const skinMat = new THREE.MeshStandardMaterial({ color: '#e8c39e', roughness: 0.6, metalness: 0 });
     const gold = goldMaterial();
 
-    const trousers = new THREE.Mesh(new THREE.BoxGeometry(0.34, 1.0, 0.22), blackMat);
-    trousers.position.y = 0.5;
-    trousers.castShadow = true; trousers.receiveShadow = true;
-    group.add(trousers);
+    // Two separate leg boxes (not one monolithic block) so the lower body
+    // reads as legs, not a plinth. They run floor (0) to legTopY, and the
+    // torso is extended down to meet legTopY exactly so there's no gap —
+    // the torso's top (and everything anchored above it: vest, bow tie,
+    // head/hair) is unchanged.
+    const legTopY = 0.85, legW = 0.09, legGap = 0.02;
+    const legGeo = new THREE.BoxGeometry(legW, legTopY, 0.2);
+    for (const sx of [-1, 1]) {
+      const leg = new THREE.Mesh(legGeo, blackMat);
+      leg.position.set(sx * (legW / 2 + legGap / 2), legTopY / 2, 0);
+      leg.castShadow = true; leg.receiveShadow = true;
+      group.add(leg);
+    }
 
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, 0.45, 12), shirtMat);
-    torso.position.y = 1.225;
+    const torsoTopY = 1.45;
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, torsoTopY - legTopY, 12), shirtMat);
+    torso.position.y = (legTopY + torsoTopY) / 2;
     torso.castShadow = true; torso.receiveShadow = true;
     group.add(torso);
 
@@ -284,16 +304,21 @@
 
     // Shoulder -> elbow -> forearm -> hand, each a child group so the bend
     // composes through the scene graph instead of by hand-rolled matrix math.
-    // A single straight cylinder from shoulder to hand reads as a T-pose stub
-    // when viewed head-on (it foreshortens almost to its end-cap); the elbow
-    // bend keeps the upper arm visible as a downward diagonal from the front.
+    // The shoulder's orientation is solved directly (align local -Y, the
+    // direction children hang toward, to the shoulder->handTarget vector)
+    // rather than guessed via Euler angles — guessed angles previously left
+    // the arms jutting sideways in a T-pose from the front. Both hand targets
+    // sit low and forward so the arms read as resting on a table edge.
     function makeArm(side) {
-      const shoulder = new THREE.Group();
-      shoulder.position.set(side * 0.155, 1.34, 0.02);
-      shoulder.rotation.z = side * 0.35;
-      shoulder.rotation.x = -0.25;
+      const shoulderPos = new THREE.Vector3(side * 0.14, 1.35, 0.02);
+      const handTarget = new THREE.Vector3(side * 0.05, 1.0, 0.24);
+      const dir = new THREE.Vector3().subVectors(handTarget, shoulderPos).normalize();
 
-      const upperLen = 0.2;
+      const shoulder = new THREE.Group();
+      shoulder.position.copy(shoulderPos);
+      shoulder.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
+
+      const upperLen = 0.22;
       const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.03, upperLen, 8), shirtMat);
       upperArm.position.y = -upperLen / 2;
       upperArm.castShadow = true; upperArm.receiveShadow = true;
@@ -301,8 +326,7 @@
 
       const elbow = new THREE.Group();
       elbow.position.y = -upperLen;
-      elbow.rotation.x = -1.15;
-      elbow.rotation.z = -side * 0.15;
+      elbow.rotation.x = -0.3; // small extra forward kink so the elbow reads as a joint
       shoulder.add(elbow);
 
       const foreLen = 0.24;
