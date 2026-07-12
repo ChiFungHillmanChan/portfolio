@@ -1,0 +1,1 @@
+{ "//": "dev-only — node --test imports the ES modules. Not synced to public/.", "type": "module" }

@@ -64,6 +64,29 @@ function formatCurrency(amount) {
 }
 
 /**
+ * Show bet error message briefly (mirrors roulette's showBetError in
+ * event-handlers.js). Used for the per-spot max guard and, once wired at the
+ * wallet debit seam, for WALLET_ERR_MSG-mapped commitBet() rejections.
+ * @param {string} message
+ */
+function showBetError(message) {
+    let errorEl = document.getElementById('betError');
+    if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.id = 'betError';
+        errorEl.className = 'bet-error-message';
+        document.body.appendChild(errorEl);
+    }
+
+    errorEl.textContent = message;
+    errorEl.classList.add('visible');
+
+    setTimeout(() => {
+        errorEl.classList.remove('visible');
+    }, 2000);
+}
+
+/**
  * Render chip stack on a bet spot
  * @param {string} betType - Bet type
  * @param {number} amount - Bet amount
@@ -332,11 +355,22 @@ function initBettingTableHandlers() {
             const betType = spot.dataset.bet;
             const chipValue = getSelectedChip();
 
+            // Enforce the per-spot max bet limit as a friendly UX guard before
+            // calling addBet (which enforces the same limit authoritatively;
+            // the server caps it too — see BET_TYPE_MAX in state.js).
+            const max = getBetTypeMax(betType);
+            if (getBetAmount(betType) + chipValue > max) {
+                showBetError(`Max ${max.toLocaleString()} per spot`);
+                return;
+            }
+
             if (addBet(betType, chipValue)) {
                 renderAllBetChips();
                 renderHUD();
                 renderChipRack();
                 updateActionButtons();
+            } else {
+                showBetError('Cannot place bet - bankroll limit reached');
             }
         });
 

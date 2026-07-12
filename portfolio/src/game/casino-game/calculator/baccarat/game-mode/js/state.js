@@ -90,6 +90,22 @@ function updateBankroll(change) {
 }
 
 /**
+ * Sync the displayed bankroll to the wallet's server-confirmed balance.
+ * The wallet (window.baccaratWallet) is now the source of truth for chips —
+ * this replaces updateBankroll()'s delta math with an absolute value reported
+ * back by commitBet()/settle(), or by the wallet's own subscribe() broadcast
+ * (e.g. a bust-reset triggered from the HUD's own Reset button, not from a
+ * hand this page resolved).
+ * @param {number} balance - Confirmed wallet balance
+ */
+function syncBankrollFromWallet(balance) {
+    if (typeof balance !== 'number') return;
+    gameState.bankroll.current = balance;
+    gameState.bankroll.sessionProfit = gameState.bankroll.current - gameState.bankroll.initial;
+    saveToStorage();
+}
+
+/**
  * Get current bankroll
  * @returns {number} Current bankroll
  */
@@ -291,6 +307,42 @@ function resetBetState() {
     betState = createInitialBetState();
 }
 
+// Per-betType MAX guard at placement (client UX; the server's
+// table-config.js GAME_TABLES.baccarat caps authoritatively). Sum-safe vs the
+// server's aggregate caps: dragonPlayer + dragonBanker ≤ 2000 = dragonBonus
+// max; egalite0..9 ≤ 10000 = egalite max. NOTE: per-betType MIN is
+// intentionally NOT enforced here — players build a spot up chip by chip
+// starting from 0; a sub-min main bet is caught by the server at commitBet
+// and surfaced via WALLET_ERR_MSG.
+const BET_TYPE_MAX = {
+    player: 10000,
+    banker: 10000,
+    tie: 1000,
+    playerPair: 1000,
+    bankerPair: 1000,
+    dragonPlayer: 1000,
+    dragonBanker: 1000,
+    egalite0: 1000,
+    egalite1: 1000,
+    egalite2: 1000,
+    egalite3: 1000,
+    egalite4: 1000,
+    egalite5: 1000,
+    egalite6: 1000,
+    egalite7: 1000,
+    egalite8: 1000,
+    egalite9: 1000
+};
+
+/**
+ * Get the per-spot max for a bet type (client UX guard; see BET_TYPE_MAX).
+ * @param {string} betType - Type of bet
+ * @returns {number} Max chips allowed on that spot
+ */
+function getBetTypeMax(betType) {
+    return BET_TYPE_MAX[betType] !== undefined ? BET_TYPE_MAX[betType] : Infinity;
+}
+
 /**
  * Add a bet
  * @param {string} betType - Type of bet (from BET_TYPES)
@@ -300,6 +352,11 @@ function resetBetState() {
 function addBet(betType, amount) {
     if (amount <= 0) return false;
     if (betState[betType] === undefined) return false;
+
+    // Per-betType max guard (client UX; server also caps authoritatively).
+    if (betState[betType] + amount > getBetTypeMax(betType)) {
+        return false;
+    }
 
     // Check affordability
     const totalAfterBet = getTotalWagered() + amount;
