@@ -974,6 +974,7 @@ function settingsOverlayHtml(tab = "coach") {
   return `
     <h2>${GEAR_SVG} Settings</h2>
     <div class="uth-guide">${settingsPanelHtml(coachOn, tab)}</div>
+    ${isLocalCode(activeCode) ? `<button class="uth-btn uth-btn-fold" data-action="reset-ask">RESET SOLO GAME</button>` : ""}
     <button class="uth-btn uth-btn-primary" data-action="close-overlay">GOT IT</button>`;
 }
 
@@ -1300,6 +1301,27 @@ document.addEventListener("click", async (e) => {
           render();
           throw err;
         }
+        break;
+      }
+      case "reset-ask":
+        if (!info?.local) break;
+        showOverlay(`
+          <h2>Reset this solo game?</h2>
+          <p class="uth-muted">Your chips go back to ${fmt(info.table?.buyIn ?? 10000)} and your
+          session stats are cleared. This can't be undone.</p>
+          <div class="uth-actions">
+            <button class="uth-btn uth-btn-fold" data-action="reset-confirm">RESET GAME</button>
+            <button class="uth-btn uth-btn-ghost" data-action="close-overlay">CANCEL</button>
+          </div>`);
+        break;
+      case "reset-confirm": {
+        hideOverlay();
+        if (!info || !isLocalCode(activeCode)) break;
+        // stale UI memos from the old session must not leak into the new one
+        info.pending = zeroBets();
+        info.domHoleRound = null;
+        info.megaShownRound = null;
+        await tableCall(activeCode, "reset-session");
         break;
       }
       case "sit-out":
