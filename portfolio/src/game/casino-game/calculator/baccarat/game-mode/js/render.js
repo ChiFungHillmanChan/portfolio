@@ -2,6 +2,9 @@
 // BACCARAT GAME MODE - UI RENDERING
 // =====================================================
 
+// Module-level guard to ensure betting table handlers attach exactly once
+let bettingHandlersAttached = false;
+
 // =====================================================
 // CHIP RENDERING
 // =====================================================
@@ -347,6 +350,13 @@ function isBettingAllowed() {
  * Initialize betting table handlers
  */
 function initBettingTableHandlers() {
+    // The .bet-spot DOM is injected once by loadComponents() and persists, but
+    // this function is called again on every wallet:ready (which re-fires on
+    // re-sign-in). Attach exactly once so click listeners don't stack (which
+    // would place 2x/3x chips per click).
+    if (bettingHandlersAttached) return;
+    bettingHandlersAttached = true;
+
     document.querySelectorAll('.bet-spot').forEach(spot => {
         // Left click to add bet
         spot.addEventListener('click', (e) => {
