@@ -74,6 +74,26 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .bet-total { text-align: center; color: #b8e0c8; margin-top: .5rem; font-size: .95rem; }
 .bet-total .err { color: #ff9c8e; }
 
+/* Blackjack betting circles */
+.bj-circles { display: flex; align-items: flex-end; justify-content: center; gap: 1.4rem;
+  margin: .6rem 0 1rem; user-select: none; }
+.bj-circle { position: relative; border-radius: 50%; border: 2px dashed rgba(240,216,120,.6);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  color: #f0d878; font-size: .78rem; letter-spacing: .06em; cursor: pointer;
+  background: rgba(0,0,0,.25); }
+.bj-circle:hover { outline: 2px solid #f0d878; }
+.bj-circle.main { width: 132px; height: 132px; font-size: .95rem; }
+.bj-circle.side { width: 92px; height: 92px; }
+.bj-circle .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 30px; padding: 1px 4px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; }
+
+/* Blackjack action HUD (HIT/STAND, shown only during the player-decision phase) */
+#bj-actions { position: fixed; left: 50%; bottom: 4vh; transform: translateX(-50%);
+  z-index: 22; display: flex; gap: .7rem; align-items: center; padding: .6rem 1rem;
+  background: rgba(10,8,4,.85); border: 1px solid #c9a227; border-radius: 8px; }
+#bj-actions .total { color: #f0d878; margin-right: .5rem; letter-spacing: .1em; }
+
 /* Roulette betting grid */
 .rgrid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; user-select: none; }
 .rspot { position: relative; padding: .55rem 0; text-align: center; font-size: .85rem;
