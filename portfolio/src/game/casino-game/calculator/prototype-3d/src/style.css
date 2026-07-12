@@ -73,3 +73,13 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .btn-dim { color: #e8e0d0; background: rgba(0,0,0,.4); border: 1px solid #6f6552; }
 .bet-total { text-align: center; color: #b8e0c8; margin-top: .5rem; font-size: .95rem; }
 .bet-total .err { color: #ff9c8e; }
+
+/* Roulette betting grid */
+.rgrid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; user-select: none; }
+.rspot { position: relative; padding: .55rem 0; text-align: center; font-size: .85rem;
+  border: 1px solid rgba(240,216,120,.55); border-radius: 3px; cursor: pointer; color: #fff; }
+.rspot.red { background: #a31621; } .rspot.black { background: #14141a; }
+.rspot.green { background: #0e6b45; } .rspot.outside { background: rgba(0,0,0,.28); }
+.rspot:hover { outline: 2px solid #f0d878; }
+.rspot .badge { position: absolute; top: -7px; right: -5px; min-width: 26px; padding: 1px 4px;
+  border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
