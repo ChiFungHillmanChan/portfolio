@@ -17,7 +17,7 @@
 // straight to showdown in one snapshot), so presentation is staged here —
 // flop (3 cards), then turn+river, then the dealer's hand, then results.
 
-import { cardLabel, cardSuit, evaluate5, evaluate7 } from "../core/engine.js";
+import { cardLabel, cardSuit, evaluate5, evaluate7, JACKPOT_PAYS, JACKPOT_MEGA_CAT } from "../core/engine.js";
 import { adviceFor } from "../core/strategy.js";
 import {
   settingsPanelHtml,
@@ -71,6 +71,10 @@ const el = {
   toast: $("toast"),
   overlay: $("overlay"),
   overlayCard: $("overlayCard"),
+  megaOverlay: $("megaOverlay"),
+  megaCards: $("megaCards"),
+  megaAmount: $("megaAmount"),
+  megaConfetti: $("megaConfetti"),
 };
 
 // table.html ships static skeletons for instant first paint — reuse them as
@@ -153,7 +157,7 @@ function tableCall(code, action, payload = {}) {
 const fmt = (n) => n.toLocaleString("en-US");
 const esc = (s) =>
   String(s).replace(/[&<>"']/g, (ch) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
-const zeroBets = () => ({ ante: 0, trips: 0, holeCard: 0, badBeat: 0 });
+const zeroBets = () => ({ ante: 0, trips: 0, holeCard: 0, badBeat: 0, jackpot: 0 });
 
 const EYE_BADGE = `<span class="uth-eye" title="Cards shown to the table">${EYE_SVG}</span>`;
 
@@ -179,6 +183,49 @@ function showOverlay(html) {
 
 function hideOverlay() {
   el.overlay.hidden = true;
+}
+
+function showMega(cards, amount) {
+  el.megaCards.innerHTML = cards.map((c) => cardHtml(c)).join("");
+  el.megaConfetti.innerHTML = Array.from({ length: 64 }, () => {
+    const left = Math.floor(Math.random() * 100);
+    const delay = (Math.random() * 2.4).toFixed(2);
+    const dur = (2.6 + Math.random() * 1.8).toFixed(2);
+    const light = 52 + Math.floor(Math.random() * 24);
+    return `<i style="left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s;background:hsl(46 90% ${light}%)"></i>`;
+  }).join("");
+  el.megaOverlay.hidden = false;
+  if (window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    el.megaAmount.textContent = fmt(amount);
+    return;
+  }
+  const start = performance.now();
+  const DUR = 1600;
+  const tick = (t) => {
+    const p = Math.min(1, (t - start) / DUR);
+    const eased = 1 - Math.pow(1 - p, 3);
+    el.megaAmount.textContent = fmt(Math.floor(eased * amount));
+    if (p < 1) requestAnimationFrame(tick);
+    else el.megaAmount.textContent = fmt(amount);
+  };
+  requestAnimationFrame(tick);
+}
+
+function hideMega() {
+  el.megaOverlay.hidden = true;
+  el.megaConfetti.innerHTML = "";
+}
+
+// Fire the full-screen celebration once when MY seat lands the MEGA (Royal) jackpot.
+function maybeMega(info) {
+  const seat = seatOf(info);
+  const r = seat?.result;
+  if (!r || r.jackpotCat !== JACKPOT_MEGA_CAT) return;
+  if (info.megaShownRound === info.table.roundNo) return;
+  info.megaShownRound = info.table.roundNo;
+  const hole = info.myCards?.holeCards || seat.holeCards || [];
+  const flop = (info.table.community || []).slice(0, 3);
+  showMega([...hole, ...flop], JACKPOT_PAYS[JACKPOT_MEGA_CAT]);
 }
 
 const ERROR_COPY = {
@@ -234,7 +281,7 @@ function myHole(info) {
 // The river 1x is the minimum the game requires (fold-only otherwise), so a
 // bet that can't cover it is blocked; missing 3x/4x is only worth a warning.
 function raiseAffordability(seat, p) {
-  const remaining = seat.stack - (p.ante * 2 + p.trips + p.holeCard + p.badBeat);
+  const remaining = seat.stack - (p.ante * 2 + p.trips + p.holeCard + p.badBeat + p.jackpot);
   return {
     remaining,
     can1x: remaining >= p.ante,
@@ -317,8 +364,11 @@ function stepReveal(code) {
   }
   if (code === activeCode) {
     render();
-    // small screens: the felt scrolls — bring the per-bet payouts into view
-    if (resultsJustShown) el.boardZone.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    if (resultsJustShown) {
+      // small screens: the felt scrolls — bring the per-bet payouts into view
+      el.boardZone.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      maybeMega(info);
+    }
   }
   renderTabs();
   info.revealTimer = setTimeout(() => {
@@ -712,12 +762,12 @@ function renderSeats(info, phase) {
       }
 
       // everyone sees everyone's bets: ante+blind · play · side bets
-      const sides = s.bets.trips + s.bets.holeCard + s.bets.badBeat;
+      const sides = s.bets.trips + s.bets.holeCard + s.bets.badBeat + (s.bets.jackpot || 0);
       const betBits = [];
       if (s.bets.ante) betBits.push(`A+B ${fmt(s.bets.ante + s.bets.blind)}`);
       if (s.playBet) betBits.push(`PLAY ${fmt(s.playBet)}`);
       if (sides) betBits.push(`SIDE ${fmt(sides)}`);
-      const betTitle = `Ante ${s.bets.ante} · Blind ${s.bets.blind} · Play ${s.playBet || 0} · Trips ${s.bets.trips} · Hole Card ${s.bets.holeCard} · Bad Beat ${s.bets.badBeat}`;
+      const betTitle = `Ante ${s.bets.ante} · Blind ${s.bets.blind} · Play ${s.playBet || 0} · Trips ${s.bets.trips} · Hole Card ${s.bets.holeCard} · Bad Beat ${s.bets.badBeat} · Jackpot ${s.bets.jackpot || 0 ? "$1" : "—"}`;
       const betLine =
         (s.inHand || (phase === "betting" && s.ready)) && betBits.length
           ? `<div class="uth-seat-bets" title="${betTitle}">${betBits.join(" · ")}</div>`
@@ -748,12 +798,16 @@ function renderDock(info, seat, phase) {
   // sitting out (only meaningful surface during betting)
   if (seat.sittingOut && phase === "betting") {
     const broke = seat.stack < info.table.minAnte * 2;
+    const stuck = info.local && !broke && seat.stack < info.table.minAnte * 3;
     el.dockContent.innerHTML = `
       <p class="uth-muted">You're sitting out.</p>
+      ${stuck ? `<p class="uth-bet-warning block">Only ${fmt(seat.stack)} chips left — a hand needs at least ${fmt(info.table.minAnte * 3)} (Ante + Blind + 1x Play). Reset to start fresh with ${fmt(info.table.buyIn)}.</p>` : ""}
       <div class="uth-actions">
         ${broke
           ? `<button class="uth-btn uth-btn-primary" data-action="rebuy">REBUY ${fmt(info.table.buyIn)}</button>`
-          : `<button class="uth-btn uth-btn-primary" data-action="sit-in">SIT IN</button>`}
+          : stuck
+            ? `<button class="uth-btn uth-btn-fold" data-action="reset-ask">RESET GAME</button>`
+            : `<button class="uth-btn uth-btn-primary" data-action="sit-in">SIT IN</button>`}
       </div>`;
     return;
   }
@@ -802,6 +856,14 @@ function renderDock(info, seat, phase) {
   if (phase === "betting") {
     if (seat.ready) {
       parts.push(`<p class="uth-muted">${info.local ? "Bets locked — dealing…" : "Bets locked — waiting for the other players…"}</p>`);
+    } else if (info.local && seat.stack < info.table.minAnte * 3) {
+      // solo trap zone: too few chips for Ante + Blind + the mandatory 1x
+      // Play reserve, and rebuy needs the stack below minAnte × 2
+      parts.push(`<p class="uth-bet-warning block">Only ${fmt(seat.stack)} chips left — a hand needs at least ${fmt(info.table.minAnte * 3)} (Ante + Blind + 1x Play). Reset to start fresh with ${fmt(info.table.buyIn)}.</p>`);
+      parts.push(`
+        <div class="uth-actions">
+          <button class="uth-btn uth-btn-fold" data-action="reset-ask">RESET GAME</button>
+        </div>`);
     } else {
       const chips = CHIPS.map(
         (v) => `
@@ -825,7 +887,7 @@ function renderDock(info, seat, phase) {
       parts.push(`
         <div class="uth-actions">
           <button class="uth-btn uth-btn-ghost" data-action="clear-bets">CLEAR</button>
-          <button class="uth-btn uth-btn-primary" data-action="ready" ${readyOk ? "" : "disabled"}>${info.local ? "DEAL" : "READY"}${p.ante ? ` · ${fmt(p.ante * 2 + p.trips + p.holeCard + p.badBeat)}` : ""}</button>
+          <button class="uth-btn uth-btn-primary" data-action="ready" ${readyOk ? "" : "disabled"}>${info.local ? "DEAL" : "READY"}${p.ante ? ` · ${fmt(p.ante * 2 + p.trips + p.holeCard + p.badBeat + p.jackpot)}` : ""}</button>
           <button class="uth-btn uth-btn-ghost" data-action="sit-out">SIT OUT</button>
         </div>`);
     }
@@ -924,6 +986,7 @@ function settingsOverlayHtml(tab = "coach") {
   return `
     <h2>${GEAR_SVG} Settings</h2>
     <div class="uth-guide">${settingsPanelHtml(coachOn, tab)}</div>
+    ${isLocalCode(activeCode) ? `<button class="uth-btn uth-btn-fold" data-action="reset-ask">RESET SOLO GAME</button>` : ""}
     <button class="uth-btn uth-btn-primary" data-action="close-overlay">GOT IT</button>`;
 }
 
@@ -990,9 +1053,26 @@ function renderBoard(info, seat, phase) {
       ${playResultHtml}
     </button>`;
 
+  // Jackpot: flat $1, gold, distinct from the chip-scaled side bets.
+  const jp = editing ? info.pending.jackpot : seat.bets.jackpot || 0;
+  let jpCls = "uth-bet-circle uth-jackpot-spot" + (jp ? " has-bet" : "") + (editing ? " editable" : " locked");
+  let jpDelta = "";
+  if (results) {
+    const d = results.jackpot || 0;
+    const cat = d > 0 ? "pos" : jp ? "neg" : "";
+    if (cat) jpCls += ` res-${cat}`;
+    if (jp || d > 0) jpDelta = `<span class="uth-bet-delta ${cat}">${d > 0 ? "+" + fmt(d) : "−1"}</span>`;
+  }
+  const jackpotCircle = `
+    <button class="${jpCls}" ${editing ? 'data-action="toggle-jackpot"' : 'tabindex="-1"'}>
+      <span class="uth-bet-label">JACKPOT</span>
+      <span class="uth-bet-amount">${jp ? "$1" : "—"}</span>
+      ${jpDelta}
+    </button>`;
+
   return `
     <div class="uth-bet-board${editing ? "" : " locked"}">
-      <div class="uth-bet-row uth-bet-row-sides">${sides}</div>
+      <div class="uth-bet-row uth-bet-row-sides">${sides}${jackpotCircle}</div>
       <div class="uth-bet-row uth-bet-row-core">${core}</div>
       <div class="uth-bet-row uth-bet-row-play">${playRow}</div>
     </div>`;
@@ -1042,7 +1122,7 @@ function addBet(key) {
     }
     p[key] = next;
   }
-  const total = p.ante * 2 + p.trips + p.holeCard + p.badBeat;
+  const total = p.ante * 2 + p.trips + p.holeCard + p.badBeat + p.jackpot;
   if (total > seat.stack) {
     showToast("Not enough chips (Blind matches your Ante).");
     return;
@@ -1062,6 +1142,25 @@ function removeBet(key) {
     coreJustChanged = true;
     // side bets can never exceed the (new) ante
     for (const { key: sk } of SIDE_BETS) p[sk] = Math.min(p[sk], p.ante);
+  }
+  info.pending = p;
+  render();
+}
+
+// The jackpot is a flat $1 bonus — a plain on/off toggle, not chip-scaled.
+function toggleJackpot() {
+  const info = activeInfo();
+  const seat = viewSeat(info);
+  if (!info || !seat) return;
+  const p = { ...info.pending };
+  if (p.jackpot) {
+    p.jackpot = 0;
+  } else {
+    if (p.ante * 2 + p.trips + p.holeCard + p.badBeat + 1 > seat.stack) {
+      showToast("Not enough chips for the $1 jackpot.");
+      return;
+    }
+    p.jackpot = 1;
   }
   info.pending = p;
   render();
@@ -1114,6 +1213,9 @@ document.addEventListener("click", async (e) => {
       case "add-bet":
         if (lpFired) { lpFired = false; break; } // long-press already removed
         addBet(btn.dataset.bet);
+        break;
+      case "toggle-jackpot":
+        toggleJackpot();
         break;
       case "clear-bets":
         if (info) { info.pending = zeroBets(); coreJustChanged = true; render(); }
@@ -1183,9 +1285,6 @@ document.addEventListener("click", async (e) => {
       case "settings":
         showOverlay(settingsOverlayHtml("coach"));
         break;
-      case "settings-info":
-        showOverlay(settingsOverlayHtml("info"));
-        break;
       case "settings-tab":
         switchSettingsTab(el.overlayCard, btn.dataset.tab);
         break;
@@ -1214,6 +1313,27 @@ document.addEventListener("click", async (e) => {
           render();
           throw err;
         }
+        break;
+      }
+      case "reset-ask":
+        if (!info?.local) break;
+        showOverlay(`
+          <h2>Reset this solo game?</h2>
+          <p class="uth-muted">Your chips go back to ${fmt(info.table?.buyIn ?? 10000)} and your
+          session stats are cleared. This can't be undone.</p>
+          <div class="uth-actions">
+            <button class="uth-btn uth-btn-fold" data-action="reset-confirm">RESET GAME</button>
+            <button class="uth-btn uth-btn-ghost" data-action="close-overlay">CANCEL</button>
+          </div>`);
+        break;
+      case "reset-confirm": {
+        hideOverlay();
+        if (!info || !isLocalCode(activeCode)) break;
+        // stale UI memos from the old session must not leak into the new one
+        info.pending = zeroBets();
+        info.domHoleRound = null;
+        info.megaShownRound = null;
+        await tableCall(activeCode, "reset-session");
         break;
       }
       case "sit-out":
@@ -1264,6 +1384,9 @@ document.addEventListener("click", async (e) => {
       }
       case "close-overlay":
         hideOverlay();
+        break;
+      case "mega-collect":
+        hideMega();
         break;
     }
   } catch (err) {

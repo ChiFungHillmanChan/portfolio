@@ -24,7 +24,6 @@
             <button class="uth-room-code" id="roomCode" title="Copy invite code">UTH-····</button>
             <div class="uth-topbar-right">
                 <div class="uth-round-label" id="roundLabel"></div>
-                <button type="button" class="uth-btn uth-btn-ghost uth-odds-link" data-action="settings-info" title="Payouts &amp; odds" aria-label="Payouts and odds"><svg width="1.1em" height="1.1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><line x1="12" y1="11" x2="12" y2="16.5"/><line x1="12" y1="7.5" x2="12.01" y2="7.5"/></svg></button>
             </div>
         </div>
 
@@ -71,6 +70,17 @@
         <div class="uth-toast" id="toast" hidden></div>
         <div class="uth-overlay" id="overlay" hidden>
             <div class="uth-overlay-card" id="overlayCard"></div>
+        </div>
+        <div class="uth-mega" id="megaOverlay" hidden data-action="mega-collect">
+            <div class="uth-mega-rays"></div>
+            <div class="uth-mega-confetti" id="megaConfetti"></div>
+            <div class="uth-mega-card">
+                <div class="uth-mega-kicker">MEGA JACKPOT</div>
+                <div class="uth-mega-title">ROYAL FLUSH</div>
+                <div class="uth-mega-cards" id="megaCards"></div>
+                <div class="uth-mega-amount" id="megaAmount">0</div>
+                <button class="uth-btn uth-btn-primary uth-mega-collect" data-action="mega-collect">COLLECT</button>
+            </div>
         </div>
     </div>
 

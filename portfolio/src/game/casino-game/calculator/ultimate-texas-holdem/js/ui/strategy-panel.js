@@ -9,7 +9,7 @@
 // picture can never drift from what the coach actually recommends.
 
 import { preflopAdvice } from "../core/strategy.js";
-import { CAT, CAT_NAMES, BLIND_PAYS, TRIPS_PAYS, BBB_PAYS } from "../core/engine.js";
+import { CAT, CAT_NAMES, BLIND_PAYS, TRIPS_PAYS, BBB_PAYS, JACKPOT_PAYS } from "../core/engine.js";
 
 // ── SVG icons (suite style: stroke currentColor, 24-box, 1em) ────────────────
 
@@ -124,6 +124,16 @@ function payTableHtml(pays, { belowLabel = null } = {}) {
   return `<table class="uth-info-table">${rows}${belowLabel ? `<tr><td>${belowLabel}</td><td class="uth-num-cell">Push</td></tr>` : ""}</table>`;
 }
 
+// Jackpot pays flat amounts (not X:1 ratios), generated from the engine table.
+function jackpotTableHtml() {
+  const money = (n) => n.toLocaleString("en-US");
+  const cats = Object.keys(JACKPOT_PAYS).map(Number).sort((a, b) => b - a);
+  const rows = cats
+    .map((cat) => `<tr><td>${CAT_NAMES[cat]}${cat === CAT.ROYAL ? ' <span class="uth-num">MEGA</span>' : ""}</td><td class="uth-num-cell">${money(JACKPOT_PAYS[cat])}</td></tr>`)
+    .join("");
+  return `<table class="uth-info-table">${rows}</table>`;
+}
+
 export function infoPanelHtml() {
   // Bad Beat shows a single straight-flush row (royal pays the same 7500)
   const bbbPays = { ...BBB_PAYS };
@@ -161,6 +171,13 @@ export function infoPanelHtml() {
     <section class="uth-settings-block">
       <h3>BAD BEAT BONUS (lose at showdown with…)</h3>
       ${payTableHtml(bbbPays)}
+    </section>
+    <section class="uth-settings-block">
+      <h3>JACKPOT ($1 flat — your two cards + the flop)</h3>
+      ${jackpotTableHtml()}
+      <p>Settled the instant the flop lands and <strong>pays even if you fold</strong>.
+      Anything below a flush loses the $1. The Royal Flush is the
+      <span class="uth-num">400,000</span> MEGA jackpot.</p>
     </section>
     <section class="uth-settings-block">
       <h3>HOUSE EDGE PER BET</h3>

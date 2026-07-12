@@ -664,6 +664,17 @@
 .uth-bet-circle.res-neg { border-color: var(--accent-red); box-shadow: none; opacity: 0.85; }
 .uth-bet-circle.res-push { border-color: var(--text-dim); box-shadow: none; }
 
+/* Jackpot spot — always gold, a flat $1 toggle (not chip-scaled) */
+.uth-jackpot-spot {
+    border-color: var(--accent-gold);
+    background: radial-gradient(circle at 50% 28%, rgba(212, 175, 55, 0.20), rgba(212, 175, 55, 0.04));
+}
+.uth-jackpot-spot .uth-bet-label { color: var(--accent-gold); }
+.uth-jackpot-spot.has-bet {
+    border-style: solid;
+    box-shadow: var(--glow-gold);
+}
+
 .uth-play-spot {
     width: 86px;
     height: 58px;
@@ -1694,4 +1705,92 @@
 
 .uth-subpage .uth-num-cell {
     width: 34%;
+}
+
+/* ── MEGA jackpot celebration (Royal Flush) ─────────────────────────────── */
+.uth-mega {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(circle at 50% 40%, rgba(48, 36, 4, 0.9), rgba(0, 0, 0, 0.95));
+    overflow: hidden;
+}
+.uth-mega[hidden] { display: none; }
+.uth-mega-rays {
+    position: absolute;
+    width: 220vmax;
+    height: 220vmax;
+    background: repeating-conic-gradient(from 0deg, rgba(212, 175, 55, 0.13) 0deg 6deg, transparent 6deg 12deg);
+    animation: uth-mega-spin 20s linear infinite;
+}
+@keyframes uth-mega-spin { to { transform: rotate(360deg); } }
+.uth-mega-card {
+    position: relative;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    animation: uth-mega-in 0.55s cubic-bezier(0.2, 0.9, 0.3, 1.35);
+}
+@keyframes uth-mega-in {
+    from { transform: scale(0.55); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.uth-mega-kicker {
+    font-family: var(--font-display);
+    letter-spacing: 0.32em;
+    font-size: 0.95rem;
+    color: var(--accent-gold);
+    text-shadow: var(--glow-gold);
+}
+.uth-mega-title {
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: clamp(2rem, 9vw, 4.5rem);
+    line-height: 1.05;
+    margin: 0.15em 0 0.1em;
+    background: linear-gradient(180deg, #fff7d6, var(--accent-gold) 58%, #a8791b);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+.uth-mega-cards {
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    margin: 1rem 0;
+    flex-wrap: wrap;
+}
+.uth-mega-cards .uth-card { animation: uth-card-flip 0.5s backwards; }
+.uth-mega-amount {
+    font-family: var(--font-mono);
+    font-weight: 700;
+    font-size: clamp(2.4rem, 12vw, 5.5rem);
+    color: #fff;
+    text-shadow: 0 0 26px rgba(212, 175, 55, 0.9);
+}
+.uth-mega-amount::before { content: "+"; opacity: 0.7; }
+.uth-mega-collect {
+    margin-top: 1.2rem;
+    font-size: 1.05rem;
+    padding: 0.8em 2.6em;
+}
+.uth-mega-confetti { position: absolute; inset: 0; pointer-events: none; }
+.uth-mega-confetti i {
+    position: absolute;
+    top: -6vh;
+    width: 9px;
+    height: 14px;
+    border-radius: 2px;
+    animation: uth-confetti-fall linear infinite;
+}
+@keyframes uth-confetti-fall {
+    to { transform: translateY(116vh) rotate(720deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .uth-mega-rays,
+    .uth-mega-confetti i,
+    .uth-mega-card,
+    .uth-mega-cards .uth-card { animation: none; }
 }

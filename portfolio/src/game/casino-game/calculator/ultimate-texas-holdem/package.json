@@ -1,0 +1,4 @@
+{
+  "//": "dev-only — lets `node --test tests/` import the browser ES modules. Not synced to public/.",
+  "type": "module"
+}
