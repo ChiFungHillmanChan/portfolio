@@ -20,7 +20,7 @@
 - Table limits (from spec, exact): Roulette 100–5,000 per spot / 20,000 max per spin · Blackjack main 500–10,000, side bets 100–2,500 · Baccarat main 500–10,000, side bets 100–1,000 · UTH ante = blind 100–1,000 step 100, trips 100–5,000, jackpot flat 100. Demo wallet starts at 100,000.
 - Palette: felt `#0b5d3b`, mahogany wood `#4a2c17`, gold/brass `#c9a227`, lobby carpet `#7a1f1f`, walls `#e8e0d0`, room accents warm white light `0xffe9c4`.
 - Rebuild `index.html` (`node build.mjs`) and commit it together with any `src/` change — the built file is the deliverable and must never go stale.
-- Test command (from `prototype-3d/`): `node --test tests/`. Build command: `node build.mjs`.
+- Test command (from `prototype-3d/`): `node --test`. Build command: `node build.mjs`.
 
 ## File Structure
 
@@ -299,7 +299,7 @@ test('build produces a self-contained index.html', async () => {
 - [ ] **Step 7: Run test — expect failure first** (before `build.mjs` exists the import throws; if you wrote files in the order above, instead run it once with a deliberately empty `vendor/` to see the guard fail, then restore). Then:
 
 ```bash
-cd prototype-3d && node --test tests/
+cd prototype-3d && node --test
 ```
 Expected: PASS (1 test).
 
@@ -364,7 +364,7 @@ test('credit adds and allows zero (losing round)', () => {
 });
 ```
 
-- [ ] **Step 2: Run — expect FAIL** (`wallet` undefined): `node --test tests/wallet.test.mjs`
+- [ ] **Step 2: Run — expect FAIL** (`wallet` undefined): `node --testwallet.test.mjs`
 
 - [ ] **Step 3: Implement `src/logic/wallet.js`**
 
@@ -500,7 +500,7 @@ test('uth validator', () => {
 
 Note: baccarat `tie` uses the **main** range (500–10,000) — it's a main bet position on the layout.
 
-- [ ] **Step 7: Run all — expect PASS:** `node --test tests/`
+- [ ] **Step 7: Run all — expect PASS:** `node --test`
 
 - [ ] **Step 8: Rebuild + commit**
 
@@ -645,7 +645,7 @@ test('UTH settle', () => {
 
 Note on the first baccarat test: keep the loose assertions exactly as written (they pin invariants, not a specific deal order); the `s1` shoe test pins the draw rule deterministically. Export `bacTotal` for the invariant check.
 
-- [ ] **Step 2: Run — expect FAIL:** `node --test tests/outcomes.test.mjs`
+- [ ] **Step 2: Run — expect FAIL:** `node --testoutcomes.test.mjs`
 
 - [ ] **Step 3: Implement `src/logic/outcomes.js`** (complete file):
 
@@ -843,7 +843,7 @@ Note on the first baccarat test: keep the loose assertions exactly as written (t
 })();
 ```
 
-- [ ] **Step 4: Run — expect PASS:** `node --test tests/` (all files).
+- [ ] **Step 4: Run — expect PASS:** `node --test` (all files).
 
 - [ ] **Step 5: Rebuild + commit**
 
@@ -1086,7 +1086,7 @@ git commit -m "feat(casino-3d): outcome engines — roulette, blackjack, baccara
 - [ ] **Step 5: Run tests (regression) + commit**
 
 ```bash
-node --test tests/ && node build.mjs
+node --test && node build.mjs
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio && git status --short
 git add portfolio/src/game/casino-game/calculator/prototype-3d
 git commit -m "feat(casino-3d): engine core — renderer, camera rig, room manager, picking, HUD wiring"
@@ -1176,7 +1176,7 @@ if (location.hash === '#gallery') {
 - [ ] **Step 4: Regression + commit**
 
 ```bash
-node --test tests/ && node build.mjs
+node --test && node build.mjs
 cd /Users/hillmanchan/Desktop/HillmanChan_portfolio && git status --short
 git add portfolio/src/game/casino-game/calculator/prototype-3d
 git commit -m "feat(casino-3d): procedural asset factory — cards, chips, dealer, plaque, room shell, #gallery QA mode"
@@ -1430,7 +1430,7 @@ The math invariant: **ball final world angle = 0** and **wheel final rotation pu
 From `portfolio/src/game/casino-game/calculator/prototype-3d/`:
 
 ```bash
-node --test tests/     # all logic + build tests PASS
+node --test     # all logic + build tests PASS
 node build.mjs         # regenerates index.html (~800KB–1MB)
 open index.html        # full manual checklist from Task 11
 ```
