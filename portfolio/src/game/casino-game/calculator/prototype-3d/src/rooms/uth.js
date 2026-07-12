@@ -469,13 +469,14 @@
           board, playerHole, dealerHole,
         );
 
+        // Credit payout immediately after settle, before banner — mid-banner exit cannot skip the credit
+        if (result.ret > 0) C.wallet.credit(result.ret);
+
         const title = result.cmp > 0 ? 'YOU WIN' : result.cmp === 0 ? 'PUSH' : 'DEALER WINS';
         const sub = O.HAND_NAMES[result.p.cat] + ' vs ' + O.HAND_NAMES[result.d.cat] +
           (bets.jackpot ? ' · Jackpot: no hit' : '');
         await app.banner(title, sub);
         if (app.roomGen !== gen) return;
-
-        if (result.ret > 0) C.wallet.credit(result.ret);
 
         dealtMeshes.forEach((m) => { app.scene.remove(m); disposeMesh(m); });
         dealtMeshes = [];
