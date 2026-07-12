@@ -10,6 +10,7 @@ const BUST_THRESHOLD = 100;
 function cooldownText(resetAvailableAt, nowMs) {
   if (!resetAvailableAt) return null;
   const ms = Date.parse(resetAvailableAt) - nowMs;
+  if (!Number.isFinite(ms)) return null;
   if (ms <= 0) return null;
   const totalMin = Math.ceil(ms / 60000);
   const h = Math.floor(totalMin / 60);
@@ -26,7 +27,10 @@ export function formatHud({ balance, canReset, resetAvailableAt }, nowMs) {
     return {
       state: "bust",
       balanceText: formatChips(balance),
-      showReset: cd === null && (canReset || balance < BUST_THRESHOLD),
+      // showReset is gated on the LOCALLY-recomputed cooldown (cd), so the button flips live
+      // as the cooldown elapses without needing a fresh server fetch; canReset from the
+      // server is a stale snapshot and intentionally not used here.
+      showReset: cd === null,
       cooldownText: cd,
     };
   }

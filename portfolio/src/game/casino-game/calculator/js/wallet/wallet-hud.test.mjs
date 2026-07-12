@@ -46,3 +46,23 @@ test("cooldown under a minute reads in minutes (rounds up to 1m)", () => {
   const h = formatHud({ balance: 0, canReset: false, resetAvailableAt: readyAt }, NOW);
   assert.equal(h.cooldownText, "1m");
 });
+
+test("boundary: balance exactly 100 is ok state, not bust", () => {
+  const h = formatHud({ balance: 100, canReset: false, resetAvailableAt: null }, NOW);
+  assert.equal(h.state, "ok");
+  assert.equal(h.showReset, false);
+});
+
+test("canReset ignored: stale server flag does not suppress button when cooldown is null", () => {
+  const h = formatHud({ balance: 0, canReset: false, resetAvailableAt: null }, NOW);
+  assert.equal(h.state, "bust");
+  assert.equal(h.showReset, true);
+  assert.equal(h.cooldownText, null);
+});
+
+test("malformed cooldown: bad ISO string renders no countdown, shows reset", () => {
+  const h = formatHud({ balance: 0, canReset: false, resetAvailableAt: "not-a-date" }, NOW);
+  assert.equal(h.state, "bust");
+  assert.equal(h.cooldownText, null);
+  assert.equal(h.showReset, true);
+});
