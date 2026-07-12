@@ -798,12 +798,16 @@ function renderDock(info, seat, phase) {
   // sitting out (only meaningful surface during betting)
   if (seat.sittingOut && phase === "betting") {
     const broke = seat.stack < info.table.minAnte * 2;
+    const stuck = info.local && !broke && seat.stack < info.table.minAnte * 3;
     el.dockContent.innerHTML = `
       <p class="uth-muted">You're sitting out.</p>
+      ${stuck ? `<p class="uth-bet-warning block">Only ${fmt(seat.stack)} chips left — a hand needs at least ${fmt(info.table.minAnte * 3)} (Ante + Blind + 1x Play). Reset to start fresh with ${fmt(info.table.buyIn)}.</p>` : ""}
       <div class="uth-actions">
         ${broke
           ? `<button class="uth-btn uth-btn-primary" data-action="rebuy">REBUY ${fmt(info.table.buyIn)}</button>`
-          : `<button class="uth-btn uth-btn-primary" data-action="sit-in">SIT IN</button>`}
+          : stuck
+            ? `<button class="uth-btn uth-btn-fold" data-action="reset-ask">RESET GAME</button>`
+            : `<button class="uth-btn uth-btn-primary" data-action="sit-in">SIT IN</button>`}
       </div>`;
     return;
   }
@@ -852,6 +856,14 @@ function renderDock(info, seat, phase) {
   if (phase === "betting") {
     if (seat.ready) {
       parts.push(`<p class="uth-muted">${info.local ? "Bets locked — dealing…" : "Bets locked — waiting for the other players…"}</p>`);
+    } else if (info.local && seat.stack < info.table.minAnte * 3) {
+      // solo trap zone: too few chips for Ante + Blind + the mandatory 1x
+      // Play reserve, and rebuy needs the stack below minAnte × 2
+      parts.push(`<p class="uth-bet-warning block">Only ${fmt(seat.stack)} chips left — a hand needs at least ${fmt(info.table.minAnte * 3)} (Ante + Blind + 1x Play). Reset to start fresh with ${fmt(info.table.buyIn)}.</p>`);
+      parts.push(`
+        <div class="uth-actions">
+          <button class="uth-btn uth-btn-fold" data-action="reset-ask">RESET GAME</button>
+        </div>`);
     } else {
       const chips = CHIPS.map(
         (v) => `
