@@ -70,10 +70,7 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
   const gate = mountGameGate({
     container: gameEl,
     onSignIn: () => bootstrap.signIn().catch((e) => { console.error(e); alert("Sign-in failed: " + (e?.code || e?.message || "try again")); }),
-    onReset: () => walletClient.reset().catch((e) => {
-      const when = e && e.retryAt ? ` (try again after ${new Date(e.retryAt).toLocaleTimeString()})` : "";
-      alert("Reset unavailable" + when);
-    }),
+    onReset: doReset,
     ...(lobbyHref ? { lobbyHref } : {}),
   });
 
@@ -85,6 +82,11 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
   let hudMounted = false;
   let readyFired = false;
 
+  const doReset = () => walletClient.reset().catch((e) => {
+    const when = e && e.retryAt ? ` (try again after ${new Date(e.retryAt).toLocaleTimeString()})` : "";
+    alert("Reset unavailable" + when);
+  });
+
   const refresh = () => {
     const state = computeGateState({
       authReady,
@@ -95,7 +97,7 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
     gate.update(state);
 
     if (signedIn && hudHost && !hudMounted) {
-      mountWalletHud(hudHost, walletClient, {});
+      mountWalletHud(hudHost, walletClient, { onReset: doReset });
       hudMounted = true;
     }
     if (state.mode === "ready" && !readyFired) {
