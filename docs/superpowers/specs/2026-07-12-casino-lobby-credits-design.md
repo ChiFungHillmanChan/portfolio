@@ -81,9 +81,9 @@ createdAt / updatedAt: ISO
 lastResetAt: ISO | null
 resetCount: number
 totalWagered / totalWon: number — lifetime counters (anomaly review, stats)
-openRounds: { [gameId]: { roundId, wager, at } }   — max one per game
+openRounds: { [gameId]: { roundId, bets, wager, at } }  — max one per game (at = epoch ms)
 lastRounds: { [gameId]: roundId }                  — idempotent retries
-lastNewRoundAt: { [gameId]: ISO }  — rate limiting (new rounds only)
+lastNewRoundAt: { [gameId]: epochMs }  — rate limiting (new rounds only)
 ```
 
 Security rules: client may READ its own doc only (same pattern as
@@ -97,9 +97,9 @@ All actions: Bearer Firebase ID token, Firestore transactions.
 | Action | Contract |
 |---|---|
 | `wallet-get` | → `{balance, resetAvailableAt}`. Creates doc with 100,000 chips on first call (idempotent transaction). |
-| `wallet-bet` | `{gameId, roundId, bets: {betType: amount, …}}` (wager = sum of amounts) → debits wager up front, records the open round with its bet breakdown. Same-roundId calls are additive top-ups (blackjack double/split, added side bets) and merge into the stored breakdown. Rejects: wager > balance, any amount outside that betType's fixed limits, or a NEW roundId < 2s after the previous new round (top-ups exempt from the rate limit). Opening a new roundId while another is open forfeits the old open wager (already debited — house keeps it). |
+| `wallet-bet` | `{gameId, roundId, bets: {betType: amount, …}}` (wager = sum of amounts) → debits wager up front, records the open round with its bet breakdown. Same-roundId calls are additive top-ups (blackjack double/split) merging into the stored breakdown; top-ups may only grow betTypes already present in the open round (no post-deal side-bet additions), bounded per type by max × mergeFactor (8 for blackjack mains, 1 otherwise). Rejects: wager > balance, any initial amount outside that betType's fixed limits, or a NEW roundId < 2s after the previous new round (top-ups exempt from the rate limit). Opening a new roundId while another is open forfeits the old open wager (already debited — house keeps it). |
 | `wallet-payout` | `{gameId, payout, roundId}` → credits payout, closes round, updates `lastRounds`. Validates: roundId matches the open round; payout ≤ Σ(betType amount × that betType's max return from the game's published pay table). Duplicate roundId (retry) → returns current balance, no double-credit. |
-| `wallet-reset` | Allowed iff balance < 100 AND now − lastResetAt ≥ 6h (env `WALLET_RESET_COOLDOWN_HOURS`, default 6). Sets balance = 5,000 (env `WALLET_RESET_CHIPS`), stamps lastResetAt, resetCount++. Otherwise 403 with `resetAvailableAt`. |
+| `wallet-reset` | Allowed iff balance < 100 AND now − lastResetAt ≥ 6h (env `WALLET_RESET_COOLDOWN_HOURS`, default 6). Sets balance = 5,000 (env `WALLET_RESET_CHIPS`), stamps lastResetAt, resetCount++. Otherwise 403 with `retryAt` (ISO). |
 | `admin-adjust-wallet` | Superadmin only (same `assertSuperadmin` as other admin actions): set or add chips for `targetUid`. `admin-list-users` additionally returns wallet balance. |
 
 Signup grant (env `WALLET_SIGNUP_CHIPS`, default 100,000).
@@ -144,7 +144,7 @@ New `calculator/js/wallet/`:
 | Ultimate Hold'em | `uth` | ante = blind 100–1,000 (step 100) · trips 100–5,000 · jackpot flat 100 · buy-in 10,000 (escrowed from wallet) |
 
 Payout caps derive from each game's published pay tables (e.g. roulette
-straight-up 35:1 → cap ×36 return; baccarat Dragon 7 40:1 → ×41; blackjack
+straight-up 35:1 → cap ×36 return; baccarat Dragon Bonus 30:1 → ×31; blackjack
 3:2 with split/double top-ups already debited via `wallet-bet`).
 
 All stake numbers are constants in `table-config.js` + the cg-poker mirror —
