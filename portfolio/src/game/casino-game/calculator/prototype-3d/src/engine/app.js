@@ -12,9 +12,11 @@
   const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
 
   C.app = {
-    scene: null, camera: null, camTarget: null, renderer: null,
+    scene: null, camera: null, camTarget: null, renderer: null, roomGen: 0,
 
     init() {
+      // r149 gotcha: legacyMode=true double-encodes hex colors under sRGB output — must be off before any THREE.Color is constructed
+      THREE.ColorManagement.legacyMode = false;
       const canvas = document.getElementById('stage');
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
       renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2));
@@ -116,6 +118,8 @@
           });
         });
       }
+      C.app.roomGen++;
+      frameHooks.clear();
       currentRoom = name;
       document.getElementById('roomTitle').textContent = C.rooms[name].title;
       document.getElementById('backBtn').hidden = name === 'lobby';

@@ -422,9 +422,11 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
 
   C.app = {
-    scene: null, camera: null, camTarget: null, renderer: null,
+    scene: null, camera: null, camTarget: null, renderer: null, roomGen: 0,
 
     init() {
+      // r149 gotcha: legacyMode=true double-encodes hex colors under sRGB output — must be off before any THREE.Color is constructed
+      THREE.ColorManagement.legacyMode = false;
       const canvas = document.getElementById('stage');
       const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
       renderer.setPixelRatio(Math.min(devicePixelRatio, IS_MOBILE ? 1.5 : 2));
@@ -526,6 +528,8 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
           });
         });
       }
+      C.app.roomGen++;
+      frameHooks.clear();
       currentRoom = name;
       document.getElementById('roomTitle').textContent = C.rooms[name].title;
       document.getElementById('backBtn').hidden = name === 'lobby';
@@ -570,13 +574,6 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 // ===== src/engine/assets.js =====
 (() => {
   const C = (globalThis.CASINO ??= {});
-  // r149 defaults ColorManagement.legacyMode = true, which skips sRGB-decoding
-  // hex/CSS color strings on construction. Combined with the renderer's
-  // outputEncoding = sRGBEncoding (app.js), that double-encodes every material
-  // color — dark tones wash out badly (e.g. '#1a1a1a' renders mid-gray,
-  // '#5a1f1a' renders as pink). Turning legacy mode off makes THREE.Color
-  // decode hex strings correctly so authored colors render as authored.
-  if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
 
   // ---------- canvas texture ----------
   function canvasTexture(w, h, draw) {
@@ -1028,12 +1025,15 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   // ---------- dealing animation ----------
   function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0 } = {}) {
     return new Promise((resolve) => {
+      const gen = app.roomGen;
       cardMesh.position.set(...from);
       app.scene.add(cardMesh);
       const ease = C.tween.easings.outCubic;
       const start = () => {
         const t0 = performance.now();
+        if (app.roomGen !== gen) return resolve();
         const hook = (dt, elapsed) => {
+          if (app.roomGen !== gen) { app.offFrame(hook); return resolve(); }
           const t = Math.min(1, (performance.now() - t0) / ms);
           const e = ease(t);
           cardMesh.position.x = from[0] + (to[0] - from[0]) * e;

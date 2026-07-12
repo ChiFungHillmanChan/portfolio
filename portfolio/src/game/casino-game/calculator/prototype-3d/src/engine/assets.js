@@ -1,12 +1,5 @@
 (() => {
   const C = (globalThis.CASINO ??= {});
-  // r149 defaults ColorManagement.legacyMode = true, which skips sRGB-decoding
-  // hex/CSS color strings on construction. Combined with the renderer's
-  // outputEncoding = sRGBEncoding (app.js), that double-encodes every material
-  // color — dark tones wash out badly (e.g. '#1a1a1a' renders mid-gray,
-  // '#5a1f1a' renders as pink). Turning legacy mode off makes THREE.Color
-  // decode hex strings correctly so authored colors render as authored.
-  if (THREE.ColorManagement) THREE.ColorManagement.legacyMode = false;
 
   // ---------- canvas texture ----------
   function canvasTexture(w, h, draw) {
@@ -458,12 +451,15 @@
   // ---------- dealing animation ----------
   function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0 } = {}) {
     return new Promise((resolve) => {
+      const gen = app.roomGen;
       cardMesh.position.set(...from);
       app.scene.add(cardMesh);
       const ease = C.tween.easings.outCubic;
       const start = () => {
         const t0 = performance.now();
+        if (app.roomGen !== gen) return resolve();
         const hook = (dt, elapsed) => {
+          if (app.roomGen !== gen) { app.offFrame(hook); return resolve(); }
           const t = Math.min(1, (performance.now() - t0) / ms);
           const e = ease(t);
           cardMesh.position.x = from[0] + (to[0] - from[0]) * e;
