@@ -150,3 +150,16 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .rspot:hover { outline: 2px solid #f0d878; }
 .rspot .badge { position: absolute; top: -7px; right: -5px; min-width: 26px; padding: 1px 4px;
   border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
+
+@media (max-width: 768px) {
+  .bet-panel { max-height: 62vh; padding: .7rem .6rem; border-radius: 10px 10px 0 0; margin-bottom: 0; }
+  .rgrid { grid-template-columns: repeat(14, minmax(22px, 1fr)); font-size: .7rem; overflow-x: auto; }
+  .chip-btn { width: 46px; height: 46px; }
+  #walletPill { font-size: .9rem; padding: .35rem .8rem; }
+  #roomTitle { font-size: .75rem; letter-spacing: .18em; }
+  #banner { width: 92vw; padding: .9rem 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bet-overlay { transition: opacity .2s; }
+}

@@ -464,6 +464,7 @@
 
   // ---------- dealing animation ----------
   function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0 } = {}) {
+    if (app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
       const gen = app.roomGen;
       cardMesh.position.set(...from);
@@ -482,7 +483,7 @@
           cardMesh.position.y = base + 0.25 * 4 * t * (1 - t);
           if (t >= 1) {
             app.offFrame(hook);
-            if (flip) cardMesh.userData.flip(220, resolve);
+            if (flip) cardMesh.userData.flip(Math.min(220, app.REDUCED ? 180 : 220), resolve);
             else resolve();
           }
         };

@@ -93,6 +93,7 @@
   // existing userData.flip() only ever tweens rotation.y), same helper as
   // baccarat.js/blackjack.js's flipFlatCard.
   function flipFlatCard(mesh, ms) {
+    if (C.app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
       const baseY = mesh.position.y;
       C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {

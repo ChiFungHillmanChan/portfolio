@@ -156,6 +156,19 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .rspot:hover { outline: 2px solid #f0d878; }
 .rspot .badge { position: absolute; top: -7px; right: -5px; min-width: 26px; padding: 1px 4px;
   border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
+
+@media (max-width: 768px) {
+  .bet-panel { max-height: 62vh; padding: .7rem .6rem; border-radius: 10px 10px 0 0; margin-bottom: 0; }
+  .rgrid { grid-template-columns: repeat(14, minmax(22px, 1fr)); font-size: .7rem; overflow-x: auto; }
+  .chip-btn { width: 46px; height: 46px; }
+  #walletPill { font-size: .9rem; padding: .35rem .8rem; }
+  #roomTitle { font-size: .75rem; letter-spacing: .18em; }
+  #banner { width: 92vw; padding: .9rem 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bet-overlay { transition: opacity .2s; }
+}
 </style>
 </head>
 <body>
@@ -1116,6 +1129,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 
   // ---------- dealing animation ----------
   function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0 } = {}) {
+    if (app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
       const gen = app.roomGen;
       cardMesh.position.set(...from);
@@ -1134,7 +1148,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
           cardMesh.position.y = base + 0.25 * 4 * t * (1 - t);
           if (t >= 1) {
             app.offFrame(hook);
-            if (flip) cardMesh.userData.flip(220, resolve);
+            if (flip) cardMesh.userData.flip(Math.min(220, app.REDUCED ? 180 : 220), resolve);
             else resolve();
           }
         };
@@ -1933,6 +1947,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   // cheap visual flourish; it doesn't touch rotation and can't affect where
   // the card ends up.
   function flipFlatCard(mesh, ms) {
+    if (C.app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
       const baseY = mesh.position.y;
       C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
@@ -2459,6 +2474,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   // existing userData.flip() only ever tweens rotation.y), same helper as
   // blackjack.js's flipFlatCard -- a brief lift-then-settle purely cosmetic.
   function flipFlatCard(mesh, ms) {
+    if (C.app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
       const baseY = mesh.position.y;
       C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
@@ -2938,6 +2954,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   // existing userData.flip() only ever tweens rotation.y), same helper as
   // baccarat.js/blackjack.js's flipFlatCard.
   function flipFlatCard(mesh, ms) {
+    if (C.app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
       const baseY = mesh.position.y;
       C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
