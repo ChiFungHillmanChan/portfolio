@@ -152,6 +152,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
 
 /* Hand mirror (crisp 2D duplicate of the 3D hands) */
+.hand-mirror[hidden] { display: none; }
 .hand-mirror { position: fixed; top: 3.4rem; right: 1rem; z-index: 23; display: flex;
   flex-direction: column; gap: .55rem; padding: .7rem .8rem; min-width: 180px;
   background: rgba(10,8,4,.88); border: 1px solid #c9a227; border-radius: 8px;

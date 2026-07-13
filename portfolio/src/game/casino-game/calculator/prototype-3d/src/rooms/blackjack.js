@@ -1,5 +1,6 @@
 (() => {
   const C = (globalThis.CASINO ??= {});
+  const L = C.layouts.blackjack;
 
   const TABLE_R = 1.6;
   const RAIL_H = 0.8;
@@ -11,14 +12,11 @@
   const GHOST_SEATS = [1, 5];
   const GHOST_R = TABLE_R - 0.35;
 
-  const SHOE_POS = [1.1, 0.83, -0.75];
-  const PLAYER_BASE = [0.35, 0.86, 0.35];
-  const DEALER_BASE = [-0.15, 0.86, -0.55];
-  const FAN_DX = 0.11;
+  const SHOE_POS = L.shoePos;
+  const POSE_DEAL = L.poseDeal;
 
   const WIDE_POSE = { pos: [0.6, 2.6, 5.2], look: [0, 1, -0.4] };
   const POSE_SEAT = { pos: [0.45, 1.28, 1.55], look: [0, 0.85, -0.6] };
-  const POSE_DEAL = { pos: [0.2, 1.5, 1.1], look: [0, 0.86, -0.5] };
 
   const REASON_COPY = {
     'main-range': 'Main bet 500 – 10,000',
@@ -38,32 +36,23 @@
     const a = seatAngle(i);
     return [Math.cos(a) * r, Math.sin(a) * r];
   }
-  function cardPos(base, idx) {
-    return [base[0] + idx * FAN_DX, base[1], base[2]];
-  }
-
-  // Reveal the hole card: rotation.x stays fixed at -PI/2 throughout (never
-  // touched), so the existing userData.flip() (which only ever tweens
-  // rotation.y) sweeps the flat card face-down -> up-on-edge -> face-up in
-  // place -- verified empirically against real THREE.js output (see report).
-  // Layered on top: a brief lift (+0.05 y, up then back down) purely as a
-  // cheap visual flourish; it doesn't touch rotation and can't affect where
-  // the card ends up.
-  function flipFlatCard(mesh, ms) {
-    if (C.app.REDUCED) ms = Math.min(ms, 180);
-    return new Promise((resolve) => {
-      const baseY = mesh.position.y;
-      C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
-        C.tween.to(mesh.position, { y: baseY }, ms / 2, 'outQuart');
-      });
-      mesh.userData.flip(ms, resolve);
-    });
+  // slots come from C.layouts.blackjack (L.playerSlots / L.dealerSlots): the
+  // first N cards land on their fixed painted-box positions; the 3rd+ card
+  // (hits) fans out to the right of the last box by L.fanDx per card.
+  function cardPos(slots, idx) {
+    if (idx < slots.length) return slots[idx];
+    const last = slots[slots.length - 1];
+    return [last[0] + (idx - slots.length + 1) * L.fanDx, last[1], last[2]];
   }
 
   // ---------- betting overlay ----------
-  function makeOverlay(onDeal) {
+  function makeOverlay(onDeal, stacks) {
     const bets = { main: 0, perfectPair: 0, twentyOnePlusThree: 0 };
     const history = [];
+    // per-spot denomination history, mirrored 1:1 into the 3D chip stacks
+    // (stacks.add/removeTop/clear below) so the 2D badge, the 2D chip icons,
+    // and the 3D felt chips never drift out of sync under UNDO/CLEAR.
+    const placed = { main: [], perfectPair: [], twentyOnePlusThree: [] };
     let selectedDenom = 100;
 
     const root = document.createElement('div');
@@ -127,17 +116,23 @@
     function placeBet(id) {
       bets[id] = (bets[id] || 0) + selectedDenom;
       history.push({ id, amt: selectedDenom });
+      placed[id].push(selectedDenom);
+      stacks.add(id, selectedDenom);
       refresh();
     }
     undoBtn.addEventListener('click', () => {
       const last = history.pop();
       if (!last) return;
       bets[last.id] -= last.amt;
+      placed[last.id].pop();
+      stacks.removeTop(last.id);
       refresh();
     });
     clearBtn.addEventListener('click', () => {
       bets.main = 0; bets.perfectPair = 0; bets.twentyOnePlusThree = 0;
       history.length = 0;
+      Object.values(placed).forEach((a) => (a.length = 0));
+      stacks.clear();
       refresh();
     });
     dealBtn.addEventListener('click', () => {
@@ -161,6 +156,7 @@
         } else if (badge) {
           badge.remove();
         }
+        C.hud.renderChips(el, placed[el.dataset.spot] || []);
       });
       const v = C.validate.blackjack(bets);
       const allZero = bets.main === 0 && bets.perfectPair === 0 && bets.twentyOnePlusThree === 0;
@@ -180,6 +176,10 @@
     function resetBets() {
       bets.main = 0; bets.perfectPair = 0; bets.twentyOnePlusThree = 0;
       history.length = 0;
+      // Clear the local denom-history only -- the 3D stacks were already
+      // consumed (paid out / lost / pushed) by settle()'s stacks.settle()
+      // calls, so calling stacks.clear() here would double-remove them.
+      Object.values(placed).forEach((a) => (a.length = 0));
       refresh();
     }
 
@@ -189,6 +189,8 @@
   // ---------- room ----------
   let dealerHook = null;
   let ui = null;
+  let stacks = null;
+  let mirror = null;
   let actionsEl = null;
   let dealtMeshes = [];
 
@@ -254,6 +256,27 @@
       rim.castShadow = true; rim.receiveShadow = true;
       scene.add(rim);
 
+      // painted card boxes + bet spots — positions ARE the deal/chip targets
+      [...L.playerSlots, ...L.dealerSlots].forEach((slot) => {
+        const box = C.cards.makeCardBoxDecal();
+        box.position.set(slot[0], L.feltY + 0.002, slot[2]);
+        scene.add(box);
+      });
+      Object.values(L.spots).forEach(({ pos, r, label }) => {
+        const decal = C.chips.makeSpotDecal({ label, r });
+        decal.position.set(pos[0], L.feltY + 0.002, pos[2]);
+        scene.add(decal);
+      });
+      stacks = C.chips.createBetStacks(app, {
+        getSpotPos: (id) => L.spots[id].pos,
+        source: L.chipSource,
+        dealerPos: L.dealerChipPos,
+      });
+      mirror = C.hud.createMirror([
+        { id: 'dealer', label: 'DEALER' },
+        { id: 'player', label: 'YOUR HAND' },
+      ]);
+
       // dealer (default pose already faces +Z, i.e. toward the table/camera)
       const dealer = A.makeDealer();
       dealer.position.set(0, 0, -1.3);
@@ -290,7 +313,7 @@
         const chips = A.makeChipStack(500, 4);
         chips.position.set(Math.cos(a) * GHOST_R, FELT_Y + 0.02, Math.sin(a) * GHOST_R);
         scene.add(chips);
-        const card = A.makeCard(null);
+        const card = C.cards.makeCard(null);
         card.rotation.x = -Math.PI / 2;
         const cardR = GHOST_R - 0.2;
         card.position.set(Math.cos(a) * cardR, FELT_Y + 0.015, Math.sin(a) * cardR);
@@ -314,12 +337,24 @@
 
       setTimeout(() => {
         if (app.roomGen !== gen) return;   // room switched during the delay
-        ui = makeOverlay(startRound);
+        ui = makeOverlay(startRound, stacks);
         app.setOverlay(ui.el);
       }, 800);
 
       // ---------- round state (reset at the top of every startRound) ----------
       let bets = null, shoe = null, playerHand = [], dealerHand = [], ppRet = 0, tptRet = 0;
+
+      // Fires the dealer's arm-sweep + head-turn toward a world position,
+      // timed to line up with a card's flight (delay matches the dealCardTo
+      // stagger it accompanies). Re-entrant/roomGen-guarded helpers live on
+      // the dealer mesh itself (assets.js) -- this just schedules the call.
+      const gesture = (pos, delay = 0) => {
+        setTimeout(() => {
+          if (app.roomGen !== gen) return;
+          dealer.userData.dealGesture(app, pos);
+          dealer.userData.lookToward(app, pos);
+        }, delay);
+      };
 
       function showActions() {
         actionsEl = document.createElement('div');
@@ -345,14 +380,17 @@
           acting = true;
           hitBtn.disabled = true; standBtn.disabled = true;
           const card = shoe.pop();
-          const mesh = A.makeCard(card);
+          const mesh = C.cards.makeCard(card);
           mesh.rotation.x = -Math.PI / 2; // lie flat, face up
           const idx = playerHand.length;
           playerHand.push({ card, mesh });
           dealtMeshes.push(mesh);
-          await A.dealCardTo(app, mesh, SHOE_POS, cardPos(PLAYER_BASE, idx), { ms: 420 });
+          const to = cardPos(L.playerSlots, idx);
+          gesture(to, 0);
+          await C.cards.dealCardTo(app, mesh, SHOE_POS, to, { ms: 420 });
           if (app.roomGen !== gen) return;
           const v = O.handValue(playerHand.map((h) => h.card));
+          mirror.set('player', playerHand.map((h) => h.card), 'TOTAL ' + v.total + (v.soft ? ' (soft)' : ''));
           if (v.total > 21) {
             hideActions();
             await settle();
@@ -376,7 +414,7 @@
 
       async function dealInitial() {
         const pc1 = shoe.pop(), dc1 = shoe.pop(), pc2 = shoe.pop(), dc2 = shoe.pop();
-        const pm1 = A.makeCard(pc1), dm1 = A.makeCard(dc1), pm2 = A.makeCard(pc2), dm2 = A.makeCard(dc2);
+        const pm1 = C.cards.makeCard(pc1), dm1 = C.cards.makeCard(dc1), pm2 = C.cards.makeCard(pc2), dm2 = C.cards.makeCard(dc2);
         // lie flat on the felt, face up -- same rotation.x used by the static
         // ghost cards (verified empirically: rotation.x=-PI/2 alone puts the
         // face-mesh normal at world (0,1,0), matching the felt's own "up").
@@ -388,31 +426,45 @@
         dealtMeshes.push(pm1, dm1, pm2, dm2);
 
         const ms = 420, stagger = 320;
+        gesture(cardPos(L.playerSlots, 0), 0);
+        gesture(cardPos(L.dealerSlots, 0), stagger);
+        gesture(cardPos(L.playerSlots, 1), stagger * 2);
+        gesture(cardPos(L.dealerSlots, 1), stagger * 3);
         await Promise.all([
-          A.dealCardTo(app, pm1, SHOE_POS, cardPos(PLAYER_BASE, 0), { ms, delay: 0 }),
-          A.dealCardTo(app, dm1, SHOE_POS, cardPos(DEALER_BASE, 0), { ms, delay: stagger }),
-          A.dealCardTo(app, pm2, SHOE_POS, cardPos(PLAYER_BASE, 1), { ms, delay: stagger * 2 }),
-          A.dealCardTo(app, dm2, SHOE_POS, cardPos(DEALER_BASE, 1), { ms, delay: stagger * 3 }),
+          C.cards.dealCardTo(app, pm1, SHOE_POS, cardPos(L.playerSlots, 0), { ms, delay: 0 }),
+          C.cards.dealCardTo(app, dm1, SHOE_POS, cardPos(L.dealerSlots, 0), { ms, delay: stagger }),
+          C.cards.dealCardTo(app, pm2, SHOE_POS, cardPos(L.playerSlots, 1), { ms, delay: stagger * 2 }),
+          C.cards.dealCardTo(app, dm2, SHOE_POS, cardPos(L.dealerSlots, 1), { ms, delay: stagger * 3 }),
         ]);
+        if (app.roomGen !== gen) return;   // room exited mid-deal -- mirror is gone
+
+        mirror.set('player', [pc1, pc2], 'TOTAL ' + O.handValue([pc1, pc2]).total);
+        mirror.set('dealer', [dc1, null], 'SHOWING ' + O.handValue([dc1]).total);
       }
 
       async function resolveDealer() {
-        await flipFlatCard(dealerHand[1].mesh, 350);
+        await C.cards.flipFlatCard(app, dealerHand[1].mesh, 350);
         if (app.roomGen !== gen) return;
+
+        mirror.set('dealer', dealerHand.map((h) => h.card), 'TOTAL ' + O.handValue(dealerHand.map((h) => h.card)).total);
 
         const dealerRaw = dealerHand.map((h) => h.card);
         const before = dealerRaw.length;
         O.dealerPlay(dealerRaw, shoe);
         const newCards = dealerRaw.slice(before);
         const flights = newCards.map((card, i) => {
-          const mesh = A.makeCard(card);
+          const mesh = C.cards.makeCard(card);
           mesh.rotation.x = -Math.PI / 2; // lie flat, face up
           dealerHand.push({ card, mesh });
           dealtMeshes.push(mesh);
-          return A.dealCardTo(app, mesh, SHOE_POS, cardPos(DEALER_BASE, before + i), { ms: 420, delay: i * 500 });
+          const to = cardPos(L.dealerSlots, before + i);
+          gesture(to, i * 500);
+          return C.cards.dealCardTo(app, mesh, SHOE_POS, to, { ms: 420, delay: i * 500 });
         });
         await Promise.all(flights);
         if (app.roomGen !== gen) return;
+
+        mirror.set('dealer', dealerHand.map((h) => h.card), 'TOTAL ' + O.handValue(dealerHand.map((h) => h.card)).total);
 
         await settle();
       }
@@ -441,9 +493,26 @@
         const sub = (ret > 0 ? 'You win ' + ret.toLocaleString() : 'No win') +
           (sideWins.length ? ' — ' + sideWins.join(', ') : '');
 
+        // Per-spot chip settlement, run CONCURRENTLY with the banner (chips are
+        // purely visual -- the wallet credit above already used `ret`, computed
+        // the same way; settleBlackjack is a pure function of the already-final
+        // hands so calling it again here is safe).
+        const mainRet = O.settleBlackjack({ main: bets.main }, playerRaw, dealerRaw);
+        const spotOutcome = (spotAmt, retAmt) =>
+          spotAmt === 0 ? null : retAmt === 0 ? 'lose' : retAmt === spotAmt ? 'push' : 'win';
+        const settles = [
+          ['main', spotOutcome(bets.main, mainRet), Math.max(0, mainRet - bets.main)],
+          ['perfectPair', spotOutcome(bets.perfectPair, ppRet), Math.max(0, ppRet - bets.perfectPair)],
+          ['twentyOnePlusThree', spotOutcome(bets.twentyOnePlusThree, tptRet), Math.max(0, tptRet - bets.twentyOnePlusThree)],
+        ].filter(([, o]) => o);
+        const chipsDone = Promise.all(settles.map(([id, o, extra]) => stacks.settle(id, o, extra)));
+
         hideActions();
         await app.banner(title, sub);
         if (app.roomGen !== gen) return;
+
+        await chipsDone;
+        mirror.hide();
 
         dealtMeshes.forEach((m) => { app.scene.remove(m); disposeMesh(m); });
         dealtMeshes = [];
@@ -463,6 +532,8 @@
 
         ui.el.classList.add('hidden-down');
         app.flyTo(POSE_DEAL, 800);
+        mirror.clear();
+        mirror.show();
 
         await dealInitial();
         if (app.roomGen !== gen) return;          // room exited mid-deal
@@ -486,6 +557,8 @@
       if (actionsEl) { actionsEl.remove(); actionsEl = null; }
       dealtMeshes = [];
       ui = null;
+      stacks?.disposeAll(); stacks = null;
+      mirror?.destroy(); mirror = null;
     },
   };
 })();
