@@ -157,6 +157,32 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .rspot .badge { position: absolute; top: -7px; right: -5px; min-width: 26px; padding: 1px 4px;
   border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
 
+/* Hand mirror (crisp 2D duplicate of the 3D hands) */
+.hand-mirror { position: fixed; top: 3.4rem; right: 1rem; z-index: 23; display: flex;
+  flex-direction: column; gap: .55rem; padding: .7rem .8rem; min-width: 180px;
+  background: rgba(10,8,4,.88); border: 1px solid #c9a227; border-radius: 8px;
+  box-shadow: 0 6px 30px rgba(0,0,0,.6); }
+.hm-label { font-size: .68rem; letter-spacing: .2em; color: #b8ad98; margin-bottom: .25rem; }
+.hm-cards { display: flex; gap: .3rem; flex-wrap: wrap; }
+.hm-note { margin-top: .25rem; font-size: .8rem; color: #f0d878; letter-spacing: .08em; min-height: 1em; }
+.mc { position: relative; width: 34px; height: 48px; border-radius: 4px; background: #f8f6ee;
+  color: #141414; box-shadow: 0 1px 3px rgba(0,0,0,.5); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-family: Georgia, serif; }
+.mc.red { color: #c0392b; }
+.mc.back { background: repeating-linear-gradient(45deg, #1e3a8a 0 4px, #2b4a9d 4px 8px);
+  border: 2px solid #c9a227; }
+.mc-r { font-size: 1rem; font-weight: bold; line-height: 1; }
+.mc-s { font-size: .85rem; line-height: 1; }
+
+/* 2D chip stacks inside bet spots */
+.chips2d { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  width: 38px; height: 60px; pointer-events: none; }
+.chip2d { position: absolute; left: 0; width: 38px; height: 38px; border-radius: 50%;
+  border: 3px dashed #fff; display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; color: #fff; text-shadow: 0 1px 2px #000; box-shadow: 0 1px 2px rgba(0,0,0,.55); }
+.chip2d.c100 { background: #2e6db4; } .chip2d.c500 { background: #8e44ad; }
+.chip2d.c1000 { background: #c0392b; } .chip2d.c5000 { background: #b8860b; }
+
 @media (max-width: 768px) {
   .bet-panel { max-height: 62vh; padding: .7rem .6rem; border-radius: 10px 10px 0 0; margin-bottom: 0; }
   .rgrid { grid-template-columns: repeat(14, minmax(22px, 1fr)); font-size: .7rem; overflow-x: auto; }
@@ -164,6 +190,9 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   #walletPill { font-size: .9rem; padding: .35rem .8rem; }
   #roomTitle { font-size: .75rem; letter-spacing: .18em; }
   #banner { width: 92vw; padding: .9rem 1rem; }
+  .hand-mirror { top: 2.9rem; left: .5rem; right: .5rem; flex-direction: row;
+    justify-content: center; gap: 1.2rem; min-width: 0; padding: .45rem .5rem; }
+  .mc { width: 26px; height: 38px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1539,6 +1568,87 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   C.chips = { CHIP_COLORS, makeChip, makeChipStack, makeSpotDecal, createBetStacks };
   C.assets.makeChip = makeChip;
   C.assets.makeChipStack = makeChipStack;
+})();
+
+
+// ===== src/engine/hud.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+  const CHIP_CLASS = { 100: 'c100', 500: 'c500', 1000: 'c1000', 5000: 'c5000' };
+
+  function miniCard(card) {
+    const el = document.createElement('div');
+    if (!card) { el.className = 'mc back'; return el; }
+    const red = card.s === 1 || card.s === 2;
+    el.className = 'mc' + (red ? ' red' : '');
+    const rank = document.createElement('span');
+    rank.className = 'mc-r';
+    rank.textContent = C.outcomes.RANK_LABEL[card.r];
+    const suit = document.createElement('span');
+    suit.className = 'mc-s';
+    suit.textContent = C.outcomes.SUIT_CHAR[card.s];
+    el.append(rank, suit);
+    return el;
+  }
+
+  // sections: [{ id: 'dealer', label: 'DEALER' }, ...]
+  function createMirror(sections) {
+    const el = document.createElement('div');
+    el.className = 'hand-mirror';
+    el.hidden = true;
+    const secEls = {};
+    for (const s of sections) {
+      const sec = document.createElement('div');
+      sec.className = 'hm-sec';
+      const label = document.createElement('div');
+      label.className = 'hm-label';
+      label.textContent = s.label;
+      const cards = document.createElement('div');
+      cards.className = 'hm-cards';
+      const note = document.createElement('div');
+      note.className = 'hm-note';
+      sec.append(label, cards, note);
+      el.appendChild(sec);
+      secEls[s.id] = { sec, cards, note };
+    }
+    document.body.appendChild(el);
+    return {
+      el,
+      set(id, cards, note = '') {
+        const s = secEls[id];
+        if (!s) return;
+        s.cards.replaceChildren(...cards.map(miniCard));
+        s.note.textContent = note;
+      },
+      clear() {
+        Object.values(secEls).forEach((s) => { s.cards.replaceChildren(); s.note.textContent = ''; });
+      },
+      show() { el.hidden = false; },
+      hide() { el.hidden = true; },
+      destroy() { el.remove(); },
+    };
+  }
+
+  // 2D chip stack inside a bet spot: bottom-anchored, 3px vertical offset per
+  // chip, visual cap 8 (the numeric badge stays exact).
+  function renderChips(spotEl, denoms) {
+    let wrap = spotEl.querySelector('.chips2d');
+    if (!denoms.length) { wrap?.remove(); return; }
+    if (!wrap) {
+      wrap = document.createElement('div');
+      wrap.className = 'chips2d';
+      spotEl.appendChild(wrap);
+    }
+    wrap.replaceChildren(...denoms.slice(-8).map((v, i) => {
+      const chip = document.createElement('div');
+      chip.className = 'chip2d ' + (CHIP_CLASS[v] || 'c100');
+      chip.style.bottom = i * 3 + 'px';
+      chip.textContent = v >= 1000 ? v / 1000 + 'K' : String(v);
+      return chip;
+    }));
+  }
+
+  C.hud = { miniCard, createMirror, renderChips };
 })();
 
 
