@@ -86,43 +86,6 @@
     return new THREE.MeshStandardMaterial({ map: tx, roughness: 0.9, metalness: 0 });
   }
 
-  // ---------- chips ----------
-  const CHIP_COLORS = { 100: '#2e6db4', 500: '#8e44ad', 1000: '#c0392b', 5000: '#b8860b' };
-
-  function makeChip(value) {
-    const color = CHIP_COLORS[value] || '#555555';
-    const topTx = canvasTexture(128, 128, (ctx) => {
-      ctx.fillStyle = color; ctx.fillRect(0, 0, 128, 128);
-      ctx.strokeStyle = '#fff'; ctx.lineWidth = 6; ctx.setLineDash([10, 8]);
-      ctx.beginPath(); ctx.arc(64, 64, 50, 0, Math.PI * 2); ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.fillStyle = '#fff';
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 30px Georgia, serif';
-      ctx.fillText(value >= 1000 ? `${value / 1000}K` : String(value), 64, 68);
-    });
-    const sideMat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.15 });
-    const topMat = new THREE.MeshStandardMaterial({ map: topTx, roughness: 0.35, metalness: 0.1 });
-    const geo = new THREE.CylinderGeometry(0.034, 0.034, 0.007, 32);
-    const mesh = new THREE.Mesh(geo, [sideMat, topMat, sideMat]);
-    mesh.castShadow = true; mesh.receiveShadow = true;
-    mesh.userData.value = value;
-    return mesh;
-  }
-
-  function makeChipStack(value, n) {
-    const group = new THREE.Group();
-    for (let i = 0; i < n; i++) {
-      const chip = makeChip(value);
-      chip.position.y = i * 0.0072;
-      chip.rotation.y = Math.random() * 0.3 - 0.15;
-      group.add(chip);
-    }
-    group.userData.value = value;
-    group.userData.count = n;
-    return group;
-  }
-
   // ---------- stool ----------
   function makeStool() {
     const group = new THREE.Group();
@@ -387,7 +350,7 @@
 
   C.assets = {
     canvasTexture, roundRect, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
-    makeChip, makeChipStack, makeStool, makeDealer, makePlaque,
+    makeStool, makeDealer, makePlaque,
     makeRoomShell, makeSign,
   };
 })();
