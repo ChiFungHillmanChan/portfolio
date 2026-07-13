@@ -111,14 +111,6 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
   min-width: 30px; padding: 1px 4px; border-radius: 999px; background: #f0d878; color: #1a1208;
   font-size: .68rem; text-align: center; }
 
-/* Baccarat floating total tags (shown mid-deal, removed between rounds / on exit) */
-.bac-tag { position: fixed; z-index: 24; padding: .35rem .9rem; border-radius: 6px;
-  background: rgba(10,8,4,.85); border: 1px solid #c9a227; color: #f0d878;
-  font-size: .95rem; letter-spacing: .08em; pointer-events: none;
-  transform: translate(-50%, -50%); }
-.bac-tag.player { left: 39%; top: 64%; }
-.bac-tag.banker { left: 61%; top: 64%; }
-
 /* UTH betting spots */
 .uth-spots { display: flex; align-items: center; justify-content: center; gap: 1.4rem;
   margin: .6rem 0 1rem; user-select: none; }
