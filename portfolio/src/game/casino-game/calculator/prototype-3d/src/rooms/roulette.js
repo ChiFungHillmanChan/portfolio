@@ -232,9 +232,15 @@
   }
 
   // ---------- betting overlay ----------
-  function makeOverlay(onSpin) {
+  function makeOverlay(onSpin, stacks) {
     const bets = {};
     const history = [];
+    // per-spot denomination history, mirrored 1:1 into the 3D chip stacks
+    // (stacks.add/removeTop/clear below) so the 2D badge, the 2D chip-mini
+    // dot, and the 3D felt chips never drift out of sync under UNDO/CLEAR.
+    // Built lazily (spot ids are dynamic: n0..n36, c1-c3, d1-d3, outside) --
+    // `placed[id] || []` in refresh() handles never-touched spots.
+    const placed = {};
     let selectedDenom = 100;
 
     const root = document.createElement('div');
@@ -325,6 +331,8 @@
     function placeBet(id) {
       bets[id] = (bets[id] || 0) + selectedDenom;
       history.push({ id, amt: selectedDenom });
+      (placed[id] ??= []).push(selectedDenom);
+      stacks.add(id, selectedDenom);
       refresh();
     }
     undoBtn.addEventListener('click', () => {
@@ -332,11 +340,15 @@
       if (!last) return;
       bets[last.id] -= last.amt;
       if (bets[last.id] <= 0) delete bets[last.id];
+      placed[last.id].pop();
+      stacks.removeTop(last.id);
       refresh();
     });
     clearBtn.addEventListener('click', () => {
       Object.keys(bets).forEach((k) => delete bets[k]);
       history.length = 0;
+      Object.values(placed).forEach((a) => (a.length = 0));
+      stacks.clear();
       refresh();
     });
     spinBtn.addEventListener('click', () => {
@@ -364,6 +376,12 @@
         } else if (badge) {
           badge.remove();
         }
+        let mini = el.querySelector('.chip-mini');
+        const denoms = placed[el.dataset.spot] || [];
+        if (denoms.length) {
+          if (!mini) { mini = document.createElement('span'); mini.className = 'chip-mini'; el.appendChild(mini); }
+          mini.dataset.v = Math.max(...denoms);
+        } else if (mini) mini.remove();
       });
       const v = C.validate.roulette(bets);
       if (v.ok) {
@@ -383,6 +401,10 @@
     function resetBets() {
       Object.keys(bets).forEach((k) => delete bets[k]);
       history.length = 0;
+      // Clear the local denom-history only -- the 3D stacks were already
+      // consumed (paid out / lost) by settle()'s stacks.settle() calls in
+      // startRound, so calling stacks.clear() here would double-remove them.
+      Object.values(placed).forEach((a) => (a.length = 0));
       refresh();
     }
 
@@ -393,6 +415,7 @@
   let dealerHook = null;
   let wheel = null;
   let ui = null;
+  let stacks = null;
 
   C.rooms.roulette = {
     title: 'ROULETTE',
@@ -421,6 +444,18 @@
       felt.position.y = FELT_Y;
       felt.receiveShadow = true;
       scene.add(felt);
+
+      // live 3D bet stacks: getSpotPos wraps rouletteSpotPos (verified
+      // empirically against the painted felt texture, see report) with the
+      // felt box's top face y.
+      stacks = C.chips.createBetStacks(app, {
+        getSpotPos: (id) => {
+          const [x, z] = C.layouts.rouletteSpotPos(id);
+          return [x, FELT_Y + 0.021, z];
+        },
+        source: [0, FELT_Y + 0.021, 0.62],
+        dealerPos: [0, FELT_Y + 0.021, -0.6],
+      });
 
       // wheel bowl (static) + spinning wheel mounted on top
       const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.66, 0.34, 48), A.woodMaterial('#241408'));
@@ -465,7 +500,7 @@
 
       setTimeout(() => {
         if (app.roomGen !== gen) return;   // room switched during the delay
-        ui = makeOverlay(startRound);
+        ui = makeOverlay(startRound, stacks);
         app.setOverlay(ui.el);
       }, 800);
 
@@ -484,9 +519,21 @@
         const ret = O.rouletteReturn(betsSnapshot, result);
         if (ret > 0) C.wallet.credit(ret);
 
+        // Per-spot chip settlement, run CONCURRENTLY with the banner (chips
+        // are purely visual -- the wallet credit above already used `ret`,
+        // computed the same way; rouletteReturn is a pure function of the
+        // already-final result so calling it again per spot here is safe).
+        const chipsDone = Promise.all(Object.entries(betsSnapshot).map(([id, amt]) => {
+          const r = O.rouletteReturn({ [id]: amt }, result);
+          return stacks.settle(id, r > 0 ? 'win' : 'lose', Math.max(0, r - amt));
+        }));
+
         const colorWord = result === 0 ? 'GREEN' : O.RED.has(result) ? 'RED' : 'BLACK';
         await app.banner(result + ' ' + colorWord, ret > 0 ? 'You win ' + ret.toLocaleString() : 'No win', 2600);
         if (app.roomGen !== gen) return;
+
+        await chipsDone;
+        if (app.roomGen !== gen) return;   // room exited while chips were still settling
 
         app.flyTo(POSE_TABLE, 900);
         ui.resetBets();
@@ -498,6 +545,7 @@
       if (dealerHook) { C.app.offFrame(dealerHook); dealerHook = null; }
       wheel = null;
       ui = null;
+      stacks?.disposeAll(); stacks = null;
     },
   };
 })();

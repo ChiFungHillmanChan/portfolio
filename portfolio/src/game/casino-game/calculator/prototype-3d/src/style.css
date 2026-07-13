@@ -142,6 +142,10 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
 .rspot:hover { outline: 2px solid #f0d878; }
 .rspot .badge { position: absolute; top: -7px; right: -5px; min-width: 26px; padding: 1px 4px;
   border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
+.chip-mini { position: absolute; left: 4px; bottom: 4px; width: 14px; height: 14px;
+  border-radius: 50%; border: 2px dashed #fff; box-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.chip-mini[data-v="100"] { background: #2e6db4; } .chip-mini[data-v="500"] { background: #8e44ad; }
+.chip-mini[data-v="1000"] { background: #c0392b; } .chip-mini[data-v="5000"] { background: #b8860b; }
 
 /* Hand mirror (crisp 2D duplicate of the 3D hands) */
 .hand-mirror[hidden] { display: none; }
