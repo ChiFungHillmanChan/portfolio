@@ -2968,6 +2968,7 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
         if (app.roomGen !== gen) return;
 
         await chipsDone;
+        if (app.roomGen !== gen) return;   // room exited while chips were still settling
         mirror.hide();
 
         dealtMeshes.forEach((m) => { app.scene.remove(m); disposeMesh(m); });

@@ -512,6 +512,7 @@
         if (app.roomGen !== gen) return;
 
         await chipsDone;
+        if (app.roomGen !== gen) return;   // room exited while chips were still settling
         mirror.hide();
 
         dealtMeshes.forEach((m) => { app.scene.remove(m); disposeMesh(m); });
