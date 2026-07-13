@@ -4180,12 +4180,17 @@ html, body { height: 100%; overflow: hidden; background: #0a0a0a;
     // Front row: small props raised to table height on a pedestal so they
     // don't float. Back row: tall props that already stand on the floor
     // (dealer feet / stool legs / plaque pole all start at y=0).
+    const boxDecal = C.cards.makeCardBoxDecal({ label: 'BOX' });
+    boxDecal.rotation.x = 0;                       // stand upright for the gallery camera
+    const spotDecal = C.chips.makeSpotDecal({ label: 'MAIN', r: 0.11 });
+    spotDecal.rotation.x = 0;
     const frontItems = [
       A.makeCard({ r: 14, s: 0 }), A.makeCard({ r: 12, s: 1 }), A.makeCard(null),
       A.makeChipStack(100, 5), A.makeChipStack(5000, 9),
+      boxDecal, spotDecal,
     ];
     frontItems.forEach((m, i) => {
-      const x = (i - 2) * 0.8;
+      const x = (i - 3) * 0.7;
       const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.9, 0.3),
         new THREE.MeshStandardMaterial({ color: '#161616', roughness: 0.9 }));
       pedestal.position.set(x, 0.45, 0.4);
