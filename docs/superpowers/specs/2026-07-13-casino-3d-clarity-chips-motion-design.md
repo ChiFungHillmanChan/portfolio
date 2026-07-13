@@ -50,8 +50,13 @@ integration, no edits outside the prototype.
     baccarat.
   - **UTH:** 2 dealer slots, 2 player slots, 5 community slots labeled
     COMMUNITY CARDS.
-- Blackjack's plain-color felt becomes a canvas-textured felt (like roulette's)
-  carrying the boxes, bet spots (section 4), and a game-name arc.
+- ~~Blackjack's plain-color felt becomes a canvas-textured felt (like
+  roulette's) carrying the boxes, bet spots (section 4), and a game-name
+  arc.~~ **As-built waiver (final review):** boxes and bet spots shipped as
+  separate decal meshes positioned from the same `C.layouts` constants as the
+  deal/chip targets (strictly better — markings cannot drift from targets);
+  the decorative felt texture + game-name arc were dropped as cosmetic. Add
+  later if wanted.
 - **Camera:** each card room gets a closer, lower play-phase pose so boxes fill
   more of the frame. Betting-phase and wide poses unchanged.
 - Deal-target constants and painted-box positions come from **one shared

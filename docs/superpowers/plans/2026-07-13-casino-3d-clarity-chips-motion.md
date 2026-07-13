@@ -14,7 +14,7 @@
 - Every new animation honors `app.REDUCED` (prefers-reduced-motion): shorten to ≤180ms or skip entirely.
 - Every frame-hook animation must carry the `roomGen` guard pattern (capture `const gen = app.roomGen` at start; on mismatch, `app.offFrame(hook)` and resolve) AND a `hook.cancel = () => { app.offFrame(hook); resolve(); }` property, exactly like the existing `dealCardTo` (`src/engine/assets.js:466-496`).
 - Dispose discipline: every mesh removed from the scene has `geometry.dispose()` + all materials (+ their `.map`s) disposed — reuse the rooms' existing `disposeMesh` pattern.
-- Run the full suite with `node --test tests/` from the `prototype-3d/` directory. It must stay green after every task. Rebuild with `node build.mjs` before every commit so `index.html` never goes stale.
+- Run the full suite with `node --test tests/*.test.mjs` from the `prototype-3d/` directory. It must stay green after every task. Rebuild with `node build.mjs` before every commit so `index.html` never goes stale.
 - Card size constants: `CARD_W = 0.14`, `CARD_H = 0.196` (world units). Chip: radius 0.034, height 0.007, stack pitch 0.0072.
 - Commit after every task on branch `feat/casino-lobby-credits`. Check `git status` first — parallel sessions share this tree; stage only your own files.
 - All file paths below are relative to `portfolio/src/game/casino-game/calculator/prototype-3d/`.
@@ -249,7 +249,7 @@ Expected: PASS (5 tests).
 - [ ] **Step 5: Add to build order and run the full suite**
 
 In `build.mjs`, add `'src/logic/layouts.js'` to `SRC_ORDER` immediately after `'src/logic/tables.js'`.
-Run: `node --test tests/ && node build.mjs`
+Run: `node --test tests/*.test.mjs && node build.mjs`
 Expected: all tests pass; `built index.html (…KB)`.
 
 - [ ] **Step 6: Commit**
@@ -469,7 +469,7 @@ Move `drawCardBack`, `drawCardFace`, `makeCard`, and `dealCardTo` OUT of `assets
 - [ ] **Step 4: Add to build order, run tests, verify in browser**
 
 In `build.mjs` SRC_ORDER add `'src/engine/cards.js'` immediately after `'src/engine/assets.js'`.
-Run: `node --test tests/ && node build.mjs` — expected: green, build OK.
+Run: `node --test tests/*.test.mjs && node build.mjs` — expected: green, build OK.
 Open `index.html#gallery` in a browser: the ace/queen/back cards in the front row must render with the new jumbo faces at the larger size, no console errors. Play one blackjack round (rooms still call `C.assets.makeCard`/`dealCardTo` via the aliases): cards fly with spin + overshoot and land at the OLD positions (room migration comes in Task 6).
 
 - [ ] **Step 5: Commit**
@@ -655,7 +655,7 @@ Delete `CHIP_COLORS`, `makeChip`, `makeChipStack` from `assets.js` and from its 
 
 - [ ] **Step 3: Run tests + browser check**
 
-Run: `node --test tests/ && node build.mjs` — green.
+Run: `node --test tests/*.test.mjs && node build.mjs` — green.
 Browser: `#gallery` still shows the two chip stacks (aliases work); lobby → blackjack ghost chips render; console clean.
 
 - [ ] **Step 4: Commit**
@@ -804,7 +804,7 @@ And inside the existing `@media (max-width: 768px)` block:
 - [ ] **Step 3: Wire build order, run tests**
 
 Add `'src/engine/hud.js'` to SRC_ORDER after `'src/engine/chips3d.js'`.
-Run: `node --test tests/ && node build.mjs` — green (hud has no node-testable logic; DOM verification happens in room tasks).
+Run: `node --test tests/*.test.mjs && node build.mjs` — green (hud has no node-testable logic; DOM verification happens in room tasks).
 
 - [ ] **Step 4: Commit**
 
@@ -916,7 +916,7 @@ Note: `group.worldToLocal` requires the dealer to be scene-attached with updated
 
 - [ ] **Step 2: Run tests + browser check**
 
-Run: `node --test tests/ && node build.mjs` — green.
+Run: `node --test tests/*.test.mjs && node build.mjs` — green.
 Browser `#gallery`: dealer still renders correctly (arms in rest pose at the table-rest position, head + hair intact). No console errors.
 
 - [ ] **Step 3: Commit**
@@ -1059,7 +1059,7 @@ After the banner: `await chipsDone;` then `mirror.hide();` before the existing c
 
 - [ ] **Step 7: Full check**
 
-Run: `node --test tests/ && node build.mjs`.
+Run: `node --test tests/*.test.mjs && node build.mjs`.
 Browser, full blackjack rounds (aim for one win, one loss, one push, one blackjack, one bust):
 - 4 dashed card boxes visible; every initial card lands centered in its box; hit cards fan right.
 - Chips: tap MAIN/PP/21+3 → CSS chip stacks in the circles AND 3D chips flying onto the painted felt spots in real time; UNDO/CLEAR reverse both.
@@ -1135,7 +1135,7 @@ In `startRound` after computing `ret`, settle each spot from its individual retu
 
 - [ ] **Step 5: Full check + commit**
 
-`node --test tests/ && node build.mjs`; browser rounds covering player win, banker win, tie, a 3rd-card draw (sideways card lands in the sideways box), pair side bets. Mid-round exit clean; console clean.
+`node --test tests/*.test.mjs && node build.mjs`; browser rounds covering player win, banker win, tie, a 3rd-card draw (sideways card lands in the sideways box), pair side bets. Mid-round exit clean; console clean.
 
 ```bash
 git add src/rooms/baccarat.js src/style.css index.html
@@ -1208,7 +1208,7 @@ Run concurrent with the banner, `await chipsDone;` + `mirror.hide();` after it.
 
 - [ ] **Step 6: Full check + commit**
 
-`node --test tests/ && node build.mjs`; browser rounds: boxes for player/dealer/board all land exactly; ante tap fills BOTH ante+blind stacks (2D ante circle + both 3D spots); jackpot toggle places/removes one 100 chip; mirror walks hole cards → flop → turn → river → showdown hand names. Mid-round exit clean.
+`node --test tests/*.test.mjs && node build.mjs`; browser rounds: boxes for player/dealer/board all land exactly; ante tap fills BOTH ante+blind stacks (2D ante circle + both 3D spots); jackpot toggle places/removes one 100 chip; mirror walks hole cards → flop → turn → river → showdown hand names. Mid-round exit clean.
 
 ```bash
 git add src/rooms/uth.js index.html
@@ -1293,7 +1293,7 @@ before the banner; `await chipsDone;` after it (before flyTo/reset).
 
 - [ ] **Step 5: Full check + commit**
 
-`node --test tests/ && node build.mjs`; browser: chips land on the correct painted cells (spot-check 0, a few numbers across all three rows, RED, a dozen, a column), spin resolves each stack independently (winners paid at the spot then pushed to you, losers raked), UNDO/CLEAR mirror in 3D, mid-spin exit clean, console clean.
+`node --test tests/*.test.mjs && node build.mjs`; browser: chips land on the correct painted cells (spot-check 0, a few numbers across all three rows, RED, a dozen, a column), spin resolves each stack independently (winners paid at the spot then pushed to you, losers raked), UNDO/CLEAR mirror in 3D, mid-spin exit clean, console clean.
 
 ```bash
 git add src/rooms/roulette.js src/style.css index.html
