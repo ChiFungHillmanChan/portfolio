@@ -16,6 +16,7 @@ export const SRC_ORDER = [
   'src/engine/assets.js',
   'src/engine/cards.js',
   'src/engine/chips3d.js',
+  'src/engine/hud.js',
   'src/rooms/lobby.js',
   'src/rooms/roulette.js',
   'src/rooms/blackjack.js',
