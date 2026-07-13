@@ -171,15 +171,17 @@
     bowR.castShadow = true;
     group.add(bowL, bowR);
 
+    // Head + hair share a group (rather than each sitting on `group` at
+    // y=1.57 independently) so lookToward can yaw them together — a rotating
+    // bare sphere is invisible, so the hair MUST ride along with the head.
+    const headGroup = new THREE.Group();
+    headGroup.position.y = 1.57;
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), skinMat);
-    head.position.y = 1.57;
     head.castShadow = true; head.receiveShadow = true;
-    group.add(head);
-
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.116, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), blackMat);
-    hair.position.y = 1.57;
     hair.castShadow = true;
-    group.add(hair);
+    headGroup.add(head, hair);
+    group.add(headGroup);
 
     // Shoulder -> elbow -> forearm -> hand, each a child group so the bend
     // composes through the scene graph instead of by hand-rolled matrix math.
@@ -219,9 +221,74 @@
       hand.castShadow = true;
       elbow.add(hand);
 
-      return shoulder;
+      return { shoulder, elbow, shoulderPos };
     }
-    group.add(makeArm(-1), makeArm(1));
+    const armR = makeArm(1), armL = makeArm(-1);
+    group.add(armL.shoulder, armR.shoulder);
+
+    // Solve a shoulder quaternion that points the arm (local -Y) at a
+    // dealer-LOCAL point — same math as the rest pose above.
+    const _v = new THREE.Vector3();
+    function armQuat(arm, localTarget) {
+      _v.copy(localTarget).sub(arm.shoulderPos).normalize();
+      return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), _v);
+    }
+    const restQuatR = armR.shoulder.quaternion.clone();
+
+    function slerpQ(app, obj, toQuat, ms, token, getToken) {
+      return new Promise((resolve) => {
+        if (app.REDUCED) { obj.quaternion.copy(toQuat); return resolve(); }
+        const fromQuat = obj.quaternion.clone();
+        const t0 = performance.now();
+        const hook = () => {
+          if (getToken() !== token) { app.offFrame(hook); return resolve(); }
+          const t = Math.min(1, (performance.now() - t0) / ms);
+          obj.quaternion.slerpQuaternions(fromQuat, toQuat, C.tween.easings.inOutCubic(t));
+          if (t >= 1) { app.offFrame(hook); resolve(); }
+        };
+        hook.cancel = () => { app.offFrame(hook); resolve(); };
+        app.onFrame(hook);
+      });
+    }
+
+    // Re-entrancy guard: each call to dealGesture bumps gestureId and closes
+    // over its own token; every await checks the token still matches the
+    // latest call before continuing, so a stale in-flight gesture just
+    // resolves early instead of fighting a newer one for the shoulder quat.
+    let gestureId = 0;
+    group.userData.dealGesture = async (app, worldTarget, ms = 650) => {
+      if (app.REDUCED) return;
+      const token = ++gestureId;
+      const getToken = () => gestureId;
+      // worldToLocal needs `group` scene-attached with up-to-date world
+      // matrices — true whenever gestures fire, since rooms only call this
+      // after enter() has added the dealer and the render loop updates
+      // matrices every frame.
+      const local = group.worldToLocal(new THREE.Vector3(...worldTarget));
+      // reach: hand toward a point up-forward-right (the shoe side)
+      const reach = armQuat(armR, new THREE.Vector3(0.35, 1.05, 0.3));
+      const sweep = armQuat(armR, local.setY(Math.min(local.y, 1.05)));
+      await slerpQ(app, armR.shoulder, reach, ms * 0.3, token, getToken);
+      await slerpQ(app, armR.shoulder, sweep, ms * 0.4, token, getToken);
+      await slerpQ(app, armR.shoulder, restQuatR, ms * 0.3, token, getToken);
+    };
+
+    let lookId = 0;
+    group.userData.lookToward = (app, worldTarget) => {
+      if (app.REDUCED) return;
+      const token = ++lookId;
+      const local = group.worldToLocal(new THREE.Vector3(...worldTarget));
+      const yaw = Math.max(-0.6, Math.min(0.6, Math.atan2(local.x, local.z)));
+      const t0 = performance.now(), from = headGroup.rotation.y;
+      const hook = () => {
+        if (lookId !== token) return app.offFrame(hook);
+        const t = Math.min(1, (performance.now() - t0) / 300);
+        headGroup.rotation.y = from + (yaw - from) * C.tween.easings.outCubic(t);
+        if (t >= 1) app.offFrame(hook);
+      };
+      hook.cancel = () => app.offFrame(hook);
+      app.onFrame(hook);
+    };
 
     group.userData.idle = (app) => {
       const hook = (dt, elapsed) => { torso.rotation.z = Math.sin(elapsed * 0.8) * 0.02; };
