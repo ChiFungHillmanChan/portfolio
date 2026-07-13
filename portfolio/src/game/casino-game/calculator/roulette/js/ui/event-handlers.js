@@ -817,6 +817,14 @@ function handleBetPlacement(betType, betValue, e) {
         return;
     }
 
+    // Table-total cap for the active stake tier (friendly mirror of the
+    // server's over-table-max reject).
+    const tableTotal = window.rouletteTable ? window.rouletteTable.maxTotalBet : Infinity;
+    if (totalWagered + chipValue > tableTotal) {
+        showBetError(`Table max is ${tableTotal.toLocaleString()} total`);
+        return;
+    }
+
     // Check if can afford this bet
     if (!canAffordBet(chipValue, currentBankroll, totalWagered)) {
         // Try to find a smaller chip that we can afford

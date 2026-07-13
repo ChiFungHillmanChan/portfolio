@@ -1002,3 +1002,29 @@
         font-size: 0.8rem;
     }
 }
+
+/* =====================================================
+   BET ERROR MESSAGE (wallet integration — see js/render.js showBetError)
+   ===================================================== */
+
+.bet-error-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(-100px);
+    background: rgba(230, 57, 70, 0.95);
+    color: white;
+    padding: var(--spacing-sm) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 1rem;
+    font-weight: 600;
+    z-index: 9999;
+    box-shadow: 0 4px 20px rgba(230, 57, 70, 0.5);
+    transition: transform 0.3s ease;
+    pointer-events: none;
+}
+
+.bet-error-message.visible {
+    transform: translateX(-50%) translateY(0);
+}

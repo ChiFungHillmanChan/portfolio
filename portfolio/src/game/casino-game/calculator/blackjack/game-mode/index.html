@@ -18,6 +18,7 @@
     <link rel="stylesheet" href="../../css/settings-modal.css">
     <link rel="stylesheet" href="../../css/admin.css">
     <link rel="stylesheet" href="../../css/svg-icons.css">
+    <link rel="stylesheet" href="../../css/wallet.css">
     <link rel="stylesheet" href="css/game-mode.css">
 </head>
 <body>
@@ -61,8 +62,13 @@
         </div>
     </nav>
 
-    <!-- Setup Screen -->
-    <div id="setupScreen" class="setup-screen">
+    <!-- Wallet balance HUD + sign-in/bust gate + stake picker (mounted by
+         js/wallet/blackjack-wallet.js) -->
+    <div id="walletHudHost" class="game-wallet-hud"></div>
+
+    <!-- Setup Screen (retired — the stake picker + wallet gate own the
+         pre-game UX; kept inert for markup compatibility) -->
+    <div id="setupScreen" class="setup-screen" style="display: none;">
         <div class="setup-container">
             <h1>GAME MODE</h1>
             <p class="setup-subtitle">Play Blackjack with Side Bets</p>
@@ -285,6 +291,9 @@
     <script src="../js/shared/utils.js"></script>
     <script src="js/side-bets.js"></script>
     <script src="js/game-mode.js"></script>
+    <!-- Wallet module AFTER the classic scripts: module scripts are deferred,
+         so game-mode.js's listeners exist before wallet events fire -->
+    <script type="module" src="js/wallet/blackjack-wallet.js"></script>
     <script src="../../js/hamburger-menu.js"></script>
     <script type="module" src="../../js/settings-modal.js"></script>
 </body>

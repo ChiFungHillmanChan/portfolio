@@ -150,7 +150,7 @@ New `calculator/js/wallet/`:
 | Blackjack | `blackjack` | main 500–10,000 · side bets (Perfect Pair / 21+3 / Top3) 100–2,500 each |
 | Blackjack Normal Shoe | `blackjack-shoe` | 100–2,000 |
 | Baccarat | `baccarat` | main 500–10,000 · side bets 100–1,000 |
-| Ultimate Hold'em | `uth` | ante = blind 100–1,000 (step 100) · trips 100–5,000 · jackpot flat 100 · buy-in 10,000 (escrowed from wallet) |
+| Ultimate Hold'em | `uth` | tiered ante levels (see §5 UTH — confirmed 2026-07-13): ante 25 / 100 / 500 / 1,000 · buy-in 100 antes, escrowed from wallet |
 
 Payout caps derive from each game's published pay tables (e.g. roulette
 straight-up 35:1 → cap ×36 return; baccarat Dragon Bonus 30:1 → ×31; blackjack
@@ -182,20 +182,38 @@ Lobby UTH — solo AND multiplayer — runs on the existing cg-uth Lambda
 single-player server table; the in-browser `local-table.js` engine is no longer
 used by the lobby (code retained for a potential future practice mode).
 
+**Stake tiers (confirmed with the user 2026-07-13, matching the Micro/Mini/
+Standard/High tiers shipped for roulette/blackjack/baccarat):** a UTH table is
+created at one of four ante levels; the buy-in escrowed from the wallet is
+100 antes (covers ante + blind + 4× play ≈ 6 antes/hand ≈ 16 hands).
+
+| Tier | Ante (= blind) | Buy-in (escrow) |
+|---|---|---|
+| Micro | 25 | 2,500 |
+| Mini | 100 | 10,000 |
+| Standard | 500 | 50,000 |
+| High | 1,000 | 100,000 |
+
+The tier is a table property chosen at create-table (the shared stake picker
+UI from `js/wallet/stake-picker.js` fronts it, `?stake=` style, like the other
+games); join-table inherits the table's tier. Trips scales with the tier
+(max 5× ante); jackpot side bet stays flat 100 on every tier.
+
 cg-uth changes:
 
-- `create-table` / `join-table`: debit 10,000 buy-in from `casinoWallet/{uid}`
-  in the same Firestore transaction that seats the player. Insufficient wallet
-  → clear error.
-- `rebuy`: debits another 10,000 from the wallet (replaces free minting).
+- `create-table` / `join-table`: debit the tier's buy-in from
+  `casinoWallet/{uid}` in the same Firestore transaction that seats the
+  player. Insufficient wallet → clear error.
+- `rebuy`: debits another full buy-in from the wallet (replaces free minting).
 - `leave-table` / `sit-out` removal / stale-table GC: credit the seat's
   remaining stack back to the wallet.
-- Ante limits change to 100–1,000 step 100 (`logic.mjs` constants), jackpot
+- Ante fixed per tier (25/100/500/1,000 — `logic.mjs` constants), jackpot
   side bet costs 100 chips.
 
 During play the HUD shows the seat stack (escrow), not the wallet. A 5,000
-bust-reset intentionally cannot afford the 10,000 UTH buy-in — players grind
-cheaper tables back up (and later, purchase).
+bust-reset affords the Micro buy-in (2,500) — so UTH keeps an on-ramp after a
+bust — but intentionally not Mini and above; players grind cheaper tables
+back up (and later, purchase).
 
 ## 6. Edge Cases
 

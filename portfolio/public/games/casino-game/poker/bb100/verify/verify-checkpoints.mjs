@@ -1,132 +1,147 @@
-// verify-checkpoints.mjs — compare per-100-hand cumulative green + orange
-// against the user-provided GGPoker app readings for the 1815-hand sample.
+// verify/verify-checkpoints.mjs
+// Manual verification driver. Three modes:
 //
-// Pass criteria: at every checkpoint, both green and orange round-to-cent
-// match the expected value EXACTLY. Any mismatch is a real bug.
+//   node verify/verify-checkpoints.mjs [1815|23795]
+//     Run a fixture's checkpoint comparison. Pretty diff table. Exits 0 on
+//     all-match, 2 on any mismatch.
 //
-// Run:  node verify/verify-checkpoints.mjs [hand-history-dir]
+//   node verify/verify-checkpoints.mjs --pin [1815|23795]
+//     Compute the fixture, print the observed final values that should be
+//     pasted into verify/fixtures.mjs. Also prints the checkpoint diff table
+//     so you can confirm cent-exact match BEFORE pinning final values.
+//     Does not modify fixtures.mjs.
+//
+//   node verify/verify-checkpoints.mjs --at [1815|23795] <handN> [<handN> ...]
+//     Print computed cumulative EV / Winnings at arbitrary hand indices,
+//     both before-rake and after-rake. No comparison — for ad-hoc spot-checks
+//     against the GGPoker app.
 
-import { readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
-import { parseFile } from '../js/parser/gg-parser.mjs';
-import { computeSeries } from '../js/stats/compute.mjs';
+import { FIXTURES } from './fixtures.mjs';
 import { formatUSD, formatUSD6 } from '../js/stats/money.mjs';
+import {
+  loadAndCompute,
+  compareCheckpoints,
+  compareFinalPins,
+  valueAt,
+  ucToCentsRoundHalfUp,
+  usdToCents,
+} from '../tests/helpers/checkpoint-runner.mjs';
 
-const DEFAULT_DIR = '/Users/hillmanchan/Desktop/0000019e-4a9e-fb13-0000-0000280dc4e8';
-const DIR = process.argv[2] || DEFAULT_DIR;
+const args = process.argv.slice(2);
+const mode = args[0]?.startsWith('--') ? args[0] : null;
+const positional = mode ? args.slice(1) : args;
+const key = positional[0] ?? '1815';
 
-// User-provided expected values from the GGPoker app's EV graph, before-rake view,
-// read at every 100 hands. Source: HillmanChan, 2026-05-22 (corrected reading).
-// Each tuple: [handIndex (1-based), expectedOrangeUSD, expectedGreenUSD]
-const EXPECTED = [
-  [100,  +0.81,  +0.81],
-  [200,  +1.30,  +1.30],
-  [300,  -0.28,  +0.15],
-  [400,  +0.55,  +0.21],
-  [500,  -0.33,  -2.17],
-  [600,  -0.78,  -1.40],
-  [700,  -1.21,  -3.24],
-  [800,  +1.10,  -0.93],
-  [900,  +1.06,  -0.97],
-  [1000, +1.10,  -3.58],
-  [1100, +2.35,  -1.33],
-  [1200, +1.01,  -2.67],
-  [1300, +0.17,  -3.51],
-  [1400, +2.30,  -1.38],
-  [1500, +1.06,  -1.45],
-  [1600, +1.85,  -0.66],
-  [1700, +8.84,  +6.33],
-  [1800, +11.01, +8.50],
-  [1815, +11.23, +8.72],
-];
-
-console.log(`Loading hand histories from: ${DIR}\n`);
-
-const files = readdirSync(DIR).filter(f => f.toLowerCase().endsWith('.txt'));
-if (files.length === 0) {
-  console.error('No .txt files found');
+if (!FIXTURES[key]) {
+  console.error(`Unknown fixture: ${key}. Available: ${Object.keys(FIXTURES).join(', ')}`);
   process.exit(1);
 }
+const fixture = FIXTURES[key];
 
-const allHands = [];
-for (const f of files) {
-  const content = readFileSync(join(DIR, f), 'utf8');
-  const r = parseFile(f, content);
-  const validationError = r.errors && r.errors.find(e => e.startsWith('Validation failed:'));
-  if (validationError) continue;
-  allHands.push(...r.hands);
-}
+console.log(`Loading fixture "${key}" — ${fixture.label}`);
+for (const dir of fixture.folders) console.log(`  folder: ${dir}`);
 
-// Same canonical sort as verify.mjs
-allHands.sort((a, b) => {
-  if (a.date !== b.date) return a.date.localeCompare(b.date);
-  return a.id.localeCompare(b.id);
-});
+const t0 = performance.now();
+const { allHands, seriesBefore, seriesAfter, summary } = await loadAndCompute(fixture);
+const dur = performance.now() - t0;
+console.log(`Parsed + computed ${allHands.length} hands in ${dur.toFixed(0)} ms\n`);
 
-console.log(`Hands parsed: ${allHands.length}\n`);
-
-if (allHands.length < 1800) {
-  console.error(`ERROR: need at least 1800 hands for checkpoint verification; got ${allHands.length}`);
-  process.exit(1);
-}
-
-const { series } = await computeSeries(allHands, { beforeRake: true });
-
-// Round BigInt micro-cents to nearest cent (display precision).
-// formatUSD already does round-half-up; we need the rounded number for comparison.
-function ucToCentsRoundHalfUp(uc) {
-  const sign = uc < 0n ? -1n : 1n;
-  const abs = uc < 0n ? -uc : uc;
-  const cents = (abs + 5000n) / 10000n; // micro-cent → cent, round half up
-  return Number(sign * cents);
-}
-
-function expectedToCents(usd) {
-  // usd may be e.g. +0.81 or -3.55. Multiply by 100 + round to avoid float drift.
-  return Math.round(usd * 100);
-}
-
-console.log('Hand   | Green expect | Green actual | Δ¢ |   | Orange expect | Orange actual | Δ¢');
-console.log('-------+--------------+--------------+----+   +---------------+---------------+----');
-
-let allMatch = true;
-let mismatchCount = 0;
-
-for (const [handN, expOrange, expGreen] of EXPECTED) {
-  const idx = handN - 1; // 1-based hand number → 0-based index
-  const actGreenUC = series.winningsUC[idx];
-  const actOrangeUC = series.evUC[idx];
-
-  const actGreenCents = ucToCentsRoundHalfUp(actGreenUC);
-  const actOrangeCents = ucToCentsRoundHalfUp(actOrangeUC);
-  const expGreenCents = expectedToCents(expGreen);
-  const expOrangeCents = expectedToCents(expOrange);
-
-  const greenDelta = actGreenCents - expGreenCents;
-  const orangeDelta = actOrangeCents - expOrangeCents;
-  const greenOK = greenDelta === 0;
-  const orangeOK = orangeDelta === 0;
-  if (!greenOK || !orangeOK) {
-    allMatch = false;
-    mismatchCount++;
-  }
-
-  const fmtCents = (c) => (c >= 0 ? '+' : '-') + '$' + (Math.abs(c) / 100).toFixed(2);
-  const fmtMark = (delta, ok) => ok ? '   ' : ((delta > 0 ? '+' + delta : String(delta)).padStart(3));
-  console.log(
-    `${String(handN).padStart(5)}  | ` +
-    `${fmtCents(expGreenCents).padStart(7)} | ${fmtCents(actGreenCents).padStart(7)} ${formatUSD6(actGreenUC).padStart(12)} | ${fmtMark(greenDelta, greenOK)}${greenOK ? '' : '✗'}  || ` +
-    `${fmtCents(expOrangeCents).padStart(7)} | ${fmtCents(actOrangeCents).padStart(7)} ${formatUSD6(actOrangeUC).padStart(12)} | ${fmtMark(orangeDelta, orangeOK)}${orangeOK ? '' : '✗'}`
-  );
-}
-
-console.log();
-if (allMatch) {
-  console.log('✅ ALL 18 CHECKPOINTS MATCH (green AND orange, to the cent)');
-  console.log(`   Final at hand ${allHands.length}: green ${formatUSD(series.winningsUC.at(-1))} (${formatUSD6(series.winningsUC.at(-1))}), orange ${formatUSD(series.evUC.at(-1))} (${formatUSD6(series.evUC.at(-1))})`);
-  process.exit(0);
-} else {
-  console.log(`❌ ${mismatchCount} of 18 checkpoints have mismatches`);
-  console.log(`   Final at hand ${allHands.length}: green ${formatUSD(series.winningsUC.at(-1))} (${formatUSD6(series.winningsUC.at(-1))}), orange ${formatUSD(series.evUC.at(-1))} (${formatUSD6(series.evUC.at(-1))})`);
+if (allHands.length !== fixture.expectedHands) {
+  console.error(`ERROR: expected ${fixture.expectedHands} hands, got ${allHands.length}`);
   process.exit(2);
 }
+
+// ── Mode dispatch ────────────────────────────────────────────────────────────
+if (mode === '--at') {
+  const handNs = positional.slice(1).map(s => parseInt(s, 10));
+  if (handNs.length === 0 || handNs.some(n => !Number.isFinite(n) || n < 1 || n > allHands.length)) {
+    console.error(`--at requires one or more hand indices in [1, ${allHands.length}]`);
+    process.exit(1);
+  }
+  console.log(`Hand  | EV before | Win before | EV after | Win after`);
+  console.log(`------+-----------+------------+----------+----------`);
+  for (const row of valueAt(seriesBefore, seriesAfter, handNs)) {
+    console.log(
+      `${String(row.handN).padStart(5)} | ` +
+      `${formatUSD(row.evBeforeUC).padStart(9)} | ${formatUSD(row.winBeforeUC).padStart(10)} | ` +
+      `${formatUSD(row.evAfterUC).padStart(8)}  | ${formatUSD(row.winAfterUC).padStart(8)}`
+    );
+  }
+  process.exit(0);
+}
+
+// ── Default + --pin modes share the checkpoint diff table ────────────────────
+console.log(`Hand   | Win expect | Win actual         | Δ¢ |   | EV expect | EV actual          | Δ¢`);
+console.log(`-------+------------+--------------------+----+   +-----------+--------------------+----`);
+const fmtCents = c => (c >= 0 ? '+' : '-') + '$' + (Math.abs(c) / 100).toFixed(2);
+const fmtMark = (delta, ok) => ok ? '   ' : ((delta > 0 ? '+' + delta : String(delta)).padStart(3));
+
+const cp = compareCheckpoints(fixture, seriesBefore);
+for (const [handN, expEv, expWin] of fixture.checkpoints) {
+  const idx = handN - 1;
+  const actWinUC = seriesBefore.winningsUC[idx];
+  const actEvUC  = seriesBefore.evUC[idx];
+  const actWinCents = ucToCentsRoundHalfUp(actWinUC);
+  const actEvCents  = ucToCentsRoundHalfUp(actEvUC);
+  const expWinCents = usdToCents(expWin);
+  const expEvCents  = usdToCents(expEv);
+  const dW = actWinCents - expWinCents;
+  const dE = actEvCents  - expEvCents;
+  const okW = dW === 0;
+  const okE = dE === 0;
+  console.log(
+    `${String(handN).padStart(5)}  | ` +
+    `${fmtCents(expWinCents).padStart(7)} | ${fmtCents(actWinCents).padStart(7)} ${formatUSD6(actWinUC).padStart(12)} | ${fmtMark(dW, okW)}${okW ? '' : '✗'}  || ` +
+    `${fmtCents(expEvCents).padStart(7)} | ${fmtCents(actEvCents).padStart(7)} ${formatUSD6(actEvUC).padStart(12)} | ${fmtMark(dE, okE)}${okE ? '' : '✗'}`
+  );
+}
+console.log();
+
+if (mode === '--pin') {
+  // Pretty diff already printed above. Print observed checkpoints (for pasting
+  // into the 'checkpoints' array) + observed final values (for pasting into the
+  // final* fields). Both come from the same single computeSeries call. No
+  // hard-coding — these are read directly out of seriesBefore by index.
+  console.log(`Observed checkpoint values (paste over the 'checkpoints' array in verify/fixtures.mjs '${key}' entry):`);
+  console.log(`    checkpoints: [`);
+  const sign = c => (c >= 0 ? '+' : '-') + (Math.abs(c) / 100).toFixed(2);
+  for (const [handN] of fixture.checkpoints) {
+    const idx = handN - 1;
+    const winCents = ucToCentsRoundHalfUp(seriesBefore.winningsUC[idx]);
+    const evCents  = ucToCentsRoundHalfUp(seriesBefore.evUC[idx]);
+    console.log(`      [${String(handN).padStart(5)}, ${sign(evCents).padStart(6)}, ${sign(winCents).padStart(6)}],`);
+  }
+  console.log(`    ],`);
+  console.log();
+  console.log(`Observed final values (paste into verify/fixtures.mjs '${key}' entry):`);
+  console.log(`  finalBbPer100Before: ${summary.bbPer100Before},`);
+  console.log(`  finalBbPer100After:  ${summary.bbPer100After},`);
+  console.log(`  finalRakePaidUC:     ${summary.rakePaidUC}n,`);
+  console.log();
+  if (!cp.ok) {
+    console.log(`(${cp.mismatches.length} of ${fixture.checkpoints.length * 2} comparisons differ from the values currently in fixtures.mjs — paste the block above to update.)`);
+  } else {
+    console.log(`✅ All ${fixture.checkpoints.length} checkpoints already match. Safe to pin final values.`);
+  }
+  process.exit(0);
+}
+
+// Default mode — also check final pins if they're populated.
+if (fixture.finalBbPer100Before == null) {
+  console.log(`(Final pins not set — run with --pin ${key} to record them.)`);
+  process.exit(cp.ok ? 0 : 2);
+}
+const pin = compareFinalPins(fixture, summary);
+
+if (cp.ok && pin.ok) {
+  console.log(`✅ All ${fixture.checkpoints.length} checkpoints match. Final pins match.`);
+  console.log(`   Final at hand ${allHands.length}: green ${formatUSD(seriesBefore.winningsUC.at(-1))}, orange ${formatUSD(seriesBefore.evUC.at(-1))}`);
+  process.exit(0);
+}
+
+if (!cp.ok) console.log(`❌ ${cp.mismatches.length} of ${fixture.checkpoints.length * 2} checkpoint comparisons failed`);
+if (!pin.ok) {
+  console.log(`❌ ${pin.mismatches.length} final pin mismatch(es):`);
+  for (const m of pin.mismatches) console.log(`     ${m.field}: expected ${m.expected}, got ${m.actual}`);
+}
+process.exit(2);

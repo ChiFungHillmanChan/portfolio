@@ -15,6 +15,7 @@
     <link rel="stylesheet" href="css/hamburger-menu.css">
     <link rel="stylesheet" href="css/settings-modal.css">
     <link rel="stylesheet" href="css/admin.css">
+    <link rel="stylesheet" href="css/wallet.css">
 </head>
 <body>
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
@@ -24,16 +25,16 @@
     </button>
     <nav class="dropdown-menu" id="dropdownMenu" aria-hidden="true">
         <div class="dropdown-section">
-            <div class="dropdown-label">Games</div>
+            <div class="dropdown-label">Game Lobby</div>
             <a href="roulette/index.html" class="dropdown-item">
                 <span class="dropdown-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg></span>
                 <span>Roulette</span>
             </a>
-            <a href="blackjack/index.html" class="dropdown-item">
+            <a href="blackjack/game-mode/index.html" class="dropdown-item">
                 <span class="dropdown-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/></svg></span>
                 <span>Blackjack</span>
             </a>
-            <a href="baccarat/index.html" class="dropdown-item">
+            <a href="baccarat/game-mode/index.html" class="dropdown-item">
                 <span class="dropdown-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/><circle cx="8.5" cy="13.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10.5" r="1.5" fill="currentColor" stroke="none"/></svg></span>
                 <span>Baccarat</span>
             </a>
@@ -45,6 +46,16 @@
                 <span class="dropdown-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/><path d="M15.5 7l2.2 2.8-2.2 2.8-2.2-2.8z" fill="currentColor" stroke="none"/></svg></span>
                 <span>Ultimate Hold'em</span>
             </a>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-section">
+            <div class="dropdown-label">Practice</div>
+            <a href="roulette/trainer/index.html" class="dropdown-item"><span>Roulette Trainer</span></a>
+            <a href="blackjack/index.html" class="dropdown-item"><span>Blackjack Counting</span></a>
+            <a href="blackjack/normal-shoe/index.html" class="dropdown-item"><span>Normal Shoe</span></a>
+            <a href="baccarat/card-counting/index.html" class="dropdown-item"><span>Baccarat Counting</span></a>
+            <a href="poker/bb100/index.html" class="dropdown-item"><span>Hand Recorder</span></a>
+            <a href="ultimate-texas-holdem/odds.html" class="dropdown-item"><span>Hold'em Odds</span></a>
         </div>
         <div class="dropdown-divider"></div>
         <div class="dropdown-section">
@@ -62,88 +73,73 @@
             <p class="subtitle">Bet Strategy Simulator & EV Tracker</p>
         </header>
 
-        <section class="games-section">
-            <h2 class="section-title">Select Game</h2>
-            
+        <section class="games-section" id="gameLobby">
+            <h2 class="section-title zone-title">Game Lobby</h2>
+            <p class="zone-subtitle">Play with your chip balance. Real casino table limits.</p>
+
+            <div class="lobby-account" id="gameLobbyAccount">
+                <div class="lobby-signin">
+                    <span class="lobby-signin-note">Sign in to play with chips</span>
+                    <button type="button" class="lobby-signin-btn">Sign in with Google</button>
+                </div>
+                <div class="lobby-hud-host" hidden></div>
+            </div>
+
             <div class="games-grid">
-                <!-- Roulette -->
                 <a href="roulette/index.html" class="game-card roulette available">
-                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg></span>
+                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="3" x2="12" y2="9"/><line x1="12" y1="15" x2="12" y2="21"/><line x1="3" y1="12" x2="9" y2="12"/><line x1="15" y1="12" x2="21" y2="12"/></svg></span>
                     <h3 class="game-name">Roulette</h3>
-                    <p class="game-description">European & American roulette game mode with live statistics and physics-based wheel.</p>
-                    <div class="game-features">
-                        <span class="feature-tag">Game Mode</span>
-                        <span class="feature-tag">Live Stats</span>
-                        <span class="feature-tag">Hot/Cold Numbers</span>
-                    </div>
-                    <div class="game-status">
-                        <span class="status-dot"></span>
-                        Available Now
-                    </div>
+                    <p class="game-description">European & American wheel with live statistics.</p>
+                    <div class="game-limits">10 – 100,000 · 4 stakes</div>
                 </a>
-
-                <!-- Blackjack -->
-                <a href="blackjack/index.html" class="game-card blackjack available">
-                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/></svg></span>
+                <a href="blackjack/game-mode/index.html" class="game-card blackjack available">
+                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/></svg></span>
                     <h3 class="game-name">Blackjack</h3>
-                    <p class="game-description">Hi-Lo card counting with true count EV calculator, basic strategy, and bet sizing.</p>
-                    <div class="game-features">
-                        <span class="feature-tag">Hi-Lo Counting</span>
-                        <span class="feature-tag">True Count</span>
-                        <span class="feature-tag">Kelly Criterion</span>
-                    </div>
-                    <div class="game-status">
-                        <span class="status-dot"></span>
-                        Available Now
-                    </div>
+                    <p class="game-description">Dealt hands with Perfect Pair, 21+3 and Top-3 side bets.</p>
+                    <div class="game-limits">50 – 20,000 · 4 stakes</div>
                 </a>
-
-                <!-- Baccarat -->
-                <a href="baccarat/index.html" class="game-card baccarat available">
-                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/><circle cx="8.5" cy="13.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10.5" r="1.5" fill="currentColor" stroke="none"/></svg></span>
+                <a href="baccarat/game-mode/index.html" class="game-card baccarat available">
+                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/><circle cx="8.5" cy="13.5" r="1.5" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10.5" r="1.5" fill="currentColor" stroke="none"/></svg></span>
                     <h3 class="game-name">Baccarat</h3>
-                    <p class="game-description">Live EV tracking with egalité bets, Dragon 7 / Panda 8, and custom payouts.</p>
-                    <div class="game-features">
-                        <span class="feature-tag">Edge Calculator</span>
-                        <span class="feature-tag">Egalité Bets</span>
-                        <span class="feature-tag">Side Bets</span>
-                    </div>
-                    <div class="game-status">
-                        <span class="status-dot"></span>
-                        Available Now
-                    </div>
+                    <p class="game-description">Player / Banker / Tie with pairs, Dragon Bonus and Egalité.</p>
+                    <div class="game-limits">50 – 20,000 · 4 stakes</div>
                 </a>
-
-                <!-- Poker -->
-                <a href="poker/index.html" class="game-card poker available">
-                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" focusable="false"><path d="M12 2c-1 3-7 7-7 11.5C5 16 7 18 9 18c1 0 2-.4 2.6-1.1L11 21h2l-.6-4.1C13 17.6 14 18 15 18c2 0 4-2 4-4.5 0-4.5-6-8.5-7-11.5z"/></svg></span>
-                    <h3 class="game-name">Poker</h3>
-                    <p class="game-description">Cash-game win-rate tools — start with a bb/100 calculator and grow into pot odds and equity.</p>
-                    <div class="game-features">
-                        <span class="feature-tag">BB/100</span>
-                        <span class="feature-tag">Win Rate</span>
-                        <span class="feature-tag">Sample Check</span>
-                    </div>
-                    <div class="game-status">
-                        <span class="status-dot"></span>
-                        Available Now
-                    </div>
-                </a>
-
-                <!-- Ultimate Texas Hold'em -->
                 <a href="ultimate-texas-holdem/index.html" class="game-card uth available">
-                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/><path d="M15.5 7l2.2 2.8-2.2 2.8-2.2-2.8z" fill="currentColor" stroke="none"/></svg></span>
+                    <span class="game-icon"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="6" width="11" height="15" rx="1.5"/><rect x="10" y="3" width="11" height="15" rx="1.5"/><path d="M15.5 7l2.2 2.8-2.2 2.8-2.2-2.8z" fill="currentColor" stroke="none"/></svg></span>
                     <h3 class="game-name">Ultimate Texas Hold'em</h3>
-                    <p class="game-description">Online multiplayer hold'em vs the dealer. Private tables with room codes, up to 6 players, casino side bets.</p>
-                    <div class="game-features">
-                        <span class="feature-tag">Live Multiplayer</span>
-                        <span class="feature-tag">Room Codes</span>
-                        <span class="feature-tag">Side Bets</span>
-                    </div>
-                    <div class="game-status">
-                        <span class="status-dot"></span>
-                        Available Now
-                    </div>
+                    <p class="game-description">Online multiplayer vs the dealer. 10,000 buy-in from your chips.</p>
+                    <div class="game-limits">Ante 100 – 1,000</div>
+                </a>
+            </div>
+        </section>
+
+        <section class="games-section" id="practiceZone">
+            <h2 class="section-title zone-title">Practice</h2>
+            <p class="zone-subtitle">Trainers, counting and theory. Free, no sign-in.</p>
+            <div class="games-grid">
+                <a href="roulette/trainer/index.html" class="game-card roulette available">
+                    <h3 class="game-name">Roulette Dealer Trainer</h3>
+                    <p class="game-description">Practice calculating dealer payouts, four difficulties.</p>
+                </a>
+                <a href="blackjack/index.html" class="game-card blackjack available">
+                    <h3 class="game-name">Blackjack Card Counting</h3>
+                    <p class="game-description">Hi-Lo counting trainers, easy → hard, with progress.</p>
+                </a>
+                <a href="blackjack/normal-shoe/index.html" class="game-card blackjack available">
+                    <h3 class="game-name">Blackjack Normal Shoe</h3>
+                    <p class="game-description">Full-shoe counting trainer — Hi-Lo, true count, optimal play.</p>
+                </a>
+                <a href="baccarat/card-counting/index.html" class="game-card baccarat available">
+                    <h3 class="game-name">Baccarat Card Counting</h3>
+                    <p class="game-description">Road maps and an EV calculator for baccarat counting.</p>
+                </a>
+                <a href="poker/bb100/index.html" class="game-card poker available">
+                    <h3 class="game-name">Poker Hand Recorder</h3>
+                    <p class="game-description">Drop GG hand histories → bb/100, EV curves, cloud save.</p>
+                </a>
+                <a href="ultimate-texas-holdem/odds.html" class="game-card uth available">
+                    <h3 class="game-name">Ultimate Hold'em Odds</h3>
+                    <p class="game-description">Full payout table and house-edge reference.</p>
                 </a>
             </div>
         </section>
@@ -166,5 +162,6 @@
     <script src="js/main.js"></script>
     <script src="js/hamburger-menu.js"></script>
     <script type="module" src="js/settings-modal.js"></script>
+    <script type="module" src="js/wallet/lobby.js"></script>
 </body>
 </html>

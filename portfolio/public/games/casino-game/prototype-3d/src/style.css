@@ -1,0 +1,191 @@
+/* ===== Grand Casino 3D preview — base ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; overflow: hidden; background: #0a0a0a;
+  font-family: Georgia, 'Times New Roman', serif; color: #e8e0d0; }
+#stage { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+/* Splash */
+#splash { position: fixed; inset: 0; z-index: 50; display: flex; align-items: center;
+  justify-content: center; background: radial-gradient(ellipse at 50% 40%, #24160c 0%, #0a0604 70%); }
+.splash-inner { text-align: center; }
+#splash h1 { font-size: clamp(2.2rem, 6vw, 4.5rem); letter-spacing: .35em; color: #c9a227;
+  text-shadow: 0 0 30px rgba(201,162,39,.4); font-weight: 400; }
+.splash-sub { margin-top: .6rem; letter-spacing: .2em; color: #b8ad98; }
+#enterBtn { margin-top: 2.4rem; padding: .9rem 2.6rem; font: inherit; font-size: 1.05rem;
+  letter-spacing: .18em; color: #1a1208; background: linear-gradient(#e3c04b, #a8821a);
+  border: 1px solid #f0d878; border-radius: 3px; cursor: pointer; }
+#enterBtn:hover { filter: brightness(1.1); }
+.splash-note { margin-top: 1.4rem; font-size: .8rem; color: #6f6552; }
+
+/* HUD */
+#hud { position: fixed; top: 0; left: 0; right: 0; z-index: 20; display: flex;
+  align-items: center; gap: 1rem; padding: .8rem 1.2rem; pointer-events: none; }
+#hud > * { pointer-events: auto; }
+#walletPill { display: flex; align-items: center; gap: .5rem; padding: .45rem 1.1rem;
+  background: rgba(10,8,4,.82); border: 1px solid #c9a227; border-radius: 999px;
+  font-size: 1.05rem; color: #f0d878; box-shadow: 0 2px 12px rgba(0,0,0,.6); }
+.chip-ico { width: 16px; height: 16px; border-radius: 50%; background: #c0392b;
+  border: 3px dashed #fff; }
+#walletPill.flash-up { animation: flashUp .6s; }
+#walletPill.flash-down { animation: flashDown .6s; }
+@keyframes flashUp { 30% { border-color: #3ecf6e; color: #8affb6; } }
+@keyframes flashDown { 30% { border-color: #e05545; color: #ff9c8e; } }
+#roomTitle { flex: 1; text-align: center; letter-spacing: .3em; color: #c9a227;
+  text-shadow: 0 1px 4px #000; font-size: 1rem; }
+#backBtn { padding: .45rem 1rem; font: inherit; letter-spacing: .1em; color: #e8e0d0;
+  background: rgba(10,8,4,.82); border: 1px solid #6f6552; border-radius: 3px; cursor: pointer; }
+#backBtn:hover { border-color: #c9a227; color: #f0d878; }
+
+/* Banner + fader */
+#banner { position: fixed; left: 50%; top: 38%; transform: translate(-50%, -50%);
+  z-index: 30; padding: 1.2rem 2.6rem; text-align: center; background: rgba(12,9,4,.92);
+  border: 1px solid #c9a227; border-radius: 4px; box-shadow: 0 8px 40px rgba(0,0,0,.8); }
+#banner h2 { font-size: 1.6rem; letter-spacing: .12em; color: #f0d878; font-weight: 400; }
+#banner p { margin-top: .4rem; color: #b8ad98; }
+#fader { position: fixed; inset: 0; z-index: 40; background: #000; opacity: 0;
+  pointer-events: none; transition: opacity .18s; }
+#fader.on { opacity: 1; pointer-events: auto; }
+
+/* Betting overlays (shared shell; per-room layouts in later tasks) */
+.bet-overlay { position: fixed; inset: 0; z-index: 25; display: flex; align-items: flex-end;
+  justify-content: center; background: linear-gradient(rgba(0,0,0,0) 30%, rgba(0,0,0,.55));
+  transition: transform .55s cubic-bezier(.4,0,.2,1), opacity .4s; }
+.bet-overlay.hidden-down { transform: translateY(105%); opacity: 0; pointer-events: none; }
+.bet-panel { width: min(980px, 96vw); max-height: 78vh; overflow: auto; margin-bottom: 2vh;
+  background: radial-gradient(ellipse at 50% 0%, #0e6b45 0%, #0b5d3b 55%, #084730 100%);
+  border: 3px solid #4a2c17; outline: 2px solid #c9a227; border-radius: 14px;
+  box-shadow: 0 -10px 60px rgba(0,0,0,.7); padding: 1.1rem 1.3rem; }
+.bet-title { text-align: center; letter-spacing: .25em; color: #f0d878; margin-bottom: .8rem; }
+.chip-rack { display: flex; gap: .6rem; justify-content: center; margin: .9rem 0 .4rem; }
+.chip-btn { width: 54px; height: 54px; border-radius: 50%; border: 4px dashed #fff;
+  font: inherit; font-size: .8rem; color: #fff; cursor: pointer; text-shadow: 0 1px 2px #000; }
+.chip-btn[data-v="100"]  { background: #2e6db4; }
+.chip-btn[data-v="500"]  { background: #8e44ad; }
+.chip-btn[data-v="1000"] { background: #c0392b; }
+.chip-btn[data-v="5000"] { background: #b8860b; }
+.chip-btn.sel { outline: 3px solid #f0d878; transform: scale(1.12); }
+.bet-actions { display: flex; gap: .8rem; justify-content: center; margin-top: .7rem; }
+.btn-gold, .btn-dim { padding: .7rem 2rem; font: inherit; letter-spacing: .15em;
+  border-radius: 3px; cursor: pointer; }
+.btn-gold { color: #1a1208; background: linear-gradient(#e3c04b, #a8821a);
+  border: 1px solid #f0d878; }
+.btn-gold:disabled { filter: grayscale(.8) brightness(.6); cursor: not-allowed; }
+.btn-dim { color: #e8e0d0; background: rgba(0,0,0,.4); border: 1px solid #6f6552; }
+.bet-total { text-align: center; color: #b8e0c8; margin-top: .5rem; font-size: .95rem; }
+.bet-total .err { color: #ff9c8e; }
+
+/* Blackjack betting circles */
+.bj-circles { display: flex; align-items: flex-end; justify-content: center; gap: 1.4rem;
+  margin: .6rem 0 1rem; user-select: none; }
+.bj-circle { position: relative; border-radius: 50%; border: 2px dashed rgba(240,216,120,.6);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  color: #f0d878; font-size: .78rem; letter-spacing: .06em; cursor: pointer;
+  background: rgba(0,0,0,.25); }
+.bj-circle:hover { outline: 2px solid #f0d878; }
+.bj-circle.main { width: 132px; height: 132px; font-size: .95rem; }
+.bj-circle.side { width: 92px; height: 92px; }
+.bj-circle .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 30px; padding: 1px 4px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; }
+
+/* Blackjack action HUD (HIT/STAND, shown only during the player-decision phase) */
+#bj-actions { position: fixed; left: 50%; bottom: 4vh; transform: translateX(-50%);
+  z-index: 22; display: flex; gap: .7rem; align-items: center; padding: .6rem 1rem;
+  background: rgba(10,8,4,.85); border: 1px solid #c9a227; border-radius: 8px; }
+#bj-actions .total { color: #f0d878; margin-right: .5rem; letter-spacing: .1em; }
+
+/* Baccarat betting circles */
+.bac-mains { display: flex; align-items: flex-end; justify-content: center; gap: 1.2rem;
+  margin: .6rem 0 .5rem; user-select: none; }
+.bac-sides { display: flex; align-items: center; justify-content: center; gap: 1rem;
+  margin: 0 0 .8rem; user-select: none; }
+.bac-circle { position: relative; border-radius: 50%; border: 2px dashed rgba(240,216,120,.6);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  color: #f0d878; font-size: .78rem; letter-spacing: .06em; cursor: pointer; }
+.bac-circle:hover { outline: 2px solid #f0d878; }
+.bac-circle.player { width: 150px; height: 150px; font-size: 1rem; background: rgba(46,109,180,.35); }
+.bac-circle.banker { width: 150px; height: 150px; font-size: 1rem; background: rgba(163,22,33,.35); }
+.bac-circle.tie { width: 108px; height: 108px; background: rgba(14,107,69,.4); }
+.bac-circle.side { width: 84px; height: 84px; font-size: .72rem; background: rgba(0,0,0,.25); }
+.bac-circle .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 30px; padding: 1px 4px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; }
+
+/* UTH betting spots */
+.uth-spots { display: flex; align-items: center; justify-content: center; gap: 1.4rem;
+  margin: .6rem 0 1rem; user-select: none; }
+.uth-circle { position: relative; border-radius: 50%; border: 2px dashed rgba(240,216,120,.6);
+  display: flex; align-items: center; justify-content: center; text-align: center;
+  color: #f0d878; font-size: .82rem; letter-spacing: .06em; cursor: pointer; }
+.uth-circle:hover { outline: 2px solid #f0d878; }
+.uth-circle.ante { width: 150px; height: 150px; font-size: 1rem; background: rgba(46,109,180,.35); }
+.uth-circle.trips { width: 108px; height: 108px; background: rgba(163,22,33,.35); }
+.uth-circle .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 30px; padding: 1px 6px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; white-space: nowrap; }
+.uth-jackpot { position: relative; width: 84px; height: 84px; border-radius: 50%;
+  border: 3px dashed rgba(240,216,120,.6); display: flex; align-items: center; justify-content: center;
+  text-align: center; color: #f0d878; font-size: .72rem; letter-spacing: .05em; cursor: pointer;
+  background: rgba(0,0,0,.28); }
+.uth-jackpot:hover { outline: 2px solid #f0d878; }
+.uth-jackpot.on { background: rgba(184,134,11,.55); outline: 3px solid #f0d878; }
+.uth-jackpot .badge { position: absolute; bottom: -10px; left: 50%; transform: translateX(-50%);
+  min-width: 26px; padding: 1px 6px; border-radius: 999px; background: #f0d878; color: #1a1208;
+  font-size: .68rem; text-align: center; }
+
+/* Roulette betting grid */
+.rgrid { display: grid; grid-template-columns: repeat(14, 1fr); gap: 3px; user-select: none; }
+.rspot { position: relative; padding: .55rem 0; text-align: center; font-size: .85rem;
+  border: 1px solid rgba(240,216,120,.55); border-radius: 3px; cursor: pointer; color: #fff; }
+.rspot.red { background: #a31621; } .rspot.black { background: #14141a; }
+.rspot.green { background: #0e6b45; } .rspot.outside { background: rgba(0,0,0,.28); }
+.rspot:hover { outline: 2px solid #f0d878; }
+.rspot .badge { position: absolute; top: -7px; right: -5px; min-width: 26px; padding: 1px 4px;
+  border-radius: 999px; background: #f0d878; color: #1a1208; font-size: .68rem; text-align: center; }
+.chip-mini { position: absolute; left: 4px; bottom: 4px; width: 14px; height: 14px;
+  border-radius: 50%; border: 2px dashed #fff; box-shadow: 0 1px 2px rgba(0,0,0,.6); }
+.chip-mini[data-v="100"] { background: #2e6db4; } .chip-mini[data-v="500"] { background: #8e44ad; }
+.chip-mini[data-v="1000"] { background: #c0392b; } .chip-mini[data-v="5000"] { background: #b8860b; }
+
+/* Hand mirror (crisp 2D duplicate of the 3D hands) */
+.hand-mirror[hidden] { display: none; }
+.hand-mirror { position: fixed; top: 3.4rem; right: 1rem; z-index: 23; display: flex;
+  flex-direction: column; gap: .55rem; padding: .7rem .8rem; min-width: 180px;
+  background: rgba(10,8,4,.88); border: 1px solid #c9a227; border-radius: 8px;
+  box-shadow: 0 6px 30px rgba(0,0,0,.6); }
+.hm-label { font-size: .68rem; letter-spacing: .2em; color: #b8ad98; margin-bottom: .25rem; }
+.hm-cards { display: flex; gap: .3rem; flex-wrap: wrap; }
+.hm-note { margin-top: .25rem; font-size: .8rem; color: #f0d878; letter-spacing: .08em; min-height: 1em; }
+.mc { position: relative; width: 34px; height: 48px; border-radius: 4px; background: #f8f6ee;
+  color: #141414; box-shadow: 0 1px 3px rgba(0,0,0,.5); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; font-family: Georgia, serif; }
+.mc.red { color: #c0392b; }
+.mc.back { background: repeating-linear-gradient(45deg, #1e3a8a 0 4px, #2b4a9d 4px 8px);
+  border: 2px solid #c9a227; }
+.mc-r { font-size: 1rem; font-weight: bold; line-height: 1; }
+.mc-s { font-size: .85rem; line-height: 1; }
+
+/* 2D chip stacks inside bet spots */
+.chips2d { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%);
+  width: 38px; height: 60px; pointer-events: none; }
+.chip2d { position: absolute; left: 0; width: 38px; height: 38px; border-radius: 50%;
+  border: 3px dashed #fff; display: flex; align-items: center; justify-content: center;
+  font-size: .6rem; color: #fff; text-shadow: 0 1px 2px #000; box-shadow: 0 1px 2px rgba(0,0,0,.55); }
+.chip2d.c100 { background: #2e6db4; } .chip2d.c500 { background: #8e44ad; }
+.chip2d.c1000 { background: #c0392b; } .chip2d.c5000 { background: #b8860b; }
+
+@media (max-width: 768px) {
+  .bet-panel { max-height: 62vh; padding: .7rem .6rem; border-radius: 10px 10px 0 0; margin-bottom: 0; }
+  .rgrid { grid-template-columns: repeat(14, minmax(22px, 1fr)); font-size: .7rem; overflow-x: auto; }
+  .chip-btn { width: 46px; height: 46px; }
+  #walletPill { font-size: .9rem; padding: .35rem .8rem; }
+  #roomTitle { font-size: .75rem; letter-spacing: .18em; }
+  #banner { width: 92vw; padding: .9rem 1rem; }
+  .hand-mirror { top: 2.9rem; left: .5rem; right: .5rem; flex-direction: row;
+    justify-content: center; gap: 1.2rem; min-width: 0; padding: .45rem .5rem; }
+  .mc { width: 26px; height: 38px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bet-overlay { transition: opacity .2s; }
+}

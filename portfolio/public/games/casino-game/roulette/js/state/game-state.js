@@ -77,6 +77,21 @@ function updateBankroll(change) {
 }
 
 /**
+ * Sync the displayed bankroll to the wallet's server-confirmed balance.
+ * The wallet (window.rouletteWallet) is now the source of truth for chips —
+ * this replaces updateBankroll()'s delta math with an absolute value reported
+ * back by commitBet()/settle(), or by the wallet's own subscribe() broadcast
+ * (e.g. a bust-reset triggered from the HUD, not from a spin this page drove).
+ * @param {number} balance - Confirmed wallet balance
+ */
+function syncBankrollFromWallet(balance) {
+    if (typeof balance !== 'number') return;
+    gameState.bankroll.current = balance;
+    gameState.bankroll.sessionProfit = gameState.bankroll.current - gameState.bankroll.initial;
+    saveGameStateToStorage();
+}
+
+/**
  * Set the selected chip denomination
  * @param {number} value - Chip value
  */

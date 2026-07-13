@@ -68,12 +68,17 @@
     overflow: hidden;
     max-height: 0;
     opacity: 0;
-    transition: max-height 0.3s ease, opacity 0.2s ease;
+    /* visibility keeps the CLOSED menu's links out of the keyboard tab
+       order (max-height/opacity alone leave them focusable — Tab would land
+       on invisible links before the page's real controls) */
+    visibility: hidden;
+    transition: max-height 0.3s ease, opacity 0.2s ease, visibility 0.3s;
 }
 
 .dropdown-menu.open {
     max-height: 480px;
     opacity: 1;
+    visibility: visible;
 }
 
 .dropdown-section {

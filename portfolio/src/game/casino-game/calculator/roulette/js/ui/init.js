@@ -26,20 +26,17 @@ async function init() {
     }
 }
 
-// Fixed table config (Plan 3: no setup screen — one house table). Server caps
-// (table-config.js GAME_TABLES.roulette) are authoritative; these are only the
-// client-side display/UX limits.
-const ROULETTE_TABLE_MIN_BET = 100;
-const ROULETTE_TABLE_MAX_BET = 5000;
-
-// Wallet is ready (signed in, balance known): auto-start the game using the
-// wallet balance as the stack, replacing the old setup-form submit flow.
+// Wallet is ready (stake picked, signed in, balance known): auto-start the
+// game using the wallet balance as the stack, replacing the old setup-form
+// submit flow. The table limits come from the active stake tier
+// (window.rouletteTable, set from ?stake= by roulette-wallet.js) — the
+// server caps (table-config.js) are authoritative; these are UX mirrors.
 document.addEventListener('wallet:ready', () => {
     startGame({
         rouletteType: DEFAULT_CONFIG.rouletteType,
         initialStack: window.rouletteWallet.getBalance(),
-        minBet: ROULETTE_TABLE_MIN_BET,
-        maxBet: ROULETTE_TABLE_MAX_BET,
+        minBet: window.rouletteTable.min,
+        maxBet: window.rouletteTable.perSpotMax,
     });
     showGameScreen();
 });

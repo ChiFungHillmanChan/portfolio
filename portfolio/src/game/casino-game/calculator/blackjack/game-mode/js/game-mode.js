@@ -61,21 +61,97 @@ const STORAGE_KEY = 'blackjack_game_mode_settings';
 const GAME_STATE_KEY = 'blackjack_game_mode_state';
 
 // =====================================================
+// WALLET INTEGRATION
+// =====================================================
+// window.blackjackWallet (session) + window.blackjackTable (active stake
+// tier's limits) are set by js/wallet/blackjack-wallet.js from ?stake=.
+// GameState.bankroll is a MIRROR of the server-confirmed wallet balance —
+// the wallet debits at deal (commitBet), grows the round on double/split
+// (topUp) and credits gross winnings at settle. The old hardcoded
+// config.minBet/maxBet/maxSideBet are retired in favour of blackjackTable.
+
+// Friendly copy for wallet-backend error codes surfaced from
+// commitBet/topUp/settle (see js/wallet/game-session.js). Anything not in
+// this map falls back to a generic message rather than a raw code.
+var WALLET_ERR_MSG = {
+    'insufficient-balance': 'Not enough chips for that bet',
+    'too-fast': 'Slow down — wait a moment before the next round',
+    'round-in-progress': 'Finish the current round first',
+    'over-table-max': 'That bet is over the table limit',
+    'bad-bets': "That bet isn't allowed here",
+    'empty-bet': 'Place a bet first'
+};
+
+// True while a wallet commitBet request is awaiting the server (closes the
+// double-click window on Deal — mirrors baccarat's betCommitInFlight).
+var betCommitInFlight = false;
+
+// True while a double/split topUp request is awaiting the server. All action
+// buttons are disabled while set: a rejected top-up must NOT draw a card or
+// create a hand, and a concurrent HIT would race the pending debit.
+var topUpInFlight = false;
+
+/**
+ * Mirror the wallet's server-confirmed balance into the bankroll display.
+ * Replaces local debit/credit math with the absolute value returned by
+ * commitBet()/topUp()/settle(), or broadcast via the wallet's subscribe()
+ * (e.g. a bust-reset from the HUD's own Reset button).
+ */
+function syncBankrollFromWallet(balance) {
+    if (typeof balance !== 'number') return;
+    GameState.bankroll.current = balance;
+    renderBankroll();
+}
+
+// =====================================================
 // INITIALIZATION
 // =====================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    if (hasSavedGameState()) {
-        if (restoreSavedGameState()) {
-            showGameScreen();
-            renderGame();
-        } else {
-            initializeSetup();
-        }
-    } else {
-        initializeSetup();
-    }
+    // Setup screen retired: the shared stake picker (no ?stake=) or the
+    // wallet's game-gate overlay owns the pre-game UX, and chips ARE the
+    // wallet balance. The saved-game restore went with it — a mid-hand local
+    // snapshot can't be reconciled with the server round, so every page load
+    // starts fresh at the betting phase once 'wallet:ready' fires below.
+    var setupScreen = document.getElementById('setupScreen');
+    if (setupScreen) setupScreen.style.display = 'none';
 });
+
+// Wallet is ready (stake picked, signed in, balance known): seat the player
+// and show the table — replaces the old setup-form submit flow.
+document.addEventListener('wallet:ready', function() {
+    startWalletGame(window.blackjackWallet.getBalance());
+});
+
+// Mirror balance changes this page didn't itself just cause (e.g. a
+// bust-reset from the HUD's Reset button).
+document.addEventListener('wallet:balance', function() {
+    if (!window.blackjackWallet) return;
+    syncBankrollFromWallet(window.blackjackWallet.getBalance());
+});
+
+/**
+ * Start (or restart) the table from the wallet balance. All 3 seats are laid
+ * out — a seat only plays when it has a bet, so multi-seat stays available
+ * without the retired setup screen's seat picker.
+ */
+function startWalletGame(balance) {
+    GameState.bankroll.initial = balance;
+    GameState.bankroll.current = balance;
+    GameState.table.seats = [1, 2, 3].map(function(seatNum) {
+        return {
+            id: seatNum,
+            hands: [createEmptyHand()],
+            bet: 0,
+            activeHandIndex: 0
+        };
+    });
+    GameState.sideBets = { perfectPair: 0, twentyOnePlus3: 0, top3: 0 };
+    initializeShoe();
+    GameState.phase = 'betting';
+    showGameScreen();
+    renderGame();
+}
 
 function initializeSetup() {
     loadSavedSettings();
@@ -180,11 +256,18 @@ function createEmptyHand() {
 // SCREEN MANAGEMENT
 // =====================================================
 
+var gameListenersAttached = false;
+
 function showGameScreen() {
     document.getElementById('setupScreen').style.display = 'none';
     document.getElementById('gameScreen').style.display = 'flex';
-    
-    setupGameEventListeners();
+
+    // wallet:ready can fire more than once (sign-out → sign-in re-seats the
+    // table) — attach the DOM listeners only on the first show.
+    if (!gameListenersAttached) {
+        gameListenersAttached = true;
+        setupGameEventListeners();
+    }
 }
 
 function showSetupScreen() {
@@ -340,35 +423,45 @@ function selectChip(value) {
 
 function placeBetOnSpot(spotType, seatIndex) {
     if (GameState.phase !== 'betting') return;
-    
+
+    var table = window.blackjackTable;
+    if (!table) return; // stake not resolved yet — picker/gate still up
+
     var chipValue = GameState.selectedChip;
-    
+
     // Check if can afford
     if (!canAffordBet(chipValue)) {
         showToast('Not enough funds');
         return;
     }
-    
+
+    // Client mirror of the server's validateBets caps (the server re-checks
+    // everything at commit — see startDeal): grand total ≤ maxTotalBet,
+    // Σ main across seats ≤ main.max, each side bet ≤ its own max.
+    if (getTotalBets() + chipValue > table.maxTotalBet) {
+        showToast('Table max is ' + table.maxTotalBet.toLocaleString() + ' total');
+        return;
+    }
+
     if (spotType === 'main') {
         var seat = GameState.table.seats[seatIndex];
-        var newBet = seat.bet + chipValue;
-        if (newBet > GameState.config.maxBet) {
-            showToast('Max bet is $' + GameState.config.maxBet.toLocaleString());
+        if (getMainBetTotal() + chipValue > table.main.max) {
+            showToast('Max main bet is ' + table.main.max.toLocaleString() + ' (all seats)');
             return;
         }
-        seat.bet = newBet;
-        seat.hands[0].bet = newBet;
+        seat.bet += chipValue;
+        seat.hands[0].bet = seat.bet;
     } else {
         // Side bet
+        var spec = table[spotType];
         var currentBet = GameState.sideBets[spotType] || 0;
-        var newBet = currentBet + chipValue;
-        if (newBet > GameState.config.maxSideBet) {
-            showToast('Max side bet is $' + GameState.config.maxSideBet.toLocaleString());
+        if (spec && currentBet + chipValue > spec.max) {
+            showToast('Max side bet is ' + spec.max.toLocaleString());
             return;
         }
-        GameState.sideBets[spotType] = newBet;
+        GameState.sideBets[spotType] = currentBet + chipValue;
     }
-    
+
     renderBettingArea();
     updateTotalBetDisplay();
     saveGameState();
@@ -409,6 +502,16 @@ function getTotalBets() {
     return total;
 }
 
+// Sum of all seats' base bets — the server merges every seat into one `main`
+// bucket, so the tier's main.min/main.max apply to THIS total, not per seat.
+function getMainBetTotal() {
+    var total = 0;
+    GameState.table.seats.forEach(function(s) {
+        total += s.bet || 0;
+    });
+    return total;
+}
+
 function clearBets() {
     GameState.table.seats.forEach(function(seat) {
         seat.bet = 0;
@@ -432,18 +535,10 @@ function updateTotalBetDisplay() {
     // Update session profit display
     updateSessionProfit();
 
-    // Update deal button state (both legacy and inline)
+    // Update deal button state (both legacy and inline). Kept disabled while
+    // a wallet commit is in flight (startDeal re-runs this on reject).
     var hasMainBet = GameState.table.seats.some(function(s) { return s.bet > 0; });
-
-    var dealBtn = document.getElementById('dealBtn');
-    var dealBtnInline = document.getElementById('dealBtnInline');
-
-    if (dealBtn) {
-        dealBtn.disabled = !hasMainBet;
-    }
-    if (dealBtnInline) {
-        dealBtnInline.disabled = !hasMainBet;
-    }
+    setDealButtonsDisabled(!hasMainBet || betCommitInFlight);
 }
 
 function updateSessionProfit() {
@@ -552,20 +647,91 @@ function needsReshuffle() {
 // DEALING
 // =====================================================
 
-function startDeal() {
-    var hasMainBet = GameState.table.seats.some(function(s) { return s.bet > 0; });
-    if (!hasMainBet) {
-        showToast('Place at least one main bet');
+/**
+ * Client mirror of the server's validateBets — same rules, friendlier
+ * messages. Returns null when the current bets can deal, else the message.
+ */
+function validateDealBets() {
+    var table = window.blackjackTable;
+    if (!table) return 'Table not ready';
+
+    var mainTotal = getMainBetTotal();
+    if (mainTotal === 0) return 'Place at least one main bet';
+    if (mainTotal < table.main.min) return 'Main bet minimum is ' + table.main.min.toLocaleString();
+    if (mainTotal > table.main.max) return 'Max main bet is ' + table.main.max.toLocaleString();
+
+    var sideLabels = { perfectPair: 'Perfect Pair', twentyOnePlus3: '21+3', top3: 'Top 3' };
+    for (var key in sideLabels) {
+        var amount = GameState.sideBets[key] || 0;
+        var spec = table[key];
+        if (amount > 0 && spec) {
+            if (amount < spec.min) return sideLabels[key] + ' minimum is ' + spec.min.toLocaleString();
+            if (amount > spec.max) return sideLabels[key] + ' max is ' + spec.max.toLocaleString();
+        }
+    }
+
+    if (getTotalBets() > table.maxTotalBet) return 'Table max is ' + table.maxTotalBet.toLocaleString() + ' total';
+    return null;
+}
+
+function setDealButtonsDisabled(disabled) {
+    var dealBtn = document.getElementById('dealBtn');
+    var dealBtnInline = document.getElementById('dealBtnInline');
+    if (dealBtn) dealBtn.disabled = disabled;
+    if (dealBtnInline) dealBtnInline.disabled = disabled;
+}
+
+/**
+ * Deal → wallet commit. Debits the full stake up front (server-authoritative);
+ * a rejected commit stays in the betting phase with the bets intact. The old
+ * local debit + deal body lives on in beginDealtRound().
+ */
+async function startDeal() {
+    if (GameState.phase !== 'betting' || betCommitInFlight) return;
+
+    var invalid = validateDealBets();
+    if (invalid) {
+        showToast(invalid);
         return;
     }
-    
+
+    // The wallet gate covers the page until the session exists, so this
+    // should be unreachable while null — guard defensively anyway.
+    var session = window.blackjackWallet;
+    if (!session) return;
+
+    // Set synchronously (before the first await) and disable both Deal
+    // buttons so a rapid double-click can't fire a second commitBet.
+    betCommitInFlight = true;
+    setDealButtonsDisabled(true);
+    try {
+        var result = await session.commitBet({
+            main: getMainBetTotal(),
+            perfectPair: GameState.sideBets.perfectPair,
+            twentyOnePlus3: GameState.sideBets.twentyOnePlus3,
+            top3: GameState.sideBets.top3
+        });
+        syncBankrollFromWallet(result.balance);
+    } catch (err) {
+        // insufficient-balance / too-fast / bad-bets / round-in-progress →
+        // stay in betting, keep the placed chips, let the player adjust.
+        showToast(WALLET_ERR_MSG[err.code] || 'Bet rejected');
+        betCommitInFlight = false;
+        updateTotalBetDisplay(); // phase is still betting — re-enable Deal
+        return;
+    }
+    betCommitInFlight = false;
+
+    beginDealtRound();
+}
+
+// The committed round: reset hands and deal (no local debit — the wallet
+// already took the stake in startDeal above).
+function beginDealtRound() {
     if (needsReshuffle()) {
         shuffleShoe();
     }
-    
-    // Deduct bets
-    GameState.bankroll.current -= getTotalBets();
-    
+
     // Reset hands
     GameState.table.seats.forEach(function(seat) {
         seat.hands = [createEmptyHand()];
@@ -736,9 +902,11 @@ function advanceToNextHand() {
 }
 
 function playerHit() {
+    if (topUpInFlight) return; // a pending double/split debit owns the hand
+
     var seat = GameState.table.seats[GameState.table.currentSeatIndex];
     var hand = seat.hands[seat.activeHandIndex];
-    
+
     var card = drawCard();
     hand.cards.push(card);
     updateHandTotal(hand);
@@ -763,57 +931,99 @@ function playerHit() {
 }
 
 function playerStand() {
+    if (topUpInFlight) return; // a pending double/split debit owns the hand
+
     var seat = GameState.table.seats[GameState.table.currentSeatIndex];
     var hand = seat.hands[seat.activeHandIndex];
-    
+
     hand.isComplete = true;
     renderGame();
     setTimeout(advanceToNextHand, 300);
     saveGameState();
 }
 
-function playerDouble() {
+async function playerDouble() {
+    if (topUpInFlight) return;
+
     var seat = GameState.table.seats[GameState.table.currentSeatIndex];
     var hand = seat.hands[seat.activeHandIndex];
-    
+
+    // UX pre-check only — the authoritative reject is the server's topUp.
     if (GameState.bankroll.current < hand.bet) {
         showToast('Not enough funds');
         return;
     }
-    
-    GameState.bankroll.current -= hand.bet;
+
+    var session = window.blackjackWallet;
+    if (!session) return;
+
+    // Same-round top-up: the server must confirm the extra debit BEFORE the
+    // card is drawn — a rejected top-up aborts the double entirely (no card,
+    // no 2× bet), never dealing a card the wallet didn't fund.
+    topUpInFlight = true;
+    renderActionButtons(); // disables HIT/STAND/DOUBLE/SPLIT while in flight
+    try {
+        var result = await session.topUp({ main: hand.bet });
+        syncBankrollFromWallet(result.balance);
+    } catch (err) {
+        showToast(WALLET_ERR_MSG[err.code] || 'Double rejected');
+        topUpInFlight = false;
+        renderActionButtons();
+        return;
+    }
+    topUpInFlight = false;
+
     hand.bet *= 2;
     hand.isDoubled = true;
-    
+
     var card = drawCard();
     hand.cards.push(card);
     updateHandTotal(hand);
-    
+
     hand.isComplete = true;
     if (hand.total > 21) {
         hand.isBusted = true;
         hand.result = 'lose';
     }
-    
+
     renderGame();
     setTimeout(advanceToNextHand, 300);
     saveGameState();
 }
 
-function playerSplit() {
+async function playerSplit() {
+    if (topUpInFlight) return;
+
     var seat = GameState.table.seats[GameState.table.currentSeatIndex];
     var hand = seat.hands[seat.activeHandIndex];
-    
+
     if (hand.cards.length !== 2) return;
     if (getCardValue(hand.cards[0].rank) !== getCardValue(hand.cards[1].rank)) return;
-    
+
+    // UX pre-check only — the authoritative reject is the server's topUp.
     if (GameState.bankroll.current < hand.bet) {
         showToast('Not enough funds');
         return;
     }
-    
-    GameState.bankroll.current -= hand.bet;
-    
+
+    var session = window.blackjackWallet;
+    if (!session) return;
+
+    // Same-round top-up confirmed BEFORE the split happens — a rejected
+    // top-up aborts entirely (no second hand, no cards drawn).
+    topUpInFlight = true;
+    renderActionButtons();
+    try {
+        var result = await session.topUp({ main: hand.bet });
+        syncBankrollFromWallet(result.balance);
+    } catch (err) {
+        showToast(WALLET_ERR_MSG[err.code] || 'Split rejected');
+        topUpInFlight = false;
+        renderActionButtons();
+        return;
+    }
+    topUpInFlight = false;
+
     var secondCard = hand.cards.pop();
     var newHand = createEmptyHand();
     newHand.cards.push(secondCard);
@@ -861,31 +1071,33 @@ function renderActionButtons() {
     hitBtn.className = 'action-btn hit';
     hitBtn.textContent = 'HIT';
     hitBtn.onclick = playerHit;
+    hitBtn.disabled = topUpInFlight;
     container.appendChild(hitBtn);
-    
+
     var standBtn = document.createElement('button');
     standBtn.className = 'action-btn stand';
     standBtn.textContent = 'STAND';
     standBtn.onclick = playerStand;
+    standBtn.disabled = topUpInFlight;
     container.appendChild(standBtn);
-    
+
     if (hand.cards.length === 2 && !hand.isSplit) {
         var doubleBtn = document.createElement('button');
         doubleBtn.className = 'action-btn double';
         doubleBtn.textContent = 'DOUBLE';
         doubleBtn.onclick = playerDouble;
-        doubleBtn.disabled = GameState.bankroll.current < hand.bet;
+        doubleBtn.disabled = topUpInFlight || GameState.bankroll.current < hand.bet;
         container.appendChild(doubleBtn);
     }
-    
-    if (hand.cards.length === 2 && 
+
+    if (hand.cards.length === 2 &&
         getCardValue(hand.cards[0].rank) === getCardValue(hand.cards[1].rank) &&
         seat.hands.length < 7) {
         var splitBtn = document.createElement('button');
         splitBtn.className = 'action-btn split';
         splitBtn.textContent = 'SPLIT';
         splitBtn.onclick = playerSplit;
-        splitBtn.disabled = GameState.bankroll.current < hand.bet;
+        splitBtn.disabled = topUpInFlight || GameState.bankroll.current < hand.bet;
         container.appendChild(splitBtn);
     }
 }
@@ -1021,8 +1233,21 @@ function resolveRound() {
         );
     }
     
-    GameState.bankroll.current += totalWinnings;
-    
+    // Credit the wallet with GROSS winnings — the server caps the payout at
+    // Σ(merged bucket × maxReturn). Math.round: an odd main bet's 3:2
+    // blackjack pays x.5 and the server only accepts integers (rounding the
+    // final total once stays under the server's per-bucket ceil'd cap).
+    // Fire-and-forget (resolveRound is reached via setTimeout chains): a
+    // failed settle leaves the round open server-side and the next commitBet
+    // surfaces "round-in-progress" until it resolves — same recovery gap as
+    // roulette/baccarat (accepted in Plan 3).
+    var session = window.blackjackWallet;
+    if (session && session.hasOpenRound()) {
+        session.settle(Math.round(totalWinnings))
+            .then(function(res) { syncBankrollFromWallet(res.balance); })
+            .catch(function(e) { console.error('[blackjack] settle failed:', e); });
+    }
+
     var netResult = totalWinnings - getTotalBetsForLastRound();
     GameState.lastRoundResults = { netResult: netResult, totalWinnings: totalWinnings };
     
@@ -1602,9 +1827,18 @@ function clearSavedGameState() {
 }
 
 function newGame() {
+    // The setup screen is retired — "new game" re-seeds the local session
+    // (shoe, session profit baseline) from the wallet balance instead; it
+    // does not touch the server balance. Blocked mid-hand: the wallet round
+    // stays open until settle, and restarting would strand it.
+    if (GameState.phase !== 'betting' || betCommitInFlight || topUpInFlight) {
+        showToast('Finish the current hand first');
+        return;
+    }
     if (confirm('Start a new game?')) {
         clearSavedGameState();
-        GameState.phase = 'setup';
-        showSetupScreen();
+        if (window.blackjackWallet) {
+            startWalletGame(window.blackjackWallet.getBalance());
+        }
     }
 }
