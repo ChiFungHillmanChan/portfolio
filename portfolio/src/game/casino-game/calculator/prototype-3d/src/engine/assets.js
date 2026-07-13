@@ -86,83 +86,6 @@
     return new THREE.MeshStandardMaterial({ map: tx, roughness: 0.9, metalness: 0 });
   }
 
-  // ---------- cards ----------
-  function drawCardBack(ctx) {
-    const w = 256, h = 358;
-    ctx.fillStyle = '#1e3a8a';
-    roundRect(ctx, 0, 0, w, h, 20); ctx.fill();
-    ctx.save();
-    roundRect(ctx, 0, 0, w, h, 20); ctx.clip();
-    ctx.strokeStyle = 'rgba(201,162,39,0.55)';
-    ctx.lineWidth = 2;
-    for (let x = -h; x < w + h; x += 26) {
-      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x + h, h); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(x, h); ctx.lineTo(x + h, 0); ctx.stroke();
-    }
-    ctx.restore();
-    ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 6;
-    roundRect(ctx, 10, 10, w - 20, h - 20, 16); ctx.stroke();
-    ctx.lineWidth = 2;
-    roundRect(ctx, 18, 18, w - 36, h - 36, 12); ctx.stroke();
-  }
-
-  function drawCardFace(ctx, card) {
-    const w = 256, h = 358;
-    const RANK_LABEL = C.outcomes.RANK_LABEL, SUIT_CHAR = C.outcomes.SUIT_CHAR;
-    ctx.fillStyle = '#f6f3ea';
-    roundRect(ctx, 4, 4, w - 8, h - 8, 20); ctx.fill();
-    ctx.lineWidth = 3; ctx.strokeStyle = '#999';
-    roundRect(ctx, 4, 4, w - 8, h - 8, 20); ctx.stroke();
-
-    const suit = SUIT_CHAR[card.s];
-    const rank = RANK_LABEL[card.r];
-    const red = card.s === 1 || card.s === 2; // hearts, diamonds
-    ctx.fillStyle = red ? '#c0392b' : '#1a1a1a';
-    ctx.textAlign = 'left'; ctx.textBaseline = 'top';
-
-    ctx.font = '44px Georgia, serif';
-    ctx.fillText(rank, 14, 8);
-    ctx.font = '34px Georgia, serif';
-    ctx.fillText(suit, 16, 54);
-
-    ctx.save();
-    ctx.translate(w - 14, h - 8);
-    ctx.rotate(Math.PI);
-    ctx.font = '44px Georgia, serif';
-    ctx.fillText(rank, 0, 0);
-    ctx.font = '34px Georgia, serif';
-    ctx.fillText(suit, 2, 46);
-    ctx.restore();
-
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.font = '120px Georgia, serif';
-    ctx.fillText(suit, w / 2, h / 2 + 6);
-  }
-
-  function makeCard(card) {
-    const geo = new THREE.PlaneGeometry(0.09, 0.126);
-    const faceTx = canvasTexture(256, 358, (ctx) => (card ? drawCardFace(ctx, card) : drawCardBack(ctx)));
-    const backTx = canvasTexture(256, 358, drawCardBack);
-    const faceMat = new THREE.MeshStandardMaterial({ map: faceTx, roughness: 0.5, metalness: 0 });
-    const backMat = new THREE.MeshStandardMaterial({ map: backTx, roughness: 0.5, metalness: 0 });
-
-    const face = new THREE.Mesh(geo, faceMat);
-    face.position.z = 0.0006;
-    face.castShadow = true; face.receiveShadow = true;
-
-    const back = new THREE.Mesh(geo, backMat);
-    back.rotation.y = Math.PI;
-    back.position.z = -0.0006;
-    back.castShadow = true; back.receiveShadow = true;
-
-    const group = new THREE.Group();
-    group.add(face, back);
-    group.userData.card = card;
-    group.userData.flip = (ms = 400, onDone) =>
-      C.tween.to(group.rotation, { y: group.rotation.y + Math.PI }, ms, 'inOutCubic', onDone);
-    return group;
-  }
-
   // ---------- chips ----------
   const CHIP_COLORS = { 100: '#2e6db4', 500: '#8e44ad', 1000: '#c0392b', 5000: '#b8860b' };
 
@@ -462,42 +385,9 @@
     return new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.36), mat);
   }
 
-  // ---------- dealing animation ----------
-  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0 } = {}) {
-    if (app.REDUCED) ms = Math.min(ms, 180);
-    return new Promise((resolve) => {
-      const gen = app.roomGen;
-      cardMesh.position.set(...from);
-      app.scene.add(cardMesh);
-      const ease = C.tween.easings.outCubic;
-      const start = () => {
-        const t0 = performance.now();
-        if (app.roomGen !== gen) return resolve();
-        const hook = (dt, elapsed) => {
-          if (app.roomGen !== gen) { app.offFrame(hook); return resolve(); }
-          const t = Math.min(1, (performance.now() - t0) / ms);
-          const e = ease(t);
-          cardMesh.position.x = from[0] + (to[0] - from[0]) * e;
-          cardMesh.position.z = from[2] + (to[2] - from[2]) * e;
-          const base = from[1] + (to[1] - from[1]) * e;
-          cardMesh.position.y = base + 0.25 * 4 * t * (1 - t);
-          if (t >= 1) {
-            app.offFrame(hook);
-            if (flip) cardMesh.userData.flip(Math.min(220, app.REDUCED ? 180 : 220), resolve);
-            else resolve();
-          }
-        };
-        hook.cancel = () => { app.offFrame(hook); resolve(); };
-        app.onFrame(hook);
-      };
-      if (delay > 0) setTimeout(start, delay);
-      else start();
-    });
-  }
-
   C.assets = {
-    canvasTexture, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
-    makeCard, makeChip, makeChipStack, makeStool, makeDealer, makePlaque,
-    makeRoomShell, makeSign, dealCardTo,
+    canvasTexture, roundRect, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
+    makeChip, makeChipStack, makeStool, makeDealer, makePlaque,
+    makeRoomShell, makeSign,
   };
 })();

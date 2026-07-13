@@ -5,6 +5,7 @@
     inOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
     outCubic: (t) => 1 - Math.pow(1 - t, 3),
     outQuart: (t) => 1 - Math.pow(1 - t, 4),
+    outBack: (t) => 1 + 2.70158 * Math.pow(t - 1, 3) + 1.70158 * Math.pow(t - 1, 2),
   };
   C.tween = {
     easings,
