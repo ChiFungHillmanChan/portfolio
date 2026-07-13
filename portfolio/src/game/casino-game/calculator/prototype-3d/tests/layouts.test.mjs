@@ -28,6 +28,16 @@ test('blackjack slots + spots sit on the half-disc table (radius 1.6, +Z side)',
   // hit cards keep fanning right and must stay on the felt up to 7 cards
   const x7 = bj.playerSlots[1][0] + 5 * bj.fanDx;
   assert.ok(Math.hypot(x7 + L.CARD_W / 2, bj.playerSlots[1][2]) < 1.6);
+  // the felt is a HALF-disc: flat (dealer) edge at z = 0, arc toward +Z.
+  // Card footprints, the shoe, and chip endpoints must sit fully at z >= 0
+  // (the original room constants floated the dealer's cards off the table).
+  [...bj.playerSlots, ...bj.dealerSlots].forEach((p) =>
+    assert.ok(p[2] - L.CARD_H / 2 >= 0, 'card footprint on the +Z felt'));
+  assert.ok(bj.shoePos[2] > 0, 'shoe on the felt');
+  assert.ok(bj.dealerChipPos[2] >= 0, 'dealer chip endpoint on the felt');
+  assert.ok(bj.chipSource[2] > 0, 'chip source on the felt');
+  Object.values(bj.spots).forEach(({ pos }) =>
+    assert.ok(pos[2] > 0, 'bet spot on the +Z felt'));
 });
 
 test('baccarat + uth slots/spots sit inside their felt ellipses', () => {

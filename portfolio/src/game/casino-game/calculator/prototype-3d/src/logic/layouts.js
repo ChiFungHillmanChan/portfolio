@@ -22,20 +22,24 @@
   }
 
   // ---------- blackjack (half-disc table, radius 1.6, felt +Z side, FELT_Y 0.83)
+  // The felt is a HALF-disc: its flat (dealer) edge is at z = 0 and felt only
+  // exists for z in [0, 1.6]. The original room constants floated the dealer
+  // cards and shoe at negative z — off the table. Everything here (cards,
+  // shoe, chip endpoints) sits fully on the felt, i.e. footprint z >= 0.
   const blackjack = {
     feltY: 0.83, cardY: 0.86,
-    shoePos: [1.1, 0.83, -0.75],
+    shoePos: [1.05, 0.83, 0.18],
     chipSource: [1.0, 0.85, 1.05],          // near table edge at the player's right
-    dealerChipPos: [0, 0.85, -0.95],
-    playerSlots: [[0.27, 0.86, 0.38], [0.44, 0.86, 0.38]],
-    dealerSlots: [[-0.24, 0.86, -0.52], [-0.07, 0.86, -0.52]],
+    dealerChipPos: [0, 0.85, 0.10],
+    playerSlots: [[0.27, 0.86, 0.50], [0.44, 0.86, 0.50]],
+    dealerSlots: [[-0.24, 0.86, 0.16], [-0.07, 0.86, 0.16]],
     fanDx: 0.17,                             // 3rd+ card continues right of slot[1]
     spots: {
-      main:               { pos: [0.36, 0.845, 0.72], r: 0.11,  label: 'MAIN' },
-      perfectPair:        { pos: [0.10, 0.845, 0.80], r: 0.075, label: 'PP' },
-      twentyOnePlusThree: { pos: [0.62, 0.845, 0.80], r: 0.075, label: '21+3' },
+      main:               { pos: [0.36, 0.845, 0.78], r: 0.11,  label: 'MAIN' },
+      perfectPair:        { pos: [0.10, 0.845, 0.88], r: 0.075, label: 'PP' },
+      twentyOnePlusThree: { pos: [0.62, 0.845, 0.88], r: 0.075, label: '21+3' },
     },
-    poseDeal: { pos: [0.15, 1.25, 0.95], look: [0.08, 0.85, -0.25] },
+    poseDeal: { pos: [0.12, 1.35, 1.25], look: [0.08, 0.84, 0.25] },
   };
 
   // ---------- baccarat (ellipse felt rx 1.692 / rz 0.799, FELT_Y 0.82)
