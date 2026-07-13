@@ -127,14 +127,23 @@
   }
 
   // Shared reveal for flat-lying cards (was duplicated in 3 room files).
+  // A watcher frame hook carries the roomGen guard + cancel contract: a room
+  // switch mid-flip resolves the promise promptly instead of leaving the
+  // caller awaiting a tween on a torn-down room. (Double-resolve is safe.)
   function flipFlatCard(app, mesh, ms) {
     if (app.REDUCED) ms = Math.min(ms, 180);
     return new Promise((resolve) => {
+      const gen = app.roomGen;
+      const guard = () => {
+        if (app.roomGen !== gen) { app.offFrame(guard); resolve(); }
+      };
+      guard.cancel = () => { app.offFrame(guard); resolve(); };
+      app.onFrame(guard);
       const baseY = mesh.position.y;
       C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
         C.tween.to(mesh.position, { y: baseY }, ms / 2, 'outQuart');
       });
-      mesh.userData.flip(ms, resolve);
+      mesh.userData.flip(ms, () => { app.offFrame(guard); resolve(); });
     });
   }
 
