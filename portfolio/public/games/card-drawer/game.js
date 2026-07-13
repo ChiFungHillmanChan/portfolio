@@ -1,0 +1,619 @@
+// Card Drawer — UI + state. Pure logic lives in hand-eval.js (poker) and
+// card-svg.js (rendering); this module only composes them and manages state.
+
+import {
+  createDeck,
+  shuffle,
+  evaluateHand,
+  compareScores,
+  rankLabel,
+  SUITS,
+} from './hand-eval.js';
+import { renderCardSVG } from './card-svg.js';
+
+const STORAGE_KEY = 'card-drawer:v1';
+const MAX_PLAYERS = 10;
+const MIN_PLAYERS = 2;
+
+const SUIT_TITLES = { spades: 'Spades', hearts: 'Hearts', diamonds: 'Diamonds', clubs: 'Clubs' };
+
+// Hand-drawn UI glyphs — inline SVG paths, never emoji.
+const ICONS = {
+  crown:
+    '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
+    '<path d="M3 16 L3 8 L8 11.5 L12 5 L16 11.5 L21 8 L21 16 Z" fill="currentColor"/>' +
+    '<path d="M4 18 H20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>',
+  cross:
+    '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">' +
+    '<path d="M6 6 L18 18 M18 6 L6 18" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>',
+  plus:
+    '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
+    '<path d="M12 4 V20 M4 12 H20" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" fill="none"/></svg>',
+  undo:
+    '<svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">' +
+    '<path d="M8 4 L3 9 L8 14" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M3 9 H14 a6 6 0 0 1 6 6 v2" stroke="currentColor" stroke-width="2.2" fill="none" stroke-linecap="round"/></svg>',
+  ornament:
+    '<svg class="ornament" width="132" height="14" viewBox="0 0 132 14" aria-hidden="true">' +
+    '<path d="M0 7 H54 M78 7 H132" stroke="currentColor" stroke-width="1"/>' +
+    '<path d="M66 1 L72 7 L66 13 L60 7 Z" fill="currentColor"/></svg>',
+};
+
+const esc = (s) =>
+  String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+// --- state -----------------------------------------------------------------
+
+function defaultState() {
+  return {
+    phase: 'setup',
+    includeJokers: false,
+    drawMode: 'random',
+    players: [],
+    deck: [],
+    history: [],
+  };
+}
+
+let state = defaultState();
+// Transient UI state — never persisted.
+const ui = { sheetFor: null, justDrawn: null, justPicked: null, confirmReset: false, resume: null };
+let resetTimer = null;
+
+const nextPlayerId = () => state.players.reduce((m, p) => Math.max(m, p.id), 0) + 1;
+
+// --- persistence (localStorage may be absent or corrupt — never crash) ------
+
+function saveState() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch {
+    /* in-memory only */
+  }
+}
+
+function clearSaved() {
+  try {
+    localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+function loadSaved() {
+  let raw;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+  if (!raw) return null;
+  let parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return null;
+  }
+  return normalizeState(parsed);
+}
+
+// Validate the shape and card integrity of a stored state; returns a clean
+// state (cards re-mapped onto canonical deck objects) or null.
+function normalizeState(s) {
+  if (!s || typeof s !== 'object') return null;
+  if (s.phase !== 'setup' && s.phase !== 'playing') return null;
+  if (s.drawMode !== 'random' && s.drawMode !== 'manual') return null;
+  if (typeof s.includeJokers !== 'boolean') return null;
+  if (!Array.isArray(s.players) || s.players.length > MAX_PLAYERS) return null;
+  if (!Array.isArray(s.deck) || !Array.isArray(s.history)) return null;
+
+  const universe = new Map(
+    createDeck({ includeJokers: s.includeJokers }).map((card) => [card.id, card])
+  );
+  const seen = new Set();
+  const mapCard = (card) => {
+    if (!card || typeof card.id !== 'string') return null;
+    if (!universe.has(card.id) || seen.has(card.id)) return null;
+    seen.add(card.id);
+    return universe.get(card.id);
+  };
+
+  const players = [];
+  for (const p of s.players) {
+    if (!p || typeof p.id !== 'number' || typeof p.name !== 'string' || !p.name.trim()) return null;
+    if (!Array.isArray(p.cards)) return null;
+    const cards = p.cards.map(mapCard);
+    if (cards.some((card) => card === null)) return null;
+    players.push({ id: p.id, name: p.name.trim().slice(0, 24), cards });
+  }
+  if (new Set(players.map((p) => p.id)).size !== players.length) return null;
+
+  const deck = s.deck.map(mapCard);
+  if (deck.some((card) => card === null)) return null;
+
+  if (s.phase === 'playing') {
+    if (players.length < MIN_PLAYERS) return null;
+    if (seen.size !== universe.size) return null; // every card accounted for
+  }
+
+  const history = [];
+  for (const h of s.history) {
+    if (!h || typeof h.cardId !== 'string' || !players.some((p) => p.id === h.playerId)) return null;
+    history.push({ playerId: h.playerId, cardId: h.cardId });
+  }
+
+  return {
+    phase: s.phase,
+    includeJokers: s.includeJokers,
+    drawMode: s.drawMode,
+    players,
+    deck,
+    history,
+  };
+}
+
+// --- actions ------------------------------------------------------------------
+
+function addPlayer(name) {
+  const trimmed = name.trim().slice(0, 24);
+  if (!trimmed || state.players.length >= MAX_PLAYERS) return false;
+  state.players.push({ id: nextPlayerId(), name: trimmed, cards: [] });
+  saveState();
+  return true;
+}
+
+function renamePlayer(id, name) {
+  const player = state.players.find((p) => p.id === id);
+  if (!player) return;
+  const trimmed = name.trim().slice(0, 24);
+  if (trimmed) player.name = trimmed;
+  saveState();
+  render();
+}
+
+function removePlayer(id) {
+  state.players = state.players.filter((p) => p.id !== id);
+  saveState();
+  render();
+}
+
+function startGame() {
+  if (state.players.length < MIN_PLAYERS) return;
+  state.players.forEach((p) => {
+    p.cards = [];
+  });
+  state.deck = shuffle(createDeck({ includeJokers: state.includeJokers }));
+  state.history = [];
+  state.phase = 'playing';
+  saveState();
+  render();
+}
+
+function dealRandom(playerId) {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player || state.deck.length === 0) return;
+  const card = state.deck.pop();
+  player.cards.push(card);
+  state.history.push({ playerId, cardId: card.id });
+  ui.justDrawn = { playerId, cardId: card.id };
+  saveState();
+  render();
+  ui.justDrawn = null;
+}
+
+function assignCard(playerId, cardId) {
+  const player = state.players.find((p) => p.id === playerId);
+  const index = state.deck.findIndex((card) => card.id === cardId);
+  if (!player || index === -1) return;
+  const [card] = state.deck.splice(index, 1);
+  player.cards.push(card);
+  state.history.push({ playerId, cardId: card.id });
+  ui.justPicked = { playerId, cardId: card.id };
+  ui.sheetFor = null;
+  saveState();
+  render();
+  ui.justPicked = null;
+}
+
+function undoLastDraw() {
+  const last = state.history.pop();
+  if (!last) return;
+  const player = state.players.find((p) => p.id === last.playerId);
+  // Piles are append-only, so the most recent draw is that player's last card.
+  if (player && player.cards.length && player.cards[player.cards.length - 1].id === last.cardId) {
+    state.deck.push(player.cards.pop());
+  }
+  saveState();
+  render();
+}
+
+function resetGame() {
+  clearTimeout(resetTimer);
+  ui.confirmReset = false;
+  ui.sheetFor = null;
+  const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [] }));
+  state = { ...defaultState(), includeJokers: state.includeJokers, players: names };
+  saveState();
+  render();
+}
+
+// --- leaderboard -----------------------------------------------------------------
+
+function rankedEntries() {
+  const entries = state.players.map((p) => ({ player: p, hand: evaluateHand(p.cards) }));
+  entries.sort((a, b) => {
+    if (!a.hand && !b.hand) return 0;
+    if (!a.hand) return 1;
+    if (!b.hand) return -1;
+    return compareScores(b.hand.score, a.hand.score);
+  });
+  entries.forEach((entry, i) => {
+    if (i === 0) {
+      entry.rank = 1;
+      return;
+    }
+    const prev = entries[i - 1];
+    const tied =
+      (!entry.hand && !prev.hand) ||
+      (entry.hand && prev.hand && compareScores(entry.hand.score, prev.hand.score) === 0);
+    entry.rank = tied ? prev.rank : i + 1;
+  });
+  return entries;
+}
+
+// --- rendering ----------------------------------------------------------------------
+
+const app = document.getElementById('app');
+
+function cardWrap(card, { flip = false, pop = false } = {}) {
+  if (flip) {
+    return (
+      '<span class="card-wrap flip"><span class="flip-inner">' +
+      `<span class="flip-face">${renderCardSVG(card)}</span>` +
+      `<span class="flip-back">${renderCardSVG('back')}</span>` +
+      '</span></span>'
+    );
+  }
+  return `<span class="card-wrap${pop ? ' pop-in' : ''}">${renderCardSVG(card)}</span>`;
+}
+
+function setupScreen() {
+  const count = state.players.length;
+  const canStart = count >= MIN_PLAYERS;
+  const full = count >= MAX_PLAYERS;
+
+  const rows = state.players
+    .map(
+      (p, i) => `
+      <li class="player-row">
+        <span class="seat">${i + 1}</span>
+        <input type="text" value="${esc(p.name)}" maxlength="24" aria-label="Rename ${esc(p.name)}"
+               data-rename="${p.id}" enterkeyhint="done" />
+        <button class="btn btn-quiet btn-icon" data-action="remove-player" data-player="${p.id}"
+                aria-label="Remove ${esc(p.name)}">${ICONS.cross}</button>
+      </li>`
+    )
+    .join('');
+
+  return `
+    <header class="masthead">
+      <p class="eyebrow">Pass &amp; play</p>
+      <h1>Card Drawer</h1>
+      <p class="tagline">One deck, your table, best hand on top.</p>
+      ${ICONS.ornament}
+    </header>
+
+    <section class="panel" aria-labelledby="players-h">
+      <h2 id="players-h">Players</h2>
+      <form class="add-player-form" data-form="add-player">
+        <input type="text" name="playerName" maxlength="24" autocomplete="off"
+               placeholder="${full ? 'Table is full' : `Player ${count + 1}`}"
+               aria-label="New player name" ${full ? 'disabled' : ''} />
+        <button class="btn btn-icon" type="submit" aria-label="Add player" ${full ? 'disabled' : ''}>${ICONS.plus}</button>
+      </form>
+      ${rows ? `<ul class="player-list">${rows}</ul>` : ''}
+      <p class="setup-hint">${
+        full
+          ? 'Table is full — ten seats taken.'
+          : canStart
+            ? `${count} of ${MAX_PLAYERS} seats taken.`
+            : 'Add at least 2 players to start.'
+      }</p>
+    </section>
+
+    <section class="panel" aria-labelledby="deck-h">
+      <h2 id="deck-h">Deck</h2>
+      <div class="toggle-row">
+        <div class="toggle-copy">
+          <strong>Include jokers</strong>
+          <p>Two wild cards — 54 instead of 52.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" data-toggle="jokers" ${state.includeJokers ? 'checked' : ''}
+                 aria-label="Include jokers" />
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+    </section>
+
+    <button class="btn btn-primary btn-block" data-action="start" ${canStart ? '' : 'disabled'}>
+      Start game
+    </button>
+  `;
+}
+
+function playerPanel(player) {
+  const hand = evaluateHand(player.cards);
+  const deckEmpty = state.deck.length === 0;
+  const fan = player.cards.length
+    ? player.cards
+        .map((card) => {
+          const flip = ui.justDrawn && ui.justDrawn.cardId === card.id;
+          const pop = ui.justPicked && ui.justPicked.cardId === card.id;
+          return cardWrap(card, { flip, pop });
+        })
+        .join('')
+    : '<span class="fan-empty">No cards yet</span>';
+  const actionLabel = state.drawMode === 'random' ? `Deal to ${esc(player.name)}` : `Pick for ${esc(player.name)}`;
+  const action = state.drawMode === 'random' ? 'deal' : 'open-sheet';
+
+  return `
+    <section class="panel player-panel">
+      <div class="player-head">
+        <h3 class="player-name">${esc(player.name)}</h3>
+        <span class="card-count">${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</span>
+      </div>
+      <div class="fan">${fan}</div>
+      ${hand ? `<p class="hand-label">${esc(hand.name)}</p>` : ''}
+      <button class="btn btn-block" data-action="${action}" data-player="${player.id}" ${deckEmpty ? 'disabled' : ''}>
+        ${deckEmpty ? 'Deck empty' : actionLabel}
+      </button>
+    </section>
+  `;
+}
+
+function leaderboardHTML() {
+  const rows = rankedEntries()
+    .map((entry) => {
+      const leader = entry.rank === 1 && entry.hand;
+      return `
+      <li class="${leader ? 'lb-leader' : ''}">
+        <span class="lb-rank">${entry.rank}</span>
+        ${leader ? `<span class="lb-crown">${ICONS.crown}</span>` : ''}
+        <span class="lb-body">
+          <span class="lb-name">${esc(entry.player.name)}</span>
+          <span class="lb-hand">${entry.hand ? esc(entry.hand.name) : 'No cards yet'}</span>
+        </span>
+        <span class="lb-count">${entry.player.cards.length}c</span>
+      </li>`;
+    })
+    .join('');
+  return `
+    <section class="panel leaderboard" aria-labelledby="lb-h">
+      <h2 id="lb-h">Leaderboard</h2>
+      <ol>${rows}</ol>
+    </section>
+  `;
+}
+
+function dealerBar() {
+  const left = state.deck.length;
+  const empty = left === 0;
+  return `
+    <div class="dealer-bar">
+      <div class="dealer-row">
+        <div class="deck-stack${empty ? ' deck-empty' : ''}" aria-hidden="true">
+          ${renderCardSVG('back')}${renderCardSVG('back')}
+        </div>
+        <div class="deck-meta" aria-live="polite">
+          <p class="eyebrow" style="margin:0">Card Drawer</p>
+          <span class="deck-count${empty ? ' deck-empty-note' : ''}">
+            ${empty ? 'Deck empty' : `${left} <span class="unit">card${left === 1 ? '' : 's'} left</span>`}
+          </span>
+        </div>
+        <div class="dealer-actions">
+          <button class="btn btn-quiet btn-icon" data-action="undo" aria-label="Undo last draw"
+                  ${state.history.length ? '' : 'disabled'}>${ICONS.undo}</button>
+          <button class="btn ${ui.confirmReset ? 'btn-danger' : 'btn-quiet'}" data-action="reset">
+            ${ui.confirmReset ? 'Confirm' : 'Reset'}
+          </button>
+        </div>
+      </div>
+      <div class="mode-toggle" role="group" aria-label="Draw mode">
+        <button class="btn" data-action="mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
+        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Manual</button>
+      </div>
+    </div>
+  `;
+}
+
+function sheetHTML() {
+  const player = state.players.find((p) => p.id === ui.sheetFor);
+  if (!player) return '';
+  const remaining = new Set(state.deck.map((card) => card.id));
+  const full = createDeck({ includeJokers: state.includeJokers });
+
+  const sections = SUITS.map((suit) => {
+    const cards = full
+      .filter((card) => card.suit === suit)
+      .sort((a, b) => b.rank - a.rank)
+      .map((card) => pickButton(card, remaining))
+      .join('');
+    return `<h3 class="sheet-suit">${SUIT_TITLES[suit]}</h3><div class="pick-grid">${cards}</div>`;
+  }).join('');
+
+  const jokers = state.includeJokers
+    ? `<h3 class="sheet-suit">Jokers</h3><div class="pick-grid">${full
+        .filter((card) => card.joker)
+        .map((card) => pickButton(card, remaining))
+        .join('')}</div>`
+    : '';
+
+  return `
+    <div class="sheet-backdrop" data-action="close-sheet"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-label="Pick a card for ${esc(player.name)}">
+      <div class="sheet-head">
+        <h2>Pick a card for ${esc(player.name)}
+          <span class="sheet-sub">${state.deck.length} in the deck — drawn cards are dimmed</span>
+        </h2>
+        <button class="btn btn-quiet btn-icon" data-action="close-sheet" aria-label="Close">${ICONS.cross}</button>
+      </div>
+      <div class="sheet-body">${sections}${jokers}</div>
+    </div>
+  `;
+}
+
+function pickButton(card, remaining) {
+  const taken = !remaining.has(card.id);
+  const name = card.joker ? 'Joker' : `${rankLabel(card.rank)} of ${SUIT_TITLES[card.suit]}`;
+  return (
+    `<button class="pick-card" data-action="pick" data-card="${card.id}" ${taken ? 'disabled' : ''} ` +
+    `aria-label="${taken ? `${name} (already drawn)` : name}">` +
+    renderCardSVG(card, { dimmed: taken }) +
+    '</button>'
+  );
+}
+
+function gameScreen() {
+  return `
+    ${dealerBar()}
+    ${state.players.map(playerPanel).join('')}
+    ${leaderboardHTML()}
+    ${ui.sheetFor !== null ? sheetHTML() : ''}
+  `;
+}
+
+function resumeOverlay() {
+  return `
+    <div class="overlay">
+      <div class="panel" role="dialog" aria-modal="true" aria-labelledby="resume-h">
+        <h2 id="resume-h">Game in progress</h2>
+        <p>A saved game with ${ui.resume.players.length} players was found on this device.</p>
+        <div class="overlay-actions">
+          <button class="btn btn-primary" data-action="resume">Resume</button>
+          <button class="btn btn-quiet" data-action="discard-resume">Start over</button>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function render() {
+  app.innerHTML =
+    (state.phase === 'setup' ? setupScreen() : gameScreen()) + (ui.resume ? resumeOverlay() : '');
+}
+
+// --- events (delegated once) -----------------------------------------------------
+
+app.addEventListener('click', (event) => {
+  const target = event.target.closest('[data-action]');
+  if (!target || target.disabled) return;
+  const playerId = Number(target.dataset.player);
+
+  switch (target.dataset.action) {
+    case 'remove-player':
+      removePlayer(playerId);
+      break;
+    case 'start':
+      startGame();
+      break;
+    case 'deal':
+      dealRandom(playerId);
+      break;
+    case 'open-sheet':
+      ui.sheetFor = playerId;
+      render();
+      break;
+    case 'close-sheet':
+      ui.sheetFor = null;
+      render();
+      break;
+    case 'pick': {
+      const sheetPlayer = ui.sheetFor;
+      if (sheetPlayer !== null) assignCard(sheetPlayer, target.dataset.card);
+      break;
+    }
+    case 'undo':
+      undoLastDraw();
+      break;
+    case 'mode':
+      state.drawMode = target.dataset.mode === 'manual' ? 'manual' : 'random';
+      saveState();
+      render();
+      break;
+    case 'reset':
+      if (ui.confirmReset) {
+        resetGame();
+      } else {
+        ui.confirmReset = true;
+        render();
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(() => {
+          ui.confirmReset = false;
+          render();
+        }, 2600);
+      }
+      break;
+    case 'resume':
+      state = ui.resume;
+      ui.resume = null;
+      saveState();
+      render();
+      break;
+    case 'discard-resume':
+      ui.resume = null;
+      saveState();
+      render();
+      break;
+    default:
+      break;
+  }
+});
+
+app.addEventListener('submit', (event) => {
+  const form = event.target.closest('[data-form="add-player"]');
+  if (!form) return;
+  event.preventDefault();
+  const input = form.elements.playerName;
+  if (addPlayer(input.value)) {
+    render();
+    const fresh = app.querySelector('.add-player-form input');
+    if (fresh) fresh.focus();
+  } else {
+    input.focus();
+  }
+});
+
+app.addEventListener('change', (event) => {
+  const rename = event.target.closest('[data-rename]');
+  if (rename) {
+    renamePlayer(Number(rename.dataset.rename), rename.value);
+    return;
+  }
+  if (event.target.closest('[data-toggle="jokers"]')) {
+    state.includeJokers = event.target.checked;
+    saveState();
+    render();
+  }
+});
+
+document.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && ui.sheetFor !== null) {
+    ui.sheetFor = null;
+    render();
+  }
+});
+
+// --- boot -------------------------------------------------------------------------
+
+const saved = loadSaved();
+if (saved && saved.phase === 'playing') {
+  ui.resume = saved; // offer Resume / Start over
+} else if (saved) {
+  state = saved; // quietly restore the setup screen (player list, joker toggle)
+}
+render();
