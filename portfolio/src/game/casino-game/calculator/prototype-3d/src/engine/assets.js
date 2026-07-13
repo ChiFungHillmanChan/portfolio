@@ -260,6 +260,11 @@
       if (app.REDUCED) return;
       const token = ++gestureId;
       const getToken = () => gestureId;
+      // Room-switch guard: the hook-cancel sweep only resolves the CURRENT
+      // phase's promise — without these checks the continuation would
+      // register fresh hooks into the NEW room and keep animating a
+      // disposed dealer (same idiom as dealCardTo / chips3d fly).
+      const gen = app.roomGen;
       // worldToLocal needs `group` scene-attached with up-to-date world
       // matrices — true whenever gestures fire, since rooms only call this
       // after enter() has added the dealer and the render loop updates
@@ -269,7 +274,9 @@
       const reach = armQuat(armR, new THREE.Vector3(0.35, 1.05, 0.3));
       const sweep = armQuat(armR, local.setY(Math.min(local.y, 1.05)));
       await slerpQ(app, armR.shoulder, reach, ms * 0.3, token, getToken);
+      if (app.roomGen !== gen) return;
       await slerpQ(app, armR.shoulder, sweep, ms * 0.4, token, getToken);
+      if (app.roomGen !== gen) return;
       await slerpQ(app, armR.shoulder, restQuatR, ms * 0.3, token, getToken);
     };
 
