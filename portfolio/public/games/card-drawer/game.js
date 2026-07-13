@@ -158,9 +158,18 @@ function normalizeState(s) {
 
 // --- actions ------------------------------------------------------------------
 
+// First "Player N" not already in use — shown as the input placeholder and
+// assigned when the host adds a seat without typing a name.
+function defaultPlayerName() {
+  const taken = new Set(state.players.map((p) => p.name));
+  let n = 1;
+  while (taken.has(`Player ${n}`)) n++;
+  return `Player ${n}`;
+}
+
 function addPlayer(name) {
-  const trimmed = name.trim().slice(0, 24);
-  if (!trimmed || state.players.length >= MAX_PLAYERS) return false;
+  if (state.players.length >= MAX_PLAYERS) return false;
+  const trimmed = name.trim().slice(0, 24) || defaultPlayerName();
   state.players.push({ id: nextPlayerId(), name: trimmed, cards: [] });
   saveState();
   return true;
@@ -311,7 +320,7 @@ function setupScreen() {
       <h2 id="players-h">Players</h2>
       <form class="add-player-form" data-form="add-player">
         <input type="text" name="playerName" maxlength="24" autocomplete="off"
-               placeholder="${full ? 'Table is full' : `Player ${count + 1}`}"
+               placeholder="${full ? 'Table is full' : esc(defaultPlayerName())}"
                aria-label="New player name" ${full ? 'disabled' : ''} />
         <button class="btn btn-icon" type="submit" aria-label="Add player" ${full ? 'disabled' : ''}>${ICONS.plus}</button>
       </form>
