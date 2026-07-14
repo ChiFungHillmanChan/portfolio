@@ -45,6 +45,8 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 .wallet-pill .pill-reset { margin-left: .3rem; min-height: 32px; padding: .1rem .6rem;
   font: inherit; font-size: .8rem; color: #16130a; background: linear-gradient(#f0cd6b, #c69a2e);
   border: 0; border-radius: 999px; cursor: pointer; }
+.wallet-pill .pill-cash { margin-left: .35rem; padding-left: .45rem; font-size: .85rem;
+  color: #9fd6a8; border-left: 1px solid #3a4053; white-space: nowrap; }
 .account-menu { position: relative; }
 .account-menu .menu-pop { position: absolute; right: 0; top: calc(100% + 6px);
   background: rgba(10,12,18,.97); border: 1px solid #3a4053; border-radius: 10px;
@@ -80,6 +82,12 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 .floor-card .muted { color: #7d8398; font-size: .85rem; margin-top: .5rem; }
 .floor-card .hint, .floor-card .err { margin-top: .5rem; color: #ff9ba5; font-size: .85rem; }
 .floor-card .actions { display: flex; gap: .6rem; margin-top: .85rem; flex-wrap: wrap; align-items: center; }
+/* display:inline-flex on .btn-* would otherwise override the UA [hidden] rule */
+.floor-card [hidden] { display: none !important; }
+.floor-card .exchange-row { display: flex; gap: .5rem; margin-top: .6rem; flex-wrap: wrap; align-items: center; }
+.floor-card .exchange-amt { width: 8.5rem; min-height: 40px; padding: .3rem .6rem; font: inherit;
+  color: #e6e4dc; background: rgba(255,255,255,.06); border: 1px solid #3a4053; border-radius: 8px; }
+.floor-card .exchange-amt:focus { outline: none; border-color: #ffd27f; }
 .floor-card .linkline { margin-top: .6rem; font-size: .85rem; }
 .floor-card .linkline a { color: #9aa0b4; text-decoration: underline; }
 .floor-card .linkline a:hover { color: #ffd27f; }
@@ -117,6 +125,30 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   .floor-card { animation: none; }
   #fader { transition: none; }
 }
+
+/* Live roulette session: bottom-sheet iframe running the 2D game in embed
+   mode. Hidden (slid down) while the 3D wheel spins. */
+#rouletteLive { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%);
+  width: min(980px, calc(100vw - 20px)); height: min(48vh, 500px); z-index: 32;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: 14px;
+  background: rgba(10, 12, 18, .96); border: 1px solid #3a4053;
+  box-shadow: 0 14px 60px rgba(0, 0, 0, .7);
+  transition: transform .45s ease, opacity .45s ease; }
+#rouletteLive.rl-hidden { transform: translate(-50%, 130%); opacity: 0; pointer-events: none; }
+.rl-bar { display: flex; align-items: center; gap: .8rem; padding: .45rem .8rem;
+  background: #12151d; border-bottom: 1px solid #262c3a; }
+.rl-title { color: #ffd27f; font-size: .78rem; letter-spacing: .14em; font-weight: 600; }
+.rl-status { flex: 1; color: #9aa0b4; font-size: .78rem; text-align: right; }
+.rl-leave { color: #cfd2da; background: rgba(255,255,255,.05); border: 1px solid #3a4053;
+  border-radius: 8px; padding: .25rem .7rem; font-size: .78rem; cursor: pointer; }
+.rl-leave:hover { border-color: #ffd27f; color: #ffd27f; }
+.rl-frame { flex: 1; width: 100%; border: 0; background: #0d0f13; }
+@media (max-width: 768px) {
+  #rouletteLive { height: 56vh; bottom: 0; width: 100vw; border-radius: 14px 14px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #rouletteLive { transition: none; }
+}
 </style>
 </head>
 <body>
@@ -134,6 +166,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   <div id="sectionLabel" aria-live="polite"></div>
   <div id="hudRight">
     <div id="accountHost"></div>
+    <button id="muteBtn" class="hud-btn" type="button" aria-label="Toggle sound"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 3 9 3 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
     <a id="exit2d" class="hud-btn" href="../index.html">2D Lobby</a>
   </div>
 </div>
@@ -178,6 +211,206 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       requestAnimationFrame(tick);
       return entry;
     },
+  };
+})();
+
+
+// ===== src/engine/sound.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+  // sound.js — procedural casino audio + dealer voice. Zero asset files: every
+  // effect is synthesised with the Web Audio API (same philosophy as the
+  // canvas-drawn textures) and the dealer voice uses the browser TTS.
+  // Autoplay policy: nothing can start before a user gesture, so everything
+  // no-ops until unlock() runs from the ENTER button. Also import-safe in
+  // node (tests) — no browser API is touched at module load.
+  const KEY = 'cg3d.soundMuted';
+  const LS = typeof localStorage !== 'undefined' ? localStorage : null;
+  const AC = typeof AudioContext !== 'undefined' ? AudioContext
+    : typeof webkitAudioContext !== 'undefined' ? webkitAudioContext : null;
+  const TTS = typeof speechSynthesis !== 'undefined' ? speechSynthesis : null;
+
+  let muted = LS ? LS.getItem(KEY) === '1' : false;
+  let ctx = null, master = null, noiseBuf = null;
+  let ambienceWanted = false, ambienceNodes = null, visibilityHooked = false;
+
+  const ready = () => !!ctx && !muted;
+
+  function ensureNoise() {
+    if (!noiseBuf) {
+      const len = Math.floor(ctx.sampleRate * 1.2);
+      noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  function env(g, t0, peak, dur) {
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(peak, t0 + 0.008);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  }
+
+  function noiseHit({ delay = 0, dur = 0.06, peak = 0.25, freq = 4000, q = 1.2, type = 'bandpass', rate = 1 } = {}) {
+    const t0 = ctx.currentTime + delay;
+    const src = ctx.createBufferSource();
+    src.buffer = ensureNoise();
+    src.playbackRate.value = rate;
+    const f = ctx.createBiquadFilter();
+    f.type = type; f.frequency.value = freq; f.Q.value = q;
+    const g = ctx.createGain();
+    env(g, t0, peak, dur);
+    src.connect(f).connect(g).connect(master);
+    src.start(t0);
+    src.stop(t0 + dur + 0.05);
+  }
+
+  function tone({ delay = 0, dur = 0.18, peak = 0.12, freq = 660, type = 'sine', slide = 0 } = {}) {
+    const t0 = ctx.currentTime + delay;
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t0);
+    if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(40, freq + slide), t0 + dur);
+    const g = ctx.createGain();
+    env(g, t0, peak, dur);
+    o.connect(g).connect(master);
+    o.start(t0);
+    o.stop(t0 + dur + 0.05);
+  }
+
+  const SFX = {
+    chip()  { noiseHit({ dur: 0.035, peak: 0.35, freq: 5200, q: 2.5 }); noiseHit({ delay: 0.045, dur: 0.03, peak: 0.22, freq: 6400, q: 2.5 }); },
+    chipSweep() { for (let i = 0; i < 5; i++) noiseHit({ delay: i * 0.035, dur: 0.03, peak: 0.16, freq: 4800 + i * 350, q: 2 }); },
+    card()  { noiseHit({ dur: 0.09, peak: 0.18, freq: 2400, q: 0.7, rate: 0.8 }); },
+    win()   { [523, 659, 784].forEach((f, i) => tone({ delay: i * 0.09, dur: 0.22, peak: 0.14, freq: f, type: 'triangle' })); },
+    lose()  { tone({ dur: 0.3, peak: 0.12, freq: 196, type: 'triangle', slide: -60 }); },
+    push()  { tone({ dur: 0.15, peak: 0.1, freq: 440 }); },
+    step()  { noiseHit({ dur: 0.05, peak: 0.045, freq: 240, q: 0.8, type: 'lowpass' }); },
+    buzz()  { tone({ dur: 0.16, peak: 0.08, freq: 110, type: 'square' }); tone({ delay: 0.19, dur: 0.16, peak: 0.08, freq: 110, type: 'square' }); },
+    sting() { [392, 523, 659, 784].forEach((f, i) => tone({ delay: i * 0.07, dur: 0.3, peak: 0.1, freq: f, type: 'triangle' })); },
+  };
+
+  function play(name) {
+    if (!ready()) return;
+    try { SFX[name] && SFX[name](); } catch { /* audio must never break gameplay */ }
+  }
+
+  // Ball circling the rim: looping noise whose pitch/level fall as it slows,
+  // then a pocket rattle over the last 28% (matches spinTo's drop window).
+  function ballSpin(ms = 5000) {
+    if (!ready()) return { stop() {} };
+    try {
+      const t0 = ctx.currentTime, sec = ms / 1000;
+      const src = ctx.createBufferSource();
+      src.buffer = ensureNoise();
+      src.loop = true;
+      src.playbackRate.setValueAtTime(1.5, t0);
+      src.playbackRate.linearRampToValueAtTime(0.55, t0 + sec);
+      const f = ctx.createBiquadFilter();
+      f.type = 'bandpass'; f.Q.value = 3;
+      f.frequency.setValueAtTime(3200, t0);
+      f.frequency.exponentialRampToValueAtTime(900, t0 + sec);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.11, t0);
+      g.gain.linearRampToValueAtTime(0.03, t0 + sec * 0.72);
+      g.gain.linearRampToValueAtTime(0.0001, t0 + sec);
+      src.connect(f).connect(g).connect(master);
+      src.start(t0);
+      src.stop(t0 + sec + 0.1);
+      for (let i = 0; i < 7; i++) {
+        const frac = i / 7;
+        noiseHit({ delay: sec * 0.72 + frac * sec * 0.26, dur: 0.03, peak: 0.2 * (1 - frac * 0.5), freq: 2600, q: 4 });
+      }
+      let stopped = false;
+      return {
+        stop() {
+          if (stopped) return;
+          stopped = true;
+          try {
+            g.gain.cancelScheduledValues(ctx.currentTime);
+            g.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.05);
+            src.stop(ctx.currentTime + 0.25);
+          } catch { /* already ended */ }
+        },
+      };
+    } catch { return { stop() {} }; }
+  }
+
+  function startAmbience() {
+    if (ambienceNodes || !ambienceWanted || !ready()) return;
+    try {
+      const src = ctx.createBufferSource();
+      src.buffer = ensureNoise();
+      src.loop = true;
+      src.playbackRate.value = 0.35;
+      const f = ctx.createBiquadFilter();
+      f.type = 'lowpass'; f.frequency.value = 420; f.Q.value = 0.4;
+      const g = ctx.createGain();
+      g.gain.value = 0.03;
+      src.connect(f).connect(g).connect(master);
+      src.start();
+      ambienceNodes = { src };
+    } catch { /* no ambience */ }
+  }
+  function stopAmbience() {
+    if (!ambienceNodes) return;
+    try { ambienceNodes.src.stop(); } catch { /* already stopped */ }
+    ambienceNodes = null;
+  }
+  function ambience(on) {
+    ambienceWanted = !!on;
+    if (ambienceWanted) startAmbience(); else stopAmbience();
+  }
+
+  function say(text, { lang = 'en-US', rate = 0.95 } = {}) {
+    if (muted || !TTS) return;
+    try {
+      TTS.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = lang;
+      u.rate = rate;
+      TTS.speak(u);
+    } catch { /* TTS is best-effort */ }
+  }
+  const sayResult = (num, color, parity) => say([num, color, parity].filter(Boolean).join(', '));
+  const sayNoMoreBets = () => say('No more bets');
+
+  // Call from a user gesture (the ENTER button): creates/resumes the
+  // AudioContext even while muted, so unmuting later needs no new gesture.
+  function unlock() {
+    if (!ctx && AC) {
+      try {
+        ctx = new AC();
+        master = ctx.createGain();
+        master.gain.value = 0.9;
+        master.connect(ctx.destination);
+      } catch { ctx = null; }
+    }
+    if (ctx && ctx.state === 'suspended') ctx.resume().catch(() => {});
+    if (TTS) { try { TTS.getVoices(); } catch { /* voices load async */ } }
+    if (!visibilityHooked && typeof document !== 'undefined') {
+      visibilityHooked = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) stopAmbience();
+        else if (ambienceWanted) startAmbience();
+      });
+    }
+    startAmbience();
+  }
+
+  function setMuted(m) {
+    muted = !!m;
+    if (LS) { try { LS.setItem(KEY, muted ? '1' : '0'); } catch { /* private mode */ } }
+    if (muted) {
+      stopAmbience();
+      if (TTS) { try { TTS.cancel(); } catch { /* best-effort */ } }
+    } else if (ambienceWanted) startAmbience();
+  }
+
+  C.sound = {
+    unlock, play, say, sayResult, sayNoMoreBets, ballSpin, ambience, setMuted,
+    get muted() { return muted; },
   };
 })();
 
@@ -290,7 +523,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       let look = null;   // { id, x, y, yaw, pitch, dragging }
       canvas.addEventListener('pointerdown', (e) => {
-        if (!e.isPrimary) return;
+        if (C.app.inputLocked || !e.isPrimary) return;
         look = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw: P.yaw, pitch: P.pitch, dragging: false };
         canvas.setPointerCapture?.(e.pointerId);
       });
@@ -336,18 +569,19 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
       // ----- frame loop -----
-      let last = performance.now(), proxTimer = 0, nearId, zoneId;
+      let last = performance.now(), proxTimer = 0, nearId, zoneId, stepAccum = 0;
       const loop = (now) => {
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
-        const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
-        const s = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+        const locked = C.app.inputLocked;
+        const f = locked ? 0 : (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+        const s = locked ? 0 : (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
         if (f || s) {
           glide = null; cancelFly();
           const len = Math.hypot(f, s) || 1;
           const dx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) / len;
           const dz = (Math.cos(P.yaw) * f - Math.sin(P.yaw) * s) / len;
-          tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt);
+          if (tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt)) stepAccum += dt;
         } else if (glide) {
           const dx = glide.x - P.x, dz = glide.z - P.z, d = Math.hypot(dx, dz);
           if (d < 0.05) { const done = glide.onDone; glide = null; done?.(); }
@@ -356,6 +590,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
             const speed = Math.min(GLIDE, Math.max(1.4, d * 2.2));
             const moved = tryMove(P.x + (dx / d) * Math.min(speed * dt, d),
                                   P.z + (dz / d) * Math.min(speed * dt, d));
+            if (moved) stepAccum += dt;
             if (!moved) { const done = glide.onDone; glide = null; done?.(); }
             else if (glide && glide.turn) {
               // yawTarget is FIXED at walkTo time — re-aiming at the noisy
@@ -368,6 +603,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
             }
           }
         }
+        if (stepAccum > 0.45) { stepAccum = 0; C.sound?.play('step'); }   // footsteps
         // proximity + zone checks at ~10 Hz
         proxTimer += dt;
         if (proxTimer > 0.1) {
@@ -413,6 +649,17 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       };
     },
 
+    // A closed turnstile must block click-to-fly the same way it blocks
+    // walking: glideTo deliberately ignores collision, so flying a signed-out
+    // player from the vestibule to a floor-side pose would skip the ID check.
+    // (East→west stays allowed — sign-out pulls the player back to spawn.)
+    canFlyTo(pos) {
+      if (C.world.gateOpen) return true;
+      const gx = C.floorplan.GATE_X;
+      if (P.x < gx && pos[0] > gx) { ui?.onTurnstileBlocked?.(); return false; }
+      return true;
+    },
+
     // Fly the camera to an exact pose (stage.goTo / walkToDesk). Ignores
     // collision — poses are always chosen inside walkable space.
     glideTo(pos, look, ms = 1100) {
@@ -445,7 +692,10 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         C.app.onFrame(hook);
       });
     },
-    goToAnchor(a) { return C.app.glideTo(a.approach.pos, a.approach.look); },
+    goToAnchor(a) {
+      if (!C.app.canFlyTo(a.approach.pos)) return Promise.resolve();
+      return C.app.glideTo(a.approach.pos, a.approach.look);
+    },
 
     spawn() {
       const s = C.floorplan.SPAWN;
@@ -454,6 +704,9 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       P.pitch = 0;
     },
 
+    // While true, walk/look/tap input is ignored (set by the live-play
+    // session so betting can't wander the camera away from the table).
+    inputLocked: false,
     onFrame: (fn) => frameHooks.add(fn),
     offFrame: (fn) => frameHooks.delete(fn),
     addPickable: (mesh, onClick) => pickables.push({ mesh, onClick }),
@@ -607,206 +860,17 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   }
 
   // ---------- dealer / staff figure ----------
-  // opts.suit tints legs + vest (e.g. navy blazer for the receptionist);
-  // hair stays near-black regardless so a colored suit doesn't dye the head.
-  function makeDealer({ suit = '#1a1a1a', shirt = '#f2f0e8' } = {}) {
-    const group = new THREE.Group();
-    const blackMat = new THREE.MeshStandardMaterial({ color: suit, roughness: 0.6, metalness: 0.05 });
-    const hairMat = new THREE.MeshStandardMaterial({ color: '#161616', roughness: 0.65, metalness: 0 });
-    const shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.5, metalness: 0 });
-    const skinMat = new THREE.MeshStandardMaterial({ color: '#e8c39e', roughness: 0.6, metalness: 0 });
-    const gold = goldMaterial();
-
-    // Two separate leg boxes (not one monolithic block) so the lower body
-    // reads as legs, not a plinth. They run floor (0) to legTopY, and the
-    // torso is extended down to meet legTopY exactly so there's no gap —
-    // the torso's top (and everything anchored above it: vest, bow tie,
-    // head/hair) is unchanged.
-    const legTopY = 0.85, legW = 0.09, legGap = 0.02;
-    const legGeo = new THREE.BoxGeometry(legW, legTopY, 0.2);
-    for (const sx of [-1, 1]) {
-      const leg = new THREE.Mesh(legGeo, blackMat);
-      leg.position.set(sx * (legW / 2 + legGap / 2), legTopY / 2, 0);
-      leg.castShadow = true; leg.receiveShadow = true;
-      group.add(leg);
-    }
-
-    const torsoTopY = 1.45;
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, torsoTopY - legTopY, 12), shirtMat);
-    torso.position.y = (legTopY + torsoTopY) / 2;
-    torso.castShadow = true; torso.receiveShadow = true;
-    group.add(torso);
-
-    // Vest: a slightly-larger-radius cylinder shell wrapping the torso, open
-    // along a front arc (thetaStart/thetaLength) so the shirt shows through —
-    // a flat box here would sit entirely inside the torso's curved radius and
-    // never be visible.
-    const vestGap = 0.34;
-    const vest = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.156, 0.176, 0.43, 16, 1, true, vestGap, Math.PI * 2 - vestGap * 2),
-      blackMat,
-    );
-    vest.position.y = 1.225;
-    vest.castShadow = true; vest.receiveShadow = true;
-    group.add(vest);
-
-    const coneGeo = new THREE.ConeGeometry(0.028, 0.05, 8);
-    const bowL = new THREE.Mesh(coneGeo, gold);
-    bowL.rotation.z = -Math.PI / 2;
-    bowL.position.set(-0.03, 1.47, 0.15);
-    bowL.castShadow = true;
-    const bowR = new THREE.Mesh(coneGeo, gold);
-    bowR.rotation.z = Math.PI / 2;
-    bowR.position.set(0.03, 1.47, 0.15);
-    bowR.castShadow = true;
-    group.add(bowL, bowR);
-
-    // Head + hair share a group (rather than each sitting on `group` at
-    // y=1.57 independently) so lookToward can yaw them together — a rotating
-    // bare sphere is invisible, so the hair MUST ride along with the head.
-    const headGroup = new THREE.Group();
-    headGroup.position.y = 1.57;
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.11, 16, 12), skinMat);
-    head.castShadow = true; head.receiveShadow = true;
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.116, 16, 12, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
-    hair.castShadow = true;
-    headGroup.add(head, hair);
-    group.add(headGroup);
-
-    // Shoulder -> elbow -> forearm -> hand, each a child group so the bend
-    // composes through the scene graph instead of by hand-rolled matrix math.
-    // The shoulder's orientation is solved directly (align local -Y, the
-    // direction children hang toward, to the shoulder->handTarget vector)
-    // rather than guessed via Euler angles — guessed angles previously left
-    // the arms jutting sideways in a T-pose from the front. Both hand targets
-    // sit low and forward so the arms read as resting on a table edge.
-    function makeArm(side) {
-      const shoulderPos = new THREE.Vector3(side * 0.14, 1.35, 0.02);
-      const handTarget = new THREE.Vector3(side * 0.05, 1.0, 0.24);
-      const dir = new THREE.Vector3().subVectors(handTarget, shoulderPos).normalize();
-
-      const shoulder = new THREE.Group();
-      shoulder.position.copy(shoulderPos);
-      shoulder.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
-
-      const upperLen = 0.22;
-      const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.03, upperLen, 8), shirtMat);
-      upperArm.position.y = -upperLen / 2;
-      upperArm.castShadow = true; upperArm.receiveShadow = true;
-      shoulder.add(upperArm);
-
-      const elbow = new THREE.Group();
-      elbow.position.y = -upperLen;
-      elbow.rotation.x = -0.3; // small extra forward kink so the elbow reads as a joint
-      shoulder.add(elbow);
-
-      const foreLen = 0.24;
-      const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.026, 0.03, foreLen, 8), shirtMat);
-      forearm.position.y = -foreLen / 2;
-      forearm.castShadow = true; forearm.receiveShadow = true;
-      elbow.add(forearm);
-
-      const hand = new THREE.Mesh(new THREE.SphereGeometry(0.032, 8, 8), skinMat);
-      hand.position.y = -foreLen;
-      hand.castShadow = true;
-      elbow.add(hand);
-
-      return { shoulder, elbow, shoulderPos };
-    }
-    const armR = makeArm(1), armL = makeArm(-1);
-    group.add(armL.shoulder, armR.shoulder);
-
-    // Solve a shoulder quaternion that points the arm (local -Y) at a
-    // dealer-LOCAL point — same math as the rest pose above.
-    const _v = new THREE.Vector3();
-    function armQuat(arm, localTarget) {
-      _v.copy(localTarget).sub(arm.shoulderPos).normalize();
-      return new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, -1, 0), _v);
-    }
-    const restQuatR = armR.shoulder.quaternion.clone();
-
-    function slerpQ(app, obj, toQuat, ms, token, getToken) {
-      return new Promise((resolve) => {
-        if (app.REDUCED) { obj.quaternion.copy(toQuat); return resolve(); }
-        const fromQuat = obj.quaternion.clone();
-        const t0 = performance.now();
-        const hook = () => {
-          if (getToken() !== token) { app.offFrame(hook); return resolve(); }
-          const t = Math.min(1, (performance.now() - t0) / ms);
-          obj.quaternion.slerpQuaternions(fromQuat, toQuat, C.tween.easings.inOutCubic(t));
-          if (t >= 1) { app.offFrame(hook); resolve(); }
-        };
-        hook.cancel = () => { app.offFrame(hook); resolve(); };
-        app.onFrame(hook);
-      });
-    }
-
-    // Re-entrancy guard: each call to dealGesture bumps gestureId and closes
-    // over its own token; every await checks the token still matches the
-    // latest call before continuing, so a stale in-flight gesture just
-    // resolves early instead of fighting a newer one for the shoulder quat.
-    let gestureId = 0;
-    group.userData.dealGesture = async (app, worldTarget, ms = 650) => {
-      if (app.REDUCED) return;
-      const token = ++gestureId;
-      const getToken = () => gestureId;
-      // Room-switch guard: the hook-cancel sweep only resolves the CURRENT
-      // phase's promise — without these checks the continuation would
-      // register fresh hooks into the NEW room and keep animating a
-      // disposed dealer (same idiom as dealCardTo / chips3d fly).
-      const gen = app.roomGen;
-      // worldToLocal needs `group` scene-attached with up-to-date world
-      // matrices — true whenever gestures fire, since rooms only call this
-      // after enter() has added the dealer and the render loop updates
-      // matrices every frame.
-      const local = group.worldToLocal(new THREE.Vector3(...worldTarget));
-      // reach: hand toward a point up-forward-right (the shoe side)
-      const reach = armQuat(armR, new THREE.Vector3(0.35, 1.05, 0.3));
-      const sweep = armQuat(armR, local.setY(Math.min(local.y, 1.05)));
-      await slerpQ(app, armR.shoulder, reach, ms * 0.3, token, getToken);
-      if (app.roomGen !== gen) return;
-      await slerpQ(app, armR.shoulder, sweep, ms * 0.4, token, getToken);
-      if (app.roomGen !== gen) return;
-      await slerpQ(app, armR.shoulder, restQuatR, ms * 0.3, token, getToken);
-    };
-
-    // Quick refusal gesture: three small head yaws. Instant no-op if REDUCED.
-    group.userData.headShake = (app) => {
-      if (app.REDUCED) return Promise.resolve();
-      return new Promise((resolve) => {
-        const t0 = performance.now(), dur = 650, base = headGroup.rotation.y;
-        const hook = () => {
-          const t = Math.min(1, (performance.now() - t0) / dur);
-          headGroup.rotation.y = base + Math.sin(t * Math.PI * 5) * 0.16 * (1 - t);
-          if (t >= 1) { headGroup.rotation.y = base; app.offFrame(hook); resolve(); }
-        };
-        hook.cancel = () => { app.offFrame(hook); resolve(); };
-        app.onFrame(hook);
-      });
-    };
-
-    let lookId = 0;
-    group.userData.lookToward = (app, worldTarget) => {
-      if (app.REDUCED) return;
-      const token = ++lookId;
-      const local = group.worldToLocal(new THREE.Vector3(...worldTarget));
-      const yaw = Math.max(-0.6, Math.min(0.6, Math.atan2(local.x, local.z)));
-      const t0 = performance.now(), from = headGroup.rotation.y;
-      const hook = () => {
-        if (lookId !== token) return app.offFrame(hook);
-        const t = Math.min(1, (performance.now() - t0) / 300);
-        headGroup.rotation.y = from + (yaw - from) * C.tween.easings.outCubic(t);
-        if (t >= 1) app.offFrame(hook);
-      };
-      hook.cancel = () => app.offFrame(hook);
-      app.onFrame(hook);
-    };
-
-    group.userData.idle = (app) => {
-      const hook = (dt, elapsed) => { torso.rotation.z = Math.sin(elapsed * 0.8) * 0.02; };
-      app.onFrame(hook);
-      return hook;
-    };
+  // Thin wrapper over the humanoid rig (src/engine/rig.js) preserving the
+  // legacy userData API. opts.seed varies skin/hair/vest per character.
+  function makeDealer(opts = {}) {
+    const rig = C.rig.makeHumanRig(opts);
+    const group = rig.group;
+    group.userData.rig = rig;
+    group.userData.idle = (app) => rig.setIdle(app);
+    group.userData.lookToward = (app, worldTarget) => rig.lookAt(app, worldTarget);
+    group.userData.headShake = (app) => rig.play(app, 'headShake');
+    group.userData.dealGesture = (app, worldTarget, ms) =>
+      rig.play(app, 'welcomeSweep', { refs: { target: worldTarget }, ms });
     return group;
   }
 
@@ -1088,6 +1152,74 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     return group;
   }
 
+  // dealCardTo v2 — same contract as the original (assets.js), plus:
+  //  * in-plane spin: rotation.z starts 0.45 rad short of the caller's final
+  //    value and eases in (rotation.z is the INNERMOST Euler axis, so the
+  //    spin stays in the card's own plane whatever rotation.x/y are doing).
+  //  * XZ travel eases with outBack — the card overshoots its box by a few cm
+  //    and slides back, reading as "dealt" instead of "placed".
+  //  * REDUCED: no spin, linear-ish fast flight (unchanged from v1).
+  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0, spin = true } = {}) {
+    if (app.REDUCED) { ms = Math.min(ms, 180); spin = false; }
+    return new Promise((resolve) => {
+      const gen = app.roomGen;
+      cardMesh.position.set(...from);
+      const zEnd = cardMesh.rotation.z;
+      const zStart = spin ? zEnd - 0.45 : zEnd;
+      cardMesh.rotation.z = zStart;
+      app.scene.add(cardMesh);
+      C.sound?.play('card');
+      const easeXZ = spin ? C.tween.easings.outBack : C.tween.easings.outCubic;
+      const easeSpin = C.tween.easings.outCubic;
+      const start = () => {
+        const t0 = performance.now();
+        if (app.roomGen !== gen) return resolve();
+        const hook = () => {
+          if (app.roomGen !== gen) { app.offFrame(hook); return resolve(); }
+          const t = Math.min(1, (performance.now() - t0) / ms);
+          const exz = easeXZ(t);
+          cardMesh.position.x = from[0] + (to[0] - from[0]) * exz;
+          cardMesh.position.z = from[2] + (to[2] - from[2]) * exz;
+          const base = from[1] + (to[1] - from[1]) * t;
+          cardMesh.position.y = base + 0.25 * 4 * t * (1 - t);
+          cardMesh.rotation.z = zStart + (zEnd - zStart) * easeSpin(t);
+          if (t >= 1) {
+            cardMesh.position.set(to[0], to[1], to[2]);
+            cardMesh.rotation.z = zEnd;
+            app.offFrame(hook);
+            if (flip) cardMesh.userData.flip(Math.min(220, ms), resolve);
+            else resolve();
+          }
+        };
+        hook.cancel = () => { app.offFrame(hook); resolve(); };
+        app.onFrame(hook);
+      };
+      if (delay > 0) setTimeout(start, delay);
+      else start();
+    });
+  }
+
+  // Shared reveal for flat-lying cards (was duplicated in 3 room files).
+  // A watcher frame hook carries the roomGen guard + cancel contract: a room
+  // switch mid-flip resolves the promise promptly instead of leaving the
+  // caller awaiting a tween on a torn-down room. (Double-resolve is safe.)
+  function flipFlatCard(app, mesh, ms) {
+    if (app.REDUCED) ms = Math.min(ms, 180);
+    return new Promise((resolve) => {
+      const gen = app.roomGen;
+      const guard = () => {
+        if (app.roomGen !== gen) { app.offFrame(guard); resolve(); }
+      };
+      guard.cancel = () => { app.offFrame(guard); resolve(); };
+      app.onFrame(guard);
+      const baseY = mesh.position.y;
+      C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
+        C.tween.to(mesh.position, { y: baseY }, ms / 2, 'outQuart');
+      });
+      mesh.userData.flip(ms, () => { app.offFrame(guard); resolve(); });
+    });
+  }
+
   // Painted card box: a thin transparent decal plane, dashed cream outline,
   // sized to the card footprint + margin. Lay at feltY + 0.002.
   function makeCardBoxDecal({ label = '', sideways = false } = {}) {
@@ -1117,7 +1249,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     return mesh;
   }
 
-  C.cards = { makeCard, makeCardBoxDecal };
+  C.cards = { makeCard, dealCardTo, flipFlatCard, makeCardBoxDecal };
   C.assets.makeCard = makeCard;
 })();
 
@@ -1127,7 +1259,10 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   const C = (globalThis.CASINO ??= {});
 
   // ---------- chips ----------
-  const CHIP_COLORS = { 100: '#2e6db4', 500: '#8e44ad', 1000: '#c0392b', 5000: '#b8860b' };
+  const CHIP_COLORS = {
+    1: '#9aa0a8', 5: '#8d6e63', 10: '#2f9e5b', 25: '#207f6e', 50: '#c26a1f',
+    100: '#2e6db4', 500: '#8e44ad', 1000: '#c0392b', 5000: '#b8860b',
+  };
   const CHIP_H = 0.0072;
 
   function makeChip(value) {
@@ -1193,9 +1328,478 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       .forEach((m) => { if (!m) return; m.map?.dispose(); m.dispose(); });
   }
 
-  C.chips = { CHIP_COLORS, CHIP_H, makeChip, makeChipStack, makeSpotDecal, disposeChip };
+  // Live 3D wager stacks for one room. Every animation carries the roomGen
+  // guard + hook.cancel, mirroring dealCardTo.
+  function createBetStacks(app, { getSpotPos, source, dealerPos }) {
+    const gen = app.roomGen;
+    const stacks = {};            // spotId -> [chip meshes]
+    const inFlight = new Set();   // frame hooks, for disposeAll
+
+    // One flight owns a chip at a time: starting a new flight SUPERSEDES the
+    // mesh's previous hook (without firing its onDone — the new flight owns
+    // the mesh from here). cancel() — the room-switch sweep and disposeAll —
+    // DOES fire onDone so awaited promises settle instead of hanging.
+    function fly(mesh, from, to, ms, onDone) {
+      mesh.userData.flyHook?.supersede();
+      if (app.REDUCED) {
+        mesh.position.set(...to);
+        onDone && onDone();
+        return;
+      }
+      mesh.position.set(...from);
+      const t0 = performance.now();
+      const ease = C.tween.easings.outCubic;
+      const done = () => {
+        app.offFrame(hook);
+        inFlight.delete(hook);
+        if (mesh.userData.flyHook === hook) mesh.userData.flyHook = null;
+      };
+      const hook = () => {
+        if (app.roomGen !== gen) { done(); onDone && onDone(); return; }
+        const t = Math.min(1, (performance.now() - t0) / ms);
+        const e = ease(t);
+        mesh.position.x = from[0] + (to[0] - from[0]) * e;
+        mesh.position.z = from[2] + (to[2] - from[2]) * e;
+        mesh.position.y = from[1] + (to[1] - from[1]) * e + 0.12 * 4 * t * (1 - t);
+        if (t >= 1) {
+          mesh.position.set(...to);
+          done();
+          onDone && onDone();
+        }
+      };
+      hook.cancel = () => { done(); onDone && onDone(); };
+      hook.supersede = done;
+      mesh.userData.flyHook = hook;
+      inFlight.add(hook);
+      app.onFrame(hook);
+    }
+
+    function stackTop(spotId) {
+      const [x, y, z] = getSpotPos(spotId);
+      const n = (stacks[spotId] || []).length;
+      return [x, y + 0.005 + n * CHIP_H, z];
+    }
+
+    function add(spotId, value) {
+      const chip = makeChip(value);
+      chip.rotation.y = Math.random() * 0.5 - 0.25;
+      (stacks[spotId] ??= []);
+      const to = stackTop(spotId);
+      stacks[spotId].push(chip);
+      app.scene.add(chip);
+      C.sound?.play('chip');
+      fly(chip, source, to, 340);
+    }
+
+    function removeTop(spotId) {
+      const chip = (stacks[spotId] || []).pop();
+      if (!chip) return;
+      C.sound?.play('chip');
+      fly(chip, chip.position.toArray(), source, 280, () => {
+        app.scene.remove(chip); disposeChip(chip);
+      });
+    }
+
+    function clear() {
+      for (const id of Object.keys(stacks)) {
+        while (stacks[id].length) removeTop(id);
+      }
+    }
+
+    // Glide a batch of chips to a point, shrink out, dispose.
+    function sweep(chips, to, ms) {
+      if (app.REDUCED) {
+        chips.forEach((chip) => { app.scene.remove(chip); disposeChip(chip); });
+        return Promise.resolve();
+      }
+      return Promise.all(chips.map((chip, i) => new Promise((res) => {
+        setTimeout(() => {
+          if (app.roomGen !== gen) { app.scene.remove(chip); disposeChip(chip); return res(); }
+          fly(chip, chip.position.toArray(), [to[0], to[1] + i * CHIP_H, to[2]], ms, () => {
+            C.tween.to(chip.scale, { x: 0.01, y: 0.01, z: 0.01 }, 140, 'outCubic', () => {
+              // switchRoom's scene sweep may have disposed the chip already
+              if (app.roomGen === gen) { app.scene.remove(chip); disposeChip(chip); }
+              res();
+            });
+          });
+        }, i * 40);
+      })));
+    }
+
+    // outcome: 'win'  -> payoutExtra chips fly in from the dealer beside the
+    //                    stack, brief beat, then everything glides to source.
+    //          'lose' -> stack glides to dealerPos.
+    //          'push' -> stack glides back to source.
+    async function settle(spotId, outcome, payoutExtra = 0) {
+      const chips = stacks[spotId] || [];
+      stacks[spotId] = [];
+      if (!chips.length && outcome !== 'win') return;
+      C.sound?.play('chipSweep');
+      if (outcome === 'lose') return sweep(chips, dealerPos, 420);
+      if (outcome === 'push') return sweep(chips, source, 420);
+      const [x, y, z] = getSpotPos(spotId);
+      const pay = C.layouts.chipBreakdown(payoutExtra);
+      const payChips = pay.map((v, i) => {
+        const chip = makeChip(v);
+        chip.rotation.y = Math.random() * 0.5 - 0.25;
+        app.scene.add(chip);
+        fly(chip, dealerPos, [x + 0.085, y + 0.005 + i * CHIP_H, z], 380);
+        return chip;
+      });
+      await new Promise((r) => setTimeout(r, app.REDUCED ? 60 : 450));
+      return sweep([...chips, ...payChips], source, 460);
+    }
+
+    function disposeAll() {
+      inFlight.forEach((hook) => hook.cancel());
+      inFlight.clear();
+      for (const id of Object.keys(stacks)) {
+        stacks[id].forEach((chip) => { app.scene.remove(chip); disposeChip(chip); });
+      }
+      Object.keys(stacks).forEach((k) => delete stacks[k]);
+    }
+
+    return { add, removeTop, clear, settle, disposeAll };
+  }
+
+  C.chips = { CHIP_COLORS, CHIP_H, makeChip, makeChipStack, makeSpotDecal, createBetStacks, disposeChip };
   C.assets.makeChip = makeChip;
   C.assets.makeChipStack = makeChipStack;
+})();
+
+
+// ===== src/engine/rig.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Humanoid rig: jointed procedural figure + a generic pose-clip player.
+  // Clip DATA lives in src/logic/gestures.js (pure, node-tested); this file
+  // owns the THREE side: building the body and animating joint quaternions.
+  // All hooks carry the roomGen guard + .cancel (same idiom as dealCardTo).
+
+  const SKINS = ['#e8c39e', '#d9a877', '#c98f63', '#a06a44', '#f0d0b0'];
+  const HAIRS = ['#161616', '#2e1d10', '#4a3520', '#3a3a3f', '#241a12'];
+  const VESTS = ['#1a1a1a', '#2a1018', '#10222e', '#1c2416', '#221c30'];
+  const HAIR_STYLES = ['cap', 'side', 'long', 'bun'];
+
+  const hashSeed = (s) => {
+    let h = 9;
+    for (const ch of String(s)) h = Math.imul(h ^ ch.charCodeAt(0), 0x9e3779b1);
+    return Math.abs(h >>> 0);
+  };
+
+  function makeHumanRig({ suit = '#1a1a1a', shirt = '#f2f0e8', seed = '' } = {}) {
+    const h = hashSeed(seed || Math.floor(performance.now()));
+    // >>> keeps the shifted index unsigned — a signed >> on a hash above 2^31
+    // went negative, so HAIRS[-4]/VESTS[-4] were undefined and THREE fell
+    // back to white hair/vests for half of all seeds.
+    const skin = SKINS[h % SKINS.length];
+    const hairC = HAIRS[(h >>> 3) % HAIRS.length];
+    const vestC = seed ? VESTS[(h >>> 6) % VESTS.length] : suit;
+    const hairStyle = HAIR_STYLES[(h >>> 9) % HAIR_STYLES.length];
+
+    const suitMat = new THREE.MeshStandardMaterial({ color: suit, roughness: 0.6, metalness: 0.05 });
+    const vestMat = new THREE.MeshStandardMaterial({ color: vestC, roughness: 0.55, metalness: 0.08 });
+    const hairMat = new THREE.MeshStandardMaterial({ color: hairC, roughness: 0.65, metalness: 0 });
+    const shirtMat = new THREE.MeshStandardMaterial({ color: shirt, roughness: 0.5, metalness: 0 });
+    const skinMat = new THREE.MeshStandardMaterial({ color: skin, roughness: 0.6, metalness: 0 });
+    const darkMat = new THREE.MeshStandardMaterial({ color: '#22160e', roughness: 0.5, metalness: 0 });
+
+    const group = new THREE.Group();
+    const joints = {};
+    const jointAt = (name, parent, x, y, z) => {
+      const j = new THREE.Group();
+      j.position.set(x, y, z);
+      parent.add(j);
+      joints[name] = j;
+      return j;
+    };
+    const shadow = (m) => { m.castShadow = true; m.receiveShadow = true; return m; };
+
+    // ---- legs: hip -> thigh capsule -> knee -> shin capsule (feet at y 0)
+    const HIP_Y = 0.85, THIGH = 0.44, SHIN = 0.41;
+    for (const [side, sx] of [['L', -1], ['R', 1]]) {
+      const hip = jointAt('hip' + side, group, sx * 0.075, HIP_Y, 0);
+      const thigh = shadow(new THREE.Mesh(new THREE.CapsuleGeometry(0.055, THIGH - 0.11, 4, 10), suitMat));
+      thigh.position.y = -THIGH / 2;
+      hip.add(thigh);
+      const knee = jointAt('knee' + side, hip, 0, -THIGH, 0);
+      const shin = shadow(new THREE.Mesh(new THREE.CapsuleGeometry(0.048, SHIN - 0.1, 4, 10), suitMat));
+      shin.position.y = -SHIN / 2;
+      knee.add(shin);
+      const shoe = shadow(new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.045, 0.19), darkMat));
+      shoe.position.set(0, -SHIN + 0.02, 0.04);
+      knee.add(shoe);
+    }
+
+    // ---- spine + torso + vest + bow tie
+    const spine = jointAt('spine', group, 0, HIP_Y, 0);
+    const TORSO = 0.60;
+    const torso = shadow(new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.17, TORSO, 14), shirtMat));
+    torso.position.y = TORSO / 2;
+    spine.add(torso);
+    const vestGap = 0.34;
+    const vest = shadow(new THREE.Mesh(
+      new THREE.CylinderGeometry(0.156, 0.176, 0.43, 16, 1, true, vestGap, Math.PI * 2 - vestGap * 2), vestMat));
+    vest.position.y = 0.375;
+    spine.add(vest);
+    const gold = C.assets.goldMaterial();
+    const coneGeo = new THREE.ConeGeometry(0.028, 0.05, 8);
+    for (const sx of [-1, 1]) {
+      const bow = new THREE.Mesh(coneGeo, gold);
+      bow.rotation.z = sx * Math.PI / 2;
+      bow.position.set(sx * 0.03, 0.62, 0.15);
+      bow.castShadow = true;
+      spine.add(bow);
+    }
+
+    // ---- neck + head + face (all children of neck so looks/nods compose)
+    const neck = jointAt('neck', spine, 0, 0.62, 0);
+    const neckMesh = shadow(new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.05, 0.07, 10), skinMat));
+    neckMesh.position.y = 0.035;
+    neck.add(neckMesh);
+    const head = shadow(new THREE.Mesh(new THREE.SphereGeometry(0.11, 18, 14), skinMat));
+    head.position.y = 0.12;
+    neck.add(head);
+    // hair
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.116, 18, 14, 0, Math.PI * 2, 0, Math.PI / 2), hairMat);
+    hair.castShadow = true;
+    hair.position.y = 0.12;
+    if (hairStyle === 'side') hair.rotation.z = 0.22;
+    neck.add(hair);
+    if (hairStyle === 'long') {
+      const back = shadow(new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.06, 0.26, 12), hairMat));
+      back.position.set(0, 0.02, -0.055);
+      neck.add(back);
+    } else if (hairStyle === 'bun') {
+      const bun = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), hairMat);
+      bun.position.set(0, 0.17, -0.1);
+      bun.castShadow = true;
+      neck.add(bun);
+    }
+    // eyes (scaled to blink) + brows + mouth
+    const eyes = [];
+    for (const sx of [-1, 1]) {
+      const eye = new THREE.Mesh(new THREE.SphereGeometry(0.013, 8, 8), darkMat);
+      eye.position.set(sx * 0.04, 0.135, 0.098);
+      neck.add(eye);
+      eyes.push(eye);
+      const brow = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.007, 0.008), hairMat);
+      brow.position.set(sx * 0.04, 0.162, 0.099);
+      brow.rotation.z = sx * -0.12;
+      neck.add(brow);
+    }
+    const mouth = new THREE.Mesh(new THREE.BoxGeometry(0.036, 0.008, 0.008),
+      new THREE.MeshStandardMaterial({ color: '#7a3b30', roughness: 0.7 }));
+    mouth.position.set(0, 0.078, 0.102);
+    neck.add(mouth);
+
+    // ---- arms: shoulder -> elbow -> wrist -> palm + thumb
+    const UPPER = 0.22, FORE = 0.20;
+    for (const [side, sx] of [['L', -1], ['R', 1]]) {
+      const shoulderPos = new THREE.Vector3(sx * 0.14, 0.50, 0.02); // spine-local
+      const shoulder = jointAt('shoulder' + side, spine, shoulderPos.x, shoulderPos.y, shoulderPos.z);
+      const handTarget = new THREE.Vector3(sx * 0.05, 1.0, 0.24);   // group-local rest
+      const worldPos = new THREE.Vector3(sx * 0.14, HIP_Y + 0.50, 0.02);
+      const dir = handTarget.clone().sub(worldPos).normalize();
+      shoulder.quaternion.setFromUnitVectors(new THREE.Vector3(0, -1, 0), dir);
+      const upper = shadow(new THREE.Mesh(new THREE.CapsuleGeometry(0.032, UPPER - 0.06, 4, 8), shirtMat));
+      upper.position.y = -UPPER / 2;
+      shoulder.add(upper);
+      const elbow = jointAt('elbow' + side, shoulder, 0, -UPPER, 0);
+      elbow.rotation.x = -0.3;
+      const fore = shadow(new THREE.Mesh(new THREE.CapsuleGeometry(0.027, FORE - 0.05, 4, 8), shirtMat));
+      fore.position.y = -FORE / 2;
+      elbow.add(fore);
+      const wrist = jointAt('wrist' + side, elbow, 0, -FORE, 0);
+      const palm = shadow(new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.022, 0.07), skinMat));
+      palm.position.y = -0.03;
+      wrist.add(palm);
+      const thumb = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.016, 0.03), skinMat);
+      thumb.position.set(sx * -0.03, -0.025, 0.02);
+      thumb.castShadow = true;
+      wrist.add(thumb);
+    }
+
+    // ---- store rest pose + group-local base positions for aim solving
+    group.updateMatrixWorld(true);
+    const _wv = new THREE.Vector3();
+    for (const [name, j] of Object.entries(joints)) {
+      j.userData.restQ = j.quaternion.clone();
+      j.getWorldPosition(_wv);
+      j.userData.basePos = group.worldToLocal(_wv.clone());
+    }
+
+    // ---- clip player ----
+    const tokens = { arms: 0, head: 0, body: 0, mouth: 0 };
+    const DOWN = new THREE.Vector3(0, -1, 0);
+    const _v = new THREE.Vector3();
+    const _e = new THREE.Euler();
+    const _q = new THREE.Quaternion();
+
+    function targetQuat(joint, tgt, refs) {
+      if (tgt.rest) return joint.userData.restQ.clone();
+      if (tgt.e) {
+        _e.set(tgt.e[0], tgt.e[1], tgt.e[2]);
+        return joint.userData.restQ.clone().multiply(_q.setFromEuler(_e).clone());
+      }
+      const ref = refs[tgt.aim];
+      if (!ref) return joint.userData.restQ.clone();   // missing ref -> rest, never crash
+      const local = group.worldToLocal(new THREE.Vector3(ref[0], ref[1], ref[2]));
+      _v.copy(local).sub(joint.userData.basePos).normalize();
+      return new THREE.Quaternion().setFromUnitVectors(DOWN, _v);
+    }
+
+    function play(app, clipName, { refs = {}, ms } = {}) {
+      const clip = C.gestures.CLIPS[clipName];
+      if (!clip) return Promise.resolve();
+      const token = ++tokens[clip.track];
+      const dur = ms || clip.dur;
+      const gen = app.roomGen;
+      // Precompute each key's absolute-quat targets once, up front.
+      const keyTargets = clip.keys.map((k) => ({
+        at: k.at,
+        ease: C.tween.easings[k.ease || 'inOutCubic'],
+        targets: Object.entries(k.joints).map(([name, tgt]) => ({
+          joint: joints[name], to: targetQuat(joints[name], tgt, refs),
+        })),
+      }));
+      if (app.REDUCED) {
+        keyTargets.forEach((k) => k.targets.forEach(({ joint, to }) => joint.quaternion.copy(to)));
+        return Promise.resolve();
+      }
+      return new Promise((resolve) => {
+        let ki = 0, segStart = 0;
+        let seg = null;   // { from: [{joint, fromQ, to}], t0, len, ease }
+        const startSeg = () => {
+          const k = keyTargets[ki];
+          seg = {
+            pairs: k.targets.map(({ joint, to }) => ({ joint, from: joint.quaternion.clone(), to })),
+            t0: performance.now(), len: (k.at - segStart) * dur, ease: k.ease,
+          };
+        };
+        startSeg();
+        const hook = () => {
+          if (tokens[clip.track] !== token || app.roomGen !== gen) { app.offFrame(hook); return resolve(); }
+          const t = seg.len <= 0 ? 1 : Math.min(1, (performance.now() - seg.t0) / seg.len);
+          const e = seg.ease(t);
+          seg.pairs.forEach(({ joint, from, to }) => joint.quaternion.slerpQuaternions(from, to, e));
+          if (t >= 1) {
+            segStart = keyTargets[ki].at;
+            ki += 1;
+            if (ki >= keyTargets.length) { app.offFrame(hook); return resolve(); }
+            startSeg();
+          }
+        };
+        hook.cancel = () => { app.offFrame(hook); resolve(); };
+        app.onFrame(hook);
+      });
+    }
+
+    const stop = (track) => { tokens[track] += 1; };
+
+    // ---- speech bubble + mouth ----
+    let bubble = null;
+    function say(app, text, { ms = 2600 } = {}) {
+      if (bubble) { group.remove(bubble.sprite); bubble.dispose(); bubble = null; }
+      const lines = C.gestures.wrapLines(text, 18);
+      const PW = 512, LH = 88, PH = lines.length * LH + 72;
+      const tx = C.assets.canvasTexture(PW, PH, (ctx) => {
+        ctx.clearRect(0, 0, PW, PH);
+        ctx.fillStyle = 'rgba(16,13,9,0.88)';
+        C.assets.roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
+        ctx.fill();
+        ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 5;
+        C.assets.roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
+        ctx.stroke();
+        ctx.beginPath();                       // tail
+        ctx.moveTo(PW / 2 - 22, PH - 26); ctx.lineTo(PW / 2, PH - 2); ctx.lineTo(PW / 2 + 22, PH - 26);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(16,13,9,0.88)'; ctx.fill();
+        ctx.fillStyle = '#f0d878';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `600 56px 'Segoe UI', system-ui, sans-serif`;
+        lines.forEach((ln, i) => ctx.fillText(ln, PW / 2, 44 + LH / 2 + i * LH));
+      });
+      const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
+      const sprite = new THREE.Sprite(mat);
+      const W = 0.95;
+      sprite.scale.set(W, W * PH / PW, 1);
+      sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
+      sprite.renderOrder = 5;
+      group.add(sprite);
+      bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
+
+      const token = ++tokens.mouth;
+      const gen = app.roomGen;
+      return new Promise((resolve) => {
+        const t0 = performance.now();
+        const cleanup = () => {
+          mouth.scale.set(1, 1, 1);
+          if (bubble && bubble.sprite === sprite) { group.remove(sprite); bubble.dispose(); bubble = null; }
+          resolve();
+        };
+        if (app.REDUCED) { setTimeout(cleanup, ms); return; }
+        const hook = () => {
+          if (tokens.mouth !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
+          const t = (performance.now() - t0);
+          mouth.scale.y = 1 + Math.abs(Math.sin(t / 90)) * 2.6;
+          if (t >= ms) { app.offFrame(hook); cleanup(); }
+        };
+        hook.cancel = () => { app.offFrame(hook); cleanup(); };
+        app.onFrame(hook);
+      });
+    }
+
+    // ---- head look (neck yaw + slight pitch, clamped) ----
+    let lookToken = 0;
+    function lookAt(app, worldTarget) {
+      const token = ++lookToken;
+      const local = group.worldToLocal(new THREE.Vector3(worldTarget[0], worldTarget[1], worldTarget[2]));
+      const yaw = Math.max(-0.7, Math.min(0.7, Math.atan2(local.x, local.z)));
+      const flat = Math.hypot(local.x, local.z) || 1e-4;
+      const pitch = Math.max(-0.35, Math.min(0.35, -Math.atan2(local.y - 1.5, flat)));
+      if (app.REDUCED) { neck.rotation.y = yaw; neck.rotation.x = pitch; return; }
+      const gen = app.roomGen;
+      const t0 = performance.now(), fy = neck.rotation.y, fx = neck.rotation.x;
+      const hook = () => {
+        if (lookToken !== token || app.roomGen !== gen) return app.offFrame(hook);
+        const t = Math.min(1, (performance.now() - t0) / 300);
+        const e = C.tween.easings.outCubic(t);
+        neck.rotation.y = fy + (yaw - fy) * e;
+        neck.rotation.x = fx + (pitch - fx) * e;
+        if (t >= 1) app.offFrame(hook);
+      };
+      hook.cancel = () => app.offFrame(hook);
+      app.onFrame(hook);
+    }
+
+    // ---- idle: breath sway + weight shift + blink ----
+    function setIdle(app) {
+      if (app.REDUCED) return null;
+      const gen = app.roomGen;
+      let nextBlink = 2 + Math.random() * 3, blinkEnd = 0;
+      let shiftPhase = Math.random() * Math.PI * 2;
+      const hook = (dt, elapsed) => {
+        if (app.roomGen !== gen) return app.offFrame(hook);
+        spine.rotation.z = Math.sin(elapsed * 0.8 + shiftPhase) * 0.02;
+        spine.rotation.x = Math.sin(elapsed * 0.55 + shiftPhase) * 0.012;
+        const shift = Math.sin(elapsed * 0.25 + shiftPhase) * 0.05;
+        joints.hipL.rotation.z = shift;
+        joints.hipR.rotation.z = shift;
+        if (elapsed > nextBlink) { blinkEnd = elapsed + 0.13; nextBlink = elapsed + 2 + Math.random() * 3.5; }
+        const blinking = elapsed < blinkEnd;
+        eyes.forEach((e) => { e.scale.y = blinking ? 0.08 : 1; });
+      };
+      hook.cancel = () => app.offFrame(hook);
+      app.onFrame(hook);
+      return hook;
+    }
+
+    return { group, joints, play, stop, say, lookAt, setIdle };
+  }
+
+  C.rig = { makeHumanRig };
 })();
 
 
@@ -1234,7 +1838,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     chipSource: [1.0, 0.85, 1.05],          // near table edge at the player's right
     dealerChipPos: [0, 0.85, 0.10],
     playerSlots: [[0.27, 0.86, 0.50], [0.44, 0.86, 0.50]],
-    dealerSlots: [[-0.24, 0.86, 0.16], [-0.07, 0.86, 0.16]],
+    dealerSlots: [[-0.085, 0.86, 0.16], [0.085, 0.86, 0.16]],
     fanDx: 0.17,                             // 3rd+ card continues right of slot[1]
     spots: {
       main:               { pos: [0.36, 0.845, 0.78], r: 0.11,  label: 'MAIN' },
@@ -1242,24 +1846,44 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       twentyOnePlusThree: { pos: [0.62, 0.845, 0.88], r: 0.075, label: '21+3' },
     },
     poseDeal: { pos: [0.12, 1.35, 1.25], look: [0.08, 0.84, 0.25] },
+    // v2 floor-table seat geometry (polar, radii from table center). The
+    // table builder AND blackjack-live.js both use seatPoint so painted
+    // spots, chips and cards can never drift apart.
+    seat: {
+      count: 6, angleStart: 160, angleStep: 28, stoolR: 1.95,
+      mainR: 1.40, sideR: 1.19, sideDx: 0.07,
+      cardsR: 1.02, stackDr: 0.062, splitDx: 0.14,
+    },
   };
+  blackjack.seatPoint = (a, radius, tangent = 0) => [
+    Math.cos(a) * radius - Math.sin(a) * tangent,
+    Math.sin(a) * radius + Math.cos(a) * tangent,
+  ];
 
   // ---------- baccarat (ellipse felt rx 1.692 / rz 0.799, FELT_Y 0.82)
+  // Macau-style layout: dealer strip (chip rack/shoe/discard) at -z, the
+  // card-dealing area between it and six numbered seat sectors of betting
+  // arcs on the +z side. Angles: 90° = player edge; x = cos(a)*f*rx,
+  // z = sin(a)*f*rz — shared by seatSpot() and the painted felt texture.
   const baccarat = {
     feltY: 0.82, cardY: 0.85,
-    shoePos: [0.85, 0.82, -0.55],
+    feltRx: 1.692, feltRz: 0.799,
+    rackPos: [0, 0.82, -0.52],
+    shoePos: [0.62, 0.82, -0.48],
+    discardPos: [-0.62, 0.82, -0.48],
     chipSource: [1.05, 0.84, 0.35],
-    dealerChipPos: [0, 0.84, -0.6],
-    // two upright slots side by side + the third card laid SIDEWAYS next to
-    // them (rotation.z = ±PI/2 on the flat card), as dealt in real baccarat.
-    playerSlots: [[-0.78, 0.85, 0.08], [-0.61, 0.85, 0.08], [-0.37, 0.85, 0.08]],
-    bankerSlots: [[0.61, 0.85, 0.08], [0.78, 0.85, 0.08], [0.37, 0.85, 0.08]],
-    spots: {
-      player: { pos: [-0.70, 0.84, 0.42], r: 0.13,  label: 'PLAYER' },
-      banker: { pos: [0.70, 0.84, 0.42],  r: 0.13,  label: 'BANKER' },
-      tie:    { pos: [0, 0.84, 0.48],     r: 0.10,  label: 'TIE' },
-      pPair:  { pos: [-0.32, 0.84, 0.54], r: 0.07,  label: 'P PAIR' },
-      bPair:  { pos: [0.32, 0.84, 0.54],  r: 0.07,  label: 'B PAIR' },
+    dealerChipPos: [0, 0.84, -0.32],
+    // two upright slots + the third card laid SIDEWAYS outboard of them
+    // (slot index 2), as dealt in real baccarat.
+    playerSlots: [[-0.45, 0.85, -0.14], [-0.28, 0.85, -0.14], [-0.66, 0.85, -0.14]],
+    bankerSlots: [[0.28, 0.85, -0.14], [0.45, 0.85, -0.14], [0.66, 0.85, -0.14]],
+    spots: {},   // per-seat boxes are printed on the felt instead
+    seatAngles: [27.5, 52.5, 77.5, 102.5, 127.5, 152.5],   // seat 1..6
+    betFracs: { tie: 0.46, banker: 0.66, player: 0.81 },
+    seatSpot(seat, kind) {
+      const a = (this.seatAngles[seat] * Math.PI) / 180;
+      const f = this.betFracs[kind];
+      return [Math.cos(a) * f * this.feltRx, Math.sin(a) * f * this.feltRz];
     },
     poseDeal: { pos: [0, 1.32, 0.82], look: [0, 0.85, -0.15] },
   };
@@ -1325,6 +1949,399 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 })();
 
 
+// ===== src/logic/gestures.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Pure gesture data for the humanoid rig (src/engine/rig.js). No THREE/DOM —
+  // node-testable. A clip animates named joints across keyframes on one track.
+  //
+  // Joint targets (exactly one per joint per key):
+  //   {aim: 'refKey'} point the limb (local -Y) at a world ref resolved at
+  //                   play time (rig.play refs option)
+  //   {e: [x,y,z]}    euler offset (radians) applied relative to the REST pose
+  //   {rest: true}    return to the stored rest pose
+  const JOINTS = [
+    'neck', 'spine',
+    'shoulderL', 'shoulderR', 'elbowL', 'elbowR', 'wristL', 'wristR',
+    'hipL', 'hipR', 'kneeL', 'kneeR',
+  ];
+  const TRACKS = ['arms', 'head', 'body', 'mouth'];
+  const EASINGS = ['inOutCubic', 'outCubic', 'outQuart', 'outBack'];
+
+  const CLIPS = {
+    // draw from the shoe (ref 'shoe') and sweep to the card spot (ref 'target')
+    dealCard: { track: 'arms', dur: 520, keys: [
+      { at: 0.30, ease: 'outCubic',   joints: { shoulderR: { aim: 'shoe' },   elbowR: { e: [-0.45, 0, 0] }, wristR: { e: [-0.2, 0, 0] } } },
+      { at: 0.70, ease: 'inOutCubic', joints: { shoulderR: { aim: 'target' }, elbowR: { e: [-0.15, 0, 0] }, wristR: { e: [0.15, 0, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true }, wristR: { rest: true } } },
+    ] },
+    // rake losing chips from 'target' into the rack ('rack')
+    sweepChips: { track: 'arms', dur: 700, keys: [
+      { at: 0.35, ease: 'outCubic',   joints: { shoulderR: { aim: 'target' }, elbowR: { e: [-0.2, 0, 0] } } },
+      { at: 0.75, ease: 'inOutCubic', joints: { shoulderR: { aim: 'rack' } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true } } },
+    ] },
+    // push payout chips from 'rack' out to 'target'
+    payChips: { track: 'arms', dur: 700, keys: [
+      { at: 0.30, ease: 'outCubic',   joints: { shoulderR: { aim: 'rack' } } },
+      { at: 0.70, ease: 'inOutCubic', joints: { shoulderR: { aim: 'target' }, wristR: { e: [0.3, 0, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, wristR: { rest: true } } },
+    ] },
+    // reach to the wheel rim ('rim') — hold there (spinFollow completes it)
+    spinReach: { track: 'arms', dur: 480, keys: [
+      { at: 1.00, ease: 'outCubic', joints: { shoulderR: { aim: 'rim' }, elbowR: { e: [-0.35, 0, 0] } } },
+    ] },
+    // the flick + return to rest, fired as the wheel starts turning
+    spinFollow: { track: 'arms', dur: 650, keys: [
+      { at: 0.35, ease: 'outBack',    joints: { wristR: { e: [0, -1.2, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true }, wristR: { rest: true } } },
+    ] },
+    // carry the dolly from 'rack' to the winning number 'target'
+    placeDolly: { track: 'arms', dur: 800, keys: [
+      { at: 0.30, ease: 'outCubic',   joints: { shoulderR: { aim: 'rack' } } },
+      { at: 0.75, ease: 'inOutCubic', joints: { shoulderR: { aim: 'target' }, elbowR: { e: [-0.2, 0, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true } } },
+    ] },
+    // double-tap the chip rack ('rack') — the buy-in beat
+    tapRack: { track: 'arms', dur: 620, keys: [
+      { at: 0.30, ease: 'outCubic', joints: { shoulderR: { aim: 'rack' }, elbowR: { e: [-0.3, 0, 0] } } },
+      { at: 0.50, ease: 'outCubic', joints: { elbowR: { e: [-0.15, 0, 0] } } },
+      { at: 0.70, ease: 'outCubic', joints: { elbowR: { e: [-0.3, 0, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true } } },
+    ] },
+    // greeting wave: raise the arm, two elbow swings, drop
+    wave: { track: 'arms', dur: 1300, keys: [
+      { at: 0.25, ease: 'outCubic',   joints: { shoulderR: { e: [0, 0, -2.4] }, elbowR: { e: [0, 0, -0.5] } } },
+      { at: 0.45, ease: 'inOutCubic', joints: { elbowR: { e: [0, 0, 0.4] } } },
+      { at: 0.62, ease: 'inOutCubic', joints: { elbowR: { e: [0, 0, -0.5] } } },
+      { at: 0.80, ease: 'inOutCubic', joints: { elbowR: { e: [0, 0, 0.4] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true } } },
+    ] },
+    // open-palm sweep toward 'target' (this-way-please / old dealGesture)
+    welcomeSweep: { track: 'arms', dur: 1100, keys: [
+      { at: 0.35, ease: 'outCubic',   joints: { shoulderR: { aim: 'target' }, elbowR: { e: [-0.1, 0, 0] } } },
+      { at: 0.75, ease: 'inOutCubic', joints: { shoulderR: { aim: 'target' } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { shoulderR: { rest: true }, elbowR: { rest: true } } },
+    ] },
+    nod: { track: 'head', dur: 550, keys: [
+      { at: 0.40, ease: 'outCubic',   joints: { neck: { e: [0.28, 0, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { neck: { rest: true } } },
+    ] },
+    headShake: { track: 'head', dur: 650, keys: [
+      { at: 0.20, ease: 'inOutCubic', joints: { neck: { e: [0, 0.3, 0] } } },
+      { at: 0.45, ease: 'inOutCubic', joints: { neck: { e: [0, -0.3, 0] } } },
+      { at: 0.70, ease: 'inOutCubic', joints: { neck: { e: [0, 0.18, 0] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: { neck: { rest: true } } },
+    ] },
+  };
+
+  function validateClip(clip) {
+    const errs = [];
+    if (!clip || typeof clip !== 'object') return ['clip is not an object'];
+    if (!TRACKS.includes(clip.track)) errs.push(`unknown track: ${clip.track}`);
+    if (!(clip.dur > 0)) errs.push('dur must be > 0');
+    if (!Array.isArray(clip.keys) || !clip.keys.length) { errs.push('keys empty'); return errs; }
+    let prev = 0;
+    clip.keys.forEach((k, i) => {
+      if (!(k.at > prev && k.at <= 1)) errs.push(`key ${i}: at must increase within (0,1]`);
+      prev = k.at;
+      if (k.ease !== undefined && !EASINGS.includes(k.ease)) errs.push(`key ${i}: unknown ease ${k.ease}`);
+      const joints = k.joints || {};
+      if (!Object.keys(joints).length) errs.push(`key ${i}: no joints`);
+      for (const [name, tgt] of Object.entries(joints)) {
+        if (!JOINTS.includes(name)) errs.push(`key ${i}: unknown joint ${name}`);
+        const kinds = ['aim', 'e', 'rest'].filter((f) => tgt[f] !== undefined);
+        if (kinds.length !== 1) errs.push(`key ${i}: joint ${name} needs exactly one of aim/e/rest`);
+        if (tgt.aim !== undefined && typeof tgt.aim !== 'string') errs.push(`key ${i}: ${name}.aim must be a string`);
+        if (tgt.e !== undefined && !(Array.isArray(tgt.e) && tgt.e.length === 3 && tgt.e.every((n) => typeof n === 'number')))
+          errs.push(`key ${i}: ${name}.e must be [x,y,z] numbers`);
+      }
+    });
+    if (clip.keys[clip.keys.length - 1].at !== 1) errs.push('last key must be at 1');
+    return errs;
+  }
+
+  // Word-wrap for speech bubbles: <= 3 lines, ellipsize overflow.
+  function wrapLines(text, maxChars = 18) {
+    const words = String(text).trim().split(/\s+/);
+    const lines = [''];
+    for (const w of words) {
+      const cur = lines[lines.length - 1];
+      if (!cur.length) lines[lines.length - 1] = w;
+      else if ((cur + ' ' + w).length <= maxChars) lines[lines.length - 1] = cur + ' ' + w;
+      else lines.push(w);
+    }
+    if (lines.length > 3) {
+      const kept = lines.slice(0, 3);
+      kept[2] = (kept[2].length >= maxChars ? kept[2].slice(0, maxChars - 1) : kept[2]) + '…';
+      return kept;
+    }
+    return lines;
+  }
+
+  C.gestures = { JOINTS, TRACKS, EASINGS, CLIPS, validateClip, wrapLines };
+})();
+
+
+// ===== src/logic/roulette-cover.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Pure EU-roulette coverage + payout factors, used ONLY for 3D settle
+  // choreography (which chip stacks the dealer sweeps vs pays). The 2D game
+  // remains authoritative for money. Bet shape mirrors roulette-map.js.
+  const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+  const parseNums = (key) => String(key).split('-').map((t) => (t === '00' ? 0 : Number(t)));
+
+  const FACTORS = {
+    straight: 35, split: 17, street: 11, trio: 11, corner: 8,
+    firstFour: 8, topLine: 8, line: 5, column: 2, dozen: 2,
+    low: 1, even: 1, red: 1, black: 1, odd: 1, high: 1,
+  };
+  const factorOf = (type) => FACTORS[type];
+
+  function covers(type, key, n) {
+    switch (type) {
+      case 'straight': return parseNums(key)[0] === n;
+      case 'split':
+      case 'trio':
+      case 'corner': return parseNums(key).includes(n);
+      case 'street': {
+        const nums = parseNums(key);
+        const f = nums[0];
+        return nums.length > 1 ? nums.includes(n) : n >= f && n <= f + 2;
+      }
+      case 'line': {
+        const f = parseNums(key)[0];
+        return n >= f && n <= f + 5;
+      }
+      case 'column': return n !== 0 && ((n - 1) % 3) === Number(key) - 1;
+      case 'dozen': return n !== 0 && Math.ceil(n / 12) === Number(key);
+      case 'firstFour':
+      case 'topLine': return n <= 3;
+      case 'low': return n >= 1 && n <= 18;
+      case 'high': return n >= 19;
+      case 'even': return n !== 0 && n % 2 === 0;
+      case 'odd': return n % 2 === 1;
+      case 'red': return RED.has(n);
+      case 'black': return n !== 0 && !RED.has(n);
+      default: return false;
+    }
+  }
+
+  const NESTED = ['straight', 'split', 'trio', 'corner', 'street', 'line', 'column', 'dozen'];
+  const SCALAR = ['firstFour', 'topLine', 'low', 'even', 'red', 'black', 'odd', 'high'];
+
+  function splitByOutcome(bets, result) {
+    const winning = {}, losing = {}, wins = [];
+    const put = (bucket, type, key, amount) => {
+      if (key === null) bucket[type] = amount;
+      else (bucket[type] ??= {})[key] = amount;
+    };
+    for (const type of NESTED) {
+      for (const [key, amount] of Object.entries(bets?.[type] || {})) {
+        if (!(amount > 0)) continue;
+        if (covers(type, key, result)) {
+          put(winning, type, key, amount);
+          wins.push({ type, key, amount, factor: FACTORS[type] });
+        } else put(losing, type, key, amount);
+      }
+    }
+    for (const type of SCALAR) {
+      const amount = bets?.[type];
+      if (!(amount > 0)) continue;
+      if (covers(type, null, result)) {
+        put(winning, type, null, amount);
+        wins.push({ type, key: null, amount, factor: FACTORS[type] });
+      } else put(losing, type, null, amount);
+    }
+    return { winning, losing, wins };
+  }
+
+  C.rouletteCover = { covers, factorOf, splitByOutcome };
+})();
+
+
+// ===== src/logic/baccarat-roads.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Pure baccarat shoe simulation + roadmap derivations. No THREE/DOM —
+  // node-testable; consumed by the baccarat floor table's scoreboard.
+  // Cards reuse the lobby shape {r: 2..14, s: 0..3} (14 = Ace).
+
+  const bacValue = (c) => (c.r === 14 ? 1 : c.r >= 10 ? 0 : c.r);
+  const total = (cards) => cards.reduce((t, c) => (t + bacValue(c)) % 10, 0);
+
+  function buildShoe(rng, decks = 8) {
+    const cards = [];
+    for (let d = 0; d < decks; d++)
+      for (let s = 0; s < 4; s++)
+        for (let r = 2; r <= 14; r++) cards.push({ r, s });
+    for (let i = cards.length - 1; i > 0; i--) {
+      const j = Math.floor(rng() * (i + 1));
+      [cards[i], cards[j]] = [cards[j], cards[i]];
+    }
+    return cards;
+  }
+
+  // Banker third-card table: banker two-card total vs the VALUE of the
+  // player's third card (null = player stood).
+  function bankerDraws(bt, p3) {
+    if (bt >= 7) return false;
+    if (p3 === null) return bt <= 5;
+    if (bt <= 2) return true;
+    if (bt === 3) return p3 !== 8;
+    if (bt === 4) return p3 >= 2 && p3 <= 7;
+    if (bt === 5) return p3 >= 4 && p3 <= 7;
+    return p3 === 6 || p3 === 7; // bt === 6
+  }
+
+  function playRound(draw) {
+    const p = [draw(), draw()], b = [draw(), draw()];
+    let natural = false;
+    if (total(p) >= 8 || total(b) >= 8) {
+      natural = true;
+    } else {
+      let p3 = null;
+      if (total(p) <= 5) { p.push(draw()); p3 = bacValue(p[2]); }
+      if (bankerDraws(total(b), p3)) b.push(draw());
+    }
+    const pt = total(p), bt = total(b);
+    return {
+      outcome: pt > bt ? 'P' : bt > pt ? 'B' : 'T',
+      playerCards: p, bankerCards: b,
+      playerTotal: pt, bankerTotal: bt,
+      playerPair: p[0].r === p[1].r, bankerPair: b[0].r === b[1].r,
+      natural,
+    };
+  }
+
+  // Full shoe: 8 decks, cut card ~14 from the end (~60-80 rounds).
+  function simulateShoe(rng = Math.random) {
+    const shoe = buildShoe(rng);
+    let i = 0;
+    const draw = () => shoe[i++];
+    const rounds = [];
+    while (shoe.length - i > 14 + 6) rounds.push(playRound(draw));
+    return rounds;
+  }
+
+  function stats(rounds) {
+    const s = { banker: 0, player: 0, tie: 0, bPair: 0, pPair: 0, natural: 0, games: rounds.length };
+    for (const r of rounds) {
+      if (r.outcome === 'B') s.banker++;
+      else if (r.outcome === 'P') s.player++;
+      else s.tie++;
+      if (r.bankerPair) s.bPair++;
+      if (r.playerPair) s.pPair++;
+      if (r.natural) s.natural++;
+    }
+    return s;
+  }
+
+  // ---------- big road (LOGICAL streak columns) ----------
+  // Ties never occupy a cell: they increment `ties` on the previous cell;
+  // ties before any B/P result are held in leadingTies.
+  function buildBigRoad(rounds) {
+    const cols = [];
+    let leadingTies = 0;
+    for (const r of rounds) {
+      if (r.outcome === 'T') {
+        const col = cols[cols.length - 1];
+        if (col) col.cells[col.cells.length - 1].ties++;
+        else leadingTies++;
+        continue;
+      }
+      const col = cols[cols.length - 1];
+      if (col && col.outcome === r.outcome) col.cells.push({ ties: 0 });
+      else cols.push({ outcome: r.outcome, cells: [{ ties: 0 }] });
+    }
+    return { cols, leadingTies };
+  }
+
+  // ---------- display placement (6-row grid + dragon tail) ----------
+  // seq: [{key, ...payload}] — consecutive equal keys stack in a column.
+  // Stacking past the last row, or into an occupied cell, turns right and
+  // continues along the current row (the "dragon tail"). New columns start
+  // one to the right of the previous column's START (row 0 is never a tail
+  // row, so column starts cannot collide).
+  function layoutRoad(seq, rows = 6) {
+    const out = [], used = new Set(), key = (c, r) => c + ':' + r;
+    let colStart = -1, prevKey = null, c = 0, r = 0;
+    for (const item of seq) {
+      if (item.key !== prevKey) {
+        colStart += 1; c = colStart; r = 0;
+      } else if (r + 1 < rows && !used.has(key(c, r + 1))) {
+        r += 1;
+      } else {
+        c += 1;
+        while (used.has(key(c, r))) c += 1;
+      }
+      used.add(key(c, r));
+      out.push({ col: c, row: r, ...item });
+      prevKey = item.key;
+    }
+    return out;
+  }
+
+  const bigRoadCells = (big, rows = 6) => layoutRoad(
+    big.cols.flatMap((col) => col.cells.map((cell) => ({ key: col.outcome, outcome: col.outcome, ties: cell.ties }))),
+    rows,
+  );
+
+  // ---------- bead plate (every round incl. ties; newest columns kept) ----------
+  function beadPlate(rounds, cols = 12, rows = 6) {
+    const totalCols = Math.ceil(rounds.length / rows);
+    const skip = Math.max(0, (totalCols - cols) * rows);
+    return rounds.slice(skip).map((r, i) => ({
+      col: Math.floor(i / rows), row: i % rows,
+      outcome: r.outcome, playerPair: r.playerPair, bankerPair: r.bankerPair,
+    }));
+  }
+
+  // ---------- derived roads ----------
+  // offset 1 = big eye boy (大眼仔), 2 = small road (小路),
+  // 3 = cockroach pig (曱甴路). For each big-road cell at LOGICAL (col c,
+  // row r) with c > offset or (c === offset, r >= 1):
+  //   r === 0: red if depth(c-1) === depth(c-1-offset) else blue
+  //   r >= 1:  blue if column c-offset ends exactly at row r-1, else red
+  function deriveRoad(big, offset) {
+    const depth = (i) => big.cols[i].cells.length;
+    const colors = [];
+    big.cols.forEach((col, c) => {
+      col.cells.forEach((_, r) => {
+        if (!(c > offset || (c === offset && r >= 1))) return;
+        if (r === 0) colors.push(depth(c - 1) === depth(c - 1 - offset) ? 'r' : 'b');
+        else colors.push(depth(c - offset) === r ? 'b' : 'r');
+      });
+    });
+    return colors;
+  }
+
+  // 下局預告: the symbol each derived road would print if the next result
+  // were B / P — computed by actually appending the hypothetical round.
+  function predictNext(big) {
+    const out = {};
+    for (const oc of ['B', 'P']) {
+      const cols = big.cols.map((c) => ({ outcome: c.outcome, cells: c.cells.map((x) => ({ ...x })) }));
+      const last = cols[cols.length - 1];
+      if (last && last.outcome === oc) last.cells.push({ ties: 0 });
+      else cols.push({ outcome: oc, cells: [{ ties: 0 }] });
+      out[oc] = [1, 2, 3].map((k) => {
+        const after = deriveRoad({ cols }, k);
+        const before = deriveRoad(big, k);
+        return after.length > before.length ? after[after.length - 1] : null;
+      });
+    }
+    return out;
+  }
+
+  C.baccaratRoads = { bacValue, total, bankerDraws, buildShoe, playRound, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate, deriveRoad, predictNext };
+})();
+
+
 // ===== src/floor/layout.js =====
 (() => {
   const C = (globalThis.CASINO ??= {});
@@ -1358,7 +2375,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       roulette:  { pos: [-6.5, 1.6, -2.8],  look: [-6.5, 1.0, -6.5] },
       blackjack: { pos: [10, 1.6, -2.8],    look: [10, 1.0, -6.5] },
       baccarat:  { pos: [-6.5, 1.6, 2.8],   look: [-6.5, 1.0, 6.5] },
-      uth:       { pos: [7, 1.6, 2.8],      look: [7, 1.0, 6.5] },
+      uth:       { pos: [5.3, 1.6, 2.5],    look: [5.2, 0.9, 6.5] },
     },
   };
 
@@ -1379,28 +2396,158 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   C.floor = C.floor || {};
   C.floor.tables = C.floor.tables || {};
 
-  // Static roulette table: rail box + printed felt layout + full wheel
-  // assembly (ported from the v1 room, spin logic removed — the 3D hub never
-  // plays). Group origin = rail center at floor level; +Z faces the aisle.
+  // Static roulette table: rail box + printed felt layout (racetrack, grid,
+  // dozens/columns) + recessed wheel bowl + tote board (ported from the v1
+  // room, spin logic removed — the 3D hub never plays). Group origin = rail
+  // center at floor level; +Z faces the players' long side.
   const RAIL_H = 0.82, FELT_Y = 0.84, STEP = (Math.PI * 2) / 37;
   const EU_WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
   const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
+  const GOLD = 'rgba(240,216,120,.6)', GOLD_SOFT = 'rgba(240,216,120,.4)';
 
+  const numFill = (n) => (n === 0 ? '#0e6b45' : RED.has(n) ? '#a31621' : '#111');
+
+  // ---------- felt layout (racetrack + grid + dozens + columns) ----------
+  // Racetrack number arrangement ported from the 2D game's render-racetrack.js:
+  // EU wheel sequence rotated 3 positions so the ORPHELINS dividers center.
+  const TRACK_TOP = [10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12];
+  const TRACK_BOTTOM = [36, 13, 27, 6, 34, 17, 25, 2, 21, 4, 19, 15, 32];
+  const TRACK_LEFT = [11, 30, 8, 23];   // bottom → top
+  const TRACK_RIGHT = [35, 3, 26, 0];   // top → bottom
+
+  function trackWedge(ctx, cx, cy, r0, r1, a0, a1, fill) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, r0, a0, a1);
+    ctx.arc(cx, cy, r1, a1, a0, true);
+    ctx.closePath();
+    ctx.fillStyle = fill; ctx.fill();
+    ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1.5; ctx.stroke();
+  }
+
+  function stadiumPath(ctx, lcx, rcx, cy, r) {
+    ctx.beginPath();
+    ctx.moveTo(lcx, cy - r);
+    ctx.lineTo(rcx, cy - r);
+    ctx.arc(rcx, cy, r, -Math.PI / 2, Math.PI / 2);
+    ctx.lineTo(lcx, cy + r);
+    ctx.arc(lcx, cy, r, Math.PI / 2, Math.PI * 1.5);
+    ctx.closePath();
+  }
+
+  function drawRacetrack(ctx, x0, x1, y0, h) {
+    const r = h / 2, cy = y0 + r;
+    const lcx = x0 + r, rcx = x1 - r;
+    const CELL_H = 34, edge = 5, gap = 2;
+
+    stadiumPath(ctx, lcx, rcx, cy, r);
+    ctx.fillStyle = '#0a0a0a'; ctx.fill();
+    ctx.strokeStyle = '#d4b07a'; ctx.lineWidth = 3; ctx.stroke();
+
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.font = 'bold 17px Georgia, serif';
+
+    // curved end wedges
+    const outerR = r - edge, innerR = outerR - CELL_H;
+    const wedgeA = Math.PI / TRACK_LEFT.length;
+    TRACK_LEFT.forEach((n, i) => {
+      const a0 = Math.PI / 2 + i * wedgeA, a1 = a0 + wedgeA;
+      trackWedge(ctx, lcx, cy, innerR, outerR, a0, a1, numFill(n));
+      const mid = (a0 + a1) / 2, tr = (innerR + outerR) / 2;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(String(n), lcx + tr * Math.cos(mid), cy + tr * Math.sin(mid));
+    });
+    TRACK_RIGHT.forEach((n, i) => {
+      const a0 = -Math.PI / 2 + i * wedgeA, a1 = a0 + wedgeA;
+      trackWedge(ctx, rcx, cy, innerR, outerR, a0, a1, numFill(n));
+      const mid = (a0 + a1) / 2, tr = (innerR + outerR) / 2;
+      ctx.fillStyle = '#fff';
+      ctx.fillText(String(n), rcx + tr * Math.cos(mid), cy + tr * Math.sin(mid));
+    });
+
+    // straight rows
+    const topRowY = y0 + edge, botRowY = y0 + h - edge - CELL_H;
+    const rowW = rcx - lcx;
+    const tw = (rowW - (TRACK_TOP.length - 1) * gap) / TRACK_TOP.length;
+    const bw = (rowW - (TRACK_BOTTOM.length - 1) * gap) / TRACK_BOTTOM.length;
+    TRACK_TOP.forEach((n, i) => {
+      const x = lcx + i * (tw + gap);
+      ctx.fillStyle = numFill(n); ctx.fillRect(x, topRowY, tw, CELL_H);
+      ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1; ctx.strokeRect(x, topRowY, tw, CELL_H);
+      ctx.fillStyle = '#fff'; ctx.fillText(String(n), x + tw / 2, topRowY + CELL_H / 2);
+    });
+    TRACK_BOTTOM.forEach((n, i) => {
+      const x = lcx + i * (bw + gap);
+      ctx.fillStyle = numFill(n); ctx.fillRect(x, botRowY, bw, CELL_H);
+      ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1; ctx.strokeRect(x, botRowY, bw, CELL_H);
+      ctx.fillStyle = '#fff'; ctx.fillText(String(n), x + bw / 2, botRowY + CELL_H / 2);
+    });
+
+    // center call-bet sections (TIER | ORPHELINS | VOISINS DU ZERO)
+    const cTop = topRowY + CELL_H, cBot = botRowY;
+    stadiumPath(ctx, lcx, rcx, cy, innerR);
+    ctx.fillStyle = '#0a3a24'; ctx.fill();
+    ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1; ctx.stroke();
+
+    // divider boundaries mirror the 2D racetrack: top after 5 / 10 cells,
+    // bottom after 3 / 6 cells (TIERS | ORPHELINS | VOISINS)
+    const div1T = lcx + 5 * (tw + gap) - gap / 2, div1B = lcx + 3 * (bw + gap) - gap / 2;
+    const div2T = lcx + 10 * (tw + gap) - gap / 2, div2B = lcx + 6 * (bw + gap) - gap / 2;
+    ctx.strokeStyle = '#d4b07a'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(div1T, cTop); ctx.lineTo(div1B, cBot); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(div2T, cTop); ctx.lineTo(div2B, cBot); ctx.stroke();
+
+    ctx.fillStyle = '#f0e6c8';
+    ctx.font = 'bold 15px Georgia, serif';
+    ctx.fillText('TIER', (lcx + div1T) / 2, cy);
+    ctx.fillText('ORPHELINS', (div1T + div2T) / 2, cy);
+    ctx.font = 'bold 13px Georgia, serif';
+    ctx.fillText('VOISINS DU ZERO', (div2T + rcx - 10) / 2, cy);
+  }
+
+  // Felt print geometry (canvas px + felt metres). Exposed as
+  // C.floor.ROULETTE_FELT so the live-play bet mapping (roulette-map.js)
+  // lands 3D chips on the exact printed cells.
+  const FELT = {
+    W: 1280, H: 640,            // canvas size
+    FW: 3.28, FD: 1.48,         // felt top dimensions in metres
+    LX: 150, RX: 1270,          // printed layout span (left strip = chip apron)
+    ZERO_W: 80, COL_W: 120,     // zero column / "2 TO 1" boxes width
+    GY: 194, ROW_H: 92,         // grid origin + row height (3 rows)
+    ROW_GAP: 8, DOZEN_H: 52, EVEN_H: 52,
+    TRACK_Y: 16, TRACK_H: 160,  // racetrack band
+  };
+  C.floor.ROULETTE_FELT = FELT;
+
+  // Built once and shared — all four floor tables print the same layout.
+  let feltTexture = null;
   function makeFeltLayoutTexture() {
-    return C.assets.canvasTexture(1024, 512, (ctx) => {
+    if (feltTexture) return feltTexture;
+    feltTexture = C.assets.canvasTexture(FELT.W, FELT.H, (ctx) => {
       ctx.fillStyle = '#0b5d3b';
-      ctx.fillRect(0, 0, 1024, 512);
+      ctx.fillRect(0, 0, FELT.W, FELT.H);
 
-      const gx = 40, gy = 30, gw = 940, gh = 380, zeroW = 70;
-      const cellW = (gw - zeroW) / 12, cellH = gh / 3;
+      // Left strip (canvas x 0..LX) stays plain felt: the apron between the
+      // wheel and the printed layout where the chip bank sits.
+      const { LX, RX } = FELT;
+
+      // racetrack band along the dealer side (canvas top)
+      drawRacetrack(ctx, LX, RX, FELT.TRACK_Y, FELT.TRACK_H);
+
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+      // main grid
+      const GY = FELT.GY, ROW_H = FELT.ROW_H, GH = ROW_H * 3;
+      const ZERO_W = FELT.ZERO_W, COL_W = FELT.COL_W;
+      const gx = LX + ZERO_W, grx = RX - COL_W;
+      const cellW = (grx - gx) / 12;
 
       ctx.fillStyle = '#0e6b45';
-      ctx.fillRect(gx, gy, zeroW, gh);
-      ctx.strokeStyle = 'rgba(240,216,120,.6)'; ctx.lineWidth = 2;
-      ctx.strokeRect(gx, gy, zeroW, gh);
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 34px Georgia, serif';
-      ctx.fillText('0', gx + zeroW / 2, gy + gh / 2);
+      ctx.fillRect(LX, GY, ZERO_W, GH);
+      ctx.strokeStyle = GOLD; ctx.lineWidth = 2;
+      ctx.strokeRect(LX, GY, ZERO_W, GH);
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 40px Georgia, serif';
+      ctx.fillText('0', LX + ZERO_W / 2, GY + GH / 2);
 
       const ROWS = [
         [3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36],
@@ -1409,31 +2556,58 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       ];
       ROWS.forEach((row, r) => {
         row.forEach((n, c) => {
-          const x = gx + zeroW + c * cellW, y = gy + r * cellH;
-          ctx.fillStyle = RED.has(n) ? '#a31621' : '#111';
-          ctx.fillRect(x, y, cellW, cellH);
-          ctx.strokeStyle = 'rgba(240,216,120,.4)'; ctx.lineWidth = 1.5;
-          ctx.strokeRect(x, y, cellW, cellH);
+          const x = gx + c * cellW, y = GY + r * ROW_H;
+          ctx.fillStyle = numFill(n);
+          ctx.fillRect(x, y, cellW, ROW_H);
+          ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1.5;
+          ctx.strokeRect(x, y, cellW, ROW_H);
           ctx.fillStyle = '#fff';
-          ctx.font = 'bold 24px Georgia, serif';
-          ctx.fillText(String(n), x + cellW / 2, y + cellH / 2);
+          ctx.font = 'bold 30px Georgia, serif';
+          ctx.fillText(String(n), x + cellW / 2, y + ROW_H / 2);
         });
       });
 
-      const oy = gy + gh + 24, oh = 56;
+      // 2 TO 1 column boxes at the grid's far end
+      for (let r = 0; r < 3; r++) {
+        const y = GY + r * ROW_H;
+        ctx.fillStyle = 'rgba(0,0,0,.28)';
+        ctx.fillRect(grx, y, COL_W, ROW_H);
+        ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1.5;
+        ctx.strokeRect(grx, y, COL_W, ROW_H);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 22px Georgia, serif';
+        ctx.fillText('2 TO 1', grx + COL_W / 2, y + ROW_H / 2);
+      }
+
+      // dozens row
+      const DY = GY + GH + FELT.ROW_GAP, DH = FELT.DOZEN_H;
+      ['1st 12', '2nd 12', '3rd 12'].forEach((label, i) => {
+        const w = (grx - gx) / 3, x = gx + i * w;
+        ctx.fillStyle = 'rgba(0,0,0,.28)';
+        ctx.fillRect(x, DY, w, DH);
+        ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, DY, w, DH);
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 26px Georgia, serif';
+        ctx.fillText(label, x + w / 2, DY + DH / 2);
+      });
+
+      // even-money row nearest the players
+      const OY = DY + DH + FELT.ROW_GAP, OH = FELT.EVEN_H;
       const labels = ['1-18', 'EVEN', 'RED', 'BLACK', 'ODD', '19-36'];
-      const ow = gw / labels.length;
+      const ow = (grx - gx) / labels.length;
       labels.forEach((label, i) => {
         const x = gx + i * ow;
         ctx.fillStyle = label === 'RED' ? '#a31621' : label === 'BLACK' ? '#111' : 'rgba(0,0,0,.28)';
-        ctx.fillRect(x, oy, ow, oh);
-        ctx.strokeStyle = 'rgba(240,216,120,.4)'; ctx.lineWidth = 1.5;
-        ctx.strokeRect(x, oy, ow, oh);
+        ctx.fillRect(x, OY, ow, OH);
+        ctx.strokeStyle = GOLD_SOFT; ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, OY, ow, OH);
         ctx.fillStyle = '#fff';
-        ctx.font = 'bold 22px Georgia, serif';
-        ctx.fillText(label, x + ow / 2, oy + oh / 2);
+        ctx.font = 'bold 24px Georgia, serif';
+        ctx.fillText(label, x + ow / 2, OY + OH / 2);
       });
     });
+    return feltTexture;
   }
 
   // Wheel number ring — the canvas-arc angle convention lands at the same
@@ -1450,7 +2624,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         ctx.moveTo(cx, cy);
         ctx.arc(cx, cy, 500, a0, a1);
         ctx.closePath();
-        ctx.fillStyle = n === 0 ? '#0e6b45' : RED.has(n) ? '#a31621' : '#111';
+        ctx.fillStyle = numFill(n);
         ctx.fill();
         ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 2;
         ctx.stroke();
@@ -1469,33 +2643,37 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     });
   }
 
+  // Wheel assembly. `mount` is the non-rotating group at the bowl's location;
+  // `rotor` is its spinning child. During flight the ball is a direct child
+  // of the mount so its cos/sin path stays fixed while the rotor turns
+  // underneath (same rig as the v1 room). Returns { spinTo }.
   function buildWheel(mount) {
     const gold = C.assets.goldMaterial();
     const darkWood = new THREE.MeshStandardMaterial({ color: '#241408', roughness: 0.55, metalness: 0.1 });
-    const group = new THREE.Group();
+    const rotor = new THREE.Group();
 
     const base = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.16, 64), darkWood);
     base.rotation.x = Math.PI;   // wide flat face up
     base.position.y = 0.08;
     base.castShadow = true; base.receiveShadow = true;
-    group.add(base);
+    rotor.add(base);
 
     const RING_Y = 0.161;
     const hubCone = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.10, 0.06, 24), gold);
     hubCone.position.y = RING_Y + 0.03;
     hubCone.castShadow = true;
-    group.add(hubCone);
+    rotor.add(hubCone);
     const hubFinial = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), gold);
     hubFinial.position.y = RING_Y + 0.09;
     hubFinial.castShadow = true;
-    group.add(hubFinial);
+    rotor.add(hubFinial);
 
     const ringMat = new THREE.MeshStandardMaterial({ map: makeNumberRingTexture(), roughness: 0.4, metalness: 0.1 });
     const ring = new THREE.Mesh(new THREE.RingGeometry(0.30, 0.52, 148), ringMat);
     ring.rotation.x = -Math.PI / 2;
     ring.position.y = RING_Y;
     ring.receiveShadow = true;
-    group.add(ring);
+    rotor.add(ring);
 
     const SEP_RADIUS = 0.44, SEP_H = 0.014;
     const sepGeo = new THREE.BoxGeometry(0.10, SEP_H, 0.008);
@@ -1508,23 +2686,276 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       box.position.set(SEP_RADIUS, RING_Y + SEP_H / 2, 0);
       box.castShadow = true;
       pivot.add(box);
-      group.add(pivot);
+      rotor.add(pivot);
     }
 
-    // static ball parked in a pocket + fixed drop marker (no spins in the hub)
+    // Bowl surround (static — does NOT spin): raised outer rim rolling over
+    // into an inward-sloping ball apron, so the wheel sits recessed inside
+    // and the running ball stays contained. Profile points are
+    // (radius, height) bottom → over the lip → down to the number ring.
+    const rimProfile = [
+      [0.70, -0.02], [0.72, 0.05], [0.72, 0.185], [0.685, 0.235],
+      [0.615, 0.225], [0.55, 0.175],
+    ].map(([x, y]) => new THREE.Vector2(x, y));
+    const rimMat = C.assets.woodMaterial('#241408');
+    rimMat.side = THREE.DoubleSide;
+    const rim = new THREE.Mesh(new THREE.LatheGeometry(rimProfile, 64), rimMat);
+    rim.castShadow = true; rim.receiveShadow = true;
+    mount.add(rim);
+    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.014, 10, 64), gold);
+    lip.rotation.x = -Math.PI / 2;
+    lip.position.y = 0.238;
+    mount.add(lip);
+
+    // ball parked in a pocket (on TOP of the ring plane — it used to sit
+    // inside the base cone, i.e. invisible) + drop marker on the static rim
+    // at world angle 0, where spinTo lands the ball
+    const R_REST = 0.36, R_FLIGHT = 0.56;
     const ball = new THREE.Mesh(
       new THREE.SphereGeometry(0.018, 16, 12),
       new THREE.MeshStandardMaterial({ color: '#fdfdf5', roughness: 0.25, metalness: 0.05 }),
     );
     ball.castShadow = true;
-    ball.position.set(0.36, 0.055, 0);
-    group.add(ball);
+    ball.position.set(R_REST, RING_Y + 0.016, 0);
+    rotor.add(ball);
     const marker = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.05, 8), gold);
     marker.rotation.x = Math.PI;
-    marker.position.set(0.50, 0.22, 0);
+    marker.position.set(0.655, 0.285, 0);
     mount.add(marker);
 
-    mount.add(group);
+    mount.add(rotor);
+
+    // Land the ball on `pocket` (0-36). Wheel spins forward 4-7 turns while
+    // the ball counter-rotates 6-10 turns around the apron, easing inward
+    // over the last 28% and parking at world angle 0 — so the rotor must
+    // stop at rotation.y ≡ +idx*STEP (three.js puts local angle a at world
+    // angle a - rotation.y; sign verified empirically in the v1 room).
+    function spinTo(pocket) {
+      return new Promise((resolve) => {
+        const idx = EU_WHEEL.indexOf(pocket);
+        if (idx < 0) return resolve();
+        const wheelTurns = 4 + (crypto.getRandomValues(new Uint32Array(1))[0] % 4);   // 4–7
+        const ballTurns = 6 + (crypto.getRandomValues(new Uint32Array(1))[0] % 5);    // 6–10
+        const ms = C.app.REDUCED ? 2200 : 4200 + Math.random() * 1600;
+        const w0 = rotor.rotation.y % (Math.PI * 2);
+        const w1 = w0 + wheelTurns * Math.PI * 2 + ((idx * STEP - w0) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
+        const b1 = -ballTurns * Math.PI * 2;   // counter-rotation, ends at world angle 0
+        const t0 = performance.now();
+        const ease = C.tween.easings.outQuart;
+        rotor.remove(ball);
+        mount.add(ball);
+        const hook = () => {
+          const t = Math.min(1, (performance.now() - t0) / ms);
+          const e = ease(t);
+          rotor.rotation.y = w0 + (w1 - w0) * e;
+          const ba = b1 * e;
+          const drop = Math.max(0, (t - 0.72) / 0.28);              // radius eases in over last 28%
+          const r = R_FLIGHT + (R_REST - R_FLIGHT) * drop * drop;
+          ball.position.set(Math.cos(ba) * r, 0.21 - 0.033 * drop, Math.sin(ba) * r);
+          if (t === 1) {
+            C.app.offFrame(hook);
+            // lock the ball into the winning pocket: reparent into the rotor
+            // at the pocket's LOCAL angle so it rides the wheel afterwards
+            mount.remove(ball);
+            rotor.add(ball);
+            ball.position.set(Math.cos(idx * STEP) * R_REST, RING_Y + 0.016, Math.sin(idx * STEP) * R_REST);
+            resolve();
+          }
+        };
+        hook.cancel = () => { C.app.offFrame(hook); resolve(); };
+        C.app.onFrame(hook);
+      });
+    }
+
+    return { spinTo };
+  }
+
+  // ---------- tote board (history / statistics display) ----------
+  // Portrait LED panel on a pole beside the wheel, modeled on real casino
+  // roulette displays: recent numbers, limits, HIGH/LOW/ODD/EVEN split,
+  // hot/cold numbers. All stats derive from one simulated spin history so
+  // every figure on a board is self-consistent (and each table differs).
+  function makeToteBoard(opts) {
+    const limits = String(opts.limitsText || '').split(/[–-]/).map((s) => s.trim());
+    const minTxt = limits[0] || opts.minChipLabel || '100';
+    const maxTxt = limits[1] || '20,000';
+
+    // REAL records only. The board starts empty (fresh session) and is fed
+    // by roulette-live.js via userData.setStats — live spins at this table
+    // plus the embedded game's Skip-100 simulations, computed with the 2D
+    // game's own stats semantics (roulette-map.js#boardStats).
+    let S = { total: 0, last: [], hot: [], cold: [], high: null, low: null, odd: null, even: null };
+
+    const R = C.assets.roundRect;
+    const drawBoard = (ctx) => {
+      const stats = [
+        { label: 'HIGH', v: S.high, hue0: '#8a5cf0', hue1: '#5b2fb8' },
+        { label: 'LOW', v: S.low, hue0: '#ffc14d', hue1: '#d98a1a' },
+        { label: 'ODD', v: S.odd, hue0: '#8a5cf0', hue1: '#5b2fb8' },
+        { label: 'EVEN', v: S.even, hue0: '#ffc14d', hue1: '#d98a1a' },
+      ];
+
+      ctx.fillStyle = '#0b0e14'; ctx.fillRect(0, 0, 512, 896);
+      ctx.strokeStyle = '#3a3f4a'; ctx.lineWidth = 4;
+      ctx.strokeRect(6, 6, 500, 884);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+      // left column: winning-number history, latest at top (larger cell);
+      // 13 slots are always drawn — unfilled ones stay as dim empty frames
+      const colX = 14, colW = 112;
+      for (let i = 0; i < 13; i++) {
+        const big = i === 0;
+        const y = big ? 14 : 108 + (i - 1) * 59;
+        const h = big ? 90 : 55;
+        const n = S.last[i];
+        const filled = n !== undefined;
+        ctx.fillStyle = !filled ? '#12151c'
+          : n === 0 ? '#12813f' : RED.has(n) ? '#b01218' : '#1c1f24';
+        R(ctx, colX, y, colW, h, 6); ctx.fill();
+        ctx.strokeStyle = filled ? '#454b57' : '#252a34'; ctx.lineWidth = 1.5;
+        R(ctx, colX, y, colW, h, 6); ctx.stroke();
+        ctx.fillStyle = filled ? '#fff' : '#3a4150';
+        ctx.font = `bold ${big ? 56 : 32}px 'Segoe UI', system-ui, sans-serif`;
+        ctx.fillText(filled ? String(n) : '–', colX + colW / 2, y + h / 2 + 2);
+      }
+
+      const rx = 140, rw = 358, rcx = rx + rw / 2;
+
+      // header
+      ctx.fillStyle = '#e8b54a';
+      ctx.font = "bold 20px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText((opts.tierName || '').toUpperCase(), rcx, 28);
+      ctx.fillStyle = '#d42026';
+      ctx.font = "bold 42px Georgia, serif";
+      ctx.fillText('ROULETTE', rcx, 66);
+
+      // min bet panel + maximum bar
+      ctx.fillStyle = '#e9e9e4';
+      R(ctx, rx + 20, 92, rw - 40, 86, 8); ctx.fill();
+      ctx.fillStyle = '#8a8a85';
+      ctx.font = "bold 15px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText('MINIMUM BET', rcx, 112);
+      ctx.fillStyle = '#c01218';
+      ctx.font = "bold 52px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText(minTxt, rcx, 148);
+      ctx.fillStyle = '#a01218';
+      R(ctx, rx + 20, 188, rw - 40, 36, 6); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 21px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText(`MAXIMUM ${maxTxt}`, rcx, 207);
+
+      // HIGH / LOW / ODD / EVEN pennants
+      ctx.fillStyle = '#101725';
+      R(ctx, rx + 8, 238, rw - 16, 216, 8); ctx.fill();
+      ctx.strokeStyle = '#2c3242'; ctx.lineWidth = 1.5;
+      R(ctx, rx + 8, 238, rw - 16, 216, 8); ctx.stroke();
+      const segW = (rw - 16) / 4;
+      stats.forEach((s, i) => {
+        const cx = rx + 8 + segW * (i + 0.5);
+        ctx.fillStyle = '#e6e9ef';
+        ctx.font = "bold 17px 'Segoe UI', system-ui, sans-serif";
+        ctx.fillText(s.label, cx, 258);
+        const g = ctx.createLinearGradient(0, 274, 0, 398);
+        g.addColorStop(0, s.hue0); g.addColorStop(1, s.hue1);
+        ctx.fillStyle = g;
+        ctx.globalAlpha = s.v === null ? 0.25 : 1;   // dim pennant until data exists
+        ctx.beginPath();
+        ctx.moveTo(cx - 16, 274); ctx.lineTo(cx + 16, 274);
+        ctx.lineTo(cx + 16, 374); ctx.lineTo(cx, 398); ctx.lineTo(cx - 16, 374);
+        ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = s.v === null ? '#5a6274' : '#fff';
+        ctx.font = "bold 19px 'Segoe UI', system-ui, sans-serif";
+        ctx.fillText(s.v === null ? '–' : `${s.v}%`, cx, 432);
+      });
+
+      // hot / cold numbers — 4 slots each, dim frames until enough spins
+      ctx.font = "bold 24px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillStyle = '#ff7a1a'; ctx.fillText('HOT', rx + segW, 484);
+      ctx.fillStyle = '#5ec8f0'; ctx.fillText('COLD', rx + rw - segW, 484);
+      const badge = (n, x, y, c0, c1) => {
+        const filled = n !== undefined;
+        if (filled) {
+          const g = ctx.createLinearGradient(0, y, 0, y + 52);
+          g.addColorStop(0, c0); g.addColorStop(1, c1);
+          ctx.fillStyle = g;
+        } else ctx.fillStyle = '#12151c';
+        R(ctx, x, y, 64, 52, 8); ctx.fill();
+        ctx.strokeStyle = filled ? 'rgba(255,255,255,.35)' : '#252a34'; ctx.lineWidth = 1.5;
+        R(ctx, x, y, 64, 52, 8); ctx.stroke();
+        ctx.fillStyle = filled ? '#fff' : '#3a4150';
+        ctx.font = "bold 27px 'Segoe UI', system-ui, sans-serif";
+        ctx.fillText(filled ? String(n) : '–', x + 32, y + 28);
+      };
+      for (let i = 0; i < 4; i++) {
+        badge(S.hot[i], rx + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#ff8c1a', '#c81616');
+        badge(S.cold[i], rx + rw / 2 + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#4fb6e8', '#1a5fa8');
+      }
+
+      // session spin counter (real records only — resets on every session)
+      ctx.fillStyle = '#7c8496';
+      ctx.font = "600 15px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText(S.total === 0 ? 'NEW SESSION' : `SESSION SPINS ${S.total}`, rcx, 646);
+
+      // mini wheel graphic
+      const wcx = rcx, wcy = 738, wr = 84;
+      for (let i = 0; i < 37; i++) {
+        const a0 = i * STEP, a1 = a0 + STEP;
+        ctx.beginPath();
+        ctx.moveTo(wcx, wcy);
+        ctx.arc(wcx, wcy, wr, a0, a1);
+        ctx.closePath();
+        ctx.fillStyle = numFill(EU_WHEEL[i]);
+        ctx.fill();
+      }
+      ctx.beginPath(); ctx.arc(wcx, wcy, wr * 0.62, 0, Math.PI * 2);
+      ctx.fillStyle = '#23262c'; ctx.fill();
+      ctx.beginPath(); ctx.arc(wcx, wcy, wr * 0.16, 0, Math.PI * 2);
+      ctx.fillStyle = '#c9a227'; ctx.fill();
+
+      // footer
+      ctx.fillStyle = '#1c8a2e';
+      R(ctx, 14, 842, 484, 42, 6); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.font = "bold 26px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText('PLACE YOUR BETS', 256, 864);
+    };
+    const tx = C.assets.canvasTexture(512, 896, drawBoard);
+
+    const group = new THREE.Group();
+    const dark = new THREE.MeshStandardMaterial({ color: '#0d0f13', roughness: 0.55, metalness: 0.35 });
+    const base = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.19, 0.04, 20), dark);
+    base.position.y = 0.02;
+    base.castShadow = true; base.receiveShadow = true;
+    group.add(base);
+    const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.86, 12), dark);
+    pole.position.y = 0.45;
+    pole.castShadow = true;
+    group.add(pole);
+    const casing = new THREE.Mesh(new THREE.BoxGeometry(0.68, 1.14, 0.07), dark);
+    casing.position.y = 1.42;
+    casing.castShadow = true; casing.receiveShadow = true;
+    group.add(casing);
+    // unlit screen so it reads as an LED panel under any room light
+    const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.60, 1.05),
+      new THREE.MeshBasicMaterial({ map: tx, fog: false }));
+    screen.position.set(0, 1.42, 0.037);
+    group.add(screen);
+
+    // Live update: replace the whole stats snapshot and redraw. Redraws are
+    // coalesced so a Skip-100 burst (100 results in ~1s) paints a handful of
+    // frames instead of a hundred.
+    let redrawTimer = null;
+    group.userData.setStats = (stats) => {
+      S = stats || { total: 0, last: [], hot: [], cold: [], high: null, low: null, odd: null, even: null };
+      if (redrawTimer) return;
+      redrawTimer = setTimeout(() => {
+        redrawTimer = null;
+        drawBoard(tx.image.getContext('2d'));
+        tx.needsUpdate = true;
+      }, 100);
+    };
+    return group;
   }
 
   // opts: { tierName, limitsText, minChipLabel, accent, withDealer }
@@ -1547,46 +2978,67 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     g.add(feltTop);
 
     // wheel bowl on a pedestal at the west end of the table
-    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.62, 0.66, 0.34, 48),
+    const bowl = new THREE.Mesh(new THREE.CylinderGeometry(0.71, 0.76, 0.34, 48),
       A.woodMaterial('#241408'));
     bowl.position.set(-2.35, 0.61, 0);
     bowl.castShadow = true; bowl.receiveShadow = true;
     g.add(bowl);
-    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.42, 0.46, 24),
+    const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.44, 0.46, 24),
       A.woodMaterial('#241408'));
     pedestal.position.set(-2.35, 0.22, 0);
     pedestal.castShadow = true; pedestal.receiveShadow = true;
     g.add(pedestal);
     const wheelMount = new THREE.Group();
     wheelMount.position.set(-2.35, 0.78, 0);
-    buildWheel(wheelMount);
+    const wheel = buildWheel(wheelMount);
     g.add(wheelMount);
 
-    // ghost chips so the table never looks abandoned
+    // Bet-chip layer: ghost bets live here so the first live setBets()
+    // replaces them, and every live bet lands/clears through this group.
+    const betLayer = new THREE.Group();
+    g.add(betLayer);
     const c1 = C.chips.makeChipStack(500, 6);
-    c1.position.set(0.9, 0.86, 0.45);
-    g.add(c1);
+    c1.position.set(0.35, 0.86, 0.05);
+    betLayer.add(c1);
     const c2 = C.chips.makeChipStack(100, 4);
-    c2.position.set(1.25, 0.86, 0.35);
-    g.add(c2);
+    c2.position.set(0.05, 0.86, 0.52);
+    betLayer.add(c2);
 
-    // dealer-side chip bank: tray + four denomination stacks
-    const rack = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.05, 0.24),
+    const DENOMS = [5000, 1000, 500, 100, 50, 25, 10, 5, 1];
+    const chipsFor = (amount) => {
+      const denom = DENOMS.find((d) => d <= amount) || 1;
+      return { denom, count: Math.max(1, Math.min(10, Math.round(amount / denom))) };
+    };
+
+    // dealer chip bank on the plain apron between the wheel and the layout
+    // (NOT on the printed betting grid) — rack turned to run across the table
+    const rack = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.05, 0.7),
       new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.5, metalness: 0.3 }));
-    rack.position.set(0.2, FELT_Y + 0.03, -0.56);
+    rack.position.set(-1.44, FELT_Y + 0.03, 0);
     g.add(rack);
     [100, 500, 1000, 5000].forEach((v, i) => {
       const stk = C.chips.makeChipStack(v, 8);
-      stk.position.set(-0.04 + i * 0.16, FELT_Y + 0.055, -0.56);
+      stk.position.set(-1.44, FELT_Y + 0.055, -0.24 + i * 0.16);
       g.add(stk);
     });
 
+    let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer();
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
       dealer.position.set(0.2, 0, -1.15);
       g.add(dealer);
       dealer.userData.idle(C.app);
+      dealerRig = dealer.userData.rig;
     }
+    g.userData.dealerRig = dealerRig;
+
+    // History/stats tote board beside the wheel on the dealer side, screen
+    // angled toward the aisle + players — in frame behind the felt while
+    // betting, and beside the bowl (not blocking it) during the spin shot.
+    const board = makeToteBoard(opts);
+    board.position.set(-1.75, 0, -1.25);
+    board.rotation.y = Math.PI / 2 - 0.15;
+    g.add(board);
 
     // tier sign at the aisle-side corner (plaqueYaw lets a rotated table
     // keep its sign facing the aisle)
@@ -1604,6 +3056,132 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     g.userData.highlight = (on) => pad.userData.setBright(on);
     g.userData.radius = 2.5;
 
+    // Live-play rig for the lobby's in-place roulette session (roulette-live.js):
+    // spin the real wheel, append results to the tote board, mirror the 2D
+    // game's bets as chip stacks on the printed felt.
+    g.userData.setBoardStats = (stats) => board.userData.setStats(stats);
+    g.userData.setBets = (spots) => {
+      betLayer.children.slice().forEach((stack) => {
+        stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+        betLayer.remove(stack);
+      });
+      (spots || []).forEach(({ x, z, amount }) => {
+        const { denom, count } = chipsFor(amount);
+        const stk = C.chips.makeChipStack(denom, count);
+        stk.position.set(x, 0.86, z);
+        betLayer.add(stk);
+      });
+    };
+
+    // ---- dealer choreography rig (visual only; roulette-live.js drives it) ----
+    const RACK_LOCAL = [-1.44, FELT_Y + 0.12, 0];
+    const RIM_LOCAL = [-1.72, 1.02, 0];
+    const toW = (p) => g.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const rigPlay = (name, refs, ms) =>
+      dealerRig ? dealerRig.play(C.app, name, { refs, ms }) : Promise.resolve();
+
+    // dolly: gold cylinder marker, parked (hidden) at the rack
+    const dolly = new THREE.Group();
+    const dBase = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.05, 12), A.goldMaterial());
+    dBase.position.y = 0.025;
+    const dStem = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.05, 8), A.goldMaterial());
+    dStem.position.y = 0.075;
+    const dTop = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), A.goldMaterial());
+    dTop.position.y = 0.105;
+    dolly.add(dBase, dStem, dTop);
+    dolly.visible = false;
+    dolly.position.set(...RACK_LOCAL);
+    g.add(dolly);
+
+    const glideLocal = (obj, to, ms) => new Promise((res) => {
+      if (C.app.REDUCED) { obj.position.set(to[0], to[1], to[2]); return res(); }
+      C.tween.to(obj.position, { y: to[1] + 0.18 }, ms * 0.25, 'outCubic', () => {
+        C.tween.to(obj.position, { x: to[0], z: to[2] }, ms * 0.5, 'inOutCubic', () => {
+          C.tween.to(obj.position, { y: to[1] }, ms * 0.25, 'outCubic', res);
+        });
+      });
+    });
+
+    g.userData.placeDolly = async (n) => {
+      const [x, z] = C.layouts.rouletteSpotPos('n' + n);
+      dolly.visible = true;
+      rigPlay('placeDolly', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+      await glideLocal(dolly, [x, FELT_Y + 0.02, z], 750);
+    };
+    g.userData.liftDolly = async () => {
+      await glideLocal(dolly, RACK_LOCAL, 500);
+      dolly.visible = false;
+    };
+
+    // Fly a chip-stack group along a small arc, then run onDone.
+    const flyStack = (stack, to, ms, onDone) => {
+      if (C.app.REDUCED) { stack.position.set(to[0], to[1], to[2]); onDone && onDone(); return; }
+      C.tween.to(stack.position, { y: stack.position.y + 0.16 }, ms * 0.3, 'outCubic', () => {
+        C.tween.to(stack.position, { x: to[0], z: to[2] }, ms * 0.45, 'inOutCubic', () => {
+          C.tween.to(stack.position, { y: to[1] }, ms * 0.25, 'outCubic', onDone);
+        });
+      });
+    };
+    const disposeStack = (stack) => {
+      stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+      stack.parent && stack.parent.remove(stack);
+    };
+    const stackNear = (x, z) => betLayer.children.find(
+      (s) => Math.hypot(s.position.x - x, s.position.z - z) < 0.02);
+
+    g.userData.settleBets = async ({ losingSpots = [], winningSpots = [] }) => {
+      // sweep losing stacks into the rack, dealer raking alongside
+      if (losingSpots.length) {
+        const first = losingSpots[0];
+        rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) });
+      }
+      const sweeps = losingSpots.map(({ x, z }, i) => new Promise((res) => {
+        const stack = stackNear(x, z);
+        if (!stack) return res();
+        setTimeout(() => flyStack(stack, RACK_LOCAL, 420, () => { disposeStack(stack); res(); }),
+          C.app.REDUCED ? 0 : i * 90);
+      }));
+      await Promise.all(sweeps);
+      // pay each winning spot from the rack
+      for (let i = 0; i < winningSpots.length; i++) {
+        const { x, z, amount, factor } = winningSpots[i];
+        rigPlay('payChips', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+        const chips = C.layouts.chipBreakdown(amount * factor);
+        const pay = new THREE.Group();
+        chips.forEach((v, k) => {
+          const chip = C.chips.makeChip(v);
+          chip.position.y = k * C.chips.CHIP_H;
+          pay.add(chip);
+        });
+        pay.position.set(...RACK_LOCAL);
+        betLayer.add(pay);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((res) => flyStack(pay, [x + 0.09, 0.86, z], 460, res));
+      }
+    };
+
+    g.userData.buyIn = async () => {
+      rigPlay('tapRack', { rack: toW(RACK_LOCAL) });
+      const stk = C.chips.makeChipStack(100, 6);
+      stk.position.set(...RACK_LOCAL);
+      g.add(stk);
+      await new Promise((res) => flyStack(stk, [0.35, FELT_Y + 0.02, 1.05], 600, res));
+      await new Promise((res) => setTimeout(res, C.app.REDUCED ? 100 : 900));
+      if (!C.app.REDUCED) {
+        await new Promise((res) => C.tween.to(stk.scale, { x: 0.01, y: 0.01, z: 0.01 }, 200, 'outCubic', res));
+      }
+      stk.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+      g.remove(stk);
+    };
+
+    // wrap spinTo: the dealer reaches to the rim, flicks, wheel spins
+    const rawSpinTo = wheel.spinTo;
+    g.userData.spinTo = async (pocket) => {
+      await rigPlay('spinReach', { rim: toW(RIM_LOCAL) });
+      rigPlay('spinFollow', {});
+      return rawSpinTo(pocket);
+    };
+
     return g;
   };
 })();
@@ -1619,9 +3197,9 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   // layout (arc lettering + insurance band + seat circles) instead of plain
   // green. Group origin = table center at floor level; +Z = player arc side.
   const TABLE_R = 1.6, RAIL_H = 0.8, FELT_Y = 0.83;
-  const SEAT_COUNT = 6, SEAT_ANGLE_START = 160, SEAT_ANGLE_STEP = 28, SEAT_R = 1.95;
-  const GHOST_SEATS = [1, 4], GHOST_R = 1.28;
-  const seatAngle = (i) => ((SEAT_ANGLE_START - i * SEAT_ANGLE_STEP) * Math.PI) / 180;
+  // Geometry lives in C.layouts.blackjack.seat — but layouts.js loads first
+  // in SRC_ORDER, so read it lazily inside the builder, not at module scope.
+  const seatSpin = (a) => Math.PI / 2 - a;
 
   // Half-disc UV mapping (CircleGeometry): canvas px = (512 + cos(a)·R·320,
   // 512 + sin(a)·R·320) for a world point at polar (a, R) on the felt —
@@ -1666,22 +3244,12 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         (148 * Math.PI) / 180, (32 * Math.PI) / 180,
         'bold 26px Georgia, serif', 'rgba(240,216,120,0.7)');
 
-      // main arc lettering between the band and the seat circles
-      arcText(ctx, 'BLACKJACK PAYS 3 TO 2', 305,
-        (150 * Math.PI) / 180, (30 * Math.PI) / 180,
-        'bold 40px Georgia, serif', 'rgba(240,216,120,0.85)');
-
-      // seat bet circles out by the player arc, matching the stools
-      for (let i = 0; i < SEAT_COUNT; i++) {
-        const a = seatAngle(i);
-        const px = CX + Math.cos(a) * 1.28 * PX;
-        const py = CY + Math.sin(a) * 1.28 * PX;
-        ctx.strokeStyle = 'rgba(240,216,120,0.65)';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(px, py, 0.1 * PX, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      // main arc lettering between the band and the seat circles. Bet circles
+      // are NOT painted here — they are decals placed by the table code with
+      // the same polar math as the chips, so chips always land dead-center.
+      arcText(ctx, 'BLACKJACK PAYS 3 TO 2', 275,
+        (155 * Math.PI) / 180, (25 * Math.PI) / 180,
+        'bold 38px Georgia, serif', 'rgba(240,216,120,0.85)');
     });
   }
 
@@ -1689,6 +3257,11 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   C.floor.tables.blackjack = (opts = {}) => {
     const A = C.assets;
     const L = C.layouts.blackjack;
+    const S = L.seat;
+    const seatPoint = L.seatPoint;
+    const seatAngle = (i) => ((S.angleStart - i * S.angleStep) * Math.PI) / 180;
+    const SEAT_COUNT = S.count, SEAT_R = S.stoolR;
+    const MAIN_R = S.mainR, SIDE_R = S.sideR, SIDE_DX = S.sideDx, CARDS_R = S.cardsR;
     const g = new THREE.Group();
 
     // half-cylinder skirt (bulges +Z for thetaStart=0 — v1 verified)
@@ -1731,17 +3304,30 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     rimBack.position.set(0, FELT_Y, -0.02);
     g.add(rimBack);
 
-    // ghost hand: card boxes + bet spot decals at the hero seat
-    [...L.playerSlots, ...L.dealerSlots].forEach((slot) => {
+    // dealer card boxes on the flat-edge side of the insurance band
+    L.dealerSlots.forEach((slot) => {
       const box = C.cards.makeCardBoxDecal();
       box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
       g.add(box);
     });
-    Object.values(L.spots).forEach(({ pos, r, label }) => {
-      const decal = C.chips.makeSpotDecal({ label, r });
-      decal.position.set(pos[0], FELT_Y + 0.004, pos[2]);
-      g.add(decal);
-    });
+
+    // per-seat bet spots: main circle nearest the player, PP + 21+3 side bets
+    // in a row directly above it, everything oriented toward that seat
+    for (let i = 0; i < SEAT_COUNT; i++) {
+      const a = seatAngle(i);
+      const spin = seatSpin(a);
+      [
+        { radius: MAIN_R, tangent: 0,        r: 0.095, label: 'MAIN' },
+        { radius: SIDE_R, tangent: -SIDE_DX, r: 0.055, label: 'PP' },
+        { radius: SIDE_R, tangent: SIDE_DX,  r: 0.055, label: '21+3' },
+      ].forEach(({ radius, tangent, r, label }) => {
+        const [x, z] = seatPoint(a, radius, tangent);
+        const decal = C.chips.makeSpotDecal({ label, r });
+        decal.rotation.set(-Math.PI / 2, 0, spin);
+        decal.position.set(x, FELT_Y + 0.004, z);
+        g.add(decal);
+      });
+    }
 
     // card shoe
     const shoeGroup = new THREE.Group();
@@ -1754,47 +3340,62 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     shoeGroup.add(shoeBody);
     const shoeTrim = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.02, 0.24), A.goldMaterial());
     shoeTrim.rotation.x = -0.35;
-    shoeTrim.position.y = 0.09;
+    // flush against the tilted body's top face (0.08 up along the tilted normal)
+    shoeTrim.position.set(0, 0.08 * Math.cos(0.35), -0.08 * Math.sin(0.35));
     shoeGroup.add(shoeTrim);
     shoeGroup.position.set(...L.shoePos);
+    // face the shoe LEFT (toward the dealer's dealing hand at table center,
+    // slightly angled to the arc) so both dealer and players see its mouth
+    shoeGroup.rotation.y = -Math.PI / 2 + 0.32;
     g.add(shoeGroup);
 
-    // dealer chip tray on the flat edge
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.04, 0.2),
-      new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.5, metalness: 0.3 }));
-    tray.position.set(-0.55, FELT_Y + 0.025, 0.12);
-    g.add(tray);
-    [500, 1000, 5000].forEach((v, i) => {
-      const stk = C.chips.makeChipStack(v, 7);
-      stk.position.set(-0.7 + i * 0.16, FELT_Y + 0.05, 0.12);
-      g.add(stk);
+    // dealer chip station: a rimmed rack on its own console shelf BETWEEN the
+    // dealer and the table's flat edge — chips never sit on the playing felt
+    const station = new THREE.Group();
+    const PED_TOP = FELT_Y + 0.03;   // rack surface clears the table's back rim
+    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.8, PED_TOP, 0.26),
+      A.woodMaterial('#241408'));
+    pedestal.position.y = PED_TOP / 2;
+    pedestal.castShadow = true; pedestal.receiveShadow = true;
+    station.add(pedestal);
+    const trayMat = new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.5, metalness: 0.3 });
+    const trayBase = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.02, 0.24), trayMat);
+    trayBase.position.y = PED_TOP + 0.01;
+    station.add(trayBase);
+    [-1, 1].forEach((s) => {
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.035, 0.02), trayMat);
+      lip.position.set(0, PED_TOP + 0.028, s * 0.11);
+      station.add(lip);
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.035, 0.24), trayMat);
+      side.position.set(s * 0.37, PED_TOP + 0.028, 0);
+      station.add(side);
     });
+    [100, 500, 1000, 5000].forEach((v, i) => {
+      const stk = C.chips.makeChipStack(v, 8);
+      stk.position.set(-0.27 + i * 0.18, PED_TOP + 0.024, 0);
+      station.add(stk);
+    });
+    station.position.set(0, 0, -0.19);
+    g.add(station);
 
-    // stools + ghost occupants
+    // stools — every seat is open for a real player; no demo props on the
+    // felt (cards/chips only appear from actual live play)
     for (let i = 0; i < SEAT_COUNT; i++) {
       const stool = A.makeStool();
       const a = seatAngle(i);
       stool.position.set(Math.cos(a) * SEAT_R, 0, Math.sin(a) * SEAT_R);
       g.add(stool);
     }
-    GHOST_SEATS.forEach((i) => {
-      const a = seatAngle(i);
-      const chips = C.chips.makeChipStack(500, 4);
-      chips.position.set(Math.cos(a) * GHOST_R, FELT_Y + 0.02, Math.sin(a) * GHOST_R);
-      g.add(chips);
-      const card = C.cards.makeCard(null);
-      card.rotation.x = -Math.PI / 2;
-      const cardR = GHOST_R - 0.2;
-      card.position.set(Math.cos(a) * cardR, FELT_Y + 0.015, Math.sin(a) * cardR);
-      g.add(card);
-    });
 
+    let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer();
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
       dealer.position.set(0, 0, -0.55);
       g.add(dealer);
       dealer.userData.idle(C.app);
+      dealerRig = dealer.userData.rig;
     }
+    g.userData.dealerRig = dealerRig;
 
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);
@@ -1808,6 +3409,27 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     g.add(pad);
     g.userData.highlight = (on) => pad.userData.setBright(on);
     g.userData.radius = 2.2;
+
+    // live-play rig: everything blackjack-live.js needs, in TABLE-LOCAL coords
+    // (convert with group.localToWorld). main2 = the split hand's bet stack.
+    g.userData.bj = {
+      seat: S, feltY: FELT_Y, seatAngle, seatPoint,
+      dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoePos,
+      trayLocal: [0, FELT_Y + 0.054, -0.19],
+      freeSeats: [0, 1, 2, 3, 4, 5],
+      get dealerRig() { return g.userData.dealerRig; },
+      spotLocal(i, id) {
+        const a = seatAngle(i);
+        const at = (radius, tangent) => {
+          const [x, z] = seatPoint(a, radius, tangent);
+          return [x, FELT_Y + 0.004, z];
+        };
+        if (id === 'main') return at(MAIN_R, 0);
+        if (id === 'main2') return at(MAIN_R, -S.splitDx);
+        if (id === 'perfectPair') return at(SIDE_R, -SIDE_DX);
+        return at(SIDE_R, SIDE_DX);            // twentyOnePlus3
+      },
+    };
 
     return g;
   };
@@ -1825,41 +3447,406 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   const RAIL_H = 0.8, FELT_Y = 0.82;
   const RAIL_RX = 1.8, RAIL_RZ = 0.85, FELT_FRAC = 0.94;
   const FELT_RX = RAIL_RX * FELT_FRAC, FELT_RZ = RAIL_RZ * FELT_FRAC;
-  const GHOST_ANGLES_DEG = [40, 75, 105, 140];
-  const SEAT_RX = 2.15, SEAT_RZ = 1.3, CHIP_RX = 1.35, CHIP_RZ = 0.62;
+  const SEAT_RX = 2.15, SEAT_RZ = 1.3;
 
+  const CJK = "'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif";
+
+  // Macau-style felt, module-cached — the four floor tables share one
+  // 2048x1024 texture. Canvas top = dealer edge (-z); pt(f, deg) uses the
+  // same parametrisation as layouts.baccarat.seatSpot (90° = player edge).
+  let feltTexture = null;
   function makeFeltTexture() {
-    const W = 1024, H = 512, cx = W / 2, cy = H / 2;
-    return C.assets.canvasTexture(W, H, (ctx) => {
+    if (feltTexture) return feltTexture;
+    const L = C.layouts.baccarat;
+    const W = 2048, H = 1024, cx = W / 2, cy = H / 2;
+    const px = (x) => cx + (x / L.feltRx) * (W / 2);
+    const py = (z) => cy + (z / L.feltRz) * (H / 2);
+    const pt = (f, deg) => {
+      const a = (deg * Math.PI) / 180;
+      return [cx + Math.cos(a) * f * (W / 2), cy + Math.sin(a) * f * (H / 2)];
+    };
+
+    feltTexture = C.assets.canvasTexture(W, H, (ctx) => {
+      const R = C.assets.roundRect;
       ctx.fillStyle = '#0b5d3b';
       ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = 'rgba(46,109,180,.38)';   // PLAYER tint (left)
-      ctx.fillRect(0, 0, W * 0.37, H);
-      ctx.fillStyle = 'rgba(163,22,33,.38)';    // BANKER tint (right)
-      ctx.fillRect(W * 0.63, 0, W * 0.37, H);
-      ctx.fillStyle = 'rgba(14,107,69,.5)';     // TIE tint (center)
-      ctx.fillRect(W * 0.37, 0, W * 0.26, H);
-
-      ctx.strokeStyle = 'rgba(240,216,120,.7)'; ctx.lineWidth = 6;
+      // gold border ring
+      ctx.strokeStyle = 'rgba(240,216,120,.7)'; ctx.lineWidth = 8;
       ctx.beginPath(); ctx.ellipse(cx, cy, W / 2 - 14, H / 2 - 14, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 3;
-      [0.37, 0.63].forEach((f) => {
-        ctx.beginPath(); ctx.moveTo(W * f, 40); ctx.lineTo(W * f, H - 40); ctx.stroke();
+
+      // dealer strip: outline where the physical chip rack sits
+      ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 4;
+      R(ctx, px(-0.42), py(-0.66), px(0.42) - px(-0.42), py(-0.38) - py(-0.66), 14); ctx.stroke();
+
+      // card-dealing area: 閒 PLAYER (left, yellow) | 庄 BANKER (right, red)
+      const cardBox = (x0, x1, color, label) => {
+        ctx.strokeStyle = color; ctx.lineWidth = 5;
+        R(ctx, px(x0), py(-0.30), px(x1) - px(x0), py(0.02) - py(-0.30), 16); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `bold 34px ${CJK}`;
+        ctx.fillText(label, (px(x0) + px(x1)) / 2, py(-0.25));
+      };
+      cardBox(-0.78, -0.16, '#f0d878', '閒 PLAYER');
+      cardBox(0.16, 0.78, '#e05555', '庄 BANKER');
+      ctx.strokeStyle = 'rgba(240,216,120,.8)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(cx, py(-0.30)); ctx.lineTo(cx, py(0.02)); ctx.stroke();
+
+      // rotated text helper: upright for a viewer at that seat
+      const arcText = (text, f, deg, font, fill) => {
+        const [x, y] = pt(f, deg);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(((deg - 90) * Math.PI) / 180);
+        ctx.font = font; ctx.fillStyle = fill;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      };
+      // closed band between fractions f0..f1, angles a0..a1
+      const bandPath = (f0, f1, a0, a1) => {
+        ctx.beginPath();
+        for (let a = a0; a <= a1; a += 2) { const [x, y] = pt(f1, a); a === a0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+        for (let a = a1; a >= a0; a -= 2) { const [x, y] = pt(f0, a); ctx.lineTo(x, y); }
+        ctx.closePath();
+      };
+
+      // commission boxes 1..6 (dealer tracks 5% commission per seat)
+      L.seatAngles.forEach((deg, i) => {
+        const [bx, by] = pt(0.30, deg);
+        ctx.save(); ctx.translate(bx, by); ctx.rotate(((deg - 90) * Math.PI) / 180);
+        ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 3;
+        R(ctx, -30, -24, 60, 48, 8); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.font = 'bold 30px Georgia, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), 0, 0);
+        ctx.restore();
       });
 
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 58px Georgia, serif';
-      ctx.fillText('PLAYER', W * 0.185, cy - 20);
-      ctx.fillText('BANKER', W * 0.815, cy - 20);
-      ctx.font = 'bold 42px Georgia, serif';
-      ctx.fillText('TIE', cx, cy - 14);
-      ctx.font = '22px Georgia, serif';
-      ctx.fillStyle = 'rgba(255,255,255,.85)';
-      ctx.fillText('PAYS 1 TO 1', W * 0.185, cy + 34);
-      ctx.fillText('PAYS 0.95 TO 1', W * 0.815, cy + 34);
-      ctx.fillText('PAYS 8 TO 1', cx, cy + 30);
+      // radial sector dividers
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3;
+      for (let i = 0; i <= 6; i++) {
+        const deg = 15 + i * 25;
+        const [x0, y0] = pt(0.40, deg), [x1, y1] = pt(0.90, deg);
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+
+      // per-seat betting arcs: TIE(+pairs) inner, BANKER middle, PLAYER outer
+      L.seatAngles.forEach((deg, i) => {
+        // TIE box (wide, with the odds stacked inside it)
+        ctx.strokeStyle = '#59d98e'; ctx.lineWidth = 4;
+        bandPath(0.41, 0.505, deg - 8, deg + 8); ctx.stroke();
+        arcText('和 TIE', 0.478, deg, `bold 20px ${CJK}`, '#59d98e');
+        arcText('8:1', 0.432, deg, 'bold 15px Georgia, serif', 'rgba(89,217,142,.9)');
+        // pair circles side by side BELOW the tie box, well inside the
+        // sector — flanking the box angularly made neighbouring sectors'
+        // circles overlap each other and the dividers on the ellipse sides.
+        [['庄對', '#e05555', -4.5], ['閒對', '#f0d878', 4.5]].forEach(([t, col, da]) => {
+          const [ox, oy] = pt(0.55, deg + da);
+          ctx.strokeStyle = col; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(ox, oy, 17, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = col;
+          ctx.font = `bold 13px ${CJK}`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(t, ox, oy);
+        });
+        // BANKER arc
+        ctx.strokeStyle = '#e05555'; ctx.lineWidth = 4;
+        bandPath(0.60, 0.72, deg - 11, deg + 11); ctx.stroke();
+        arcText('庄 BANKER', 0.66, deg, `bold 30px ${CJK}`, '#e05555');
+        // PLAYER arc
+        ctx.strokeStyle = '#f0d878'; ctx.lineWidth = 4;
+        bandPath(0.75, 0.87, deg - 11, deg + 11); ctx.stroke();
+        arcText('閒 PLAYER', 0.81, deg, `bold 30px ${CJK}`, '#f0d878');
+        // seat number at the rim
+        arcText(String(i + 1), 0.93, deg, 'bold 44px Georgia, serif', 'rgba(255,255,255,.9)');
+      });
     });
+    return feltTexture;
+  }
+
+  // dealer chip rack: dark tray, gold dividers, 8 chip stacks
+  function makeChipRack() {
+    const g = new THREE.Group();
+    const tray = new THREE.Mesh(
+      new THREE.BoxGeometry(0.72, 0.045, 0.26),
+      new THREE.MeshStandardMaterial({ color: '#1a120b', roughness: 0.45, metalness: 0.25 }),
+    );
+    tray.position.y = 0.0225;
+    tray.castShadow = true; tray.receiveShadow = true;
+    g.add(tray);
+    for (let i = 0; i <= 8; i++) {
+      const div = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.052, 0.26), C.assets.goldMaterial());
+      div.position.set(-0.36 + i * 0.09, 0.028, 0);
+      g.add(div);
+    }
+    [5000, 1000, 1000, 500, 500, 100, 100, 25].forEach((v, i) => {
+      const stack = C.chips.makeChipStack(v, 5 + (i % 3));
+      stack.position.set(-0.315 + i * 0.09, 0.048, 0);
+      g.add(stack);
+    });
+    return g;
+  }
+
+  // discard holder: shallow tray with a few face-down cards
+  function makeDiscardTray() {
+    const g = new THREE.Group();
+    const tray = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.03, 0.3),
+      new THREE.MeshStandardMaterial({ color: '#14100c', roughness: 0.5, metalness: 0.2 }),
+    );
+    tray.position.y = 0.015;
+    tray.castShadow = true;
+    g.add(tray);
+    for (let i = 0; i < 3; i++) {
+      const card = C.cards.makeCard(null);
+      card.rotation.x = -Math.PI / 2;
+      card.rotation.z = (Math.random() - 0.5) * 0.3;
+      card.position.set(0, 0.033 + i * 0.002, 0);
+      g.add(card);
+    }
+    return g;
+  }
+
+  // ---------- roadmap scoreboard (bilingual Macau LED board) ----------
+  function drawBoardCanvas(rounds, opts) {
+    const R2 = C.baccaratRoads;
+    const big = R2.buildBigRoad(rounds);
+    const st = R2.stats(rounds);
+    const pred = R2.predictNext(big);
+    const RED = '#e0453a', BLUE = '#3d7de0', GREEN = '#2fae62', GOLD = '#e8b54a';
+    const RANK = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
+    for (let r = 2; r <= 10; r++) RANK[r] = String(r);
+    const SUITS = ['♠', '♥', '♦', '♣'];
+    const derivedCells = (k) =>
+      R2.layoutRoad(R2.deriveRoad(big, k).map((color) => ({ key: color, color })));
+    const lastCols = (cells, n) => {
+      const max = cells.reduce((m, c) => Math.max(m, c.col), 0);
+      const shift = Math.max(0, max + 1 - n);
+      return cells.filter((c) => c.col >= shift).map((c) => ({ ...c, col: c.col - shift }));
+    };
+
+    return C.assets.canvasTexture(1024, 800, (ctx) => {
+      const RR = C.assets.roundRect;
+      const bg = ctx.createLinearGradient(0, 0, 0, 800);
+      bg.addColorStop(0, '#241014'); bg.addColorStop(1, '#0c0d12');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 1024, 800);
+      ctx.strokeStyle = '#4a3b22'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 1016, 792);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+      const grid = (x0, y0, cell, cols, rows) => {
+        ctx.strokeStyle = 'rgba(120,130,150,0.4)'; ctx.lineWidth = 1;
+        for (let i = 0; i <= cols; i++) {
+          ctx.beginPath(); ctx.moveTo(x0 + i * cell, y0); ctx.lineTo(x0 + i * cell, y0 + rows * cell); ctx.stroke();
+        }
+        for (let j = 0; j <= rows; j++) {
+          ctx.beginPath(); ctx.moveTo(x0, y0 + j * cell); ctx.lineTo(x0 + cols * cell, y0 + j * cell); ctx.stroke();
+        }
+      };
+      const roadPanel = (x0, y0, cell, cols, rows) => {
+        ctx.fillStyle = '#f5efdf';
+        RR(ctx, x0 - 3, y0 - 3, cols * cell + 6, rows * cell + 6, 6); ctx.fill();
+        grid(x0, y0, cell, cols, rows);
+      };
+      const bandLabel = (t, x, y) => {
+        ctx.fillStyle = '#c8b78e'; ctx.font = `bold 13px ${CJK}`;
+        ctx.textAlign = 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'center';
+      };
+
+      // title
+      ctx.fillStyle = GOLD;
+      ctx.font = `bold 52px ${CJK}`;
+      ctx.fillText('百家樂', 150, 46);
+      ctx.font = 'bold 38px Georgia, serif';
+      ctx.fillText('BACCARAT', 150, 96);
+      ctx.fillStyle = '#c8b78e'; ctx.font = `16px ${CJK}`;
+      ctx.fillText((opts.tierName || '').toUpperCase(), 150, 132);
+
+      // stats table
+      [
+        ['庄 BANKER', st.banker, RED],
+        ['閒 PLAYER', st.player, BLUE],
+        ['和 TIE', st.tie, GREEN],
+        ['庄對 BANKER PAIR', st.bPair, RED],
+        ['閒對 PLAYER PAIR', st.pPair, BLUE],
+        ['例牌 NATURAL', st.natural, GOLD],
+        ['局數 GAME NUMBER', st.games, '#dcd6c8'],
+      ].forEach(([label, n, col], i) => {
+        const y = 24 + i * 19;
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(324, y, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#efe9dc'; ctx.textAlign = 'left';
+        ctx.font = `bold 15px ${CJK}`;
+        ctx.fillText(label, 340, y);
+        ctx.fillStyle = GOLD; ctx.textAlign = 'right';
+        ctx.font = 'bold 17px Georgia, serif';
+        ctx.fillText(String(n), 700, y);
+        ctx.textAlign = 'center';
+      });
+
+      // 下局預告 (next-round preview) — genuinely computed one step ahead
+      ctx.strokeStyle = '#6b5a33'; ctx.lineWidth = 2;
+      RR(ctx, 720, 12, 292, 140, 8); ctx.stroke();
+      ctx.fillStyle = '#efe9dc'; ctx.font = `bold 18px ${CJK}`;
+      ctx.fillText('下局預告', 866, 32);
+      const predSymbol = (x, y, road, color) => {
+        if (!color) {
+          ctx.fillStyle = '#666';
+          ctx.fillRect(x - 6, y - 1.5, 12, 3);
+          return;
+        }
+        const col = color === 'r' ? RED : BLUE;
+        if (road === 0) {           // big eye boy: ring
+          ctx.strokeStyle = col; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.stroke();
+        } else if (road === 1) {    // small road: dot
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
+        } else {                    // cockroach: slash
+          ctx.strokeStyle = col; ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(x - 7, y + 7); ctx.lineTo(x + 7, y - 7); ctx.stroke();
+        }
+      };
+      [['B', 810, RED, '庄'], ['P', 922, BLUE, '閒']].forEach(([oc, x, col, ch]) => {
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(x, 66, 15, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = `bold 16px ${CJK}`;
+        ctx.fillText(ch, x, 66);
+        pred[oc].forEach((color, k) => predSymbol(x - 34 + k * 34, 108, k, color));
+      });
+
+      // 珠盤路 bead plate (12 cols)
+      bandLabel('珠盤路', 14, 160);
+      const BX = 12, BY = 170, BC = 26;
+      roadPanel(BX, BY, BC, 12, 6);
+      R2.beadPlate(rounds, 12).forEach((cell) => {
+        const x = BX + cell.col * BC + BC / 2, y = BY + cell.row * BC + BC / 2;
+        ctx.fillStyle = cell.outcome === 'B' ? RED : cell.outcome === 'P' ? BLUE : GREEN;
+        ctx.beginPath(); ctx.arc(x, y, BC * 0.44, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = `bold 14px ${CJK}`;
+        ctx.fillText(cell.outcome === 'B' ? '庄' : cell.outcome === 'P' ? '閒' : '和', x, y);
+        if (cell.bankerPair) {
+          ctx.fillStyle = RED;
+          ctx.beginPath(); ctx.arc(x - BC * 0.34, y - BC * 0.34, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+        if (cell.playerPair) {
+          ctx.fillStyle = BLUE;
+          ctx.beginPath(); ctx.arc(x + BC * 0.34, y + BC * 0.34, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+
+      // current round card panel (gold)
+      const last = rounds[rounds.length - 1];
+      const gp = ctx.createLinearGradient(0, 170, 0, 326);
+      gp.addColorStop(0, '#caa64f'); gp.addColorStop(1, '#9a7a2e');
+      ctx.fillStyle = gp; RR(ctx, 340, 170, 672, 156, 8); ctx.fill();
+      ctx.strokeStyle = '#6b5a1f'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(676, 178); ctx.lineTo(676, 318); ctx.stroke();
+      ctx.fillStyle = '#3a2c08'; ctx.font = `bold 22px ${CJK}`;
+      ctx.fillText(`閒 PLAYER ${last.playerTotal}`, 508, 306);
+      ctx.fillText(`庄 BANKER ${last.bankerTotal}`, 844, 306);
+      const mini = (card, x, y, sideways) => {
+        ctx.save(); ctx.translate(x, y);
+        if (sideways) ctx.rotate(Math.PI / 2);
+        ctx.fillStyle = '#fdfbf2'; RR(ctx, -24, -34, 48, 68, 6); ctx.fill();
+        ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5; RR(ctx, -24, -34, 48, 68, 6); ctx.stroke();
+        ctx.fillStyle = card.s === 1 || card.s === 2 ? '#c0392b' : '#16161c';
+        ctx.font = 'bold 26px Georgia, serif';
+        ctx.fillText(RANK[card.r], 0, -12);
+        ctx.font = '24px Georgia, serif';
+        ctx.fillText(SUITS[card.s], 0, 16);
+        ctx.restore();
+      };
+      last.playerCards.forEach((cd, i) => mini(cd, 448 + i * 64, 232, i === 2));
+      last.bankerCards.forEach((cd, i) => mini(cd, 784 + i * 64, 232, i === 2));
+
+      // 大路 big road
+      bandLabel('大路', 14, 340);
+      roadPanel(12, 348, 32, 31, 6);
+      lastCols(R2.bigRoadCells(big), 31).forEach((c) => {
+        const x = 12 + c.col * 32 + 16, y = 348 + c.row * 32 + 16;
+        ctx.strokeStyle = c.outcome === 'B' ? RED : BLUE; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.stroke();
+        if (c.ties > 0) {
+          ctx.strokeStyle = GREEN; ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(x - 11, y + 11); ctx.lineTo(x + 11, y - 11); ctx.stroke();
+          if (c.ties > 1) {
+            ctx.fillStyle = GREEN; ctx.font = 'bold 13px Georgia, serif';
+            ctx.fillText(String(c.ties), x + 10, y + 10);
+          }
+        }
+      });
+
+      // 大眼仔 big eye boy
+      bandLabel('大眼仔', 14, 556);
+      roadPanel(12, 564, 17, 59, 6);
+      lastCols(derivedCells(1), 59).forEach((c) => {
+        const x = 12 + c.col * 17 + 8.5, y = 564 + c.row * 17 + 8.5;
+        ctx.strokeStyle = c.color === 'r' ? RED : BLUE; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.stroke();
+      });
+
+      // 小路 + 曱甴路
+      bandLabel('小路', 14, 680);
+      roadPanel(12, 688, 16, 30, 6);
+      lastCols(derivedCells(2), 30).forEach((c) => {
+        const x = 12 + c.col * 16 + 8, y = 688 + c.row * 16 + 8;
+        ctx.fillStyle = c.color === 'r' ? RED : BLUE;
+        ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.fill();
+      });
+      bandLabel('曱甴路', 522, 680);
+      roadPanel(520, 688, 16, 30, 6);
+      lastCols(derivedCells(3), 30).forEach((c) => {
+        const x = 520 + c.col * 16 + 8, y = 688 + c.row * 16 + 8;
+        ctx.strokeStyle = c.color === 'r' ? RED : BLUE; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x - 5, y + 5); ctx.lineTo(x + 5, y - 5); ctx.stroke();
+      });
+
+      // bilingual disclaimer footer
+      ctx.fillStyle = '#9b8f78'; ctx.font = `12px ${CJK}`;
+      ctx.fillText('路盤所顯示之資料，只供參考，如有錯漏，本公司概不負責。 Results displayed are provided as a service only.', 512, 792);
+    });
+  }
+
+  function makeScoreBoard(rounds, opts) {
+    const g = new THREE.Group();
+    const casing = new THREE.Mesh(
+      new THREE.BoxGeometry(1.24, 1.0, 0.07),
+      new THREE.MeshStandardMaterial({ color: '#14161c', roughness: 0.5, metalness: 0.3 }),
+    );
+    casing.position.y = 1.5;
+    casing.castShadow = true;
+    g.add(casing);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.06, 0.05), C.assets.goldMaterial());
+    frame.position.set(0, 1.5, -0.014);
+    g.add(frame);
+    const screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.16, 0.92),
+      new THREE.MeshBasicMaterial({ map: drawBoardCanvas(rounds, opts), fog: false }),
+    );
+    screen.position.set(0, 1.5, 0.037);
+    g.add(screen);
+    g.userData.pushRound = (round) => {
+      rounds.push(round);
+      if (rounds.length > 80) rounds.shift();
+      const old = screen.material.map;
+      screen.material.map = drawBoardCanvas(rounds, opts);
+      screen.material.needsUpdate = true;
+      old && old.dispose();
+    };
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.045, 1.0, 12),
+      new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.4, metalness: 0.5 }),
+    );
+    pole.position.y = 0.5;
+    g.add(pole);
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.22, 0.26, 0.05, 20),
+      new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.5, metalness: 0.4 }),
+    );
+    base.position.y = 0.025;
+    g.add(base);
+    return g;
   }
 
   // opts: { tierName, limitsText, minChipLabel, accent, withDealer }
@@ -1886,19 +3873,29 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     felt.receiveShadow = true;
     g.add(felt);
 
-    // card boxes (index 2 = sideways third card) + bet spot decals
-    [L.playerSlots, L.bankerSlots].forEach((slots) => {
-      slots.forEach((slot, idx) => {
-        const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
-        box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
-        g.add(box);
+    // one simulated shoe per table: the same history drives the felt cards
+    // and the scoreboard, so everything on this table is self-consistent
+    const rounds = C.baccaratRoads.simulateShoe();
+    const lastRound = rounds[rounds.length - 1];
+
+    // card-dealing area: printed boxes + the final round's actual cards
+    const staticCards = [];
+    [[L.playerSlots, lastRound.playerCards], [L.bankerSlots, lastRound.bankerCards]]
+      .forEach(([slots, cards]) => {
+        slots.forEach((slot, idx) => {
+          const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
+          box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
+          g.add(box);
+        });
+        cards.forEach((cardDef, idx) => {
+          const card = C.cards.makeCard(cardDef);
+          card.rotation.x = -Math.PI / 2;
+          if (idx === 2) card.rotation.z = Math.PI / 2;
+          card.position.set(slots[idx][0], FELT_Y + 0.006 + idx * 0.0005, slots[idx][2]);
+          g.add(card);
+          staticCards.push(card);
+        });
       });
-    });
-    Object.values(L.spots).forEach(({ pos, r, label }) => {
-      const decal = C.chips.makeSpotDecal({ label, r });
-      decal.position.set(pos[0], FELT_Y + 0.004, pos[2]);
-      g.add(decal);
-    });
 
     // shoe
     const shoeGroup = new THREE.Group();
@@ -1913,30 +3910,57 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     shoeTrim.rotation.x = -0.35;
     shoeTrim.position.y = 0.09;
     shoeGroup.add(shoeTrim);
-    shoeGroup.position.set(...L.shoePos);
+    shoeGroup.position.set(L.shoePos[0], FELT_Y, L.shoePos[2]);
     g.add(shoeGroup);
 
-    // ghost seats: stools + chips + face-down card
-    GHOST_ANGLES_DEG.forEach((deg) => {
+    // dealer strip props
+    const rack = makeChipRack();
+    rack.position.set(L.rackPos[0], FELT_Y, L.rackPos[2]);
+    g.add(rack);
+    const discard = makeDiscardTray();
+    discard.position.set(L.discardPos[0], FELT_Y, L.discardPos[2]);
+    g.add(discard);
+
+    // six seats matching the felt sectors; some "occupied" with ghost bets
+    const kinds = ['player', 'banker', 'banker', 'player', 'tie'];
+    const occupied = new Set();
+    while (occupied.size < 3 + Math.floor(Math.random() * 2))
+      occupied.add(Math.floor(Math.random() * 6));
+    L.seatAngles.forEach((deg, i) => {
       const a = (deg * Math.PI) / 180;
       const stool = A.makeStool();
       stool.position.set(Math.cos(a) * SEAT_RX, 0, Math.sin(a) * SEAT_RZ);
       g.add(stool);
-      const chips = C.chips.makeChipStack(500, 4);
-      chips.position.set(Math.cos(a) * CHIP_RX, FELT_Y + 0.02, Math.sin(a) * CHIP_RZ);
+      if (!occupied.has(i)) return;
+      const kind = kinds[Math.floor(Math.random() * kinds.length)];
+      const [bx, bz] = L.seatSpot(i, kind);
+      const chips = C.chips.makeChipStack([100, 500, 1000][i % 3], 3 + (i % 4));
+      chips.position.set(bx, FELT_Y + 0.005, bz);
       g.add(chips);
-      const card = C.cards.makeCard(null);
-      card.rotation.x = -Math.PI / 2;
-      card.position.set(Math.cos(a) * CHIP_RX * 0.7, FELT_Y + 0.015, Math.sin(a) * CHIP_RZ * 0.7);
-      g.add(card);
     });
 
+    let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer();
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);
+      dealerRig = dealer.userData.rig;
     }
+    g.userData.dealerRig = dealerRig;
+
+    // roadmap scoreboard at the end opposite the plaque, facing the aisle
+    const board = makeScoreBoard(rounds, opts);
+    board.position.set(-2.35, 0, 0.35);
+    board.rotation.y = 0.35;
+    g.add(board);
+
+    // ambient-show rig (src/floor/baccarat-show.js drives it when the player is near)
+    g.userData.bac = {
+      L, feltY: FELT_Y, rounds, staticCards,
+      pushRound: (round) => board.userData.pushRound(round),
+      get dealerRig() { return g.userData.dealerRig; },
+    };
 
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);
@@ -1948,7 +3972,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     const pad = A.makeGlowPad(4.8, 3.0, opts.accent || '#ffb040');
     g.add(pad);
     g.userData.highlight = (on) => pad.userData.setBright(on);
-    g.userData.radius = 2.3;
+    g.userData.radius = 2.4;
 
     return g;
   };
@@ -2067,12 +4091,15 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       }
     });
 
+    let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer();
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);
+      dealerRig = dealer.userData.rig;
     }
+    g.userData.dealerRig = dealerRig;
 
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);
@@ -2087,6 +4114,162 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     g.userData.radius = 2.2;
 
     return g;
+  };
+})();
+
+
+// ===== src/floor/baccarat-show.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+  C.floor = C.floor || {};
+
+  // Ambient baccarat show: when the player stands near a baccarat table, its
+  // dealer runs real rounds — deal, flip, third-card rules, announce, settle
+  // ghost bets, update the roads board. Pure round logic = C.baccaratRoads.
+  // Visual only; pauses (after finishing the round) when the player leaves.
+  const NEAR = 9, CHECK_EVERY = 0.8;
+
+  C.floor.attachBaccaratShow = (group) => {
+    const bac = group.userData.bac;
+    if (!bac || !bac.dealerRig || C.app.REDUCED) return;
+    const app = C.app, L = bac.L;
+    const toW = (p) => group.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const rig = bac.dealerRig;
+    let running = false, wantRun = false, t = 0, cleared = false;
+    let shoe = C.baccaratRoads.buildShoe(Math.random), si = 0;
+    const draw = () => {
+      if (si > shoe.length - 8) { shoe = C.baccaratRoads.buildShoe(Math.random); si = 0; }
+      return shoe[si++];
+    };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const disposeMesh = (m) => {
+      m.traverse((o) => {
+        o.geometry?.dispose();
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        mats.forEach((mm) => { if (!mm) return; mm.map?.dispose(); mm.dispose(); });
+      });
+      m.parent && m.parent.remove(m);
+    };
+
+    async function runRound() {
+      const round = C.baccaratRoads.playRound(draw);
+      const dealt = [];
+      // ghost bets: 2 random seats, biased to the round for a lively board
+      const kinds = ['player', 'banker', round.outcome === 'T' ? 'tie' : 'banker'];
+      const betStacks = [];
+      for (let k = 0; k < 2; k++) {
+        const seat = Math.floor(Math.random() * 6);
+        const kind = kinds[Math.floor(Math.random() * kinds.length)];
+        const [bx, bz] = L.seatSpot(seat, kind);
+        const stk = C.chips.makeChipStack([100, 500][k % 2], 3 + (seat % 3));
+        stk.position.set(bx, bac.feltY + 0.005, bz);
+        group.add(stk);
+        betStacks.push({ stk, kind });
+      }
+      // deal P1 B1 P2 B2 face-down, alternating (cards pre-decided by playRound)
+      const seq = [
+        [L.playerSlots[0], round.playerCards[0]], [L.bankerSlots[0], round.bankerCards[0]],
+        [L.playerSlots[1], round.playerCards[1]], [L.bankerSlots[1], round.bankerCards[1]],
+      ];
+      for (const [slot, cardDef] of seq) {
+        const mesh = C.cards.makeCard(cardDef);
+        mesh.rotation.set(-Math.PI / 2, 0, 0);
+        mesh.rotateY(Math.PI);                    // face-down
+        dealt.push(mesh);
+        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW(slot) } });
+        // eslint-disable-next-line no-await-in-loop
+        await C.cards.dealCardTo(app, mesh, toW(L.shoePos), toW(slot), { ms: 430 });
+        // eslint-disable-next-line no-await-in-loop
+        await wait(140);
+      }
+      // flip player then banker
+      await C.cards.flipFlatCard(app, dealt[0], 320);
+      await C.cards.flipFlatCard(app, dealt[2], 320);
+      await C.cards.flipFlatCard(app, dealt[1], 320);
+      await C.cards.flipFlatCard(app, dealt[3], 320);
+      // third cards (sideways slot index 2), face-up
+      const thirds = [[round.playerCards[2], L.playerSlots[2]], [round.bankerCards[2], L.bankerSlots[2]]];
+      for (const [cardDef, slot] of thirds) {
+        if (!cardDef) continue;
+        const mesh = C.cards.makeCard(cardDef);
+        mesh.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+        dealt.push(mesh);
+        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW(slot) } });
+        // eslint-disable-next-line no-await-in-loop
+        await C.cards.dealCardTo(app, mesh, toW(L.shoePos), toW(slot), { ms: 430 });
+        // eslint-disable-next-line no-await-in-loop
+        await wait(200);
+      }
+      // announce + settle ghost bets
+      const line = round.outcome === 'T'
+        ? `和 TIE  ${round.playerTotal} : ${round.bankerTotal}`
+        : round.outcome === 'P'
+          ? `閒 PLAYER wins ${round.playerTotal} over ${round.bankerTotal}`
+          : `庄 BANKER wins ${round.bankerTotal} over ${round.playerTotal}`;
+      rig.say(app, line, { ms: 2400 });
+      const wins = { P: 'player', B: 'banker', T: 'tie' }[round.outcome];
+      const payStacks = [];   // reaped at cleanup — kept OUT of betStacks so the
+                              // settle loop below never treats a payout as a bet
+      for (const { stk, kind } of betStacks) {
+        const won = kind === wins;
+        rig.play(app, won ? 'payChips' : 'sweepChips', {
+          refs: { rack: toW(L.rackPos), target: toW([stk.position.x, bac.feltY, stk.position.z]) },
+        });
+        if (won) {
+          const pay = C.chips.makeChipStack(100, 3);
+          pay.position.set(stk.position.x + 0.1, stk.position.y, stk.position.z);
+          group.add(pay);
+          payStacks.push(pay);
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((res) =>
+            C.tween.to(stk.position, { x: L.rackPos[0], z: L.rackPos[2] }, 420, 'inOutCubic', res));
+        }
+        // eslint-disable-next-line no-await-in-loop
+        await wait(260);
+      }
+      bac.pushRound(round);
+      await wait(2000);
+      // clear: cards to the discard tray, chips away
+      const disc = toW(L.discardPos);
+      await Promise.all(dealt.map((mesh, i) => new Promise((res) => {
+        C.tween.to(mesh.position, { x: disc[0], y: disc[1] + 0.05 + i * 0.002, z: disc[2] }, 360, 'inOutCubic', res);
+      })));
+      dealt.forEach(disposeMesh);
+      betStacks.forEach(({ stk }) => disposeMesh(stk));
+      payStacks.forEach(disposeMesh);
+      await wait(1200);
+    }
+
+    async function loop() {
+      running = true;
+      // first activation: clear the static ghost cards baked at build time
+      if (!cleared) {
+        cleared = true;
+        bac.staticCards.forEach(disposeMesh);
+        bac.staticCards.length = 0;
+      }
+      while (wantRun) {
+        // eslint-disable-next-line no-await-in-loop
+        await runRound().catch((err) => {
+          console.error('[bac-show]', err);
+          // backoff so a runRound that rejects before its first await can
+          // never hot-spin the loop and starve the frame budget
+          return wait(1500);
+        });
+      }
+      running = false;
+    }
+
+    const hook = (dt) => {
+      t += dt;
+      if (t < CHECK_EVERY) return;
+      t = 0;
+      const p = app.player;
+      wantRun = Math.hypot(p.x - group.position.x, p.z - group.position.z) < NEAR;
+      if (wantRun && !running) loop();
+    };
+    app.onFrame(hook);
   };
 })();
 
@@ -2514,11 +4697,33 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 
     // receptionist behind the desk, facing the entrance (far enough back
     // that the resting hands don't clip into the counter slab)
-    receptionist = A.makeDealer({ suit: '#1c2a44' });
+    receptionist = A.makeDealer({ suit: '#1c2a44', seed: 'receptionist-v1' });
     receptionist.position.set(-18.35, 0, -1.85);
     receptionist.rotation.y = -Math.PI / 2 + 0.3;
     s.add(receptionist);
     receptionist.userData.idle(C.app);
+
+    // Proximity host: head tracks the player nearby; first approach gets a
+    // wave + greeting (re-arms after the player leaves for a while).
+    const rig = receptionist.userData.rig;
+    let greetedAt = -Infinity, wasNear = false, proxT = 0;
+    const proxHook = (dt, elapsed) => {
+      proxT += dt;
+      if (proxT < 0.5) return;                 // ~2 Hz is plenty
+      proxT = 0;
+      const p = C.app.player;
+      const d = Math.hypot(p.x - -18.35, p.z - -1.85);
+      const near = d < 5.5;
+      if (near) rig.lookAt(C.app, [p.x, 1.5, p.z]);
+      else if (wasNear) rig.lookAt(C.app, [-24, 1.5, 0]);   // relax toward the entrance
+      if (near && !wasNear && elapsed - greetedAt > 90) {
+        greetedAt = elapsed;
+        rig.play(C.app, 'wave');
+        rig.say(C.app, 'Welcome to Grand Casino!', { ms: 2400 });
+      }
+      wasNear = near;
+    };
+    C.app.onFrame(proxHook);
 
     // signage above the desk (angled with it, facing the entrance)
     const sign = A.makeNeonSign('RECEPTION — ID CHECK', '#ffd27f', { w: 2.5, h: 0.38 });
@@ -2557,12 +4762,18 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     C.stage.setAccess = (open) => turnstile.setOpen(open);
     C.stage.walkToDesk = () => {
       const p = C.floorplan.ANCHOR_POSES.reception;
+      receptionist.userData.rig.say(C.app, 'May I see your member card?', { ms: 2600 });
       return C.app.glideTo(p.pos, p.look, 900);
     };
-    C.stage.playHeadShake = () => receptionist.userData.headShake(C.app);
+    C.stage.playHeadShake = () => {
+      receptionist.userData.rig.say(C.app, 'Members only — please sign in.', { ms: 2200 });
+      return receptionist.userData.headShake(C.app);
+    };
     C.stage.playWelcome = () => {
-      receptionist.userData.lookToward(C.app, [C.app.player.x, 1.5, C.app.player.z]);
-      return stamp.play();
+      const rig2 = receptionist.userData.rig;
+      rig2.lookAt(C.app, [C.app.player.x, 1.5, C.app.player.z]);
+      rig2.say(C.app, "You're verified — enjoy the floor!", { ms: 2600 });
+      return stamp.play().then(() => rig2.play(C.app, 'nod'));
     };
     C.stage.resetWelcome = () => stamp.reset();
     C.stage.playWaveThrough = () => {
@@ -2583,6 +4794,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         };
         addEventListener('pointerup', skip, { once: true });
         receptionist.userData.lookToward(C.app, [-24, 1.5, 0]);
+        receptionist.userData.rig.say(C.app, 'This way, please!', { ms: 2000 });
         receptionist.userData.dealGesture(C.app, [C.floorplan.GATE_X, 1.2, 0], 900);
         const byDesk = { pos: [-19.6, 1.6, 0.2], look: [-16.2, 1.35, 0] };
         C.app.glideTo(byDesk.pos, byDesk.look, 650)
@@ -2593,6 +4805,240 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
           });
       });
     };
+  };
+})();
+
+
+// ===== src/floor/maintenance.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+  C.floor = C.floor || {};
+
+  // Maintenance enclosure around a closed table: steel stanchions joined by
+  // yellow/black hazard rails, an A-frame "DEALER TRAINING" signboard with a
+  // pulsing amber beacon, cones, and an optional supervisor figure. The rails
+  // are REAL walls: a chain of collision obstacles (r 0.35 at ≤0.9 m spacing)
+  // runs under every edge — with player radius 0.35, threading between two
+  // obstacles needs ≥1.4 m centre spacing, so the perimeter cannot be crossed
+  // by WASD, tap-to-move or glide.
+  const POST_H = 0.95, POST_R = 0.03, BASE_R = 0.16;
+  const RAIL_YS = [0.82, 0.45], RAIL_H = 0.1, RAIL_D = 0.028;
+  const OBSTACLE_R = 0.35, OBSTACLE_STEP = 0.9, POST_STEP = 0.96;
+
+  // Dense 45° stripes: 1024px wide so a rail stretched to ~4.5 m still reads
+  // as ~28 cm barricade stripes, not four fat wedges.
+  function hazardTexture(A) {
+    return A.canvasTexture(1024, 64, (ctx) => {
+      ctx.fillStyle = '#e8b820';
+      ctx.fillRect(0, 0, 1024, 64);
+      ctx.fillStyle = '#17181c';
+      for (let x = -64; x < 1024 + 64; x += 64) {
+        ctx.beginPath();
+        ctx.moveTo(x, 64); ctx.lineTo(x + 32, 64);
+        ctx.lineTo(x + 96, 0); ctx.lineTo(x + 64, 0);
+        ctx.closePath(); ctx.fill();
+      }
+      // grime so the boards don't read as flat vector art
+      for (let i = 0; i < 800; i++) {
+        ctx.fillStyle = `rgba(0,0,0,${Math.random() * 0.12})`;
+        ctx.fillRect(Math.random() * 1024, Math.random() * 64, 2, 1);
+      }
+    });
+  }
+
+  function signTexture(A, lines) {
+    return A.canvasTexture(512, 640, (ctx) => {
+      ctx.fillStyle = '#f5f2ea';
+      ctx.fillRect(0, 0, 512, 640);
+      // hazard header band
+      ctx.save();
+      ctx.beginPath(); ctx.rect(0, 0, 512, 84); ctx.clip();
+      ctx.fillStyle = '#e8b820'; ctx.fillRect(0, 0, 512, 84);
+      ctx.fillStyle = '#17181c';
+      for (let x = -84; x < 512 + 84; x += 84) {
+        ctx.beginPath();
+        ctx.moveTo(x, 84); ctx.lineTo(x + 42, 84);
+        ctx.lineTo(x + 126, 0); ctx.lineTo(x + 84, 0);
+        ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      ctx.strokeStyle = '#17181c'; ctx.lineWidth = 10;
+      ctx.strokeRect(5, 5, 502, 630);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      // lines: [{ text, size, color?, weight? }]
+      let y = 84;
+      for (const line of lines) {
+        y += line.size * 0.98;
+        ctx.font = `${line.weight || 'bold'} ${line.size}px 'Segoe UI', system-ui, sans-serif`;
+        ctx.fillStyle = line.color || '#17181c';
+        ctx.fillText(line.text, 256, y);
+        y += line.size * 0.42;
+      }
+    });
+  }
+
+  // Evenly spaced points from a to b (inclusive) at ≤ step apart.
+  function chain(a, b, step) {
+    const n = Math.max(1, Math.ceil(Math.abs(b - a) / step));
+    const pts = [];
+    for (let i = 0; i <= n; i++) pts.push(a + ((b - a) * i) / n);
+    return pts;
+  }
+
+  // opts: { rect: {x0,x1,z0,z1}, signLines, trainer: {pos:[x,z], lookAt:[x,z]} }
+  C.floor.buildMaintenanceZone = (opts) => {
+    const s = C.app.scene, A = C.assets;
+    const { x0, x1, z0, z1 } = opts.rect;
+    const g = new THREE.Group();
+
+    const postMat = new THREE.MeshStandardMaterial({ color: '#23262c', metalness: 0.75, roughness: 0.4 });
+    const railMat = new THREE.MeshStandardMaterial({ map: hazardTexture(A), roughness: 0.6, metalness: 0.05 });
+    railMat.map.wrapS = THREE.RepeatWrapping;
+
+    // edges as [ax, az, bx, bz]
+    const edges = [
+      [x0, z0, x1, z0],   // front (aisle)
+      [x1, z0, x1, z1],   // east
+      [x1, z1, x0, z1],   // back
+      [x0, z1, x0, z0],   // west
+    ];
+
+    for (const [ax, az, bx, bz] of edges) {
+      const horizontal = az === bz;
+      const len = Math.abs(horizontal ? bx - ax : bz - az);
+
+      // posts (corners included; shared corners just get two coincident posts
+      // merged visually by identical position — skip the duplicate)
+      const ts = chain(0, len, POST_STEP);
+      for (const t of ts.slice(0, -1)) {   // last post is the next edge's first
+        const px = horizontal ? ax + Math.sign(bx - ax) * t : ax;
+        const pz = horizontal ? az : az + Math.sign(bz - az) * t;
+        const post = new THREE.Mesh(new THREE.CylinderGeometry(POST_R, POST_R, POST_H, 10), postMat);
+        post.position.set(px, POST_H / 2, pz);
+        post.castShadow = true;
+        g.add(post);
+        const base = new THREE.Mesh(new THREE.CylinderGeometry(BASE_R, BASE_R * 1.15, 0.05, 14), postMat);
+        base.position.set(px, 0.025, pz);
+        base.receiveShadow = true;
+        g.add(base);
+        const cap = new THREE.Mesh(new THREE.SphereGeometry(0.045, 10, 8), postMat);
+        cap.position.set(px, POST_H, pz);
+        g.add(cap);
+      }
+
+      // striped rails spanning the whole edge (one box per height, not per bay
+      // — fewer meshes, and the stripe texture repeats along the length)
+      for (const ry of RAIL_YS) {
+        const rail = new THREE.Mesh(
+          new THREE.BoxGeometry(horizontal ? len : RAIL_D, RAIL_H, horizontal ? RAIL_D : len),
+          railMat,
+        );
+        rail.position.set((ax + bx) / 2, ry, (az + bz) / 2);
+        rail.castShadow = true;
+        g.add(rail);
+      }
+
+      // collision chain under the rail
+      for (const t of chain(0, len, OBSTACLE_STEP)) {
+        const ox = horizontal ? ax + Math.sign(bx - ax) * t : ax;
+        const oz = horizontal ? az : az + Math.sign(bz - az) * t;
+        C.world.addObstacle({ x: ox, z: oz, r: OBSTACLE_R });
+      }
+    }
+
+    // ---- "TABLE CLOSED" placard hung on the top front rail, dead-centre in
+    // front of the table and facing the aisle — the cage must read as closing
+    // THIS table even before the A-frame sign is in view.
+    const placTx = A.canvasTexture(512, 176, (ctx) => {
+      ctx.fillStyle = '#f5f2ea'; ctx.fillRect(0, 0, 512, 176);
+      ctx.strokeStyle = '#17181c'; ctx.lineWidth = 8;
+      ctx.strokeRect(4, 4, 504, 168);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#b3231e';
+      ctx.font = "bold 58px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText('TABLE CLOSED', 256, 58);
+      ctx.fillStyle = '#17181c';
+      ctx.font = "bold 50px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText('荷官培訓中', 256, 128);
+    });
+    const placard = new THREE.Mesh(
+      new THREE.PlaneGeometry(0.72, 0.25),
+      new THREE.MeshStandardMaterial({ map: placTx, roughness: 0.55, metalness: 0.05 }),
+    );
+    placard.position.set((x0 + x1) / 2, 0.64, z0 - 0.03);
+    placard.rotation.y = Math.PI;   // face the aisle (-z)
+    g.add(placard);
+
+    // ---- A-frame signboard on the aisle side of the front rail. Offset off
+    // the table's centre line (signDx) so the camera's approach pose never
+    // lands inside the board.
+    const cx = (x0 + x1) / 2 + (opts.signDx || 0);
+    const signTx = signTexture(A, opts.signLines);
+    const boardMat = new THREE.MeshStandardMaterial({ map: signTx, roughness: 0.55, metalness: 0.05 });
+    const backMat = new THREE.MeshStandardMaterial({ color: '#d9d5ca', roughness: 0.7 });
+    const BW = 0.78, BH = 0.98, LEAN = 0.24;
+    const sign = new THREE.Group();
+    // Two panels meeting at the top (bases spread ±sin(LEAN)·BH/2). BoxGeometry
+    // material order is [+x,-x,+y,-y,+z,-z]: the aisle-side panel (side −1)
+    // shows its −z face (index 5) to the aisle, the other its +z face (index 4).
+    for (const side of [-1, 1]) {
+      const panel = new THREE.Mesh(new THREE.BoxGeometry(BW, BH, 0.02),
+        side === -1
+          ? [backMat, backMat, backMat, backMat, backMat, boardMat]
+          : [backMat, backMat, backMat, backMat, boardMat, backMat]);
+      panel.position.set(0, BH / 2 * Math.cos(LEAN), side * (BH / 2) * Math.sin(LEAN));
+      panel.rotation.x = -side * LEAN;
+      panel.castShadow = true;
+      sign.add(panel);
+    }
+    // pulsing amber beacon on top — animated via the shared onFrame idiom
+    const beaconMat = new THREE.MeshBasicMaterial({ color: '#ffb020', fog: false });
+    const beacon = new THREE.Mesh(new THREE.SphereGeometry(0.055, 12, 10), beaconMat);
+    beacon.position.y = BH * Math.cos(LEAN) + 0.07;
+    sign.add(beacon);
+    const beaconStem = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.06, 8), postMat);
+    beaconStem.position.y = BH * Math.cos(LEAN) + 0.02;
+    sign.add(beaconStem);
+    C.app.onFrame((dt, t) => {
+      beaconMat.color.setHSL(0.09, 1, 0.42 + 0.22 * Math.sin(t * 3.2));
+    });
+    // the sign faces -z (aisle side of the front rail): panel textures face
+    // ±z already, so no yaw — just place it a step outside the rail line.
+    sign.position.set(cx, 0, z0 - 0.55);
+    g.add(sign);
+    C.world.addObstacle({ x: cx, z: z0 - 0.55, r: 0.5 });
+
+    // ---- traffic cones: one outside the front-east corner (inside the
+    // corner post's blocked radius, so players can't clip it), one inside
+    // near the back — the tight rect leaves no stool-free room at the front.
+    const coneMat = new THREE.MeshStandardMaterial({ color: '#e8641e', roughness: 0.55 });
+    const bandMat = new THREE.MeshStandardMaterial({ color: '#f2f0e8', roughness: 0.4 });
+    for (const [px, pz] of [[x1 - 0.15, z0 - 0.45], [x1 - 0.5, z1 - 0.55]]) {
+      const base = new THREE.Mesh(new THREE.BoxGeometry(0.3, 0.03, 0.3), coneMat);
+      base.position.set(px, 0.015, pz);
+      g.add(base);
+      const cone = new THREE.Mesh(new THREE.ConeGeometry(0.11, 0.42, 14), coneMat);
+      cone.position.set(px, 0.24, pz);
+      cone.castShadow = true;
+      g.add(cone);
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.072, 0.085, 0.09, 14), bandMat);
+      band.position.set(px, 0.25, pz);
+      g.add(band);
+    }
+
+    // ---- supervisor watching the dealer — it IS dealer training
+    if (opts.trainer) {
+      const t = A.makeDealer({ suit: '#2a3247', shirt: '#e8e4d8' });
+      const [tx, tz] = opts.trainer.pos;
+      const [lx, lz] = opts.trainer.lookAt;
+      t.position.set(tx, 0, tz);
+      t.rotation.y = Math.atan2(lx - tx, lz - tz);
+      g.add(t);
+      t.userData.idle(C.app);
+    }
+
+    s.add(g);
+    return g;
   };
 })();
 
@@ -2618,7 +5064,29 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     baccarat:  { z: 6.5,  dir: -1, xs: [-13.4, -9.0, -4.6, -0.2] },
     uth:       { z: 6.5,  dir: -1, xs: [5.2], reserved: [8.8, 11.4, 14.0, 16.6] },
   };
-  const SIGN_X = { roulette: -6.8, blackjack: 10.0, baccarat: -6.8, uth: 8.4 };
+  // Maintenance enclosure for the closed UTH table — hugs the table footprint
+  // (stools reach x 3.24–7.16, z 5.21; dealer at z 7.75) so the cage reads as
+  // wrapping THE table, not fencing floor space near it. West rail (x0 3.45)
+  // stays outside the cashier corridor (the table's own obstacle already
+  // blocks x > 2.65 at z 6.5); east rail (x1 7.3) clears the OPENING-SOON
+  // dais at 7.6.
+  const CLOSED_ZONE = {
+    rect: { x0: 3.45, x1: 7.3, z0: 4.95, z1: 8.35 },
+    signDx: -1.35,
+    signLines: [
+      { text: 'DEALER TRAINING', size: 56, color: '#b3541e' },
+      { text: '荷官培訓中', size: 60, color: '#b3541e' },
+      { text: 'TABLE CLOSED', size: 50 },
+      { text: '暫停開放', size: 54 },
+      { text: 'Sorry for the inconvenience', size: 22, weight: 'normal' },
+      { text: '不便之處，敬請原諒', size: 26, weight: 'normal' },
+    ],
+    trainer: { pos: [6.3, 7.6], lookAt: [5.2, 7.75] },
+  };
+  // uth neon hangs OVER the (closed) table itself — at 8.4 it hung over the
+  // reserved pads, which read as "the UTH area is open floor, the cage is
+  // something else off to the side".
+  const SIGN_X = { roulette: -6.8, blackjack: 10.0, baccarat: -6.8, uth: 5.4 };
 
   const highlights = new Map();   // table.id → group.userData.highlight
 
@@ -2669,14 +5137,15 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       section.tables.forEach((table, i) => {
         const x = row.xs[i];
         if (x === undefined) return;
-        const accent = table.key ? TIER_TINTS[table.key] : TINTS.uth;
+        const accent = table.closed ? '#ffb040' : (table.key ? TIER_TINTS[table.key] : TINTS.uth);
         const rotated = !!row.yaw;
         const group = C.floor.tables[section.id]({
           tierName: table.tierName,
           limitsText: table.limitsText,
           minChipLabel: table.minBet.toLocaleString('en-US'),
           accent,
-          withDealer: table.key === 'std' || section.id === 'uth',
+          withDealer: true,
+          dealerSeed: table.id,
           // rotated roulette: counter-rotate the plaque so it faces the aisle
           plaqueYaw: rotated ? Math.PI / 2 + 0.15 : undefined,
         });
@@ -2684,6 +5153,11 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         group.rotation.y = row.yaw ?? (row.dir === -1 ? Math.PI : 0);
         s.add(group);
         highlights.set(table.id, group.userData.highlight);
+        // live-play rigs: roulette tables expose spinTo/setBoardStats/setBets
+        // on their group userData for the in-place session (roulette-live.js)
+        if (section.id === 'roulette') (C.floor.rouletteRigs ??= new Map()).set(table.id, group);
+        if (section.id === 'blackjack') (C.floor.blackjackRigs ??= new Map()).set(table.id, group);
+        if (section.id === 'baccarat') C.floor.attachBaccaratShow?.(group);
 
         // dedicated warm pool over every table (desktop; mobile uses the
         // shell's four wide washes instead — light count budget)
@@ -2696,22 +5170,55 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
           s.add(sp, sp.target);
         }
 
-        // obstacle center follows the footprint: rotated roulette extends its
-        // wheel toward the wall (world -z); aisle-facing roulette would shift x.
-        const ox = rotated ? x : (section.id === 'roulette' ? x - 0.4 * row.dir : x);
-        const oz = rotated ? row.z - 0.45 : row.z;
-        C.world.addObstacle({ x: ox, z: oz, r: group.userData.radius });
+        if (rotated) {
+          // Rotated roulette: capsule of small circles down the table's long
+          // axis (+ tote board + dealer) instead of one fat r-2.5 circle —
+          // that circle kept players 1.7m off the rail, so nobody could
+          // actually stand AT the table.
+          C.world.addObstacle({ x, z: row.z - 2.35, r: 1.15 });           // wheel bowl
+          C.world.addObstacle({ x, z: row.z - 0.7, r: 1.1 });             // rail west half
+          C.world.addObstacle({ x, z: row.z + 0.95, r: 1.1 });            // rail east half
+          C.world.addObstacle({ x: x + 1.25, z: row.z - 1.75, r: 0.55 }); // tote board
+          if (table.key === 'std') C.world.addObstacle({ x: x + 1.15, z: row.z + 0.2, r: 0.45 }); // dealer
+        } else {
+          // obstacle center follows the footprint: aisle-facing roulette
+          // would shift x toward its wheel end.
+          const ox = section.id === 'roulette' ? x - 0.4 * row.dir : x;
+          C.world.addObstacle({ x: ox, z: row.z, r: group.userData.radius });
+        }
 
-        // anchor on the aisle side of the table
-        const az = row.z + row.dir * (rotated ? 2.6 : 2.35);
-        C.world.addAnchor({
-          id: table.id, kind: 'table', table,
-          pos: [x, az], radius: 2.0,
-          approach: {
-            pos: [x, 1.6, row.z + row.dir * (rotated ? 3.0 : 2.7)],
-            look: [x, 0.95, row.z],
-          },
-        });
+        // closed table: build the maintenance enclosure (rails + sign +
+        // collision chain) — the anchor stays, but its approach pulls back
+        // so the camera lands OUTSIDE the barrier looking through it.
+        if (table.closed) C.floor.buildMaintenanceZone(CLOSED_ZONE);
+
+        if (rotated) {
+          // Approach = the players' long side, across the felt facing the
+          // dealer (not parked at the aisle end). Clamped off the west wall
+          // for the table nearest it. The anchor sits between the aisle and
+          // that spot so the card triggers walking past AND at the rail.
+          const floorRect = C.floorplan.WALK_RECTS.find((r) => r.id === 'floor');
+          const standX = Math.max(x - 1.9, floorRect.x0 + 0.35);
+          C.world.addAnchor({
+            id: table.id, kind: 'table', table,
+            pos: [x - 0.9, row.z + 1.6], radius: 2.2,
+            approach: {
+              pos: [standX, 1.6, row.z + 0.2],
+              look: [x + 1.0, 1.1, row.z + 0.2],
+            },
+          });
+        } else {
+          // anchor on the aisle side of the table
+          const az = row.z + row.dir * 2.35;
+          C.world.addAnchor({
+            id: table.id, kind: 'table', table,
+            pos: [x, az], radius: 2.0,
+            approach: {
+              pos: [x, 1.6, row.z + row.dir * (table.closed ? 3.9 : 2.7)],
+              look: [x, 0.95, row.z],
+            },
+          });
+        }
         C.app.addPickable(group, () => {
           const a = C.world.anchorById(table.id);
           if (a) C.app.goToAnchor(a);
@@ -2734,97 +5241,9 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   C.floor = C.floor || {};
 
   // Ambient décor — atmosphere only, deliberately simple, no interactions:
-  // a slot-bank island on the aisle, a bar along the east wall, the cashier
-  // cage on the south wall, plants and columns. The cashier registers an
-  // anchor (its DOM card is wallet services); everything else is scenery.
-
-  function slotScreenTexture(A, variant) {
-    return A.canvasTexture(128, 160, (ctx) => {
-      const g = ctx.createLinearGradient(0, 0, 0, 160);
-      g.addColorStop(0, variant ? '#2a0f33' : '#0f1e33');
-      g.addColorStop(1, variant ? '#4a1447' : '#14315c');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 160);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 44px "Segoe UI", sans-serif';
-      ctx.fillStyle = variant ? '#ff79c6' : '#ffd75e';
-      ctx.fillText(variant ? '♦♦♦' : '777', 64, 62);
-      ctx.font = 'bold 20px "Segoe UI", sans-serif';
-      ctx.fillStyle = '#fff';
-      ctx.fillText(variant ? 'DIAMONDS' : 'LUCKY 7', 64, 108);
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 4;
-      ctx.strokeRect(6, 6, 116, 148);
-    });
-  }
-
-  function buildSlotIsland(s, A) {
-    const screens = [slotScreenTexture(A, 0), slotScreenTexture(A, 1)];
-    const bodyMat = new THREE.MeshStandardMaterial({ color: '#1c1f2a', roughness: 0.55, metalness: 0.3 });
-    const baseMat = new THREE.MeshStandardMaterial({ color: '#10121a', roughness: 0.8 });
-    // one pulsing topper material per side of the island (cheap: 2 materials)
-    const topperMats = [
-      new THREE.MeshBasicMaterial({ color: '#ffd75e', fog: false }),
-      new THREE.MeshBasicMaterial({ color: '#ff79c6', fog: false }),
-    ];
-    C.app.onFrame((dt, t) => {
-      topperMats[0].color.setHSL(0.13, 0.85, 0.5 + 0.16 * Math.sin(t * 2.1));
-      topperMats[1].color.setHSL(0.9, 0.7, 0.5 + 0.16 * Math.sin(t * 2.1 + 1.7));
-    });
-
-    const mkSlot = (x, z, ry, sideIdx, screenIdx) => {
-      const g = new THREE.Group();
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.14, 0.6), baseMat);
-      base.position.y = 0.07;
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.95, 0.55), bodyMat);
-      body.position.y = 1.09;
-      body.castShadow = true; body.receiveShadow = true;
-      const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.5),
-        new THREE.MeshBasicMaterial({ map: screens[screenIdx], fog: false }));
-      screen.position.set(0, 1.35, 0.281);
-      screen.rotation.x = -0.06;
-      const deck = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.07, 0.3),
-        new THREE.MeshStandardMaterial({ color: '#1d2029', roughness: 0.5 }));
-      deck.position.set(0, 0.95, 0.36);
-      deck.rotation.x = 0.3;
-      const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.1), topperMats[sideIdx]);
-      topper.position.set(0, 2.12, 0.18);
-      g.add(base, body, screen, deck, topper);
-      g.position.set(x, 0, z);
-      g.rotation.y = ry;
-      s.add(g);
-    };
-
-    // back-to-back island of 5+5 on the aisle
-    for (let i = 0; i < 5; i++) {
-      const x = -4.3 + i * 1.05;
-      mkSlot(x, -0.62, 0, 0, i % 2);          // faces… wait: ry 0 faces +z (south)
-    }
-    for (let i = 0; i < 5; i++) {
-      const x = -4.3 + i * 1.05;
-      mkSlot(x, 0.62, Math.PI, 1, (i + 1) % 2); // faces north
-    }
-    // island end caps: low plinth + glowing LED column so the island reads
-    // as a lit fixture from the entrance instead of a black monolith
-    for (const ex of [-4.95, -4.3 + 4 * 1.05 + 0.65]) {
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 1.7),
-        new THREE.MeshStandardMaterial({ color: '#161923', roughness: 0.6, metalness: 0.25 }));
-      cap.position.set(ex, 0.55, 0);
-      cap.castShadow = true;
-      s.add(cap);
-      const beacon = A.ledStrip('#ffd75e', 0.09, 2.3, 0.09);
-      beacon.position.set(ex, 1.15, 0);
-      s.add(beacon);
-      const beaconCapTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.16), A.steelMaterial());
-      beaconCapTop.position.set(ex, 2.34, 0);
-      s.add(beaconCapTop);
-    }
-    // base skirt light along both long sides
-    for (const sz of [-1.0, 1.0]) {
-      const skirt = A.ledStrip('#8a6c3a', 5.4, 0.04, 0.04);
-      skirt.position.set(-2.2, 0.09, sz);
-      s.add(skirt);
-    }
-    C.world.addObstacle({ x: -2.2, z: 0, r: 3.1 });
-  }
+  // a bar along the east wall, the cashier cage on the south wall, plants
+  // and columns. The cashier registers an anchor (its DOM card is wallet
+  // services); everything else is scenery.
 
   function buildBar(s, A) {
     // counter along the east wall
@@ -2974,14 +5393,12 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         cap.position.set(x, cy, z);
         s.add(cap);
       }
-      const ring = C.assets.ledStrip('#d7b45c', 0.02, 0.06, 0.02);
       // thin LED collar around the column
       const collar = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.018, 8, 24),
         new THREE.MeshBasicMaterial({ color: '#d7b45c', fog: false }));
       collar.rotation.x = Math.PI / 2;
       collar.position.set(x, 2.6, z);
       s.add(collar);
-      void ring;
       C.world.addObstacle({ x, z, r: 0.55 });
     };
     [[-10, -3.8], [-10, 3.8], [8, -3.8], [8, 3.8]].forEach(([x, z]) => mkColumn(x, z));
@@ -2989,7 +5406,6 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 
   C.floor.buildDecor = () => {
     const s = C.app.scene, A = C.assets;
-    buildSlotIsland(s, A);
     buildBar(s, A);
     buildCashier(s, A);
     buildPlantsAndColumns(s, A);
@@ -3024,7 +5440,12 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   // registered anchor's approach (tables, cashier, practice).
   C.stage.goTo = (id) => {
     const pose = C.floorplan.ANCHOR_POSES[id];
-    if (pose) return C.app.glideTo(pose.pos, pose.look, 1200);
+    if (pose) {
+      // signed-out clicks on floor-side signs open the ID check instead of
+      // flying through the closed turnstile (canFlyTo notifies the UI)
+      if (!C.app.canFlyTo(pose.pos)) return Promise.resolve();
+      return C.app.glideTo(pose.pos, pose.look, 1200);
+    }
     const a = C.world.anchorById(id);
     return a ? C.app.goToAnchor(a) : Promise.resolve();
   };

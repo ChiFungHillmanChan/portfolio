@@ -38,12 +38,23 @@ test('minBet is the smallest min across the wallet table betTypes', () => {
   assert.equal(section('blackjack').tables[3].minBet, 200); // blackjack-high sides min
 });
 
-test('UTH: one table, no ?stake=, buy-in min, 4 reserved spots', () => {
+test('UTH: one table, buy-in min, 4 reserved spots', () => {
   const uth = section('uth');
   assert.equal(uth.tables.length, 1);
-  assert.equal(uth.tables[0].href, '../ultimate-texas-holdem/index.html');
-  assert.ok(!uth.tables[0].href.includes('stake'));
   assert.equal(uth.tables[0].minBet, 10000);
   assert.equal(uth.tables[0].id, 'uth:main');
   assert.equal(uth.reservedSpots, 4);
+});
+
+test('UTH table is closed for dealer training: no play link exists', () => {
+  const t = section('uth').tables[0];
+  assert.equal(t.closed, true);
+  assert.equal(t.href, null);
+  assert.ok(t.closedNotice && t.closedNotice.length > 0);
+  // no other table on the floor is closed
+  for (const s of model.sections) {
+    for (const table of s.tables) {
+      if (table.id !== 'uth:main') assert.ok(!table.closed, `${table.id} must stay open`);
+    }
+  }
 });

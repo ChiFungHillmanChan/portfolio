@@ -32,7 +32,7 @@
     chipSource: [1.0, 0.85, 1.05],          // near table edge at the player's right
     dealerChipPos: [0, 0.85, 0.10],
     playerSlots: [[0.27, 0.86, 0.50], [0.44, 0.86, 0.50]],
-    dealerSlots: [[-0.24, 0.86, 0.16], [-0.07, 0.86, 0.16]],
+    dealerSlots: [[-0.085, 0.86, 0.16], [0.085, 0.86, 0.16]],
     fanDx: 0.17,                             // 3rd+ card continues right of slot[1]
     spots: {
       main:               { pos: [0.36, 0.845, 0.78], r: 0.11,  label: 'MAIN' },
@@ -40,24 +40,44 @@
       twentyOnePlusThree: { pos: [0.62, 0.845, 0.88], r: 0.075, label: '21+3' },
     },
     poseDeal: { pos: [0.12, 1.35, 1.25], look: [0.08, 0.84, 0.25] },
+    // v2 floor-table seat geometry (polar, radii from table center). The
+    // table builder AND blackjack-live.js both use seatPoint so painted
+    // spots, chips and cards can never drift apart.
+    seat: {
+      count: 6, angleStart: 160, angleStep: 28, stoolR: 1.95,
+      mainR: 1.40, sideR: 1.19, sideDx: 0.07,
+      cardsR: 1.02, stackDr: 0.062, splitDx: 0.14,
+    },
   };
+  blackjack.seatPoint = (a, radius, tangent = 0) => [
+    Math.cos(a) * radius - Math.sin(a) * tangent,
+    Math.sin(a) * radius + Math.cos(a) * tangent,
+  ];
 
   // ---------- baccarat (ellipse felt rx 1.692 / rz 0.799, FELT_Y 0.82)
+  // Macau-style layout: dealer strip (chip rack/shoe/discard) at -z, the
+  // card-dealing area between it and six numbered seat sectors of betting
+  // arcs on the +z side. Angles: 90° = player edge; x = cos(a)*f*rx,
+  // z = sin(a)*f*rz — shared by seatSpot() and the painted felt texture.
   const baccarat = {
     feltY: 0.82, cardY: 0.85,
-    shoePos: [0.85, 0.82, -0.55],
+    feltRx: 1.692, feltRz: 0.799,
+    rackPos: [0, 0.82, -0.52],
+    shoePos: [0.62, 0.82, -0.48],
+    discardPos: [-0.62, 0.82, -0.48],
     chipSource: [1.05, 0.84, 0.35],
-    dealerChipPos: [0, 0.84, -0.6],
-    // two upright slots side by side + the third card laid SIDEWAYS next to
-    // them (rotation.z = ±PI/2 on the flat card), as dealt in real baccarat.
-    playerSlots: [[-0.78, 0.85, 0.08], [-0.61, 0.85, 0.08], [-0.37, 0.85, 0.08]],
-    bankerSlots: [[0.61, 0.85, 0.08], [0.78, 0.85, 0.08], [0.37, 0.85, 0.08]],
-    spots: {
-      player: { pos: [-0.70, 0.84, 0.42], r: 0.13,  label: 'PLAYER' },
-      banker: { pos: [0.70, 0.84, 0.42],  r: 0.13,  label: 'BANKER' },
-      tie:    { pos: [0, 0.84, 0.48],     r: 0.10,  label: 'TIE' },
-      pPair:  { pos: [-0.32, 0.84, 0.54], r: 0.07,  label: 'P PAIR' },
-      bPair:  { pos: [0.32, 0.84, 0.54],  r: 0.07,  label: 'B PAIR' },
+    dealerChipPos: [0, 0.84, -0.32],
+    // two upright slots + the third card laid SIDEWAYS outboard of them
+    // (slot index 2), as dealt in real baccarat.
+    playerSlots: [[-0.45, 0.85, -0.14], [-0.28, 0.85, -0.14], [-0.66, 0.85, -0.14]],
+    bankerSlots: [[0.28, 0.85, -0.14], [0.45, 0.85, -0.14], [0.66, 0.85, -0.14]],
+    spots: {},   // per-seat boxes are printed on the felt instead
+    seatAngles: [27.5, 52.5, 77.5, 102.5, 127.5, 152.5],   // seat 1..6
+    betFracs: { tie: 0.46, banker: 0.66, player: 0.81 },
+    seatSpot(seat, kind) {
+      const a = (this.seatAngles[seat] * Math.PI) / 180;
+      const f = this.betFracs[kind];
+      return [Math.cos(a) * f * this.feltRx, Math.sin(a) * f * this.feltRz];
     },
     poseDeal: { pos: [0, 1.32, 0.82], look: [0, 0.85, -0.15] },
   };
