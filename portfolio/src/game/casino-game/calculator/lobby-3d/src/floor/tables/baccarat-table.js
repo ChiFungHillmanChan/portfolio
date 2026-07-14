@@ -8,8 +8,7 @@
   const RAIL_H = 0.8, FELT_Y = 0.82;
   const RAIL_RX = 1.8, RAIL_RZ = 0.85, FELT_FRAC = 0.94;
   const FELT_RX = RAIL_RX * FELT_FRAC, FELT_RZ = RAIL_RZ * FELT_FRAC;
-  const GHOST_ANGLES_DEG = [40, 75, 105, 140];
-  const SEAT_RX = 2.15, SEAT_RZ = 1.3, CHIP_RX = 1.35, CHIP_RZ = 0.62;
+  const SEAT_RX = 2.15, SEAT_RZ = 1.3;
 
   const CJK = "'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif";
 
@@ -125,6 +124,49 @@
     return feltTexture;
   }
 
+  // dealer chip rack: dark tray, gold dividers, 8 chip stacks
+  function makeChipRack() {
+    const g = new THREE.Group();
+    const tray = new THREE.Mesh(
+      new THREE.BoxGeometry(0.72, 0.045, 0.26),
+      new THREE.MeshStandardMaterial({ color: '#1a120b', roughness: 0.45, metalness: 0.25 }),
+    );
+    tray.position.y = 0.0225;
+    tray.castShadow = true; tray.receiveShadow = true;
+    g.add(tray);
+    for (let i = 0; i <= 8; i++) {
+      const div = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.052, 0.26), C.assets.goldMaterial());
+      div.position.set(-0.36 + i * 0.09, 0.028, 0);
+      g.add(div);
+    }
+    [5000, 1000, 1000, 500, 500, 100, 100, 25].forEach((v, i) => {
+      const stack = C.chips.makeChipStack(v, 5 + (i % 3));
+      stack.position.set(-0.315 + i * 0.09, 0.048, 0);
+      g.add(stack);
+    });
+    return g;
+  }
+
+  // discard holder: shallow tray with a few face-down cards
+  function makeDiscardTray() {
+    const g = new THREE.Group();
+    const tray = new THREE.Mesh(
+      new THREE.BoxGeometry(0.24, 0.03, 0.3),
+      new THREE.MeshStandardMaterial({ color: '#14100c', roughness: 0.5, metalness: 0.2 }),
+    );
+    tray.position.y = 0.015;
+    tray.castShadow = true;
+    g.add(tray);
+    for (let i = 0; i < 3; i++) {
+      const card = C.cards.makeCard(null);
+      card.rotation.x = -Math.PI / 2;
+      card.rotation.z = (Math.random() - 0.5) * 0.3;
+      card.position.set(0, 0.033 + i * 0.002, 0);
+      g.add(card);
+    }
+    return g;
+  }
+
   // opts: { tierName, limitsText, minChipLabel, accent, withDealer }
   C.floor.tables.baccarat = (opts = {}) => {
     const A = C.assets;
@@ -149,19 +191,27 @@
     felt.receiveShadow = true;
     g.add(felt);
 
-    // card boxes (index 2 = sideways third card) + bet spot decals
-    [L.playerSlots, L.bankerSlots].forEach((slots) => {
-      slots.forEach((slot, idx) => {
-        const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
-        box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
-        g.add(box);
+    // one simulated shoe per table: the same history drives the felt cards
+    // and the scoreboard, so everything on this table is self-consistent
+    const rounds = C.baccaratRoads.simulateShoe();
+    const lastRound = rounds[rounds.length - 1];
+
+    // card-dealing area: printed boxes + the final round's actual cards
+    [[L.playerSlots, lastRound.playerCards], [L.bankerSlots, lastRound.bankerCards]]
+      .forEach(([slots, cards]) => {
+        slots.forEach((slot, idx) => {
+          const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
+          box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
+          g.add(box);
+        });
+        cards.forEach((cardDef, idx) => {
+          const card = C.cards.makeCard(cardDef);
+          card.rotation.x = -Math.PI / 2;
+          if (idx === 2) card.rotation.z = Math.PI / 2;
+          card.position.set(slots[idx][0], FELT_Y + 0.006 + idx * 0.0005, slots[idx][2]);
+          g.add(card);
+        });
       });
-    });
-    Object.values(L.spots).forEach(({ pos, r, label }) => {
-      const decal = C.chips.makeSpotDecal({ label, r });
-      decal.position.set(pos[0], FELT_Y + 0.004, pos[2]);
-      g.add(decal);
-    });
 
     // shoe
     const shoeGroup = new THREE.Group();
@@ -176,22 +226,33 @@
     shoeTrim.rotation.x = -0.35;
     shoeTrim.position.y = 0.09;
     shoeGroup.add(shoeTrim);
-    shoeGroup.position.set(...L.shoePos);
+    shoeGroup.position.set(L.shoePos[0], FELT_Y, L.shoePos[2]);
     g.add(shoeGroup);
 
-    // ghost seats: stools + chips + face-down card
-    GHOST_ANGLES_DEG.forEach((deg) => {
+    // dealer strip props
+    const rack = makeChipRack();
+    rack.position.set(L.rackPos[0], FELT_Y, L.rackPos[2]);
+    g.add(rack);
+    const discard = makeDiscardTray();
+    discard.position.set(L.discardPos[0], FELT_Y, L.discardPos[2]);
+    g.add(discard);
+
+    // six seats matching the felt sectors; some "occupied" with ghost bets
+    const kinds = ['player', 'banker', 'banker', 'player', 'tie'];
+    const occupied = new Set();
+    while (occupied.size < 3 + Math.floor(Math.random() * 2))
+      occupied.add(Math.floor(Math.random() * 6));
+    L.seatAngles.forEach((deg, i) => {
       const a = (deg * Math.PI) / 180;
       const stool = A.makeStool();
       stool.position.set(Math.cos(a) * SEAT_RX, 0, Math.sin(a) * SEAT_RZ);
       g.add(stool);
-      const chips = C.chips.makeChipStack(500, 4);
-      chips.position.set(Math.cos(a) * CHIP_RX, FELT_Y + 0.02, Math.sin(a) * CHIP_RZ);
+      if (!occupied.has(i)) return;
+      const kind = kinds[Math.floor(Math.random() * kinds.length)];
+      const [bx, bz] = L.seatSpot(i, kind);
+      const chips = C.chips.makeChipStack([100, 500, 1000][i % 3], 3 + (i % 4));
+      chips.position.set(bx, FELT_Y + 0.005, bz);
       g.add(chips);
-      const card = C.cards.makeCard(null);
-      card.rotation.x = -Math.PI / 2;
-      card.position.set(Math.cos(a) * CHIP_RX * 0.7, FELT_Y + 0.015, Math.sin(a) * CHIP_RZ * 0.7);
-      g.add(card);
     });
 
     if (opts.withDealer) {
