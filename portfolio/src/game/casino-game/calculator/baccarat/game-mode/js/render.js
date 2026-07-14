@@ -19,7 +19,7 @@ function renderChipRack() {
     const availableChips = getAvailableChips();
     const selectedChip = getSelectedChip();
 
-    rack.innerHTML = CHIP_DENOMINATIONS.map(value => {
+    rack.innerHTML = tableChipDenominations().map(value => {
         const isAvailable = availableChips.includes(value);
         const isSelected = value === selectedChip;
         const displayValue = formatChipValue(value);

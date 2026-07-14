@@ -7,6 +7,38 @@
  */
 function init() {
     setupComingSoonCards();
+    setupModeToggle();
+}
+
+/**
+ * Landing has two options: "3D Lobby" (a real link) and "Practice Mode".
+ * Practice Mode swaps the landing view for the practice trainers in-page,
+ * with a back button to return. Keeps the first screen to just two choices.
+ */
+function setupModeToggle() {
+    const landing = document.getElementById('landingZone');
+    const practice = document.getElementById('practiceZone');
+    const enter = document.getElementById('enterPracticeCard');
+    const back = document.getElementById('backToLobby');
+    if (!landing || !practice || !enter) return;
+
+    const show = (view) => {
+        const showPractice = view === 'practice';
+        landing.hidden = showPractice;
+        practice.hidden = !showPractice;
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    };
+
+    enter.addEventListener('click', (e) => {
+        e.preventDefault();
+        show('practice');
+    });
+    if (back) {
+        back.addEventListener('click', (e) => {
+            e.preventDefault();
+            show('landing');
+        });
+    }
 }
 
 /**

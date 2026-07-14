@@ -149,8 +149,35 @@ function startWalletGame(balance) {
     GameState.sideBets = { perfectPair: 0, twentyOnePlus3: 0, top3: 0 };
     initializeShoe();
     GameState.phase = 'betting';
+    applyTableChipLimits();
     showGameScreen();
     renderGame();
+}
+
+/**
+ * Limit the chip rack to the active tier: no chip below the main-bet min
+ * (one chip of the smallest visible denom is already a valid main bet) and
+ * none above the main max. If the selected chip got hidden, select the
+ * smallest visible one.
+ */
+function applyTableChipLimits() {
+    var table = window.blackjackTable;
+    if (!table || !table.main) return;
+    var chips = document.querySelectorAll('.chip-rack .chip, .chip-rack-inline .chip');
+    var visible = [];
+    chips.forEach(function(chip) {
+        var v = parseInt(chip.dataset.value);
+        var ok = v >= table.main.min && v <= table.main.max;
+        chip.style.display = ok ? '' : 'none';
+        if (ok) visible.push(v);
+    });
+    if (!visible.length) {
+        chips.forEach(function(chip) { chip.style.display = ''; });
+        return;
+    }
+    if (visible.indexOf(GameState.selectedChip) === -1) {
+        selectChip(Math.min.apply(null, visible));
+    }
 }
 
 function initializeSetup() {

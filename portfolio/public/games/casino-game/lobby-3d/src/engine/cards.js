@@ -109,7 +109,9 @@
   //  * XZ travel eases with outBack — the card overshoots its box by a few cm
   //    and slides back, reading as "dealt" instead of "placed".
   //  * REDUCED: no spin, linear-ish fast flight (unchanged from v1).
-  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0, spin = true } = {}) {
+  // sound is OPT-IN: ambient dealer shows fly cards constantly at several
+  // tables at once — only the table the user is actually playing should blip.
+  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0, spin = true, sound = false } = {}) {
     if (app.REDUCED) { ms = Math.min(ms, 180); spin = false; }
     return new Promise((resolve) => {
       const gen = app.roomGen;
@@ -118,7 +120,7 @@
       const zStart = spin ? zEnd - 0.45 : zEnd;
       cardMesh.rotation.z = zStart;
       app.scene.add(cardMesh);
-      C.sound?.play('card');
+      if (sound) C.sound?.play('card');
       const easeXZ = spin ? C.tween.easings.outBack : C.tween.easings.outCubic;
       const easeSpin = C.tween.easings.outCubic;
       const start = () => {

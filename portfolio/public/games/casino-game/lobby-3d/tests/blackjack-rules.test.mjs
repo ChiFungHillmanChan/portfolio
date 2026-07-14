@@ -89,9 +89,13 @@ test('validateBets against tier betTypes', () => {
   assert.equal(validateBets({ main: 1000, perfectPair: 250, twentyOnePlus3: 250 }, MICRO, 99999, 1400).reason, 'table-max');
 });
 
-test('chipRack scales with the tier', () => {
+test('chipRack scales with the tier — no chip below the main min', () => {
   assert.deepEqual(chipRack(MICRO), [50, 100, 500, 1000]);
-  assert.deepEqual(chipRack({ main: { min: 1000, max: 20000 } }), [50, 100, 500, 1000, 5000]);
+  assert.deepEqual(chipRack({ main: { min: 100, max: 2500 } }), [100, 500, 1000]);
+  assert.deepEqual(chipRack({ main: { min: 500, max: 10000 } }), [500, 1000, 5000]);
+  assert.deepEqual(chipRack({ main: { min: 1000, max: 20000 } }), [1000, 5000]);
+  // degenerate config (min above every denom) still yields a usable rack
+  assert.deepEqual(chipRack({ main: { min: 20000, max: 50000 } }), [5000]);
 });
 
 test('makeShoe: 6 decks, injectable rand is deterministic', () => {

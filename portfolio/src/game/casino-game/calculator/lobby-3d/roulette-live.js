@@ -32,6 +32,8 @@ export function openRouletteLive({ table }) {
     return null;
   }
 
+  C.music?.duck(true);   // live session: music sits back behind the dealer
+
   const toWorld = (x, y, z) => rig.localToWorld(new THREE.Vector3(x, y, z)).toArray();
   // The westmost table's player side runs close to the wall — keep camera
   // poses inside the walkable floor rect.
@@ -148,6 +150,7 @@ export function openRouletteLive({ table }) {
     wrap.remove();
     rig.userData.setBets([]);
     C.app.inputLocked = false;
+    C.music?.duck(false);
     active = null;
     const a = C.world.anchorById(table.id);
     if (a) C.app.goToAnchor(a);

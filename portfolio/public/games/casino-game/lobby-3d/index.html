@@ -397,6 +397,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       });
     }
     startAmbience();
+    C.music?.start();
   }
 
   function setMuted(m) {
@@ -406,12 +407,185 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       stopAmbience();
       if (TTS) { try { TTS.cancel(); } catch { /* best-effort */ } }
     } else if (ambienceWanted) startAmbience();
+    C.music?.setMuted(muted);
   }
 
+  // Shared audio bus for sibling modules (music.js) — null before unlock.
+  const bus = () => (ctx ? { ctx, master } : null);
+
   C.sound = {
-    unlock, play, say, sayResult, sayNoMoreBets, ballSpin, ambience, setMuted,
+    unlock, play, say, sayResult, sayNoMoreBets, ballSpin, ambience, setMuted, bus,
     get muted() { return muted; },
   };
+})();
+
+
+// ===== src/engine/music.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Generative lounge music renderer — zero asset files, same philosophy as
+  // sound.js. Track plans come from the pure C.musicPlan module; this file
+  // owns the Web Audio side: EP chords, walking bass, brushed ride, track
+  // scheduling with rest gaps, plus duck / mute / tab-visibility handling.
+  // Import-safe in node — no browser API is touched at module load.
+
+  const BASE_GAIN = 0.5, DUCK_FACTOR = 0.4;
+  let bus = null;        // { ctx, master } borrowed from C.sound.bus()
+  let out = null;        // music output gain (under sound's master)
+  let noiseBuf = null;
+  let running = false, muted = false, ducked = false;
+  let timer = 0, trackGain = null, visHooked = false;
+
+  function ensureOut() {
+    if (!bus) bus = C.sound?.bus?.() || null;
+    if (!bus || !bus.ctx) return false;
+    if (!out) {
+      out = bus.ctx.createGain();
+      out.gain.value = BASE_GAIN * (ducked ? DUCK_FACTOR : 1);
+      out.connect(bus.master);
+    }
+    return true;
+  }
+
+  function ensureNoise() {
+    if (!noiseBuf) {
+      const len = Math.floor(bus.ctx.sampleRate * 1.0);
+      noiseBuf = bus.ctx.createBuffer(1, len, bus.ctx.sampleRate);
+      const d = noiseBuf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    }
+    return noiseBuf;
+  }
+
+  // ---- instruments (everything scheduled on the audio timeline) ----
+  function epChord(t, freqs, dur) {
+    const { ctx } = bus;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = 1400; lp.Q.value = 0.5;
+    lp.connect(trackGain);
+    for (const f of freqs) {
+      // soft electric piano: triangle + slightly detuned sine per voice
+      for (const [type, mul, peak] of [['triangle', 1, 0.040], ['sine', 1.004, 0.018]]) {
+        const o = ctx.createOscillator();
+        o.type = type; o.frequency.value = f * mul;
+        const g = ctx.createGain();
+        g.gain.setValueAtTime(0.0001, t);
+        g.gain.exponentialRampToValueAtTime(peak, t + 0.04);
+        g.gain.setTargetAtTime(peak * 0.5, t + 0.15, 0.6);
+        g.gain.setTargetAtTime(0.0001, t + Math.max(0.3, dur - 0.3), 0.12);
+        o.connect(g).connect(lp);
+        o.start(t); o.stop(t + dur + 0.6);
+      }
+    }
+  }
+
+  function bassNote(t, freq, dur) {
+    const { ctx } = bus;
+    const o = ctx.createOscillator();
+    o.type = 'sine'; o.frequency.value = freq;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.10, t + 0.02);
+    g.gain.setTargetAtTime(0.0001, t + dur * 0.7, 0.08);
+    o.connect(g).connect(trackGain);
+    o.start(t); o.stop(t + dur + 0.3);
+  }
+
+  function brush(t, accent) {
+    const { ctx } = bus;
+    const src = ctx.createBufferSource();
+    src.buffer = ensureNoise();
+    const f = ctx.createBiquadFilter();
+    f.type = 'bandpass'; f.frequency.value = 7200; f.Q.value = 1.4;
+    const g = ctx.createGain();
+    const peak = accent ? 0.030 : 0.016;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(peak, t + 0.005);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.09);
+    src.connect(f).connect(g).connect(trackGain);
+    src.start(t, Math.random() * 0.4);
+    src.stop(t + 0.15);
+  }
+
+  // Schedule one whole track; returns its length in seconds.
+  function scheduleTrack(plan) {
+    const { ctx } = bus;
+    trackGain = ctx.createGain();
+    trackGain.gain.value = 1;
+    trackGain.connect(out);
+    const spb = 60 / plan.bpm;
+    const t0 = ctx.currentTime + 0.15;
+    const passLen = plan.bars * plan.beatsPerBar * spb;
+    for (let rep = 0; rep < plan.repeats; rep++) {
+      const base = t0 + rep * passLen;
+      for (const e of plan.events) {
+        const t = base + e.at * spb;
+        if (e.type === 'chord') epChord(t, e.freqs, e.dur * spb);
+        else if (e.type === 'bass') bassNote(t, e.freq, e.dur * spb);
+        else brush(t, e.accent);
+      }
+    }
+    return plan.repeats * passLen + 0.3;
+  }
+
+  function nextTrack() {
+    if (!running || muted) return;
+    if (typeof document !== 'undefined' && document.hidden) return;
+    if (!ensureOut()) return;
+    try {
+      const len = scheduleTrack(C.musicPlan.buildTrackPlan(Math.random));
+      const gap = 3000 + Math.random() * 5000;           // breathe between tracks
+      timer = setTimeout(nextTrack, len * 1000 + gap);
+    } catch { /* music must never break gameplay */ }
+  }
+
+  // Fade + drop the in-flight track (mute, tab hidden, stop).
+  function killCurrent() {
+    clearTimeout(timer);
+    if (trackGain && bus) {
+      const tg = trackGain;
+      try {
+        tg.gain.setTargetAtTime(0.0001, bus.ctx.currentTime, 0.1);
+        setTimeout(() => { try { tg.disconnect(); } catch { /* gone */ } }, 800);
+      } catch { /* gone */ }
+    }
+    trackGain = null;
+  }
+
+  function start() {
+    if (running) return;
+    running = true;
+    muted = !!C.sound?.muted;
+    if (!visHooked && typeof document !== 'undefined') {
+      visHooked = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) killCurrent();
+        else if (running && !muted) nextTrack();
+      });
+    }
+    nextTrack();
+  }
+
+  function stop() { running = false; killCurrent(); }
+
+  function setMuted(m) {
+    muted = !!m;
+    if (muted) killCurrent();
+    else if (running) nextTrack();
+  }
+
+  // Live-play ducking: music sits back so cards/chips/dealer voice read clearly.
+  function duck(on) {
+    ducked = !!on;
+    if (out && bus) {
+      try {
+        out.gain.setTargetAtTime(BASE_GAIN * (ducked ? DUCK_FACTOR : 1), bus.ctx.currentTime, 0.4);
+      } catch { /* best-effort */ }
+    }
+  }
+
+  C.music = { start, stop, duck, setMuted };
 })();
 
 
@@ -1176,7 +1350,9 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   //  * XZ travel eases with outBack — the card overshoots its box by a few cm
   //    and slides back, reading as "dealt" instead of "placed".
   //  * REDUCED: no spin, linear-ish fast flight (unchanged from v1).
-  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0, spin = true } = {}) {
+  // sound is OPT-IN: ambient dealer shows fly cards constantly at several
+  // tables at once — only the table the user is actually playing should blip.
+  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0, spin = true, sound = false } = {}) {
     if (app.REDUCED) { ms = Math.min(ms, 180); spin = false; }
     return new Promise((resolve) => {
       const gen = app.roomGen;
@@ -1185,7 +1361,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       const zStart = spin ? zEnd - 0.45 : zEnd;
       cardMesh.rotation.z = zStart;
       app.scene.add(cardMesh);
-      C.sound?.play('card');
+      if (sound) C.sound?.play('card');
       const easeXZ = spin ? C.tween.easings.outBack : C.tween.easings.outCubic;
       const easeSpin = C.tween.easings.outCubic;
       const start = () => {
@@ -2133,6 +2309,82 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   }
 
   C.gestures = { JOINTS, TRACKS, EASINGS, CLIPS, validateClip, wrapLines };
+})();
+
+
+// ===== src/logic/music-plan.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Pure generative lounge-track planner. No Web Audio/DOM — node-testable;
+  // rendered by src/engine/music.js. A "track" is 8 bars of 4/4 (a 4-chord
+  // progression played twice) with one EP chord per bar, a walking bass, and
+  // a swing-brush ride. Every call randomises key, mode, tempo, swing and
+  // progression, so no two tracks are alike.
+
+  const midiHz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+
+  // chord qualities as semitone intervals from the chord root
+  const QUALITY = { maj7: [0, 4, 7, 11], m7: [0, 3, 7, 10], 7: [0, 4, 7, 10] };
+
+  // progressions: [degree above key root (semitones), quality] — lounge pool
+  const PROGRESSIONS = {
+    major: [
+      [[2, 'm7'], [7, '7'], [0, 'maj7'], [9, 'm7']],      // ii V I vi
+      [[0, 'maj7'], [9, 'm7'], [2, 'm7'], [7, '7']],      // I vi ii V
+      [[0, 'maj7'], [5, 'maj7'], [2, 'm7'], [7, '7']],    // I IV ii V
+    ],
+    minor: [
+      [[0, 'm7'], [10, '7'], [8, 'maj7'], [7, '7']],      // i bVII bVI V
+      [[0, 'm7'], [5, 'm7'], [10, '7'], [7, '7']],        // i iv bVII V
+    ],
+  };
+
+  function buildTrackPlan(rng = Math.random) {
+    const bpm = 72 + Math.floor(rng() * 21);              // 72..92
+    const swing = 0.62 + rng() * 0.06;                    // off-beat placement
+    const mode = rng() < 0.5 ? 'major' : 'minor';
+    const rootPc = Math.floor(rng() * 12);                // key pitch class
+    const pool = PROGRESSIONS[mode];
+    const progression = pool[Math.floor(rng() * pool.length)];
+    const beatsPerBar = 4, bars = 8;
+
+    // chord roots in a fixed middle band (midi 55..66) so voicings stay warm
+    const chordRoot = (deg) => 55 + ((rootPc + deg) % 12);
+
+    const events = [];
+    for (let bar = 0; bar < bars; bar++) {
+      const [deg, quality] = progression[bar % progression.length];
+      const [degNext] = progression[(bar + 1) % progression.length];
+      const root = chordRoot(deg);
+      const at = bar * beatsPerBar;
+
+      // one sustained chord per bar (root/3rd/5th/7th)
+      events.push({
+        type: 'chord', at, dur: beatsPerBar - 0.5,
+        freqs: QUALITY[quality].map((iv) => midiHz(root + iv)),
+      });
+
+      // walking bass: root · fifth · third · chromatic approach to next root
+      const bassRoot = root - 24;
+      const third = QUALITY[quality][1];
+      const approach = chordRoot(degNext) - 24 - 1;
+      [bassRoot, bassRoot + 7, bassRoot + third, approach].forEach((m, beat) => {
+        events.push({ type: 'bass', at: at + beat, dur: 0.9, freq: midiHz(m) });
+      });
+
+      // swing ride: every beat, swung off-beats after 2 and 4, accents on 2/4
+      for (let beat = 0; beat < beatsPerBar; beat++) {
+        events.push({ type: 'brush', at: at + beat, dur: 0.08, accent: beat % 2 === 1 });
+        if (beat % 2 === 1) events.push({ type: 'brush', at: at + beat + swing, dur: 0.05, accent: false });
+      }
+    }
+    events.sort((a, b) => a.at - b.at);
+
+    return { bpm, swing, mode, rootPc, progression, beatsPerBar, bars, repeats: 2, events };
+  }
+
+  C.musicPlan = { buildTrackPlan, midiHz, PROGRESSIONS };
 })();
 
 
@@ -3970,29 +4222,18 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     felt.receiveShadow = true;
     g.add(felt);
 
-    // one simulated shoe per table: the same history drives the felt cards
-    // and the scoreboard, so everything on this table is self-consistent
-    const rounds = C.baccaratRoads.simulateShoe();
-    const lastRound = rounds[rounds.length - 1];
+    // fresh shoe: the board starts empty (新靴 NEW SHOE) and only fills with
+    // rounds the ambient show actually deals in front of the player
+    const rounds = [];
 
-    // card-dealing area: printed boxes + the final round's actual cards
-    const staticCards = [];
-    [[L.playerSlots, lastRound.playerCards], [L.bankerSlots, lastRound.bankerCards]]
-      .forEach(([slots, cards]) => {
-        slots.forEach((slot, idx) => {
-          const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
-          box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
-          g.add(box);
-        });
-        cards.forEach((cardDef, idx) => {
-          const card = C.cards.makeCard(cardDef);
-          card.rotation.x = -Math.PI / 2;
-          if (idx === 2) card.rotation.z = Math.PI / 2;
-          card.position.set(slots[idx][0], FELT_Y + 0.006 + idx * 0.0005, slots[idx][2]);
-          g.add(card);
-          staticCards.push(card);
-        });
+    // card-dealing area: printed boxes only — cards appear when the show deals
+    [L.playerSlots, L.bankerSlots].forEach((slots) => {
+      slots.forEach((slot, idx) => {
+        const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
+        box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
+        g.add(box);
       });
+    });
 
     // shoe
     const shoeGroup = new THREE.Group();
@@ -4018,22 +4259,13 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     discard.position.set(L.discardPos[0], FELT_Y, L.discardPos[2]);
     g.add(discard);
 
-    // six seats matching the felt sectors; some "occupied" with ghost bets
-    const kinds = ['player', 'banker', 'banker', 'player', 'tie'];
-    const occupied = new Set();
-    while (occupied.size < 3 + Math.floor(Math.random() * 2))
-      occupied.add(Math.floor(Math.random() * 6));
-    L.seatAngles.forEach((deg, i) => {
+    // six seats matching the felt sectors; bets only appear once the show
+    // deals (a fresh shoe has no chips on the arcs)
+    L.seatAngles.forEach((deg) => {
       const a = (deg * Math.PI) / 180;
       const stool = A.makeStool();
       stool.position.set(Math.cos(a) * SEAT_RX, 0, Math.sin(a) * SEAT_RZ);
       g.add(stool);
-      if (!occupied.has(i)) return;
-      const kind = kinds[Math.floor(Math.random() * kinds.length)];
-      const [bx, bz] = L.seatSpot(i, kind);
-      const chips = C.chips.makeChipStack([100, 500, 1000][i % 3], 3 + (i % 4));
-      chips.position.set(bx, FELT_Y + 0.005, bz);
-      g.add(chips);
     });
 
     let dealerRig = null;
@@ -4054,7 +4286,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 
     // ambient-show rig (src/floor/baccarat-show.js drives it when the player is near)
     g.userData.bac = {
-      L, feltY: FELT_Y, rounds, staticCards,
+      L, feltY: FELT_Y, rounds,
       pushRound: (round) => board.userData.pushRound(round),
       resetBoard: () => board.userData.resetRounds(),
       setShuffling: (on) => board.userData.setShuffling(on),
@@ -4269,7 +4501,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     const app = C.app, L = bac.L;
     const toW = (p) => group.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
     const rig = bac.dealerRig;
-    let running = false, wantRun = false, t = 0, cleared = false;
+    let running = false, wantRun = false, t = 0;
     let shoe = C.baccaratRoads.buildShoe(Math.random), si = 0;
     let cutIndex = C.baccaratRoads.pickCutIndex(Math.random);
     const draw = () => {
@@ -4496,7 +4728,6 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
             if (half + i < cards.length) order.push(cards[half + i]);
           }
           for (let i = 0; i < order.length; i++) {
-            if (i % 3 === 0) C.sound?.play('card');
             // eslint-disable-next-line no-await-in-loop
             await tweenPos(order[i], toW([
               SPOT[0] + (Math.random() - 0.5) * 0.01,
@@ -4567,12 +4798,6 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 
     async function loop() {
       running = true;
-      // first activation: clear the static ghost cards baked at build time
-      if (!cleared) {
-        cleared = true;
-        bac.staticCards.forEach(disposeMesh);
-        bac.staticCards.length = 0;
-      }
       while (wantRun) {
         const act = si >= cutIndex ? runShuffle : runRound;
         // eslint-disable-next-line no-await-in-loop
