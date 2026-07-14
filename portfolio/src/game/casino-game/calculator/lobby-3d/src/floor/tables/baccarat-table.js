@@ -167,6 +167,239 @@
     return g;
   }
 
+  // ---------- roadmap scoreboard (bilingual Macau LED board) ----------
+  function drawBoardCanvas(rounds, opts) {
+    const R2 = C.baccaratRoads;
+    const big = R2.buildBigRoad(rounds);
+    const st = R2.stats(rounds);
+    const pred = R2.predictNext(big);
+    const RED = '#e0453a', BLUE = '#3d7de0', GREEN = '#2fae62', GOLD = '#e8b54a';
+    const RANK = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' };
+    for (let r = 2; r <= 10; r++) RANK[r] = String(r);
+    const SUITS = ['♠', '♥', '♦', '♣'];
+    const derivedCells = (k) =>
+      R2.layoutRoad(R2.deriveRoad(big, k).map((color) => ({ key: color, color })));
+    const lastCols = (cells, n) => {
+      const max = cells.reduce((m, c) => Math.max(m, c.col), 0);
+      const shift = Math.max(0, max + 1 - n);
+      return cells.filter((c) => c.col >= shift).map((c) => ({ ...c, col: c.col - shift }));
+    };
+
+    return C.assets.canvasTexture(1024, 800, (ctx) => {
+      const RR = C.assets.roundRect;
+      const bg = ctx.createLinearGradient(0, 0, 0, 800);
+      bg.addColorStop(0, '#241014'); bg.addColorStop(1, '#0c0d12');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 1024, 800);
+      ctx.strokeStyle = '#4a3b22'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 1016, 792);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+
+      const grid = (x0, y0, cell, cols, rows) => {
+        ctx.strokeStyle = 'rgba(120,130,150,0.4)'; ctx.lineWidth = 1;
+        for (let i = 0; i <= cols; i++) {
+          ctx.beginPath(); ctx.moveTo(x0 + i * cell, y0); ctx.lineTo(x0 + i * cell, y0 + rows * cell); ctx.stroke();
+        }
+        for (let j = 0; j <= rows; j++) {
+          ctx.beginPath(); ctx.moveTo(x0, y0 + j * cell); ctx.lineTo(x0 + cols * cell, y0 + j * cell); ctx.stroke();
+        }
+      };
+      const roadPanel = (x0, y0, cell, cols, rows) => {
+        ctx.fillStyle = '#f5efdf';
+        RR(ctx, x0 - 3, y0 - 3, cols * cell + 6, rows * cell + 6, 6); ctx.fill();
+        grid(x0, y0, cell, cols, rows);
+      };
+      const bandLabel = (t, x, y) => {
+        ctx.fillStyle = '#c8b78e'; ctx.font = `bold 13px ${CJK}`;
+        ctx.textAlign = 'left'; ctx.fillText(t, x, y); ctx.textAlign = 'center';
+      };
+
+      // title
+      ctx.fillStyle = GOLD;
+      ctx.font = `bold 52px ${CJK}`;
+      ctx.fillText('百家樂', 150, 46);
+      ctx.font = 'bold 38px Georgia, serif';
+      ctx.fillText('BACCARAT', 150, 96);
+      ctx.fillStyle = '#c8b78e'; ctx.font = `16px ${CJK}`;
+      ctx.fillText((opts.tierName || '').toUpperCase(), 150, 132);
+
+      // stats table
+      [
+        ['庄 BANKER', st.banker, RED],
+        ['閒 PLAYER', st.player, BLUE],
+        ['和 TIE', st.tie, GREEN],
+        ['庄對 BANKER PAIR', st.bPair, RED],
+        ['閒對 PLAYER PAIR', st.pPair, BLUE],
+        ['例牌 NATURAL', st.natural, GOLD],
+        ['局數 GAME NUMBER', st.games, '#dcd6c8'],
+      ].forEach(([label, n, col], i) => {
+        const y = 24 + i * 19;
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(324, y, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#efe9dc'; ctx.textAlign = 'left';
+        ctx.font = `bold 15px ${CJK}`;
+        ctx.fillText(label, 340, y);
+        ctx.fillStyle = GOLD; ctx.textAlign = 'right';
+        ctx.font = 'bold 17px Georgia, serif';
+        ctx.fillText(String(n), 700, y);
+        ctx.textAlign = 'center';
+      });
+
+      // 下局預告 (next-round preview) — genuinely computed one step ahead
+      ctx.strokeStyle = '#6b5a33'; ctx.lineWidth = 2;
+      RR(ctx, 720, 12, 292, 140, 8); ctx.stroke();
+      ctx.fillStyle = '#efe9dc'; ctx.font = `bold 18px ${CJK}`;
+      ctx.fillText('下局預告', 866, 32);
+      const predSymbol = (x, y, road, color) => {
+        if (!color) {
+          ctx.fillStyle = '#666';
+          ctx.fillRect(x - 6, y - 1.5, 12, 3);
+          return;
+        }
+        const col = color === 'r' ? RED : BLUE;
+        if (road === 0) {           // big eye boy: ring
+          ctx.strokeStyle = col; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.stroke();
+        } else if (road === 1) {    // small road: dot
+          ctx.fillStyle = col;
+          ctx.beginPath(); ctx.arc(x, y, 8, 0, Math.PI * 2); ctx.fill();
+        } else {                    // cockroach: slash
+          ctx.strokeStyle = col; ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(x - 7, y + 7); ctx.lineTo(x + 7, y - 7); ctx.stroke();
+        }
+      };
+      [['B', 810, RED, '庄'], ['P', 922, BLUE, '閒']].forEach(([oc, x, col, ch]) => {
+        ctx.fillStyle = col;
+        ctx.beginPath(); ctx.arc(x, 66, 15, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = `bold 16px ${CJK}`;
+        ctx.fillText(ch, x, 66);
+        pred[oc].forEach((color, k) => predSymbol(x - 34 + k * 34, 108, k, color));
+      });
+
+      // 珠盤路 bead plate (12 cols)
+      bandLabel('珠盤路', 14, 160);
+      const BX = 12, BY = 170, BC = 26;
+      roadPanel(BX, BY, BC, 12, 6);
+      R2.beadPlate(rounds, 12).forEach((cell) => {
+        const x = BX + cell.col * BC + BC / 2, y = BY + cell.row * BC + BC / 2;
+        ctx.fillStyle = cell.outcome === 'B' ? RED : cell.outcome === 'P' ? BLUE : GREEN;
+        ctx.beginPath(); ctx.arc(x, y, BC * 0.44, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = '#fff'; ctx.font = `bold 14px ${CJK}`;
+        ctx.fillText(cell.outcome === 'B' ? '庄' : cell.outcome === 'P' ? '閒' : '和', x, y);
+        if (cell.bankerPair) {
+          ctx.fillStyle = RED;
+          ctx.beginPath(); ctx.arc(x - BC * 0.34, y - BC * 0.34, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+        if (cell.playerPair) {
+          ctx.fillStyle = BLUE;
+          ctx.beginPath(); ctx.arc(x + BC * 0.34, y + BC * 0.34, 3.5, 0, Math.PI * 2); ctx.fill();
+        }
+      });
+
+      // current round card panel (gold)
+      const last = rounds[rounds.length - 1];
+      const gp = ctx.createLinearGradient(0, 170, 0, 326);
+      gp.addColorStop(0, '#caa64f'); gp.addColorStop(1, '#9a7a2e');
+      ctx.fillStyle = gp; RR(ctx, 340, 170, 672, 156, 8); ctx.fill();
+      ctx.strokeStyle = '#6b5a1f'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(676, 178); ctx.lineTo(676, 318); ctx.stroke();
+      ctx.fillStyle = '#3a2c08'; ctx.font = `bold 22px ${CJK}`;
+      ctx.fillText(`閒 PLAYER ${last.playerTotal}`, 508, 306);
+      ctx.fillText(`庄 BANKER ${last.bankerTotal}`, 844, 306);
+      const mini = (card, x, y, sideways) => {
+        ctx.save(); ctx.translate(x, y);
+        if (sideways) ctx.rotate(Math.PI / 2);
+        ctx.fillStyle = '#fdfbf2'; RR(ctx, -24, -34, 48, 68, 6); ctx.fill();
+        ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5; RR(ctx, -24, -34, 48, 68, 6); ctx.stroke();
+        ctx.fillStyle = card.s === 1 || card.s === 2 ? '#c0392b' : '#16161c';
+        ctx.font = 'bold 26px Georgia, serif';
+        ctx.fillText(RANK[card.r], 0, -12);
+        ctx.font = '24px Georgia, serif';
+        ctx.fillText(SUITS[card.s], 0, 16);
+        ctx.restore();
+      };
+      last.playerCards.forEach((cd, i) => mini(cd, 448 + i * 64, 232, i === 2));
+      last.bankerCards.forEach((cd, i) => mini(cd, 784 + i * 64, 232, i === 2));
+
+      // 大路 big road
+      bandLabel('大路', 14, 340);
+      roadPanel(12, 348, 32, 31, 6);
+      lastCols(R2.bigRoadCells(big), 31).forEach((c) => {
+        const x = 12 + c.col * 32 + 16, y = 348 + c.row * 32 + 16;
+        ctx.strokeStyle = c.outcome === 'B' ? RED : BLUE; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.arc(x, y, 11, 0, Math.PI * 2); ctx.stroke();
+        if (c.ties > 0) {
+          ctx.strokeStyle = GREEN; ctx.lineWidth = 3.5;
+          ctx.beginPath(); ctx.moveTo(x - 11, y + 11); ctx.lineTo(x + 11, y - 11); ctx.stroke();
+          if (c.ties > 1) {
+            ctx.fillStyle = GREEN; ctx.font = 'bold 13px Georgia, serif';
+            ctx.fillText(String(c.ties), x + 10, y + 10);
+          }
+        }
+      });
+
+      // 大眼仔 big eye boy
+      bandLabel('大眼仔', 14, 556);
+      roadPanel(12, 564, 17, 59, 6);
+      lastCols(derivedCells(1), 59).forEach((c) => {
+        const x = 12 + c.col * 17 + 8.5, y = 564 + c.row * 17 + 8.5;
+        ctx.strokeStyle = c.color === 'r' ? RED : BLUE; ctx.lineWidth = 2.5;
+        ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.stroke();
+      });
+
+      // 小路 + 曱甴路
+      bandLabel('小路', 14, 680);
+      roadPanel(12, 688, 16, 30, 6);
+      lastCols(derivedCells(2), 30).forEach((c) => {
+        const x = 12 + c.col * 16 + 8, y = 688 + c.row * 16 + 8;
+        ctx.fillStyle = c.color === 'r' ? RED : BLUE;
+        ctx.beginPath(); ctx.arc(x, y, 5.5, 0, Math.PI * 2); ctx.fill();
+      });
+      bandLabel('曱甴路', 522, 680);
+      roadPanel(520, 688, 16, 30, 6);
+      lastCols(derivedCells(3), 30).forEach((c) => {
+        const x = 520 + c.col * 16 + 8, y = 688 + c.row * 16 + 8;
+        ctx.strokeStyle = c.color === 'r' ? RED : BLUE; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(x - 5, y + 5); ctx.lineTo(x + 5, y - 5); ctx.stroke();
+      });
+
+      // bilingual disclaimer footer
+      ctx.fillStyle = '#9b8f78'; ctx.font = `12px ${CJK}`;
+      ctx.fillText('路盤所顯示之資料，只供參考，如有錯漏，本公司概不負責。 Results displayed are provided as a service only.', 512, 792);
+    });
+  }
+
+  function makeScoreBoard(rounds, opts) {
+    const g = new THREE.Group();
+    const casing = new THREE.Mesh(
+      new THREE.BoxGeometry(1.24, 1.0, 0.07),
+      new THREE.MeshStandardMaterial({ color: '#14161c', roughness: 0.5, metalness: 0.3 }),
+    );
+    casing.position.y = 1.5;
+    casing.castShadow = true;
+    g.add(casing);
+    const frame = new THREE.Mesh(new THREE.BoxGeometry(1.3, 1.06, 0.05), C.assets.goldMaterial());
+    frame.position.set(0, 1.5, -0.014);
+    g.add(frame);
+    const screen = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.16, 0.92),
+      new THREE.MeshBasicMaterial({ map: drawBoardCanvas(rounds, opts), fog: false }),
+    );
+    screen.position.set(0, 1.5, 0.037);
+    g.add(screen);
+    const pole = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.035, 0.045, 1.0, 12),
+      new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.4, metalness: 0.5 }),
+    );
+    pole.position.y = 0.5;
+    g.add(pole);
+    const base = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.22, 0.26, 0.05, 20),
+      new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.5, metalness: 0.4 }),
+    );
+    base.position.y = 0.025;
+    g.add(base);
+    return g;
+  }
+
   // opts: { tierName, limitsText, minChipLabel, accent, withDealer }
   C.floor.tables.baccarat = (opts = {}) => {
     const A = C.assets;
@@ -262,6 +495,12 @@
       dealer.userData.idle(C.app);
     }
 
+    // roadmap scoreboard at the end opposite the plaque, facing the aisle
+    const board = makeScoreBoard(rounds, opts);
+    board.position.set(-2.35, 0, 0.35);
+    board.rotation.y = 0.35;
+    g.add(board);
+
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);
       plaque.position.set(2.25, 0, 0.6);
@@ -272,7 +511,7 @@
     const pad = A.makeGlowPad(4.8, 3.0, opts.accent || '#ffb040');
     g.add(pad);
     g.userData.highlight = (on) => pad.userData.setBright(on);
-    g.userData.radius = 2.3;
+    g.userData.radius = 2.4;
 
     return g;
   };
