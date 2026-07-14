@@ -8454,6 +8454,23 @@ THREE.SkeletonUtils = { clone };
     }
     if (Number.isFinite(neckBaseY)) bibYMax = neckBaseY;
 
+    // Reviewer guard: if the chest-vertex filter found nothing (no
+    // spine_02/03-dominant vertices at all, or none within the lateral
+    // band, or none in the front cluster) any of these bounds comes out
+    // non-finite (±Infinity from the untouched min/max seeds, or NaN from
+    // averaging two of them — see the passes above). A future asset swap
+    // or bone-name/region change could silently hit this on a mesh whose
+    // topology doesn't match this pack's assumptions. Fail loud instead of
+    // baking a garbage (possibly Infinity-sized) box: warn once and return
+    // a sentinel bakeUniformColors() treats as "skip the bib override" —
+    // affected vertices simply keep their normal region-blend (VEST) color.
+    const degenerate = !Number.isFinite(lateralThresh) || !Number.isFinite(forwardZMin)
+      || !Number.isFinite(bibYMin) || !Number.isFinite(bibYMax) || bibYMin > bibYMax;
+    if (degenerate) {
+      console.warn('[character] bib bounds degenerate — skipping bib');
+      return null;
+    }
+
     return { lateralThresh, forwardZMin, bibYMin, bibYMax, spine02Idx, spine03Idx };
   }
 
@@ -8493,15 +8510,21 @@ THREE.SkeletonUtils = { clone };
     }
 
     // v2 bib override — see computeBibBounds() for how every threshold here
-    // is derived from this mesh's own bind-pose geometry, not guessed.
+    // is derived from this mesh's own bind-pose geometry, not guessed. A
+    // null result means the geometry didn't have the chest landmarks this
+    // needs (see the guard at the end of computeBibBounds()) — skip the
+    // override entirely rather than bake against garbage bounds; affected
+    // vertices simply keep whatever the region blend above already gave them.
     const bib = computeBibBounds(geometry, skeletonBones);
-    const bibColor = regionColors.SHIRT;
-    for (let i = 0; i < count; i++) {
-      const bi = dominantBoneIndexAt(i, iArr, wArr, size);
-      if (bi !== bib.spine02Idx && bi !== bib.spine03Idx) continue;
-      const x = pArr[i * 3], y = pArr[i * 3 + 1], z = pArr[i * 3 + 2];
-      if (Math.abs(x) < bib.lateralThresh && y >= bib.bibYMin && y <= bib.bibYMax && z > bib.forwardZMin) {
-        colors[i * 3] = bibColor.r; colors[i * 3 + 1] = bibColor.g; colors[i * 3 + 2] = bibColor.b;
+    if (bib) {
+      const bibColor = regionColors.SHIRT;
+      for (let i = 0; i < count; i++) {
+        const bi = dominantBoneIndexAt(i, iArr, wArr, size);
+        if (bi !== bib.spine02Idx && bi !== bib.spine03Idx) continue;
+        const x = pArr[i * 3], y = pArr[i * 3 + 1], z = pArr[i * 3 + 2];
+        if (Math.abs(x) < bib.lateralThresh && y >= bib.bibYMin && y <= bib.bibYMax && z > bib.forwardZMin) {
+          colors[i * 3] = bibColor.r; colors[i * 3 + 1] = bibColor.g; colors[i * 3 + 2] = bibColor.b;
+        }
       }
     }
 
