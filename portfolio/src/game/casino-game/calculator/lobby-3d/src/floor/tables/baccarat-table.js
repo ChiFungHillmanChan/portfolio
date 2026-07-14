@@ -94,18 +94,20 @@
 
       // per-seat betting arcs: TIE(+pairs) inner, BANKER middle, PLAYER outer
       L.seatAngles.forEach((deg, i) => {
-        // TIE box
+        // TIE box (wide, with the odds stacked inside it)
         ctx.strokeStyle = '#59d98e'; ctx.lineWidth = 4;
-        bandPath(0.43, 0.56, deg - 6.5, deg + 6.5); ctx.stroke();
-        arcText('和 TIE', 0.515, deg, `bold 26px ${CJK}`, '#59d98e');
-        arcText('8:1', 0.455, deg, 'bold 20px Georgia, serif', 'rgba(89,217,142,.9)');
-        // pair circles flanking the tie box
-        [['庄對', '#e05555', -10.2], ['閒對', '#f0d878', 10.2]].forEach(([t, col, da]) => {
-          const [ox, oy] = pt(0.50, deg + da);
+        bandPath(0.41, 0.505, deg - 8, deg + 8); ctx.stroke();
+        arcText('和 TIE', 0.478, deg, `bold 20px ${CJK}`, '#59d98e');
+        arcText('8:1', 0.432, deg, 'bold 15px Georgia, serif', 'rgba(89,217,142,.9)');
+        // pair circles side by side BELOW the tie box, well inside the
+        // sector — flanking the box angularly made neighbouring sectors'
+        // circles overlap each other and the dividers on the ellipse sides.
+        [['庄對', '#e05555', -4.5], ['閒對', '#f0d878', 4.5]].forEach(([t, col, da]) => {
+          const [ox, oy] = pt(0.55, deg + da);
           ctx.strokeStyle = col; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.arc(ox, oy, 26, 0, Math.PI * 2); ctx.stroke();
+          ctx.beginPath(); ctx.arc(ox, oy, 17, 0, Math.PI * 2); ctx.stroke();
           ctx.fillStyle = col;
-          ctx.font = `bold 16px ${CJK}`;
+          ctx.font = `bold 13px ${CJK}`;
           ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
           ctx.fillText(t, ox, oy);
         });

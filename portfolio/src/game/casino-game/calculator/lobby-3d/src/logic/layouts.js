@@ -73,7 +73,7 @@
     bankerSlots: [[0.28, 0.85, -0.14], [0.45, 0.85, -0.14], [0.66, 0.85, -0.14]],
     spots: {},   // per-seat boxes are printed on the felt instead
     seatAngles: [27.5, 52.5, 77.5, 102.5, 127.5, 152.5],   // seat 1..6
-    betFracs: { tie: 0.50, banker: 0.66, player: 0.81 },
+    betFracs: { tie: 0.46, banker: 0.66, player: 0.81 },
     seatSpot(seat, kind) {
       const a = (this.seatAngles[seat] * Math.PI) / 180;
       const f = this.betFracs[kind];
