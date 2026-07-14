@@ -9,6 +9,7 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 export const SRC_ORDER = [
   'src/engine/tween.js',
   'src/engine/sound.js',
+  'src/engine/music.js',
   'src/engine/app.js',
   'src/engine/assets.js',
   'src/engine/cards.js',
@@ -16,6 +17,7 @@ export const SRC_ORDER = [
   'src/engine/rig.js',
   'src/logic/layouts.js',
   'src/logic/gestures.js',
+  'src/logic/music-plan.js',
   'src/logic/roulette-cover.js',
   'src/logic/baccarat-roads.js',
   'src/floor/layout.js',

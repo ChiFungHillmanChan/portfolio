@@ -49,7 +49,7 @@
     const app = C.app, L = bac.L;
     const toW = (p) => group.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
     const rig = bac.dealerRig;
-    let running = false, wantRun = false, t = 0, cleared = false;
+    let running = false, wantRun = false, t = 0;
     let shoe = C.baccaratRoads.buildShoe(Math.random), si = 0;
     let cutIndex = C.baccaratRoads.pickCutIndex(Math.random);
     const draw = () => {
@@ -276,7 +276,6 @@
             if (half + i < cards.length) order.push(cards[half + i]);
           }
           for (let i = 0; i < order.length; i++) {
-            if (i % 3 === 0) C.sound?.play('card');
             // eslint-disable-next-line no-await-in-loop
             await tweenPos(order[i], toW([
               SPOT[0] + (Math.random() - 0.5) * 0.01,
@@ -347,12 +346,6 @@
 
     async function loop() {
       running = true;
-      // first activation: clear the static ghost cards baked at build time
-      if (!cleared) {
-        cleared = true;
-        bac.staticCards.forEach(disposeMesh);
-        bac.staticCards.length = 0;
-      }
       while (wantRun) {
         const act = si >= cutIndex ? runShuffle : runRound;
         // eslint-disable-next-line no-await-in-loop

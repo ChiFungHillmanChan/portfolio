@@ -474,29 +474,18 @@
     felt.receiveShadow = true;
     g.add(felt);
 
-    // one simulated shoe per table: the same history drives the felt cards
-    // and the scoreboard, so everything on this table is self-consistent
-    const rounds = C.baccaratRoads.simulateShoe();
-    const lastRound = rounds[rounds.length - 1];
+    // fresh shoe: the board starts empty (新靴 NEW SHOE) and only fills with
+    // rounds the ambient show actually deals in front of the player
+    const rounds = [];
 
-    // card-dealing area: printed boxes + the final round's actual cards
-    const staticCards = [];
-    [[L.playerSlots, lastRound.playerCards], [L.bankerSlots, lastRound.bankerCards]]
-      .forEach(([slots, cards]) => {
-        slots.forEach((slot, idx) => {
-          const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
-          box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
-          g.add(box);
-        });
-        cards.forEach((cardDef, idx) => {
-          const card = C.cards.makeCard(cardDef);
-          card.rotation.x = -Math.PI / 2;
-          if (idx === 2) card.rotation.z = Math.PI / 2;
-          card.position.set(slots[idx][0], FELT_Y + 0.006 + idx * 0.0005, slots[idx][2]);
-          g.add(card);
-          staticCards.push(card);
-        });
+    // card-dealing area: printed boxes only — cards appear when the show deals
+    [L.playerSlots, L.bankerSlots].forEach((slots) => {
+      slots.forEach((slot, idx) => {
+        const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
+        box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
+        g.add(box);
       });
+    });
 
     // shoe
     const shoeGroup = new THREE.Group();
@@ -522,22 +511,13 @@
     discard.position.set(L.discardPos[0], FELT_Y, L.discardPos[2]);
     g.add(discard);
 
-    // six seats matching the felt sectors; some "occupied" with ghost bets
-    const kinds = ['player', 'banker', 'banker', 'player', 'tie'];
-    const occupied = new Set();
-    while (occupied.size < 3 + Math.floor(Math.random() * 2))
-      occupied.add(Math.floor(Math.random() * 6));
-    L.seatAngles.forEach((deg, i) => {
+    // six seats matching the felt sectors; bets only appear once the show
+    // deals (a fresh shoe has no chips on the arcs)
+    L.seatAngles.forEach((deg) => {
       const a = (deg * Math.PI) / 180;
       const stool = A.makeStool();
       stool.position.set(Math.cos(a) * SEAT_RX, 0, Math.sin(a) * SEAT_RZ);
       g.add(stool);
-      if (!occupied.has(i)) return;
-      const kind = kinds[Math.floor(Math.random() * kinds.length)];
-      const [bx, bz] = L.seatSpot(i, kind);
-      const chips = C.chips.makeChipStack([100, 500, 1000][i % 3], 3 + (i % 4));
-      chips.position.set(bx, FELT_Y + 0.005, bz);
-      g.add(chips);
     });
 
     let dealerRig = null;
@@ -558,7 +538,7 @@
 
     // ambient-show rig (src/floor/baccarat-show.js drives it when the player is near)
     g.userData.bac = {
-      L, feltY: FELT_Y, rounds, staticCards,
+      L, feltY: FELT_Y, rounds,
       pushRound: (round) => board.userData.pushRound(round),
       resetBoard: () => board.userData.resetRounds(),
       setShuffling: (on) => board.userData.setShuffling(on),

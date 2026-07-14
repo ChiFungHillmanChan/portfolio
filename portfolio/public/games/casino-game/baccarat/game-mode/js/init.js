@@ -60,6 +60,11 @@ async function loadComponents() {
 // wallet balance as the bankroll, replacing the old setup-form submit flow.
 document.addEventListener('wallet:ready', () => {
     startNewGame(window.baccaratWallet.getBalance());
+    // The rack only deals the tier's denominations — a restored selection
+    // (or the pre-wallet default) below the table min must snap to the
+    // smallest chip the table deals in.
+    const denoms = tableChipDenominations();
+    if (!denoms.includes(getSelectedChip())) setSelectedChip(denoms[0]);
     showGameScreen();
     renderAll();
     initBettingTableHandlers();

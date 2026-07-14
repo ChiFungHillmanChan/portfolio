@@ -179,6 +179,7 @@
       });
     }
     startAmbience();
+    C.music?.start();
   }
 
   function setMuted(m) {
@@ -188,10 +189,14 @@
       stopAmbience();
       if (TTS) { try { TTS.cancel(); } catch { /* best-effort */ } }
     } else if (ambienceWanted) startAmbience();
+    C.music?.setMuted(muted);
   }
 
+  // Shared audio bus for sibling modules (music.js) — null before unlock.
+  const bus = () => (ctx ? { ctx, master } : null);
+
   C.sound = {
-    unlock, play, say, sayResult, sayNoMoreBets, ballSpin, ambience, setMuted,
+    unlock, play, say, sayResult, sayNoMoreBets, ballSpin, ambience, setMuted, bus,
     get muted() { return muted; },
   };
 })();

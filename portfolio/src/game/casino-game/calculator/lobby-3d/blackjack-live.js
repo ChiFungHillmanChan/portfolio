@@ -59,7 +59,7 @@ const CSS = `
 .bj3-spot{position:relative;width:86px;height:86px;border:2px solid rgba(240,216,120,.7);border-radius:50%;background:rgba(11,93,59,.55);color:#f0d878;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:pointer;user-select:none}
 .bj3-spot.bj3-main{width:104px;height:104px;font-size:15px}
 .bj3-spot .bj3-badge{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);background:#1d1608;border:1px solid #6b5325;border-radius:9px;padding:0 8px;font-size:12px;color:#ffd76a;white-space:nowrap;z-index:1}
-.bj3-spot .bj3-chips2d{position:absolute;left:50%;bottom:10px;width:36px;margin-left:-18px;pointer-events:none}
+.bj3-spot .bj3-chips2d{position:absolute;left:50%;top:50%;width:36px;height:36px;margin:-18px 0 0 -18px;pointer-events:none}
 .bj3-chip2d{position:absolute;left:0;width:36px;height:36px;border-radius:50%;border:2px dashed rgba(255,255,255,.85);color:#fff;font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 3px rgba(0,0,0,.5)}
 .bj3-rack{display:flex;justify-content:center;gap:8px;margin-bottom:10px}
 .bj3-chipbtn{width:44px;height:44px;border-radius:50%;border:3px dashed rgba(255,255,255,.75);color:#fff;font-weight:700;cursor:pointer;font-size:12px}
@@ -92,6 +92,8 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     window.location.href = table.href;
     return null;
   }
+  C.music?.duck(true);   // live session: music sits back behind the dealer
+
   const cfg = getTable(table.gameId);
   const rack = chipRack(cfg.betTypes);
   const toWorld = (p) => rig.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
@@ -132,7 +134,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   const bets = { main: 0, perfectPair: 0, twentyOnePlus3: 0 };
   const placed = { main: [], perfectPair: [], twentyOnePlus3: [] };
   const history = [];
-  let selectedDenom = rack[Math.min(1, rack.length - 1)];
+  let selectedDenom = rack[0];   // smallest rack chip = the table's main min
   let roundInFlight = false;
 
   const wrap = document.createElement('div');
@@ -201,7 +203,8 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
         badge.textContent = amt.toLocaleString();
       } else badge?.remove();
       // 2D chip stack inside the circle, mirroring the placed denominations
-      // (bottom-anchored, 4px per chip, last 8 visible — badge stays exact)
+      // (base chip centred, stack grows up 4px per chip, last 8 visible —
+      // badge stays exact)
       const denoms = placed[el.dataset.spot] || [];
       let chipsEl = el.querySelector('.bj3-chips2d');
       if (!denoms.length) { chipsEl?.remove(); }
@@ -314,6 +317,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     stacks.disposeAll();
     clearTableMeshes();
     C.app.inputLocked = false;
+    C.music?.duck(false);
     active = null;
     onClosed && onClosed();
     const a = C.world.anchorById(table.id);
@@ -350,7 +354,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     bj.dealerRig?.play(C.app, 'dealCard', {
       refs: { shoe: toWorld(bj.shoeLocal), target: toWorld(plan.pos) },
     });
-    return C.cards.dealCardTo(C.app, mesh, toWorld(bj.shoeLocal), toWorld(plan.pos), { ms: 420, ...opts });
+    return C.cards.dealCardTo(C.app, mesh, toWorld(bj.shoeLocal), toWorld(plan.pos), { ms: 420, sound: true, ...opts });
   };
 
   function actionBar() {

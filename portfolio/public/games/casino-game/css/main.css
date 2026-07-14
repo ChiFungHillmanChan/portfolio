@@ -242,6 +242,45 @@ h1 {
 .game-card.baccarat { --card-accent: #d4af37; }
 .game-card.poker { --card-accent: #3498db; }
 .game-card.uth { --card-accent: #9b59b6; }
+.game-card.lobby3d { --card-accent: #9b59b6; }
+.game-card.practice { --card-accent: #d4af37; }
+
+/* Two-option landing: center the pair, give each choice more presence */
+.games-grid.landing-choices {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    max-width: 760px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.games-grid.landing-choices .game-card {
+    padding: 40px 30px;
+    text-align: center;
+}
+.games-grid.landing-choices .game-icon {
+    font-size: 3.6rem;
+}
+
+/* Back button on the practice view */
+.back-to-lobby {
+    font-family: var(--font-body);
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    background: transparent;
+    border: 1px solid var(--border-subtle);
+    border-radius: var(--radius-sm);
+    padding: 8px 16px;
+    margin-bottom: var(--spacing-lg);
+    cursor: pointer;
+    transition: color var(--transition-fast), border-color var(--transition-fast);
+}
+.back-to-lobby:hover {
+    color: var(--accent-gold);
+    border-color: var(--border-active);
+}
+
+/* Ensure a hidden zone stays hidden despite .games-section flex rules */
+.games-section[hidden] { display: none; }
 
 /* Info Section */
 .info-section {

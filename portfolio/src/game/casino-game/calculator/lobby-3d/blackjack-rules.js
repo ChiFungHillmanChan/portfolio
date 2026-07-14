@@ -100,5 +100,10 @@ export function validateBets(bets, betTypes, balance, maxTotalBet = Infinity) {
 }
 
 // Chip rack denominations for the tier (chip meshes exist for all of these).
-export const chipRack = (betTypes) =>
-  [50, 100, 500, 1000, 5000].filter((v) => v <= betTypes.main.max);
+// No chip below the main-bet min: every stack of rack chips is a clean
+// multiple of a playable amount, and one chip of the smallest denom is
+// already a valid main bet.
+export const chipRack = ({ main }) => {
+  const fit = [50, 100, 500, 1000, 5000].filter((v) => v >= main.min && v <= main.max);
+  return fit.length ? fit : [5000];
+};
