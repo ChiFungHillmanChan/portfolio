@@ -8313,21 +8313,31 @@ THREE.SkeletonUtils = { clone };
   // where the skin weights blend (collar, cuffs, waistband) instead of a
   // hard per-triangle cutoff.
   //
+  // v2 (dealer uniform v2 — see task-5b-report.md "v2" section): the v1
+  // light SHIRT sleeves read as bare skin at distance on this muscled
+  // model. Sleeves now fold into VEST (dark suit-jacket arms + torso as one
+  // fitted suit), and a separate position-gated "bib" override paints a
+  // narrow white shirt-front onto the front-central-chest VEST vertices
+  // (spine_02/spine_03-dominant) so there's still a visible shirt collar
+  // under the bow tie, just no longer bare-looking sleeves.
+  //
   // Bone -> region bucketing table (all 65 bones in assets/manifest.json;
   // see task-5b-report.md for the full reasoning):
   //   SKIN     Head, neck_01, hand_l/r, every finger bone (index/middle/
   //            ring/pinky/thumb, incl. the _04_leaf tip bones)
-  //   SHIRT    clavicle_l/r, upperarm_l/r, lowerarm_l/r  (fixed light tone,
-  //            rig.js's own shirt color, no per-dealer variation)
-  //   VEST     spine_01/02/03                            (per-dealer, VESTS)
+  //   VEST     spine_01/02/03, clavicle_l/r, upperarm_l/r, lowerarm_l/r
+  //            (per-dealer, VESTS — v2: sleeves moved here from SHIRT, see
+  //            above; torso + arms now read as one dark suit)
   //   TROUSERS pelvis, thigh_l/r, calf_l/r                (fixed dark charcoal)
   //   SHOES    foot_l/r, ball_l/r, ball_leaf_l/r          (fixed near-black)
   //   (none of the above) root, and anything unforeseen  -> walk up to the
   //            nearest ancestor BONE that resolves; if none does (root's
-  //            own parent is the non-bone "Armature" node), default SHIRT.
+  //            own parent is the non-bone "Armature" node), default SHIRT
+  //            (the light fabric tone — no bone maps here directly anymore,
+  //            it only survives as this fallback + the bib override color).
   //            No actual vertices are expected to weight to 'root' — this
   //            path exists purely as a safety net for asset-pack surprises.
-  const REGION_SHIRT_HEX = '#f2f0e8';     // rig.js's shirt tone
+  const REGION_SHIRT_HEX = '#f2f0e8';     // rig.js's shirt tone; also the bib color (v2)
   const REGION_TROUSERS_HEX = '#1b1e26';  // dark charcoal
   const REGION_SHOES_HEX = '#14100c';     // near-black
 
@@ -8335,7 +8345,10 @@ THREE.SkeletonUtils = { clone };
     if (name === 'Head' || name === 'neck_01') return 'SKIN';
     if (/^hand_[lr]$/.test(name)) return 'SKIN';
     if (/^(index|middle|ring|pinky|thumb)_(0[1-3]|04_leaf)_[lr]$/.test(name)) return 'SKIN';
-    if (/^(clavicle|upperarm|lowerarm)_[lr]$/.test(name)) return 'SHIRT';
+    // v2: sleeves (clavicle/upperarm/lowerarm) now VEST, not a separate light
+    // SHIRT tone — see task-5b-report.md "v2" section for why (bare-skin
+    // read at distance on this model).
+    if (/^(clavicle|upperarm|lowerarm)_[lr]$/.test(name)) return 'VEST';
     if (/^spine_0[1-3]$/.test(name)) return 'VEST';
     if (name === 'pelvis' || /^(thigh|calf)_[lr]$/.test(name)) return 'TROUSERS';
     if (/^(foot|ball)(_leaf)?_[lr]$/.test(name)) return 'SHOES';
@@ -8351,6 +8364,99 @@ THREE.SkeletonUtils = { clone };
     return 'SHIRT';
   }
 
+  // Per-vertex "dominant" bone index = the single skinIndex/skinWeight slot
+  // with the highest weight for that vertex (distinct from the full 4-slot
+  // BLEND used elsewhere: the bib override needs a categorical yes/no —
+  // "is this vertex primarily owned by spine_02/03" — not a blended color).
+  function dominantBoneIndexAt(i, iArr, wArr, size) {
+    let bestW = -1, bestIdx = -1;
+    for (let k = 0; k < size; k++) {
+      const w = wArr[i * size + k];
+      if (w > bestW) { bestW = w; bestIdx = iArr[i * size + k]; }
+    }
+    return bestIdx;
+  }
+
+  // Computes the "shirt-front bib" bounding box directly from THIS mesh's
+  // own bind-pose vertex positions (never guessed/hardcoded — see
+  // task-5b-report.md "v2" for the node-probe numbers this was verified
+  // against). All bounds are derived proportionally from real geometry:
+  //   - lateralThresh: 15% of the chest's own lateral (X) extent, measured
+  //     from spine_02/03-dominant vertices only (NOT the full body bbox —
+  //     the full mesh bbox is T-pose arms-out and would give a wildly wrong
+  //     "chest width").
+  //   - forwardZMin: this body mesh is two open shells (front torso surface
+  //     + back/spine surface) with a real gap between them near the
+  //     centerline — confirmed empirically: restricted to |x| < lateralThresh,
+  //     spine_02/03-dominant vertices split cleanly into a back cluster
+  //     (z ~ -0.16..-0.07) and a front cluster (z ~ +0.06..+0.13) with
+  //     nothing in between. forwardZMin is the midpoint of that real gap.
+  //     (Away from the centerline the two shells nearly touch at the sides
+  //     of the ribcage — this is why the gap MUST be measured only within
+  //     the lateral band already established above, not across the whole
+  //     chest.)
+  //   - bibYMin/bibYMax: the vertical band actually spanned by those same
+  //     front-cluster, laterally-centered spine_02/03 vertices, capped above
+  //     by the base of the neck (min Y among neck_01-dominant vertices) —
+  //     i.e. "upper chest, below the neck", matching the brief's wording.
+  //   - Axis convention (+Z forward) is NOT guessed: task-5b-report.md
+  //     already established +Z is forward for this rig (Eyes mesh sits at a
+  //     more positive world Z than the Head bone itself, in this same rest
+  //     pose). This function reuses that same convention for "front".
+  function computeBibBounds(geometry, skeletonBones) {
+    const posAttr = geometry.attributes.position;
+    const skinIndexAttr = geometry.attributes.skinIndex;
+    const skinWeightAttr = geometry.attributes.skinWeight;
+    const pArr = posAttr.array, iArr = skinIndexAttr.array, wArr = skinWeightAttr.array;
+    const size = skinIndexAttr.itemSize;
+    const count = posAttr.count;
+    const spine02Idx = skeletonBones.findIndex((b) => b.name === 'spine_02');
+    const spine03Idx = skeletonBones.findIndex((b) => b.name === 'spine_03');
+    const neckIdx = skeletonBones.findIndex((b) => b.name === 'neck_01');
+    const isChestBone = (idx) => idx === spine02Idx || idx === spine03Idx;
+
+    // Pass 1: chest lateral extent -> lateral threshold.
+    let chestMinX = Infinity, chestMaxX = -Infinity;
+    for (let i = 0; i < count; i++) {
+      if (!isChestBone(dominantBoneIndexAt(i, iArr, wArr, size))) continue;
+      const x = pArr[i * 3];
+      if (x < chestMinX) chestMinX = x;
+      if (x > chestMaxX) chestMaxX = x;
+    }
+    const lateralThresh = 0.15 * (chestMaxX - chestMinX);
+
+    // Pass 2: within that lateral band only, find the real front/back gap.
+    let negMaxZ = -Infinity, posMinZ = Infinity;
+    for (let i = 0; i < count; i++) {
+      if (!isChestBone(dominantBoneIndexAt(i, iArr, wArr, size))) continue;
+      const x = pArr[i * 3];
+      if (Math.abs(x) >= lateralThresh) continue;
+      const z = pArr[i * 3 + 2];
+      if (z < 0) { if (z > negMaxZ) negMaxZ = z; } else if (z < posMinZ) posMinZ = z;
+    }
+    const forwardZMin = (negMaxZ + posMinZ) / 2;
+
+    // Pass 3: vertical band actually spanned by the front-cluster chest
+    // vertices, capped above by the base of the neck.
+    let neckBaseY = Infinity;
+    let bibYMin = Infinity, bibYMax = -Infinity;
+    for (let i = 0; i < count; i++) {
+      const bi = dominantBoneIndexAt(i, iArr, wArr, size);
+      const y = pArr[i * 3 + 1];
+      if (bi === neckIdx && y < neckBaseY) neckBaseY = y;
+      if (isChestBone(bi)) {
+        const x = pArr[i * 3], z = pArr[i * 3 + 2];
+        if (Math.abs(x) < lateralThresh && z > forwardZMin) {
+          if (y < bibYMin) bibYMin = y;
+          if (y > bibYMax) bibYMax = y;
+        }
+      }
+    }
+    if (Number.isFinite(neckBaseY)) bibYMax = neckBaseY;
+
+    return { lateralThresh, forwardZMin, bibYMin, bibYMax, spine02Idx, spine03Idx };
+  }
+
   // Bakes a per-vertex 'color' BufferAttribute onto `geometry` (which the
   // caller MUST already have cloned — see the call site for why) by
   // blending each region's color across a vertex's (up to 4) skinIndex
@@ -8358,12 +8464,18 @@ THREE.SkeletonUtils = { clone };
   // `skeleton.bones` array — that's the ONLY array whose order matches the
   // skinIndex values baked into this geometry (NOT assets/manifest.json's
   // order, which is alphabetical).
+  //
+  // v2: after the normal region blend, a second pass overrides the narrow
+  // front-central-chest patch of VEST (spine_02/03-dominant) vertices to the
+  // light shirt tone — a "shirt-front bib" peeking out under the bow tie,
+  // between what reads as an open dark suit jacket.
   function bakeUniformColors(geometry, skeletonBones, regionColors) {
     const skinIndexAttr = geometry.attributes.skinIndex;
     const skinWeightAttr = geometry.attributes.skinWeight;
-    const count = geometry.attributes.position.count;
+    const posAttr = geometry.attributes.position;
+    const count = posAttr.count;
     const boneColor = skeletonBones.map((b) => regionColors[resolveBoneRegion(b)]);
-    const iArr = skinIndexAttr.array, wArr = skinWeightAttr.array;
+    const iArr = skinIndexAttr.array, wArr = skinWeightAttr.array, pArr = posAttr.array;
     const size = skinIndexAttr.itemSize; // 4
     const colors = new Float32Array(count * 3);
     for (let i = 0; i < count; i++) {
@@ -8379,6 +8491,20 @@ THREE.SkeletonUtils = { clone };
       else { r = regionColors.SHIRT.r; g = regionColors.SHIRT.g; b = regionColors.SHIRT.b; }
       colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
     }
+
+    // v2 bib override — see computeBibBounds() for how every threshold here
+    // is derived from this mesh's own bind-pose geometry, not guessed.
+    const bib = computeBibBounds(geometry, skeletonBones);
+    const bibColor = regionColors.SHIRT;
+    for (let i = 0; i < count; i++) {
+      const bi = dominantBoneIndexAt(i, iArr, wArr, size);
+      if (bi !== bib.spine02Idx && bi !== bib.spine03Idx) continue;
+      const x = pArr[i * 3], y = pArr[i * 3 + 1], z = pArr[i * 3 + 2];
+      if (Math.abs(x) < bib.lateralThresh && y >= bib.bibYMin && y <= bib.bibYMax && z > bib.forwardZMin) {
+        colors[i * 3] = bibColor.r; colors[i * 3 + 1] = bibColor.g; colors[i * 3 + 2] = bibColor.b;
+      }
+    }
+
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
 
