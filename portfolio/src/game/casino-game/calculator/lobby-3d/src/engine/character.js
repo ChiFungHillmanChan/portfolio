@@ -603,7 +603,7 @@
       action.reset();
       action.setLoop(THREE.LoopOnce, 1);
       action.clampWhenFinished = false;
-      if (ms) action.timeScale = (clip.duration * 1000) / ms;
+      action.timeScale = ms ? (clip.duration * 1000) / ms : 1;
       if (app.REDUCED) return Promise.resolve();
       idleAction && action.crossFadeFrom(idleAction, 0.25, false);
       action.play();

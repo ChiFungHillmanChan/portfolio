@@ -377,3 +377,80 @@ test('bow tie: 3 gold children parented to each clone\'s neck_01 bone, absent fr
   const templateBow = templateNeck.children.find((c) => c.name === 'BowTie');
   assert.equal(templateBow, undefined, 'the shared template must never get its own BowTie attached');
 });
+
+// ---------------------------------------------------------------------
+// Regression test: playMocap's cached-AnimationAction timeScale bleed (see
+// task-6-report.md "Fix: timeScale bleed"). mixer.clipAction(clip) returns a
+// CACHED THREE.AnimationAction per (clip, root) pair — see
+// vendor/three-0.149.0.min.js's clipAction(): it keys
+// `_actionsByClip[clip.uuid].actionByRoot[root.uuid]` and returns the SAME
+// action object on a repeat call — and action.reset() does NOT touch
+// timeScale. `wave` and `welcomeSweep` both map to the same 'Interact' clip
+// (see MOCAP_MAP above): a `welcomeSweep` played with `ms:900` sets
+// timeScale ~= clip.duration*1000/900 (~2.22) on that SHARED action; a LATER
+// `wave` with no `ms` override must reset timeScale back to 1, not inherit
+// the stale sped-up value (reachable in the app via the vestibule
+// re-greeting after its 90s cooldown).
+// ---------------------------------------------------------------------
+test('playMocap resets a shared cached AnimationAction\'s timeScale on a later un-timed play (no stale speed bleed between welcomeSweep and wave)', () => {
+  // A fresh character via the SAME attach() route the app uses, but with a
+  // tickable app stub: the shared before() appStub's onFrame/offFrame are
+  // no-ops (none of the OTHER tests in this file ever drive the mixer), so
+  // playMocap's acquireDrive() -> driveFrame() -> mixer.update() path needs
+  // an app stub that actually stores + can re-invoke frame hooks.
+  const hooks = new Set();
+  const tickApp = {
+    REDUCED: false,
+    roomGen: 1,
+    onFrame(fn) { hooks.add(fn); },
+    offFrame(fn) { hooks.delete(fn); },
+  };
+  const tick = (dt) => { for (const fn of [...hooks]) fn(dt); };
+
+  let implC;
+  const rootC = new CTX_THREE.Group();
+  CTX_CASINO.character.attach(tickApp, rootC, { seed: 'dealer-timescale' }, (impl) => { implC = impl; });
+  assert.ok(implC, 'attach() must synchronously build once preload is ready');
+
+  // Spy on AnimationMixer.prototype.clipAction (same technique before()
+  // already uses for THREE.SkeletonUtils.clone) to capture the actual cached
+  // action object playMocap operates on for the 'Interact' clip.
+  // character.js's `findClip`/`state.clips` are module-private closure state,
+  // never exposed on C.character's public surface (preload/attach/ready
+  // only), so this is the supported way to reach the same object mixer
+  // .clipAction(clip) resolves to internally, without changing character.js
+  // beyond the one-line fix.
+  const AnimationMixer = CTX_THREE.AnimationMixer;
+  const realClipAction = AnimationMixer.prototype.clipAction;
+  const captured = [];
+  AnimationMixer.prototype.clipAction = function spyClipAction(clip, ...rest) {
+    const action = realClipAction.call(this, clip, ...rest);
+    if (this === implC.mixer && clip && clip.name === 'Interact') captured.push(action);
+    return action;
+  };
+
+  try {
+    // welcomeSweep sped up (ms:900) sets timeScale ~= 2.22 on the SHARED
+    // 'Interact' action.
+    implC.play(tickApp, 'welcomeSweep', { ms: 900 });
+    tick(1 / 30);
+    tick(1 / 30);
+    // A later un-timed wave must reset that SAME action back to timeScale 1,
+    // not inherit the stale sped-up value.
+    implC.play(tickApp, 'wave');
+
+    assert.equal(captured.length, 2, 'both plays must resolve to the Interact clip via the spy');
+    assert.equal(
+      captured[0], captured[1],
+      'welcomeSweep and wave must reuse the SAME cached AnimationAction (mixer.clipAction caches per '
+      + 'clip+root) — this identity is what makes the timeScale bleed possible in the first place',
+    );
+    assert.equal(
+      captured[1].timeScale, 1,
+      'wave (no ms override) must reset the shared action\'s timeScale to 1, not inherit welcomeSweep\'s '
+      + 'stale ~2.22x speed',
+    );
+  } finally {
+    AnimationMixer.prototype.clipAction = realClipAction;
+  }
+});
