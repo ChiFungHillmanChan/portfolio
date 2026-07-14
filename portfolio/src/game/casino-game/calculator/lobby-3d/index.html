@@ -8258,6 +8258,78 @@ THREE.SkeletonUtils = { clone };
   };
   const IDLE_CLIP = 'Idle_Loop';
 
+  // Task 6: gesture -> mocap clip map. The brief guessed Quaternius names
+  // (Wave/Yes/No) that do NOT exist in this committed pack — see
+  // assets/manifest.json (dumped in task-6-report.md). Real available clips:
+  // A_TPose, Dance_Loop, Hit_Chest, Hit_Head, Idle_Loop, Idle_Talking_Loop,
+  // Idle_Torch_Loop, Interact, Jog_Fwd_Loop, PickUp_Table, Punch_Cross,
+  // Punch_Jab, Sitting_*, Spell_Simple_*, Sprint_Loop, Walk_Formal_Loop,
+  // Walk_Loop. Candidates tried in the browser at the vestibule (receptionist
+  // wave-on-approach + the gate welcomeSweep) — see task-6-report.md for the
+  // full comparison:
+  //   - 'Interact' (2.0s): a two-handed forward-reach-and-return, reads
+  //     clearly as an inviting "come in / this way" gesture at both its
+  //     native speed (wave) and sped up under an ms override (welcomeSweep).
+  //   - 'Spell_Simple_Shoot' (0.5s): one arm snaps up to a raised
+  //     palm-forward "halt!" pose almost instantly, then drops — too fast
+  //     and forceful to land as a welcome, and over so quick it's barely
+  //     perceptible at native speed — rejected for both.
+  //   - 'PickUp_Table' (0.833s): both arms reach DOWN toward table height
+  //     with a forward lean — wrong silhouette entirely for a standing
+  //     greeting/usher gesture — rejected.
+  // Chosen: BOTH gesture names map to 'Interact', same clip at different
+  // speeds (native ~2s for the unhurried lobby-entry wave, sped up via the
+  // caller's existing `ms: 900` override for the brisker gate-side sweep) —
+  // exactly the "same clip, different ms" shape the task called out as an
+  // acceptable outcome.
+  const MOCAP_MAP = {
+    wave: { clip: 'Interact', track: 'arms' },
+    welcomeSweep: { clip: 'Interact', track: 'arms' },
+  };
+
+  // nod / headShake: NO mocap clip exists for either (nothing in the pack
+  // reads as an acknowledgement nod or a refusal head-shake — the closest,
+  // Hit_Head, is a reaction-to-impact flinch, not a voluntary gesture).
+  // Implemented as procedural one-shot deltas on the neck_01 bone instead,
+  // mirroring the OLD procedural rig's feel (src/logic/gestures.js
+  // CLIPS.nod/headShake): nod pitches down ~0.28 rad and back over 550ms;
+  // headShake yaws ±0.3 rad over 650ms. See makeImpl's applyHeadGesture()
+  // for the post-mixer application mechanics (mixer.update() overwrites bone
+  // transforms every call, so this must layer on AFTER it, every frame —
+  // same trick applyLook() already uses for the look-at layer).
+  const HEAD_GESTURES = {
+    nod: { dur: 550, axis: 'pitch', keys: [
+      { at: 0.40, ease: 'outCubic', v: 0.28 },
+      { at: 1.00, ease: 'inOutCubic', v: 0 },
+    ] },
+    headShake: { dur: 650, axis: 'yaw', keys: [
+      { at: 0.20, ease: 'inOutCubic', v: 0.3 },
+      { at: 0.45, ease: 'inOutCubic', v: -0.3 },
+      { at: 0.70, ease: 'inOutCubic', v: 0.18 },
+      { at: 1.00, ease: 'inOutCubic', v: 0 },
+    ] },
+  };
+  const HEAD_EASE = {
+    outCubic: (t) => 1 - Math.pow(1 - t, 3),
+    inOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  };
+  // Samples a {at,ease,v} keyframe curve at fraction t in [0,1], with an
+  // implicit (0, v:0) start key — the gesture is an ADDITIVE offset from
+  // whatever the mixer/look-at layer already put on the bone this frame, so
+  // it always starts and ends at 0 (a no-op offset) by construction.
+  function sampleHeadCurve(keys, t) {
+    let prevAt = 0, prevV = 0;
+    for (const k of keys) {
+      if (t <= k.at) {
+        const span = k.at - prevAt;
+        const lt = span <= 0 ? 1 : Math.max(0, Math.min(1, (t - prevAt) / span));
+        return prevV + (k.v - prevV) * HEAD_EASE[k.ease](lt);
+      }
+      prevAt = k.at; prevV = k.v;
+    }
+    return keys[keys.length - 1].v;
+  }
+
   const state = { ready: null, template: null, clips: null, pending: [], failed: false };
 
   async function fetchGlb(url, timeoutMs = 10000) {
@@ -8648,6 +8720,21 @@ THREE.SkeletonUtils = { clone };
     let idleHook = null;
     let idleAction = null;
 
+    // Every per-frame "extra" layer (look-at, head gestures) is additive on
+    // TOP of whatever mixer.update() just wrote to the bones — it must run
+    // in the SAME tick, right after mixer.update(), every single frame,
+    // because AnimationMixer overwrites the bone transforms it drives on
+    // every update() call (so anything applied on an earlier tick, or before
+    // update(), gets silently stomped the very next frame). This is the one
+    // function that is allowed to call mixer.update() — setIdle's own hook
+    // and the temporary driver below both funnel through it so the mixer is
+    // never advanced twice in the same frame.
+    function driveFrame(dt) {
+      mixer.update(dt);
+      applyLook();          // look-at layer, below
+      applyHeadGesture();    // procedural nod/headShake layer, below
+    }
+
     function setIdle() {
       if (app.REDUCED || idleHook) return idleHook;
       const gen = app.roomGen;
@@ -8655,8 +8742,7 @@ THREE.SkeletonUtils = { clone };
       idleAction.play();
       const hook = (dt) => {
         if (app.roomGen !== gen) { idleAction?.stop(); return app.offFrame(hook); }
-        mixer.update(dt);
-        applyLook();          // look-at layer, below
+        driveFrame(dt);
       };
       hook.cancel = () => app.offFrame(hook);
       app.onFrame(hook);
@@ -8686,9 +8772,107 @@ THREE.SkeletonUtils = { clone };
       if (app.REDUCED) { look.yaw = look.tYaw; look.pitch = look.tPitch; }
     }
 
-    // play(): Task 6 adds mocap gestures, Task 7 adds IK actions. For now,
+    // ---- procedural head gesture layer (nod / headShake — see HEAD_GESTURES
+    // doc comment up top for why these are procedural, not mocap clips) ----
+    let headGesture = null;   // { spec: {dur,axis,keys}, t0, done } | null
+    function applyHeadGesture() {
+      if (!headGesture || !bones.neck) return;
+      const g = headGesture;
+      const t = g.spec.dur <= 0 ? 1 : Math.min(1, (performance.now() - g.t0) / g.spec.dur);
+      const v = sampleHeadCurve(g.spec.keys, t);
+      if (g.spec.axis === 'pitch') bones.neck.rotation.x += v;
+      else bones.neck.rotation.y += v;
+      if (t >= 1) g.done();
+    }
+
+    // Shared "keep the mixer + extra layers running" driver for one-shots
+    // fired while setIdle() was never called (be safe — see Task 6 brief).
+    // Ref-counted so a concurrent mocap one-shot (arms) and head gesture
+    // (head) never both install their own hook and double-call
+    // mixer.update() in the same frame; self-tears-down the instant a real
+    // setIdle() hook takes over.
+    let tempDriveHook = null, tempDriveRefs = 0;
+    function acquireDrive() {
+      tempDriveRefs += 1;
+      if (!idleHook && !tempDriveHook) {
+        const gen = app.roomGen;
+        tempDriveHook = (dt) => {
+          if (app.roomGen !== gen || idleHook) { app.offFrame(tempDriveHook); tempDriveHook = null; return; }
+          driveFrame(dt);
+        };
+        app.onFrame(tempDriveHook);
+      }
+      return () => {
+        tempDriveRefs = Math.max(0, tempDriveRefs - 1);
+        if (tempDriveRefs === 0 && tempDriveHook) { app.offFrame(tempDriveHook); tempDriveHook = null; }
+      };
+    }
+
+    function playHeadGesture(name, ms) {
+      const spec = HEAD_GESTURES[name];
+      const token = ++tokens.head;
+      const gen = app.roomGen;
+      if (app.REDUCED) return Promise.resolve();
+      const release = acquireDrive();
+      return new Promise((resolve) => {
+        const entry = { spec: { ...spec, dur: ms || spec.dur }, t0: performance.now() };
+        const done = () => {
+          if (headGesture === entry) headGesture = null;
+          app.offFrame(watch);
+          release();
+          resolve();
+        };
+        entry.done = done;
+        headGesture = entry;
+        const watch = () => {
+          if (tokens.head !== token || app.roomGen !== gen) done();
+        };
+        watch.cancel = done;
+        app.onFrame(watch);
+      });
+    }
+
+    function playMocap(name, ms) {
+      const entry = MOCAP_MAP[name];
+      const clip = findClip(entry.clip);
+      if (!clip) return Promise.resolve();
+      const token = ++tokens[entry.track];
+      const gen = app.roomGen;
+      const action = mixer.clipAction(clip);
+      action.reset();
+      action.setLoop(THREE.LoopOnce, 1);
+      action.clampWhenFinished = false;
+      if (ms) action.timeScale = (clip.duration * 1000) / ms;
+      if (app.REDUCED) return Promise.resolve();
+      idleAction && action.crossFadeFrom(idleAction, 0.25, false);
+      action.play();
+      const release = acquireDrive();
+      return new Promise((resolve) => {
+        const done = () => {
+          mixer.removeEventListener('finished', onFin);
+          app.offFrame(watch);
+          if (idleAction) { idleAction.reset(); idleAction.play(); action.crossFadeTo(idleAction, 0.25, false); }
+          release();
+          resolve();
+        };
+        const onFin = (e) => { if (e.action === action) done(); };
+        const watch = () => {
+          if (tokens[entry.track] !== token || app.roomGen !== gen) { action.stop(); done(); }
+        };
+        watch.cancel = () => { action.stop(); done(); };
+        mixer.addEventListener('finished', onFin);
+        app.onFrame(watch);
+      });
+    }
+
+    // play(): Task 6 adds mocap gestures (wave/welcomeSweep) + procedural
+    // head one-shots (nod/headShake). Task 7 adds IK actions — those still
     // resolve immediately so awaited sequences never hang mid-implementation.
-    function play() { return Promise.resolve(); }
+    function play(_a, name, opts = {}) {
+      if (MOCAP_MAP[name]) return playMocap(name, opts.ms);
+      if (HEAD_GESTURES[name]) return playHeadGesture(name, opts.ms);
+      return Promise.resolve();
+    }
     // See rig.js's stop() for why 'mouth' also cancels via stopBubble.
     const stop = (track) => {
       tokens[track] += 1;
