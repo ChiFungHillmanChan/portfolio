@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Grand Casino — 3D Floor</title>
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<div id="splash">
+  <div class="splash-inner">
+    <h1>GRAND CASINO</h1>
+    <p class="splash-sub">Walk the floor. Pick your table.</p>
+    <button id="enterBtn">ENTER THE CASINO</button>
+    <p class="splash-note"><a href="../index.html">Prefer 2D? Open the classic lobby</a></p>
+  </div>
+</div>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div id="hud" hidden>
+  <div id="hudLeft"><div id="walletHost"></div></div>
+  <div id="sectionLabel" aria-live="polite"></div>
+  <div id="hudRight">
+    <div id="accountHost"></div>
+    <a id="exit2d" class="hud-btn" href="../index.html">2D Lobby</a>
+  </div>
+</div>
+<nav id="quicknav" hidden aria-label="Casino quick navigation"></nav>
+<div id="card-root" aria-live="polite"></div>
+<div id="banner" hidden></div>
+<div id="fader"></div>
+<script>//__VENDOR__</script>
+<script>//__APP__</script>
+<script type="module" src="./platform.js"></script>
+</body>
+</html>

@@ -1,0 +1,4 @@
+{
+  "//": "dev-only — lets `node --test` import the runtime ES modules (floor-model.js, reception-model.js). Inert in browsers, not relied on by public/.",
+  "type": "module"
+}
