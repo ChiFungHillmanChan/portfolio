@@ -7,7 +7,6 @@
   // layout (arc lettering + insurance band + seat circles) instead of plain
   // green. Group origin = table center at floor level; +Z = player arc side.
   const TABLE_R = 1.6, RAIL_H = 0.8, FELT_Y = 0.83;
-  const GHOST_SEATS = [1, 4];
   // Geometry lives in C.layouts.blackjack.seat — but layouts.js loads first
   // in SRC_ORDER, so read it lazily inside the builder, not at module scope.
   const seatSpin = (a) => Math.PI / 2 - a;
@@ -189,35 +188,14 @@
     station.position.set(0, 0, -0.19);
     g.add(station);
 
-    // stools + ghost occupants
+    // stools — every seat is open for a real player; no demo props on the
+    // felt (cards/chips only appear from actual live play)
     for (let i = 0; i < SEAT_COUNT; i++) {
       const stool = A.makeStool();
       const a = seatAngle(i);
       stool.position.set(Math.cos(a) * SEAT_R, 0, Math.sin(a) * SEAT_R);
       g.add(stool);
     }
-    GHOST_SEATS.forEach((i, k) => {
-      const a = seatAngle(i);
-      const spin = seatSpin(a);
-      // main bet dead-center in the seat's MAIN circle
-      const chips = C.chips.makeChipStack(500, 4);
-      const [mx, mz] = seatPoint(a, MAIN_R);
-      chips.position.set(mx, FELT_Y + 0.004, mz);
-      g.add(chips);
-      // one flavor chip centered on a side bet (PP for one ghost, 21+3 the other)
-      const side = C.chips.makeChip(100);
-      const [sx, sz] = seatPoint(a, SIDE_R, (k % 2 ? 1 : -1) * SIDE_DX);
-      side.position.set(sx, FELT_Y + 0.008, sz);
-      g.add(side);
-      // dealt hand: two face-up cards just above the side bets, facing the seat
-      [{ r: 14, s: 0, t: -0.04 }, { r: 13, s: 2, t: 0.05 }].forEach(({ r, s, t }, n) => {
-        const card = C.cards.makeCard({ r, s });
-        card.rotation.set(-Math.PI / 2, 0, spin + (n ? -0.12 : 0.1));
-        const [cx, cz] = seatPoint(a, CARDS_R + n * 0.015, t);
-        card.position.set(cx, FELT_Y + 0.012 + n * 0.003, cz);
-        g.add(card);
-      });
-    });
 
     let dealerRig = null;
     if (opts.withDealer) {
@@ -248,7 +226,7 @@
       seat: S, feltY: FELT_Y, seatAngle, seatPoint,
       dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoePos,
       trayLocal: [0, FELT_Y + 0.054, -0.19],
-      freeSeats: [0, 2, 3, 5],
+      freeSeats: [0, 1, 2, 3, 4, 5],
       spotLocal(i, id) {
         const a = seatAngle(i);
         const at = (radius, tangent) => {
