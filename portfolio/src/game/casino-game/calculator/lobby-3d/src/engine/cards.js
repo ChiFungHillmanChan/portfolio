@@ -85,6 +85,73 @@
     return group;
   }
 
+  // dealCardTo v2 — same contract as the original (assets.js), plus:
+  //  * in-plane spin: rotation.z starts 0.45 rad short of the caller's final
+  //    value and eases in (rotation.z is the INNERMOST Euler axis, so the
+  //    spin stays in the card's own plane whatever rotation.x/y are doing).
+  //  * XZ travel eases with outBack — the card overshoots its box by a few cm
+  //    and slides back, reading as "dealt" instead of "placed".
+  //  * REDUCED: no spin, linear-ish fast flight (unchanged from v1).
+  function dealCardTo(app, cardMesh, from, to, { ms = 420, flip = false, delay = 0, spin = true } = {}) {
+    if (app.REDUCED) { ms = Math.min(ms, 180); spin = false; }
+    return new Promise((resolve) => {
+      const gen = app.roomGen;
+      cardMesh.position.set(...from);
+      const zEnd = cardMesh.rotation.z;
+      const zStart = spin ? zEnd - 0.45 : zEnd;
+      cardMesh.rotation.z = zStart;
+      app.scene.add(cardMesh);
+      const easeXZ = spin ? C.tween.easings.outBack : C.tween.easings.outCubic;
+      const easeSpin = C.tween.easings.outCubic;
+      const start = () => {
+        const t0 = performance.now();
+        if (app.roomGen !== gen) return resolve();
+        const hook = () => {
+          if (app.roomGen !== gen) { app.offFrame(hook); return resolve(); }
+          const t = Math.min(1, (performance.now() - t0) / ms);
+          const exz = easeXZ(t);
+          cardMesh.position.x = from[0] + (to[0] - from[0]) * exz;
+          cardMesh.position.z = from[2] + (to[2] - from[2]) * exz;
+          const base = from[1] + (to[1] - from[1]) * t;
+          cardMesh.position.y = base + 0.25 * 4 * t * (1 - t);
+          cardMesh.rotation.z = zStart + (zEnd - zStart) * easeSpin(t);
+          if (t >= 1) {
+            cardMesh.position.set(to[0], to[1], to[2]);
+            cardMesh.rotation.z = zEnd;
+            app.offFrame(hook);
+            if (flip) cardMesh.userData.flip(Math.min(220, ms), resolve);
+            else resolve();
+          }
+        };
+        hook.cancel = () => { app.offFrame(hook); resolve(); };
+        app.onFrame(hook);
+      };
+      if (delay > 0) setTimeout(start, delay);
+      else start();
+    });
+  }
+
+  // Shared reveal for flat-lying cards (was duplicated in 3 room files).
+  // A watcher frame hook carries the roomGen guard + cancel contract: a room
+  // switch mid-flip resolves the promise promptly instead of leaving the
+  // caller awaiting a tween on a torn-down room. (Double-resolve is safe.)
+  function flipFlatCard(app, mesh, ms) {
+    if (app.REDUCED) ms = Math.min(ms, 180);
+    return new Promise((resolve) => {
+      const gen = app.roomGen;
+      const guard = () => {
+        if (app.roomGen !== gen) { app.offFrame(guard); resolve(); }
+      };
+      guard.cancel = () => { app.offFrame(guard); resolve(); };
+      app.onFrame(guard);
+      const baseY = mesh.position.y;
+      C.tween.to(mesh.position, { y: baseY + 0.05 }, ms / 2, 'outCubic', () => {
+        C.tween.to(mesh.position, { y: baseY }, ms / 2, 'outQuart');
+      });
+      mesh.userData.flip(ms, () => { app.offFrame(guard); resolve(); });
+    });
+  }
+
   // Painted card box: a thin transparent decal plane, dashed cream outline,
   // sized to the card footprint + margin. Lay at feltY + 0.002.
   function makeCardBoxDecal({ label = '', sideways = false } = {}) {
@@ -114,6 +181,6 @@
     return mesh;
   }
 
-  C.cards = { makeCard, makeCardBoxDecal };
+  C.cards = { makeCard, dealCardTo, flipFlatCard, makeCardBoxDecal };
   C.assets.makeCard = makeCard;
 })();
