@@ -8,11 +8,13 @@ const ROOT = dirname(fileURLToPath(import.meta.url));
 
 export const SRC_ORDER = [
   'src/engine/tween.js',
+  'src/engine/sound.js',
   'src/engine/app.js',
   'src/engine/assets.js',
   'src/engine/cards.js',
   'src/engine/chips3d.js',
   'src/logic/layouts.js',
+  'src/logic/gestures.js',
   'src/logic/baccarat-roads.js',
   'src/floor/layout.js',
   'src/floor/tables/roulette-table.js',
@@ -21,6 +23,7 @@ export const SRC_ORDER = [
   'src/floor/tables/uth-table.js',
   'src/floor/shell.js',
   'src/floor/vestibule.js',
+  'src/floor/maintenance.js',
   'src/floor/sections.js',
   'src/floor/decor.js',
   'src/boot.js',
