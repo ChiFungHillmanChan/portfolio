@@ -63,45 +63,194 @@
 
   function findClip(name) { return state.clips.find((c) => c.name === name) || null; }
 
+  // ---------------------------------------------------------------------
+  // Task 5b: dress the dealers. This asset pack's body mesh (material
+  // MI_Superhero_Male) is the ENTIRE figure — face, hands, torso, legs —
+  // in one draw call with no separate clothing geometry (see
+  // task-5-report.md). Task 5 could only tint that one material a flat
+  // skin tone (readable but "naked"). This bakes a per-vertex 'color'
+  // attribute from the mesh's own skinIndex/skinWeight so different bone
+  // regions read as different uniform pieces, with soft blending exactly
+  // where the skin weights blend (collar, cuffs, waistband) instead of a
+  // hard per-triangle cutoff.
+  //
+  // Bone -> region bucketing table (all 65 bones in assets/manifest.json;
+  // see task-5b-report.md for the full reasoning):
+  //   SKIN     Head, neck_01, hand_l/r, every finger bone (index/middle/
+  //            ring/pinky/thumb, incl. the _04_leaf tip bones)
+  //   SHIRT    clavicle_l/r, upperarm_l/r, lowerarm_l/r  (fixed light tone,
+  //            rig.js's own shirt color, no per-dealer variation)
+  //   VEST     spine_01/02/03                            (per-dealer, VESTS)
+  //   TROUSERS pelvis, thigh_l/r, calf_l/r                (fixed dark charcoal)
+  //   SHOES    foot_l/r, ball_l/r, ball_leaf_l/r          (fixed near-black)
+  //   (none of the above) root, and anything unforeseen  -> walk up to the
+  //            nearest ancestor BONE that resolves; if none does (root's
+  //            own parent is the non-bone "Armature" node), default SHIRT.
+  //            No actual vertices are expected to weight to 'root' — this
+  //            path exists purely as a safety net for asset-pack surprises.
+  const REGION_SHIRT_HEX = '#f2f0e8';     // rig.js's shirt tone
+  const REGION_TROUSERS_HEX = '#1b1e26';  // dark charcoal
+  const REGION_SHOES_HEX = '#14100c';     // near-black
+
+  function regionForBoneName(name) {
+    if (name === 'Head' || name === 'neck_01') return 'SKIN';
+    if (/^hand_[lr]$/.test(name)) return 'SKIN';
+    if (/^(index|middle|ring|pinky|thumb)_(0[1-3]|04_leaf)_[lr]$/.test(name)) return 'SKIN';
+    if (/^(clavicle|upperarm|lowerarm)_[lr]$/.test(name)) return 'SHIRT';
+    if (/^spine_0[1-3]$/.test(name)) return 'VEST';
+    if (name === 'pelvis' || /^(thigh|calf)_[lr]$/.test(name)) return 'TROUSERS';
+    if (/^(foot|ball)(_leaf)?_[lr]$/.test(name)) return 'SHOES';
+    return null;
+  }
+  function resolveBoneRegion(bone) {
+    let cur = bone;
+    while (cur) {
+      const r = regionForBoneName(cur.name);
+      if (r) return r;
+      cur = cur.isBone ? cur.parent : null;
+    }
+    return 'SHIRT';
+  }
+
+  // Bakes a per-vertex 'color' BufferAttribute onto `geometry` (which the
+  // caller MUST already have cloned — see the call site for why) by
+  // blending each region's color across a vertex's (up to 4) skinIndex
+  // bones weighted by skinWeight. `skeletonBones` must be the mesh's own
+  // `skeleton.bones` array — that's the ONLY array whose order matches the
+  // skinIndex values baked into this geometry (NOT assets/manifest.json's
+  // order, which is alphabetical).
+  function bakeUniformColors(geometry, skeletonBones, regionColors) {
+    const skinIndexAttr = geometry.attributes.skinIndex;
+    const skinWeightAttr = geometry.attributes.skinWeight;
+    const count = geometry.attributes.position.count;
+    const boneColor = skeletonBones.map((b) => regionColors[resolveBoneRegion(b)]);
+    const iArr = skinIndexAttr.array, wArr = skinWeightAttr.array;
+    const size = skinIndexAttr.itemSize; // 4
+    const colors = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      let r = 0, g = 0, b = 0, wSum = 0;
+      for (let k = 0; k < size; k++) {
+        const w = wArr[i * size + k];
+        if (w <= 0) continue;
+        const c = boneColor[iArr[i * size + k]] || regionColors.SHIRT;
+        r += c.r * w; g += c.g * w; b += c.b * w;
+        wSum += w;
+      }
+      if (wSum > 0) { r /= wSum; g /= wSum; b /= wSum; }
+      else { r = regionColors.SHIRT.r; g = regionColors.SHIRT.g; b = regionColors.SHIRT.b; }
+      colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
+    }
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
+
+  // Small gold bow tie riding the neck_01 BONE — an Object3D child of a
+  // bone inherits its animated transform every frame for free (no per-frame
+  // code needed), same trick rig.js's own procedural bow tie uses (see
+  // rig.js ~L76-83), just parented to a GLB bone instead of a joint Group.
+  //
+  // Placement math: buildCharacter() runs before `group` is ever added to a
+  // parent, and `group` itself carries an identity transform at this point
+  // (table placement/rotation happens later, in floor/*.js, via
+  // root.add(impl.group)) — so "world" space here IS the rig's own rest-
+  // pose reference frame, and group-local +Z is "forward" (confirmed by
+  // inspecting the Eyes mesh: its world-space Z sits well in front of the
+  // Head bone's own Z in this rest pose). We express the collar offset in
+  // that frame (small offset down + forward from neck_01's rest position,
+  // wings splayed left/right) and convert into neck_01's local space via
+  // its (already-updated) matrixWorld, so the result is correct regardless
+  // of the neck bone's own local axis convention.
+  function attachBowTie(group, neckBone) {
+    if (!neckBone) return null;
+    group.updateMatrixWorld(true);
+    const gold = C.assets.goldMaterial();
+    const coneGeo = new THREE.ConeGeometry(0.028, 0.05, 8);
+    const knotGeo = new THREE.SphereGeometry(0.018, 8, 6);
+
+    const neckWorldPos = new THREE.Vector3();
+    neckBone.getWorldPosition(neckWorldPos);
+    const neckWorldQuat = new THREE.Quaternion();
+    neckBone.getWorldQuaternion(neckWorldQuat);
+    const neckInvQuat = neckWorldQuat.clone().invert();
+    const worldZAxis = new THREE.Vector3(0, 0, 1);
+
+    const bow = new THREE.Group();
+    bow.name = 'BowTie';
+    for (const sx of [-1, 1]) {
+      const cone = new THREE.Mesh(coneGeo, gold);
+      const worldPos = neckWorldPos.clone().add(new THREE.Vector3(sx * 0.035, -0.05, 0.12));
+      cone.position.copy(neckBone.worldToLocal(worldPos));
+      const worldQuat = new THREE.Quaternion().setFromAxisAngle(worldZAxis, sx * Math.PI / 2);
+      cone.quaternion.copy(neckInvQuat.clone().multiply(worldQuat));
+      cone.castShadow = true;
+      bow.add(cone);
+    }
+    const knot = new THREE.Mesh(knotGeo, gold);
+    knot.position.copy(neckBone.worldToLocal(neckWorldPos.clone().add(new THREE.Vector3(0, -0.05, 0.125))));
+    knot.castShadow = true;
+    bow.add(knot);
+
+    neckBone.add(bow);
+    return bow;
+  }
+
   function buildCharacter(opts) {
     const seed = String(opts.seed ?? '');
     let h = 9;
     for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 0x9e3779b1);
     h = Math.abs(h >>> 0);
     const group = THREE.SkeletonUtils.clone(state.template);
-    group.traverse((o) => {
-      if (o.isMesh || o.isSkinnedMesh) {
-        o.castShadow = true; o.receiveShadow = true;
-        o.material = o.material.clone();            // per-dealer tinting
-      }
-    });
     // Variation: tint + height. Palettes shared with rig.js via C.rigPalettes
     // (exported from rig.js Step 3). Real materials on this pack (see
     // assets/manifest.json + task-5-report.md inspection): MI_Hair_1 (the
     // Eyebrows mesh), MI_Eyes (the Eyes mesh), MI_Superhero_Male (the ENTIRE
     // body incl. face — this base-character pack has no separate clothing
-    // mesh/material at all, textures were stripped in Task 1). Because body
-    // and face share one material, tinting it with VESTS (a near-black suit
-    // color, as the brief guessed from the material's name alone) would turn
-    // the whole face the same dark color — clearly wrong. SKINS is the only
-    // sensible default for that material (its baseColorFactor is already a
-    // skin tone). 'vest'/'suit' substring branch kept for forward
-    // compatibility in case a future asset swap adds real clothing geometry.
+    // mesh/material at all, textures were stripped in Task 1).
     const P = C.rigPalettes;
+    const regionColors = {
+      SKIN: new THREE.Color(P.SKINS[h % P.SKINS.length]),
+      SHIRT: new THREE.Color(REGION_SHIRT_HEX),
+      VEST: new THREE.Color(P.VESTS[(h >>> 6) % P.VESTS.length]),
+      TROUSERS: new THREE.Color(REGION_TROUSERS_HEX),
+      SHOES: new THREE.Color(REGION_SHOES_HEX),
+    };
     group.traverse((o) => {
       if (!o.isMesh && !o.isSkinnedMesh) return;
+      o.castShadow = true; o.receiveShadow = true;
+      o.material = o.material.clone();            // per-dealer tinting
       const n = (o.material.name || '').toLowerCase();
       if (n.includes('eye')) return;                                   // MI_Eyes: leave as-is
       if (n.includes('hair')) { o.material.color.set(P.HAIRS[(h >>> 3) % P.HAIRS.length]); return; }
-      if (n.includes('vest') || n.includes('suit')) { o.material.color.set(P.VESTS[(h >>> 6) % P.VESTS.length]); return; }
-      o.material.color.set(P.SKINS[h % P.SKINS.length]);                // MI_Superhero_Male: body + face
+      // MI_Superhero_Male: body + face, one mesh, one material — bake a
+      // bone-weighted vertex-color uniform instead of a flat tint (Task 5b).
+      // SkeletonUtils.clone() shares GEOMETRY across every cloned dealer
+      // (only materials + the scene graph get duplicated per clone) —
+      // baking a per-dealer 'color' attribute onto the shared geometry
+      // would leak across every OTHER dealer sharing this template, so the
+      // geometry must be cloned here first. Cost: BufferGeometry.clone()
+      // duplicates ALL attributes (position/normal/uv/skinIndex/skinWeight),
+      // not just the new color one — roughly 7.3k verts x ~68 bytes/vert
+      // (~0.5MB) of EXTRA memory per dealer clone, on top of what Task 5
+      // already carried. With 5-6 dealers on screen at once that's a low
+      // single-digit MB of duplicated geometry — not free, but small next
+      // to the ~1MB GLB payload itself, and there's no cheaper option in
+      // this three.js version (no per-instance vertex-color mechanism for
+      // SkinnedMesh).
+      if (o.isSkinnedMesh && o.geometry.attributes.skinIndex) {
+        o.geometry = o.geometry.clone();
+        bakeUniformColors(o.geometry, o.skeleton.bones, regionColors);
+        o.material.vertexColors = true;
+        o.material.color.set('#ffffff');            // show baked colors unmodified
+        return;
+      }
+      o.material.color.set(regionColors.SKIN);       // fallback safety net (not expected to hit)
     });
     group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
     const bones = {};
     for (const [logical, real] of Object.entries(BONE_MAP)) {
       bones[logical] = group.getObjectByName(real);
     }
-    return { group, bones, mixer: new THREE.AnimationMixer(group), hash: h };
+    const bowTie = attachBowTie(group, bones.neck);
+    return { group, bones, mixer: new THREE.AnimationMixer(group), hash: h, bowTie };
   }
 
   // charImpl: same method contract as rig.js's rig object.
