@@ -286,9 +286,10 @@
       const flat = Math.hypot(local.x, local.z) || 1e-4;
       const pitch = Math.max(-0.35, Math.min(0.35, -Math.atan2(local.y - 1.5, flat)));
       if (app.REDUCED) { neck.rotation.y = yaw; neck.rotation.x = pitch; return; }
+      const gen = app.roomGen;
       const t0 = performance.now(), fy = neck.rotation.y, fx = neck.rotation.x;
       const hook = () => {
-        if (lookToken !== token) return app.offFrame(hook);
+        if (lookToken !== token || app.roomGen !== gen) return app.offFrame(hook);
         const t = Math.min(1, (performance.now() - t0) / 300);
         const e = C.tween.easings.outCubic(t);
         neck.rotation.y = fy + (yaw - fy) * e;
@@ -302,9 +303,11 @@
     // ---- idle: breath sway + weight shift + blink ----
     function setIdle(app) {
       if (app.REDUCED) return null;
+      const gen = app.roomGen;
       let nextBlink = 2 + Math.random() * 3, blinkEnd = 0;
       let shiftPhase = Math.random() * Math.PI * 2;
       const hook = (dt, elapsed) => {
+        if (app.roomGen !== gen) return app.offFrame(hook);
         spine.rotation.z = Math.sin(elapsed * 0.8 + shiftPhase) * 0.02;
         spine.rotation.x = Math.sin(elapsed * 0.55 + shiftPhase) * 0.012;
         const shift = Math.sin(elapsed * 0.25 + shiftPhase) * 0.05;
@@ -314,6 +317,7 @@
         const blinking = elapsed < blinkEnd;
         eyes.forEach((e) => { e.scale.y = blinking ? 0.08 : 1; });
       };
+      hook.cancel = () => app.offFrame(hook);
       app.onFrame(hook);
       return hook;
     }
