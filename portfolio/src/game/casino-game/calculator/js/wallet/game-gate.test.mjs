@@ -34,7 +34,36 @@ test("every non-ready mode carries a user-facing message", () => {
     { authReady: true, signedIn: false, balance: null, minBet: 500 },
     { authReady: true, signedIn: true, balance: 40, minBet: 500 },
     { authReady: true, signedIn: true, balance: 300, minBet: 500 },
+    { authReady: true, signedIn: true, balance: 0, cash: 100000, minBet: 500 },
   ]) {
     assert.ok(computeGateState(s).message.length > 0);
   }
+});
+
+// ---------- dual balance: wallet cash + chips ----------
+
+test("not bust when the wallet still holds cash — offer buy-in instead", () => {
+  const s = computeGateState({ authReady: true, signedIn: true, balance: 0, cash: 100000, minBet: 500 });
+  assert.equal(s.mode, "buy-in");
+  assert.equal(s.suggestedBuyIn, 5000);   // min(cash, 10× minBet)
+});
+
+test("buy-in suggestion is capped at the available cash", () => {
+  const s = computeGateState({ authReady: true, signedIn: true, balance: 0, cash: 800, minBet: 500 });
+  assert.equal(s.mode, "buy-in");
+  assert.equal(s.suggestedBuyIn, 800);
+});
+
+test("bust only when cash + chips together are below the threshold", () => {
+  assert.equal(computeGateState({ authReady: true, signedIn: true, balance: 40, cash: 20, minBet: 500 }).mode, "bust");
+});
+
+test("insufficient when even cash + chips cannot reach the table minimum", () => {
+  assert.equal(computeGateState({ authReady: true, signedIn: true, balance: 100, cash: 100, minBet: 500 }).mode, "insufficient");
+});
+
+test("legacy call without cash behaves exactly as before", () => {
+  assert.equal(computeGateState({ authReady: true, signedIn: true, balance: 40, minBet: 500 }).mode, "bust");
+  assert.equal(computeGateState({ authReady: true, signedIn: true, balance: 300, minBet: 500 }).mode, "insufficient");
+  assert.equal(computeGateState({ authReady: true, signedIn: true, balance: 500, minBet: 500 }).mode, "ready");
 });

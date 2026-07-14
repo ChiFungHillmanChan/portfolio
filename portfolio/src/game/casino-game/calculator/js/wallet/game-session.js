@@ -79,6 +79,9 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
     container: gameEl,
     onSignIn: () => bootstrap.signIn().catch((e) => { console.error(e); alert("Sign-in failed: " + (e?.code || e?.message || "try again")); }),
     onReset: doReset,
+    onBuyIn: (amount) => walletClient.buyIn(amount).catch((e) => {
+      alert("Buy-in failed: " + (e?.code || e?.message || "try again"));
+    }),
     ...(lobbyHref ? { lobbyHref } : {}),
   });
 
@@ -95,6 +98,7 @@ export async function createGameSession({ gameId, mapBets, minBet, gameEl, hudHo
       authReady,
       signedIn,
       balance: walletClient.getBalance(),
+      cash: walletClient.getCash ? walletClient.getCash() : null,
       minBet,
     });
     gate.update(state);

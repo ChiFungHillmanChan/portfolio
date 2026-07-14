@@ -66,3 +66,32 @@ test("malformed cooldown: bad ISO string renders no countdown, shows reset", () 
   assert.equal(h.cooldownText, null);
   assert.equal(h.showReset, true);
 });
+
+// ---------- dual balance: chips (balance) + wallet cash ----------
+
+test("cashText renders when cash is present, null otherwise (back-compat)", () => {
+  const dual = formatHud({ balance: 3500, cash: 12000, canReset: false, resetAvailableAt: null }, NOW);
+  assert.equal(dual.balanceText, "3,500");
+  assert.equal(dual.cashText, "12,000");
+  const legacy = formatHud({ balance: 3500, canReset: false, resetAvailableAt: null }, NOW);
+  assert.equal(legacy.cashText, null);
+});
+
+test("bust is judged on cash + chips: chips 0 with cash in the wallet is NOT bust", () => {
+  const h = formatHud({ balance: 0, cash: 12000, canReset: false, resetAvailableAt: null }, NOW);
+  assert.equal(h.state, "ok");
+  assert.equal(h.showReset, false);
+});
+
+test("bust when cash + chips together are below the threshold", () => {
+  const h = formatHud({ balance: 40, cash: 20, canReset: false, resetAvailableAt: null }, NOW);
+  assert.equal(h.state, "bust");
+  assert.equal(h.showReset, true);
+});
+
+test("resetLabel follows the server-configured resetChips (default 5,000)", () => {
+  const dflt = formatHud({ balance: 0, canReset: true, resetAvailableAt: null }, NOW);
+  assert.equal(dflt.resetLabel, "Reset +5,000");
+  const tuned = formatHud({ balance: 0, canReset: true, resetAvailableAt: null, resetChips: 2000 }, NOW);
+  assert.equal(tuned.resetLabel, "Reset +2,000");
+});

@@ -18,26 +18,35 @@ function cooldownText(resetAvailableAt, nowMs) {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-export function formatHud({ balance, canReset, resetAvailableAt }, nowMs) {
+export function formatHud({ balance, cash, canReset, resetAvailableAt, resetChips }, nowMs) {
+  const resetLabel = `Reset +${formatChips(typeof resetChips === "number" ? resetChips : 5000)}`;
   if (typeof balance !== "number") {
-    return { state: "loading", balanceText: "—", showReset: false, cooldownText: null };
+    return { state: "loading", balanceText: "—", cashText: null, showReset: false, cooldownText: null, resetLabel };
   }
+  const cashText = typeof cash === "number" ? formatChips(cash) : null;
+  // Bust means the PLAYER is out of money, not just out of chips on hand —
+  // someone with a full wallet should buy in, not claim the charity reset.
+  const total = balance + (typeof cash === "number" ? cash : 0);
   const cd = cooldownText(resetAvailableAt, nowMs);
-  if (balance < BUST_THRESHOLD) {
+  if (total < BUST_THRESHOLD) {
     return {
       state: "bust",
       balanceText: formatChips(balance),
+      cashText,
       // showReset is gated on the LOCALLY-recomputed cooldown (cd), so the button flips live
       // as the cooldown elapses without needing a fresh server fetch; canReset from the
       // server is a stale snapshot and intentionally not used here.
       showReset: cd === null,
       cooldownText: cd,
+      resetLabel,
     };
   }
-  return { state: "ok", balanceText: formatChips(balance), showReset: false, cooldownText: null };
+  return { state: "ok", balanceText: formatChips(balance), cashText, showReset: false, cooldownText: null, resetLabel };
 }
 
 const CHIP_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><line x1="12" y1="3" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="21"/><line x1="3" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="21" y2="12"/></svg>`;
+
+export const CASH_SVG = `<svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/></svg>`;
 
 // Renders the pill into `container` and keeps it live. `onReset` is called when
 // the user clicks Reset; it should call walletClient.reset() and handle errors.
@@ -48,12 +57,18 @@ export function mountWalletHud(container, walletClient, { now = () => Date.now()
 
   const render = () => {
     const info = walletClient.getResetInfo();
-    const h = formatHud({ balance: walletClient.getBalance(), ...info }, now());
+    const h = formatHud({
+      balance: walletClient.getBalance(),
+      cash: walletClient.getCash ? walletClient.getCash() : null,
+      resetChips: walletClient.getResetChips ? walletClient.getResetChips() : null,
+      ...info,
+    }, now());
     el.dataset.state = h.state;
     el.innerHTML = `
       <span class="wallet-hud-chip">${CHIP_SVG}</span>
       <span class="wallet-hud-balance">${h.balanceText}</span>
-      ${h.showReset ? `<button type="button" class="wallet-hud-reset">Reset +5,000</button>` : ""}
+      ${h.cashText !== null ? `<span class="wallet-hud-cash">${CASH_SVG} ${h.cashText}</span>` : ""}
+      ${h.showReset ? `<button type="button" class="wallet-hud-reset">${h.resetLabel}</button>` : ""}
       ${h.cooldownText ? `<span class="wallet-hud-cooldown">Reset in ${h.cooldownText}</span>` : ""}
     `;
     const btn = el.querySelector(".wallet-hud-reset");

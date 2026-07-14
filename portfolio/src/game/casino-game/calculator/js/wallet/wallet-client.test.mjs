@@ -65,7 +65,7 @@ test("bet() refuses a second open round for the same game locally", async () => 
   await assert.rejects(() => c.bet("roulette", { straight: 100 }), (e) => e instanceof WalletError && e.code === "round-in-progress");
 });
 
-test("topUp() adds to the open round with the same roundId", async () => {
+test("topUp() adds to the open round with the same roundId and an explicit topUp flag", async () => {
   const post = fakePost([
     { status: 200, body: { ok: true, balance: 99500, roundId: "rid-fixed" } },
     { status: 200, body: { ok: true, balance: 99000, roundId: "rid-fixed" } },
@@ -74,7 +74,9 @@ test("topUp() adds to the open round with the same roundId", async () => {
   await c.bet("blackjack", { main: 500 });
   const r = await c.topUp("blackjack", { main: 500 });
   assert.equal(r.balance, 99000);
-  assert.deepEqual(post.calls[1], { action: "wallet-bet", payload: { gameId: "blackjack", roundId: "rid-fixed", bets: { main: 500 } } });
+  // topUp: true tells the server this is a deliberate merge, NOT an
+  // idempotent retry of the opening bet (which must never double-debit)
+  assert.deepEqual(post.calls[1], { action: "wallet-bet", payload: { gameId: "blackjack", roundId: "rid-fixed", bets: { main: 500 }, topUp: true } });
   assert.deepEqual(c.openRound("blackjack"), { roundId: "rid-fixed", bets: { main: 1000 } });
 });
 
@@ -214,4 +216,106 @@ test("load() skips a malformed round (missing roundId) and does not throw", asyn
   const c = createWalletClient(deps(post));
   await c.load(); // should not throw
   assert.equal(c.openRound("roulette"), null); // malformed round was skipped, not written
+});
+
+// ---------- dual balance: wallet cash vs chips on hand ----------
+
+test("load() captures cash and resetChips from a dual-balance wallet-get", async () => {
+  const post = fakePost([{ status: 200, body: {
+    ok: true, cash: 12000, chips: 3500, balance: 3500,
+    canReset: false, resetAvailableAt: null, resetChips: 2000,
+  }}]);
+  const c = createWalletClient(deps(post));
+  await c.load();
+  assert.equal(c.getBalance(), 3500);      // chips on hand — what games can bet
+  assert.equal(c.getCash(), 12000);        // wallet cash — safe from the tables
+  assert.equal(c.getResetChips(), 2000);   // server-configured reset grant
+});
+
+test("getCash() is null before load and getResetChips() defaults to 5000", async () => {
+  const c = createWalletClient(deps(fakePost([])));
+  assert.equal(c.getCash(), null);
+  assert.equal(c.getResetChips(), 5000);
+});
+
+test("buyIn() converts cash to chips via wallet-buy-in", async () => {
+  const post = fakePost([{ status: 200, body: { ok: true, cash: 2000, chips: 10500, balance: 10500 } }]);
+  const c = createWalletClient(deps(post));
+  const r = await c.buyIn(10000);
+  assert.deepEqual(post.calls[0], { action: "wallet-buy-in", payload: { amount: 10000 } });
+  assert.equal(r.cash, 2000);
+  assert.equal(r.balance, 10500);
+  assert.equal(c.getBalance(), 10500);
+  assert.equal(c.getCash(), 2000);
+});
+
+test("cashOut() converts chips to cash; 'all' sends the all flag", async () => {
+  const post = fakePost([
+    { status: 200, body: { ok: true, cash: 11000, chips: 500, balance: 500 } },
+    { status: 200, body: { ok: true, cash: 11500, chips: 0, balance: 0 } },
+  ]);
+  const c = createWalletClient(deps(post));
+  await c.cashOut(1000);
+  assert.deepEqual(post.calls[0], { action: "wallet-cash-out", payload: { amount: 1000 } });
+  const r = await c.cashOut("all");
+  assert.deepEqual(post.calls[1], { action: "wallet-cash-out", payload: { all: true } });
+  assert.equal(r.balance, 0);
+  assert.equal(c.getCash(), 11500);
+});
+
+test("clear() wipes cash too", async () => {
+  const post = fakePost([{ status: 200, body: { ok: true, cash: 12000, chips: 3500, balance: 3500, canReset: false, resetAvailableAt: null } }]);
+  const c = createWalletClient(deps(post));
+  await c.load();
+  c.clear();
+  assert.equal(c.getCash(), null);
+});
+
+// ---------- bet() idempotent retry: a lost response must never double-debit ----------
+
+test("bet() network failure keeps a pending round; the retry reuses the same roundId", async () => {
+  const storage = fakeStorage();
+  const post = fakePost([
+    { status: 0, body: { ok: false, error: "network-error" } },
+    { status: 200, body: { ok: true, balance: 99400, roundId: "rid-1" } },
+  ]);
+  const dd = deps(post, storage);
+  let n = 0;
+  dd.randomId = () => `rid-${++n}`;   // incrementing — a fresh id would be visible
+  const c = createWalletClient(dd);
+  await assert.rejects(() => c.bet("blackjack", { main: 500 }), (e) => e instanceof WalletError && e.code === "network-error");
+  const r = await c.bet("blackjack", { main: 500 });
+  assert.equal(post.calls[0].payload.roundId, "rid-1");
+  assert.equal(post.calls[1].payload.roundId, "rid-1");   // idempotent replay, NOT rid-2
+  assert.equal(post.calls[1].payload.topUp, undefined);   // NOT a top-up
+  assert.equal(r.roundId, "rid-1");
+  assert.deepEqual(c.openRound("blackjack"), { roundId: "rid-1", bets: { main: 500 } });
+});
+
+test("bet() retry after a network failure re-sends the ORIGINAL bets (stake = what was debited)", async () => {
+  const post = fakePost([
+    { status: 0, body: { ok: false, error: "network-error" } },
+    { status: 200, body: { ok: true, balance: 99400, roundId: "rid-fixed" } },
+  ]);
+  const c = createWalletClient(deps(post));
+  await assert.rejects(() => c.bet("blackjack", { main: 500 }));
+  const r = await c.bet("blackjack", { main: 900 });   // user fiddled the board — server round is 500
+  assert.deepEqual(post.calls[1].payload.bets, { main: 500 });
+  assert.deepEqual(r.bets, { main: 500 });             // caller must play the authoritative stake
+});
+
+test("bet() server rejection (non-network) clears the pending round", async () => {
+  const post = fakePost([
+    { status: 400, body: { ok: false, error: "bad-bets" } },
+    { status: 200, body: { ok: true, balance: 99400, roundId: "rid-2" } },
+  ]);
+  const dd = deps(post);
+  let n = 0;
+  dd.randomId = () => `rid-${++n}`;
+  const c = createWalletClient(dd);
+  await assert.rejects(() => c.bet("roulette", { straight: 5 }));
+  assert.equal(c.openRound("roulette"), null);         // rejected — nothing pending
+  const r = await c.bet("roulette", { straight: 100 });
+  assert.equal(post.calls[1].payload.roundId, "rid-2"); // fresh round, fresh id
+  assert.equal(r.roundId, "rid-2");
 });
