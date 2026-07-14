@@ -7170,6 +7170,18 @@ THREE.SkeletonUtils = { clone };
     });
   }
 
+  // Cancel any in-flight bubble on `group`: bumps its mouthTokens entry so
+  // the active bubble's frame hook (running in speechBubbleOn's Promise
+  // above) sees a stale token on its next tick and runs its own cleanup path
+  // (sprite removed, mouthPulse(0), promise resolved). This is the same
+  // idiom stop() already uses for arms/head/body tokens — mouth just lives
+  // in a different (module-local, group-keyed) map since the bubble helper
+  // is shared across the procedural rig and GLB character impls.
+  function stopBubble(group) {
+    const key = group.uuid;
+    mouthTokens.set(key, (mouthTokens.get(key) || 0) + 1);
+  }
+
   // ---------- materials ----------
   function feltMaterial(color = '#0b5d3b') {
     const tx = canvasTexture(512, 512, (ctx) => {
@@ -7493,7 +7505,7 @@ THREE.SkeletonUtils = { clone };
   }
 
   C.assets = {
-    canvasTexture, roundRect, speechBubbleOn, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
+    canvasTexture, roundRect, speechBubbleOn, stopBubble, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
     carpetModern, marbleMaterial, steelMaterial, glassMaterial, ledStrip, makeNeonSign,
     makeGlowPad, makeStool, makeDealer, makePlaque, makeSign,
   };
@@ -8151,7 +8163,14 @@ THREE.SkeletonUtils = { clone };
       });
     }
 
-    const stop = (track) => { tokens[track] += 1; };
+    // Bumping tokens[track] alone cancels play()'s clip loop; 'mouth' also
+    // needs to cancel the bubble helper's own frame hook in assets.js (its
+    // cancellation state lives in a module-local, group-keyed map there, not
+    // in this rig's tokens object — see stopBubble's comment).
+    const stop = (track) => {
+      tokens[track] += 1;
+      if (track === 'mouth') C.assets.stopBubble(group);
+    };
 
     // ---- speech bubble + mouth ----
     // Bubble sprite/timer bookkeeping now lives in assets.js's speechBubbleOn
@@ -8372,7 +8391,11 @@ THREE.SkeletonUtils = { clone };
     // play(): Task 6 adds mocap gestures, Task 7 adds IK actions. For now,
     // resolve immediately so awaited sequences never hang mid-implementation.
     function play() { return Promise.resolve(); }
-    const stop = (track) => { tokens[track] += 1; };
+    // See rig.js's stop() for why 'mouth' also cancels via stopBubble.
+    const stop = (track) => {
+      tokens[track] += 1;
+      if (track === 'mouth') C.assets.stopBubble(group);
+    };
     function say(_app, text, o = {}) {
       // GLB face is static — subtle head bob stands in for the mouth flap
       return C.assets.speechBubbleOn(app, group, text, {

@@ -152,7 +152,11 @@
     // play(): Task 6 adds mocap gestures, Task 7 adds IK actions. For now,
     // resolve immediately so awaited sequences never hang mid-implementation.
     function play() { return Promise.resolve(); }
-    const stop = (track) => { tokens[track] += 1; };
+    // See rig.js's stop() for why 'mouth' also cancels via stopBubble.
+    const stop = (track) => {
+      tokens[track] += 1;
+      if (track === 'mouth') C.assets.stopBubble(group);
+    };
     function say(_app, text, o = {}) {
       // GLB face is static — subtle head bob stands in for the mouth flap
       return C.assets.speechBubbleOn(app, group, text, {

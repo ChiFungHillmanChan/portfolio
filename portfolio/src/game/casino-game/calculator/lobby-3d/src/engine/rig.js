@@ -225,7 +225,14 @@
       });
     }
 
-    const stop = (track) => { tokens[track] += 1; };
+    // Bumping tokens[track] alone cancels play()'s clip loop; 'mouth' also
+    // needs to cancel the bubble helper's own frame hook in assets.js (its
+    // cancellation state lives in a module-local, group-keyed map there, not
+    // in this rig's tokens object — see stopBubble's comment).
+    const stop = (track) => {
+      tokens[track] += 1;
+      if (track === 'mouth') C.assets.stopBubble(group);
+    };
 
     // ---- speech bubble + mouth ----
     // Bubble sprite/timer bookkeeping now lives in assets.js's speechBubbleOn

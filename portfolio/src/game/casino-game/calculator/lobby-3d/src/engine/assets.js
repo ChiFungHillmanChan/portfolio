@@ -86,6 +86,18 @@
     });
   }
 
+  // Cancel any in-flight bubble on `group`: bumps its mouthTokens entry so
+  // the active bubble's frame hook (running in speechBubbleOn's Promise
+  // above) sees a stale token on its next tick and runs its own cleanup path
+  // (sprite removed, mouthPulse(0), promise resolved). This is the same
+  // idiom stop() already uses for arms/head/body tokens — mouth just lives
+  // in a different (module-local, group-keyed) map since the bubble helper
+  // is shared across the procedural rig and GLB character impls.
+  function stopBubble(group) {
+    const key = group.uuid;
+    mouthTokens.set(key, (mouthTokens.get(key) || 0) + 1);
+  }
+
   // ---------- materials ----------
   function feltMaterial(color = '#0b5d3b') {
     const tx = canvasTexture(512, 512, (ctx) => {
@@ -409,7 +421,7 @@
   }
 
   C.assets = {
-    canvasTexture, roundRect, speechBubbleOn, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
+    canvasTexture, roundRect, speechBubbleOn, stopBubble, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
     carpetModern, marbleMaterial, steelMaterial, glassMaterial, ledStrip, makeNeonSign,
     makeGlowPad, makeStool, makeDealer, makePlaque, makeSign,
   };
