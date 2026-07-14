@@ -31,7 +31,7 @@ const WALLET_ERR_MSG = {
     "too-fast": "Slow down — wait a moment before the next round",
     "round-in-progress": "Finish the current round first",
     "over-table-max": "That bet is over the table limit",
-    "bad-bets": "That bet isn't allowed here",
+    "bad-bets": "That bet isn't allowed — each bet type must reach the table minimum",
     "empty-bet": "Place a bet first",
 };
 
@@ -424,6 +424,19 @@ async function handleSpinClick() {
     // Wallet debit at bet-lock. Zero-bet spins are intentionally allowed (for
     // stats/practice) and skip the wallet entirely — there is nothing to debit.
     if (hasBets()) {
+        // Spin-time mirror of the server's per-class MIN rule. Placement can't
+        // enforce it (classes build up chip by chip from 0), so without this
+        // check a sub-min bet only fails at the server — a bare 400 bad-bets
+        // with no hint of why. Catch it here with the exact shortfall instead.
+        const minMsg = window.rouletteTable && window.rouletteTable.checkBets
+            ? window.rouletteTable.checkBets(getAllBets())
+            : null;
+        if (minMsg) {
+            showBetError(minMsg);
+            updateButtonStates(); // phase is still BETTING — keep Spin enabled
+            return;
+        }
+
         // Set synchronously (before the first await) and disable the button so
         // a rapid double-click can't fire a second commitBet for this same
         // round while the first request is still in flight.

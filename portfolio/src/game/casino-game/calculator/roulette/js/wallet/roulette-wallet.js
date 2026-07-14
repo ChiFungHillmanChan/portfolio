@@ -9,7 +9,7 @@
 
 import { createGameSession } from "../../../js/wallet/game-session.js";
 import bootstrap from "../../../js/wallet/wallet-bootstrap.js";
-import { mapRouletteBets } from "./bet-map.js";
+import { mapRouletteBets, findMinViolation } from "./bet-map.js";
 import { getTable } from "../../../js/wallet/table-config.js";
 import { stakeFromUrl, mountStakePicker } from "../../../js/wallet/stake-picker.js";
 
@@ -28,6 +28,12 @@ if (!stake) {
   });
 } else {
   const table = getTable(stake.gameId);
+  // How the per-class buckets read to a player, for min-violation messages.
+  const CLASS_LABEL = {
+    straight: "Straight-up", split: "Split", street: "Street/Trio",
+    corner: "Corner/First-four", sixline: "Six-line", column: "Column",
+    dozen: "Dozen", evenMoney: "Even-money",
+  };
   // Active tier's limits for init.js/event-handlers.js: every roulette bet
   // class shares the tier min; perSpotMax is the client-only UX cap (the
   // server caps per-CLASS aggregates at maxTotalBet, not per spot).
@@ -38,6 +44,14 @@ if (!stake) {
     min: table.betTypes.straight.min,
     perSpotMax: stake.perSpotMax,
     maxTotalBet: table.maxTotalBet,
+    // Spin-time mirror of the server's per-class MIN rule (chips are placed
+    // one at a time from 0, so placement can't enforce it). Returns a friendly
+    // message when the server would reject the bet as bad-bets, else null.
+    checkBets(betState) {
+      const v = findMinViolation(betState, table.betTypes);
+      if (!v) return null;
+      return `${CLASS_LABEL[v.type] || v.type} bets total ${v.amount.toLocaleString()} — table minimum is ${v.min.toLocaleString()} per bet type`;
+    },
   };
 
   createGameSession({

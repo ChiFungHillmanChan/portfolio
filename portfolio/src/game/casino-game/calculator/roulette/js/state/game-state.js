@@ -209,11 +209,25 @@ function isBankrupt() {
 }
 
 /**
- * Get available chip denominations based on bankroll
+ * Chip denominations offered at the active wallet table: nothing below the
+ * tier min (one chip of the smallest denom is already a valid bet) and
+ * nothing above the per-spot max. Practice mode (no window.rouletteTable)
+ * offers the full rack.
+ * @returns {array} Denominations the table deals in
+ */
+function tableChipDenominations() {
+    const table = typeof window !== 'undefined' ? window.rouletteTable : null;
+    if (!table) return CHIP_DENOMINATIONS;
+    const fit = CHIP_DENOMINATIONS.filter(chip => chip >= table.min && chip <= table.perSpotMax);
+    return fit.length ? fit : CHIP_DENOMINATIONS;
+}
+
+/**
+ * Get available chip denominations based on bankroll (within the table's rack)
  * @returns {array} Available chip values
  */
 function getAvailableChips() {
-    return CHIP_DENOMINATIONS.filter(chip => chip <= gameState.bankroll.current);
+    return tableChipDenominations().filter(chip => chip <= gameState.bankroll.current);
 }
 
 /**
