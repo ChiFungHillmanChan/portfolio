@@ -152,6 +152,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     insufficient: 'Not enough chips',
     'too-fast': 'One moment — dealing too fast',
     'network-error': 'Connection problem — try again',
+    'round-in-progress': 'Previous hand still closing — one moment',
   };
 
   const renderBalance = () => { balanceEl.textContent = formatChips(walletClient.getBalance() ?? 0); };
@@ -223,6 +224,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
 
   // ---- session lifecycle ----
   let closed = false;
+  let pendingHandResolve = null;   // resolves the in-flight playOneHand promise, if any
   const dealt = [];        // card meshes on the felt this round
   const markers = [];      // split-hand highlight decals
 
@@ -242,6 +244,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   function close() {
     if (closed) return;
     closed = true;
+    pendingHandResolve?.();
     unsubBalance();
     wrap.remove();
     document.getElementById('bjActions')?.remove();
@@ -382,12 +385,14 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
 
   function playOneHand(hands, hi, dealPlayer, roundBets) {
     return new Promise((resolve) => {
+      const done = () => { pendingHandResolve = null; resolve(); };
+      pendingHandResolve = done;
       const hand = hands[hi];
       const el = actionBar();
       const spotId = hi === 0 ? 'main' : 'main2';
       let acting = false;
 
-      const finish = () => { resolve(); };
+      const finish = () => { done(); };
       const render = () => {
         const hv = handValue(hand.cards);
         const label = hands.length > 1 ? `HAND ${hi + 1}/${hands.length}: ` : 'YOUR HAND: ';
@@ -412,7 +417,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
         acting = true;
         await dealPlayer(hand, hi, hands.length);
         acting = false;
-        if (closed) return resolve();
+        if (closed) return done();
         if (handValue(hand.cards).total > 21) return finish();
         render();
       };
@@ -427,7 +432,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
           render();
           return;
         }
-        if (closed) return resolve();
+        if (closed) return done();
         hand.doubled = true;
         hand.stake += roundBets.main;
         // double is only offered on the unsplit hand, so the spot is 'main';
@@ -435,7 +440,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
         placed.main.forEach((v) => stacks.add('main', v));
         await dealPlayer(hand, hi, hands.length, { sideways: true });
         acting = false;
-        if (closed) return resolve();
+        if (closed) return done();
         finish();                                               // double = exactly one card
       };
 
@@ -449,7 +454,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
           render();
           return;
         }
-        if (closed) return resolve();
+        if (closed) return done();
         // second hand takes the second card; re-home both card meshes
         const moved = hand.cards.pop();
         const movedMesh = hand.meshes.pop();
@@ -461,12 +466,13 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
         C.tween.to(movedMesh.position, { x: toWorld(p1.pos)[0], z: toWorld(p1.pos)[2] }, 320, 'outCubic');
         placed.main.forEach((v) => stacks.add('main2', v));     // second hand's equal bet
         await wait(380);
+        if (closed) return done();
         // each split hand draws its second card before play continues
         await dealPlayer(hand, 0, 2);
-        if (closed) return resolve();
+        if (closed) return done();
         await dealPlayer(hands[1], 1, 2);
         acting = false;
-        if (closed) return resolve();
+        if (closed) return done();
         render();
       };
 
