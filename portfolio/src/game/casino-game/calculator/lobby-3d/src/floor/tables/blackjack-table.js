@@ -7,9 +7,10 @@
   // layout (arc lettering + insurance band + seat circles) instead of plain
   // green. Group origin = table center at floor level; +Z = player arc side.
   const TABLE_R = 1.6, RAIL_H = 0.8, FELT_Y = 0.83;
-  const SEAT_COUNT = 6, SEAT_ANGLE_START = 160, SEAT_ANGLE_STEP = 28, SEAT_R = 1.95;
-  const GHOST_SEATS = [1, 4], GHOST_R = 1.28;
-  const seatAngle = (i) => ((SEAT_ANGLE_START - i * SEAT_ANGLE_STEP) * Math.PI) / 180;
+  const GHOST_SEATS = [1, 4];
+  // Geometry lives in C.layouts.blackjack.seat — but layouts.js loads first
+  // in SRC_ORDER, so read it lazily inside the builder, not at module scope.
+  const seatSpin = (a) => Math.PI / 2 - a;
 
   // Half-disc UV mapping (CircleGeometry): canvas px = (512 + cos(a)·R·320,
   // 512 + sin(a)·R·320) for a world point at polar (a, R) on the felt —
@@ -54,22 +55,12 @@
         (148 * Math.PI) / 180, (32 * Math.PI) / 180,
         'bold 26px Georgia, serif', 'rgba(240,216,120,0.7)');
 
-      // main arc lettering between the band and the seat circles
-      arcText(ctx, 'BLACKJACK PAYS 3 TO 2', 305,
-        (150 * Math.PI) / 180, (30 * Math.PI) / 180,
-        'bold 40px Georgia, serif', 'rgba(240,216,120,0.85)');
-
-      // seat bet circles out by the player arc, matching the stools
-      for (let i = 0; i < SEAT_COUNT; i++) {
-        const a = seatAngle(i);
-        const px = CX + Math.cos(a) * 1.28 * PX;
-        const py = CY + Math.sin(a) * 1.28 * PX;
-        ctx.strokeStyle = 'rgba(240,216,120,0.65)';
-        ctx.lineWidth = 4;
-        ctx.beginPath();
-        ctx.arc(px, py, 0.1 * PX, 0, Math.PI * 2);
-        ctx.stroke();
-      }
+      // main arc lettering between the band and the seat circles. Bet circles
+      // are NOT painted here — they are decals placed by the table code with
+      // the same polar math as the chips, so chips always land dead-center.
+      arcText(ctx, 'BLACKJACK PAYS 3 TO 2', 275,
+        (155 * Math.PI) / 180, (25 * Math.PI) / 180,
+        'bold 38px Georgia, serif', 'rgba(240,216,120,0.85)');
     });
   }
 
@@ -77,6 +68,11 @@
   C.floor.tables.blackjack = (opts = {}) => {
     const A = C.assets;
     const L = C.layouts.blackjack;
+    const S = L.seat;
+    const seatPoint = L.seatPoint;
+    const seatAngle = (i) => ((S.angleStart - i * S.angleStep) * Math.PI) / 180;
+    const SEAT_COUNT = S.count, SEAT_R = S.stoolR;
+    const MAIN_R = S.mainR, SIDE_R = S.sideR, SIDE_DX = S.sideDx, CARDS_R = S.cardsR;
     const g = new THREE.Group();
 
     // half-cylinder skirt (bulges +Z for thetaStart=0 — v1 verified)
@@ -119,17 +115,30 @@
     rimBack.position.set(0, FELT_Y, -0.02);
     g.add(rimBack);
 
-    // ghost hand: card boxes + bet spot decals at the hero seat
-    [...L.playerSlots, ...L.dealerSlots].forEach((slot) => {
+    // dealer card boxes on the flat-edge side of the insurance band
+    L.dealerSlots.forEach((slot) => {
       const box = C.cards.makeCardBoxDecal();
       box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
       g.add(box);
     });
-    Object.values(L.spots).forEach(({ pos, r, label }) => {
-      const decal = C.chips.makeSpotDecal({ label, r });
-      decal.position.set(pos[0], FELT_Y + 0.004, pos[2]);
-      g.add(decal);
-    });
+
+    // per-seat bet spots: main circle nearest the player, PP + 21+3 side bets
+    // in a row directly above it, everything oriented toward that seat
+    for (let i = 0; i < SEAT_COUNT; i++) {
+      const a = seatAngle(i);
+      const spin = seatSpin(a);
+      [
+        { radius: MAIN_R, tangent: 0,        r: 0.095, label: 'MAIN' },
+        { radius: SIDE_R, tangent: -SIDE_DX, r: 0.055, label: 'PP' },
+        { radius: SIDE_R, tangent: SIDE_DX,  r: 0.055, label: '21+3' },
+      ].forEach(({ radius, tangent, r, label }) => {
+        const [x, z] = seatPoint(a, radius, tangent);
+        const decal = C.chips.makeSpotDecal({ label, r });
+        decal.rotation.set(-Math.PI / 2, 0, spin);
+        decal.position.set(x, FELT_Y + 0.004, z);
+        g.add(decal);
+      });
+    }
 
     // card shoe
     const shoeGroup = new THREE.Group();
@@ -142,21 +151,43 @@
     shoeGroup.add(shoeBody);
     const shoeTrim = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.02, 0.24), A.goldMaterial());
     shoeTrim.rotation.x = -0.35;
-    shoeTrim.position.y = 0.09;
+    // flush against the tilted body's top face (0.08 up along the tilted normal)
+    shoeTrim.position.set(0, 0.08 * Math.cos(0.35), -0.08 * Math.sin(0.35));
     shoeGroup.add(shoeTrim);
     shoeGroup.position.set(...L.shoePos);
+    // face the shoe LEFT (toward the dealer's dealing hand at table center,
+    // slightly angled to the arc) so both dealer and players see its mouth
+    shoeGroup.rotation.y = -Math.PI / 2 + 0.32;
     g.add(shoeGroup);
 
-    // dealer chip tray on the flat edge
-    const tray = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.04, 0.2),
-      new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.5, metalness: 0.3 }));
-    tray.position.set(-0.55, FELT_Y + 0.025, 0.12);
-    g.add(tray);
-    [500, 1000, 5000].forEach((v, i) => {
-      const stk = C.chips.makeChipStack(v, 7);
-      stk.position.set(-0.7 + i * 0.16, FELT_Y + 0.05, 0.12);
-      g.add(stk);
+    // dealer chip station: a rimmed rack on its own console shelf BETWEEN the
+    // dealer and the table's flat edge — chips never sit on the playing felt
+    const station = new THREE.Group();
+    const PED_TOP = FELT_Y + 0.03;   // rack surface clears the table's back rim
+    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.8, PED_TOP, 0.26),
+      A.woodMaterial('#241408'));
+    pedestal.position.y = PED_TOP / 2;
+    pedestal.castShadow = true; pedestal.receiveShadow = true;
+    station.add(pedestal);
+    const trayMat = new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.5, metalness: 0.3 });
+    const trayBase = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.02, 0.24), trayMat);
+    trayBase.position.y = PED_TOP + 0.01;
+    station.add(trayBase);
+    [-1, 1].forEach((s) => {
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.035, 0.02), trayMat);
+      lip.position.set(0, PED_TOP + 0.028, s * 0.11);
+      station.add(lip);
+      const side = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.035, 0.24), trayMat);
+      side.position.set(s * 0.37, PED_TOP + 0.028, 0);
+      station.add(side);
     });
+    [100, 500, 1000, 5000].forEach((v, i) => {
+      const stk = C.chips.makeChipStack(v, 8);
+      stk.position.set(-0.27 + i * 0.18, PED_TOP + 0.024, 0);
+      station.add(stk);
+    });
+    station.position.set(0, 0, -0.19);
+    g.add(station);
 
     // stools + ghost occupants
     for (let i = 0; i < SEAT_COUNT; i++) {
@@ -165,16 +196,27 @@
       stool.position.set(Math.cos(a) * SEAT_R, 0, Math.sin(a) * SEAT_R);
       g.add(stool);
     }
-    GHOST_SEATS.forEach((i) => {
+    GHOST_SEATS.forEach((i, k) => {
       const a = seatAngle(i);
+      const spin = seatSpin(a);
+      // main bet dead-center in the seat's MAIN circle
       const chips = C.chips.makeChipStack(500, 4);
-      chips.position.set(Math.cos(a) * GHOST_R, FELT_Y + 0.02, Math.sin(a) * GHOST_R);
+      const [mx, mz] = seatPoint(a, MAIN_R);
+      chips.position.set(mx, FELT_Y + 0.004, mz);
       g.add(chips);
-      const card = C.cards.makeCard(null);
-      card.rotation.x = -Math.PI / 2;
-      const cardR = GHOST_R - 0.2;
-      card.position.set(Math.cos(a) * cardR, FELT_Y + 0.015, Math.sin(a) * cardR);
-      g.add(card);
+      // one flavor chip centered on a side bet (PP for one ghost, 21+3 the other)
+      const side = C.chips.makeChip(100);
+      const [sx, sz] = seatPoint(a, SIDE_R, (k % 2 ? 1 : -1) * SIDE_DX);
+      side.position.set(sx, FELT_Y + 0.008, sz);
+      g.add(side);
+      // dealt hand: two face-up cards just above the side bets, facing the seat
+      [{ r: 14, s: 0, t: -0.04 }, { r: 13, s: 2, t: 0.05 }].forEach(({ r, s, t }, n) => {
+        const card = C.cards.makeCard({ r, s });
+        card.rotation.set(-Math.PI / 2, 0, spin + (n ? -0.12 : 0.1));
+        const [cx, cz] = seatPoint(a, CARDS_R + n * 0.015, t);
+        card.position.set(cx, FELT_Y + 0.012 + n * 0.003, cz);
+        g.add(card);
+      });
     });
 
     if (opts.withDealer) {
@@ -196,6 +238,26 @@
     g.add(pad);
     g.userData.highlight = (on) => pad.userData.setBright(on);
     g.userData.radius = 2.2;
+
+    // live-play rig: everything blackjack-live.js needs, in TABLE-LOCAL coords
+    // (convert with group.localToWorld). main2 = the split hand's bet stack.
+    g.userData.bj = {
+      seat: S, feltY: FELT_Y, seatAngle, seatPoint,
+      dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoePos,
+      trayLocal: [0, FELT_Y + 0.054, -0.19],
+      freeSeats: [0, 2, 3, 5],
+      spotLocal(i, id) {
+        const a = seatAngle(i);
+        const at = (radius, tangent) => {
+          const [x, z] = seatPoint(a, radius, tangent);
+          return [x, FELT_Y + 0.004, z];
+        };
+        if (id === 'main') return at(MAIN_R, 0);
+        if (id === 'main2') return at(MAIN_R, -S.splitDx);
+        if (id === 'perfectPair') return at(SIDE_R, -SIDE_DX);
+        return at(SIDE_R, SIDE_DX);            // twentyOnePlus3
+      },
+    };
 
     return g;
   };

@@ -76,6 +76,28 @@ test('baccarat Macau layout: seat spots on the felt, card slots in the dealing a
   assert.ok(bac.rackPos[2] < -0.3 && bac.shoePos[2] < -0.3 && bac.discardPos[2] < -0.3);
 });
 
+test('blackjack seat layout: stacks, splits and spots stay on the felt', () => {
+  const bj = L.blackjack, s = bj.seat;
+  assert.ok(s && s.count === 6);
+  const angle = (i) => ((s.angleStart - i * s.angleStep) * Math.PI) / 180;
+  for (let i = 0; i < s.count; i++) {
+    const a = angle(i);
+    for (const [radius, tangent] of [
+      [s.mainR, 0], [s.sideR, -s.sideDx], [s.sideR, s.sideDx],       // bet spots
+      [s.cardsR, s.splitDx], [s.cardsR, -s.splitDx],                 // split bases
+      [s.cardsR - 6 * s.stackDr, 0],                                 // 7th hit card
+      [bj.seat.mainR, -s.splitDx],                                   // split bet stack
+    ]) {
+      const [x, z] = bj.seatPoint(a, radius, tangent);
+      assert.ok(Math.hypot(x, z) < 1.6 - 0.05, `inside rim seat ${i}`);
+      assert.ok(z - L.CARD_H / 2 > -0.02, `on +Z felt seat ${i}`);
+    }
+  }
+  // deepest stack card never collides with the dealer's card row (z 0.16)
+  const deep = bj.seatPoint(angle(2), s.cardsR - 6 * s.stackDr, 0);
+  assert.ok(Math.hypot(deep[0], deep[1]) > 0.45);
+});
+
 test('rouletteSpotPos maps every overlay spot id onto the felt box', () => {
   const ids = ['n0', ...Array.from({ length: 36 }, (_, i) => 'n' + (i + 1)),
     'c1', 'c2', 'c3', 'd1', 'd2', 'd3', 'low', 'even', 'red', 'black', 'odd', 'high'];

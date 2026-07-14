@@ -18,7 +18,28 @@
     baccarat:  { z: 6.5,  dir: -1, xs: [-13.4, -9.0, -4.6, -0.2] },
     uth:       { z: 6.5,  dir: -1, xs: [5.2], reserved: [8.8, 11.4, 14.0, 16.6] },
   };
-  const SIGN_X = { roulette: -6.8, blackjack: 10.0, baccarat: -6.8, uth: 8.4 };
+  // Maintenance enclosure for the closed UTH table — hugs the table footprint
+  // (stools reach x 3.24–7.16, z 5.21; dealer at z 7.75) so the cage reads as
+  // wrapping THE table, not fencing floor space near it. West rail (x0 3.45)
+  // stays outside the cashier corridor (the table's own obstacle already
+  // blocks x > 2.65 at z 6.5); east rail (x1 7.3) clears the OPENING-SOON
+  // dais at 7.6.
+  const CLOSED_ZONE = {
+    rect: { x0: 3.45, x1: 7.3, z0: 4.95, z1: 8.35 },
+    signDx: -1.35,
+    signLines: [
+      { text: 'DEALER TRAINING', size: 56, color: '#b3541e' },
+      { text: 'IN PROGRESS', size: 44, color: '#b3541e' },
+      { text: 'TABLE CLOSED', size: 52 },
+      { text: '維修中', size: 64 },
+      { text: 'Sorry for the inconvenience', size: 26, weight: 'normal' },
+    ],
+    trainer: { pos: [6.3, 7.6], lookAt: [5.2, 7.75] },
+  };
+  // uth neon hangs OVER the (closed) table itself — at 8.4 it hung over the
+  // reserved pads, which read as "the UTH area is open floor, the cage is
+  // something else off to the side".
+  const SIGN_X = { roulette: -6.8, blackjack: 10.0, baccarat: -6.8, uth: 5.4 };
 
   const highlights = new Map();   // table.id → group.userData.highlight
 
@@ -69,7 +90,7 @@
       section.tables.forEach((table, i) => {
         const x = row.xs[i];
         if (x === undefined) return;
-        const accent = table.key ? TIER_TINTS[table.key] : TINTS.uth;
+        const accent = table.closed ? '#ffb040' : (table.key ? TIER_TINTS[table.key] : TINTS.uth);
         const rotated = !!row.yaw;
         const group = C.floor.tables[section.id]({
           tierName: table.tierName,
@@ -84,6 +105,10 @@
         group.rotation.y = row.yaw ?? (row.dir === -1 ? Math.PI : 0);
         s.add(group);
         highlights.set(table.id, group.userData.highlight);
+        // live-play rigs: roulette tables expose spinTo/pushResult/setBets
+        // on their group userData for the in-place session (roulette-live.js)
+        if (section.id === 'roulette') (C.floor.rouletteRigs ??= new Map()).set(table.id, group);
+        if (section.id === 'blackjack') (C.floor.blackjackRigs ??= new Map()).set(table.id, group);
 
         // dedicated warm pool over every table (desktop; mobile uses the
         // shell's four wide washes instead — light count budget)
@@ -102,13 +127,18 @@
         const oz = rotated ? row.z - 0.45 : row.z;
         C.world.addObstacle({ x: ox, z: oz, r: group.userData.radius });
 
+        // closed table: build the maintenance enclosure (rails + sign +
+        // collision chain) — the anchor stays, but its approach pulls back
+        // so the camera lands OUTSIDE the barrier looking through it.
+        if (table.closed) C.floor.buildMaintenanceZone(CLOSED_ZONE);
+
         // anchor on the aisle side of the table
         const az = row.z + row.dir * (rotated ? 2.6 : 2.35);
         C.world.addAnchor({
           id: table.id, kind: 'table', table,
           pos: [x, az], radius: 2.0,
           approach: {
-            pos: [x, 1.6, row.z + row.dir * (rotated ? 3.0 : 2.7)],
+            pos: [x, 1.6, row.z + row.dir * (rotated ? 3.0 : (table.closed ? 3.9 : 2.7))],
             look: [x, 0.95, row.z],
           },
         });

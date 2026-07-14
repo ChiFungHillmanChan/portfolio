@@ -32,7 +32,7 @@
     chipSource: [1.0, 0.85, 1.05],          // near table edge at the player's right
     dealerChipPos: [0, 0.85, 0.10],
     playerSlots: [[0.27, 0.86, 0.50], [0.44, 0.86, 0.50]],
-    dealerSlots: [[-0.24, 0.86, 0.16], [-0.07, 0.86, 0.16]],
+    dealerSlots: [[-0.085, 0.86, 0.16], [0.085, 0.86, 0.16]],
     fanDx: 0.17,                             // 3rd+ card continues right of slot[1]
     spots: {
       main:               { pos: [0.36, 0.845, 0.78], r: 0.11,  label: 'MAIN' },
@@ -40,7 +40,19 @@
       twentyOnePlusThree: { pos: [0.62, 0.845, 0.88], r: 0.075, label: '21+3' },
     },
     poseDeal: { pos: [0.12, 1.35, 1.25], look: [0.08, 0.84, 0.25] },
+    // v2 floor-table seat geometry (polar, radii from table center). The
+    // table builder AND blackjack-live.js both use seatPoint so painted
+    // spots, chips and cards can never drift apart.
+    seat: {
+      count: 6, angleStart: 160, angleStep: 28, stoolR: 1.95,
+      mainR: 1.40, sideR: 1.19, sideDx: 0.07,
+      cardsR: 1.02, stackDr: 0.062, splitDx: 0.14,
+    },
   };
+  blackjack.seatPoint = (a, radius, tangent = 0) => [
+    Math.cos(a) * radius - Math.sin(a) * tangent,
+    Math.sin(a) * radius + Math.cos(a) * tangent,
+  ];
 
   // ---------- baccarat (ellipse felt rx 1.692 / rz 0.799, FELT_Y 0.82)
   // Macau-style layout: dealer strip (chip rack/shoe/discard) at -z, the
