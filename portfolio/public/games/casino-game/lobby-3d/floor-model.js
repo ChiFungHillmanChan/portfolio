@@ -26,13 +26,18 @@ export function buildFloorModel() {
     if (game === 'uth') {
       // One physical table until Plan 5 ships the ante tiers; the section
       // reserves the floor space. Buy-in (not ante) is the seat requirement.
+      // The 3D UTH table is not playable yet: closed for "dealer training".
+      // href is null (not merely hidden) so no code path can render a live
+      // play link; the floor builds a maintenance barrier around the table.
       return {
         id: game, label: meta.label, gameName: meta.gameName, reservedSpots: 4,
         tables: [{
           id: 'uth:main', key: null, gameId: 'uth', tierName: 'Table 1',
           limitsText: 'Ante 100 – 1,000 · Buy-in 10,000',
           blurb: 'Online multiplayer vs the dealer.',
-          href: meta.base, minBet: 10000,
+          href: null, closed: true,
+          closedNotice: 'Our dealers are training on this table. Multiplayer opens soon.',
+          minBet: 10000,
         }],
       };
     }

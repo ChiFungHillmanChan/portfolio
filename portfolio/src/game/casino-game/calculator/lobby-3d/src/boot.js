@@ -24,7 +24,12 @@
   // registered anchor's approach (tables, cashier, practice).
   C.stage.goTo = (id) => {
     const pose = C.floorplan.ANCHOR_POSES[id];
-    if (pose) return C.app.glideTo(pose.pos, pose.look, 1200);
+    if (pose) {
+      // signed-out clicks on floor-side signs open the ID check instead of
+      // flying through the closed turnstile (canFlyTo notifies the UI)
+      if (!C.app.canFlyTo(pose.pos)) return Promise.resolve();
+      return C.app.glideTo(pose.pos, pose.look, 1200);
+    }
     const a = C.world.anchorById(id);
     return a ? C.app.goToAnchor(a) : Promise.resolve();
   };

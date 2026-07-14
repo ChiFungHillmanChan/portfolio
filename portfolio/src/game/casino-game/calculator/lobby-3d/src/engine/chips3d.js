@@ -130,12 +130,14 @@
       const to = stackTop(spotId);
       stacks[spotId].push(chip);
       app.scene.add(chip);
+      C.sound?.play('chip');
       fly(chip, source, to, 340);
     }
 
     function removeTop(spotId) {
       const chip = (stacks[spotId] || []).pop();
       if (!chip) return;
+      C.sound?.play('chip');
       fly(chip, chip.position.toArray(), source, 280, () => {
         app.scene.remove(chip); disposeChip(chip);
       });
@@ -175,6 +177,7 @@
       const chips = stacks[spotId] || [];
       stacks[spotId] = [];
       if (!chips.length && outcome !== 'win') return;
+      C.sound?.play('chipSweep');
       if (outcome === 'lose') return sweep(chips, dealerPos, 420);
       if (outcome === 'push') return sweep(chips, source, 420);
       const [x, y, z] = getSpotPos(spotId);

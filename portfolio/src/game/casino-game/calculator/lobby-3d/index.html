@@ -166,7 +166,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
   <div id="sectionLabel" aria-live="polite"></div>
   <div id="hudRight">
     <div id="accountHost"></div>
-    <button id="muteBtn" class="hud-btn" type="button" aria-label="Toggle sound">🔊</button>
+    <button id="muteBtn" class="hud-btn" type="button" aria-label="Toggle sound"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 3 9 3 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
     <a id="exit2d" class="hud-btn" href="../index.html">2D Lobby</a>
   </div>
 </div>
@@ -1152,6 +1152,23 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     return group;
   }
 
+  // Yellow cut card: solid colour both sides, playing-card footprint. Same
+  // group + flip contract as makeCard so dealCardTo can fly it.
+  function makeCutCard() {
+    const geo = new THREE.PlaneGeometry(C.layouts.CARD_W, C.layouts.CARD_H);
+    const mat = new THREE.MeshStandardMaterial({
+      color: '#e6c531', roughness: 0.55, metalness: 0, side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    const group = new THREE.Group();
+    group.add(mesh);
+    group.userData.card = null;
+    group.userData.flip = (ms = 400, onDone) =>
+      C.tween.to(group.rotation, { y: group.rotation.y + Math.PI }, ms, 'inOutCubic', onDone);
+    return group;
+  }
+
   // dealCardTo v2 — same contract as the original (assets.js), plus:
   //  * in-plane spin: rotation.z starts 0.45 rad short of the caller's final
   //    value and eases in (rotation.z is the INNERMOST Euler axis, so the
@@ -1249,7 +1266,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     return mesh;
   }
 
-  C.cards = { makeCard, dealCardTo, flipFlatCard, makeCardBoxDecal };
+  C.cards = { makeCard, makeCutCard, dealCardTo, flipFlatCard, makeCardBoxDecal };
   C.assets.makeCard = makeCard;
 })();
 
@@ -1490,10 +1507,13 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 
   function makeHumanRig({ suit = '#1a1a1a', shirt = '#f2f0e8', seed = '' } = {}) {
     const h = hashSeed(seed || Math.floor(performance.now()));
+    // >>> keeps the shifted index unsigned — a signed >> on a hash above 2^31
+    // went negative, so HAIRS[-4]/VESTS[-4] were undefined and THREE fell
+    // back to white hair/vests for half of all seeds.
     const skin = SKINS[h % SKINS.length];
-    const hairC = HAIRS[(h >> 3) % HAIRS.length];
-    const vestC = seed ? VESTS[(h >> 6) % VESTS.length] : suit;
-    const hairStyle = HAIR_STYLES[(h >> 9) % HAIR_STYLES.length];
+    const hairC = HAIRS[(h >>> 3) % HAIRS.length];
+    const vestC = seed ? VESTS[(h >>> 6) % VESTS.length] : suit;
+    const hairStyle = HAIR_STYLES[(h >>> 9) % HAIR_STYLES.length];
 
     const suitMat = new THREE.MeshStandardMaterial({ color: suit, roughness: 0.6, metalness: 0.05 });
     const vestMat = new THREE.MeshStandardMaterial({ color: vestC, roughness: 0.55, metalness: 0.08 });
@@ -2031,6 +2051,41 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       { at: 0.70, ease: 'inOutCubic', joints: { neck: { e: [0, 0.18, 0] } } },
       { at: 1.00, ease: 'inOutCubic', joints: { neck: { rest: true } } },
     ] },
+    // two-arm circular card wash over the felt: arms reach forward-down and
+    // trace counter-phase circles. Last key ≈ first key so consecutive plays
+    // chain into a continuous smear; finish a wash run with armsRest.
+    washCards: { track: 'arms', dur: 1600, keys: [
+      { at: 0.25, ease: 'inOutCubic', joints: {
+        shoulderL: { e: [-0.45, 0, 0.35] }, shoulderR: { e: [-0.45, 0, -0.35] },
+        elbowL: { e: [-0.35, 0, 0] }, elbowR: { e: [-0.35, 0, 0] } } },
+      { at: 0.50, ease: 'inOutCubic', joints: {
+        shoulderL: { e: [-0.70, 0, 0.12] }, shoulderR: { e: [-0.25, 0, -0.55] } } },
+      { at: 0.75, ease: 'inOutCubic', joints: {
+        shoulderL: { e: [-0.25, 0, 0.55] }, shoulderR: { e: [-0.70, 0, -0.12] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: {
+        shoulderL: { e: [-0.45, 0, 0.35] }, shoulderR: { e: [-0.45, 0, -0.35] } } },
+    ] },
+    // riffle shuffle: hands come together in front of the chest, wrists
+    // alternate the interleave flick. Chains like washCards; end via armsRest.
+    shuffleRiffle: { track: 'arms', dur: 1100, keys: [
+      { at: 0.20, ease: 'outCubic', joints: {
+        shoulderL: { e: [-0.5, 0, 0.55] }, shoulderR: { e: [-0.5, 0, -0.55] },
+        elbowL: { e: [-0.85, 0, 0] }, elbowR: { e: [-0.85, 0, 0] },
+        wristL: { e: [0, 0, 0.45] }, wristR: { e: [0, 0, -0.45] } } },
+      { at: 0.45, ease: 'inOutCubic', joints: {
+        wristL: { e: [0.35, 0, 0.15] }, wristR: { e: [0.35, 0, -0.15] } } },
+      { at: 0.70, ease: 'inOutCubic', joints: {
+        wristL: { e: [-0.2, 0, 0.45] }, wristR: { e: [-0.2, 0, -0.45] } } },
+      { at: 1.00, ease: 'inOutCubic', joints: {
+        wristL: { e: [0.25, 0, 0.3] }, wristR: { e: [0.25, 0, -0.3] } } },
+    ] },
+    // return both arms to rest after a chained wash/riffle sequence
+    armsRest: { track: 'arms', dur: 500, keys: [
+      { at: 1.00, ease: 'inOutCubic', joints: {
+        shoulderL: { rest: true }, shoulderR: { rest: true },
+        elbowL: { rest: true }, elbowR: { rest: true },
+        wristL: { rest: true }, wristR: { rest: true } } },
+    ] },
   };
 
   function validateClip(clip) {
@@ -2215,6 +2270,11 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     };
   }
 
+  // Ambient-show cut card: placed shallow (72-96 cards ≈ 12-15 rounds) so
+  // visitors actually witness the shuffle ritual — a realistic cut (~14 from
+  // the end of 416) would take ~66 rounds of continuous watching to reach.
+  const pickCutIndex = (rng = Math.random) => 72 + Math.floor(rng() * 25);
+
   // Full shoe: 8 decks, cut card ~14 from the end (~60-80 rounds).
   function simulateShoe(rng = Math.random) {
     const shoe = buildShoe(rng);
@@ -2335,7 +2395,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     return out;
   }
 
-  C.baccaratRoads = { bacValue, total, bankerDraws, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate, deriveRoad, predictNext };
+  C.baccaratRoads = { bacValue, total, bankerDraws, buildShoe, pickCutIndex, playRound, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate, deriveRoad, predictNext };
 })();
 
 
@@ -2777,45 +2837,44 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     const minTxt = limits[0] || opts.minChipLabel || '100';
     const maxTxt = limits[1] || '20,000';
 
-    // Simulated session history — every figure on the board derives from it,
-    // and live play appends real results via userData.pushResult below.
-    const spins = Array.from({ length: 130 }, () => Math.floor(Math.random() * 37));
+    // REAL records only. The board starts empty (fresh session) and is fed
+    // by roulette-live.js via userData.setStats — live spins at this table
+    // plus the embedded game's Skip-100 simulations, computed with the 2D
+    // game's own stats semantics (roulette-map.js#boardStats).
+    let S = { total: 0, last: [], hot: [], cold: [], high: null, low: null, odd: null, even: null };
 
     const R = C.assets.roundRect;
     const drawBoard = (ctx) => {
-      const counts = new Array(37).fill(0);
-      spins.forEach((n) => counts[n]++);
-      const byFreq = counts.map((c, n) => ({ n, c })).sort((a, b) => b.c - a.c || a.n - b.n);
-      const hot = byFreq.slice(0, 4).map((o) => o.n);
-      const cold = byFreq.slice(-4).map((o) => o.n).reverse();
-      const pct = (fn) => Math.round((spins.filter((n) => n > 0 && fn(n)).length / spins.length) * 100);
       const stats = [
-        { label: 'HIGH', v: pct((n) => n >= 19), hue0: '#8a5cf0', hue1: '#5b2fb8' },
-        { label: 'LOW', v: pct((n) => n <= 18), hue0: '#ffc14d', hue1: '#d98a1a' },
-        { label: 'ODD', v: pct((n) => n % 2 === 1), hue0: '#8a5cf0', hue1: '#5b2fb8' },
-        { label: 'EVEN', v: pct((n) => n % 2 === 0), hue0: '#ffc14d', hue1: '#d98a1a' },
+        { label: 'HIGH', v: S.high, hue0: '#8a5cf0', hue1: '#5b2fb8' },
+        { label: 'LOW', v: S.low, hue0: '#ffc14d', hue1: '#d98a1a' },
+        { label: 'ODD', v: S.odd, hue0: '#8a5cf0', hue1: '#5b2fb8' },
+        { label: 'EVEN', v: S.even, hue0: '#ffc14d', hue1: '#d98a1a' },
       ];
-      const last = spins.slice(-13).reverse();
 
       ctx.fillStyle = '#0b0e14'; ctx.fillRect(0, 0, 512, 896);
       ctx.strokeStyle = '#3a3f4a'; ctx.lineWidth = 4;
       ctx.strokeRect(6, 6, 500, 884);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-      // left column: winning-number history, latest at top (larger cell)
+      // left column: winning-number history, latest at top (larger cell);
+      // 13 slots are always drawn — unfilled ones stay as dim empty frames
       const colX = 14, colW = 112;
-      last.forEach((n, i) => {
+      for (let i = 0; i < 13; i++) {
         const big = i === 0;
         const y = big ? 14 : 108 + (i - 1) * 59;
         const h = big ? 90 : 55;
-        ctx.fillStyle = n === 0 ? '#12813f' : RED.has(n) ? '#b01218' : '#1c1f24';
+        const n = S.last[i];
+        const filled = n !== undefined;
+        ctx.fillStyle = !filled ? '#12151c'
+          : n === 0 ? '#12813f' : RED.has(n) ? '#b01218' : '#1c1f24';
         R(ctx, colX, y, colW, h, 6); ctx.fill();
-        ctx.strokeStyle = '#454b57'; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = filled ? '#454b57' : '#252a34'; ctx.lineWidth = 1.5;
         R(ctx, colX, y, colW, h, 6); ctx.stroke();
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = filled ? '#fff' : '#3a4150';
         ctx.font = `bold ${big ? 56 : 32}px 'Segoe UI', system-ui, sans-serif`;
-        ctx.fillText(String(n), colX + colW / 2, y + h / 2 + 2);
-      });
+        ctx.fillText(filled ? String(n) : '–', colX + colW / 2, y + h / 2 + 2);
+      }
 
       const rx = 140, rw = 358, rcx = rx + rw / 2;
 
@@ -2856,32 +2915,44 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         const g = ctx.createLinearGradient(0, 274, 0, 398);
         g.addColorStop(0, s.hue0); g.addColorStop(1, s.hue1);
         ctx.fillStyle = g;
+        ctx.globalAlpha = s.v === null ? 0.25 : 1;   // dim pennant until data exists
         ctx.beginPath();
         ctx.moveTo(cx - 16, 274); ctx.lineTo(cx + 16, 274);
         ctx.lineTo(cx + 16, 374); ctx.lineTo(cx, 398); ctx.lineTo(cx - 16, 374);
         ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = s.v === null ? '#5a6274' : '#fff';
         ctx.font = "bold 19px 'Segoe UI', system-ui, sans-serif";
-        ctx.fillText(`${s.v}%`, cx, 432);
+        ctx.fillText(s.v === null ? '–' : `${s.v}%`, cx, 432);
       });
 
-      // hot / cold numbers
+      // hot / cold numbers — 4 slots each, dim frames until enough spins
       ctx.font = "bold 24px 'Segoe UI', system-ui, sans-serif";
       ctx.fillStyle = '#ff7a1a'; ctx.fillText('HOT', rx + segW, 484);
       ctx.fillStyle = '#5ec8f0'; ctx.fillText('COLD', rx + rw - segW, 484);
       const badge = (n, x, y, c0, c1) => {
-        const g = ctx.createLinearGradient(0, y, 0, y + 52);
-        g.addColorStop(0, c0); g.addColorStop(1, c1);
-        ctx.fillStyle = g;
+        const filled = n !== undefined;
+        if (filled) {
+          const g = ctx.createLinearGradient(0, y, 0, y + 52);
+          g.addColorStop(0, c0); g.addColorStop(1, c1);
+          ctx.fillStyle = g;
+        } else ctx.fillStyle = '#12151c';
         R(ctx, x, y, 64, 52, 8); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = filled ? 'rgba(255,255,255,.35)' : '#252a34'; ctx.lineWidth = 1.5;
         R(ctx, x, y, 64, 52, 8); ctx.stroke();
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = filled ? '#fff' : '#3a4150';
         ctx.font = "bold 27px 'Segoe UI', system-ui, sans-serif";
-        ctx.fillText(String(n), x + 32, y + 28);
+        ctx.fillText(filled ? String(n) : '–', x + 32, y + 28);
       };
-      hot.forEach((n, i) => badge(n, rx + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#ff8c1a', '#c81616'));
-      cold.forEach((n, i) => badge(n, rx + rw / 2 + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#4fb6e8', '#1a5fa8'));
+      for (let i = 0; i < 4; i++) {
+        badge(S.hot[i], rx + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#ff8c1a', '#c81616');
+        badge(S.cold[i], rx + rw / 2 + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#4fb6e8', '#1a5fa8');
+      }
+
+      // session spin counter (real records only — resets on every session)
+      ctx.fillStyle = '#7c8496';
+      ctx.font = "600 15px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText(S.total === 0 ? 'NEW SESSION' : `SESSION SPINS ${S.total}`, rcx, 646);
 
       // mini wheel graphic
       const wcx = rcx, wcy = 738, wr = 84;
@@ -2928,11 +2999,18 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     screen.position.set(0, 1.42, 0.037);
     group.add(screen);
 
-    // live update: append a real spin result and redraw the whole panel
-    group.userData.pushResult = (n) => {
-      spins.push(n);
-      drawBoard(tx.image.getContext('2d'));
-      tx.needsUpdate = true;
+    // Live update: replace the whole stats snapshot and redraw. Redraws are
+    // coalesced so a Skip-100 burst (100 results in ~1s) paints a handful of
+    // frames instead of a hundred.
+    let redrawTimer = null;
+    group.userData.setStats = (stats) => {
+      S = stats || { total: 0, last: [], hot: [], cold: [], high: null, low: null, odd: null, even: null };
+      if (redrawTimer) return;
+      redrawTimer = setTimeout(() => {
+        redrawTimer = null;
+        drawBoard(tx.image.getContext('2d'));
+        tx.needsUpdate = true;
+      }, 100);
     };
     return group;
   }
@@ -3038,8 +3116,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     // Live-play rig for the lobby's in-place roulette session (roulette-live.js):
     // spin the real wheel, append results to the tote board, mirror the 2D
     // game's bets as chip stacks on the printed felt.
-    g.userData.spinTo = wheel.spinTo;
-    g.userData.pushResult = (n) => board.userData.pushResult(n);
+    g.userData.setBoardStats = (stats) => board.userData.setStats(stats);
     g.userData.setBets = (spots) => {
       betLayer.children.slice().forEach((stack) => {
         stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
@@ -3051,6 +3128,115 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         stk.position.set(x, 0.86, z);
         betLayer.add(stk);
       });
+    };
+
+    // ---- dealer choreography rig (visual only; roulette-live.js drives it) ----
+    const RACK_LOCAL = [-1.44, FELT_Y + 0.12, 0];
+    const RIM_LOCAL = [-1.72, 1.02, 0];
+    const toW = (p) => g.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const rigPlay = (name, refs, ms) =>
+      dealerRig ? dealerRig.play(C.app, name, { refs, ms }) : Promise.resolve();
+
+    // dolly: gold cylinder marker, parked (hidden) at the rack
+    const dolly = new THREE.Group();
+    const dBase = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.05, 12), A.goldMaterial());
+    dBase.position.y = 0.025;
+    const dStem = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.05, 8), A.goldMaterial());
+    dStem.position.y = 0.075;
+    const dTop = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), A.goldMaterial());
+    dTop.position.y = 0.105;
+    dolly.add(dBase, dStem, dTop);
+    dolly.visible = false;
+    dolly.position.set(...RACK_LOCAL);
+    g.add(dolly);
+
+    const glideLocal = (obj, to, ms) => new Promise((res) => {
+      if (C.app.REDUCED) { obj.position.set(to[0], to[1], to[2]); return res(); }
+      C.tween.to(obj.position, { y: to[1] + 0.18 }, ms * 0.25, 'outCubic', () => {
+        C.tween.to(obj.position, { x: to[0], z: to[2] }, ms * 0.5, 'inOutCubic', () => {
+          C.tween.to(obj.position, { y: to[1] }, ms * 0.25, 'outCubic', res);
+        });
+      });
+    });
+
+    g.userData.placeDolly = async (n) => {
+      const [x, z] = C.layouts.rouletteSpotPos('n' + n);
+      dolly.visible = true;
+      rigPlay('placeDolly', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+      await glideLocal(dolly, [x, FELT_Y + 0.02, z], 750);
+    };
+    g.userData.liftDolly = async () => {
+      await glideLocal(dolly, RACK_LOCAL, 500);
+      dolly.visible = false;
+    };
+
+    // Fly a chip-stack group along a small arc, then run onDone.
+    const flyStack = (stack, to, ms, onDone) => {
+      if (C.app.REDUCED) { stack.position.set(to[0], to[1], to[2]); onDone && onDone(); return; }
+      C.tween.to(stack.position, { y: stack.position.y + 0.16 }, ms * 0.3, 'outCubic', () => {
+        C.tween.to(stack.position, { x: to[0], z: to[2] }, ms * 0.45, 'inOutCubic', () => {
+          C.tween.to(stack.position, { y: to[1] }, ms * 0.25, 'outCubic', onDone);
+        });
+      });
+    };
+    const disposeStack = (stack) => {
+      stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+      stack.parent && stack.parent.remove(stack);
+    };
+    const stackNear = (x, z) => betLayer.children.find(
+      (s) => Math.hypot(s.position.x - x, s.position.z - z) < 0.02);
+
+    g.userData.settleBets = async ({ losingSpots = [], winningSpots = [] }) => {
+      // sweep losing stacks into the rack, dealer raking alongside
+      if (losingSpots.length) {
+        const first = losingSpots[0];
+        rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) });
+      }
+      const sweeps = losingSpots.map(({ x, z }, i) => new Promise((res) => {
+        const stack = stackNear(x, z);
+        if (!stack) return res();
+        setTimeout(() => flyStack(stack, RACK_LOCAL, 420, () => { disposeStack(stack); res(); }),
+          C.app.REDUCED ? 0 : i * 90);
+      }));
+      await Promise.all(sweeps);
+      // pay each winning spot from the rack
+      for (let i = 0; i < winningSpots.length; i++) {
+        const { x, z, amount, factor } = winningSpots[i];
+        rigPlay('payChips', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+        const chips = C.layouts.chipBreakdown(amount * factor);
+        const pay = new THREE.Group();
+        chips.forEach((v, k) => {
+          const chip = C.chips.makeChip(v);
+          chip.position.y = k * C.chips.CHIP_H;
+          pay.add(chip);
+        });
+        pay.position.set(...RACK_LOCAL);
+        betLayer.add(pay);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((res) => flyStack(pay, [x + 0.09, 0.86, z], 460, res));
+      }
+    };
+
+    g.userData.buyIn = async () => {
+      rigPlay('tapRack', { rack: toW(RACK_LOCAL) });
+      const stk = C.chips.makeChipStack(100, 6);
+      stk.position.set(...RACK_LOCAL);
+      g.add(stk);
+      await new Promise((res) => flyStack(stk, [0.35, FELT_Y + 0.02, 1.05], 600, res));
+      await new Promise((res) => setTimeout(res, C.app.REDUCED ? 100 : 900));
+      if (!C.app.REDUCED) {
+        await new Promise((res) => C.tween.to(stk.scale, { x: 0.01, y: 0.01, z: 0.01 }, 200, 'outCubic', res));
+      }
+      stk.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+      g.remove(stk);
+    };
+
+    // wrap spinTo: the dealer reaches to the rim, flicks, wheel spins
+    const rawSpinTo = wheel.spinTo;
+    g.userData.spinTo = async (pocket) => {
+      await rigPlay('spinReach', { rim: toW(RIM_LOCAL) });
+      rigPlay('spinFollow', {});
+      return rawSpinTo(pocket);
     };
 
     return g;
@@ -3288,6 +3474,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
       dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoePos,
       trayLocal: [0, FELT_Y + 0.054, -0.19],
       freeSeats: [0, 1, 2, 3, 4, 5],
+      get dealerRig() { return g.userData.dealerRig; },
       spotLocal(i, id) {
         const a = seatAngle(i);
         const at = (radius, tangent) => {
@@ -3605,30 +3792,37 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         }
       });
 
-      // current round card panel (gold)
+      // current round card panel (gold) — freshly shuffled shoe has no rounds
       const last = rounds[rounds.length - 1];
       const gp = ctx.createLinearGradient(0, 170, 0, 326);
       gp.addColorStop(0, '#caa64f'); gp.addColorStop(1, '#9a7a2e');
       ctx.fillStyle = gp; RR(ctx, 340, 170, 672, 156, 8); ctx.fill();
-      ctx.strokeStyle = '#6b5a1f'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(676, 178); ctx.lineTo(676, 318); ctx.stroke();
-      ctx.fillStyle = '#3a2c08'; ctx.font = `bold 22px ${CJK}`;
-      ctx.fillText(`閒 PLAYER ${last.playerTotal}`, 508, 306);
-      ctx.fillText(`庄 BANKER ${last.bankerTotal}`, 844, 306);
-      const mini = (card, x, y, sideways) => {
-        ctx.save(); ctx.translate(x, y);
-        if (sideways) ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = '#fdfbf2'; RR(ctx, -24, -34, 48, 68, 6); ctx.fill();
-        ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5; RR(ctx, -24, -34, 48, 68, 6); ctx.stroke();
-        ctx.fillStyle = card.s === 1 || card.s === 2 ? '#c0392b' : '#16161c';
-        ctx.font = 'bold 26px Georgia, serif';
-        ctx.fillText(RANK[card.r], 0, -12);
-        ctx.font = '24px Georgia, serif';
-        ctx.fillText(SUITS[card.s], 0, 16);
-        ctx.restore();
-      };
-      last.playerCards.forEach((cd, i) => mini(cd, 448 + i * 64, 232, i === 2));
-      last.bankerCards.forEach((cd, i) => mini(cd, 784 + i * 64, 232, i === 2));
+      if (last) {
+        ctx.strokeStyle = '#6b5a1f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(676, 178); ctx.lineTo(676, 318); ctx.stroke();
+        ctx.fillStyle = '#3a2c08'; ctx.font = `bold 22px ${CJK}`;
+        ctx.fillText(`閒 PLAYER ${last.playerTotal}`, 508, 306);
+        ctx.fillText(`庄 BANKER ${last.bankerTotal}`, 844, 306);
+        const mini = (card, x, y, sideways) => {
+          ctx.save(); ctx.translate(x, y);
+          if (sideways) ctx.rotate(Math.PI / 2);
+          ctx.fillStyle = '#fdfbf2'; RR(ctx, -24, -34, 48, 68, 6); ctx.fill();
+          ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5; RR(ctx, -24, -34, 48, 68, 6); ctx.stroke();
+          ctx.fillStyle = card.s === 1 || card.s === 2 ? '#c0392b' : '#16161c';
+          ctx.font = 'bold 26px Georgia, serif';
+          ctx.fillText(RANK[card.r], 0, -12);
+          ctx.font = '24px Georgia, serif';
+          ctx.fillText(SUITS[card.s], 0, 16);
+          ctx.restore();
+        };
+        last.playerCards.forEach((cd, i) => mini(cd, 448 + i * 64, 232, i === 2));
+        last.bankerCards.forEach((cd, i) => mini(cd, 784 + i * 64, 232, i === 2));
+      } else {
+        ctx.fillStyle = '#3a2c08'; ctx.font = `bold 44px ${CJK}`;
+        ctx.fillText('新靴 NEW SHOE', 676, 236);
+        ctx.font = `22px ${CJK}`;
+        ctx.fillText('祝君好運 GOOD LUCK', 676, 286);
+      }
 
       // 大路 big road
       bandLabel('大路', 14, 340);
@@ -3678,6 +3872,32 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     });
   }
 
+  // Full-screen splash shown while the dealer performs the shuffle ritual.
+  function drawShufflingCanvas(opts) {
+    return C.assets.canvasTexture(1024, 800, (ctx) => {
+      const RR = C.assets.roundRect;
+      const bg = ctx.createLinearGradient(0, 0, 0, 800);
+      bg.addColorStop(0, '#241014'); bg.addColorStop(1, '#0c0d12');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 1024, 800);
+      ctx.strokeStyle = '#4a3b22'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 1016, 792);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e8b54a';
+      ctx.font = `bold 44px ${CJK}`;
+      ctx.fillText('百家樂 BACCARAT', 512, 120);
+      ctx.fillStyle = '#c8b78e'; ctx.font = `18px ${CJK}`;
+      ctx.fillText((opts.tierName || '').toUpperCase(), 512, 170);
+      ctx.strokeStyle = '#e8b54a'; ctx.lineWidth = 3;
+      RR(ctx, 192, 280, 640, 280, 16); ctx.stroke();
+      ctx.fillStyle = '#f0d878';
+      ctx.font = `bold 130px ${CJK}`;
+      ctx.fillText('洗牌中', 512, 390);
+      ctx.font = 'bold 58px Georgia, serif';
+      ctx.fillText('SHUFFLING', 512, 500);
+      ctx.fillStyle = '#9b8f78'; ctx.font = `26px ${CJK}`;
+      ctx.fillText('請稍候 · 新靴準備中  Please wait — preparing a new shoe', 512, 640);
+    });
+  }
+
   function makeScoreBoard(rounds, opts) {
     const g = new THREE.Group();
     const casing = new THREE.Mesh(
@@ -3696,6 +3916,21 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     );
     screen.position.set(0, 1.5, 0.037);
     g.add(screen);
+    const setMap = (tx) => {
+      const old = screen.material.map;
+      screen.material.map = tx;
+      screen.material.needsUpdate = true;
+      old && old.dispose();
+    };
+    const redraw = () => setMap(drawBoardCanvas(rounds, opts));
+    g.userData.pushRound = (round) => {
+      rounds.push(round);
+      if (rounds.length > 80) rounds.shift();
+      redraw();
+    };
+    // new shoe: wipe the whole history like a real Macau board
+    g.userData.resetRounds = () => { rounds.length = 0; redraw(); };
+    g.userData.setShuffling = (on) => (on ? setMap(drawShufflingCanvas(opts)) : redraw());
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.035, 0.045, 1.0, 12),
       new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.4, metalness: 0.5 }),
@@ -3741,6 +3976,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     const lastRound = rounds[rounds.length - 1];
 
     // card-dealing area: printed boxes + the final round's actual cards
+    const staticCards = [];
     [[L.playerSlots, lastRound.playerCards], [L.bankerSlots, lastRound.bankerCards]]
       .forEach(([slots, cards]) => {
         slots.forEach((slot, idx) => {
@@ -3754,6 +3990,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
           if (idx === 2) card.rotation.z = Math.PI / 2;
           card.position.set(slots[idx][0], FELT_Y + 0.006 + idx * 0.0005, slots[idx][2]);
           g.add(card);
+          staticCards.push(card);
         });
       });
 
@@ -3814,6 +4051,15 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     board.position.set(-2.35, 0, 0.35);
     board.rotation.y = 0.35;
     g.add(board);
+
+    // ambient-show rig (src/floor/baccarat-show.js drives it when the player is near)
+    g.userData.bac = {
+      L, feltY: FELT_Y, rounds, staticCards,
+      pushRound: (round) => board.userData.pushRound(round),
+      resetBoard: () => board.userData.resetRounds(),
+      setShuffling: (on) => board.userData.setShuffling(on),
+      get dealerRig() { return g.userData.dealerRig; },
+    };
 
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);
@@ -3967,6 +4213,388 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
     g.userData.radius = 2.2;
 
     return g;
+  };
+})();
+
+
+// ===== src/floor/baccarat-show.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+  C.floor = C.floor || {};
+
+  // Ambient baccarat show: when the player stands near a baccarat table, its
+  // dealer runs real rounds — deal, flip, third-card rules, announce, settle
+  // ghost bets, update the roads board. Pure round logic = C.baccaratRoads.
+  // Visual only; pauses (after finishing the round) when the player leaves.
+  // When the draw index crosses the yellow cut card the dealer performs the
+  // full shuffle ritual (runShuffle) and the roads board wipes for a new shoe.
+  const NEAR = 9, CHECK_EVERY = 0.8;
+  const BRICK_H = 0.06;   // one "deck brick" ≈ 52 cards
+
+  // Shared ritual props, cached across tables: 416 real card meshes would
+  // blow the frame budget, so the bulk of the shoe travels as deck bricks and
+  // only the detail riffle uses real (cloned, material-sharing) cards.
+  let brickShared = null, cardBackProto = null;
+  const brickAssets = () => {
+    if (brickShared) return brickShared;
+    const edge = C.assets.canvasTexture(128, 64, (ctx) => {
+      ctx.fillStyle = '#efece0'; ctx.fillRect(0, 0, 128, 64);
+      ctx.strokeStyle = 'rgba(125,118,100,0.55)'; ctx.lineWidth = 1;
+      for (let y = 2; y < 64; y += 3) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(128, y); ctx.stroke(); }
+    });
+    const side = new THREE.MeshStandardMaterial({ map: edge, roughness: 0.7 });
+    const top = new THREE.MeshStandardMaterial({ color: '#1e3a8a', roughness: 0.55 });
+    brickShared = {
+      geo: new THREE.BoxGeometry(C.layouts.CARD_W, BRICK_H, C.layouts.CARD_H),
+      mats: [side, side, top, side, side, side],
+    };
+    return brickShared;
+  };
+  const makeBrick = () => {
+    const m = new THREE.Mesh(brickAssets().geo, brickAssets().mats);
+    m.castShadow = true;
+    return m;
+  };
+  // clone() shares geometry + materials with the proto (never scene-added);
+  // clones must NOT go through disposeMesh — removeMesh only
+  const makeBackCard = () => {
+    if (!cardBackProto) cardBackProto = C.cards.makeCard(null);
+    return cardBackProto.clone();
+  };
+  const removeMesh = (m) => { m.parent && m.parent.remove(m); };
+
+  C.floor.attachBaccaratShow = (group) => {
+    const bac = group.userData.bac;
+    if (!bac || !bac.dealerRig || C.app.REDUCED) return;
+    const app = C.app, L = bac.L;
+    const toW = (p) => group.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const rig = bac.dealerRig;
+    let running = false, wantRun = false, t = 0, cleared = false;
+    let shoe = C.baccaratRoads.buildShoe(Math.random), si = 0;
+    let cutIndex = C.baccaratRoads.pickCutIndex(Math.random);
+    const draw = () => {
+      // safety net only — the cut card (72-96) fires long before this
+      if (si > shoe.length - 8) { shoe = C.baccaratRoads.buildShoe(Math.random); si = 0; }
+      return shoe[si++];
+    };
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+    const tweenPos = (obj, [x, y, z], ms, ease = 'inOutCubic') =>
+      new Promise((res) => C.tween.to(obj.position, { x, y, z }, ms, ease, res));
+    const disposeMesh = (m) => {
+      m.traverse((o) => {
+        o.geometry?.dispose();
+        const mats = Array.isArray(o.material) ? o.material : [o.material];
+        mats.forEach((mm) => { if (!mm) return; mm.map?.dispose(); mm.dispose(); });
+      });
+      m.parent && m.parent.remove(m);
+    };
+
+    async function runRound() {
+      const round = C.baccaratRoads.playRound(draw);
+      const dealt = [];
+      // ghost bets: 2 random seats, biased to the round for a lively board
+      const kinds = ['player', 'banker', round.outcome === 'T' ? 'tie' : 'banker'];
+      const betStacks = [];
+      for (let k = 0; k < 2; k++) {
+        const seat = Math.floor(Math.random() * 6);
+        const kind = kinds[Math.floor(Math.random() * kinds.length)];
+        const [bx, bz] = L.seatSpot(seat, kind);
+        const stk = C.chips.makeChipStack([100, 500][k % 2], 3 + (seat % 3));
+        stk.position.set(bx, bac.feltY + 0.005, bz);
+        group.add(stk);
+        betStacks.push({ stk, kind });
+      }
+      // deal P1 B1 P2 B2 face-down, alternating (cards pre-decided by playRound)
+      const seq = [
+        [L.playerSlots[0], round.playerCards[0]], [L.bankerSlots[0], round.bankerCards[0]],
+        [L.playerSlots[1], round.playerCards[1]], [L.bankerSlots[1], round.bankerCards[1]],
+      ];
+      for (const [slot, cardDef] of seq) {
+        const mesh = C.cards.makeCard(cardDef);
+        mesh.rotation.set(-Math.PI / 2, 0, 0);
+        mesh.rotateY(Math.PI);                    // face-down
+        dealt.push(mesh);
+        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW(slot) } });
+        // eslint-disable-next-line no-await-in-loop
+        await C.cards.dealCardTo(app, mesh, toW(L.shoePos), toW(slot), { ms: 430 });
+        // eslint-disable-next-line no-await-in-loop
+        await wait(140);
+      }
+      // flip player then banker
+      await C.cards.flipFlatCard(app, dealt[0], 320);
+      await C.cards.flipFlatCard(app, dealt[2], 320);
+      await C.cards.flipFlatCard(app, dealt[1], 320);
+      await C.cards.flipFlatCard(app, dealt[3], 320);
+      // third cards (sideways slot index 2), face-up
+      const thirds = [[round.playerCards[2], L.playerSlots[2]], [round.bankerCards[2], L.bankerSlots[2]]];
+      for (const [cardDef, slot] of thirds) {
+        if (!cardDef) continue;
+        const mesh = C.cards.makeCard(cardDef);
+        mesh.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
+        dealt.push(mesh);
+        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW(slot) } });
+        // eslint-disable-next-line no-await-in-loop
+        await C.cards.dealCardTo(app, mesh, toW(L.shoePos), toW(slot), { ms: 430 });
+        // eslint-disable-next-line no-await-in-loop
+        await wait(200);
+      }
+      // announce + settle ghost bets
+      const line = round.outcome === 'T'
+        ? `和 TIE  ${round.playerTotal} : ${round.bankerTotal}`
+        : round.outcome === 'P'
+          ? `閒 PLAYER wins ${round.playerTotal} over ${round.bankerTotal}`
+          : `庄 BANKER wins ${round.bankerTotal} over ${round.playerTotal}`;
+      rig.say(app, line, { ms: 2400 });
+      const wins = { P: 'player', B: 'banker', T: 'tie' }[round.outcome];
+      const payStacks = [];   // reaped at cleanup — kept OUT of betStacks so the
+                              // settle loop below never treats a payout as a bet
+      for (const { stk, kind } of betStacks) {
+        const won = kind === wins;
+        rig.play(app, won ? 'payChips' : 'sweepChips', {
+          refs: { rack: toW(L.rackPos), target: toW([stk.position.x, bac.feltY, stk.position.z]) },
+        });
+        if (won) {
+          const pay = C.chips.makeChipStack(100, 3);
+          pay.position.set(stk.position.x + 0.1, stk.position.y, stk.position.z);
+          group.add(pay);
+          payStacks.push(pay);
+        } else {
+          // eslint-disable-next-line no-await-in-loop
+          await new Promise((res) =>
+            C.tween.to(stk.position, { x: L.rackPos[0], z: L.rackPos[2] }, 420, 'inOutCubic', res));
+        }
+        // eslint-disable-next-line no-await-in-loop
+        await wait(260);
+      }
+      bac.pushRound(round);
+      await wait(2000);
+      // clear: cards to the discard tray, chips away
+      const disc = toW(L.discardPos);
+      await Promise.all(dealt.map((mesh, i) => new Promise((res) => {
+        C.tween.to(mesh.position, { x: disc[0], y: disc[1] + 0.05 + i * 0.002, z: disc[2] }, 360, 'inOutCubic', res);
+      })));
+      dealt.forEach(disposeMesh);
+      betStacks.forEach(({ stk }) => disposeMesh(stk));
+      payStacks.forEach(disposeMesh);
+      await wait(1200);
+    }
+
+    // Shuffle ritual (~80s): yellow cut card out → board splash → all cards
+    // out as deck bricks → two-arm wash → detail riffle of ~1/20 of the shoe
+    // as real cards → restack with the cut card inside → back into the shoe
+    // → burn card → board wiped for the new shoe. Runs to completion once
+    // started (like a real casino), even if the player wanders off.
+    async function runShuffle() {
+      const gen = app.roomGen;
+      const alive = () => app.roomGen === gen;
+      const feltY = bac.feltY;
+      const owned = [];                        // cut + burn cards: dispose fully
+      const shared = [];                       // bricks + riffle cards: remove only
+      const STACK = [-0.42, feltY, 0.10];      // where the shoe rebuilds
+      try {
+        // A) the yellow cut card comes out of the shoe
+        rig.say(app, '黃牌到 Cut card — 洗牌 shuffle', { ms: 3200 });
+        const cut = C.cards.makeCutCard();
+        cut.rotation.set(-Math.PI / 2, 0, 0.25);
+        owned.push(cut);
+        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW([0, feltY, 0.06]) } });
+        await C.cards.dealCardTo(app, cut, toW(L.shoePos), toW([0, feltY + 0.008, 0.06]), { ms: 560 });
+        await wait(1100);
+        bac.setShuffling(true);
+        await wait(1100);
+        if (!alive()) return;
+
+        // B) every card comes out: 8 deck bricks fly into two piles
+        const bricks = [];
+        for (let i = 0; i < 8; i++) {
+          const from = i < 4 ? L.shoePos : L.discardPos;
+          const to = [(i % 2 ? -0.3 : 0.3) + (Math.random() - 0.5) * 0.05,
+            feltY + BRICK_H / 2 + Math.floor(i / 2) * (BRICK_H + 0.004),
+            0.12 + (Math.random() - 0.5) * 0.05];
+          const b = makeBrick();
+          b.position.set(...toW(from));
+          app.scene.add(b);
+          bricks.push(b); shared.push(b);
+          rig.play(app, 'dealCard', { refs: { shoe: toW(from), target: toW(to) } });
+          // eslint-disable-next-line no-await-in-loop
+          await tweenPos(b, toW(to), 480);
+          // eslint-disable-next-line no-await-in-loop
+          await wait(200);
+        }
+        if (!alive()) return;
+
+        // C) the wash: bricks smear around the felt under circling arms
+        await Promise.all(bricks.map((b, i) => tweenPos(b,
+          toW([(Math.random() - 0.5) * 0.7, feltY + BRICK_H / 2 + i * 0.0012, 0.12 + (Math.random() - 0.5) * 0.3]), 450)));
+        let washing = true;
+        const swirls = bricks.map(async (b, i) => {
+          while (washing && alive()) {
+            // eslint-disable-next-line no-await-in-loop
+            await tweenPos(b, toW([
+              (Math.random() - 0.5) * 0.72,
+              feltY + BRICK_H / 2 + i * 0.0012,
+              0.12 + (Math.random() - 0.5) * 0.34,
+            ]), 620 + Math.random() * 480);
+          }
+        });
+        for (let k = 0; k < 14 && alive(); k++) {
+          // eslint-disable-next-line no-await-in-loop
+          await rig.play(app, 'washCards');
+        }
+        washing = false;
+        await Promise.all(swirls);
+        await rig.play(app, 'armsRest');
+        if (!alive()) return;
+
+        // D) square up into one stack, then the detail riffle: ~1/20 of the
+        // shoe as real cards, split + interleaved one card at a time, ×4
+        for (let i = 0; i < bricks.length; i++) {
+          // eslint-disable-next-line no-await-in-loop
+          await tweenPos(bricks[i], toW([STACK[0], feltY + BRICK_H / 2 + i * (BRICK_H + 0.003), STACK[2]]), 280);
+        }
+        const SPOT = [0.16, feltY, 0.10];
+        const stackTopY = feltY + 8 * (BRICK_H + 0.003);
+        const N = Math.round(shoe.length / 20);
+        let cards = [];
+        for (let i = 0; i < N; i++) {
+          const cm = makeBackCard();
+          cm.rotation.set(-Math.PI / 2, 0, (Math.random() - 0.5) * 0.12);
+          cm.position.set(...toW([STACK[0], stackTopY + 0.02, STACK[2]]));
+          app.scene.add(cm);
+          cards.push(cm); shared.push(cm);
+          tweenPos(cm, toW([SPOT[0], feltY + 0.006 + i * 0.0022, SPOT[2]]), 320, 'outCubic');
+          // eslint-disable-next-line no-await-in-loop
+          await wait(65);
+        }
+        await wait(400);
+        let riffling = true;
+        const rigLoop = (async () => {
+          while (riffling && alive()) {
+            // eslint-disable-next-line no-await-in-loop
+            await rig.play(app, 'shuffleRiffle');
+          }
+        })();
+        for (let pass = 0; pass < 4 && alive(); pass++) {
+          const half = Math.ceil(cards.length / 2);
+          // split into two packets…
+          // eslint-disable-next-line no-await-in-loop
+          await Promise.all(cards.map((cm, i) => {
+            const left = i < half;
+            const lvl = left ? i : i - half;
+            return tweenPos(cm, toW([
+              SPOT[0] + (left ? -0.13 : 0.13) + (Math.random() - 0.5) * 0.015,
+              feltY + 0.006 + lvl * 0.0022,
+              SPOT[2] + (Math.random() - 0.5) * 0.015,
+            ]), 360, 'outCubic');
+          }));
+          // eslint-disable-next-line no-await-in-loop
+          await wait(240);
+          // …then interleave them back into one pile, alternating packets
+          const order = [];
+          for (let i = 0; i < half; i++) {
+            order.push(cards[i]);
+            if (half + i < cards.length) order.push(cards[half + i]);
+          }
+          for (let i = 0; i < order.length; i++) {
+            if (i % 3 === 0) C.sound?.play('card');
+            // eslint-disable-next-line no-await-in-loop
+            await tweenPos(order[i], toW([
+              SPOT[0] + (Math.random() - 0.5) * 0.01,
+              feltY + 0.006 + i * 0.0022,
+              SPOT[2] + (Math.random() - 0.5) * 0.01,
+            ]), 160, 'outCubic');
+          }
+          cards = order;
+          // eslint-disable-next-line no-await-in-loop
+          await wait(320);
+        }
+        riffling = false;
+        await rigLoop;
+        await rig.play(app, 'armsRest');
+        if (!alive()) return;
+
+        // E) riffled packet rejoins the stack; cut card goes in mid-stack;
+        // the stack loads back into the shoe; burn the new shoe's first card
+        for (let i = 0; i < cards.length; i++) {
+          tweenPos(cards[i], toW([STACK[0], stackTopY + 0.01 + i * 0.0022, STACK[2]]), 300);
+          // eslint-disable-next-line no-await-in-loop
+          await wait(35);
+        }
+        await wait(450);
+        cards.forEach(removeMesh);
+        rig.say(app, '插黃牌 Cut card in', { ms: 2000 });
+        rig.play(app, 'dealCard', { refs: { shoe: toW([0, feltY, 0.06]), target: toW(STACK) } });
+        await tweenPos(cut, toW([STACK[0], feltY + 4 * (BRICK_H + 0.003), STACK[2]]), 550);
+        await wait(500);
+        for (let i = bricks.length - 1; i >= 0; i--) {
+          rig.play(app, 'dealCard', { refs: { shoe: toW(STACK), target: toW(L.shoePos) } });
+          // eslint-disable-next-line no-await-in-loop
+          await tweenPos(bricks[i], toW(L.shoePos), 320);
+          removeMesh(bricks[i]);
+          if (i === 4) {                        // the cut card rides in mid-stack
+            // eslint-disable-next-line no-await-in-loop
+            await tweenPos(cut, toW(L.shoePos), 320);
+            disposeMesh(cut);
+          }
+          // eslint-disable-next-line no-await-in-loop
+          await wait(110);
+        }
+        // fresh shoe BEFORE the burn so the burn card is genuinely its first
+        shoe = C.baccaratRoads.buildShoe(Math.random);
+        si = 0;
+        cutIndex = C.baccaratRoads.pickCutIndex(Math.random);
+        const burn = C.cards.makeCard(draw());
+        burn.rotation.set(-Math.PI / 2, 0, 0);
+        owned.push(burn);
+        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW([0, feltY, -0.14]) } });
+        await C.cards.dealCardTo(app, burn, toW(L.shoePos), toW([0, feltY + 0.008, -0.14]), { ms: 460 });
+        await wait(900);
+        await tweenPos(burn, toW(L.discardPos), 360);
+        disposeMesh(burn);
+
+        // F) fresh board, back to dealing
+        bac.resetBoard();
+        rig.say(app, '新靴開始 New shoe — good luck', { ms: 2600 });
+        rig.play(app, 'nod');
+        await wait(1500);
+      } finally {
+        // normal end: everything is already off the felt (removeMesh/dispose
+        // are no-ops on orphans). Early bail: this sweeps up the leftovers.
+        shared.forEach(removeMesh);
+        owned.forEach((m) => m.parent && disposeMesh(m));
+      }
+    }
+
+    async function loop() {
+      running = true;
+      // first activation: clear the static ghost cards baked at build time
+      if (!cleared) {
+        cleared = true;
+        bac.staticCards.forEach(disposeMesh);
+        bac.staticCards.length = 0;
+      }
+      while (wantRun) {
+        const act = si >= cutIndex ? runShuffle : runRound;
+        // eslint-disable-next-line no-await-in-loop
+        await act().catch((err) => {
+          console.error('[bac-show]', err);
+          // backoff so a rejection before the first await can never
+          // hot-spin the loop and starve the frame budget
+          return wait(1500);
+        });
+      }
+      running = false;
+    }
+
+    const hook = (dt) => {
+      t += dt;
+      if (t < CHECK_EVERY) return;
+      t = 0;
+      const p = app.player;
+      wantRun = Math.hypot(p.x - group.position.x, p.z - group.position.z) < NEAR;
+      if (wantRun && !running) loop();
+    };
+    app.onFrame(hook);
   };
 })();
 
@@ -4850,10 +5478,11 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
         group.rotation.y = row.yaw ?? (row.dir === -1 ? Math.PI : 0);
         s.add(group);
         highlights.set(table.id, group.userData.highlight);
-        // live-play rigs: roulette tables expose spinTo/pushResult/setBets
+        // live-play rigs: roulette tables expose spinTo/setBoardStats/setBets
         // on their group userData for the in-place session (roulette-live.js)
         if (section.id === 'roulette') (C.floor.rouletteRigs ??= new Map()).set(table.id, group);
         if (section.id === 'blackjack') (C.floor.blackjackRigs ??= new Map()).set(table.id, group);
+        if (section.id === 'baccarat') C.floor.attachBaccaratShow?.(group);
 
         // dedicated warm pool over every table (desktop; mobile uses the
         // shell's four wide washes instead — light count budget)

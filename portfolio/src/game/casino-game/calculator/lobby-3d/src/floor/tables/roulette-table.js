@@ -387,45 +387,44 @@
     const minTxt = limits[0] || opts.minChipLabel || '100';
     const maxTxt = limits[1] || '20,000';
 
-    // Simulated session history — every figure on the board derives from it,
-    // and live play appends real results via userData.pushResult below.
-    const spins = Array.from({ length: 130 }, () => Math.floor(Math.random() * 37));
+    // REAL records only. The board starts empty (fresh session) and is fed
+    // by roulette-live.js via userData.setStats — live spins at this table
+    // plus the embedded game's Skip-100 simulations, computed with the 2D
+    // game's own stats semantics (roulette-map.js#boardStats).
+    let S = { total: 0, last: [], hot: [], cold: [], high: null, low: null, odd: null, even: null };
 
     const R = C.assets.roundRect;
     const drawBoard = (ctx) => {
-      const counts = new Array(37).fill(0);
-      spins.forEach((n) => counts[n]++);
-      const byFreq = counts.map((c, n) => ({ n, c })).sort((a, b) => b.c - a.c || a.n - b.n);
-      const hot = byFreq.slice(0, 4).map((o) => o.n);
-      const cold = byFreq.slice(-4).map((o) => o.n).reverse();
-      const pct = (fn) => Math.round((spins.filter((n) => n > 0 && fn(n)).length / spins.length) * 100);
       const stats = [
-        { label: 'HIGH', v: pct((n) => n >= 19), hue0: '#8a5cf0', hue1: '#5b2fb8' },
-        { label: 'LOW', v: pct((n) => n <= 18), hue0: '#ffc14d', hue1: '#d98a1a' },
-        { label: 'ODD', v: pct((n) => n % 2 === 1), hue0: '#8a5cf0', hue1: '#5b2fb8' },
-        { label: 'EVEN', v: pct((n) => n % 2 === 0), hue0: '#ffc14d', hue1: '#d98a1a' },
+        { label: 'HIGH', v: S.high, hue0: '#8a5cf0', hue1: '#5b2fb8' },
+        { label: 'LOW', v: S.low, hue0: '#ffc14d', hue1: '#d98a1a' },
+        { label: 'ODD', v: S.odd, hue0: '#8a5cf0', hue1: '#5b2fb8' },
+        { label: 'EVEN', v: S.even, hue0: '#ffc14d', hue1: '#d98a1a' },
       ];
-      const last = spins.slice(-13).reverse();
 
       ctx.fillStyle = '#0b0e14'; ctx.fillRect(0, 0, 512, 896);
       ctx.strokeStyle = '#3a3f4a'; ctx.lineWidth = 4;
       ctx.strokeRect(6, 6, 500, 884);
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
 
-      // left column: winning-number history, latest at top (larger cell)
+      // left column: winning-number history, latest at top (larger cell);
+      // 13 slots are always drawn — unfilled ones stay as dim empty frames
       const colX = 14, colW = 112;
-      last.forEach((n, i) => {
+      for (let i = 0; i < 13; i++) {
         const big = i === 0;
         const y = big ? 14 : 108 + (i - 1) * 59;
         const h = big ? 90 : 55;
-        ctx.fillStyle = n === 0 ? '#12813f' : RED.has(n) ? '#b01218' : '#1c1f24';
+        const n = S.last[i];
+        const filled = n !== undefined;
+        ctx.fillStyle = !filled ? '#12151c'
+          : n === 0 ? '#12813f' : RED.has(n) ? '#b01218' : '#1c1f24';
         R(ctx, colX, y, colW, h, 6); ctx.fill();
-        ctx.strokeStyle = '#454b57'; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = filled ? '#454b57' : '#252a34'; ctx.lineWidth = 1.5;
         R(ctx, colX, y, colW, h, 6); ctx.stroke();
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = filled ? '#fff' : '#3a4150';
         ctx.font = `bold ${big ? 56 : 32}px 'Segoe UI', system-ui, sans-serif`;
-        ctx.fillText(String(n), colX + colW / 2, y + h / 2 + 2);
-      });
+        ctx.fillText(filled ? String(n) : '–', colX + colW / 2, y + h / 2 + 2);
+      }
 
       const rx = 140, rw = 358, rcx = rx + rw / 2;
 
@@ -466,32 +465,44 @@
         const g = ctx.createLinearGradient(0, 274, 0, 398);
         g.addColorStop(0, s.hue0); g.addColorStop(1, s.hue1);
         ctx.fillStyle = g;
+        ctx.globalAlpha = s.v === null ? 0.25 : 1;   // dim pennant until data exists
         ctx.beginPath();
         ctx.moveTo(cx - 16, 274); ctx.lineTo(cx + 16, 274);
         ctx.lineTo(cx + 16, 374); ctx.lineTo(cx, 398); ctx.lineTo(cx - 16, 374);
         ctx.closePath(); ctx.fill();
-        ctx.fillStyle = '#fff';
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = s.v === null ? '#5a6274' : '#fff';
         ctx.font = "bold 19px 'Segoe UI', system-ui, sans-serif";
-        ctx.fillText(`${s.v}%`, cx, 432);
+        ctx.fillText(s.v === null ? '–' : `${s.v}%`, cx, 432);
       });
 
-      // hot / cold numbers
+      // hot / cold numbers — 4 slots each, dim frames until enough spins
       ctx.font = "bold 24px 'Segoe UI', system-ui, sans-serif";
       ctx.fillStyle = '#ff7a1a'; ctx.fillText('HOT', rx + segW, 484);
       ctx.fillStyle = '#5ec8f0'; ctx.fillText('COLD', rx + rw - segW, 484);
       const badge = (n, x, y, c0, c1) => {
-        const g = ctx.createLinearGradient(0, y, 0, y + 52);
-        g.addColorStop(0, c0); g.addColorStop(1, c1);
-        ctx.fillStyle = g;
+        const filled = n !== undefined;
+        if (filled) {
+          const g = ctx.createLinearGradient(0, y, 0, y + 52);
+          g.addColorStop(0, c0); g.addColorStop(1, c1);
+          ctx.fillStyle = g;
+        } else ctx.fillStyle = '#12151c';
         R(ctx, x, y, 64, 52, 8); ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5;
+        ctx.strokeStyle = filled ? 'rgba(255,255,255,.35)' : '#252a34'; ctx.lineWidth = 1.5;
         R(ctx, x, y, 64, 52, 8); ctx.stroke();
-        ctx.fillStyle = '#fff';
+        ctx.fillStyle = filled ? '#fff' : '#3a4150';
         ctx.font = "bold 27px 'Segoe UI', system-ui, sans-serif";
-        ctx.fillText(String(n), x + 32, y + 28);
+        ctx.fillText(filled ? String(n) : '–', x + 32, y + 28);
       };
-      hot.forEach((n, i) => badge(n, rx + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#ff8c1a', '#c81616'));
-      cold.forEach((n, i) => badge(n, rx + rw / 2 + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#4fb6e8', '#1a5fa8'));
+      for (let i = 0; i < 4; i++) {
+        badge(S.hot[i], rx + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#ff8c1a', '#c81616');
+        badge(S.cold[i], rx + rw / 2 + 22 + (i % 2) * 76, 504 + Math.floor(i / 2) * 64, '#4fb6e8', '#1a5fa8');
+      }
+
+      // session spin counter (real records only — resets on every session)
+      ctx.fillStyle = '#7c8496';
+      ctx.font = "600 15px 'Segoe UI', system-ui, sans-serif";
+      ctx.fillText(S.total === 0 ? 'NEW SESSION' : `SESSION SPINS ${S.total}`, rcx, 646);
 
       // mini wheel graphic
       const wcx = rcx, wcy = 738, wr = 84;
@@ -538,11 +549,18 @@
     screen.position.set(0, 1.42, 0.037);
     group.add(screen);
 
-    // live update: append a real spin result and redraw the whole panel
-    group.userData.pushResult = (n) => {
-      spins.push(n);
-      drawBoard(tx.image.getContext('2d'));
-      tx.needsUpdate = true;
+    // Live update: replace the whole stats snapshot and redraw. Redraws are
+    // coalesced so a Skip-100 burst (100 results in ~1s) paints a handful of
+    // frames instead of a hundred.
+    let redrawTimer = null;
+    group.userData.setStats = (stats) => {
+      S = stats || { total: 0, last: [], hot: [], cold: [], high: null, low: null, odd: null, even: null };
+      if (redrawTimer) return;
+      redrawTimer = setTimeout(() => {
+        redrawTimer = null;
+        drawBoard(tx.image.getContext('2d'));
+        tx.needsUpdate = true;
+      }, 100);
     };
     return group;
   }
@@ -648,7 +666,7 @@
     // Live-play rig for the lobby's in-place roulette session (roulette-live.js):
     // spin the real wheel, append results to the tote board, mirror the 2D
     // game's bets as chip stacks on the printed felt.
-    g.userData.pushResult = (n) => board.userData.pushResult(n);
+    g.userData.setBoardStats = (stats) => board.userData.setStats(stats);
     g.userData.setBets = (spots) => {
       betLayer.children.slice().forEach((stack) => {
         stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });

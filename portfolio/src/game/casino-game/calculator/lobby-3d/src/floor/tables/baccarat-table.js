@@ -296,30 +296,37 @@
         }
       });
 
-      // current round card panel (gold)
+      // current round card panel (gold) — freshly shuffled shoe has no rounds
       const last = rounds[rounds.length - 1];
       const gp = ctx.createLinearGradient(0, 170, 0, 326);
       gp.addColorStop(0, '#caa64f'); gp.addColorStop(1, '#9a7a2e');
       ctx.fillStyle = gp; RR(ctx, 340, 170, 672, 156, 8); ctx.fill();
-      ctx.strokeStyle = '#6b5a1f'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(676, 178); ctx.lineTo(676, 318); ctx.stroke();
-      ctx.fillStyle = '#3a2c08'; ctx.font = `bold 22px ${CJK}`;
-      ctx.fillText(`閒 PLAYER ${last.playerTotal}`, 508, 306);
-      ctx.fillText(`庄 BANKER ${last.bankerTotal}`, 844, 306);
-      const mini = (card, x, y, sideways) => {
-        ctx.save(); ctx.translate(x, y);
-        if (sideways) ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = '#fdfbf2'; RR(ctx, -24, -34, 48, 68, 6); ctx.fill();
-        ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5; RR(ctx, -24, -34, 48, 68, 6); ctx.stroke();
-        ctx.fillStyle = card.s === 1 || card.s === 2 ? '#c0392b' : '#16161c';
-        ctx.font = 'bold 26px Georgia, serif';
-        ctx.fillText(RANK[card.r], 0, -12);
-        ctx.font = '24px Georgia, serif';
-        ctx.fillText(SUITS[card.s], 0, 16);
-        ctx.restore();
-      };
-      last.playerCards.forEach((cd, i) => mini(cd, 448 + i * 64, 232, i === 2));
-      last.bankerCards.forEach((cd, i) => mini(cd, 784 + i * 64, 232, i === 2));
+      if (last) {
+        ctx.strokeStyle = '#6b5a1f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(676, 178); ctx.lineTo(676, 318); ctx.stroke();
+        ctx.fillStyle = '#3a2c08'; ctx.font = `bold 22px ${CJK}`;
+        ctx.fillText(`閒 PLAYER ${last.playerTotal}`, 508, 306);
+        ctx.fillText(`庄 BANKER ${last.bankerTotal}`, 844, 306);
+        const mini = (card, x, y, sideways) => {
+          ctx.save(); ctx.translate(x, y);
+          if (sideways) ctx.rotate(Math.PI / 2);
+          ctx.fillStyle = '#fdfbf2'; RR(ctx, -24, -34, 48, 68, 6); ctx.fill();
+          ctx.strokeStyle = '#8a8578'; ctx.lineWidth = 1.5; RR(ctx, -24, -34, 48, 68, 6); ctx.stroke();
+          ctx.fillStyle = card.s === 1 || card.s === 2 ? '#c0392b' : '#16161c';
+          ctx.font = 'bold 26px Georgia, serif';
+          ctx.fillText(RANK[card.r], 0, -12);
+          ctx.font = '24px Georgia, serif';
+          ctx.fillText(SUITS[card.s], 0, 16);
+          ctx.restore();
+        };
+        last.playerCards.forEach((cd, i) => mini(cd, 448 + i * 64, 232, i === 2));
+        last.bankerCards.forEach((cd, i) => mini(cd, 784 + i * 64, 232, i === 2));
+      } else {
+        ctx.fillStyle = '#3a2c08'; ctx.font = `bold 44px ${CJK}`;
+        ctx.fillText('新靴 NEW SHOE', 676, 236);
+        ctx.font = `22px ${CJK}`;
+        ctx.fillText('祝君好運 GOOD LUCK', 676, 286);
+      }
 
       // 大路 big road
       bandLabel('大路', 14, 340);
@@ -369,6 +376,32 @@
     });
   }
 
+  // Full-screen splash shown while the dealer performs the shuffle ritual.
+  function drawShufflingCanvas(opts) {
+    return C.assets.canvasTexture(1024, 800, (ctx) => {
+      const RR = C.assets.roundRect;
+      const bg = ctx.createLinearGradient(0, 0, 0, 800);
+      bg.addColorStop(0, '#241014'); bg.addColorStop(1, '#0c0d12');
+      ctx.fillStyle = bg; ctx.fillRect(0, 0, 1024, 800);
+      ctx.strokeStyle = '#4a3b22'; ctx.lineWidth = 4; ctx.strokeRect(4, 4, 1016, 792);
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#e8b54a';
+      ctx.font = `bold 44px ${CJK}`;
+      ctx.fillText('百家樂 BACCARAT', 512, 120);
+      ctx.fillStyle = '#c8b78e'; ctx.font = `18px ${CJK}`;
+      ctx.fillText((opts.tierName || '').toUpperCase(), 512, 170);
+      ctx.strokeStyle = '#e8b54a'; ctx.lineWidth = 3;
+      RR(ctx, 192, 280, 640, 280, 16); ctx.stroke();
+      ctx.fillStyle = '#f0d878';
+      ctx.font = `bold 130px ${CJK}`;
+      ctx.fillText('洗牌中', 512, 390);
+      ctx.font = 'bold 58px Georgia, serif';
+      ctx.fillText('SHUFFLING', 512, 500);
+      ctx.fillStyle = '#9b8f78'; ctx.font = `26px ${CJK}`;
+      ctx.fillText('請稍候 · 新靴準備中  Please wait — preparing a new shoe', 512, 640);
+    });
+  }
+
   function makeScoreBoard(rounds, opts) {
     const g = new THREE.Group();
     const casing = new THREE.Mesh(
@@ -387,14 +420,21 @@
     );
     screen.position.set(0, 1.5, 0.037);
     g.add(screen);
-    g.userData.pushRound = (round) => {
-      rounds.push(round);
-      if (rounds.length > 80) rounds.shift();
+    const setMap = (tx) => {
       const old = screen.material.map;
-      screen.material.map = drawBoardCanvas(rounds, opts);
+      screen.material.map = tx;
       screen.material.needsUpdate = true;
       old && old.dispose();
     };
+    const redraw = () => setMap(drawBoardCanvas(rounds, opts));
+    g.userData.pushRound = (round) => {
+      rounds.push(round);
+      if (rounds.length > 80) rounds.shift();
+      redraw();
+    };
+    // new shoe: wipe the whole history like a real Macau board
+    g.userData.resetRounds = () => { rounds.length = 0; redraw(); };
+    g.userData.setShuffling = (on) => (on ? setMap(drawShufflingCanvas(opts)) : redraw());
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.035, 0.045, 1.0, 12),
       new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.4, metalness: 0.5 }),
@@ -520,6 +560,8 @@
     g.userData.bac = {
       L, feltY: FELT_Y, rounds, staticCards,
       pushRound: (round) => board.userData.pushRound(round),
+      resetBoard: () => board.userData.resetRounds(),
+      setShuffling: (on) => board.userData.setShuffling(on),
       get dealerRig() { return g.userData.dealerRig; },
     };
 

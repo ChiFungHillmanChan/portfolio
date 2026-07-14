@@ -39,6 +39,8 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 .wallet-pill .pill-reset { margin-left: .3rem; min-height: 32px; padding: .1rem .6rem;
   font: inherit; font-size: .8rem; color: #16130a; background: linear-gradient(#f0cd6b, #c69a2e);
   border: 0; border-radius: 999px; cursor: pointer; }
+.wallet-pill .pill-cash { margin-left: .35rem; padding-left: .45rem; font-size: .85rem;
+  color: #9fd6a8; border-left: 1px solid #3a4053; white-space: nowrap; }
 .account-menu { position: relative; }
 .account-menu .menu-pop { position: absolute; right: 0; top: calc(100% + 6px);
   background: rgba(10,12,18,.97); border: 1px solid #3a4053; border-radius: 10px;
@@ -74,6 +76,12 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 .floor-card .muted { color: #7d8398; font-size: .85rem; margin-top: .5rem; }
 .floor-card .hint, .floor-card .err { margin-top: .5rem; color: #ff9ba5; font-size: .85rem; }
 .floor-card .actions { display: flex; gap: .6rem; margin-top: .85rem; flex-wrap: wrap; align-items: center; }
+/* display:inline-flex on .btn-* would otherwise override the UA [hidden] rule */
+.floor-card [hidden] { display: none !important; }
+.floor-card .exchange-row { display: flex; gap: .5rem; margin-top: .6rem; flex-wrap: wrap; align-items: center; }
+.floor-card .exchange-amt { width: 8.5rem; min-height: 40px; padding: .3rem .6rem; font: inherit;
+  color: #e6e4dc; background: rgba(255,255,255,.06); border: 1px solid #3a4053; border-radius: 8px; }
+.floor-card .exchange-amt:focus { outline: none; border-color: #ffd27f; }
 .floor-card .linkline { margin-top: .6rem; font-size: .85rem; }
 .floor-card .linkline a { color: #9aa0b4; text-decoration: underline; }
 .floor-card .linkline a:hover { color: #ffd27f; }
@@ -110,4 +118,28 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 @media (prefers-reduced-motion: reduce) {
   .floor-card { animation: none; }
   #fader { transition: none; }
+}
+
+/* Live roulette session: bottom-sheet iframe running the 2D game in embed
+   mode. Hidden (slid down) while the 3D wheel spins. */
+#rouletteLive { position: fixed; left: 50%; bottom: 10px; transform: translateX(-50%);
+  width: min(980px, calc(100vw - 20px)); height: min(48vh, 500px); z-index: 32;
+  display: flex; flex-direction: column; overflow: hidden; border-radius: 14px;
+  background: rgba(10, 12, 18, .96); border: 1px solid #3a4053;
+  box-shadow: 0 14px 60px rgba(0, 0, 0, .7);
+  transition: transform .45s ease, opacity .45s ease; }
+#rouletteLive.rl-hidden { transform: translate(-50%, 130%); opacity: 0; pointer-events: none; }
+.rl-bar { display: flex; align-items: center; gap: .8rem; padding: .45rem .8rem;
+  background: #12151d; border-bottom: 1px solid #262c3a; }
+.rl-title { color: #ffd27f; font-size: .78rem; letter-spacing: .14em; font-weight: 600; }
+.rl-status { flex: 1; color: #9aa0b4; font-size: .78rem; text-align: right; }
+.rl-leave { color: #cfd2da; background: rgba(255,255,255,.05); border: 1px solid #3a4053;
+  border-radius: 8px; padding: .25rem .7rem; font-size: .78rem; cursor: pointer; }
+.rl-leave:hover { border-color: #ffd27f; color: #ffd27f; }
+.rl-frame { flex: 1; width: 100%; border: 0; background: #0d0f13; }
+@media (max-width: 768px) {
+  #rouletteLive { height: 56vh; bottom: 0; width: 100vw; border-radius: 14px 14px 0 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #rouletteLive { transition: none; }
 }

@@ -212,3 +212,15 @@ test('playRound + buildShoe are exported for the ambient show', () => {
   assert.equal(round.playerCards.length, 2);
   assert.equal(R.buildShoe(() => 0.5).length, 8 * 52);
 });
+
+test('pickCutIndex: show-friendly cut depth, always well inside the shoe', () => {
+  assert.equal(typeof R.pickCutIndex, 'function');
+  assert.equal(R.pickCutIndex(() => 0), 72);           // floor of the range
+  assert.equal(R.pickCutIndex(() => 0.999999), 96);    // ceiling of the range
+  for (let s = 0; s < 50; s++) {
+    const cut = R.pickCutIndex(mulberry32(s));
+    assert.ok(cut >= 72 && cut <= 96, `cut ${cut} out of range`);
+    // must leave plenty of shoe after the cut (draw() safety margin is 8)
+    assert.ok(cut < 8 * 52 - 8);
+  }
+});

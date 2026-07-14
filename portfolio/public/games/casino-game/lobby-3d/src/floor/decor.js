@@ -3,97 +3,9 @@
   C.floor = C.floor || {};
 
   // Ambient décor — atmosphere only, deliberately simple, no interactions:
-  // a slot-bank island on the aisle, a bar along the east wall, the cashier
-  // cage on the south wall, plants and columns. The cashier registers an
-  // anchor (its DOM card is wallet services); everything else is scenery.
-
-  function slotScreenTexture(A, variant) {
-    return A.canvasTexture(128, 160, (ctx) => {
-      const g = ctx.createLinearGradient(0, 0, 0, 160);
-      g.addColorStop(0, variant ? '#2a0f33' : '#0f1e33');
-      g.addColorStop(1, variant ? '#4a1447' : '#14315c');
-      ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 160);
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 44px "Segoe UI", sans-serif';
-      ctx.fillStyle = variant ? '#ff79c6' : '#ffd75e';
-      ctx.fillText(variant ? '♦♦♦' : '777', 64, 62);
-      ctx.font = 'bold 20px "Segoe UI", sans-serif';
-      ctx.fillStyle = '#fff';
-      ctx.fillText(variant ? 'DIAMONDS' : 'LUCKY 7', 64, 108);
-      ctx.strokeStyle = 'rgba(255,255,255,0.35)'; ctx.lineWidth = 4;
-      ctx.strokeRect(6, 6, 116, 148);
-    });
-  }
-
-  function buildSlotIsland(s, A) {
-    const screens = [slotScreenTexture(A, 0), slotScreenTexture(A, 1)];
-    const bodyMat = new THREE.MeshStandardMaterial({ color: '#1c1f2a', roughness: 0.55, metalness: 0.3 });
-    const baseMat = new THREE.MeshStandardMaterial({ color: '#10121a', roughness: 0.8 });
-    // one pulsing topper material per side of the island (cheap: 2 materials)
-    const topperMats = [
-      new THREE.MeshBasicMaterial({ color: '#ffd75e', fog: false }),
-      new THREE.MeshBasicMaterial({ color: '#ff79c6', fog: false }),
-    ];
-    C.app.onFrame((dt, t) => {
-      topperMats[0].color.setHSL(0.13, 0.85, 0.5 + 0.16 * Math.sin(t * 2.1));
-      topperMats[1].color.setHSL(0.9, 0.7, 0.5 + 0.16 * Math.sin(t * 2.1 + 1.7));
-    });
-
-    const mkSlot = (x, z, ry, sideIdx, screenIdx) => {
-      const g = new THREE.Group();
-      const base = new THREE.Mesh(new THREE.BoxGeometry(0.66, 0.14, 0.6), baseMat);
-      base.position.y = 0.07;
-      const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.95, 0.55), bodyMat);
-      body.position.y = 1.09;
-      body.castShadow = true; body.receiveShadow = true;
-      const screen = new THREE.Mesh(new THREE.PlaneGeometry(0.42, 0.5),
-        new THREE.MeshBasicMaterial({ map: screens[screenIdx], fog: false }));
-      screen.position.set(0, 1.35, 0.281);
-      screen.rotation.x = -0.06;
-      const deck = new THREE.Mesh(new THREE.BoxGeometry(0.56, 0.07, 0.3),
-        new THREE.MeshStandardMaterial({ color: '#1d2029', roughness: 0.5 }));
-      deck.position.set(0, 0.95, 0.36);
-      deck.rotation.x = 0.3;
-      const topper = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.12, 0.1), topperMats[sideIdx]);
-      topper.position.set(0, 2.12, 0.18);
-      g.add(base, body, screen, deck, topper);
-      g.position.set(x, 0, z);
-      g.rotation.y = ry;
-      s.add(g);
-    };
-
-    // back-to-back island of 5+5 on the aisle
-    for (let i = 0; i < 5; i++) {
-      const x = -4.3 + i * 1.05;
-      mkSlot(x, -0.62, 0, 0, i % 2);          // faces… wait: ry 0 faces +z (south)
-    }
-    for (let i = 0; i < 5; i++) {
-      const x = -4.3 + i * 1.05;
-      mkSlot(x, 0.62, Math.PI, 1, (i + 1) % 2); // faces north
-    }
-    // island end caps: low plinth + glowing LED column so the island reads
-    // as a lit fixture from the entrance instead of a black monolith
-    for (const ex of [-4.95, -4.3 + 4 * 1.05 + 0.65]) {
-      const cap = new THREE.Mesh(new THREE.BoxGeometry(0.5, 1.1, 1.7),
-        new THREE.MeshStandardMaterial({ color: '#161923', roughness: 0.6, metalness: 0.25 }));
-      cap.position.set(ex, 0.55, 0);
-      cap.castShadow = true;
-      s.add(cap);
-      const beacon = A.ledStrip('#ffd75e', 0.09, 2.3, 0.09);
-      beacon.position.set(ex, 1.15, 0);
-      s.add(beacon);
-      const beaconCapTop = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.06, 0.16), A.steelMaterial());
-      beaconCapTop.position.set(ex, 2.34, 0);
-      s.add(beaconCapTop);
-    }
-    // base skirt light along both long sides
-    for (const sz of [-1.0, 1.0]) {
-      const skirt = A.ledStrip('#8a6c3a', 5.4, 0.04, 0.04);
-      skirt.position.set(-2.2, 0.09, sz);
-      s.add(skirt);
-    }
-    C.world.addObstacle({ x: -2.2, z: 0, r: 3.1 });
-  }
+  // a bar along the east wall, the cashier cage on the south wall, plants
+  // and columns. The cashier registers an anchor (its DOM card is wallet
+  // services); everything else is scenery.
 
   function buildBar(s, A) {
     // counter along the east wall
@@ -243,14 +155,12 @@
         cap.position.set(x, cy, z);
         s.add(cap);
       }
-      const ring = C.assets.ledStrip('#d7b45c', 0.02, 0.06, 0.02);
       // thin LED collar around the column
       const collar = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.018, 8, 24),
         new THREE.MeshBasicMaterial({ color: '#d7b45c', fog: false }));
       collar.rotation.x = Math.PI / 2;
       collar.position.set(x, 2.6, z);
       s.add(collar);
-      void ring;
       C.world.addObstacle({ x, z, r: 0.55 });
     };
     [[-10, -3.8], [-10, 3.8], [8, -3.8], [8, 3.8]].forEach(([x, z]) => mkColumn(x, z));
@@ -258,7 +168,6 @@
 
   C.floor.buildDecor = () => {
     const s = C.app.scene, A = C.assets;
-    buildSlotIsland(s, A);
     buildBar(s, A);
     buildCashier(s, A);
     buildPlantsAndColumns(s, A);

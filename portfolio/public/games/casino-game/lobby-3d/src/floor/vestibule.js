@@ -245,11 +245,33 @@
 
     // receptionist behind the desk, facing the entrance (far enough back
     // that the resting hands don't clip into the counter slab)
-    receptionist = A.makeDealer({ suit: '#1c2a44' });
+    receptionist = A.makeDealer({ suit: '#1c2a44', seed: 'receptionist-v1' });
     receptionist.position.set(-18.35, 0, -1.85);
     receptionist.rotation.y = -Math.PI / 2 + 0.3;
     s.add(receptionist);
     receptionist.userData.idle(C.app);
+
+    // Proximity host: head tracks the player nearby; first approach gets a
+    // wave + greeting (re-arms after the player leaves for a while).
+    const rig = receptionist.userData.rig;
+    let greetedAt = -Infinity, wasNear = false, proxT = 0;
+    const proxHook = (dt, elapsed) => {
+      proxT += dt;
+      if (proxT < 0.5) return;                 // ~2 Hz is plenty
+      proxT = 0;
+      const p = C.app.player;
+      const d = Math.hypot(p.x - -18.35, p.z - -1.85);
+      const near = d < 5.5;
+      if (near) rig.lookAt(C.app, [p.x, 1.5, p.z]);
+      else if (wasNear) rig.lookAt(C.app, [-24, 1.5, 0]);   // relax toward the entrance
+      if (near && !wasNear && elapsed - greetedAt > 90) {
+        greetedAt = elapsed;
+        rig.play(C.app, 'wave');
+        rig.say(C.app, 'Welcome to Grand Casino!', { ms: 2400 });
+      }
+      wasNear = near;
+    };
+    C.app.onFrame(proxHook);
 
     // signage above the desk (angled with it, facing the entrance)
     const sign = A.makeNeonSign('RECEPTION — ID CHECK', '#ffd27f', { w: 2.5, h: 0.38 });
@@ -288,12 +310,18 @@
     C.stage.setAccess = (open) => turnstile.setOpen(open);
     C.stage.walkToDesk = () => {
       const p = C.floorplan.ANCHOR_POSES.reception;
+      receptionist.userData.rig.say(C.app, 'May I see your member card?', { ms: 2600 });
       return C.app.glideTo(p.pos, p.look, 900);
     };
-    C.stage.playHeadShake = () => receptionist.userData.headShake(C.app);
+    C.stage.playHeadShake = () => {
+      receptionist.userData.rig.say(C.app, 'Members only — please sign in.', { ms: 2200 });
+      return receptionist.userData.headShake(C.app);
+    };
     C.stage.playWelcome = () => {
-      receptionist.userData.lookToward(C.app, [C.app.player.x, 1.5, C.app.player.z]);
-      return stamp.play();
+      const rig2 = receptionist.userData.rig;
+      rig2.lookAt(C.app, [C.app.player.x, 1.5, C.app.player.z]);
+      rig2.say(C.app, "You're verified — enjoy the floor!", { ms: 2600 });
+      return stamp.play().then(() => rig2.play(C.app, 'nod'));
     };
     C.stage.resetWelcome = () => stamp.reset();
     C.stage.playWaveThrough = () => {
@@ -314,6 +342,7 @@
         };
         addEventListener('pointerup', skip, { once: true });
         receptionist.userData.lookToward(C.app, [-24, 1.5, 0]);
+        receptionist.userData.rig.say(C.app, 'This way, please!', { ms: 2000 });
         receptionist.userData.dealGesture(C.app, [C.floorplan.GATE_X, 1.2, 0], 900);
         const byDesk = { pos: [-19.6, 1.6, 0.2], look: [-16.2, 1.35, 0] };
         C.app.glideTo(byDesk.pos, byDesk.look, 650)

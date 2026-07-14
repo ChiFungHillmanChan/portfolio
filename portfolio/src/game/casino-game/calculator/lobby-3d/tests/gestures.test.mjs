@@ -11,7 +11,8 @@ test('every built-in clip validates clean', () => {
 
 test('the choreography set exists', () => {
   for (const name of ['dealCard', 'sweepChips', 'payChips', 'spinReach', 'spinFollow',
-    'placeDolly', 'tapRack', 'wave', 'welcomeSweep', 'nod', 'headShake']) {
+    'placeDolly', 'tapRack', 'wave', 'welcomeSweep', 'nod', 'headShake',
+    'washCards', 'shuffleRiffle', 'armsRest']) {
     assert.ok(G.CLIPS[name], name);
   }
 });

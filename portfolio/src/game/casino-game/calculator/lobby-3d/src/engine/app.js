@@ -105,7 +105,7 @@
       const floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
       let look = null;   // { id, x, y, yaw, pitch, dragging }
       canvas.addEventListener('pointerdown', (e) => {
-        if (!e.isPrimary) return;
+        if (C.app.inputLocked || !e.isPrimary) return;
         look = { id: e.pointerId, x: e.clientX, y: e.clientY, yaw: P.yaw, pitch: P.pitch, dragging: false };
         canvas.setPointerCapture?.(e.pointerId);
       });
@@ -151,18 +151,19 @@
       addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
 
       // ----- frame loop -----
-      let last = performance.now(), proxTimer = 0, nearId, zoneId;
+      let last = performance.now(), proxTimer = 0, nearId, zoneId, stepAccum = 0;
       const loop = (now) => {
         const dt = Math.min(0.05, (now - last) / 1000);
         last = now;
-        const f = (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
-        const s = (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
+        const locked = C.app.inputLocked;
+        const f = locked ? 0 : (keys.KeyW || keys.ArrowUp ? 1 : 0) - (keys.KeyS || keys.ArrowDown ? 1 : 0);
+        const s = locked ? 0 : (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
         if (f || s) {
           glide = null; cancelFly();
           const len = Math.hypot(f, s) || 1;
           const dx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) / len;
           const dz = (Math.cos(P.yaw) * f - Math.sin(P.yaw) * s) / len;
-          tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt);
+          if (tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt)) stepAccum += dt;
         } else if (glide) {
           const dx = glide.x - P.x, dz = glide.z - P.z, d = Math.hypot(dx, dz);
           if (d < 0.05) { const done = glide.onDone; glide = null; done?.(); }
@@ -171,6 +172,7 @@
             const speed = Math.min(GLIDE, Math.max(1.4, d * 2.2));
             const moved = tryMove(P.x + (dx / d) * Math.min(speed * dt, d),
                                   P.z + (dz / d) * Math.min(speed * dt, d));
+            if (moved) stepAccum += dt;
             if (!moved) { const done = glide.onDone; glide = null; done?.(); }
             else if (glide && glide.turn) {
               // yawTarget is FIXED at walkTo time — re-aiming at the noisy
@@ -183,6 +185,7 @@
             }
           }
         }
+        if (stepAccum > 0.45) { stepAccum = 0; C.sound?.play('step'); }   // footsteps
         // proximity + zone checks at ~10 Hz
         proxTimer += dt;
         if (proxTimer > 0.1) {
@@ -228,6 +231,17 @@
       };
     },
 
+    // A closed turnstile must block click-to-fly the same way it blocks
+    // walking: glideTo deliberately ignores collision, so flying a signed-out
+    // player from the vestibule to a floor-side pose would skip the ID check.
+    // (East→west stays allowed — sign-out pulls the player back to spawn.)
+    canFlyTo(pos) {
+      if (C.world.gateOpen) return true;
+      const gx = C.floorplan.GATE_X;
+      if (P.x < gx && pos[0] > gx) { ui?.onTurnstileBlocked?.(); return false; }
+      return true;
+    },
+
     // Fly the camera to an exact pose (stage.goTo / walkToDesk). Ignores
     // collision — poses are always chosen inside walkable space.
     glideTo(pos, look, ms = 1100) {
@@ -260,7 +274,10 @@
         C.app.onFrame(hook);
       });
     },
-    goToAnchor(a) { return C.app.glideTo(a.approach.pos, a.approach.look); },
+    goToAnchor(a) {
+      if (!C.app.canFlyTo(a.approach.pos)) return Promise.resolve();
+      return C.app.glideTo(a.approach.pos, a.approach.look);
+    },
 
     spawn() {
       const s = C.floorplan.SPAWN;
@@ -269,6 +286,9 @@
       P.pitch = 0;
     },
 
+    // While true, walk/look/tap input is ignored (set by the live-play
+    // session so betting can't wander the camera away from the table).
+    inputLocked: false,
     onFrame: (fn) => frameHooks.add(fn),
     offFrame: (fn) => frameHooks.delete(fn),
     addPickable: (mesh, onClick) => pickables.push({ mesh, onClick }),

@@ -107,7 +107,7 @@
         group.rotation.y = row.yaw ?? (row.dir === -1 ? Math.PI : 0);
         s.add(group);
         highlights.set(table.id, group.userData.highlight);
-        // live-play rigs: roulette tables expose spinTo/pushResult/setBets
+        // live-play rigs: roulette tables expose spinTo/setBoardStats/setBets
         // on their group userData for the in-place session (roulette-live.js)
         if (section.id === 'roulette') (C.floor.rouletteRigs ??= new Map()).set(table.id, group);
         if (section.id === 'blackjack') (C.floor.blackjackRigs ??= new Map()).set(table.id, group);

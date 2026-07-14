@@ -85,6 +85,23 @@
     return group;
   }
 
+  // Yellow cut card: solid colour both sides, playing-card footprint. Same
+  // group + flip contract as makeCard so dealCardTo can fly it.
+  function makeCutCard() {
+    const geo = new THREE.PlaneGeometry(C.layouts.CARD_W, C.layouts.CARD_H);
+    const mat = new THREE.MeshStandardMaterial({
+      color: '#e6c531', roughness: 0.55, metalness: 0, side: THREE.DoubleSide,
+    });
+    const mesh = new THREE.Mesh(geo, mat);
+    mesh.castShadow = true; mesh.receiveShadow = true;
+    const group = new THREE.Group();
+    group.add(mesh);
+    group.userData.card = null;
+    group.userData.flip = (ms = 400, onDone) =>
+      C.tween.to(group.rotation, { y: group.rotation.y + Math.PI }, ms, 'inOutCubic', onDone);
+    return group;
+  }
+
   // dealCardTo v2 — same contract as the original (assets.js), plus:
   //  * in-plane spin: rotation.z starts 0.45 rad short of the caller's final
   //    value and eases in (rotation.z is the INNERMOST Euler axis, so the
@@ -101,6 +118,7 @@
       const zStart = spin ? zEnd - 0.45 : zEnd;
       cardMesh.rotation.z = zStart;
       app.scene.add(cardMesh);
+      C.sound?.play('card');
       const easeXZ = spin ? C.tween.easings.outBack : C.tween.easings.outCubic;
       const easeSpin = C.tween.easings.outCubic;
       const start = () => {
@@ -181,6 +199,6 @@
     return mesh;
   }
 
-  C.cards = { makeCard, dealCardTo, flipFlatCard, makeCardBoxDecal };
+  C.cards = { makeCard, makeCutCard, dealCardTo, flipFlatCard, makeCardBoxDecal };
   C.assets.makeCard = makeCard;
 })();
