@@ -19,10 +19,13 @@
 
   function makeHumanRig({ suit = '#1a1a1a', shirt = '#f2f0e8', seed = '' } = {}) {
     const h = hashSeed(seed || Math.floor(performance.now()));
+    // >>> keeps the shifted index unsigned — a signed >> on a hash above 2^31
+    // went negative, so HAIRS[-4]/VESTS[-4] were undefined and THREE fell
+    // back to white hair/vests for half of all seeds.
     const skin = SKINS[h % SKINS.length];
-    const hairC = HAIRS[(h >> 3) % HAIRS.length];
-    const vestC = seed ? VESTS[(h >> 6) % VESTS.length] : suit;
-    const hairStyle = HAIR_STYLES[(h >> 9) % HAIR_STYLES.length];
+    const hairC = HAIRS[(h >>> 3) % HAIRS.length];
+    const vestC = seed ? VESTS[(h >>> 6) % VESTS.length] : suit;
+    const hairStyle = HAIR_STYLES[(h >>> 9) % HAIR_STYLES.length];
 
     const suitMat = new THREE.MeshStandardMaterial({ color: suit, roughness: 0.6, metalness: 0.05 });
     const vestMat = new THREE.MeshStandardMaterial({ color: vestC, roughness: 0.55, metalness: 0.08 });
