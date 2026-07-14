@@ -7,6 +7,8 @@ import { buildFloorModel } from './floor-model.js';
 import { initialReception, receptionReduce, canPassTurnstile } from './reception-model.js';
 import { formatChips } from '../js/wallet/table-config.js';
 import * as UI from './ui.js';
+import { openRouletteLive, closeRouletteLive, rouletteLiveActive } from './roulette-live.js';
+import { openBlackjackLive, closeBlackjackLive, blackjackLiveActive } from './blackjack-live.js';
 
 const model = buildFloorModel();
 
@@ -26,7 +28,55 @@ const firstName = () => {
 };
 
 // ---------- auth bridge (starts immediately, in parallel with the splash) ----------
-import('../js/wallet/wallet-bootstrap.js')
+// Local dev: Firebase blocks localhost referers, so ?stubwallet swaps in an
+// in-memory signed-in wallet. Localhost-only — production ignores the param.
+const STUB_WALLET =
+  ['localhost', '127.0.0.1'].includes(location.hostname) &&
+  new URLSearchParams(location.search).has('stubwallet');
+
+function makeStubBootstrap() {
+  let bal = 100000;
+  const subs = new Set();
+  const rounds = new Map();
+  const fail = (code) => Object.assign(new Error(code), { code });
+  const emit = () => subs.forEach((cb) => cb(bal));
+  return {
+    walletClient: {
+      getBalance: () => bal,
+      getResetInfo: () => ({ canReset: false, resetAvailableAt: null }),
+      subscribe: (cb) => (subs.add(cb), () => subs.delete(cb)),
+      openRound: (gameId) => rounds.get(gameId) || null,
+      async load() { return { balance: bal }; },
+      async bet(gameId, bets) {
+        if (rounds.has(gameId)) throw fail('round-in-progress');
+        const total = Object.values(bets).reduce((a, b) => a + b, 0);
+        if (total > bal) throw fail('insufficient');
+        bal -= total; rounds.set(gameId, { roundId: 'stub', bets: { ...bets } }); emit();
+        return { balance: bal, roundId: 'stub' };
+      },
+      async topUp(gameId, bets) {
+        if (!rounds.has(gameId)) throw fail('no-open-round');
+        const total = Object.values(bets).reduce((a, b) => a + b, 0);
+        if (total > bal) throw fail('insufficient');
+        bal -= total; emit();
+        return { balance: bal, roundId: 'stub' };
+      },
+      async payout(gameId, chips) {
+        rounds.delete(gameId); bal += chips; emit();
+        return { balance: bal };
+      },
+      async reset() { return { balance: bal }; },
+      clear() {},
+    },
+    onAuth(cb) { setTimeout(() => cb({ signedIn: true, user: { displayName: 'Stub Player', email: 'stub@localhost' } }), 50); },
+    signIn: async () => {},
+    signOut: async () => {},
+  };
+}
+
+(STUB_WALLET
+  ? Promise.resolve({ default: makeStubBootstrap() })
+  : import('../js/wallet/wallet-bootstrap.js'))
   .then((m) => {
     bootstrap = m.default;
     bootstrap.onAuth(({ signedIn, user: u }) => {
@@ -65,6 +115,8 @@ function render(prev) {
 
   switch (state.phase) {
     case 'out': {
+      closeRouletteLive();   // signed out mid-session — leave the table
+      closeBlackjackLive();  // signed out mid-session — leave the table
       stage.setAccess(false);
       stage.setHighlight(null);
       pill.setMode('signin');
@@ -151,19 +203,40 @@ function resetWallet(rerender) {
 }
 
 function showProximityCard(anchor) {
-  // The check-in card never gets replaced by proximity cards.
+  // The check-in card never gets replaced by proximity cards, and a live
+  // roulette session owns the screen — the camera glides it past anchors.
+  if (rouletteLiveActive() || blackjackLiveActive()) return;
   if (cards.kind() === 'checkin' || cards.kind() === 'unavailable') return;
   if (!anchor) {
-    if (['sitdown', 'cashier', 'practice'].includes(cards.kind())) cards.hide();
+    if (['sitdown', 'closed', 'cashier', 'practice'].includes(cards.kind())) cards.hide();
     return;
   }
   if (anchor.kind === 'table') {
     const section = model.sections.find((s) => s.tables.some((t) => t.id === anchor.table.id));
+    if (anchor.table.closed) {
+      cards.show('closed', UI.closedTableCard({
+        gameName: section ? section.gameName : '',
+        notice: anchor.table.closedNotice,
+        onOk: () => cards.hide('closed'),
+      }));
+      return;
+    }
+    const liveOpen =
+      section && section.id === 'roulette'
+        ? () => openRouletteLive({ table: anchor.table })
+        : section && section.id === 'blackjack'
+          ? () => openBlackjackLive({
+              table: anchor.table,
+              walletClient: walletClient(),
+              onClosed: () => quicknav?.refresh(),
+            })
+          : null;
     cards.show('sitdown', UI.sitdownCard({
       table: anchor.table,
       gameName: section ? section.gameName : '',
       balance: balance(),
       onNotNow: () => cards.hide('sitdown'),
+      onPlay: liveOpen ? () => { cards.hide(); liveOpen(); } : null,
     }));
   } else if (anchor.kind === 'cashier') {
     cards.show('cashier', UI.cashierCard({
@@ -195,7 +268,7 @@ const engineUi = {
   onSectionChange(zone) {
     const label = {
       vestibule: 'Vestibule', roulette: 'Roulette', blackjack: 'Blackjack',
-      baccarat: 'Baccarat', uth: "Ultimate Hold'em", aisle: '',
+      baccarat: 'Baccarat', uth: "Ultimate Hold'em — Dealer Training", aisle: '',
     }[zone] || '';
     document.getElementById('sectionLabel').textContent = label;
   },
@@ -252,6 +325,8 @@ function start() {
         if (state.phase === 'out') dispatch({ type: 'OPEN_CHECKIN' });
         return;
       }
+      closeRouletteLive();   // navigating away ends any live table session
+      closeBlackjackLive();  // navigating away ends any live table session
       cards.hide();
       stage.goTo(id);
     },
