@@ -142,3 +142,58 @@ test('stats counts outcomes, pairs, naturals, games', () => {
   assert.equal(s.pPair, rounds.filter((r) => r.playerPair).length);
   assert.equal(s.natural, rounds.filter((r) => r.natural).length);
 });
+
+test('deriveRoad: ping-pong pairs read as all red', () => {
+  // B B P P B B P P -> 4 columns of depth 2
+  const big = R.buildBigRoad(mk('BBPPBBPP'));
+  assert.deepEqual(R.deriveRoad(big, 1), ['r', 'r', 'r', 'r', 'r']);
+  assert.deepEqual(R.deriveRoad(big, 2), ['r', 'r', 'r']);
+  assert.deepEqual(R.deriveRoad(big, 3), ['r']);
+});
+
+test('deriveRoad: mixed-depth fixture (hand-verified)', () => {
+  // B P P B B B P -> cols B[1], P[2], B[3], P[1]
+  const big = R.buildBigRoad(mk('BPPBBBP'));
+  // big eye boy entries: (1,1)=b, (2,0)=b, (2,1)=r, (2,2)=b, (3,0)=b
+  assert.deepEqual(R.deriveRoad(big, 1), ['b', 'b', 'r', 'b', 'b']);
+  // small road entries: (2,1)=b, (2,2)=r, (3,0)=b
+  assert.deepEqual(R.deriveRoad(big, 2), ['b', 'r', 'b']);
+  // cockroach: (3,0) is col 3 row 0, needs c>3 or (c==3,r>=1) -> nothing yet
+  assert.deepEqual(R.deriveRoad(big, 3), []);
+});
+
+test('deriveRoad start condition: nothing before col 2 / (col 1, row 1)', () => {
+  assert.deepEqual(R.deriveRoad(R.buildBigRoad(mk('BBP')), 1), []);
+  assert.deepEqual(R.deriveRoad(R.buildBigRoad(mk('BBPP')), 1), ['r']);
+});
+
+test('ties do not disturb derived roads', () => {
+  const a = R.deriveRoad(R.buildBigRoad(mk('BPPBBBP')), 1);
+  const b = R.deriveRoad(R.buildBigRoad(mk('BTPPTTBBBPT')), 1);
+  assert.deepEqual(a, b);
+});
+
+test('predictNext matches actually appending the round', () => {
+  const big = R.buildBigRoad(mk('BPPBBBP'));
+  const pred = R.predictNext(big);
+  // hand-worked: B starts col 4 -> depths c3=1 vs (BEB) c2=3 diff=b,
+  // (small) c1=2 diff=b, (roach) c0=1 same=r
+  assert.deepEqual(pred.B, ['b', 'b', 'r']);
+  // P stacks col 3 row 1 -> (BEB) col2 depth3>1=r, (small) col1 depth2>1=r,
+  // (roach) col0 depth1==1=b
+  assert.deepEqual(pred.P, ['r', 'r', 'b']);
+  // generic consistency for both outcomes on a real shoe
+  const shoe = R.buildBigRoad(R.simulateShoe(mulberry32(3)));
+  const p2 = R.predictNext(shoe);
+  for (const oc of ['B', 'P']) {
+    const cols = shoe.cols.map((c) => ({ outcome: c.outcome, cells: c.cells.map((x) => ({ ...x })) }));
+    const last = cols[cols.length - 1];
+    if (last && last.outcome === oc) last.cells.push({ ties: 0 });
+    else cols.push({ outcome: oc, cells: [{ ties: 0 }] });
+    for (const k of [1, 2, 3]) {
+      const after = R.deriveRoad({ cols }, k);
+      const before = R.deriveRoad(shoe, k);
+      assert.equal(p2[oc][k - 1], after.length > before.length ? after[after.length - 1] : null);
+    }
+  }
+});

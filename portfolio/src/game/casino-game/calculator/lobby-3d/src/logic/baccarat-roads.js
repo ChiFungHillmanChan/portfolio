@@ -135,5 +135,42 @@
     }));
   }
 
-  C.baccaratRoads = { bacValue, total, bankerDraws, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate };
+  // ---------- derived roads ----------
+  // offset 1 = big eye boy (大眼仔), 2 = small road (小路),
+  // 3 = cockroach pig (曱甴路). For each big-road cell at LOGICAL (col c,
+  // row r) with c > offset or (c === offset, r >= 1):
+  //   r === 0: red if depth(c-1) === depth(c-1-offset) else blue
+  //   r >= 1:  blue if column c-offset ends exactly at row r-1, else red
+  function deriveRoad(big, offset) {
+    const depth = (i) => big.cols[i].cells.length;
+    const colors = [];
+    big.cols.forEach((col, c) => {
+      col.cells.forEach((_, r) => {
+        if (!(c > offset || (c === offset && r >= 1))) return;
+        if (r === 0) colors.push(depth(c - 1) === depth(c - 1 - offset) ? 'r' : 'b');
+        else colors.push(depth(c - offset) === r ? 'b' : 'r');
+      });
+    });
+    return colors;
+  }
+
+  // 下局預告: the symbol each derived road would print if the next result
+  // were B / P — computed by actually appending the hypothetical round.
+  function predictNext(big) {
+    const out = {};
+    for (const oc of ['B', 'P']) {
+      const cols = big.cols.map((c) => ({ outcome: c.outcome, cells: c.cells.map((x) => ({ ...x })) }));
+      const last = cols[cols.length - 1];
+      if (last && last.outcome === oc) last.cells.push({ ties: 0 });
+      else cols.push({ outcome: oc, cells: [{ ties: 0 }] });
+      out[oc] = [1, 2, 3].map((k) => {
+        const after = deriveRoad({ cols }, k);
+        const before = deriveRoad(big, k);
+        return after.length > before.length ? after[after.length - 1] : null;
+      });
+    }
+    return out;
+  }
+
+  C.baccaratRoads = { bacValue, total, bankerDraws, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate, deriveRoad, predictNext };
 })();
