@@ -227,6 +227,7 @@
       dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoePos,
       trayLocal: [0, FELT_Y + 0.054, -0.19],
       freeSeats: [0, 1, 2, 3, 4, 5],
+      get dealerRig() { return g.userData.dealerRig; },
       spotLocal(i, id) {
         const a = seatAngle(i);
         const at = (radius, tangent) => {

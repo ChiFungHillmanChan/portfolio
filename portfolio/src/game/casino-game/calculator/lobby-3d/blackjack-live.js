@@ -341,8 +341,13 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     dealt.push(mesh);
     return mesh;
   }
-  const dealTo = (mesh, plan, opts = {}) =>
-    C.cards.dealCardTo(C.app, mesh, toWorld(bj.shoeLocal), toWorld(plan.pos), { ms: 420, ...opts });
+  const dealTo = (mesh, plan, opts = {}) => {
+    // fire-and-forget: the arm mimes the deal while the card flies
+    bj.dealerRig?.play(C.app, 'dealCard', {
+      refs: { shoe: toWorld(bj.shoeLocal), target: toWorld(plan.pos) },
+    });
+    return C.cards.dealCardTo(C.app, mesh, toWorld(bj.shoeLocal), toWorld(plan.pos), { ms: 420, ...opts });
+  };
 
   function actionBar() {
     let el = document.getElementById('bjActions');
@@ -471,6 +476,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
       const finish = () => { done(); };
       const render = () => {
         const hv = handValue(hand.cards);
+        bj.dealerRig?.lookAt(C.app, toWorld(bj.spotLocal(seatIdx, hi === 0 ? 'main' : 'main2')));
         const label = hands.length > 1 ? `HAND ${hi + 1}/${hands.length}: ` : 'YOUR HAND: ';
         el.innerHTML = `<span class="bj3-total">${label}${hv.total}${hv.soft ? ' (soft)' : ''}</span>`;
         const mk = (txt, cls, fn, disabled = false) => {
@@ -559,6 +565,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   async function runDealerAndSettle(hands, dealerCards, dealDealer, roundBets, sideRet) {
     await C.app.glideTo(poses.dealer.pos, poses.dealer.look, 700);
     if (closed) return;
+    bj.dealerRig?.lookAt(C.app, toWorld([0, 0.95, 0.16]));
     // European: dealer completes the hand now (draws to 17, stands on all 17s)
     while (handValue(dealerCards).total < 17) {
       // eslint-disable-next-line no-await-in-loop
@@ -589,11 +596,15 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     }
     if (closed) return;
 
-    // Chip choreography: dealer pays from the tray / collects into it.
+    // Chip choreography: dealer pays from the tray / collects into it,
+    // with a matching arm gesture (visual only — never awaited before pay).
     const jobs = hands.map((h, i) => {
       const spotId = i === 0 ? 'main' : 'main2';
       const ret = rets[i];
       const outcome = ret === 0 ? 'lose' : ret === h.stake ? 'push' : 'win';
+      const spotW = toWorld(bj.spotLocal(seatIdx, spotId));
+      if (outcome === 'lose') bj.dealerRig?.play(C.app, 'sweepChips', { refs: { target: spotW, rack: toWorld(bj.trayLocal) } });
+      else if (outcome === 'win') bj.dealerRig?.play(C.app, 'payChips', { refs: { rack: toWorld(bj.trayLocal), target: spotW } });
       return stacks.settle(spotId, outcome, Math.max(0, ret - h.stake));
     });
 
