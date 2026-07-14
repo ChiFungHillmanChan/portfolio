@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mapRouletteBets } from "../js/wallet/bet-map.js";
+import { mapRouletteBets, findMinViolation } from "../js/wallet/bet-map.js";
 
 test("collapses game bet keys into server payout-class buckets", () => {
   const betState = {
@@ -29,4 +29,45 @@ test("omits zero/empty buckets", () => {
 
 test("rounds/ignores non-positive amounts", () => {
   assert.deepEqual(mapRouletteBets({ straight: { "5": 0 }, red: 100 }), { evenMoney: 100 });
+});
+
+// --- findMinViolation: client mirror of the server's per-class min rule ---
+// (wallet-logic.mjs validateBets rejects any payout-class aggregate < min).
+
+// Standard-tier shape — only `min` matters to the validator.
+const MIN100 = Object.fromEntries(
+  ["straight", "split", "street", "corner", "sixline", "column", "dozen", "evenMoney"]
+    .map((t) => [t, { min: 100, max: 20000 }]),
+);
+
+test("flags a single sub-min chip (default $1 chip on red)", () => {
+  assert.deepEqual(findMinViolation({ red: 1 }, MIN100), {
+    type: "evenMoney", amount: 1, min: 100,
+  });
+});
+
+test("flags a small class even when another class is well over min", () => {
+  assert.deepEqual(findMinViolation({ red: 500, straight: { "17": 25 } }, MIN100), {
+    type: "straight", amount: 25, min: 100,
+  });
+});
+
+test("same-class spots aggregate before the min check", () => {
+  // 4 × 25 straights = 100 → meets the class min even though each spot is under it
+  const bets = { straight: { "1": 25, "2": 25, "3": 25, "4": 25 } };
+  assert.equal(findMinViolation(bets, MIN100), null);
+});
+
+test("trio/firstFour/topLine fold into their payout class before the check", () => {
+  // street class = street 60 + trio 40 = 100 → OK; corner class = firstFour 50 + topLine 50 = 100 → OK
+  const bets = {
+    street: { "1-2-3": 60 }, trio: { "0-1-2": 40 },
+    firstFour: 50, topLine: 50,
+  };
+  assert.equal(findMinViolation(bets, MIN100), null);
+});
+
+test("passes when every class meets its min; empty bets pass", () => {
+  assert.equal(findMinViolation({ red: 100, dozen: { "2": 150 } }, MIN100), null);
+  assert.equal(findMinViolation({}, MIN100), null);
 });

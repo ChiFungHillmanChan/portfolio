@@ -45,10 +45,10 @@ function renderChipRack() {
     
     const available = getAvailableChips();
     const selected = getSelectedChip();
-    
+
     rack.innerHTML = '';
-    
-    CHIP_DENOMINATIONS.forEach(value => {
+
+    tableChipDenominations().forEach(value => {
         const isAvailable = available.includes(value);
         const isSelected = value === selected;
         

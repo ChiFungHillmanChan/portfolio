@@ -38,8 +38,28 @@ document.addEventListener('wallet:ready', () => {
         minBet: window.rouletteTable.min,
         maxBet: window.rouletteTable.perSpotMax,
     });
+    defaultChipToTableMin();
     showGameScreen();
 });
+
+// Default the chip rack to the table minimum ONCE per session: the smallest
+// affordable denomination that meets the tier min (largest affordable chip on
+// a short bankroll). Without this the rack defaults to the $1 chip, whose
+// lone bets the server rejects as sub-min (bad-bets). Runs at wallet:ready
+// when chips are already on hand (standalone page resume) or on the first
+// balance change that brings chips (the 3D-lobby flow arrives with 0 chips —
+// the buy-in overlay opens after wallet:ready). Once applied it never fires
+// again, so a chip the player picked deliberately is never stomped.
+let chipDefaulted = false;
+function defaultChipToTableMin() {
+    if (chipDefaulted || !window.rouletteTable) return;
+    const affordable = getAvailableChips();
+    if (!affordable.length) return; // no chips yet (pre buy-in) — retry on next balance change
+    const meetsMin = affordable.filter((c) => c >= window.rouletteTable.min);
+    setSelectedChip(meetsMin.length ? Math.min(...meetsMin) : Math.max(...affordable));
+    renderChipSelector();
+    chipDefaulted = true;
+}
 
 // Mirror the wallet's confirmed balance into the in-game bankroll display
 // whenever it changes for a reason this page didn't itself just cause (e.g. a
@@ -49,6 +69,7 @@ document.addEventListener('wallet:balance', () => {
     if (!window.rouletteWallet) return;
     syncBankrollFromWallet(window.rouletteWallet.getBalance());
     renderBankroll();
+    defaultChipToTableMin(); // no-op once applied; covers the post-buy-in case
 });
 
 /**
@@ -317,8 +338,8 @@ function renderChipSelector() {
     
     const available = getAvailableChips();
     const selected = getSelectedChip();
-    
-    rack.innerHTML = CHIP_DENOMINATIONS.map(value => {
+
+    rack.innerHTML = tableChipDenominations().map(value => {
         const isAvailable = available.includes(value);
         const isSelected = value === selected;
         

@@ -25,3 +25,17 @@ export function mapRouletteBets(betState) {
   for (const [k, v] of Object.entries(buckets)) if (v > 0) out[k] = v;
   return out;
 }
+
+// Client mirror of the server's per-class MIN rule (wallet-logic.mjs
+// validateBets): every mapped payout-class aggregate must reach that class's
+// min, or the whole bet is rejected server-side as bad-bets. Checked at
+// spin-time (not per chip placement — players build a class up chip by chip
+// starting from 0). Returns null when the bet would pass, else the first
+// offending { type, amount, min } so the UI can name the shortfall.
+export function findMinViolation(betState, betTypes) {
+  for (const [type, amount] of Object.entries(mapRouletteBets(betState))) {
+    const spec = betTypes && betTypes[type];
+    if (spec && amount < spec.min) return { type, amount, min: spec.min };
+  }
+  return null;
+}
