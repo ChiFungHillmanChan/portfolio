@@ -130,7 +130,12 @@
       }
       while (wantRun) {
         // eslint-disable-next-line no-await-in-loop
-        await runRound().catch((err) => console.error('[bac-show]', err));
+        await runRound().catch((err) => {
+          console.error('[bac-show]', err);
+          // backoff so a runRound that rejects before its first await can
+          // never hot-spin the loop and starve the frame budget
+          return wait(1500);
+        });
       }
       running = false;
     }
