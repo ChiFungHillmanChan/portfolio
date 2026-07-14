@@ -13,6 +13,7 @@ export const SRC_ORDER = [
   'src/engine/cards.js',
   'src/engine/chips3d.js',
   'src/logic/layouts.js',
+  'src/logic/baccarat-roads.js',
   'src/floor/layout.js',
   'src/floor/tables/roulette-table.js',
   'src/floor/tables/blackjack-table.js',
