@@ -11,38 +11,118 @@
   const GHOST_ANGLES_DEG = [40, 75, 105, 140];
   const SEAT_RX = 2.15, SEAT_RZ = 1.3, CHIP_RX = 1.35, CHIP_RZ = 0.62;
 
+  const CJK = "'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif";
+
+  // Macau-style felt, module-cached — the four floor tables share one
+  // 2048x1024 texture. Canvas top = dealer edge (-z); pt(f, deg) uses the
+  // same parametrisation as layouts.baccarat.seatSpot (90° = player edge).
+  let feltTexture = null;
   function makeFeltTexture() {
-    const W = 1024, H = 512, cx = W / 2, cy = H / 2;
-    return C.assets.canvasTexture(W, H, (ctx) => {
+    if (feltTexture) return feltTexture;
+    const L = C.layouts.baccarat;
+    const W = 2048, H = 1024, cx = W / 2, cy = H / 2;
+    const px = (x) => cx + (x / L.feltRx) * (W / 2);
+    const py = (z) => cy + (z / L.feltRz) * (H / 2);
+    const pt = (f, deg) => {
+      const a = (deg * Math.PI) / 180;
+      return [cx + Math.cos(a) * f * (W / 2), cy + Math.sin(a) * f * (H / 2)];
+    };
+
+    feltTexture = C.assets.canvasTexture(W, H, (ctx) => {
+      const R = C.assets.roundRect;
       ctx.fillStyle = '#0b5d3b';
       ctx.fillRect(0, 0, W, H);
 
-      ctx.fillStyle = 'rgba(46,109,180,.38)';   // PLAYER tint (left)
-      ctx.fillRect(0, 0, W * 0.37, H);
-      ctx.fillStyle = 'rgba(163,22,33,.38)';    // BANKER tint (right)
-      ctx.fillRect(W * 0.63, 0, W * 0.37, H);
-      ctx.fillStyle = 'rgba(14,107,69,.5)';     // TIE tint (center)
-      ctx.fillRect(W * 0.37, 0, W * 0.26, H);
-
-      ctx.strokeStyle = 'rgba(240,216,120,.7)'; ctx.lineWidth = 6;
+      // gold border ring
+      ctx.strokeStyle = 'rgba(240,216,120,.7)'; ctx.lineWidth = 8;
       ctx.beginPath(); ctx.ellipse(cx, cy, W / 2 - 14, H / 2 - 14, 0, 0, Math.PI * 2); ctx.stroke();
-      ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 3;
-      [0.37, 0.63].forEach((f) => {
-        ctx.beginPath(); ctx.moveTo(W * f, 40); ctx.lineTo(W * f, H - 40); ctx.stroke();
+
+      // dealer strip: outline where the physical chip rack sits
+      ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 4;
+      R(ctx, px(-0.42), py(-0.66), px(0.42) - px(-0.42), py(-0.38) - py(-0.66), 14); ctx.stroke();
+
+      // card-dealing area: 閒 PLAYER (left, yellow) | 庄 BANKER (right, red)
+      const cardBox = (x0, x1, color, label) => {
+        ctx.strokeStyle = color; ctx.lineWidth = 5;
+        R(ctx, px(x0), py(-0.30), px(x1) - px(x0), py(0.02) - py(-0.30), 16); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = `bold 34px ${CJK}`;
+        ctx.fillText(label, (px(x0) + px(x1)) / 2, py(-0.25));
+      };
+      cardBox(-0.78, -0.16, '#f0d878', '閒 PLAYER');
+      cardBox(0.16, 0.78, '#e05555', '庄 BANKER');
+      ctx.strokeStyle = 'rgba(240,216,120,.8)'; ctx.lineWidth = 4;
+      ctx.beginPath(); ctx.moveTo(cx, py(-0.30)); ctx.lineTo(cx, py(0.02)); ctx.stroke();
+
+      // rotated text helper: upright for a viewer at that seat
+      const arcText = (text, f, deg, font, fill) => {
+        const [x, y] = pt(f, deg);
+        ctx.save(); ctx.translate(x, y); ctx.rotate(((deg - 90) * Math.PI) / 180);
+        ctx.font = font; ctx.fillStyle = fill;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
+      };
+      // closed band between fractions f0..f1, angles a0..a1
+      const bandPath = (f0, f1, a0, a1) => {
+        ctx.beginPath();
+        for (let a = a0; a <= a1; a += 2) { const [x, y] = pt(f1, a); a === a0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+        for (let a = a1; a >= a0; a -= 2) { const [x, y] = pt(f0, a); ctx.lineTo(x, y); }
+        ctx.closePath();
+      };
+
+      // commission boxes 1..6 (dealer tracks 5% commission per seat)
+      L.seatAngles.forEach((deg, i) => {
+        const [bx, by] = pt(0.30, deg);
+        ctx.save(); ctx.translate(bx, by); ctx.rotate(((deg - 90) * Math.PI) / 180);
+        ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 3;
+        R(ctx, -30, -24, 60, 48, 8); ctx.stroke();
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        ctx.font = 'bold 30px Georgia, serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(String(i + 1), 0, 0);
+        ctx.restore();
       });
 
-      ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-      ctx.font = 'bold 58px Georgia, serif';
-      ctx.fillText('PLAYER', W * 0.185, cy - 20);
-      ctx.fillText('BANKER', W * 0.815, cy - 20);
-      ctx.font = 'bold 42px Georgia, serif';
-      ctx.fillText('TIE', cx, cy - 14);
-      ctx.font = '22px Georgia, serif';
-      ctx.fillStyle = 'rgba(255,255,255,.85)';
-      ctx.fillText('PAYS 1 TO 1', W * 0.185, cy + 34);
-      ctx.fillText('PAYS 0.95 TO 1', W * 0.815, cy + 34);
-      ctx.fillText('PAYS 8 TO 1', cx, cy + 30);
+      // radial sector dividers
+      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3;
+      for (let i = 0; i <= 6; i++) {
+        const deg = 15 + i * 25;
+        const [x0, y0] = pt(0.40, deg), [x1, y1] = pt(0.90, deg);
+        ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
+      }
+
+      // per-seat betting arcs: TIE(+pairs) inner, BANKER middle, PLAYER outer
+      L.seatAngles.forEach((deg, i) => {
+        // TIE box
+        ctx.strokeStyle = '#59d98e'; ctx.lineWidth = 4;
+        bandPath(0.43, 0.56, deg - 6.5, deg + 6.5); ctx.stroke();
+        arcText('和 TIE', 0.515, deg, `bold 26px ${CJK}`, '#59d98e');
+        arcText('8:1', 0.455, deg, 'bold 20px Georgia, serif', 'rgba(89,217,142,.9)');
+        // pair circles flanking the tie box
+        [['庄對', '#e05555', -10.2], ['閒對', '#f0d878', 10.2]].forEach(([t, col, da]) => {
+          const [ox, oy] = pt(0.50, deg + da);
+          ctx.strokeStyle = col; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(ox, oy, 26, 0, Math.PI * 2); ctx.stroke();
+          ctx.fillStyle = col;
+          ctx.font = `bold 16px ${CJK}`;
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(t, ox, oy);
+        });
+        // BANKER arc
+        ctx.strokeStyle = '#e05555'; ctx.lineWidth = 4;
+        bandPath(0.60, 0.72, deg - 11, deg + 11); ctx.stroke();
+        arcText('庄 BANKER', 0.66, deg, `bold 30px ${CJK}`, '#e05555');
+        // PLAYER arc
+        ctx.strokeStyle = '#f0d878'; ctx.lineWidth = 4;
+        bandPath(0.75, 0.87, deg - 11, deg + 11); ctx.stroke();
+        arcText('閒 PLAYER', 0.81, deg, `bold 30px ${CJK}`, '#f0d878');
+        // seat number at the rim
+        arcText(String(i + 1), 0.93, deg, 'bold 44px Georgia, serif', 'rgba(255,255,255,.9)');
+      });
     });
+    return feltTexture;
   }
 
   // opts: { tierName, limitsText, minChipLabel, accent, withDealer }
