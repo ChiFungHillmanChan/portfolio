@@ -53,6 +53,8 @@ const CSS = `
 #bjLive .bj3-bar button{background:none;border:1px solid #6b5325;border-radius:6px;color:#e8d9a8;padding:3px 10px;cursor:pointer}
 #bjLive .bj3-panel{pointer-events:auto;width:min(560px,96vw);background:rgba(12,10,8,.92);border:1px solid #6b5325;border-radius:12px 12px 0 0;padding:10px 16px 12px;transition:transform .35s ease;color:#e8d9a8}
 #bjLive.bj3-away .bj3-panel{transform:translateY(115%)}
+#bjLive.bj3-away .bj3-bar{display:none}
+#quicknav[hidden]{display:none!important}
 .bj3-circles{display:flex;justify-content:center;gap:18px;margin:6px 0 10px}
 .bj3-spot{position:relative;width:86px;height:86px;border:2px solid rgba(240,216,120,.7);border-radius:50%;background:rgba(11,93,59,.55);color:#f0d878;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;cursor:pointer;user-select:none}
 .bj3-spot.bj3-main{width:104px;height:104px;font-size:15px}
@@ -306,6 +308,8 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     pendingHandResolve?.();
     unsubBalance();
     wrap.remove();
+    const quicknav = document.getElementById('quicknav');
+    if (quicknav) quicknav.hidden = false;
     document.getElementById('bjActions')?.remove();
     stacks.disposeAll();
     clearTableMeshes();
@@ -455,7 +459,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   async function playHands(hands, dealPlayer, roundBets, sideRet, dealerCards, dealDealer) {
     for (let hi = 0; hi < hands.length; hi++) {
       // eslint-disable-next-line no-await-in-loop
-      await playOneHand(hands, hi, dealPlayer, roundBets);
+      await playOneHand(hands, hi, dealPlayer, roundBets, dealerCards);
       if (closed) return;
     }
     document.getElementById('bjActions')?.remove();
@@ -464,7 +468,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     else await settleRound(hands, dealerCards, roundBets, sideRet);
   }
 
-  function playOneHand(hands, hi, dealPlayer, roundBets) {
+  function playOneHand(hands, hi, dealPlayer, roundBets, dealerCards) {
     return new Promise((resolve) => {
       const done = () => { pendingHandResolve = null; resolve(); };
       pendingHandResolve = done;
@@ -477,8 +481,9 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
       const render = () => {
         const hv = handValue(hand.cards);
         bj.dealerRig?.lookAt(C.app, toWorld(bj.spotLocal(seatIdx, hi === 0 ? 'main' : 'main2')));
-        const label = hands.length > 1 ? `HAND ${hi + 1}/${hands.length}: ` : 'YOUR HAND: ';
-        el.innerHTML = `<span class="bj3-total">${label}${hv.total}${hv.soft ? ' (soft)' : ''}</span>`;
+        const label = hands.length > 1 ? `HAND ${hi + 1}/${hands.length}` : 'YOU';
+        const dv = handValue(dealerCards).total;
+        el.innerHTML = `<span class="bj3-total">${label}: ${hv.total}${hv.soft ? ' (soft)' : ''} · DEALER: ${dv}</span>`;
         const mk = (txt, cls, fn, disabled = false) => {
           const b = document.createElement('button');
           b.type = 'button'; b.className = cls; b.textContent = txt; b.disabled = disabled;
@@ -566,13 +571,21 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     await C.app.glideTo(poses.dealer.pos, poses.dealer.look, 700);
     if (closed) return;
     bj.dealerRig?.lookAt(C.app, toWorld([0, 0.95, 0.16]));
+    // live points readout while the dealer draws (no buttons)
+    const bestYou = Math.max(...hands.map((h) => handValue(h.cards).total));
+    const showTotals = () => {
+      actionBar().innerHTML = `<span class="bj3-total">YOU: ${bestYou} · DEALER: ${handValue(dealerCards).total}</span>`;
+    };
+    showTotals();
     // European: dealer completes the hand now (draws to 17, stands on all 17s)
     while (handValue(dealerCards).total < 17) {
       // eslint-disable-next-line no-await-in-loop
       await dealDealer();
       if (closed) return;
+      showTotals();
       // eslint-disable-next-line no-await-in-loop
       await wait(260);
+      if (closed) return;   // sign-out during the pause — don't deal onto a cleared felt
     }
     await settleRound(hands, dealerCards, roundBets, sideRet);
   }
@@ -618,6 +631,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     if (closed) return;
 
     await wait(300);
+    document.getElementById('bjActions')?.remove();
     clearTableMeshes();
     await C.app.glideTo(poses.seated.pos, poses.seated.look, 800);
     if (closed) return;
@@ -627,6 +641,10 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   }
 
   C.app.inputLocked = true;
+  // the quicknav overlays the felt from a seated camera — hide it while at
+  // the table (Leave table on the board is the way out; close() restores it)
+  const quicknavEl = document.getElementById('quicknav');
+  if (quicknavEl) quicknavEl.hidden = true;
   C.app.glideTo(poses.seated.pos, poses.seated.look, 1100);
 
   // Stale open round from a crashed session: if a payout is recorded as OWED
