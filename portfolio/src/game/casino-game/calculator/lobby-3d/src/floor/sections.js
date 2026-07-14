@@ -111,6 +111,7 @@
         // on their group userData for the in-place session (roulette-live.js)
         if (section.id === 'roulette') (C.floor.rouletteRigs ??= new Map()).set(table.id, group);
         if (section.id === 'blackjack') (C.floor.blackjackRigs ??= new Map()).set(table.id, group);
+        if (section.id === 'baccarat') C.floor.attachBaccaratShow?.(group);
 
         // dedicated warm pool over every table (desktop; mobile uses the
         // shell's four wide washes instead — light count budget)

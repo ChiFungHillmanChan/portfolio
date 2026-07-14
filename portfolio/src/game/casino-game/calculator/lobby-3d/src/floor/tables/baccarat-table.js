@@ -387,6 +387,14 @@
     );
     screen.position.set(0, 1.5, 0.037);
     g.add(screen);
+    g.userData.pushRound = (round) => {
+      rounds.push(round);
+      if (rounds.length > 80) rounds.shift();
+      const old = screen.material.map;
+      screen.material.map = drawBoardCanvas(rounds, opts);
+      screen.material.needsUpdate = true;
+      old && old.dispose();
+    };
     const pole = new THREE.Mesh(
       new THREE.CylinderGeometry(0.035, 0.045, 1.0, 12),
       new THREE.MeshStandardMaterial({ color: '#0e0f13', roughness: 0.4, metalness: 0.5 }),
@@ -432,6 +440,7 @@
     const lastRound = rounds[rounds.length - 1];
 
     // card-dealing area: printed boxes + the final round's actual cards
+    const staticCards = [];
     [[L.playerSlots, lastRound.playerCards], [L.bankerSlots, lastRound.bankerCards]]
       .forEach(([slots, cards]) => {
         slots.forEach((slot, idx) => {
@@ -445,6 +454,7 @@
           if (idx === 2) card.rotation.z = Math.PI / 2;
           card.position.set(slots[idx][0], FELT_Y + 0.006 + idx * 0.0005, slots[idx][2]);
           g.add(card);
+          staticCards.push(card);
         });
       });
 
@@ -505,6 +515,13 @@
     board.position.set(-2.35, 0, 0.35);
     board.rotation.y = 0.35;
     g.add(board);
+
+    // ambient-show rig (src/floor/baccarat-show.js drives it when the player is near)
+    g.userData.bac = {
+      L, feltY: FELT_Y, rounds, staticCards,
+      pushRound: (round) => board.userData.pushRound(round),
+      get dealerRig() { return g.userData.dealerRig; },
+    };
 
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);

@@ -172,5 +172,5 @@
     return out;
   }
 
-  C.baccaratRoads = { bacValue, total, bankerDraws, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate, deriveRoad, predictNext };
+  C.baccaratRoads = { bacValue, total, bankerDraws, buildShoe, playRound, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate, deriveRoad, predictNext };
 })();

@@ -23,6 +23,7 @@ export const SRC_ORDER = [
   'src/floor/tables/blackjack-table.js',
   'src/floor/tables/baccarat-table.js',
   'src/floor/tables/uth-table.js',
+  'src/floor/baccarat-show.js',
   'src/floor/shell.js',
   'src/floor/vestibule.js',
   'src/floor/maintenance.js',

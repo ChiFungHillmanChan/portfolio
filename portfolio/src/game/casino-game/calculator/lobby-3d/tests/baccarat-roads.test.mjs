@@ -197,3 +197,18 @@ test('predictNext matches actually appending the round', () => {
     }
   }
 });
+
+test('playRound + buildShoe are exported for the ambient show', () => {
+  assert.equal(typeof R.playRound, 'function');
+  assert.equal(typeof R.buildShoe, 'function');
+  // stacked deck: P= 9+K (natural 9), B= 4+4 (8) -> player natural win, no draws
+  const cards = [{ r: 9, s: 0 }, { r: 13, s: 1 }, { r: 4, s: 2 }, { r: 4, s: 3 }];
+  let i = 0;
+  const round = R.playRound(() => cards[i++]);
+  assert.equal(round.outcome, 'P');
+  assert.equal(round.playerTotal, 9);
+  assert.equal(round.bankerTotal, 8);
+  assert.equal(round.natural, true);
+  assert.equal(round.playerCards.length, 2);
+  assert.equal(R.buildShoe(() => 0.5).length, 8 * 52);
+});
