@@ -41,7 +41,8 @@ const guard = (name, code) => {
 };
 
 export function build() {
-  const vendor = guard('vendor', read('vendor/three-0.149.0.min.js'));
+  const vendor = guard('vendor', read('vendor/three-0.149.0.min.js'))
+    + '\n' + guard('three-addons', read('vendor/three-addons-0.149.js'));
   const css = read('src/style.css');
   const app = SRC_ORDER.map((p) => `\n// ===== ${p} =====\n` + guard(p, read(p))).join('\n');
   let html = read('template.html');
