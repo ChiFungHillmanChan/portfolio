@@ -75,5 +75,65 @@
     return s;
   }
 
-  C.baccaratRoads = { bacValue, total, bankerDraws, simulateShoe, stats };
+  // ---------- big road (LOGICAL streak columns) ----------
+  // Ties never occupy a cell: they increment `ties` on the previous cell;
+  // ties before any B/P result are held in leadingTies.
+  function buildBigRoad(rounds) {
+    const cols = [];
+    let leadingTies = 0;
+    for (const r of rounds) {
+      if (r.outcome === 'T') {
+        const col = cols[cols.length - 1];
+        if (col) col.cells[col.cells.length - 1].ties++;
+        else leadingTies++;
+        continue;
+      }
+      const col = cols[cols.length - 1];
+      if (col && col.outcome === r.outcome) col.cells.push({ ties: 0 });
+      else cols.push({ outcome: r.outcome, cells: [{ ties: 0 }] });
+    }
+    return { cols, leadingTies };
+  }
+
+  // ---------- display placement (6-row grid + dragon tail) ----------
+  // seq: [{key, ...payload}] — consecutive equal keys stack in a column.
+  // Stacking past the last row, or into an occupied cell, turns right and
+  // continues along the current row (the "dragon tail"). New columns start
+  // one to the right of the previous column's START (row 0 is never a tail
+  // row, so column starts cannot collide).
+  function layoutRoad(seq, rows = 6) {
+    const out = [], used = new Set(), key = (c, r) => c + ':' + r;
+    let colStart = -1, prevKey = null, c = 0, r = 0;
+    for (const item of seq) {
+      if (item.key !== prevKey) {
+        colStart += 1; c = colStart; r = 0;
+      } else if (r + 1 < rows && !used.has(key(c, r + 1))) {
+        r += 1;
+      } else {
+        c += 1;
+        while (used.has(key(c, r))) c += 1;
+      }
+      used.add(key(c, r));
+      out.push({ col: c, row: r, ...item });
+      prevKey = item.key;
+    }
+    return out;
+  }
+
+  const bigRoadCells = (big, rows = 6) => layoutRoad(
+    big.cols.flatMap((col) => col.cells.map((cell) => ({ key: col.outcome, outcome: col.outcome, ties: cell.ties }))),
+    rows,
+  );
+
+  // ---------- bead plate (every round incl. ties; newest columns kept) ----------
+  function beadPlate(rounds, cols = 12, rows = 6) {
+    const totalCols = Math.ceil(rounds.length / rows);
+    const skip = Math.max(0, (totalCols - cols) * rows);
+    return rounds.slice(skip).map((r, i) => ({
+      col: Math.floor(i / rows), row: i % rows,
+      outcome: r.outcome, playerPair: r.playerPair, bankerPair: r.bankerPair,
+    }));
+  }
+
+  C.baccaratRoads = { bacValue, total, bankerDraws, simulateShoe, stats, buildBigRoad, layoutRoad, bigRoadCells, beadPlate };
 })();
