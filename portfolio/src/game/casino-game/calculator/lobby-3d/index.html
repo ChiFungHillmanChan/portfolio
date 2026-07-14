@@ -7106,6 +7106,70 @@ THREE.SkeletonUtils = { clone };
     ctx.closePath();
   }
 
+  // ---------- dealer speech bubble ----------
+  // Shared dealer speech bubble: sprite on `group`, auto-removed after ms.
+  // mouthPulse(t) is optional — procedural rig scales its mouth mesh each
+  // tick, GLB characters do a subtle head bob instead. Calling it with t=0
+  // at cleanup doubles as the "reset to neutral" step (sin(0)=0), so no
+  // separate reset hook is needed. Bubble/token bookkeeping is per-group
+  // (group.userData._bubble, a module-local Map keyed by group.uuid) since
+  // this single function now serves every dealer group, procedural or GLB.
+  const mouthTokens = new Map();
+  function speechBubbleOn(app, group, text, { ms = 2600, mouthPulse = null } = {}) {
+    const prevBubble = group.userData._bubble;
+    if (prevBubble) { group.remove(prevBubble.sprite); prevBubble.dispose(); group.userData._bubble = null; }
+    const lines = C.gestures.wrapLines(text, 18);
+    const PW = 512, LH = 88, PH = lines.length * LH + 72;
+    const tx = canvasTexture(PW, PH, (ctx) => {
+      ctx.clearRect(0, 0, PW, PH);
+      ctx.fillStyle = 'rgba(16,13,9,0.88)';
+      roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
+      ctx.fill();
+      ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 5;
+      roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
+      ctx.stroke();
+      ctx.beginPath();                       // tail
+      ctx.moveTo(PW / 2 - 22, PH - 26); ctx.lineTo(PW / 2, PH - 2); ctx.lineTo(PW / 2 + 22, PH - 26);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(16,13,9,0.88)'; ctx.fill();
+      ctx.fillStyle = '#f0d878';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `600 56px 'Segoe UI', system-ui, sans-serif`;
+      lines.forEach((ln, i) => ctx.fillText(ln, PW / 2, 44 + LH / 2 + i * LH));
+    });
+    const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
+    const sprite = new THREE.Sprite(mat);
+    const W = 0.95;
+    sprite.scale.set(W, W * PH / PW, 1);
+    sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
+    sprite.renderOrder = 5;
+    group.add(sprite);
+    const bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
+    group.userData._bubble = bubble;
+
+    const key = group.uuid;
+    const token = (mouthTokens.get(key) || 0) + 1;
+    mouthTokens.set(key, token);
+    const gen = app.roomGen;
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      const cleanup = () => {
+        mouthPulse && mouthPulse(0);
+        if (group.userData._bubble === bubble) { group.remove(sprite); bubble.dispose(); group.userData._bubble = null; }
+        resolve();
+      };
+      if (app.REDUCED) { setTimeout(cleanup, ms); return; }
+      const hook = () => {
+        if (mouthTokens.get(key) !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
+        const t = (performance.now() - t0);
+        mouthPulse && mouthPulse(t);
+        if (t >= ms) { app.offFrame(hook); cleanup(); }
+      };
+      hook.cancel = () => { app.offFrame(hook); cleanup(); };
+      app.onFrame(hook);
+    });
+  }
+
   // ---------- materials ----------
   function feltMaterial(color = '#0b5d3b') {
     const tx = canvasTexture(512, 512, (ctx) => {
@@ -7204,18 +7268,46 @@ THREE.SkeletonUtils = { clone };
   }
 
   // ---------- dealer / staff figure ----------
-  // Thin wrapper over the humanoid rig (src/engine/rig.js) preserving the
-  // legacy userData API. opts.seed varies skin/hair/vest per character.
+  // Returns a root Group whose userData.rig is a STABLE facade: procedural
+  // rig first, GLB character swapped in when C.character assets arrive.
+  // Call sites hold the facade reference — it never changes identity.
   function makeDealer(opts = {}) {
-    const rig = C.rig.makeHumanRig(opts);
-    const group = rig.group;
-    group.userData.rig = rig;
-    group.userData.idle = (app) => rig.setIdle(app);
-    group.userData.lookToward = (app, worldTarget) => rig.lookAt(app, worldTarget);
-    group.userData.headShake = (app) => rig.play(app, 'headShake');
-    group.userData.dealGesture = (app, worldTarget, ms) =>
-      rig.play(app, 'welcomeSweep', { refs: { target: worldTarget }, ms });
-    return group;
+    const app = C.app;
+    const procedural = C.rig.makeHumanRig(opts);
+    const root = new THREE.Group();
+    root.add(procedural.group);
+    let impl = procedural;
+    let idleWanted = false;
+    let procIdle = null;
+    const facade = {
+      play: (a, name, o) => impl.play(a, name, o),
+      stop: (t) => impl.stop(t),
+      say: (a, text, o) => impl.say(a, text, o),
+      lookAt: (a, tgt) => impl.lookAt(a, tgt),
+      setIdle: (a) => {
+        idleWanted = true;
+        const hook = impl.setIdle(a);
+        if (impl === procedural) procIdle = hook;
+        return hook;
+      },
+      get joints() { return impl.joints; },
+    };
+    if (app && !app.REDUCED) {
+      C.character?.attach(app, root, opts, (charImpl) => {
+        ['arms', 'head', 'body', 'mouth'].forEach((t) => procedural.stop(t));
+        procIdle?.cancel?.();
+        root.remove(procedural.group);
+        impl = charImpl;
+        if (idleWanted) impl.setIdle(app);
+      });
+    }
+    root.userData.rig = facade;
+    root.userData.idle = (a) => facade.setIdle(a);
+    root.userData.lookToward = (a, worldTarget) => facade.lookAt(a, worldTarget);
+    root.userData.headShake = (a) => facade.play(a, 'headShake');
+    root.userData.dealGesture = (a, worldTarget, ms) =>
+      facade.play(a, 'welcomeSweep', { refs: { target: worldTarget }, ms });
+    return root;
   }
 
   // ---------- plaque ----------
@@ -7401,7 +7493,7 @@ THREE.SkeletonUtils = { clone };
   }
 
   C.assets = {
-    canvasTexture, roundRect, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
+    canvasTexture, roundRect, speechBubbleOn, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
     carpetModern, marbleMaterial, steelMaterial, glassMaterial, ledStrip, makeNeonSign,
     makeGlowPad, makeStool, makeDealer, makePlaque, makeSign,
   };
@@ -8062,55 +8154,13 @@ THREE.SkeletonUtils = { clone };
     const stop = (track) => { tokens[track] += 1; };
 
     // ---- speech bubble + mouth ----
-    let bubble = null;
-    function say(app, text, { ms = 2600 } = {}) {
-      if (bubble) { group.remove(bubble.sprite); bubble.dispose(); bubble = null; }
-      const lines = C.gestures.wrapLines(text, 18);
-      const PW = 512, LH = 88, PH = lines.length * LH + 72;
-      const tx = C.assets.canvasTexture(PW, PH, (ctx) => {
-        ctx.clearRect(0, 0, PW, PH);
-        ctx.fillStyle = 'rgba(16,13,9,0.88)';
-        C.assets.roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
-        ctx.fill();
-        ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 5;
-        C.assets.roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
-        ctx.stroke();
-        ctx.beginPath();                       // tail
-        ctx.moveTo(PW / 2 - 22, PH - 26); ctx.lineTo(PW / 2, PH - 2); ctx.lineTo(PW / 2 + 22, PH - 26);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(16,13,9,0.88)'; ctx.fill();
-        ctx.fillStyle = '#f0d878';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = `600 56px 'Segoe UI', system-ui, sans-serif`;
-        lines.forEach((ln, i) => ctx.fillText(ln, PW / 2, 44 + LH / 2 + i * LH));
-      });
-      const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
-      const sprite = new THREE.Sprite(mat);
-      const W = 0.95;
-      sprite.scale.set(W, W * PH / PW, 1);
-      sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
-      sprite.renderOrder = 5;
-      group.add(sprite);
-      bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
-
-      const token = ++tokens.mouth;
-      const gen = app.roomGen;
-      return new Promise((resolve) => {
-        const t0 = performance.now();
-        const cleanup = () => {
-          mouth.scale.set(1, 1, 1);
-          if (bubble && bubble.sprite === sprite) { group.remove(sprite); bubble.dispose(); bubble = null; }
-          resolve();
-        };
-        if (app.REDUCED) { setTimeout(cleanup, ms); return; }
-        const hook = () => {
-          if (tokens.mouth !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
-          const t = (performance.now() - t0);
-          mouth.scale.y = 1 + Math.abs(Math.sin(t / 90)) * 2.6;
-          if (t >= ms) { app.offFrame(hook); cleanup(); }
-        };
-        hook.cancel = () => { app.offFrame(hook); cleanup(); };
-        app.onFrame(hook);
+    // Bubble sprite/timer bookkeeping now lives in assets.js's speechBubbleOn
+    // (shared with the GLB character impl) — this just supplies the
+    // procedural mouth-flap pulse.
+    function say(app, text, o = {}) {
+      return C.assets.speechBubbleOn(app, group, text, {
+        ...o,
+        mouthPulse: (t) => { mouth.scale.y = 1 + Math.abs(Math.sin(t / 90)) * 2.6; },
       });
     }
 
@@ -8163,6 +8213,195 @@ THREE.SkeletonUtils = { clone };
   }
 
   C.rig = { makeHumanRig };
+  C.rigPalettes = { SKINS, HAIRS, VESTS };
+})();
+
+
+// ===== src/engine/character.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // GLB dealer characters: preload once, clone per dealer, mocap idle via
+  // AnimationMixer. The IK action layer lands in a later task; play() for
+  // IK-action names resolves immediately until then (procedural rig has
+  // usually been swapped out by the time tables call them — acceptable
+  // mid-implementation state, NOT shippable until Task 7).
+  // Bone/clip names below are taken from the real committed
+  // assets/manifest.json (Quaternius universal rig, UE-style names, one
+  // deviation: 'Head' is capitalized) — confirmed against the actual parsed
+  // GLB via a node:vm harness (every mapped bone resolves, mixer.clipAction
+  // plays without throwing). See task-5-report.md for the harness + output.
+  const BONE_MAP = {
+    hips: 'pelvis', spine: 'spine_01', chest: 'spine_03',
+    neck: 'neck_01', head: 'Head',
+    shoulderL: 'clavicle_l', upperArmL: 'upperarm_l', foreArmL: 'lowerarm_l', handL: 'hand_l',
+    shoulderR: 'clavicle_r', upperArmR: 'upperarm_r', foreArmR: 'lowerarm_r', handR: 'hand_r',
+  };
+  const IDLE_CLIP = 'Idle_Loop';
+
+  const state = { ready: null, template: null, clips: null, pending: [], failed: false };
+
+  async function fetchGlb(url, timeoutMs = 10000) {
+    const ctl = new AbortController();
+    const timer = setTimeout(() => ctl.abort(), timeoutMs);
+    try {
+      const res = await fetch(url, { signal: ctl.signal });
+      if (!res.ok) throw new Error(`${url}: HTTP ${res.status}`);
+      return await res.arrayBuffer();
+    } finally { clearTimeout(timer); }
+  }
+
+  const parseGlb = (buf) => new Promise((resolve, reject) =>
+    new THREE.GLTFLoader().parse(buf, '', resolve, reject));
+
+  async function preload(baseUrl = './assets/') {
+    if (state.ready) return;
+    state.ready = 'loading';
+    try {
+      const [charBuf, clipBuf] = await Promise.all([
+        fetchGlb(baseUrl + 'dealer-characters.glb'),
+        fetchGlb(baseUrl + 'dealer-clips.glb'),
+      ]);
+      const [charGltf, clipGltf] = await Promise.all([parseGlb(charBuf), parseGlb(clipBuf)]);
+      // validate every mapped bone exists
+      const names = new Set();
+      charGltf.scene.traverse((o) => names.add(o.name));
+      for (const bone of Object.values(BONE_MAP)) {
+        if (!names.has(bone)) throw new Error(`bone missing from GLB: ${bone}`);
+      }
+      state.template = charGltf.scene;
+      state.clips = clipGltf.animations.concat(charGltf.animations);
+      if (!state.clips.find((c) => c.name === IDLE_CLIP)) throw new Error(`idle clip missing: ${IDLE_CLIP}`);
+      state.ready = 'ready';
+      state.pending.splice(0).forEach((fn) => fn());
+    } catch (err) {
+      state.ready = 'failed';
+      state.pending.length = 0;
+      console.warn('[character] GLB dealers unavailable, keeping procedural rigs:', err.message);
+    }
+  }
+
+  function findClip(name) { return state.clips.find((c) => c.name === name) || null; }
+
+  function buildCharacter(opts) {
+    const seed = String(opts.seed ?? '');
+    let h = 9;
+    for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 0x9e3779b1);
+    h = Math.abs(h >>> 0);
+    const group = THREE.SkeletonUtils.clone(state.template);
+    group.traverse((o) => {
+      if (o.isMesh || o.isSkinnedMesh) {
+        o.castShadow = true; o.receiveShadow = true;
+        o.material = o.material.clone();            // per-dealer tinting
+      }
+    });
+    // Variation: tint + height. Palettes shared with rig.js via C.rigPalettes
+    // (exported from rig.js Step 3). Real materials on this pack (see
+    // assets/manifest.json + task-5-report.md inspection): MI_Hair_1 (the
+    // Eyebrows mesh), MI_Eyes (the Eyes mesh), MI_Superhero_Male (the ENTIRE
+    // body incl. face — this base-character pack has no separate clothing
+    // mesh/material at all, textures were stripped in Task 1). Because body
+    // and face share one material, tinting it with VESTS (a near-black suit
+    // color, as the brief guessed from the material's name alone) would turn
+    // the whole face the same dark color — clearly wrong. SKINS is the only
+    // sensible default for that material (its baseColorFactor is already a
+    // skin tone). 'vest'/'suit' substring branch kept for forward
+    // compatibility in case a future asset swap adds real clothing geometry.
+    const P = C.rigPalettes;
+    group.traverse((o) => {
+      if (!o.isMesh && !o.isSkinnedMesh) return;
+      const n = (o.material.name || '').toLowerCase();
+      if (n.includes('eye')) return;                                   // MI_Eyes: leave as-is
+      if (n.includes('hair')) { o.material.color.set(P.HAIRS[(h >>> 3) % P.HAIRS.length]); return; }
+      if (n.includes('vest') || n.includes('suit')) { o.material.color.set(P.VESTS[(h >>> 6) % P.VESTS.length]); return; }
+      o.material.color.set(P.SKINS[h % P.SKINS.length]);                // MI_Superhero_Male: body + face
+    });
+    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
+    const bones = {};
+    for (const [logical, real] of Object.entries(BONE_MAP)) {
+      bones[logical] = group.getObjectByName(real);
+    }
+    return { group, bones, mixer: new THREE.AnimationMixer(group), hash: h };
+  }
+
+  // charImpl: same method contract as rig.js's rig object.
+  function makeImpl(app, built) {
+    const { group, bones, mixer } = built;
+    const tokens = { arms: 0, head: 0, body: 0, mouth: 0 };
+    let idleHook = null;
+    let idleAction = null;
+
+    function setIdle() {
+      if (app.REDUCED || idleHook) return idleHook;
+      const gen = app.roomGen;
+      idleAction = mixer.clipAction(findClip(IDLE_CLIP));
+      idleAction.play();
+      const hook = (dt) => {
+        if (app.roomGen !== gen) { idleAction?.stop(); return app.offFrame(hook); }
+        mixer.update(dt);
+        applyLook();          // look-at layer, below
+      };
+      hook.cancel = () => app.offFrame(hook);
+      app.onFrame(hook);
+      idleHook = hook;
+      return hook;
+    }
+
+    // ---- head look-at (same clamping/feel as rig.js) ----
+    const look = { yaw: 0, pitch: 0, tYaw: 0, tPitch: 0 };
+    function applyLook() {
+      look.yaw += (look.tYaw - look.yaw) * 0.12;
+      look.pitch += (look.tPitch - look.pitch) * 0.12;
+      if (bones.neck) {
+        bones.neck.rotation.y += look.yaw * 0.4;
+        bones.neck.rotation.x += look.pitch * 0.4;
+      }
+      if (bones.head) {
+        bones.head.rotation.y += look.yaw * 0.6;
+        bones.head.rotation.x += look.pitch * 0.6;
+      }
+    }
+    function lookAt(_app, worldTarget) {
+      const local = group.worldToLocal(new THREE.Vector3(...worldTarget));
+      look.tYaw = Math.max(-0.7, Math.min(0.7, Math.atan2(local.x, local.z)));
+      const flat = Math.hypot(local.x, local.z) || 1e-4;
+      look.tPitch = Math.max(-0.35, Math.min(0.35, -Math.atan2(local.y - 1.5, flat)));
+      if (app.REDUCED) { look.yaw = look.tYaw; look.pitch = look.tPitch; }
+    }
+
+    // play(): Task 6 adds mocap gestures, Task 7 adds IK actions. For now,
+    // resolve immediately so awaited sequences never hang mid-implementation.
+    function play() { return Promise.resolve(); }
+    const stop = (track) => { tokens[track] += 1; };
+    function say(_app, text, o = {}) {
+      // GLB face is static — subtle head bob stands in for the mouth flap
+      return C.assets.speechBubbleOn(app, group, text, {
+        ...o,
+        mouthPulse: (t) => { if (bones.head) bones.head.rotation.x += Math.sin(t / 140) * 0.02; },
+      });
+    }
+    function dispose() {
+      idleHook?.cancel(); idleHook = null;
+      mixer.stopAllAction();
+      group.parent?.remove(group);
+    }
+
+    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, dispose };
+  }
+
+  function attach(app, root, opts, onReady) {
+    const build = () => {
+      if (state.ready !== 'ready') return;
+      const impl = makeImpl(app, buildCharacter(opts));
+      root.add(impl.group);
+      onReady(impl);
+    };
+    if (state.ready === 'ready') build();
+    else if (state.ready === 'loading') state.pending.push(build);
+    // 'failed' / null → never fires; procedural rig stays
+  }
+
+  C.character = { preload, attach, get ready() { return state.ready; } };
 })();
 
 
@@ -8479,6 +8718,168 @@ THREE.SkeletonUtils = { clone };
   }
 
   C.gestures = { JOINTS, TRACKS, EASINGS, CLIPS, validateClip, wrapLines };
+})();
+
+
+// ===== src/logic/ik.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Pure analytic two-bone IK (shoulder→elbow→hand). Plain [x,y,z] arrays,
+  // no THREE — node-tested. The THREE side (engine/character.js) converts the
+  // returned positions into bone quaternions.
+  const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
+  const add = (a, b) => [a[0] + b[0], a[1] + b[1], a[2] + b[2]];
+  const mul = (a, s) => [a[0] * s, a[1] * s, a[2] * s];
+  const dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+  const len = (a) => Math.hypot(a[0], a[1], a[2]);
+  const cross = (a, b) => [
+    a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+  const norm = (a) => { const l = len(a); return l < 1e-9 ? [0, 0, 0] : mul(a, 1 / l); };
+
+  function solveTwoBone({ shoulder, target, upperLen, foreLen, pole }) {
+    const toT = sub(target, shoulder);
+    let d = len(toT);
+    const maxR = (upperLen + foreLen) * 0.9999;      // never fully lock straight
+    const minR = Math.abs(upperLen - foreLen) + 1e-6;
+    const clamped = d > maxR || d < minR;
+    const dir = d < 1e-9 ? [1, 0, 0] : mul(toT, 1 / d);
+    d = Math.min(Math.max(d, minR), maxR);
+    const hand = add(shoulder, mul(dir, d));
+    // law of cosines: distance from shoulder to elbow's projection on dir
+    const a = (d * d + upperLen * upperLen - foreLen * foreLen) / (2 * d);
+    const h = Math.sqrt(Math.max(0, upperLen * upperLen - a * a));
+    // bend direction = pole component perpendicular to dir (with fallbacks)
+    let bend = sub(pole, mul(dir, dot(pole, dir)));
+    if (len(bend) < 1e-6) bend = cross(dir, [0, 1, 0]);
+    if (len(bend) < 1e-6) bend = cross(dir, [1, 0, 0]);
+    bend = norm(bend);
+    const elbow = add(add(shoulder, mul(dir, a)), mul(bend, h));
+    return { elbow, hand, clamped };
+  }
+
+  C.ik = { solveTwoBone };
+})();
+
+
+// ===== src/logic/hand-paths.js =====
+(() => {
+  const C = (globalThis.CASINO ??= {});
+
+  // Pure IK hand-path data for engine/character.js. No THREE/DOM — node-
+  // tested. See tests/hand-paths.test.mjs and the plan doc for the data
+  // model. Positions are WORLD-space refs resolved at play() time, exactly
+  // like gestures.js aim refs; offsets/arcs are meters.
+  const REFS = ['shoe', 'target', 'rack', 'rim'];
+  const EVENTS = ['grab', 'contact', 'release'];
+  const EASINGS = ['inOutCubic', 'outCubic', 'outQuart', 'outBack'];
+
+  const PATHS = {
+    // draw from the shoe, sweep to the card spot, hand back to rest
+    dealCard: { dur: 520, hands: { R: [
+      { at: 0.28, ref: 'shoe', offset: [0, 0.03, 0], ease: 'outCubic', event: 'grab' },
+      { at: 0.72, ref: 'target', offset: [0, 0.04, 0], arc: 0.10, event: 'release' },
+      { at: 1.00, rest: true },
+    ] } },
+    // rake losing chips: touch the stack, drag to the rack
+    sweepChips: { dur: 700, hands: { R: [
+      { at: 0.32, ref: 'target', offset: [0, 0.03, 0], ease: 'outCubic', event: 'contact' },
+      { at: 0.78, ref: 'rack', offset: [0, 0.05, 0], arc: 0.05 },
+      { at: 1.00, rest: true },
+    ] } },
+    // pay from the rack out to the winning spot
+    payChips: { dur: 700, hands: { R: [
+      { at: 0.30, ref: 'rack', offset: [0, 0.04, 0], ease: 'outCubic', event: 'grab' },
+      { at: 0.74, ref: 'target', offset: [0, 0.04, 0], arc: 0.07, event: 'release' },
+      { at: 1.00, rest: true },
+    ] } },
+    // reach and rest fingers on the wheel rim (spinFollow completes it)
+    spinReach: { dur: 480, hands: { R: [
+      { at: 1.00, ref: 'rim', offset: [0, 0.02, 0], ease: 'outCubic', event: 'contact' },
+    ] } },
+    // the flick: drag along the rim tangent, then return to rest
+    spinFollow: { dur: 650, hands: { R: [
+      { at: 0.30, ref: 'rim', offset: [0.16, 0.02, 0.10], ease: 'outBack', event: 'release' },
+      { at: 1.00, rest: true },
+    ] } },
+    // carry the dolly from the rack to the winning number
+    placeDolly: { dur: 800, hands: { R: [
+      { at: 0.28, ref: 'rack', offset: [0, 0.04, 0], ease: 'outCubic', event: 'grab' },
+      { at: 0.76, ref: 'target', offset: [0, 0.05, 0], arc: 0.12, event: 'release' },
+      { at: 1.00, rest: true },
+    ] } },
+    // double-tap the chip rack (buy-in beat)
+    tapRack: { dur: 620, hands: { R: [
+      { at: 0.30, ref: 'rack', offset: [0, 0.03, 0], ease: 'outCubic', event: 'contact' },
+      { at: 0.48, ref: 'rack', offset: [0, 0.09, 0] },
+      { at: 0.66, ref: 'rack', offset: [0, 0.03, 0], event: 'contact' },
+      { at: 1.00, rest: true },
+    ] } },
+    // two-hand circular wash over the felt around 'target'; counter-phase
+    // circles; cycle:true so consecutive plays chain into a smear
+    washCards: { dur: 1600, cycle: true, hands: {
+      L: [
+        { at: 0.25, ref: 'target', offset: [-0.16, 0.03, -0.08] },
+        { at: 0.50, ref: 'target', offset: [-0.06, 0.03, -0.16] },
+        { at: 0.75, ref: 'target', offset: [0.02, 0.03, -0.06] },
+        { at: 1.00, ref: 'target', offset: [-0.16, 0.03, -0.08] },
+      ],
+      R: [
+        { at: 0.25, ref: 'target', offset: [0.14, 0.03, 0.06] },
+        { at: 0.50, ref: 'target', offset: [0.04, 0.03, 0.14] },
+        { at: 0.75, ref: 'target', offset: [-0.04, 0.03, 0.04] },
+        { at: 1.00, ref: 'target', offset: [0.14, 0.03, 0.06] },
+      ],
+    } },
+    // riffle at 'target': hands together, alternate lift/drop; cycle:true
+    shuffleRiffle: { dur: 1100, cycle: true, hands: {
+      L: [
+        { at: 0.20, ref: 'target', offset: [-0.07, 0.05, 0], ease: 'outCubic' },
+        { at: 0.45, ref: 'target', offset: [-0.05, 0.10, 0.02] },
+        { at: 0.70, ref: 'target', offset: [-0.07, 0.04, 0] },
+        { at: 1.00, ref: 'target', offset: [-0.07, 0.05, 0] },
+      ],
+      R: [
+        { at: 0.20, ref: 'target', offset: [0.07, 0.05, 0], ease: 'outCubic' },
+        { at: 0.45, ref: 'target', offset: [0.05, 0.04, 0.02] },
+        { at: 0.70, ref: 'target', offset: [0.07, 0.10, 0] },
+        { at: 1.00, ref: 'target', offset: [0.07, 0.05, 0] },
+      ],
+    } },
+  };
+
+  function validatePath(p) {
+    const errs = [];
+    if (!p || typeof p !== 'object') return ['path is not an object'];
+    if (!(p.dur > 0)) errs.push('dur must be > 0');
+    const hands = p.hands || {};
+    const sides = Object.keys(hands);
+    if (!sides.length) errs.push('hands empty');
+    for (const side of sides) {
+      if (side !== 'L' && side !== 'R') { errs.push(`unknown hand ${side}`); continue; }
+      const wps = hands[side];
+      if (!Array.isArray(wps) || !wps.length) { errs.push(`${side}: no waypoints`); continue; }
+      let prev = 0;
+      wps.forEach((w, i) => {
+        if (!(w.at > prev && w.at <= 1)) errs.push(`${side}[${i}]: at must increase within (0,1]`);
+        prev = w.at;
+        const kinds = ['ref', 'pos', 'rest'].filter((k) => w[k] !== undefined);
+        if (kinds.length !== 1) errs.push(`${side}[${i}]: exactly one of ref/pos/rest`);
+        if (w.ref !== undefined && !REFS.includes(w.ref)) errs.push(`${side}[${i}]: unknown ref ${w.ref}`);
+        if (w.pos !== undefined && !(Array.isArray(w.pos) && w.pos.length === 3))
+          errs.push(`${side}[${i}]: pos must be [x,y,z]`);
+        if (w.offset !== undefined && !(Array.isArray(w.offset) && w.offset.length === 3))
+          errs.push(`${side}[${i}]: offset must be [x,y,z]`);
+        if (w.event !== undefined && !EVENTS.includes(w.event)) errs.push(`${side}[${i}]: unknown event ${w.event}`);
+        if (w.ease !== undefined && !EASINGS.includes(w.ease)) errs.push(`${side}[${i}]: unknown ease ${w.ease}`);
+        if (w.arc !== undefined && !(w.arc >= 0)) errs.push(`${side}[${i}]: arc must be >= 0`);
+      });
+      if (wps[wps.length - 1].at !== 1) errs.push(`${side}: last waypoint must be at 1`);
+    }
+    return errs;
+  }
+
+  C.handPaths = { PATHS, REFS, EVENTS, validatePath };
 })();
 
 
@@ -12143,6 +12544,7 @@ THREE.SkeletonUtils = { clone };
     start({ model, ui }) {
       C.app.init({ ui });
       if (!C.app.renderer) return null; // WebGL failed → app is redirecting to the 2D lobby
+      if (!C.app.REDUCED) C.character.preload('./assets/');
       C.floor.buildAll(model);
       C.app.spawn();
       // Debug camera: ?cam=x,z,yaw[,pitch] — screenshot poses for visual QA.

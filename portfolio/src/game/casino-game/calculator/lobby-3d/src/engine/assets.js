@@ -22,6 +22,70 @@
     ctx.closePath();
   }
 
+  // ---------- dealer speech bubble ----------
+  // Shared dealer speech bubble: sprite on `group`, auto-removed after ms.
+  // mouthPulse(t) is optional — procedural rig scales its mouth mesh each
+  // tick, GLB characters do a subtle head bob instead. Calling it with t=0
+  // at cleanup doubles as the "reset to neutral" step (sin(0)=0), so no
+  // separate reset hook is needed. Bubble/token bookkeeping is per-group
+  // (group.userData._bubble, a module-local Map keyed by group.uuid) since
+  // this single function now serves every dealer group, procedural or GLB.
+  const mouthTokens = new Map();
+  function speechBubbleOn(app, group, text, { ms = 2600, mouthPulse = null } = {}) {
+    const prevBubble = group.userData._bubble;
+    if (prevBubble) { group.remove(prevBubble.sprite); prevBubble.dispose(); group.userData._bubble = null; }
+    const lines = C.gestures.wrapLines(text, 18);
+    const PW = 512, LH = 88, PH = lines.length * LH + 72;
+    const tx = canvasTexture(PW, PH, (ctx) => {
+      ctx.clearRect(0, 0, PW, PH);
+      ctx.fillStyle = 'rgba(16,13,9,0.88)';
+      roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
+      ctx.fill();
+      ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 5;
+      roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
+      ctx.stroke();
+      ctx.beginPath();                       // tail
+      ctx.moveTo(PW / 2 - 22, PH - 26); ctx.lineTo(PW / 2, PH - 2); ctx.lineTo(PW / 2 + 22, PH - 26);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(16,13,9,0.88)'; ctx.fill();
+      ctx.fillStyle = '#f0d878';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.font = `600 56px 'Segoe UI', system-ui, sans-serif`;
+      lines.forEach((ln, i) => ctx.fillText(ln, PW / 2, 44 + LH / 2 + i * LH));
+    });
+    const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
+    const sprite = new THREE.Sprite(mat);
+    const W = 0.95;
+    sprite.scale.set(W, W * PH / PW, 1);
+    sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
+    sprite.renderOrder = 5;
+    group.add(sprite);
+    const bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
+    group.userData._bubble = bubble;
+
+    const key = group.uuid;
+    const token = (mouthTokens.get(key) || 0) + 1;
+    mouthTokens.set(key, token);
+    const gen = app.roomGen;
+    return new Promise((resolve) => {
+      const t0 = performance.now();
+      const cleanup = () => {
+        mouthPulse && mouthPulse(0);
+        if (group.userData._bubble === bubble) { group.remove(sprite); bubble.dispose(); group.userData._bubble = null; }
+        resolve();
+      };
+      if (app.REDUCED) { setTimeout(cleanup, ms); return; }
+      const hook = () => {
+        if (mouthTokens.get(key) !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
+        const t = (performance.now() - t0);
+        mouthPulse && mouthPulse(t);
+        if (t >= ms) { app.offFrame(hook); cleanup(); }
+      };
+      hook.cancel = () => { app.offFrame(hook); cleanup(); };
+      app.onFrame(hook);
+    });
+  }
+
   // ---------- materials ----------
   function feltMaterial(color = '#0b5d3b') {
     const tx = canvasTexture(512, 512, (ctx) => {
@@ -120,18 +184,46 @@
   }
 
   // ---------- dealer / staff figure ----------
-  // Thin wrapper over the humanoid rig (src/engine/rig.js) preserving the
-  // legacy userData API. opts.seed varies skin/hair/vest per character.
+  // Returns a root Group whose userData.rig is a STABLE facade: procedural
+  // rig first, GLB character swapped in when C.character assets arrive.
+  // Call sites hold the facade reference — it never changes identity.
   function makeDealer(opts = {}) {
-    const rig = C.rig.makeHumanRig(opts);
-    const group = rig.group;
-    group.userData.rig = rig;
-    group.userData.idle = (app) => rig.setIdle(app);
-    group.userData.lookToward = (app, worldTarget) => rig.lookAt(app, worldTarget);
-    group.userData.headShake = (app) => rig.play(app, 'headShake');
-    group.userData.dealGesture = (app, worldTarget, ms) =>
-      rig.play(app, 'welcomeSweep', { refs: { target: worldTarget }, ms });
-    return group;
+    const app = C.app;
+    const procedural = C.rig.makeHumanRig(opts);
+    const root = new THREE.Group();
+    root.add(procedural.group);
+    let impl = procedural;
+    let idleWanted = false;
+    let procIdle = null;
+    const facade = {
+      play: (a, name, o) => impl.play(a, name, o),
+      stop: (t) => impl.stop(t),
+      say: (a, text, o) => impl.say(a, text, o),
+      lookAt: (a, tgt) => impl.lookAt(a, tgt),
+      setIdle: (a) => {
+        idleWanted = true;
+        const hook = impl.setIdle(a);
+        if (impl === procedural) procIdle = hook;
+        return hook;
+      },
+      get joints() { return impl.joints; },
+    };
+    if (app && !app.REDUCED) {
+      C.character?.attach(app, root, opts, (charImpl) => {
+        ['arms', 'head', 'body', 'mouth'].forEach((t) => procedural.stop(t));
+        procIdle?.cancel?.();
+        root.remove(procedural.group);
+        impl = charImpl;
+        if (idleWanted) impl.setIdle(app);
+      });
+    }
+    root.userData.rig = facade;
+    root.userData.idle = (a) => facade.setIdle(a);
+    root.userData.lookToward = (a, worldTarget) => facade.lookAt(a, worldTarget);
+    root.userData.headShake = (a) => facade.play(a, 'headShake');
+    root.userData.dealGesture = (a, worldTarget, ms) =>
+      facade.play(a, 'welcomeSweep', { refs: { target: worldTarget }, ms });
+    return root;
   }
 
   // ---------- plaque ----------
@@ -317,7 +409,7 @@
   }
 
   C.assets = {
-    canvasTexture, roundRect, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
+    canvasTexture, roundRect, speechBubbleOn, feltMaterial, woodMaterial, goldMaterial, carpetMaterial,
     carpetModern, marbleMaterial, steelMaterial, glassMaterial, ledStrip, makeNeonSign,
     makeGlowPad, makeStool, makeDealer, makePlaque, makeSign,
   };

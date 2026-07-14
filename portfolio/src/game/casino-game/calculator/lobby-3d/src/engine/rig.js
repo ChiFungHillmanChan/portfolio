@@ -228,55 +228,13 @@
     const stop = (track) => { tokens[track] += 1; };
 
     // ---- speech bubble + mouth ----
-    let bubble = null;
-    function say(app, text, { ms = 2600 } = {}) {
-      if (bubble) { group.remove(bubble.sprite); bubble.dispose(); bubble = null; }
-      const lines = C.gestures.wrapLines(text, 18);
-      const PW = 512, LH = 88, PH = lines.length * LH + 72;
-      const tx = C.assets.canvasTexture(PW, PH, (ctx) => {
-        ctx.clearRect(0, 0, PW, PH);
-        ctx.fillStyle = 'rgba(16,13,9,0.88)';
-        C.assets.roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
-        ctx.fill();
-        ctx.strokeStyle = '#c9a227'; ctx.lineWidth = 5;
-        C.assets.roundRect(ctx, 6, 6, PW - 12, PH - 30, 26);
-        ctx.stroke();
-        ctx.beginPath();                       // tail
-        ctx.moveTo(PW / 2 - 22, PH - 26); ctx.lineTo(PW / 2, PH - 2); ctx.lineTo(PW / 2 + 22, PH - 26);
-        ctx.closePath();
-        ctx.fillStyle = 'rgba(16,13,9,0.88)'; ctx.fill();
-        ctx.fillStyle = '#f0d878';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = `600 56px 'Segoe UI', system-ui, sans-serif`;
-        lines.forEach((ln, i) => ctx.fillText(ln, PW / 2, 44 + LH / 2 + i * LH));
-      });
-      const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
-      const sprite = new THREE.Sprite(mat);
-      const W = 0.95;
-      sprite.scale.set(W, W * PH / PW, 1);
-      sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
-      sprite.renderOrder = 5;
-      group.add(sprite);
-      bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
-
-      const token = ++tokens.mouth;
-      const gen = app.roomGen;
-      return new Promise((resolve) => {
-        const t0 = performance.now();
-        const cleanup = () => {
-          mouth.scale.set(1, 1, 1);
-          if (bubble && bubble.sprite === sprite) { group.remove(sprite); bubble.dispose(); bubble = null; }
-          resolve();
-        };
-        if (app.REDUCED) { setTimeout(cleanup, ms); return; }
-        const hook = () => {
-          if (tokens.mouth !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
-          const t = (performance.now() - t0);
-          mouth.scale.y = 1 + Math.abs(Math.sin(t / 90)) * 2.6;
-          if (t >= ms) { app.offFrame(hook); cleanup(); }
-        };
-        hook.cancel = () => { app.offFrame(hook); cleanup(); };
-        app.onFrame(hook);
+    // Bubble sprite/timer bookkeeping now lives in assets.js's speechBubbleOn
+    // (shared with the GLB character impl) — this just supplies the
+    // procedural mouth-flap pulse.
+    function say(app, text, o = {}) {
+      return C.assets.speechBubbleOn(app, group, text, {
+        ...o,
+        mouthPulse: (t) => { mouth.scale.y = 1 + Math.abs(Math.sin(t / 90)) * 2.6; },
       });
     }
 
@@ -329,4 +287,5 @@
   }
 
   C.rig = { makeHumanRig };
+  C.rigPalettes = { SKINS, HAIRS, VESTS };
 })();

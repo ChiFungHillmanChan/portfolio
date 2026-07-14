@@ -7,6 +7,7 @@
     start({ model, ui }) {
       C.app.init({ ui });
       if (!C.app.renderer) return null; // WebGL failed → app is redirecting to the 2D lobby
+      if (!C.app.REDUCED) C.character.preload('./assets/');
       C.floor.buildAll(model);
       C.app.spawn();
       // Debug camera: ?cam=x,z,yaw[,pitch] — screenshot poses for visual QA.
