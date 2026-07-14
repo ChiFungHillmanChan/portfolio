@@ -648,7 +648,6 @@
     // Live-play rig for the lobby's in-place roulette session (roulette-live.js):
     // spin the real wheel, append results to the tote board, mirror the 2D
     // game's bets as chip stacks on the printed felt.
-    g.userData.spinTo = wheel.spinTo;
     g.userData.pushResult = (n) => board.userData.pushResult(n);
     g.userData.setBets = (spots) => {
       betLayer.children.slice().forEach((stack) => {
@@ -661,6 +660,115 @@
         stk.position.set(x, 0.86, z);
         betLayer.add(stk);
       });
+    };
+
+    // ---- dealer choreography rig (visual only; roulette-live.js drives it) ----
+    const RACK_LOCAL = [-1.44, FELT_Y + 0.12, 0];
+    const RIM_LOCAL = [-1.72, 1.02, 0];
+    const toW = (p) => g.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const rigPlay = (name, refs, ms) =>
+      dealerRig ? dealerRig.play(C.app, name, { refs, ms }) : Promise.resolve();
+
+    // dolly: gold cylinder marker, parked (hidden) at the rack
+    const dolly = new THREE.Group();
+    const dBase = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.05, 12), A.goldMaterial());
+    dBase.position.y = 0.025;
+    const dStem = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.05, 8), A.goldMaterial());
+    dStem.position.y = 0.075;
+    const dTop = new THREE.Mesh(new THREE.SphereGeometry(0.018, 10, 8), A.goldMaterial());
+    dTop.position.y = 0.105;
+    dolly.add(dBase, dStem, dTop);
+    dolly.visible = false;
+    dolly.position.set(...RACK_LOCAL);
+    g.add(dolly);
+
+    const glideLocal = (obj, to, ms) => new Promise((res) => {
+      if (C.app.REDUCED) { obj.position.set(to[0], to[1], to[2]); return res(); }
+      C.tween.to(obj.position, { y: to[1] + 0.18 }, ms * 0.25, 'outCubic', () => {
+        C.tween.to(obj.position, { x: to[0], z: to[2] }, ms * 0.5, 'inOutCubic', () => {
+          C.tween.to(obj.position, { y: to[1] }, ms * 0.25, 'outCubic', res);
+        });
+      });
+    });
+
+    g.userData.placeDolly = async (n) => {
+      const [x, z] = C.layouts.rouletteSpotPos('n' + n);
+      dolly.visible = true;
+      rigPlay('placeDolly', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+      await glideLocal(dolly, [x, FELT_Y + 0.02, z], 750);
+    };
+    g.userData.liftDolly = async () => {
+      await glideLocal(dolly, RACK_LOCAL, 500);
+      dolly.visible = false;
+    };
+
+    // Fly a chip-stack group along a small arc, then run onDone.
+    const flyStack = (stack, to, ms, onDone) => {
+      if (C.app.REDUCED) { stack.position.set(to[0], to[1], to[2]); onDone && onDone(); return; }
+      C.tween.to(stack.position, { y: stack.position.y + 0.16 }, ms * 0.3, 'outCubic', () => {
+        C.tween.to(stack.position, { x: to[0], z: to[2] }, ms * 0.45, 'inOutCubic', () => {
+          C.tween.to(stack.position, { y: to[1] }, ms * 0.25, 'outCubic', onDone);
+        });
+      });
+    };
+    const disposeStack = (stack) => {
+      stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+      stack.parent && stack.parent.remove(stack);
+    };
+    const stackNear = (x, z) => betLayer.children.find(
+      (s) => Math.hypot(s.position.x - x, s.position.z - z) < 0.02);
+
+    g.userData.settleBets = async ({ losingSpots = [], winningSpots = [] }) => {
+      // sweep losing stacks into the rack, dealer raking alongside
+      if (losingSpots.length) {
+        const first = losingSpots[0];
+        rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) });
+      }
+      const sweeps = losingSpots.map(({ x, z }, i) => new Promise((res) => {
+        const stack = stackNear(x, z);
+        if (!stack) return res();
+        setTimeout(() => flyStack(stack, RACK_LOCAL, 420, () => { disposeStack(stack); res(); }),
+          C.app.REDUCED ? 0 : i * 90);
+      }));
+      await Promise.all(sweeps);
+      // pay each winning spot from the rack
+      for (let i = 0; i < winningSpots.length; i++) {
+        const { x, z, amount, factor } = winningSpots[i];
+        rigPlay('payChips', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+        const chips = C.layouts.chipBreakdown(amount * factor);
+        const pay = new THREE.Group();
+        chips.forEach((v, k) => {
+          const chip = C.chips.makeChip(v);
+          chip.position.y = k * C.chips.CHIP_H;
+          pay.add(chip);
+        });
+        pay.position.set(...RACK_LOCAL);
+        betLayer.add(pay);
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((res) => flyStack(pay, [x + 0.09, 0.86, z], 460, res));
+      }
+    };
+
+    g.userData.buyIn = async () => {
+      rigPlay('tapRack', { rack: toW(RACK_LOCAL) });
+      const stk = C.chips.makeChipStack(100, 6);
+      stk.position.set(...RACK_LOCAL);
+      g.add(stk);
+      await new Promise((res) => flyStack(stk, [0.35, FELT_Y + 0.02, 1.05], 600, res));
+      await new Promise((res) => setTimeout(res, C.app.REDUCED ? 100 : 900));
+      if (!C.app.REDUCED) {
+        await new Promise((res) => C.tween.to(stk.scale, { x: 0.01, y: 0.01, z: 0.01 }, 200, 'outCubic', res));
+      }
+      stk.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
+      g.remove(stk);
+    };
+
+    // wrap spinTo: the dealer reaches to the rim, flicks, wheel spins
+    const rawSpinTo = wheel.spinTo;
+    g.userData.spinTo = async (pocket) => {
+      await rigPlay('spinReach', { rim: toW(RIM_LOCAL) });
+      rigPlay('spinFollow', {});
+      return rawSpinTo(pocket);
     };
 
     return g;
