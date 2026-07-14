@@ -16,6 +16,7 @@ export const SRC_ORDER = [
   'src/engine/rig.js',
   'src/logic/layouts.js',
   'src/logic/gestures.js',
+  'src/logic/roulette-cover.js',
   'src/logic/baccarat-roads.js',
   'src/floor/layout.js',
   'src/floor/tables/roulette-table.js',
