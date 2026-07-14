@@ -490,12 +490,15 @@
       g.add(chips);
     });
 
+    let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer();
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);
+      dealerRig = dealer.userData.rig;
     }
+    g.userData.dealerRig = dealerRig;
 
     // roadmap scoreboard at the end opposite the plaque, facing the aisle
     const board = makeScoreBoard(rounds, opts);

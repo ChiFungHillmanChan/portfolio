@@ -29,10 +29,11 @@
     signDx: -1.35,
     signLines: [
       { text: 'DEALER TRAINING', size: 56, color: '#b3541e' },
-      { text: 'IN PROGRESS', size: 44, color: '#b3541e' },
-      { text: 'TABLE CLOSED', size: 52 },
-      { text: '維修中', size: 64 },
-      { text: 'Sorry for the inconvenience', size: 26, weight: 'normal' },
+      { text: '荷官培訓中', size: 60, color: '#b3541e' },
+      { text: 'TABLE CLOSED', size: 50 },
+      { text: '暫停開放', size: 54 },
+      { text: 'Sorry for the inconvenience', size: 22, weight: 'normal' },
+      { text: '不便之處，敬請原諒', size: 26, weight: 'normal' },
     ],
     trainer: { pos: [6.3, 7.6], lookAt: [5.2, 7.75] },
   };
@@ -97,7 +98,8 @@
           limitsText: table.limitsText,
           minChipLabel: table.minBet.toLocaleString('en-US'),
           accent,
-          withDealer: table.key === 'std' || section.id === 'uth',
+          withDealer: true,
+          dealerSeed: table.id,
           // rotated roulette: counter-rotate the plaque so it faces the aisle
           plaqueYaw: rotated ? Math.PI / 2 + 0.15 : undefined,
         });
@@ -121,27 +123,55 @@
           s.add(sp, sp.target);
         }
 
-        // obstacle center follows the footprint: rotated roulette extends its
-        // wheel toward the wall (world -z); aisle-facing roulette would shift x.
-        const ox = rotated ? x : (section.id === 'roulette' ? x - 0.4 * row.dir : x);
-        const oz = rotated ? row.z - 0.45 : row.z;
-        C.world.addObstacle({ x: ox, z: oz, r: group.userData.radius });
+        if (rotated) {
+          // Rotated roulette: capsule of small circles down the table's long
+          // axis (+ tote board + dealer) instead of one fat r-2.5 circle —
+          // that circle kept players 1.7m off the rail, so nobody could
+          // actually stand AT the table.
+          C.world.addObstacle({ x, z: row.z - 2.35, r: 1.15 });           // wheel bowl
+          C.world.addObstacle({ x, z: row.z - 0.7, r: 1.1 });             // rail west half
+          C.world.addObstacle({ x, z: row.z + 0.95, r: 1.1 });            // rail east half
+          C.world.addObstacle({ x: x + 1.25, z: row.z - 1.75, r: 0.55 }); // tote board
+          if (table.key === 'std') C.world.addObstacle({ x: x + 1.15, z: row.z + 0.2, r: 0.45 }); // dealer
+        } else {
+          // obstacle center follows the footprint: aisle-facing roulette
+          // would shift x toward its wheel end.
+          const ox = section.id === 'roulette' ? x - 0.4 * row.dir : x;
+          C.world.addObstacle({ x: ox, z: row.z, r: group.userData.radius });
+        }
 
         // closed table: build the maintenance enclosure (rails + sign +
         // collision chain) — the anchor stays, but its approach pulls back
         // so the camera lands OUTSIDE the barrier looking through it.
         if (table.closed) C.floor.buildMaintenanceZone(CLOSED_ZONE);
 
-        // anchor on the aisle side of the table
-        const az = row.z + row.dir * (rotated ? 2.6 : 2.35);
-        C.world.addAnchor({
-          id: table.id, kind: 'table', table,
-          pos: [x, az], radius: 2.0,
-          approach: {
-            pos: [x, 1.6, row.z + row.dir * (rotated ? 3.0 : (table.closed ? 3.9 : 2.7))],
-            look: [x, 0.95, row.z],
-          },
-        });
+        if (rotated) {
+          // Approach = the players' long side, across the felt facing the
+          // dealer (not parked at the aisle end). Clamped off the west wall
+          // for the table nearest it. The anchor sits between the aisle and
+          // that spot so the card triggers walking past AND at the rail.
+          const floorRect = C.floorplan.WALK_RECTS.find((r) => r.id === 'floor');
+          const standX = Math.max(x - 1.9, floorRect.x0 + 0.35);
+          C.world.addAnchor({
+            id: table.id, kind: 'table', table,
+            pos: [x - 0.9, row.z + 1.6], radius: 2.2,
+            approach: {
+              pos: [standX, 1.6, row.z + 0.2],
+              look: [x + 1.0, 1.1, row.z + 0.2],
+            },
+          });
+        } else {
+          // anchor on the aisle side of the table
+          const az = row.z + row.dir * 2.35;
+          C.world.addAnchor({
+            id: table.id, kind: 'table', table,
+            pos: [x, az], radius: 2.0,
+            approach: {
+              pos: [x, 1.6, row.z + row.dir * (table.closed ? 3.9 : 2.7)],
+              look: [x, 0.95, row.z],
+            },
+          });
+        }
         C.app.addPickable(group, () => {
           const a = C.world.anchorById(table.id);
           if (a) C.app.goToAnchor(a);

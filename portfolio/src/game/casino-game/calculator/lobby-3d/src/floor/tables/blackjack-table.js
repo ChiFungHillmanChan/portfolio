@@ -219,12 +219,15 @@
       });
     });
 
+    let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer();
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
       dealer.position.set(0, 0, -0.55);
       g.add(dealer);
       dealer.userData.idle(C.app);
+      dealerRig = dealer.userData.rig;
     }
+    g.userData.dealerRig = dealerRig;
 
     if (opts.tierName) {
       const plaque = A.makePlaque([opts.tierName.toUpperCase(), opts.limitsText, 'MIN CHIP ' + opts.minChipLabel]);
