@@ -1,0 +1,48 @@
+/* =====================================================
+   EMBED-3D MODE (?embed=3d) — 3D lobby bottom sheet
+   =====================================================
+   Scoped under html.embed-3d (set before first paint by the inline head
+   snippet in index.html). Strips the page down to the betting surface:
+   the 3D lobby scene provides the wheel, the stats board and the history
+   display, so everything else is chrome we hide. The wallet gate and
+   stake-picker overlays (document.body level) stay — they gate play. */
+
+html.embed-3d body {
+    background: #0d0f13;
+    min-height: 0;
+}
+
+/* page chrome the lobby replaces */
+html.embed-3d .hamburger-btn,
+html.embed-3d .back-btn,
+html.embed-3d .dropdown-menu,
+html.embed-3d #walletHudHost,
+html.embed-3d .container > header,
+html.embed-3d #wheelContainer,
+html.embed-3d #stats-container,
+html.embed-3d #mobileTopStack {
+    display: none !important;
+}
+
+/* collapse the two-column desktop layout into a single compact column */
+html.embed-3d .container {
+    max-width: none;
+    margin: 0;
+    padding: 6px 10px 10px;
+}
+html.embed-3d .app-layout {
+    display: block;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+}
+html.embed-3d .game-area {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+}
+html.embed-3d #gameArea {
+    gap: 8px;
+    padding: 0;
+}

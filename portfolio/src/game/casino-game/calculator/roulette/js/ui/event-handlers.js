@@ -23,6 +23,26 @@ let autoRepeatState = {
 let resultDismissTimeout = null;
 let resultProgressInterval = null;
 
+// Friendly copy for wallet-backend error codes surfaced from commitBet/settle
+// (see js/wallet/game-session.js). Anything not in this map falls back to a
+// generic "Bet rejected" message rather than showing the raw code to the user.
+const WALLET_ERR_MSG = {
+    "insufficient-balance": "Not enough chips for that bet",
+    "too-fast": "Slow down — wait a moment before the next round",
+    "round-in-progress": "Finish the current round first",
+    "over-table-max": "That bet is over the table limit",
+    "bad-bets": "That bet isn't allowed here",
+    "empty-bet": "Place a bet first",
+};
+
+// True while a wallet bet-commit request is awaiting the server's response.
+// isSpinning() only flips true once the commit resolves and the phase moves
+// to SPINNING, leaving a gap where a rapid double-click on Spin could fire a
+// second commitBet() for the same round before the first response lands (the
+// wallet's own "round-in-progress" guard only engages after that first
+// response is applied). This flag closes that gap synchronously.
+let betCommitInFlight = false;
+
 /**
  * Initialize all event handlers
  */
@@ -374,9 +394,15 @@ function initGameControlHandlers() {
 /**
  * Handle spin button click
  */
-function handleSpinClick() {
-    if (isSpinning()) return;
-    
+async function handleSpinClick() {
+    if (isSpinning() || betCommitInFlight) return;
+
+    // The wallet gate (mounted on document.body) covers the whole page until
+    // sign-in + balance are ready, so this should be unreachable while null —
+    // but guard defensively rather than throw if it somehow is.
+    const session = window.rouletteWallet;
+    if (!session) return;
+
     // Store current bets for repeat feature
     // IMPORTANT: Always store the current bets (even if empty/null)
     // This ensures "Repeat" only repeats the LAST spin's bets, not older bets
@@ -386,15 +412,39 @@ function handleSpinClick() {
         // Clear last bets if user spins without placing any bets
         clearLastBets();
     }
-    
+
     // Stop auto-spin countdown if running
     stopAutoSpinCountdown();
-    
+
     // Clear previous winning marker before new spin
     if (isWinningMarkerVisible()) {
         clearWinningHighlight();
     }
-    
+
+    // Wallet debit at bet-lock. Zero-bet spins are intentionally allowed (for
+    // stats/practice) and skip the wallet entirely — there is nothing to debit.
+    if (hasBets()) {
+        // Set synchronously (before the first await) and disable the button so
+        // a rapid double-click can't fire a second commitBet for this same
+        // round while the first request is still in flight.
+        betCommitInFlight = true;
+        const spinBtn = document.getElementById('spinBtn');
+        if (spinBtn) spinBtn.disabled = true;
+        try {
+            const { balance } = await session.commitBet(getAllBets());
+            syncBankrollFromWallet(balance);
+            renderBankroll();
+        } catch (err) {
+            // insufficient-balance / too-fast / over-table-max / round-in-progress
+            // → stay in BETTING, do not transition to SPINNING.
+            showBetError(WALLET_ERR_MSG[err.code] || 'Bet rejected');
+            betCommitInFlight = false;
+            updateButtonStates(); // phase is still BETTING — re-enable Spin
+            return;
+        }
+        betCommitInFlight = false;
+    }
+
     // Disable betting during spin
     setGamePhase(GAME_PHASES.SPINNING);
     updateButtonStates();
@@ -408,50 +458,51 @@ function handleSpinClick() {
     setSpinData(spinData);
     
     // Start wheel animation
-    animateWheelSpin(spinData, () => {
+    animateWheelSpin(spinData, async () => {
         // Hide "No More Bets" overlay
         hideNoMoreBets();
-        
-        // Animation complete - resolve bets
+
+        // Animation complete - resolve bets (pure, client-side; server caps the payout)
         const resolution = resolveAllBets(spinData.result, getAllBets(), gameState.config.rouletteType);
-        
+
         // Record in stats
         recordSpin(spinData.result, resolution.totalWagered, resolution.totalWinnings);
-        
-        // Update bankroll
-        updateBankroll(resolution.netResult);
-        
+
+        // Credit the wallet with GROSS winnings (not net) — the server caps the
+        // payout at the published odds. Only settle if commitBet actually opened
+        // a round; a zero-bet spin never did, so there is nothing to settle.
+        if (session.hasOpenRound()) {
+            try {
+                const { balance } = await session.settle(Math.round(resolution.totalWinnings));
+                syncBankrollFromWallet(balance);
+            } catch (err) {
+                // Settle failed (network/server error). The round stays open
+                // server-side; the next commitBet attempt will surface
+                // "round-in-progress" until it resolves. Not auto-retried here —
+                // see Task 4 report for this known crash/failure-recovery gap.
+                console.error('[roulette] settle failed:', err);
+            }
+        }
+
         // Clear bets after resolution
         clearAllBets();
-        
+
         // Clear spin state
         clearSpinData();
-        
+
         // Update displays
         renderBankroll();
         renderStats();
         renderPlacedChips(); // Clear chips from table
-        
-        // Check for game over (bankroll <= 0 after the round)
-        if (isBankrupt()) {
-            // Show result briefly, then show game over
-            showResult(spinData.result, resolution);
-            setGamePhase(GAME_PHASES.GAME_OVER);
-            
-            // Clear localStorage immediately - game is over
-            // This ensures navigating away won't restore a bust game
-            clearAllStorage();
-            
-            // After a short delay, show game over overlay
-            setTimeout(() => {
-                hideResultOverlay();
-                showGameOver();
-            }, 2000);
-        } else {
-            // Normal result display with auto-dismiss
-            showResultWithAutoDismiss(spinData.result, resolution);
-            setGamePhase(GAME_PHASES.RESULT);
-        }
+
+        // Bust handling is now owned by the wallet's game-gate overlay, which
+        // shows automatically (via its own wallet subscription) once balance
+        // drops below its threshold and offers a real reset. The old local
+        // Game Over flow is retired: it used to leave gameState.phase stuck at
+        // GAME_OVER with no way back to BETTING once the wallet reset the
+        // balance and dismissed its own overlay.
+        showResultWithAutoDismiss(spinData.result, resolution);
+        setGamePhase(GAME_PHASES.RESULT);
     });
 }
 
@@ -754,7 +805,26 @@ function handleBetPlacement(betType, betValue, e) {
     const totalWagered = getTotalWagered();
     const currentBankroll = getCurrentBankroll();
     const remainingBankroll = currentBankroll - totalWagered;
-    
+
+    // Enforce the per-spot max bet limit (client-side UX guard; the server
+    // also caps, but a friendly message here beats a silent server reject).
+    // Only the MAX is enforced at placement time — the MIN (100) is not,
+    // since players build a spot up chip by chip starting from 0.
+    const maxBet = gameState.config.maxBet;
+    const spotTotal = getBetAmount(betType, betValue) + chipValue;
+    if (spotTotal > maxBet) {
+        showBetError(`Max ${maxBet.toLocaleString()} per spot`);
+        return;
+    }
+
+    // Table-total cap for the active stake tier (friendly mirror of the
+    // server's over-table-max reject).
+    const tableTotal = window.rouletteTable ? window.rouletteTable.maxTotalBet : Infinity;
+    if (totalWagered + chipValue > tableTotal) {
+        showBetError(`Table max is ${tableTotal.toLocaleString()} total`);
+        return;
+    }
+
     // Check if can afford this bet
     if (!canAffordBet(chipValue, currentBankroll, totalWagered)) {
         // Try to find a smaller chip that we can afford

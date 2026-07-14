@@ -302,13 +302,10 @@ function completeHand() {
 function resolveRound(handResult) {
     const placedBets = getAllBets();
     const totalWagered = getTotalWagered();
-    
-    // Calculate winnings
-    const winnings = calculateWinnings(placedBets, handResult);
 
-    // Update bankroll: subtract wagered, add winnings
+    // Calculate winnings (pure; client computes payouts, the server caps them)
+    const winnings = calculateWinnings(placedBets, handResult);
     const netChange = winnings.totalWin - totalWagered;
-    updateBankroll(netChange);
 
     // Add to history
     addToHistory({
@@ -319,16 +316,42 @@ function resolveRound(handResult) {
         netResult: netChange
     });
 
-    // Clear bets
+    // Credit the wallet with GROSS winnings (not net/netChange) — the server
+    // caps the payout at the published odds/table max. Only settle if
+    // commitBet actually opened a round with the wallet (guards the case
+    // where window.baccaratWallet never opened one, e.g. a stale call).
+    // Fire-and-forget: resolveRound() is not async and is called from both an
+    // async caller (autoDealAllCards) and a sync one (handleDeal's DEALING
+    // fallback branch), so it cannot itself await the settle round-trip.
+    const session = window.baccaratWallet;
+    if (session && session.hasOpenRound()) {
+        session.settle(Math.round(winnings.totalWin))
+            .then(({ balance }) => {
+                syncBankrollFromWallet(balance);
+                renderHUD();
+            })
+            .catch((e) => {
+                // Settle failed (network/server error). The round stays open
+                // server-side; the next commitBet attempt will surface
+                // "round-in-progress" until it resolves. Not auto-retried —
+                // see the report for this known crash/failure-recovery gap.
+                console.error('[baccarat] settle failed:', e);
+            });
+    }
+
+    // Clear bets after resolution
     clearAllBets();
 
-    // Check for bankruptcy
-    if (isBankrupt()) {
-        setGamePhase(GAME_PHASES.GAME_OVER);
-        clearStorage();
-    } else {
-        setGamePhase(GAME_PHASES.RESULT);
-    }
+    // Bust handling is owned by the wallet's game-gate overlay (see
+    // baccarat-wallet.js), which reacts to the server-confirmed balance via
+    // its own subscription — not a local isBankrupt() snapshot, which can be
+    // stale here (mid-flight: the debit already landed but a winning settle()
+    // above hasn't resolved yet). The old local Game Over flow is retired:
+    // it used to leave gameState.phase stuck at GAME_OVER with no way back to
+    // BETTING once the wallet reset the balance, and its "Play Again" button
+    // routed to the now-retired setup screen — a dead end. Always go to
+    // RESULT; see init.js's autoDealAllCards/handleDeal for the matching fix.
+    setGamePhase(GAME_PHASES.RESULT);
 
     saveToStorage();
 

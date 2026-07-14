@@ -1,0 +1,4 @@
+{
+  "//": "dev-only — lets `node --test` import these ES modules without a MODULE_TYPELESS_PACKAGE_JSON warning. Inert in browsers, not relied on by public/.",
+  "type": "module"
+}

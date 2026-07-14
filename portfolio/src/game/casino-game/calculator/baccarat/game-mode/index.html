@@ -20,9 +20,13 @@
     <link rel="stylesheet" href="../../css/settings-modal.css">
     <link rel="stylesheet" href="../../css/admin.css">
     <link rel="stylesheet" href="../../css/svg-icons.css">
+    <link rel="stylesheet" href="../../css/wallet.css">
     <link rel="stylesheet" href="css/game-mode.css">
 </head>
 <body>
+    <!-- Wallet balance HUD + sign-in/bust gate (mounted by js/wallet/baccarat-wallet.js) -->
+    <div id="walletHudHost" class="game-wallet-hud"></div>
+
     <!-- Fixed Hamburger Menu -->
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
         <span class="hamburger-line"></span>
@@ -95,6 +99,10 @@
     <script src="js/game-logic.js"></script>
     <script src="js/render.js"></script>
     <script src="js/init.js"></script>
+
+    <!-- Wallet (must load after init.js so its global game fns already exist) -->
+    <script type="module" src="js/wallet/baccarat-wallet.js"></script>
+
     <script src="../../js/hamburger-menu.js"></script>
     <script type="module" src="../../js/settings-modal.js"></script>
 </body>

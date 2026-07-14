@@ -16,26 +16,40 @@ async function init() {
         // Initialize chip selector
         renderChipSelector();
 
-        // Check for saved game and auto-continue without prompt
-        if (hasSavedGame()) {
-            // Automatically restore and continue the game
-            if (restoreGameState()) {
-                showGameScreen();
-                renderPlacedChips();
-                console.log('Roulette game restored and continued');
-            } else {
-                // Failed to restore, start fresh
-                showSetupScreen();
-            }
-        } else {
-            showSetupScreen();
-        }
-
+        // The game screen stays behind the wallet's game-gate overlay
+        // (mounted on document.body by roulette-wallet.js) until the player is
+        // signed in and their chip balance is known. See the 'wallet:ready'
+        // listener below for the auto-start that replaces the old setup form.
         console.log('Roulette initialized successfully');
     } catch (error) {
         console.error('Failed to initialize roulette:', error);
     }
 }
+
+// Wallet is ready (stake picked, signed in, balance known): auto-start the
+// game using the wallet balance as the stack, replacing the old setup-form
+// submit flow. The table limits come from the active stake tier
+// (window.rouletteTable, set from ?stake= by roulette-wallet.js) — the
+// server caps (table-config.js) are authoritative; these are UX mirrors.
+document.addEventListener('wallet:ready', () => {
+    startGame({
+        rouletteType: DEFAULT_CONFIG.rouletteType,
+        initialStack: window.rouletteWallet.getBalance(),
+        minBet: window.rouletteTable.min,
+        maxBet: window.rouletteTable.perSpotMax,
+    });
+    showGameScreen();
+});
+
+// Mirror the wallet's confirmed balance into the in-game bankroll display
+// whenever it changes for a reason this page didn't itself just cause (e.g. a
+// bust-reset from the HUD's Reset button). commitBet()/settle() already sync
+// the balance for changes this page DOES cause (see event-handlers.js).
+document.addEventListener('wallet:balance', () => {
+    if (!window.rouletteWallet) return;
+    syncBankrollFromWallet(window.rouletteWallet.getBalance());
+    renderBankroll();
+});
 
 /**
  * Show prompt to continue saved game or start new
@@ -126,8 +140,10 @@ function startFreshGame() {
  * Load HTML components
  */
 async function loadComponents() {
+    // Plan 3: the setup screen is retired — the wallet's game-gate overlay
+    // (see roulette-wallet.js) replaces it, and 'wallet:ready' auto-starts the
+    // game with a fixed table config once the player's chip balance is known.
     const components = [
-        { id: 'setup-container', path: 'html/setup-panel.html' },
         { id: 'game-container', path: 'html/game-panel.html' },
         { id: 'stats-container', path: 'html/stats-panel.html' }
     ];

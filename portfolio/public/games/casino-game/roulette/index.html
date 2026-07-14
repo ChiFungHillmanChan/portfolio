@@ -32,8 +32,20 @@
     <link rel="stylesheet" href="../css/settings-modal.css">
     <link rel="stylesheet" href="../css/admin.css">
     <link rel="stylesheet" href="../css/svg-icons.css">
+    <link rel="stylesheet" href="../css/wallet.css">
+    <link rel="stylesheet" href="css/embed-3d.css">
+    <!-- 3D-lobby embed mode: class set before first paint so embed-3d.css
+         applies without a flash of the full-page chrome -->
+    <script>
+      if (new URLSearchParams(location.search).get('embed') === '3d') {
+        document.documentElement.classList.add('embed-3d');
+      }
+    </script>
 </head>
 <body>
+    <!-- Wallet balance HUD + sign-in/bust gate (mounted by js/wallet/roulette-wallet.js) -->
+    <div id="walletHudHost" class="game-wallet-hud"></div>
+
     <!-- Fixed Hamburger Menu -->
     <button class="hamburger-btn" id="hamburgerBtn" aria-label="Menu" aria-expanded="false">
         <span class="hamburger-line"></span>
@@ -91,7 +103,6 @@
             
             <!-- Game Area (center) -->
             <div class="game-area">
-                <div id="setup-container"></div>
                 <div id="game-container"></div>
             </div>
         </div>
@@ -119,6 +130,14 @@
     
     <!-- Initialize -->
     <script src="js/ui/init.js"></script>
+
+    <!-- 3D-lobby bridge (no-op without ?embed=3d; must load after the
+         globals it patches: renderPlacedChips + animateWheelSpin) -->
+    <script src="js/embed-3d.js"></script>
+
+    <!-- Wallet (must load after init.js so its global game fns already exist) -->
+    <script type="module" src="js/wallet/roulette-wallet.js"></script>
+
     <script type="module" src="../js/settings-modal.js"></script>
 </body>
 </html>

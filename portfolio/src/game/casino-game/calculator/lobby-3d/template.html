@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Grand Casino — 3D Floor</title>
+<style>/*__CSS__*/</style>
+</head>
+<body>
+<div id="splash">
+  <div class="splash-inner">
+    <h1>GRAND CASINO</h1>
+    <p class="splash-sub">Walk the floor. Pick your table.</p>
+    <button id="enterBtn">ENTER THE CASINO</button>
+    <p class="splash-note"><a href="../index.html">Prefer 2D? Open the classic lobby</a></p>
+  </div>
+</div>
+<canvas id="stage" aria-hidden="true"></canvas>
+<div id="hud" hidden>
+  <div id="hudLeft"><div id="walletHost"></div></div>
+  <div id="sectionLabel" aria-live="polite"></div>
+  <div id="hudRight">
+    <div id="accountHost"></div>
+    <button id="muteBtn" class="hud-btn" type="button" aria-label="Toggle sound"><svg class="ui-svg-icon" width="1em" height="1em" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><polygon points="11 5 6 9 3 9 3 15 6 15 11 19 11 5"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/></svg></button>
+    <a id="exit2d" class="hud-btn" href="../index.html">2D Lobby</a>
+  </div>
+</div>
+<nav id="quicknav" hidden aria-label="Casino quick navigation"></nav>
+<div id="card-root" aria-live="polite"></div>
+<div id="banner" hidden></div>
+<div id="fader"></div>
+<script>//__VENDOR__</script>
+<script>//__APP__</script>
+<script type="module" src="./platform.js"></script>
+</body>
+</html>

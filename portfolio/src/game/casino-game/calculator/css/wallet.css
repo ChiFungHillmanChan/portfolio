@@ -1,0 +1,115 @@
+/* wallet.css — lobby account zone, wallet HUD pill, and game-gate overlay.
+   Uses the shared design tokens from variables.css. */
+
+/* Lobby zone header holding the account state */
+.lobby-account {
+  display: flex; align-items: center; justify-content: flex-end;
+  gap: var(--spacing-md); min-height: 44px; margin-bottom: var(--spacing-md);
+}
+.lobby-signin { display: flex; align-items: center; gap: var(--spacing-sm); }
+.lobby-signin-btn {
+  font-family: var(--font-body); font-weight: 600; font-size: 0.95rem;
+  color: var(--bg-primary); background: var(--accent-gold);
+  border: none; border-radius: var(--radius-sm); padding: 8px 16px; cursor: pointer;
+  transition: background var(--transition-fast);
+}
+.lobby-signin-btn:hover { background: var(--accent-gold-dim); }
+.lobby-signin-note { color: var(--text-secondary); font-size: 0.85rem; }
+
+/* Balance pill */
+.wallet-hud {
+  display: inline-flex; align-items: center; gap: var(--spacing-sm);
+  font-family: var(--font-mono); font-size: 1.05rem; font-weight: 600;
+  color: var(--accent-gold); background: var(--bg-card);
+  border: 1px solid var(--border-active); border-radius: var(--radius-md);
+  padding: 8px 14px;
+}
+.wallet-hud[data-state="bust"] { color: var(--accent-red); border-color: var(--accent-red); }
+.wallet-hud-chip { display: inline-flex; }
+.wallet-hud-reset {
+  font-family: var(--font-body); font-weight: 600; font-size: 0.85rem;
+  color: var(--bg-primary); background: var(--accent-green);
+  border: none; border-radius: var(--radius-sm); padding: 4px 10px; cursor: pointer;
+}
+.wallet-hud-cooldown { font-family: var(--font-body); font-size: 0.8rem; color: var(--text-secondary); }
+
+/* Section labels for the two zones */
+.zone-title { font-family: var(--font-display); }
+.zone-subtitle { color: var(--text-secondary); font-size: 0.9rem; margin-bottom: var(--spacing-md); }
+.game-card .game-limits {
+  margin-top: var(--spacing-sm); font-family: var(--font-mono);
+  font-size: 0.85rem; color: var(--accent-gold);
+}
+
+/* Game HUD host (mounted by Plan 3 game pages, e.g. roulette/index.html).
+   Fixed top-right so the balance pill doesn't push page content down; the
+   hamburger menu (css/hamburger-menu.css) is fixed top-LEFT so this is clear.
+   Below the game-gate overlay's z-index (9000) so the gate still covers it. */
+.game-wallet-hud {
+  position: fixed; top: 12px; right: 12px; z-index: 500;
+}
+
+/* Stake picker (mounted by js/wallet/stake-picker.js on tiered game pages
+   when ?stake= is missing/unknown). Below the game-gate overlay's 9000 —
+   the picker replaces booting the wallet, so the two never show together. */
+.stake-picker-overlay {
+  position: fixed; inset: 0; z-index: 8000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 10, 15, 0.96);
+  overflow-y: auto; padding: var(--spacing-lg);
+}
+.stake-picker { max-width: 760px; width: 100%; text-align: center; margin: auto; }
+.stake-picker-title {
+  font-family: var(--font-display); color: var(--text-primary);
+  font-size: 1.6rem; letter-spacing: 2px; margin-bottom: var(--spacing-sm);
+}
+.stake-picker-sub { color: var(--text-secondary); margin-bottom: var(--spacing-md); }
+.stake-picker-balance {
+  font-family: var(--font-mono); color: var(--accent-gold);
+  margin-bottom: var(--spacing-md);
+}
+.stake-picker-cards {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--spacing-md); margin-bottom: var(--spacing-lg);
+}
+.stake-card {
+  display: flex; flex-direction: column; gap: 6px; min-height: 44px;
+  background: var(--bg-card); border: 1px solid var(--border-active);
+  border-radius: var(--radius-md); padding: var(--spacing-lg) var(--spacing-md);
+  text-decoration: none; cursor: pointer;
+  transition: border-color var(--transition-fast), transform var(--transition-fast);
+}
+.stake-card:hover { border-color: var(--accent-gold); transform: translateY(-2px); }
+.stake-card:focus-visible {
+  outline: 2px solid var(--accent-gold); outline-offset: 2px;
+  border-color: var(--accent-gold);
+}
+.stake-card-name { font-family: var(--font-display); font-size: 1.1rem; color: var(--accent-gold); letter-spacing: 1px; }
+.stake-card-limits { font-family: var(--font-mono); font-size: 0.95rem; color: var(--text-primary); }
+.stake-card-blurb { font-size: 0.82rem; color: var(--text-secondary); }
+.stake-picker-lobby { color: var(--text-secondary); text-decoration: none; display: inline-block; min-height: 44px; line-height: 44px; }
+.stake-picker-lobby:hover, .stake-picker-lobby:focus-visible { color: var(--accent-gold); }
+@media (prefers-reduced-motion: reduce) {
+  .stake-card { transition: none; }
+  .stake-card:hover { transform: none; }
+}
+
+/* Game-gate overlay (mounted by Plan 3 game pages) */
+.game-gate-overlay {
+  position: fixed; inset: 0; z-index: 9000;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(10, 10, 15, 0.92); backdrop-filter: blur(4px);
+}
+.game-gate-overlay[hidden] { display: none; }
+.game-gate-card {
+  background: var(--bg-card); border: 1px solid var(--border-active);
+  border-radius: var(--radius-lg); padding: var(--spacing-xl);
+  max-width: 380px; text-align: center;
+}
+.game-gate-msg { color: var(--text-primary); margin-bottom: var(--spacing-lg); }
+.game-gate-btn {
+  display: inline-block; font-family: var(--font-body); font-weight: 600;
+  color: var(--bg-primary); background: var(--accent-gold);
+  border: none; border-radius: var(--radius-sm); padding: 10px 20px;
+  cursor: pointer; text-decoration: none;
+}

@@ -2,6 +2,9 @@
 // BACCARAT GAME MODE - UI RENDERING
 // =====================================================
 
+// Module-level guard to ensure betting table handlers attach exactly once
+let bettingHandlersAttached = false;
+
 // =====================================================
 // CHIP RENDERING
 // =====================================================
@@ -61,6 +64,29 @@ function formatChipValue(value) {
  */
 function formatCurrency(amount) {
     return '$' + amount.toLocaleString();
+}
+
+/**
+ * Show bet error message briefly (mirrors roulette's showBetError in
+ * event-handlers.js). Used for the per-spot max guard and, once wired at the
+ * wallet debit seam, for WALLET_ERR_MSG-mapped commitBet() rejections.
+ * @param {string} message
+ */
+function showBetError(message) {
+    let errorEl = document.getElementById('betError');
+    if (!errorEl) {
+        errorEl = document.createElement('div');
+        errorEl.id = 'betError';
+        errorEl.className = 'bet-error-message';
+        document.body.appendChild(errorEl);
+    }
+
+    errorEl.textContent = message;
+    errorEl.classList.add('visible');
+
+    setTimeout(() => {
+        errorEl.classList.remove('visible');
+    }, 2000);
 }
 
 /**
@@ -324,6 +350,13 @@ function isBettingAllowed() {
  * Initialize betting table handlers
  */
 function initBettingTableHandlers() {
+    // The .bet-spot DOM is injected once by loadComponents() and persists, but
+    // this function is called again on every wallet:ready (which re-fires on
+    // re-sign-in). Attach exactly once so click listeners don't stack (which
+    // would place 2x/3x chips per click).
+    if (bettingHandlersAttached) return;
+    bettingHandlersAttached = true;
+
     document.querySelectorAll('.bet-spot').forEach(spot => {
         // Left click to add bet
         spot.addEventListener('click', (e) => {
@@ -332,11 +365,22 @@ function initBettingTableHandlers() {
             const betType = spot.dataset.bet;
             const chipValue = getSelectedChip();
 
+            // Enforce the per-spot max bet limit as a friendly UX guard before
+            // calling addBet (which enforces the same limit authoritatively;
+            // the server caps it too — see BET_TYPE_MAX in state.js).
+            const max = getBetTypeMax(betType);
+            if (getBetAmount(betType) + chipValue > max) {
+                showBetError(`Max ${max.toLocaleString()} per spot`);
+                return;
+            }
+
             if (addBet(betType, chipValue)) {
                 renderAllBetChips();
                 renderHUD();
                 renderChipRack();
                 updateActionButtons();
+            } else {
+                showBetError('Cannot place bet - bankroll limit reached');
             }
         });
 

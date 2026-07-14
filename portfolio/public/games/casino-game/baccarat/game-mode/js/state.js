@@ -90,6 +90,22 @@ function updateBankroll(change) {
 }
 
 /**
+ * Sync the displayed bankroll to the wallet's server-confirmed balance.
+ * The wallet (window.baccaratWallet) is now the source of truth for chips —
+ * this replaces updateBankroll()'s delta math with an absolute value reported
+ * back by commitBet()/settle(), or by the wallet's own subscribe() broadcast
+ * (e.g. a bust-reset triggered from the HUD's own Reset button, not from a
+ * hand this page resolved).
+ * @param {number} balance - Confirmed wallet balance
+ */
+function syncBankrollFromWallet(balance) {
+    if (typeof balance !== 'number') return;
+    gameState.bankroll.current = balance;
+    gameState.bankroll.sessionProfit = gameState.bankroll.current - gameState.bankroll.initial;
+    saveToStorage();
+}
+
+/**
  * Get current bankroll
  * @returns {number} Current bankroll
  */
@@ -292,6 +308,30 @@ function resetBetState() {
 }
 
 /**
+ * Get the per-spot max for a bet type — derived from the ACTIVE stake tier
+ * (window.baccaratTable, set from ?stake= by baccarat-wallet.js). Client UX
+ * guard; the server caps authoritatively per aggregate class. Sum-safe vs the
+ * server's aggregate caps: the two dragon spots split the dragonBonus max
+ * (2 × ½), the ten egalité spots split the egalite max (10 × ⅒). NOTE:
+ * per-betType MIN is intentionally NOT enforced here — players build a spot
+ * up chip by chip starting from 0; a sub-min main bet is caught by the server
+ * at commitBet and surfaced via WALLET_ERR_MSG.
+ * @param {string} betType - Type of bet
+ * @returns {number} Max chips allowed on that spot
+ */
+function getBetTypeMax(betType) {
+    const t = window.baccaratTable;
+    if (!t) return 0; // no stake resolved — betting is gated anyway
+    const bt = t.betTypes;
+    if (betType === 'player' || betType === 'banker') return bt.player.max;
+    if (betType === 'tie') return bt.tie.max;
+    if (betType === 'playerPair' || betType === 'bankerPair') return bt.playerPair.max;
+    if (betType === 'dragonPlayer' || betType === 'dragonBanker') return bt.dragonBonus.max / 2;
+    if (betType.indexOf('egalite') === 0) return bt.egalite.max / 10;
+    return 0;
+}
+
+/**
  * Add a bet
  * @param {string} betType - Type of bet (from BET_TYPES)
  * @param {number} amount - Amount to add
@@ -301,9 +341,20 @@ function addBet(betType, amount) {
     if (amount <= 0) return false;
     if (betState[betType] === undefined) return false;
 
+    // Per-betType max guard (client UX; server also caps authoritatively).
+    if (betState[betType] + amount > getBetTypeMax(betType)) {
+        return false;
+    }
+
     // Check affordability
     const totalAfterBet = getTotalWagered() + amount;
     if (totalAfterBet > getCurrentBankroll()) {
+        return false;
+    }
+
+    // Table-total cap for the active stake tier (client mirror of the
+    // server's over-table-max reject).
+    if (window.baccaratTable && totalAfterBet > window.baccaratTable.maxTotalBet) {
         return false;
     }
 
