@@ -9026,25 +9026,30 @@ THREE.SkeletonUtils = { clone };
     // mixer is never advanced twice in the same frame.
     //
     // Task 10 LOD: a dealer whose root is beyond 10m from app.camera.position
-    // AND is doing nothing but idle mocap (no activePath, no headGesture) has
-    // its mixer.update() batched down to ~15Hz instead of every frame — dt
-    // accumulates in lodAcc and is flushed as one lump update once it crosses
-    // 1/15s (still exactly one mixer.update() call this function, same as
-    // before this task — just not every call advances the mixer). The
-    // instant an IK hand-path or a head-gesture one-shot goes active, this
-    // falls back to full-rate unconditionally (checked fresh every frame, so
-    // a path starting/ending while far immediately reflects in the very next
-    // tick) — chopping a dealing arm or a nod/shake down to 15Hz reads as
-    // visibly broken, per task-10-brief.md's caveat. Any leftover lodAcc is
-    // folded into that frame's dt so no animation time is lost on the
-    // throttled -> full-rate transition. castShadow toggling is independent
-    // of the throttle (a far dealer's shadow is imperceptible whether or not
-    // it happens to be mid-gesture that frame) and only costs a traverse on
-    // the actual band-change frame.
+    // AND is doing nothing but idle mocap has its mixer.update() batched down
+    // to ~15Hz instead of every frame — dt accumulates in lodAcc and is
+    // flushed as one lump update once it crosses 1/15s (still exactly one
+    // mixer.update() call this function, same as before this task — just not
+    // every call advances the mixer). The instant ANY transient action goes
+    // active, this falls back to full-rate unconditionally (checked fresh
+    // every frame, so a path starting/ending while far immediately reflects in
+    // the very next tick) — chopping a dealing arm, a nod/shake, or a wave
+    // down to 15Hz reads as visibly broken, per task-10-brief.md's caveat.
+    // "Purely idle" = tempDriveRefs === 0: every one-shot that needs full-rate
+    // mixer updates (an IK arm path, a procedural head gesture, OR a mocap
+    // one-shot like wave/welcomeSweep) holds an acquireDrive() ref for its
+    // whole duration, so that single count is the complete test. Checking
+    // activePath/headGesture alone would MISS mocap one-shots (they set
+    // neither) and drop a far wave to 15Hz. Any leftover lodAcc is folded into
+    // that frame's dt so no animation time is lost on the throttled ->
+    // full-rate transition. castShadow toggling is independent of the throttle
+    // (a far dealer's shadow is imperceptible whether or not it happens to be
+    // mid-gesture that frame) and only costs a traverse on the actual
+    // band-change frame.
     function driveFrame(dt) {
       group.getWorldPosition(_v1);   // root position only — never bone-animated, safe pre-mixer
       const far = !!(app.camera && _v1.distanceTo(app.camera.position) > 10);
-      if (far && !activePath && !headGesture) {
+      if (far && tempDriveRefs === 0) {
         lodAcc += dt;
         if (lodAcc >= 1 / 15) { mixer.update(lodAcc); lodAcc = 0; }
       } else {
