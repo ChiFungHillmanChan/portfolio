@@ -95,6 +95,7 @@ export function mountQuicknav(nav, { sections, onGo, isLocked }) {
   const items = [
     ...sections.map((s) => ({ id: s.id, label: s.gameName, gated: true })),
     { id: 'cashier', label: 'Cashier', gated: true },
+    { id: 'bar', label: 'Bar', gated: true },
     { id: 'practice', label: 'Practice', gated: false },
   ];
   for (const item of items) {
@@ -359,6 +360,46 @@ export function practiceCard() {
         <a class="btn-primary" href="../index.html#practiceZone">Open Practice</a>
       </div>
     </div>`);
+}
+
+// ---------- the bar: bartender's rotating strategy tip ----------
+export const BAR_TIPS = [
+  { game: 'Blackjack', tip: 'Always split aces and eights — but never split tens or fives.' },
+  { game: 'Blackjack', tip: 'Stand on a hard 17 or higher. The house edge only grows when you push your luck.' },
+  { game: 'Baccarat', tip: 'Banker is the smartest bet — the lowest house edge, even after the 5% commission.' },
+  { game: 'Baccarat', tip: 'Skip the Tie bet. It pays 8:1, but the house edge is a brutal ~14%.' },
+  { game: 'Roulette', tip: 'Single-zero (European) roulette halves the house edge versus double-zero. Always pick single-zero.' },
+  { game: 'Roulette', tip: 'There are no hot or cold numbers — every spin is independent. Bet for fun, not patterns.' },
+  { game: null, tip: 'Set a loss limit before you sit down, and cash out when you hit it. The cage is right there.' },
+  { game: null, tip: 'Chips play at the tables; your wallet stays safe in the cage. Only buy in what you can lose.' },
+];
+
+const BAR_TIP_KEY = 'cg_bar_tip_i';
+// Rotate through the tips, one further each visit, persisted across sessions.
+export function nextBarTip() {
+  let i = -1;
+  try { const v = Number(localStorage.getItem(BAR_TIP_KEY)); if (Number.isFinite(v)) i = v; } catch { /* no storage */ }
+  i = (i + 1) % BAR_TIPS.length;
+  try { localStorage.setItem(BAR_TIP_KEY, String(i)); } catch { /* ignore */ }
+  return BAR_TIPS[i];
+}
+
+export function barCard({ tip, onPractice, onDismiss }) {
+  const t = tip || BAR_TIPS[0];
+  const card = el(`
+    <div class="floor-card" role="dialog" aria-label="The bar — dealer's tip">
+      <h3>THE BAR</h3>
+      <p class="sub">One on the house — here's a tip from the dealer.</p>
+      <p class="row bar-tip">${t.game ? `<strong>${t.game}:</strong> ` : ''}${t.tip}</p>
+      <div class="actions">
+        <button type="button" class="btn-primary" data-act="practice">Try it in Practice</button>
+        <button type="button" class="btn-dim" data-act="cheers">Cheers</button>
+      </div>
+      <p class="muted">Free tips, free practice — no chips required.</p>
+    </div>`);
+  card.querySelector('[data-act="practice"]').addEventListener('click', onPractice);
+  card.querySelector('[data-act="cheers"]').addEventListener('click', onDismiss);
+  return card;
 }
 
 export function unavailableCard() {
