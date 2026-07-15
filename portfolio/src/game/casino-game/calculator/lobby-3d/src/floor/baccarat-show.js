@@ -231,10 +231,26 @@
             (Math.random() - 0.5) * 0.14, BRICK_H / 2 + i * 0.0012, (Math.random() - 0.5) * 0.14));
           trackHook = () => {
             if (!washing || !alive()) { app.offFrame(trackHook); return; }
+            // Hoisted out of the per-brick loop: 2 calls/frame, not 8.
+            const handL = rig.handWorld('L');
+            const handR = rig.handWorld('R');
             bricks.forEach((b, i) => {
-              const handP = rig.handWorld(i % 2 === 0 ? 'L' : 'R');
+              const handP = i % 2 === 0 ? handL : handR;
               if (!handP) return;   // transient miss — leave the brick where it is this frame
-              b.position.lerp(group.worldToLocal(handP).add(offsets[i]), 0.16);
+              // `b`'s parent is app.scene (world space) — handP is already
+              // world-space too (rig.handWorld reads the palm bone's
+              // getWorldPosition). offsets[i] is authored in show-local
+              // (table-facing) meters, the same frame every other position
+              // in this file uses (see toW() above), so it has to be rotated
+              // into world space before landing on a world-space brick: a
+              // worldToLocal with no return trip left the brick parked at
+              // table-LOCAL coordinates while living in a world-space
+              // parent, so it flew off toward whatever unrelated world point
+              // happened to share those numbers. Round-tripping through
+              // localToWorld(worldToLocal(...).add(offset)) rotates+adds the
+              // offset in table space, then converts the result back to
+              // world space, landing a few cm around the CURRENT palm.
+              b.position.lerp(group.localToWorld(group.worldToLocal(handP.clone()).add(offsets[i])), 0.16);
             });
           };
           app.onFrame(trackHook);

@@ -8786,15 +8786,23 @@ THREE.SkeletonUtils = { clone };
 
     // ---- IK path runner (single-hand for Task 7; Task 8 extends to
     // two-hand cycles — the per-hand data model already supports it) ----
-    function resolveWaypointPos(wp, refs, side) {
+    // rotQ: the character root group's WORLD quaternion, resolved ONCE per
+    // playPath() call (see the call site below) and threaded through here —
+    // never re-queried per waypoint. wp.offset is authored in the dealer's
+    // own facing frame (hand-paths.js — e.g. washCards' counter-phase
+    // circles), so it must be rotated into world space before being added.
+    // wp.pos and refs[wp.ref] are already world-space (resolved by the
+    // caller — table setup code converts local table coords via
+    // toW()/group.localToWorld() before ever reaching playPath's refs), so
+    // they must NOT be rotated again — only the offset rotates.
+    function resolveWaypointPos(wp, refs, side, rotQ) {
       if (wp.rest) {
         const ch = armChains[side];
         ch.upper.getWorldPosition(_v1);
-        group.getWorldQuaternion(_q1);
-        return _v1.add(_v2.set(0, -(ch.upperLen + ch.foreLen) * 0.82, 0.10).applyQuaternion(_q1)).clone();
+        return _v1.add(_v2.set(0, -(ch.upperLen + ch.foreLen) * 0.82, 0.10).applyQuaternion(rotQ)).clone();
       }
       const base = wp.pos ? _v1.set(...wp.pos) : _v1.set(...refs[wp.ref]);
-      if (wp.offset) base.add(_v2.set(...wp.offset));
+      if (wp.offset) base.add(_v2.set(...wp.offset).applyQuaternion(rotQ));
       return base.clone();
     }
 
@@ -8842,7 +8850,10 @@ THREE.SkeletonUtils = { clone };
       const dur = ms || path.dur;
       if (app.REDUCED) return Promise.resolve();
       // per-hand: waypoints resolved to world Vector3s up front (refs are
-      // static per call, same semantics as gestures.js)
+      // static per call, same semantics as gestures.js). rotQ resolved once
+      // here (dealers don't rotate mid-path) and reused for every waypoint's
+      // offset in resolveWaypointPos — not re-queried per waypoint/frame.
+      group.getWorldQuaternion(_q1);
       const hands = Object.entries(path.hands).map(([side, wps]) => ({
         side,
         chain: armChains[side],
@@ -8850,7 +8861,7 @@ THREE.SkeletonUtils = { clone };
         wps: wps.map((w) => ({
           at: w.at, ease: C.tween.easings[w.ease || 'inOutCubic'],
           arc: w.arc || 0, event: w.event || null, fired: false,
-          pos: resolveWaypointPos(w, refs, side),
+          pos: resolveWaypointPos(w, refs, side, _q1),
         })),
       })).filter((h) => h.chain);
       if (!hands.length) return Promise.resolve();
@@ -12033,10 +12044,26 @@ THREE.SkeletonUtils = { clone };
             (Math.random() - 0.5) * 0.14, BRICK_H / 2 + i * 0.0012, (Math.random() - 0.5) * 0.14));
           trackHook = () => {
             if (!washing || !alive()) { app.offFrame(trackHook); return; }
+            // Hoisted out of the per-brick loop: 2 calls/frame, not 8.
+            const handL = rig.handWorld('L');
+            const handR = rig.handWorld('R');
             bricks.forEach((b, i) => {
-              const handP = rig.handWorld(i % 2 === 0 ? 'L' : 'R');
+              const handP = i % 2 === 0 ? handL : handR;
               if (!handP) return;   // transient miss — leave the brick where it is this frame
-              b.position.lerp(group.worldToLocal(handP).add(offsets[i]), 0.16);
+              // `b`'s parent is app.scene (world space) — handP is already
+              // world-space too (rig.handWorld reads the palm bone's
+              // getWorldPosition). offsets[i] is authored in show-local
+              // (table-facing) meters, the same frame every other position
+              // in this file uses (see toW() above), so it has to be rotated
+              // into world space before landing on a world-space brick: a
+              // worldToLocal with no return trip left the brick parked at
+              // table-LOCAL coordinates while living in a world-space
+              // parent, so it flew off toward whatever unrelated world point
+              // happened to share those numbers. Round-tripping through
+              // localToWorld(worldToLocal(...).add(offset)) rotates+adds the
+              // offset in table space, then converts the result back to
+              // world space, landing a few cm around the CURRENT palm.
+              b.position.lerp(group.localToWorld(group.worldToLocal(handP.clone()).add(offsets[i])), 0.16);
             });
           };
           app.onFrame(trackHook);

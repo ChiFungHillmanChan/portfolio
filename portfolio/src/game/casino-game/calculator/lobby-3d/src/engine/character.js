@@ -535,15 +535,23 @@
 
     // ---- IK path runner (single-hand for Task 7; Task 8 extends to
     // two-hand cycles — the per-hand data model already supports it) ----
-    function resolveWaypointPos(wp, refs, side) {
+    // rotQ: the character root group's WORLD quaternion, resolved ONCE per
+    // playPath() call (see the call site below) and threaded through here —
+    // never re-queried per waypoint. wp.offset is authored in the dealer's
+    // own facing frame (hand-paths.js — e.g. washCards' counter-phase
+    // circles), so it must be rotated into world space before being added.
+    // wp.pos and refs[wp.ref] are already world-space (resolved by the
+    // caller — table setup code converts local table coords via
+    // toW()/group.localToWorld() before ever reaching playPath's refs), so
+    // they must NOT be rotated again — only the offset rotates.
+    function resolveWaypointPos(wp, refs, side, rotQ) {
       if (wp.rest) {
         const ch = armChains[side];
         ch.upper.getWorldPosition(_v1);
-        group.getWorldQuaternion(_q1);
-        return _v1.add(_v2.set(0, -(ch.upperLen + ch.foreLen) * 0.82, 0.10).applyQuaternion(_q1)).clone();
+        return _v1.add(_v2.set(0, -(ch.upperLen + ch.foreLen) * 0.82, 0.10).applyQuaternion(rotQ)).clone();
       }
       const base = wp.pos ? _v1.set(...wp.pos) : _v1.set(...refs[wp.ref]);
-      if (wp.offset) base.add(_v2.set(...wp.offset));
+      if (wp.offset) base.add(_v2.set(...wp.offset).applyQuaternion(rotQ));
       return base.clone();
     }
 
@@ -591,7 +599,10 @@
       const dur = ms || path.dur;
       if (app.REDUCED) return Promise.resolve();
       // per-hand: waypoints resolved to world Vector3s up front (refs are
-      // static per call, same semantics as gestures.js)
+      // static per call, same semantics as gestures.js). rotQ resolved once
+      // here (dealers don't rotate mid-path) and reused for every waypoint's
+      // offset in resolveWaypointPos — not re-queried per waypoint/frame.
+      group.getWorldQuaternion(_q1);
       const hands = Object.entries(path.hands).map(([side, wps]) => ({
         side,
         chain: armChains[side],
@@ -599,7 +610,7 @@
         wps: wps.map((w) => ({
           at: w.at, ease: C.tween.easings[w.ease || 'inOutCubic'],
           arc: w.arc || 0, event: w.event || null, fired: false,
-          pos: resolveWaypointPos(w, refs, side),
+          pos: resolveWaypointPos(w, refs, side, _q1),
         })),
       })).filter((h) => h.chain);
       if (!hands.length) return Promise.resolve();

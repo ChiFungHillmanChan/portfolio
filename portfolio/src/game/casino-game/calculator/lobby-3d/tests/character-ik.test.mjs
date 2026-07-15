@@ -416,17 +416,26 @@ test('Task 8: facade.handWorld(side) reads bones.hand* once the GLB char is atta
   const handWorldR = glbFacade.handWorld('R');
   assert.ok(handWorldR instanceof CTX_THREE.Vector3, 'GLB branch: handWorld must return a THREE.Vector3');
   assert.ok(['x', 'y', 'z'].every((k) => Number.isFinite(handWorldR[k])), 'GLB branch: handWorld position must be finite');
+  // 'L' branch (review fix): the wash hook reads BOTH hands every frame
+  // (see baccarat-show.js's trackHook), but the original test only ever
+  // exercised 'R' — assert the 'L' GLB branch too.
+  const handWorldL = glbFacade.handWorld('L');
+  assert.ok(handWorldL instanceof CTX_THREE.Vector3, 'GLB branch: handWorld(\'L\') must return a THREE.Vector3');
+  assert.ok(['x', 'y', 'z'].every((k) => Number.isFinite(handWorldL[k])), 'GLB branch: handWorld(\'L\') position must be finite');
 
   // Independently build a charImpl with the SAME seed — the GLB skeleton's
   // rest pose is identical for any seed (only the tint hash differs, see
-  // rig.js/character.js hashSeed), so its handR bone is a ground-truth
-  // position to compare the facade's reading against.
+  // rig.js/character.js hashSeed), so its hand bones are ground-truth
+  // positions to compare the facade's readings against.
   let refImpl;
   CTX_CASINO.character.attach(app, new CTX_THREE.Group(), { seed }, (i) => { refImpl = i; });
   assert.ok(refImpl, 'reference charImpl must build synchronously (preload already ready)');
   const expectedR = refImpl.bones.handR.getWorldPosition(new CTX_THREE.Vector3());
   assert.ok(handWorldR.distanceTo(expectedR) < 1e-4,
     `facade.handWorld('R') must equal the underlying GLB charImpl's handR world position (dist ${handWorldR.distanceTo(expectedR)})`);
+  const expectedL = refImpl.bones.handL.getWorldPosition(new CTX_THREE.Vector3());
+  assert.ok(handWorldL.distanceTo(expectedL) < 1e-4,
+    `facade.handWorld('L') must equal the underlying GLB charImpl's handL world position (dist ${handWorldL.distanceTo(expectedL)})`);
 
   // Procedural branch: no C.app -> makeDealer() never calls
   // character.attach() -> facade stays on the procedural rig -> handWorld
@@ -441,4 +450,49 @@ test('Task 8: facade.handWorld(side) reads bones.hand* once the GLB char is atta
     'procedural handWorld(\'R\') must equal joints.wristR\'s world position exactly');
 
   CTX_CASINO.app = undefined;   // don't leak state into any test that runs after this one
+});
+
+// ---------------------------------------------------------------------
+// Task 8 review Fix 2 — resolveWaypointPos must rotate wp.offset by the
+// character root group's world quaternion before adding it to a world-space
+// ref. hand-paths.js offsets are authored in the dealer's OWN facing frame
+// (e.g. washCards' counter-phase circles); at the π-rotated baccarat/uth
+// pits (src/floor/sections.js: baccarat/uth rows get rotation.y = Math.PI)
+// a raw, unrotated offset lands mirrored on X/Z vs. the authored intent.
+// ---------------------------------------------------------------------
+
+test('Fix 2 — a dealer rotated π (baccarat/uth pit orientation): a waypoint X-offset is rotated with the group\'s world quaternion, landing the hand at ref MINUS the x offset in world space, not ref PLUS the raw offset', async () => {
+  const app = makeTickApp();
+  const root = new CTX_THREE.Group();
+  root.rotation.y = Math.PI;   // baccarat/uth pit orientation (sections.js ROWS.baccarat/uth)
+  let impl;
+  CTX_CASINO.character.attach(app, root, { seed: 'ik-rotated-pi' }, (i) => { impl = i; });
+  assert.ok(impl, 'attach() must synchronously build once preload is ready');
+
+  // reachRefs() already reads impl.group's ACTUAL world quaternion (see its
+  // own rootQ usage above) to aim the shoe/target refs into the dealer's
+  // reach envelope regardless of rotation — reusable as-is here.
+  const { target } = reachRefs(impl);
+
+  // Throwaway path: a single R waypoint at t=1, ref 'target', offset
+  // [0.1, 0, 0] — X-only so a rotation bug (raw-add vs. rotate-then-add) is
+  // unambiguous. Rotating [0.1,0,0] by rotation.y=π negates X (Z stays 0
+  // since the offset has none), so the CORRECT landing spot is
+  // target - [0.1,0,0]; the OLD raw-add bug would have landed at
+  // target + [0.1,0,0] instead — a ~0.2m error, way outside EPS.
+  CTX_CASINO.handPaths.PATHS.__testXOffsetPi = {
+    dur: 300, hands: { R: [{ at: 1.0, ref: 'target', offset: [0.1, 0, 0] }] },
+  };
+  try {
+    mockNow = 0;
+    const p = impl.play(app, '__testXOffsetPi', { refs: { target } });
+    mockNow = 300;
+    app.tick(1 / 60);
+    await p;
+
+    const handPos = impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3());
+    vecClose(handPos, [target[0] - 0.1, target[1], target[2]], 'π-rotated X-offset waypoint');
+  } finally {
+    delete CTX_CASINO.handPaths.PATHS.__testXOffsetPi;
+  }
 });
