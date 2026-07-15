@@ -8241,10 +8241,10 @@ THREE.SkeletonUtils = { clone };
   const C = (globalThis.CASINO ??= {});
 
   // GLB dealer characters: preload once, clone per dealer, mocap idle via
-  // AnimationMixer. The IK action layer lands in a later task; play() for
-  // IK-action names resolves immediately until then (procedural rig has
-  // usually been swapped out by the time tables call them — acceptable
-  // mid-implementation state, NOT shippable until Task 7).
+  // AnimationMixer, with a two-bone IK arm layer (Task 7, see makeImpl's
+  // "IK bone aiming" / "IK path runner" sections) driving hand-path actions
+  // (dealCard, sweepChips, payChips, spinReach, spinFollow, placeDolly,
+  // tapRack) over that mocap base.
   // Bone/clip names below are taken from the real committed
   // assets/manifest.json (Quaternius universal rig, UE-style names, one
   // deviation: 'Head' is capitalized) — confirmed against the actual parsed
@@ -8720,19 +8720,205 @@ THREE.SkeletonUtils = { clone };
     let idleHook = null;
     let idleAction = null;
 
-    // Every per-frame "extra" layer (look-at, head gestures) is additive on
-    // TOP of whatever mixer.update() just wrote to the bones — it must run
-    // in the SAME tick, right after mixer.update(), every single frame,
-    // because AnimationMixer overwrites the bone transforms it drives on
-    // every update() call (so anything applied on an earlier tick, or before
-    // update(), gets silently stomped the very next frame). This is the one
-    // function that is allowed to call mixer.update() — setIdle's own hook
-    // and the temporary driver below both funnel through it so the mixer is
-    // never advanced twice in the same frame.
+    // ---- IK bone aiming (Task 7) ----
+    // For each arm bone captured at build time: restDir = direction from the
+    // bone to its child in the bone's LOCAL space (rest pose). Aiming =
+    // rotate the bone so restDir points along a desired world direction.
+    const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
+    const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+    const armChains = {};
+    for (const side of ['L', 'R']) {
+      const upper = bones['upperArm' + side], fore = bones['foreArm' + side], hand = bones['hand' + side];
+      if (!upper || !fore || !hand) continue;
+      const upperLen = fore.position.length() * upper.getWorldScale(_v1).x;
+      const foreLen = hand.position.length() * fore.getWorldScale(_v1).x;
+      armChains[side] = {
+        upper, fore, hand, upperLen, foreLen,
+        restDirUpper: fore.position.clone().normalize(),   // child dir in upper's local space
+        restDirFore: hand.position.clone().normalize(),
+      };
+    }
+
+    // Rotate `bone` so that `restDir` (local) points at world direction `dirW`.
+    function aimBone(bone, restDir, dirW, weight) {
+      bone.parent.getWorldQuaternion(_q1);
+      _v1.copy(dirW).applyQuaternion(_q2.copy(_q1).invert());   // desired dir, parent-local
+      _q2.setFromUnitVectors(restDir, _v1.normalize());
+      if (weight >= 1) bone.quaternion.copy(_q2);
+      else bone.quaternion.slerp(_q2, weight);
+    }
+
+    // Solve + apply one arm toward a world-space hand target. Pole = down-
+    // and-out from the shoulder in the character's own facing frame — the
+    // ±0.6/-1/0.15 values are the brief's starting point, verified in the
+    // browser (task-7-report.md) to keep the elbow bending naturally
+    // downward-out at every routed path with no torso clipping / turret-arm.
+    function applyArmIK(side, targetW, weight) {
+      const ch = armChains[side];
+      if (!ch || weight <= 0) return;
+      ch.upper.getWorldPosition(_v3);
+      const s = [_v3.x, _v3.y, _v3.z];
+      group.getWorldQuaternion(_q1);
+      _v2.set(side === 'L' ? -0.6 : 0.6, -1, 0.15).applyQuaternion(_q1);
+      const r = C.ik.solveTwoBone({
+        shoulder: s, target: [targetW.x, targetW.y, targetW.z],
+        upperLen: ch.upperLen, foreLen: ch.foreLen, pole: [_v2.x, _v2.y, _v2.z],
+      });
+      aimBone(ch.upper, ch.restDirUpper,
+        _v1.set(r.elbow[0] - s[0], r.elbow[1] - s[1], r.elbow[2] - s[2]), weight);
+      ch.upper.updateWorldMatrix(true, false);
+      ch.fore.getWorldPosition(_v3);
+      aimBone(ch.fore, ch.restDirFore,
+        _v1.set(r.hand[0] - _v3.x, r.hand[1] - _v3.y, r.hand[2] - _v3.z), weight);
+    }
+
+    // ---- IK path runner (single-hand for Task 7; Task 8 extends to
+    // two-hand cycles — the per-hand data model already supports it) ----
+    function resolveWaypointPos(wp, refs, side) {
+      if (wp.rest) {
+        const ch = armChains[side];
+        ch.upper.getWorldPosition(_v1);
+        group.getWorldQuaternion(_q1);
+        return _v1.add(_v2.set(0, -(ch.upperLen + ch.foreLen) * 0.82, 0.10).applyQuaternion(_q1)).clone();
+      }
+      const base = wp.pos ? _v1.set(...wp.pos) : _v1.set(...refs[wp.ref]);
+      if (wp.offset) base.add(_v2.set(...wp.offset));
+      return base.clone();
+    }
+
+    // Table setups sometimes omit a ref that was already supplied by an
+    // immediately-preceding call on the same arm (e.g. roulette-table.js
+    // fires spinReach with a `rim` ref, then spinFollow with `{}` — that call
+    // site is unchanged from the OLD procedural rig, whose spinFollow clip
+    // needs no aim ref at all). `lastRefs` is a per-dealer cache of the last
+    // WORLD position seen for each ref key; playPath resolves against
+    // `{...lastRefs, ...callRefs}` (explicit refs from THIS call always win)
+    // so a hand-path can still resolve without touching the frozen table
+    // files. A ref that has NEVER been supplied (by this or any prior call)
+    // still hits the missing-ref guard below.
+    const lastRefs = {};
+    const warnedMissingRefs = new Set();
+
+    const RAMP = 120;
+    let activePath = null;   // { token, gen, path, hands, on, dur, t0, finish } | null
+
+    function playPath(name, { refs: callRefs = {}, ms, on = {} } = {}) {
+      const path = C.handPaths.PATHS[name];
+      if (!path) return Promise.resolve();
+      const refs = Object.assign({}, lastRefs, callRefs);
+      // Missing-ref guard (Task 8 originally; pulled forward since this task
+      // owns playPath): resolve every waypoint's ref BEFORE touching
+      // tokens.arms — a call that can't resolve must not cancel whatever arm
+      // action is already running, and must never hand a NaN target to the IK
+      // solver. Warn once per path name (not per call) so a repeatedly-wrong
+      // caller can't spam the console.
+      for (const wps of Object.values(path.hands)) {
+        for (const w of wps) {
+          if (w.ref && !refs[w.ref]) {
+            if (!warnedMissingRefs.has(name)) {
+              warnedMissingRefs.add(name);
+              console.warn(`[character] playPath('${name}'): missing ref '${w.ref}', skipping`);
+            }
+            return Promise.resolve();
+          }
+        }
+      }
+      Object.assign(lastRefs, callRefs);
+      const token = ++tokens.arms;   // cancels any running mocap one-shot on 'arms' AND any active path
+      const gen = app.roomGen;
+      const dur = ms || path.dur;
+      if (app.REDUCED) return Promise.resolve();
+      // per-hand: waypoints resolved to world Vector3s up front (refs are
+      // static per call, same semantics as gestures.js)
+      const hands = Object.entries(path.hands).map(([side, wps]) => ({
+        side,
+        chain: armChains[side],
+        start: null,               // filled on first frame (current hand pos)
+        wps: wps.map((w) => ({
+          at: w.at, ease: C.tween.easings[w.ease || 'inOutCubic'],
+          arc: w.arc || 0, event: w.event || null, fired: false,
+          pos: resolveWaypointPos(w, refs, side),
+        })),
+      })).filter((h) => h.chain);
+      if (!hands.length) return Promise.resolve();
+      const release = acquireDrive();   // keep driveFrame ticking even without setIdle()
+      // Some paths deliberately END extended (no final `rest` waypoint) so a
+      // FOLLOW-ON path can pick up from there — e.g. spinReach ends "hand on
+      // the rim" by design (hand-paths.js: "hold there (spinFollow completes
+      // it)"), never returning to neutral itself. The non-cycle ramp-OUT
+      // below exists to blend an arm smoothly back toward mocap as it
+      // reaches a rest pose; applying it to a hold-style path would decay
+      // the IK weight to ~0 at the exact moment it "completes", sagging the
+      // hand off the target right when the next path needs to continue from
+      // it (confirmed in the browser — see task-7-report.md). Ramp-out only
+      // applies when the path both isn't a cycle AND actually ends at rest.
+      const holdAtEnd = !path.cycle && !Object.values(path.hands).every((wps) => wps[wps.length - 1].rest);
+      return new Promise((resolve) => {
+        const entry = {
+          token, gen, path, hands, on, dur, holdAtEnd, t0: performance.now(),
+          finish() {
+            if (activePath === entry) activePath = null;
+            release();
+            resolve();
+          },
+        };
+        activePath = entry;
+      });
+    }
+
+    // Advances the current IK path (if any) one frame. Called from
+    // driveFrame, AFTER mixer.update() — see driveFrame's ordering comment.
+    // Dropping `activePath` (natural completion OR a token/room-gen bump
+    // from armsRest / a competing playPath / a mocap one-shot) is the entire
+    // "release": the `w` ramp handles blend-in and non-cycle blend-out, and
+    // once this stops running, mixer.update() simply keeps overwriting the
+    // arm bones every frame — there is no separate rampOut step (see
+    // task-7-report.md for why the brief's rampOut sketch was dropped).
+    function applyArmPath() {
+      const ap = activePath;
+      if (!ap) return;
+      if (tokens.arms !== ap.token || app.roomGen !== ap.gen) { ap.finish(); return; }
+      const now = performance.now();
+      const t = Math.min(1, (now - ap.t0) / ap.dur);
+      const w = Math.min(1, (now - ap.t0) / RAMP)
+        * (ap.path.cycle || ap.holdAtEnd ? 1 : Math.min(1, ((1 - t) * ap.dur) / RAMP + 0.001));
+      for (const h of ap.hands) {
+        if (!h.start) { h.chain.hand.getWorldPosition(_v3); h.start = _v3.clone(); }
+        // find current segment
+        let prevAt = 0, prevPos = h.start, cur = h.wps[h.wps.length - 1];
+        for (const wp of h.wps) {
+          if (t <= wp.at || wp === h.wps[h.wps.length - 1]) { cur = wp; break; }
+          prevAt = wp.at; prevPos = wp.pos;
+        }
+        const span = Math.max(1e-4, cur.at - prevAt);
+        const st = Math.min(1, (t - prevAt) / span);
+        const e = cur.ease(st);
+        const pos = _v1.copy(prevPos).lerp(cur.pos, e);
+        pos.y += cur.arc * 4 * st * (1 - st);
+        applyArmIK(h.side, pos, w);
+        if (cur.event && !cur.fired && st >= 0.995) {
+          cur.fired = true;
+          h.chain.hand.getWorldPosition(_v2);
+          ap.on[cur.event]?.(_v2.clone());
+        }
+      }
+      if (t >= 1) ap.finish();
+    }
+
+    // Every per-frame "extra" layer (look-at, head gestures, IK arm paths) is
+    // additive on TOP of whatever mixer.update() just wrote to the bones —
+    // it must run in the SAME tick, right after mixer.update(), every single
+    // frame, because AnimationMixer overwrites the bone transforms it drives
+    // on every update() call (so anything applied on an earlier tick, or
+    // before update(), gets silently stomped the very next frame). This is
+    // the one function that is allowed to call mixer.update() — setIdle's own
+    // hook and the temporary driver below both funnel through it so the
+    // mixer is never advanced twice in the same frame.
     function driveFrame(dt) {
       mixer.update(dt);
       applyLook();          // look-at layer, below
       applyHeadGesture();    // procedural nod/headShake layer, below
+      applyArmPath();        // IK arm layer, above — also must run post-mixer
     }
 
     function setIdle() {
@@ -8866,11 +9052,16 @@ THREE.SkeletonUtils = { clone };
     }
 
     // play(): Task 6 adds mocap gestures (wave/welcomeSweep) + procedural
-    // head one-shots (nod/headShake). Task 7 adds IK actions — those still
-    // resolve immediately so awaited sequences never hang mid-implementation.
+    // head one-shots (nod/headShake). Task 7 adds the IK action layer:
+    // armsRest bumps tokens.arms alone (cancels a running mocap one-shot on
+    // 'arms' AND any active IK path — see applyArmPath's token check; bones
+    // fall back to the mixer's pose the very next frame, no separate ramp
+    // needed), and every C.handPaths.PATHS name routes through playPath().
     function play(_a, name, opts = {}) {
       if (MOCAP_MAP[name]) return playMocap(name, opts.ms);
       if (HEAD_GESTURES[name]) return playHeadGesture(name, opts.ms);
+      if (name === 'armsRest') { tokens.arms += 1; return Promise.resolve(); }
+      if (C.handPaths.PATHS[name]) return playPath(name, opts);
       return Promise.resolve();
     }
     // See rig.js's stop() for why 'mouth' also cancels via stopBubble.
