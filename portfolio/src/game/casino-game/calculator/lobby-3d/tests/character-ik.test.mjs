@@ -437,6 +437,21 @@ test('Task 8: facade.handWorld(side) reads bones.hand* once the GLB char is atta
   assert.ok(handWorldL.distanceTo(expectedL) < 1e-4,
     `facade.handWorld('L') must equal the underlying GLB charImpl's handL world position (dist ${handWorldL.distanceTo(expectedL)})`);
 
+  // Task 9: facade.handBone(side) — the roulette dolly parents to this
+  // bone between an IK path's grab/release events. GLB branch must return
+  // an actual Bone (not just a position snapshot) at the same world spot
+  // handWorld already reads — glbFacade and refImpl are independently-built
+  // charImpls (separate GLB clones), so object identity isn't meaningful
+  // here; compare by isBone + world position, same as handWorld above.
+  const boneR = glbFacade.handBone('R');
+  assert.ok(boneR && boneR.isBone, "facade.handBone('R') must return a THREE.Bone");
+  assert.ok(boneR.getWorldPosition(new CTX_THREE.Vector3()).distanceTo(expectedR) < 1e-4,
+    "facade.handBone('R') must sit at the same world position as handWorld('R')");
+  const boneL = glbFacade.handBone('L');
+  assert.ok(boneL && boneL.isBone, "facade.handBone('L') must return a THREE.Bone");
+  assert.ok(boneL.getWorldPosition(new CTX_THREE.Vector3()).distanceTo(expectedL) < 1e-4,
+    "facade.handBone('L') must sit at the same world position as handWorld('L')");
+
   // Procedural branch: no C.app -> makeDealer() never calls
   // character.attach() -> facade stays on the procedural rig -> handWorld
   // must fall through to joints.wrist*.
@@ -448,6 +463,11 @@ test('Task 8: facade.handWorld(side) reads bones.hand* once the GLB char is atta
   const expectedProcR = procFacade.joints.wristR.getWorldPosition(new CTX_THREE.Vector3());
   assert.ok(handWorldProcR.distanceTo(expectedProcR) < 1e-6,
     'procedural handWorld(\'R\') must equal joints.wristR\'s world position exactly');
+  // Task 9: procedural rig has no bone hierarchy -> handBone must return
+  // null (never throw), so placeDolly's ready-check-gated fallback branch
+  // stays reachable.
+  assert.strictEqual(procFacade.handBone('R'), null,
+    'procedural branch: handBone must return null (no GLB bones to hand out)');
 
   CTX_CASINO.app = undefined;   // don't leak state into any test that runs after this one
 });

@@ -69,6 +69,47 @@
       m.parent && m.parent.remove(m);
     };
 
+    // Deal a card FROM the dealer's actual hand at the IK path's `release`
+    // waypoint, instead of flying it from the static shoe point while the
+    // hand is elsewhere. `rigToLocal` lets the rig's aim ref differ slightly
+    // from the card's own landing spot (a couple of the ritual sites aim the
+    // hand at table height while the card itself settles a few mm above the
+    // felt) — defaults to `toLocal` for the common case where they're the
+    // same point.
+    //
+    // Fallback (mandatory, not optional): playPath's promise always
+    // resolves — even when the path is superseded/cancelled mid-flight —
+    // but a superseded path NEVER fires its remaining waypoint events. If
+    // `release` doesn't fire before `rig.play` resolves, the card would
+    // otherwise never leave the shoe. `fired` tracks whether the callback
+    // ran; if not, deal from the static from/to exactly like the
+    // procedural-rig branch below.
+    //
+    // Second fallback layer: when the procedural rig is still active (GLB
+    // failed to load), `play` silently ignores `on` altogether — so that
+    // whole branch is skipped in favour of the original fire-and-forget
+    // rig.play + dealCardTo pairing.
+    const dealVia = (mesh, fromLocal, toLocal, opts = {}, rigToLocal = toLocal) => {
+      const from = toW(fromLocal), to = toW(toLocal), rigTo = toW(rigToLocal);
+      if (C.character.ready === 'ready') {
+        return new Promise((resolve) => {
+          let fired = false;
+          const playDone = rig.play(app, 'dealCard', {
+            refs: { shoe: from, target: rigTo },
+            on: { release: (h) => {
+              fired = true;
+              resolve(C.cards.dealCardTo(app, mesh, [h.x, h.y, h.z], to, opts));
+            } },
+          });
+          playDone.then(() => {
+            if (!fired) resolve(C.cards.dealCardTo(app, mesh, from, to, opts));
+          });
+        });
+      }
+      rig.play(app, 'dealCard', { refs: { shoe: from, target: rigTo } });
+      return C.cards.dealCardTo(app, mesh, from, to, opts);
+    };
+
     async function runRound() {
       const round = C.baccaratRoads.playRound(draw);
       const dealt = [];
@@ -94,9 +135,8 @@
         mesh.rotation.set(-Math.PI / 2, 0, 0);
         mesh.rotateY(Math.PI);                    // face-down
         dealt.push(mesh);
-        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW(slot) } });
         // eslint-disable-next-line no-await-in-loop
-        await C.cards.dealCardTo(app, mesh, toW(L.shoePos), toW(slot), { ms: 430 });
+        await dealVia(mesh, L.shoePos, slot, { ms: 430 });
         // eslint-disable-next-line no-await-in-loop
         await wait(140);
       }
@@ -112,9 +152,8 @@
         const mesh = C.cards.makeCard(cardDef);
         mesh.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
         dealt.push(mesh);
-        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW(slot) } });
         // eslint-disable-next-line no-await-in-loop
-        await C.cards.dealCardTo(app, mesh, toW(L.shoePos), toW(slot), { ms: 430 });
+        await dealVia(mesh, L.shoePos, slot, { ms: 430 });
         // eslint-disable-next-line no-await-in-loop
         await wait(200);
       }
@@ -178,8 +217,7 @@
         const cut = C.cards.makeCutCard();
         cut.rotation.set(-Math.PI / 2, 0, 0.25);
         owned.push(cut);
-        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW([0, feltY, 0.06]) } });
-        await C.cards.dealCardTo(app, cut, toW(L.shoePos), toW([0, feltY + 0.008, 0.06]), { ms: 560 });
+        await dealVia(cut, L.shoePos, [0, feltY + 0.008, 0.06], { ms: 560 }, [0, feltY, 0.06]);
         await wait(1100);
         bac.setShuffling(true);
         await wait(1100);
@@ -394,8 +432,7 @@
         const burn = C.cards.makeCard(draw());
         burn.rotation.set(-Math.PI / 2, 0, 0);
         owned.push(burn);
-        rig.play(app, 'dealCard', { refs: { shoe: toW(L.shoePos), target: toW([0, feltY, -0.14]) } });
-        await C.cards.dealCardTo(app, burn, toW(L.shoePos), toW([0, feltY + 0.008, -0.14]), { ms: 460 });
+        await dealVia(burn, L.shoePos, [0, feltY + 0.008, -0.14], { ms: 460 }, [0, feltY, -0.14]);
         await wait(900);
         await tweenPos(burn, toW(L.discardPos), 360);
         disposeMesh(burn);

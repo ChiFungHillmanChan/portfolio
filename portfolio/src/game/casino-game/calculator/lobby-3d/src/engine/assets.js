@@ -231,6 +231,13 @@
         if (impl.joints?.['wrist' + side]) return impl.joints['wrist' + side].getWorldPosition(v);
         return null;
       },
+      // The actual hand bone object (not just its world position) — Task 9
+      // parents props (e.g. the roulette dolly) to it between an IK path's
+      // grab/release events so they physically ride in the dealer's hand.
+      // Procedural rig has no bone hierarchy for this, so it returns null;
+      // callers gate on C.character.ready === 'ready' before using it, same
+      // as every other GLB-only capability in this facade.
+      handBone: (side) => impl.bones?.['hand' + side] ?? null,
     };
     if (app && !app.REDUCED) {
       C.character?.attach(app, root, opts, (charImpl) => {
