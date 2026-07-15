@@ -9006,6 +9006,15 @@ THREE.SkeletonUtils = { clone };
       }
     }
 
+    // ---- Task 10: distance LOD (mixer throttle + shadow band) ----
+    // lodAcc: dt accumulated while the mixer is being throttled — flushed
+    // into the next mixer.update() call (whether that's another throttled
+    // tick or a full-rate one) so animation TIME never skips or duplicates,
+    // only the number of mixer.update() calls drops. wasFar: last known
+    // distance band, so the castShadow traverse below only runs on the
+    // frame the band actually changes, never every frame.
+    let lodAcc = 0, wasFar = false;
+
     // Every per-frame "extra" layer (look-at, head gestures, IK arm paths) is
     // additive on TOP of whatever mixer.update() just wrote to the bones —
     // it must run in the SAME tick, right after mixer.update(), every single
@@ -9015,8 +9024,37 @@ THREE.SkeletonUtils = { clone };
     // the one function that is allowed to call mixer.update() — setIdle's own
     // hook and the temporary driver below both funnel through it so the
     // mixer is never advanced twice in the same frame.
+    //
+    // Task 10 LOD: a dealer whose root is beyond 10m from app.camera.position
+    // AND is doing nothing but idle mocap (no activePath, no headGesture) has
+    // its mixer.update() batched down to ~15Hz instead of every frame — dt
+    // accumulates in lodAcc and is flushed as one lump update once it crosses
+    // 1/15s (still exactly one mixer.update() call this function, same as
+    // before this task — just not every call advances the mixer). The
+    // instant an IK hand-path or a head-gesture one-shot goes active, this
+    // falls back to full-rate unconditionally (checked fresh every frame, so
+    // a path starting/ending while far immediately reflects in the very next
+    // tick) — chopping a dealing arm or a nod/shake down to 15Hz reads as
+    // visibly broken, per task-10-brief.md's caveat. Any leftover lodAcc is
+    // folded into that frame's dt so no animation time is lost on the
+    // throttled -> full-rate transition. castShadow toggling is independent
+    // of the throttle (a far dealer's shadow is imperceptible whether or not
+    // it happens to be mid-gesture that frame) and only costs a traverse on
+    // the actual band-change frame.
     function driveFrame(dt) {
-      mixer.update(dt);
+      group.getWorldPosition(_v1);   // root position only — never bone-animated, safe pre-mixer
+      const far = !!(app.camera && _v1.distanceTo(app.camera.position) > 10);
+      if (far && !activePath && !headGesture) {
+        lodAcc += dt;
+        if (lodAcc >= 1 / 15) { mixer.update(lodAcc); lodAcc = 0; }
+      } else {
+        mixer.update(lodAcc > 0 ? dt + lodAcc : dt);
+        lodAcc = 0;
+      }
+      if (far !== wasFar) {
+        wasFar = far;
+        group.traverse((o) => { if (o.isMesh || o.isSkinnedMesh) o.castShadow = !far; });
+      }
       applyLook();          // look-at layer, below
       applyHeadGesture();    // procedural nod/headShake layer, below
       applyArmPath();        // IK arm layer, above — also must run post-mixer
