@@ -104,6 +104,8 @@ before(async () => {
 // A tickable app stub: onFrame/offFrame back a real Set (so acquireDrive's
 // temp drive hook — and setIdle's hook, if used — actually get invoked), and
 // `tick(dt)` drives every registered hook synchronously (no real rAF).
+// `hookCount()` exposes the registry size so tests can assert a drive
+// hook's refcount returns to baseline (no leak) after a supersession/hold.
 function makeTickApp() {
   const hooks = new Set();
   const app = {
@@ -113,6 +115,7 @@ function makeTickApp() {
     offFrame(fn) { hooks.delete(fn); },
   };
   app.tick = (dt) => { for (const fn of [...hooks]) fn(dt); };
+  app.hookCount = () => hooks.size;
   return app;
 }
 
@@ -173,26 +176,26 @@ test('dealCard: hand bone reaches the shoe ref (+offset) at the grab waypoint, t
   //   {at:0.72, ref:'target', offset:[0,0.04,0], arc:0.10, event:'release'},
   //   {at:1.00, rest:true},
   // ]
-  // Grab: land just past st=(t-0)/0.28 >= 0.995 while staying <= the 0.28
-  // waypoint boundary (t_frac in (0.2786, 0.28]) — full IK weight (w=1, see
-  // the RAMP math: ramp-in done by 120ms, ramp-out hasn't started yet at
-  // t=0.28 of a 520ms path) and arc=0 for this waypoint, so the hand should
-  // sit almost exactly on shoe+offset.
-  mockNow = 0.2795 * 520;
+  // Finding 2's fix removed the old segment-tail `st>=0.995` firing
+  // mechanism in favour of catch-up semantics keyed on `wp.at <= t` (raw
+  // path fraction, not eased within-segment progress). Land just PAST the
+  // grab waypoint's own `at` (0.28) — t_frac 0.2805 — so `wp.at <= t` holds
+  // and the event fires. Position is sampled a fraction of a waypoint span
+  // into the FOLLOWING segment at that point, but the eased blend at
+  // st~0.001 there is negligible (sub-millimetre) — still comfortably
+  // inside the 1cm epsilon, so the hand still reads as being at shoe+offset.
+  mockNow = 0.2805 * 520;
   app.tick(1 / 60);
   handPos.copy(impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3()));
   vecClose(handPos, [shoe[0], shoe[1] + 0.03, shoe[2]], 'grab waypoint');
-  assert.ok(events.grab, 'grab event must have fired by st>=0.995 into the first segment');
+  assert.ok(events.grab, 'grab event must have fired via wp.at<=t catch-up semantics');
 
-  // Release: land just past st=(t-0.28)/0.44 >= 0.995 while staying <= 0.72
-  // (t_frac in (0.7178, 0.72]) — full weight again (ramp-out hasn't started:
-  // remaining time at t=0.719 is (1-0.719)*520=146ms, still > RAMP's 120ms
-  // window... close to the edge, but comfortably inside the 1cm epsilon).
-  mockNow = 0.719 * 520;
+  // Release: same idea, just past the release waypoint's own `at` (0.72).
+  mockNow = 0.7205 * 520;
   app.tick(1 / 60);
   handPos.copy(impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3()));
   vecClose(handPos, [target[0], target[1] + 0.04, target[2]], 'release waypoint');
-  assert.ok(events.release, 'release event must have fired by st>=0.995 into the second segment');
+  assert.ok(events.release, 'release event must have fired via wp.at<=t catch-up semantics');
 
   // Completion: t=1 -> playPath's promise must resolve (not hang).
   mockNow = 520;
@@ -273,4 +276,121 @@ test('a mocap one-shot (wave) is cleanly cancelled by a subsequent dealCard IK p
   mockNow = 520;
   app.tick(1 / 60);
   await dealPromise;   // dealCard itself must still complete normally
+});
+
+// ---------------------------------------------------------------------
+// Task 7 review fixes (task-7-report.md "Fix: supersession + events +
+// hold"): three Important findings in playPath/applyArmPath/finish.
+// ---------------------------------------------------------------------
+
+test('Finding 1 — a second playPath supersedes an in-flight one: the outgoing promise resolves promptly (not orphaned), the incoming path runs to completion, and the drive hook refcount never leaks (returns to baseline, with no drop-to-zero flicker across the handoff)', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-supersede', app);
+  const { shoe, target } = reachRefs(impl);
+  const baseline = app.hookCount();
+
+  mockNow = 0;
+  const p1 = impl.play(app, 'dealCard', { refs: { shoe, target } });
+  app.tick(1 / 60);   // one tick, mid-flight — p1 is nowhere near t>=1
+  assert.equal(app.hookCount(), baseline + 1, 'first path holds exactly one drive hook');
+
+  let p1Resolved = false;
+  p1.then(() => { p1Resolved = true; });
+
+  // A second dealCard call while the first is still running — this is the
+  // blackjack-live.js:352-429 shape (dealTo fires 'dealCard' every ~420ms
+  // while the IK path itself lasts 520ms).
+  const p2 = impl.play(app, 'dealCard', { refs: { shoe, target } });
+
+  // Finding 1's fix finishes the outgoing entry SYNCHRONOUSLY inside
+  // playPath's install step — p1 must resolve without needing another
+  // frame tick, just a microtask flush.
+  await Promise.resolve();
+  assert.ok(p1Resolved, 'the superseded path\'s promise must resolve promptly, not hang forever');
+  assert.equal(app.hookCount(), baseline + 1,
+    'drive hook count is unchanged across the handoff — the outgoing release() and the incoming acquireDrive() overlap, so the hook is never torn down and re-created');
+
+  mockNow = 520;
+  app.tick(1 / 60);
+  await p2;   // the superseding path must still run to completion normally
+  assert.equal(app.hookCount(), baseline, 'drive hook count returns to baseline once both paths have settled — no leaked hook');
+});
+
+test('Finding 2 — tapRack: a single jank-frame jump straight past BOTH \'contact\' waypoints still fires both events, in order, via wp.at<=t catch-up (not the removed segment-tail 0.995 mechanism)', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-tapRack-catchup', app);
+  const { shoe: rack } = reachRefs(impl);   // tapRack only needs a 'rack' ref — reuse a within-reach point
+
+  const order = [];
+  mockNow = 0;
+  const p = impl.play(app, 'tapRack', {
+    refs: { rack },
+    on: { contact: (v) => { order.push(v.clone()); } },
+  });
+
+  // tapRack: dur 620ms, hands.R = [
+  //   {at:0.30, ref:'rack', offset:[0,0.03,0], ease:'outCubic', event:'contact'},
+  //   {at:0.48, ref:'rack', offset:[0,0.09,0]},
+  //   {at:0.66, ref:'rack', offset:[0,0.03,0], event:'contact'},
+  //   {at:1.00, rest:true},
+  // ]
+  // One single tick with the clock jumped straight from 0 to PAST both
+  // 'contact' waypoints (0.30 and 0.66) in one go — simulating an ~80ms+
+  // jank frame. Under the OLD mechanism this fired ZERO events (t=0.70's
+  // current segment is [0.66, 1.00] -> rest, which carries no `event` at
+  // all — the two contact waypoints behind it were never inspected).
+  // Finding 2's fix walks every waypoint each frame and fires any whose
+  // `at <= t` that hasn't fired yet, so both fire here, in waypoint order.
+  mockNow = 0.70 * 620;
+  app.tick(1 / 5);   // deliberately huge dt — irrelevant to IK timing, which reads mockNow directly
+
+  assert.equal(order.length, 2, 'both contact events must fire despite the single-frame jump over both waypoints');
+  // Both waypoints share the event name 'contact' (hand-paths.js data), so
+  // "in order" is guaranteed by the fix's `for (const wp of h.wps)` array
+  // iteration (waypoint array order), not distinguishable by event name —
+  // documented here rather than re-asserted redundantly.
+
+  mockNow = 620;
+  app.tick(1 / 60);
+  await p;   // path still completes and resolves normally after the jump
+});
+
+test('Finding 3 — spinReach (holdAtEnd, single rim waypoint): the promise resolves at completion, but the arm keeps being driven to the resolved rim target every subsequent frame (a real hold) until a superseding armsRest ends it and releases the drive', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-hold', app);
+  const baseline = app.hookCount();
+  const { target: rim } = reachRefs(impl);   // any within-reach point stands in for the rim ref
+
+  mockNow = 0;
+  let resolved = false;
+  const p = impl.play(app, 'spinReach', { refs: { rim } });
+  p.then(() => { resolved = true; });
+
+  // spinReach: dur 480ms, hands.R = [{at:1.00, ref:'rim', offset:[0,0.02,0], ease:'outCubic', event:'contact'}]
+  // — no rest waypoint, so holdAtEnd is true.
+  mockNow = 480;
+  app.tick(1 / 60);
+  await Promise.resolve();
+  assert.ok(resolved, 'a holdAtEnd path must still resolve its promise at t>=1 — callers must not hang');
+  assert.equal(app.hookCount(), baseline + 1,
+    'the drive hook must still be held during the hold phase — resolving is NOT the same as finishing/releasing');
+
+  const expected = [rim[0], rim[1] + 0.02, rim[2]];
+  for (let i = 0; i < 5; i++) {
+    mockNow += 16;
+    app.tick(1 / 60);
+    const pos = impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3());
+    vecClose(pos, expected, `hold frame ${i}: hand must stay pinned to the rim target, not sag back toward mocap`);
+  }
+
+  // Superseding via armsRest (tokens.arms bump) is one of Finding 3's three
+  // documented ways to end a hold (new playPath install / tokens.arms bump /
+  // roomGen change). armsRest's own promise resolves immediately (it never
+  // ticks a frame itself) — the holding entry's actual finish() happens on
+  // applyArmPath's NEXT tick, via the same token-mismatch check that already
+  // handles cancellation for a non-holding path.
+  await impl.play(app, 'armsRest');
+  mockNow += 16;
+  app.tick(1 / 60);
+  assert.equal(app.hookCount(), baseline, 'the holding entry\'s drive hook is released once armsRest ends the hold — no leak');
 });

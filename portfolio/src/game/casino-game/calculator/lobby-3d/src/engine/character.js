@@ -561,7 +561,8 @@
     const warnedMissingRefs = new Set();
 
     const RAMP = 120;
-    let activePath = null;   // { token, gen, path, hands, on, dur, t0, finish } | null
+    let activePath = null;   // { token, gen, path, hands, on, dur, holdAtEnd, t0, holding,
+                              //   resolved, released, resolveOnce, finish } | null
 
     function playPath(name, { refs: callRefs = {}, ms, on = {} } = {}) {
       const path = C.handPaths.PATHS[name];
@@ -615,12 +616,38 @@
       // applies when the path both isn't a cycle AND actually ends at rest.
       const holdAtEnd = !path.cycle && !Object.values(path.hands).every((wps) => wps[wps.length - 1].rest);
       return new Promise((resolve) => {
+        // Finding 1 (task-7 review): a second playPath while one is still
+        // running — or parked in a holdAtEnd 'holding' state, see Finding 3
+        // below — must not silently clobber `activePath`. Doing so skips the
+        // outgoing entry's own finish() entirely: its promise never
+        // resolves (caller hangs forever) AND its acquireDrive() release is
+        // never called (the drive hook leaks). This fires constantly in
+        // production (e.g. blackjack deals cards every ~420ms while a
+        // dealCard IK path takes 520ms). Fix: finish() the outgoing entry
+        // SYNCHRONOUSLY, right here, before installing the new one.
+        // This is a DIFFERENT trigger than the per-frame token/roomGen check
+        // in applyArmPath below — that check is UNCHANGED and remains the
+        // mechanism for armsRest / a mocap one-shot / a roomGen change
+        // finishing a path that isn't being directly superseded by another
+        // playPath() call.
+        if (activePath) activePath.finish();
         const entry = {
           token, gen, path, hands, on, dur, holdAtEnd, t0: performance.now(),
-          finish() {
-            if (activePath === entry) activePath = null;
-            release();
+          holding: false, resolved: false, released: false,
+          // Resolves the caller's promise exactly once. Split out from
+          // finish() so a holdAtEnd entry can resolve its await at logical
+          // completion (Finding 3) while staying `activePath` — finish()
+          // itself (which also releases the drive + nulls activePath) only
+          // runs later, when something actually ends the hold.
+          resolveOnce() {
+            if (entry.resolved) return;
+            entry.resolved = true;
             resolve();
+          },
+          finish() {
+            entry.resolveOnce();
+            if (activePath === entry) activePath = null;
+            if (!entry.released) { entry.released = true; release(); }
           },
         };
         activePath = entry;
@@ -657,13 +684,57 @@
         const pos = _v1.copy(prevPos).lerp(cur.pos, e);
         pos.y += cur.arc * 4 * st * (1 - st);
         applyArmIK(h.side, pos, w);
-        if (cur.event && !cur.fired && st >= 0.995) {
-          cur.fired = true;
-          h.chain.hand.getWorldPosition(_v2);
-          ap.on[cur.event]?.(_v2.clone());
+        // Finding 2 (task-7 review): firing used to be tied to the CURRENT
+        // segment's eased tail (`cur.event && st>=0.995`) — for a fast
+        // segment (e.g. tapRack's first waypoint) that's a sub-millisecond
+        // window; one jank frame skips it permanently, and Task 9 builds
+        // card-release/wheel-kick timing on these events. Fix: decoupled,
+        // catch-up semantics. Every frame, walk ALL of this hand's
+        // waypoints in array order and fire every not-yet-fired event
+        // waypoint whose `wp.at <= t` — so a big dt that jumps straight past
+        // several waypoints in one tick still fires each of their events,
+        // in waypoint order, using the hand bone's CURRENT world position
+        // (wherever this frame's IK actually placed it — not the waypoint's
+        // own historical target; there's no going back in time for that).
+        // A path that gets superseded/cancelled — via the token/roomGen
+        // check above or via playPath's supersession pre-emption — simply
+        // stops ticking this loop from that point on: its remaining unfired
+        // events stay unfired, by design. Task 9's callers own their
+        // fallbacks for that case.
+        for (const wp of h.wps) {
+          if (wp.event && !wp.fired && wp.at <= t) {
+            wp.fired = true;
+            h.chain.hand.getWorldPosition(_v2);
+            ap.on[wp.event]?.(_v2.clone());
+          }
         }
       }
-      if (t >= 1) ap.finish();
+      if (t >= 1) {
+        if (ap.holdAtEnd) {
+          // Finding 3 (task-7 review): a real hold. At t>=1, ap.finish()
+          // used to run unconditionally — nulling activePath so the very
+          // next mixer.update() would sag the arm back toward the mocap
+          // pose; a caller only ever *saw* a hold because it happened to
+          // chain a follow-on path in the await microtask (e.g. spinReach ->
+          // spinFollow). Fix: resolve the caller's await now (the contract
+          // is "logically complete", callers must not hang) but keep this
+          // entry installed as `activePath`, in a 'holding' state — the
+          // per-hand loop above keeps running every frame at full weight
+          // (the `w` ternary already treats holdAtEnd like a cycle), always
+          // re-resolving to the SAME final waypoint (t stays clamped to 1,
+          // so `cur`/`pos` are constant), so the arm keeps being aimed at
+          // the resolved target instead of sagging. Ends the same way any
+          // other active path ends: the token/roomGen check at the top of
+          // this function (armsRest / a mocap one-shot / a roomGen change)
+          // or playPath's supersession pre-emption — both funnel through
+          // finish(), which is idempotent (resolveOnce + a `released` guard)
+          // so there is no double-resolve/double-release no matter which
+          // fires first or how many times this branch re-runs.
+          if (!ap.holding) { ap.holding = true; ap.resolveOnce(); }
+        } else {
+          ap.finish();
+        }
+      }
     }
 
     // Every per-frame "extra" layer (look-at, head gestures, IK arm paths) is
