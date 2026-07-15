@@ -394,3 +394,51 @@ test('Finding 3 — spinReach (holdAtEnd, single rim waypoint): the promise reso
   app.tick(1 / 60);
   assert.equal(app.hookCount(), baseline, 'the holding entry\'s drive hook is released once armsRest ends the hold — no leak');
 });
+
+// ---------------------------------------------------------------------
+// Task 8: assets.js facade's handWorld(side) — src/floor/baccarat-show.js's
+// wash/riffle read this to track the dealer's real palms. Exercises the
+// REAL C.assets.makeDealer() facade (not character.js directly) against
+// both branches: GLB attached (impl.bones.hand*) and procedural-only
+// (impl.joints.wrist*, when makeDealer never sees a C.app / sees a
+// REDUCED one and so never calls character.attach()).
+// ---------------------------------------------------------------------
+
+test('Task 8: facade.handWorld(side) reads bones.hand* once the GLB char is attached, and joints.wrist* for the procedural-only rig', () => {
+  // GLB branch: makeDealer() reads the global C.app; preload already
+  // resolved 'ready' in before(), so character.attach() swaps the facade's
+  // internal impl to the real GLB charImpl SYNCHRONOUSLY inside makeDealer.
+  const app = makeTickApp();
+  CTX_CASINO.app = app;
+  const seed = 'handworld-glb';
+  const glbRoot = CTX_CASINO.assets.makeDealer({ seed });
+  const glbFacade = glbRoot.userData.rig;
+  const handWorldR = glbFacade.handWorld('R');
+  assert.ok(handWorldR instanceof CTX_THREE.Vector3, 'GLB branch: handWorld must return a THREE.Vector3');
+  assert.ok(['x', 'y', 'z'].every((k) => Number.isFinite(handWorldR[k])), 'GLB branch: handWorld position must be finite');
+
+  // Independently build a charImpl with the SAME seed — the GLB skeleton's
+  // rest pose is identical for any seed (only the tint hash differs, see
+  // rig.js/character.js hashSeed), so its handR bone is a ground-truth
+  // position to compare the facade's reading against.
+  let refImpl;
+  CTX_CASINO.character.attach(app, new CTX_THREE.Group(), { seed }, (i) => { refImpl = i; });
+  assert.ok(refImpl, 'reference charImpl must build synchronously (preload already ready)');
+  const expectedR = refImpl.bones.handR.getWorldPosition(new CTX_THREE.Vector3());
+  assert.ok(handWorldR.distanceTo(expectedR) < 1e-4,
+    `facade.handWorld('R') must equal the underlying GLB charImpl's handR world position (dist ${handWorldR.distanceTo(expectedR)})`);
+
+  // Procedural branch: no C.app -> makeDealer() never calls
+  // character.attach() -> facade stays on the procedural rig -> handWorld
+  // must fall through to joints.wrist*.
+  CTX_CASINO.app = undefined;
+  const procRoot = CTX_CASINO.assets.makeDealer({ seed: 'handworld-proc' });
+  const procFacade = procRoot.userData.rig;
+  const handWorldProcR = procFacade.handWorld('R');
+  assert.ok(handWorldProcR instanceof CTX_THREE.Vector3, 'procedural branch: handWorld must return a THREE.Vector3');
+  const expectedProcR = procFacade.joints.wristR.getWorldPosition(new CTX_THREE.Vector3());
+  assert.ok(handWorldProcR.distanceTo(expectedProcR) < 1e-6,
+    'procedural handWorld(\'R\') must equal joints.wristR\'s world position exactly');
+
+  CTX_CASINO.app = undefined;   // don't leak state into any test that runs after this one
+});

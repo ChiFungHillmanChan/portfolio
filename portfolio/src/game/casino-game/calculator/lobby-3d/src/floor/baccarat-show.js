@@ -171,6 +171,7 @@
       const owned = [];                        // cut + burn cards: dispose fully
       const shared = [];                       // bricks + riffle cards: remove only
       const STACK = [-0.42, feltY, 0.10];      // where the shoe rebuilds
+      let trackHook = null;                    // Task 8: wash's hand-tracking frame hook, if installed
       try {
         // A) the yellow cut card comes out of the shoe
         rig.say(app, '黃牌到 Cut card — 洗牌 shuffle', { ms: 3200 });
@@ -203,11 +204,42 @@
         }
         if (!alive()) return;
 
-        // C) the wash: bricks smear around the felt under circling arms
+        // C) the wash: bricks smear around the felt under circling arms. The
+        // wash target [0, feltY, 0.12] is the same z-center step B's fly-out
+        // and the random smear below already use, so the IK hand-path (which
+        // now orbits around this ref — hand-paths.js washCards) circles the
+        // same patch of felt the cards have always washed over.
+        const WASH_TARGET = toW([0, feltY, 0.12]);
         await Promise.all(bricks.map((b, i) => tweenPos(b,
           toW([(Math.random() - 0.5) * 0.7, feltY + BRICK_H / 2 + i * 0.0012, 0.12 + (Math.random() - 0.5) * 0.3]), 450)));
         let washing = true;
-        const swirls = bricks.map(async (b, i) => {
+        // When the GLB dealer's real palms are available, each brick
+        // (alternating L/R) eases toward that hand's ACTUAL current world
+        // position every frame — washCards' own circular IK path does the
+        // swirling, so the cards genuinely track under the palms instead of
+        // roaming to independent random points. handWorld also resolves for
+        // the procedural rig (joints.wrist* fallback), but that rig's
+        // washCards is a fixed euler clip that never actually reaches the
+        // felt, so tracking it would look wrong — gate on character.ready
+        // so the procedural fallback stays pixel-identical to before.
+        const trackingHands = C.character?.ready === 'ready' && !!rig.handWorld('L') && !!rig.handWorld('R');
+        if (trackingHands) {
+          // fixed per-brick offset from its tracked palm (show-local
+          // meters) — same spread magnitude as the old random smear, now
+          // anchored to a moving hand instead of a random felt point.
+          const offsets = bricks.map((_, i) => new THREE.Vector3(
+            (Math.random() - 0.5) * 0.14, BRICK_H / 2 + i * 0.0012, (Math.random() - 0.5) * 0.14));
+          trackHook = () => {
+            if (!washing || !alive()) { app.offFrame(trackHook); return; }
+            bricks.forEach((b, i) => {
+              const handP = rig.handWorld(i % 2 === 0 ? 'L' : 'R');
+              if (!handP) return;   // transient miss — leave the brick where it is this frame
+              b.position.lerp(group.worldToLocal(handP).add(offsets[i]), 0.16);
+            });
+          };
+          app.onFrame(trackHook);
+        }
+        const swirls = trackingHands ? [] : bricks.map(async (b, i) => {
           while (washing && alive()) {
             // eslint-disable-next-line no-await-in-loop
             await tweenPos(b, toW([
@@ -219,9 +251,10 @@
         });
         for (let k = 0; k < 14 && alive(); k++) {
           // eslint-disable-next-line no-await-in-loop
-          await rig.play(app, 'washCards');
+          await rig.play(app, 'washCards', { refs: { target: WASH_TARGET } });
         }
         washing = false;
+        if (trackHook) { app.offFrame(trackHook); trackHook = null; }
         await Promise.all(swirls);
         await rig.play(app, 'armsRest');
         if (!alive()) return;
@@ -248,12 +281,20 @@
         }
         await wait(400);
         let riffling = true;
+        // riffleT0 marks the start of the CURRENT shuffleRiffle play — the
+        // interleave loop below reads it to time each pass's card drops to
+        // THIS cycle's own L-lift (at:0.45) / R-lift (at:0.70) waypoints
+        // (hand-paths.js), so the cascade lands in sync with the hands
+        // instead of running on its own unrelated clock.
+        let riffleT0 = performance.now();
         const rigLoop = (async () => {
           while (riffling && alive()) {
+            riffleT0 = performance.now();
             // eslint-disable-next-line no-await-in-loop
-            await rig.play(app, 'shuffleRiffle');
+            await rig.play(app, 'shuffleRiffle', { refs: { target: toW(SPOT) } });
           }
         })();
+        const RIFFLE_CYCLE = 1100, L_BEAT = RIFFLE_CYCLE * 0.45, R_BEAT = RIFFLE_CYCLE * 0.70;
         for (let pass = 0; pass < 4 && alive(); pass++) {
           const half = Math.ceil(cards.length / 2);
           // split into two packets…
@@ -269,20 +310,32 @@
           }));
           // eslint-disable-next-line no-await-in-loop
           await wait(240);
-          // …then interleave them back into one pile, alternating packets
+          // …then interleave back into one pile in TWO bursts — left-origin
+          // and right-origin cards (order[] already alternates them) — timed
+          // to this riffle cycle's L-lift and R-lift beats, instead of one
+          // flat per-card cadence. Same per-card position jitter as before.
           const order = [];
           for (let i = 0; i < half; i++) {
             order.push(cards[i]);
             if (half + i < cards.length) order.push(cards[half + i]);
           }
-          for (let i = 0; i < order.length; i++) {
+          const phase = (performance.now() - riffleT0) % RIFFLE_CYCLE;
+          const delayTo = (beat) => ((beat - phase) % RIFFLE_CYCLE + RIFFLE_CYCLE) % RIFFLE_CYCLE;
+          const dropBurst = async (side, beat) => {
+            await wait(delayTo(beat));
+            if (!alive()) return;
             // eslint-disable-next-line no-await-in-loop
-            await tweenPos(order[i], toW([
-              SPOT[0] + (Math.random() - 0.5) * 0.01,
-              feltY + 0.006 + i * 0.0022,
-              SPOT[2] + (Math.random() - 0.5) * 0.01,
-            ]), 160, 'outCubic');
-          }
+            await Promise.all(order
+              .map((cm, i) => ({ cm, i, side: i % 2 === 0 ? 'L' : 'R' }))
+              .filter((d) => d.side === side)
+              .map(({ cm, i }) => tweenPos(cm, toW([
+                SPOT[0] + (Math.random() - 0.5) * 0.01,
+                feltY + 0.006 + i * 0.0022,
+                SPOT[2] + (Math.random() - 0.5) * 0.01,
+              ]), 160, 'outCubic')));
+          };
+          // eslint-disable-next-line no-await-in-loop
+          await Promise.all([dropBurst('L', L_BEAT), dropBurst('R', R_BEAT)]);
           cards = order;
           // eslint-disable-next-line no-await-in-loop
           await wait(320);
@@ -339,6 +392,7 @@
       } finally {
         // normal end: everything is already off the felt (removeMesh/dispose
         // are no-ops on orphans). Early bail: this sweeps up the leftovers.
+        if (trackHook) app.offFrame(trackHook);
         shared.forEach(removeMesh);
         owned.forEach((m) => m.parent && disposeMesh(m));
       }

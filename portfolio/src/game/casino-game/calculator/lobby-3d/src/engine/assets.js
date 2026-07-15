@@ -219,6 +219,18 @@
         return hook;
       },
       get joints() { return impl.joints; },
+      // World-space palm position for the current impl (GLB char exposes
+      // `bones.handL/handR`; procedural rig exposes `joints.wristL/wristR`).
+      // Used by baccarat-show.js (Task 8) + Task 9's prop-release sync.
+      // Returns null when neither impl has the joint (shouldn't happen for
+      // either rig, but keeps callers' existing-authored-fallback branch
+      // reachable without a throw).
+      handWorld: (side) => {
+        const v = new THREE.Vector3();
+        if (impl.bones?.['hand' + side]) return impl.bones['hand' + side].getWorldPosition(v);
+        if (impl.joints?.['wrist' + side]) return impl.joints['wrist' + side].getWorldPosition(v);
+        return null;
+      },
     };
     if (app && !app.REDUCED) {
       C.character?.attach(app, root, opts, (charImpl) => {
