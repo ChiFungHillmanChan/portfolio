@@ -74,7 +74,14 @@ before(async () => {
     navigator: { userAgent: 'node-test-harness' },
     performance: { now: () => mockNow },
     TextDecoder,
+    // v2 GLBs embed PNG textures; GLTFLoader's ImageBitmapLoader path needs
+    // these to exist. The stubs never decode pixels — tests only touch
+    // geometry/bones/tints, never rendered texels.
+    Blob,
+    URL: { createObjectURL: () => 'blob:stub', revokeObjectURL() {} },
+    createImageBitmap: async () => ({ width: 2, height: 2, close() {} }),
   };
+  sandbox.self = sandbox;   // GLTFLoader's loaders reference `self`
   vm.createContext(sandbox);
 
   loadScript(sandbox, 'vendor/three-0.149.0.min.js');

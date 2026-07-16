@@ -124,6 +124,13 @@
       state.template = charGltf.scene;
       state.clips = clipGltf.animations.concat(charGltf.animations);
       if (!state.clips.find((c) => c.name === IDLE_CLIP)) throw new Error(`idle clip missing: ${IDLE_CLIP}`);
+      // v2 GLBs carry the tuxedo-bake landmarks in scene.extras (GLTFLoader
+      // surfaces extras as userData) — without them the tint regions can't
+      // be computed, so treat their absence as a load failure (fallback).
+      const extras = charGltf.scene.userData || {};
+      if (!extras.dealerLandmarks?.skinBase) throw new Error('dealerLandmarks missing from GLB');
+      state.landmarks = extras.dealerLandmarks;
+      state.hairstyles = extras.hairstyles || [];
       state.ready = 'ready';
       state.pending.splice(0).forEach((fn) => fn());
     } catch (err) {
@@ -136,231 +143,56 @@
   function findClip(name) { return state.clips.find((c) => c.name === name) || null; }
 
   // ---------------------------------------------------------------------
-  // Task 5b: dress the dealers. This asset pack's body mesh (material
-  // MI_Superhero_Male) is the ENTIRE figure — face, hands, torso, legs —
-  // in one draw call with no separate clothing geometry (see
-  // task-5-report.md). Task 5 could only tint that one material a flat
-  // skin tone (readable but "naked"). This bakes a per-vertex 'color'
-  // attribute from the mesh's own skinIndex/skinWeight so different bone
-  // regions read as different uniform pieces, with soft blending exactly
-  // where the skin weights blend (collar, cuffs, waistband) instead of a
-  // hard per-triangle cutoff.
-  //
-  // v2 (dealer uniform v2 — see task-5b-report.md "v2" section): the v1
-  // light SHIRT sleeves read as bare skin at distance on this muscled
-  // model. Sleeves now fold into VEST (dark suit-jacket arms + torso as one
-  // fitted suit), and a separate position-gated "bib" override paints a
-  // narrow white shirt-front onto the front-central-chest VEST vertices
-  // (spine_02/spine_03-dominant) so there's still a visible shirt collar
-  // under the bow tie, just no longer bare-looking sleeves.
-  //
-  // Bone -> region bucketing table (all 65 bones in assets/manifest.json;
-  // see task-5b-report.md for the full reasoning):
-  //   SKIN     Head, neck_01, hand_l/r, every finger bone (index/middle/
-  //            ring/pinky/thumb, incl. the _04_leaf tip bones)
-  //   VEST     spine_01/02/03, clavicle_l/r, upperarm_l/r, lowerarm_l/r
-  //            (per-dealer, VESTS — v2: sleeves moved here from SHIRT, see
-  //            above; torso + arms now read as one dark suit)
-  //   TROUSERS pelvis, thigh_l/r, calf_l/r                (fixed dark charcoal)
-  //   SHOES    foot_l/r, ball_l/r, ball_leaf_l/r          (fixed near-black)
-  //   (none of the above) root, and anything unforeseen  -> walk up to the
-  //            nearest ancestor BONE that resolves; if none does (root's
-  //            own parent is the non-bone "Armature" node), default SHIRT
-  //            (the light fabric tone — no bone maps here directly anymore,
-  //            it only survives as this fallback + the bib override color).
-  //            No actual vertices are expected to weight to 'root' — this
-  //            path exists purely as a safety net for asset-pack surprises.
-  const REGION_SHIRT_HEX = '#f2f0e8';     // rig.js's shirt tone; also the bib color (v2)
-  const REGION_TROUSERS_HEX = '#1b1e26';  // dark charcoal
-  const REGION_SHOES_HEX = '#14100c';     // near-black
+  // v2 dressing (docs/superpowers/specs/2026-07-17-dealer-glb-v2-fixes-
+  // design.md). The tuxedo is BAKED into the body base-color texture by
+  // tools/build-dealer-assets.mjs — crisp lapel/placket/cuff/belt lines in
+  // UV space, face + hand skin texels kept from the original pack texture
+  // (so the face has real shading and the eyes mesh has its pupil texture
+  // back). The texture is painted in light NEUTRAL tones; per-dealer variety
+  // comes from a per-vertex tint multiplied with the texture in the shader:
+  //   SKIN     tint = SKINS[seed] / landmarks.skinBase (ratio keeps the
+  //            texture's own face shading, just shifts the tone)
+  //   SUIT     tint = VESTS[seed] (jacket painted ~0.79 gray -> dark suit)
+  //   TROUSERS fixed charcoal (belt texels are near-black already)
+  //   WHITE    shirt/cuffs/buttons/shoes — painted final in the texture
+  // Vertex regions use the SAME bind-pose position rules as the texture
+  // bake — the numbers travel inside the GLB (scene.extras.dealerLandmarks),
+  // so bake and runtime can never drift apart. Boundary triangles blend the
+  // tint across one edge; the crisp texture lines dominate visually.
+  const TROUSERS_TINT = [0.106, 0.118, 0.149];   // #1b1e26
 
-  function regionForBoneName(name) {
-    if (name === 'Head' || name === 'neck_01') return 'SKIN';
-    if (/^hand_[lr]$/.test(name)) return 'SKIN';
-    if (/^(index|middle|ring|pinky|thumb)_(0[1-3]|04_leaf)_[lr]$/.test(name)) return 'SKIN';
-    // v2: sleeves (clavicle/upperarm/lowerarm) now VEST, not a separate light
-    // SHIRT tone — see task-5b-report.md "v2" section for why (bare-skin
-    // read at distance on this model).
-    if (/^(clavicle|upperarm|lowerarm)_[lr]$/.test(name)) return 'VEST';
-    if (/^spine_0[1-3]$/.test(name)) return 'VEST';
-    if (name === 'pelvis' || /^(thigh|calf)_[lr]$/.test(name)) return 'TROUSERS';
-    if (/^(foot|ball)(_leaf)?_[lr]$/.test(name)) return 'SHOES';
-    return null;
-  }
-  function resolveBoneRegion(bone) {
-    let cur = bone;
-    while (cur) {
-      const r = regionForBoneName(cur.name);
-      if (r) return r;
-      cur = cur.isBone ? cur.parent : null;
-    }
-    return 'SHIRT';
-  }
-
-  // Per-vertex "dominant" bone index = the single skinIndex/skinWeight slot
-  // with the highest weight for that vertex (distinct from the full 4-slot
-  // BLEND used elsewhere: the bib override needs a categorical yes/no —
-  // "is this vertex primarily owned by spine_02/03" — not a blended color).
-  function dominantBoneIndexAt(i, iArr, wArr, size) {
-    let bestW = -1, bestIdx = -1;
-    for (let k = 0; k < size; k++) {
-      const w = wArr[i * size + k];
-      if (w > bestW) { bestW = w; bestIdx = iArr[i * size + k]; }
-    }
-    return bestIdx;
-  }
-
-  // Computes the "shirt-front bib" bounding box directly from THIS mesh's
-  // own bind-pose vertex positions (never guessed/hardcoded — see
-  // task-5b-report.md "v2" for the node-probe numbers this was verified
-  // against). All bounds are derived proportionally from real geometry:
-  //   - lateralThresh: 15% of the chest's own lateral (X) extent, measured
-  //     from spine_02/03-dominant vertices only (NOT the full body bbox —
-  //     the full mesh bbox is T-pose arms-out and would give a wildly wrong
-  //     "chest width").
-  //   - forwardZMin: this body mesh is two open shells (front torso surface
-  //     + back/spine surface) with a real gap between them near the
-  //     centerline — confirmed empirically: restricted to |x| < lateralThresh,
-  //     spine_02/03-dominant vertices split cleanly into a back cluster
-  //     (z ~ -0.16..-0.07) and a front cluster (z ~ +0.06..+0.13) with
-  //     nothing in between. forwardZMin is the midpoint of that real gap.
-  //     (Away from the centerline the two shells nearly touch at the sides
-  //     of the ribcage — this is why the gap MUST be measured only within
-  //     the lateral band already established above, not across the whole
-  //     chest.)
-  //   - bibYMin/bibYMax: the vertical band actually spanned by those same
-  //     front-cluster, laterally-centered spine_02/03 vertices, capped above
-  //     by the base of the neck (min Y among neck_01-dominant vertices) —
-  //     i.e. "upper chest, below the neck", matching the brief's wording.
-  //   - Axis convention (+Z forward) is NOT guessed: task-5b-report.md
-  //     already established +Z is forward for this rig (Eyes mesh sits at a
-  //     more positive world Z than the Head bone itself, in this same rest
-  //     pose). This function reuses that same convention for "front".
-  function computeBibBounds(geometry, skeletonBones) {
-    const posAttr = geometry.attributes.position;
-    const skinIndexAttr = geometry.attributes.skinIndex;
-    const skinWeightAttr = geometry.attributes.skinWeight;
-    const pArr = posAttr.array, iArr = skinIndexAttr.array, wArr = skinWeightAttr.array;
-    const size = skinIndexAttr.itemSize;
-    const count = posAttr.count;
-    const spine02Idx = skeletonBones.findIndex((b) => b.name === 'spine_02');
-    const spine03Idx = skeletonBones.findIndex((b) => b.name === 'spine_03');
-    const neckIdx = skeletonBones.findIndex((b) => b.name === 'neck_01');
-    const isChestBone = (idx) => idx === spine02Idx || idx === spine03Idx;
-
-    // Pass 1: chest lateral extent -> lateral threshold.
-    let chestMinX = Infinity, chestMaxX = -Infinity;
-    for (let i = 0; i < count; i++) {
-      if (!isChestBone(dominantBoneIndexAt(i, iArr, wArr, size))) continue;
-      const x = pArr[i * 3];
-      if (x < chestMinX) chestMinX = x;
-      if (x > chestMaxX) chestMaxX = x;
-    }
-    const lateralThresh = 0.15 * (chestMaxX - chestMinX);
-
-    // Pass 2: within that lateral band only, find the real front/back gap.
-    let negMaxZ = -Infinity, posMinZ = Infinity;
-    for (let i = 0; i < count; i++) {
-      if (!isChestBone(dominantBoneIndexAt(i, iArr, wArr, size))) continue;
-      const x = pArr[i * 3];
-      if (Math.abs(x) >= lateralThresh) continue;
-      const z = pArr[i * 3 + 2];
-      if (z < 0) { if (z > negMaxZ) negMaxZ = z; } else if (z < posMinZ) posMinZ = z;
-    }
-    const forwardZMin = (negMaxZ + posMinZ) / 2;
-
-    // Pass 3: vertical band actually spanned by the front-cluster chest
-    // vertices, capped above by the base of the neck.
-    let neckBaseY = Infinity;
-    let bibYMin = Infinity, bibYMax = -Infinity;
-    for (let i = 0; i < count; i++) {
-      const bi = dominantBoneIndexAt(i, iArr, wArr, size);
-      const y = pArr[i * 3 + 1];
-      if (bi === neckIdx && y < neckBaseY) neckBaseY = y;
-      if (isChestBone(bi)) {
-        const x = pArr[i * 3], z = pArr[i * 3 + 2];
-        if (Math.abs(x) < lateralThresh && z > forwardZMin) {
-          if (y < bibYMin) bibYMin = y;
-          if (y > bibYMax) bibYMax = y;
-        }
+  // Tint group of a bind-pose vertex — mirrors classify() in
+  // tools/build-dealer-assets.mjs, collapsed to the four tint groups.
+  function tintGroupAt(x, y, z, L) {
+    const ax = Math.abs(x);
+    if (y > L.collarY || ax > L.wristX) return 'SKIN';
+    if (y < L.ankleY) return 'WHITE';                    // shoes: painted final
+    if (ax > L.cuffX && y > 1.30) return 'WHITE';        // shirt cuffs
+    if (y > L.collarBandY && z > 0 && ax < 0.09) return 'WHITE';  // collar edge
+    if (y < L.beltTop) return 'TROUSERS';                // trousers + belt band
+    if (z > L.frontZMin) {
+      if (y >= L.vBottomY && y <= L.vTopY) {
+        const half = L.vHalfTop * (y - L.vBottomY) / (L.vTopY - L.vBottomY);
+        if (ax < half) return 'WHITE';                   // shirt V
+      } else if (y < L.vBottomY && ax < L.placketHalf) {
+        return 'WHITE';                                  // button placket
       }
     }
-    if (Number.isFinite(neckBaseY)) bibYMax = neckBaseY;
-
-    // Reviewer guard: if the chest-vertex filter found nothing (no
-    // spine_02/03-dominant vertices at all, or none within the lateral
-    // band, or none in the front cluster) any of these bounds comes out
-    // non-finite (±Infinity from the untouched min/max seeds, or NaN from
-    // averaging two of them — see the passes above). A future asset swap
-    // or bone-name/region change could silently hit this on a mesh whose
-    // topology doesn't match this pack's assumptions. Fail loud instead of
-    // baking a garbage (possibly Infinity-sized) box: warn once and return
-    // a sentinel bakeUniformColors() treats as "skip the bib override" —
-    // affected vertices simply keep their normal region-blend (VEST) color.
-    const degenerate = !Number.isFinite(lateralThresh) || !Number.isFinite(forwardZMin)
-      || !Number.isFinite(bibYMin) || !Number.isFinite(bibYMax) || bibYMin > bibYMax;
-    if (degenerate) {
-      console.warn('[character] bib bounds degenerate — skipping bib');
-      return null;
-    }
-
-    return { lateralThresh, forwardZMin, bibYMin, bibYMax, spine02Idx, spine03Idx };
+    return 'SUIT';
   }
 
-  // Bakes a per-vertex 'color' BufferAttribute onto `geometry` (which the
-  // caller MUST already have cloned — see the call site for why) by
-  // blending each region's color across a vertex's (up to 4) skinIndex
-  // bones weighted by skinWeight. `skeletonBones` must be the mesh's own
-  // `skeleton.bones` array — that's the ONLY array whose order matches the
-  // skinIndex values baked into this geometry (NOT assets/manifest.json's
-  // order, which is alphabetical).
-  //
-  // v2: after the normal region blend, a second pass overrides the narrow
-  // front-central-chest patch of VEST (spine_02/03-dominant) vertices to the
-  // light shirt tone — a "shirt-front bib" peeking out under the bow tie,
-  // between what reads as an open dark suit jacket.
-  function bakeUniformColors(geometry, skeletonBones, regionColors) {
-    const skinIndexAttr = geometry.attributes.skinIndex;
-    const skinWeightAttr = geometry.attributes.skinWeight;
-    const posAttr = geometry.attributes.position;
-    const count = posAttr.count;
-    const boneColor = skeletonBones.map((b) => regionColors[resolveBoneRegion(b)]);
-    const iArr = skinIndexAttr.array, wArr = skinWeightAttr.array, pArr = posAttr.array;
-    const size = skinIndexAttr.itemSize; // 4
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      let r = 0, g = 0, b = 0, wSum = 0;
-      for (let k = 0; k < size; k++) {
-        const w = wArr[i * size + k];
-        if (w <= 0) continue;
-        const c = boneColor[iArr[i * size + k]] || regionColors.SHIRT;
-        r += c.r * w; g += c.g * w; b += c.b * w;
-        wSum += w;
-      }
-      if (wSum > 0) { r /= wSum; g /= wSum; b /= wSum; }
-      else { r = regionColors.SHIRT.r; g = regionColors.SHIRT.g; b = regionColors.SHIRT.b; }
-      colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
+  // Bakes the per-dealer tint as a 'color' BufferAttribute. The caller MUST
+  // have cloned the geometry first — SkeletonUtils.clone() shares geometry
+  // across every dealer clone, so writing here without cloning would leak
+  // this dealer's tint onto all the others (see the call site).
+  function bakeTintColors(geometry, L, skinTint, suitTint) {
+    const pos = geometry.attributes.position;
+    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, WHITE: [1, 1, 1] };
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const g = groups[tintGroupAt(pos.getX(i), pos.getY(i), pos.getZ(i), L)];
+      colors[i * 3] = g[0]; colors[i * 3 + 1] = g[1]; colors[i * 3 + 2] = g[2];
     }
-
-    // v2 bib override — see computeBibBounds() for how every threshold here
-    // is derived from this mesh's own bind-pose geometry, not guessed. A
-    // null result means the geometry didn't have the chest landmarks this
-    // needs (see the guard at the end of computeBibBounds()) — skip the
-    // override entirely rather than bake against garbage bounds; affected
-    // vertices simply keep whatever the region blend above already gave them.
-    const bib = computeBibBounds(geometry, skeletonBones);
-    if (bib) {
-      const bibColor = regionColors.SHIRT;
-      for (let i = 0; i < count; i++) {
-        const bi = dominantBoneIndexAt(i, iArr, wArr, size);
-        if (bi !== bib.spine02Idx && bi !== bib.spine03Idx) continue;
-        const x = pArr[i * 3], y = pArr[i * 3 + 1], z = pArr[i * 3 + 2];
-        if (Math.abs(x) < bib.lateralThresh && y >= bib.bibYMin && y <= bib.bibYMax && z > bib.forwardZMin) {
-          colors[i * 3] = bibColor.r; colors[i * 3 + 1] = bibColor.g; colors[i * 3 + 2] = bibColor.b;
-        }
-      }
-    }
-
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
 
@@ -420,56 +252,71 @@
     for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 0x9e3779b1);
     h = Math.abs(h >>> 0);
     const group = THREE.SkeletonUtils.clone(state.template);
-    // Variation: tint + height. Palettes shared with rig.js via C.rigPalettes
-    // (exported from rig.js Step 3). Real materials on this pack (see
-    // assets/manifest.json + task-5-report.md inspection): MI_Hair_1 (the
-    // Eyebrows mesh), MI_Eyes (the Eyes mesh), MI_Superhero_Male (the ENTIRE
-    // body incl. face — this base-character pack has no separate clothing
-    // mesh/material at all, textures were stripped in Task 1).
+    const L = state.landmarks;
     const P = C.rigPalettes;
-    const regionColors = {
-      SKIN: new THREE.Color(P.SKINS[h % P.SKINS.length]),
-      SHIRT: new THREE.Color(REGION_SHIRT_HEX),
-      VEST: new THREE.Color(P.VESTS[(h >>> 6) % P.VESTS.length]),
-      TROUSERS: new THREE.Color(REGION_TROUSERS_HEX),
-      SHOES: new THREE.Color(REGION_SHOES_HEX),
-    };
+    // skin tint = target palette tone / the texture's own average skin tone
+    // (skinBase, measured by the bake tool) — a multiplier that re-tones the
+    // textured face/hands without flattening their shading. Capped at 1.35
+    // so pale palette entries can't blow out highlights.
+    const base = L.skinBase;
+    const skinC = new THREE.Color(P.SKINS[h % P.SKINS.length]);
+    const skinTint = [
+      Math.min(1.35, skinC.r * 255 / base[0]),
+      Math.min(1.35, skinC.g * 255 / base[1]),
+      Math.min(1.35, skinC.b * 255 / base[2]),
+    ];
+    const suitC = new THREE.Color(P.VESTS[(h >>> 6) % P.VESTS.length]);
+    // jacket texels are painted ~0.79 gray — lift the dark vest palette a
+    // touch so the suit reads as fabric, not a silhouette
+    const suitTint = [Math.min(1, suitC.r * 2.2), Math.min(1, suitC.g * 2.2), Math.min(1, suitC.b * 2.2)];
+    const hairColor = P.HAIRS[(h >>> 3) % P.HAIRS.length];
+
+    // hairstyle pick: null = bald stays in rotation; beard composes on top.
+    // Hair meshes ship in the GLB as static Armature children at bind-pose
+    // world position; Object3D.attach() reparents one to the Head bone
+    // keeping that placement, so it rides head animation rigidly (same trick
+    // as the bow tie, minus the manual matrix math).
+    const styles = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buns', 'Hair_Long'];
+    const hairPick = styles[(h >>> 9) % styles.length];
+    const wantBeard = ((h >>> 13) % 10) < 3;
+
     group.traverse((o) => {
       if (!o.isMesh && !o.isSkinnedMesh) return;
       o.castShadow = true; o.receiveShadow = true;
       o.material = o.material.clone();            // per-dealer tinting
+      // match the flat-color lighting of the rest of the lobby: treat texel
+      // values as-is instead of sRGB-decoding them (every other material in
+      // the scene feeds plain hex colors through the same linear pipeline)
+      if (o.material.map) o.material.map.encoding = THREE.LinearEncoding;
       const n = (o.material.name || '').toLowerCase();
-      if (n.includes('eye')) return;                                   // MI_Eyes: leave as-is
-      if (n.includes('hair')) { o.material.color.set(P.HAIRS[(h >>> 3) % P.HAIRS.length]); return; }
-      // MI_Superhero_Male: body + face, one mesh, one material — bake a
-      // bone-weighted vertex-color uniform instead of a flat tint (Task 5b).
-      // SkeletonUtils.clone() shares GEOMETRY across every cloned dealer
-      // (only materials + the scene graph get duplicated per clone) —
-      // baking a per-dealer 'color' attribute onto the shared geometry
-      // would leak across every OTHER dealer sharing this template, so the
-      // geometry must be cloned here first. Cost: BufferGeometry.clone()
-      // duplicates ALL attributes (position/normal/uv/skinIndex/skinWeight),
-      // not just the new color one — roughly 7.3k verts x ~68 bytes/vert
-      // (~0.5MB) of EXTRA memory per dealer clone, on top of what Task 5
-      // already carried. With 5-6 dealers on screen at once that's a low
-      // single-digit MB of duplicated geometry — not free, but small next
-      // to the ~1MB GLB payload itself, and there's no cheaper option in
-      // this three.js version (no per-instance vertex-color mechanism for
-      // SkinnedMesh).
-      if (o.isSkinnedMesh && o.geometry.attributes.skinIndex) {
+      if (n.includes('eye')) return;              // MI_Eyes: pupil texture restored
+      if (n.includes('hair')) { o.material.color.set(hairColor); return; }
+      // MI_Superhero_Male: tuxedo texture × per-vertex tint
+      if (o.isSkinnedMesh && o.geometry.attributes.position) {
         o.geometry = o.geometry.clone();
-        bakeUniformColors(o.geometry, o.skeleton.bones, regionColors);
+        bakeTintColors(o.geometry, L, skinTint, suitTint);
         o.material.vertexColors = true;
-        o.material.color.set('#ffffff');            // show baked colors unmodified
-        return;
+        o.material.color.set('#ffffff');
       }
-      o.material.color.set(regionColors.SKIN);       // fallback safety net (not expected to hit)
     });
-    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
+
     const bones = {};
     for (const [logical, real] of Object.entries(BONE_MAP)) {
       bones[logical] = group.getObjectByName(real);
     }
+
+    // attach the picked hairstyle (and maybe beard) to the Head bone; remove
+    // the rest. updateMatrixWorld first so attach() sees bind-pose matrices.
+    group.updateMatrixWorld(true);
+    for (const name of state.hairstyles) {
+      const node = group.getObjectByName(name);
+      if (!node) continue;
+      const keep = name === hairPick || (name === 'Hair_Beard' && wantBeard);
+      if (keep && bones.head) bones.head.attach(node);
+      else node.parent?.remove(node);
+    }
+
+    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
     const bowTie = attachBowTie(group, bones.neck);
     return { group, bones, mixer: new THREE.AnimationMixer(group), hash: h, bowTie };
   }
