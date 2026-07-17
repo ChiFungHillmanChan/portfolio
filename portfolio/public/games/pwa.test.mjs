@@ -10,6 +10,7 @@ const PUBLIC_DIR = resolve(GAMES_DIR, '..');               // portfolio/public
 const GAMES = [
   { dir: 'card-drawer', manifest: 'manifest.webmanifest' },
   { dir: 'connect4', manifest: 'manifest.webmanifest' },
+  { dir: 'card-game', manifest: 'manifest.json' },
 ];
 
 const read = (...p) => readFileSync(join(...p), 'utf8');
@@ -102,4 +103,19 @@ test('connect4: every self-hosted font file is precached', () => {
   for (const [, f] of css.matchAll(/url\(([^)]+\.woff2)\)/g)) {
     assert.ok(assets.includes(`./fonts/${f}`), `font ${f} missing from ASSETS`);
   }
+});
+
+test('card-game: every runtime chunk is precached (root /assets drift guard)', () => {
+  const html = read(GAMES_DIR, 'card-game', 'index.html');
+  const assets = extractJsonConst(read(GAMES_DIR, 'card-game', 'sw.js'), 'ASSETS');
+  const refs = [...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g)].map((m) => m[1]);
+  assert.ok(refs.length >= 2, 'expected root-absolute /assets refs in card-game index.html');
+  const entryName = refs.find((r) => r.endsWith('.js')).slice('/assets/'.length);
+  const entryJs = read(PUBLIC_DIR, 'assets', entryName);
+  const lazy = [...entryJs.matchAll(/import\("\.\/([^"]+)"\)/g)].map((m) => `/assets/${m[1]}`);
+  assert.ok(lazy.length >= 2, 'expected lazy sync-manager chunks');
+  for (const ref of [...refs, ...lazy]) {
+    assert.ok(assets.includes(ref), `${ref} is loaded at runtime but not in ASSETS`);
+  }
+  assert.ok(!existsSync(join(GAMES_DIR, 'card-game', 'assets')), 'stale card-game/assets/ must stay deleted');
 });
