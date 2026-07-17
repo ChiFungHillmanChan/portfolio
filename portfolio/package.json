@@ -41,7 +41,7 @@
     "mime:wasm": "aws s3 cp build/ s3://$S3_BUCKET/ --recursive --exclude \"*\" --include \"*.wasm\" --content-type \"application/wasm\" --metadata-directive REPLACE",
     "mime:map": "aws s3 cp build/ s3://$S3_BUCKET/ --recursive --exclude \"*\" --include \"*.map\" --content-type \"application/json\" --metadata-directive REPLACE",
     "invalidate": "aws cloudfront create-invalidation --distribution-id $CF_DIST --paths \"/*\"",
-    "deploy": "rm -rf build && npm run build && npm run upload:root:other && npm run upload:static:css && npm run upload:static:js && npm run upload:static:media && npm run upload:index && npm run upload:sw && npm run invalidate",
+    "deploy": "rm -rf build && npm run build && npm run upload:root:other && npm run upload:static:css && npm run upload:static:js && npm run upload:static:media && npm run upload:index && npm run upload:sw && npm run mime:webmanifest && npm run invalidate",
     "check": "aws s3 ls s3://$S3_BUCKET/",
     "check-s3": "aws s3 ls s3://$S3_BUCKET/ --recursive --human-readable"
   },

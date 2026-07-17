@@ -1,21 +1,12 @@
 // Card Drawer — UI + state. Pure logic lives in hand-eval.js (poker) and
 // card-svg.js (rendering); this module only composes them and manages state.
 
-import {
-  createDeck,
-  shuffle,
-  evaluateHand,
-  compareScores,
-  rankLabel,
-  SUITS,
-} from './hand-eval.js';
+import { createDeck, shuffle, evaluateHand, compareScores, countOuts } from './hand-eval.js';
 import { renderCardSVG } from './card-svg.js';
 
 const STORAGE_KEY = 'card-drawer:v1';
 const MAX_PLAYERS = 10;
 const MIN_PLAYERS = 2;
-
-const SUIT_TITLES = { spades: 'Spades', hearts: 'Hearts', diamonds: 'Diamonds', clubs: 'Clubs' };
 
 // Hand-drawn UI glyphs — inline SVG paths, never emoji.
 const ICONS = {
@@ -39,6 +30,20 @@ const ICONS = {
     '<path d="M66 1 L72 7 L66 13 L60 7 Z" fill="currentColor"/></svg>',
 };
 
+// Celebration sparkles — 4-point-star paths generated from fixed positions.
+const SPARKLES =
+  '<svg class="sparkles" viewBox="0 0 320 320" aria-hidden="true">' +
+  ['160 34 18', '58 84 12', '258 72 14', '36 190 10', '284 196 12', '104 262 12', '216 272 14', '160 132 8']
+    .map((s) => {
+      const [x, y, r] = s.split(' ').map(Number);
+      return (
+        `<path d="M ${x} ${y - r} Q ${x} ${y} ${x + r} ${y} Q ${x} ${y} ${x} ${y + r} ` +
+        `Q ${x} ${y} ${x - r} ${y} Q ${x} ${y} ${x} ${y - r} Z" fill="currentColor"/>`
+      );
+    })
+    .join('') +
+  '</svg>';
+
 const esc = (s) =>
   String(s)
     .replace(/&/g, '&amp;')
@@ -61,8 +66,17 @@ function defaultState() {
 
 let state = defaultState();
 // Transient UI state — never persisted.
-const ui = { sheetFor: null, justDrawn: null, justPicked: null, confirmReset: false, resume: null };
+const ui = {
+  sheetFor: null,
+  justDrawn: null,
+  confirmReset: false,
+  resume: null,
+  viewerFor: null,
+  reveal: null,
+  leadGlow: null,
+};
 let resetTimer = null;
+let revealTimer = null;
 
 const nextPlayerId = () => state.players.reduce((m, p) => Math.max(m, p.id), 0) + 1;
 
@@ -202,30 +216,72 @@ function startGame() {
   render();
 }
 
+// Leader snapshot { id, score } or null. Ties keep the earlier player,
+// matching rankedEntries' stable sort.
+function currentLeader() {
+  let best = null;
+  for (const p of state.players) {
+    const hand = evaluateHand(p.cards);
+    if (!hand) continue;
+    if (!best || compareScores(hand.score, best.score) > 0) best = { id: p.id, score: hand.score };
+  }
+  return best;
+}
+
+// A draw "takes the lead" only when someone else genuinely led before and the
+// drawer's new hand STRICTLY beats that score — a tie never celebrates.
+function tookLeadAfterDraw(prevLeader, player) {
+  if (!prevLeader || prevLeader.id === player.id) return false;
+  return compareScores(evaluateHand(player.cards).score, prevLeader.score) > 0;
+}
+
 function dealRandom(playerId) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player || state.deck.length === 0) return;
+  const prevLeader = currentLeader();
   const card = state.deck.pop();
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
+  if (tookLeadAfterDraw(prevLeader, player)) {
+    ui.leadGlow = playerId;
+  }
   ui.justDrawn = { playerId, cardId: card.id };
   saveState();
   render();
   ui.justDrawn = null;
+  ui.leadGlow = null;
 }
 
-function assignCard(playerId, cardId) {
+function pickCard(playerId, index) {
   const player = state.players.find((p) => p.id === playerId);
-  const index = state.deck.findIndex((card) => card.id === cardId);
-  if (!player || index === -1) return;
+  if (!player || index < 0 || index >= state.deck.length) return;
+  const prevLeader = currentLeader();
   const [card] = state.deck.splice(index, 1);
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
-  ui.justPicked = { playerId, cardId: card.id };
+  const tookLead = tookLeadAfterDraw(prevLeader, player);
   ui.sheetFor = null;
+  ui.reveal = { playerId, cardId: card.id, stage: 1, tookLead };
+  clearTimeout(revealTimer);
+  revealTimer = setTimeout(() => {
+    if (ui.reveal && ui.reveal.stage === 1) {
+      ui.reveal.stage = 2;
+      render();
+    }
+  }, 900);
   saveState();
   render();
-  ui.justPicked = null;
+}
+
+function dismissReveal() {
+  clearTimeout(revealTimer);
+  const reveal = ui.reveal;
+  ui.reveal = null;
+  if (reveal && reveal.tookLead) {
+    ui.leadGlow = reveal.playerId;
+  }
+  render();
+  ui.leadGlow = null;
 }
 
 function undoLastDraw() {
@@ -236,6 +292,8 @@ function undoLastDraw() {
   if (player && player.cards.length && player.cards[player.cards.length - 1].id === last.cardId) {
     state.deck.push(player.cards.pop());
   }
+  const viewed = state.players.find((p) => p.id === ui.viewerFor);
+  if (viewed && viewed.cards.length === 0) ui.viewerFor = null;
   saveState();
   render();
 }
@@ -244,6 +302,10 @@ function resetGame() {
   clearTimeout(resetTimer);
   ui.confirmReset = false;
   ui.sheetFor = null;
+  ui.viewerFor = null;
+  clearTimeout(revealTimer);
+  ui.reveal = null;
+  ui.leadGlow = null;
   const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [] }));
   state = { ...defaultState(), includeJokers: state.includeJokers, players: names };
   saveState();
@@ -271,6 +333,14 @@ function rankedEntries() {
       (entry.hand && prev.hand && compareScores(entry.hand.score, prev.hand.score) === 0);
     entry.rank = tied ? prev.rank : i + 1;
   });
+  const leader = entries[0];
+  if (leader && leader.hand && state.deck.length) {
+    for (const entry of entries) {
+      if (entry.rank > 1) {
+        entry.outs = countOuts(entry.player.cards, leader.hand.score, state.deck);
+      }
+    }
+  }
   return entries;
 }
 
@@ -278,16 +348,17 @@ function rankedEntries() {
 
 const app = document.getElementById('app');
 
-function cardWrap(card, { flip = false, pop = false } = {}) {
+function cardWrap(card, { flip = false, group = '' } = {}) {
+  const cls = `card-wrap${group ? ` ${group}` : ''}`;
   if (flip) {
     return (
-      '<span class="card-wrap flip"><span class="flip-inner">' +
+      `<span class="${cls} flip"><span class="flip-inner">` +
       `<span class="flip-face">${renderCardSVG(card)}</span>` +
       `<span class="flip-back">${renderCardSVG('back')}</span>` +
       '</span></span>'
     );
   }
-  return `<span class="card-wrap${pop ? ' pop-in' : ''}">${renderCardSVG(card)}</span>`;
+  return `<span class="${cls}">${renderCardSVG(card)}</span>`;
 }
 
 function setupScreen() {
@@ -358,17 +429,24 @@ function setupScreen() {
 function playerPanel(player) {
   const hand = evaluateHand(player.cards);
   const deckEmpty = state.deck.length === 0;
-  const fan = player.cards.length
-    ? player.cards
-        .map((card) => {
-          const flip = ui.justDrawn && ui.justDrawn.cardId === card.id;
-          const pop = ui.justPicked && ui.justPicked.cardId === card.id;
-          return cardWrap(card, { flip, pop });
-        })
-        .join('')
-    : '<span class="fan-empty">No cards yet</span>';
+  let fan = '<span class="fan-empty">No cards yet</span>';
+  if (player.cards.length) {
+    const bestSet = new Set(hand.bestFive);
+    const spares = player.cards
+      .filter((card) => !bestSet.has(card))
+      .sort((a, b) => (b.rank || 15) - (a.rank || 15));
+    const wrap = (card, group) =>
+      cardWrap(card, { flip: ui.justDrawn && ui.justDrawn.cardId === card.id, group });
+    fan =
+      hand.bestFive.map((card) => wrap(card, 'best')).join('') +
+      spares.map((card) => wrap(card, 'spare')).join('');
+  }
   const actionLabel = state.drawMode === 'random' ? `Deal to ${esc(player.name)}` : `Pick for ${esc(player.name)}`;
   const action = state.drawMode === 'random' ? 'deal' : 'open-sheet';
+  const fanAttrs = player.cards.length
+    ? ` data-action="view-cards" data-player="${player.id}" role="button" tabindex="0"` +
+      ` aria-label="View ${esc(player.name)}'s cards"`
+    : '';
 
   return `
     <section class="panel player-panel">
@@ -376,7 +454,7 @@ function playerPanel(player) {
         <h3 class="player-name">${esc(player.name)}</h3>
         <span class="card-count">${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</span>
       </div>
-      <div class="fan">${fan}</div>
+      <div class="fan"${fanAttrs}>${fan}</div>
       ${hand ? `<p class="hand-label">${esc(hand.name)}</p>` : ''}
       <button class="btn btn-block" data-action="${action}" data-player="${player.id}" ${deckEmpty ? 'disabled' : ''}>
         ${deckEmpty ? 'Deck empty' : actionLabel}
@@ -390,12 +468,21 @@ function leaderboardHTML() {
     .map((entry) => {
       const leader = entry.rank === 1 && entry.hand;
       return `
-      <li class="${leader ? 'lb-leader' : ''}">
+      <li class="${leader ? 'lb-leader' : ''}${ui.leadGlow === entry.player.id ? ' lb-glow' : ''}">
         <span class="lb-rank">${entry.rank}</span>
         ${leader ? `<span class="lb-crown">${ICONS.crown}</span>` : ''}
         <span class="lb-body">
           <span class="lb-name">${esc(entry.player.name)}</span>
           <span class="lb-hand">${entry.hand ? esc(entry.hand.name) : 'No cards yet'}</span>
+          ${
+            entry.outs === undefined
+              ? ''
+              : `<span class="lb-outs">${
+                  entry.outs
+                    ? `${entry.outs} card${entry.outs === 1 ? '' : 's'} can take the lead`
+                    : 'No single card takes the lead'
+                }</span>`
+          }
         </span>
         <span class="lb-count">${entry.player.cards.length}c</span>
       </li>`;
@@ -434,7 +521,7 @@ function dealerBar() {
       </div>
       <div class="mode-toggle" role="group" aria-label="Draw mode">
         <button class="btn" data-action="mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
-        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Manual</button>
+        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Pick</button>
       </div>
     </div>
   `;
@@ -443,56 +530,103 @@ function dealerBar() {
 function sheetHTML() {
   const player = state.players.find((p) => p.id === ui.sheetFor);
   if (!player) return '';
-  const remaining = new Set(state.deck.map((card) => card.id));
-  const full = createDeck({ includeJokers: state.includeJokers });
-
-  const sections = SUITS.map((suit) => {
-    const cards = full
-      .filter((card) => card.suit === suit)
-      .sort((a, b) => b.rank - a.rank)
-      .map((card) => pickButton(card, remaining))
-      .join('');
-    return `<h3 class="sheet-suit">${SUIT_TITLES[suit]}</h3><div class="pick-grid">${cards}</div>`;
-  }).join('');
-
-  const jokers = state.includeJokers
-    ? `<h3 class="sheet-suit">Jokers</h3><div class="pick-grid">${full
-        .filter((card) => card.joker)
-        .map((card) => pickButton(card, remaining))
-        .join('')}</div>`
-    : '';
-
+  const left = state.deck.length;
+  const backs = state.deck
+    .map(
+      (_, i) =>
+        `<button class="pick-card" data-action="pick" data-index="${i}" ` +
+        `aria-label="Face-down card ${i + 1} of ${left}">${renderCardSVG('back')}</button>`
+    )
+    .join('');
   return `
     <div class="sheet-backdrop" data-action="close-sheet"></div>
     <div class="sheet" role="dialog" aria-modal="true" aria-label="Pick a card for ${esc(player.name)}">
       <div class="sheet-head">
         <h2>Pick a card for ${esc(player.name)}
-          <span class="sheet-sub">${state.deck.length} in the deck — drawn cards are dimmed</span>
+          <span class="sheet-sub">${left} face-down card${left === 1 ? '' : 's'} — tap one</span>
         </h2>
         <button class="btn btn-quiet btn-icon" data-action="close-sheet" aria-label="Close">${ICONS.cross}</button>
       </div>
-      <div class="sheet-body">${sections}${jokers}</div>
+      <div class="sheet-body"><div class="pick-grid">${backs}</div></div>
     </div>
   `;
 }
 
-function pickButton(card, remaining) {
-  const taken = !remaining.has(card.id);
-  const name = card.joker ? 'Joker' : `${rankLabel(card.rank)} of ${SUIT_TITLES[card.suit]}`;
-  return (
-    `<button class="pick-card" data-action="pick" data-card="${card.id}" ${taken ? 'disabled' : ''} ` +
-    `aria-label="${taken ? `${name} (already drawn)` : name}">` +
-    renderCardSVG(card, { dimmed: taken }) +
-    '</button>'
-  );
+function viewerHTML() {
+  const player = state.players.find((p) => p.id === ui.viewerFor);
+  if (!player || !player.cards.length) return '';
+  const hand = evaluateHand(player.cards);
+  const bestSet = new Set(hand.bestFive);
+  const spares = player.cards
+    .filter((card) => !bestSet.has(card))
+    .sort((a, b) => (b.rank || 15) - (a.rank || 15));
+  return `
+    <div class="viewer" role="dialog" aria-modal="true" aria-label="${esc(player.name)}'s cards">
+      <div class="viewer-head">
+        <div>
+          <h2 class="viewer-name">${esc(player.name)}</h2>
+          <p class="viewer-sub">${esc(hand.name)} — ${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</p>
+        </div>
+        <button class="btn btn-quiet btn-icon" data-action="close-viewer" aria-label="Close">${ICONS.cross}</button>
+      </div>
+      <div class="viewer-body">
+        <h3 class="viewer-section">Best hand</h3>
+        <div class="viewer-grid viewer-grid-best">${hand.bestFive.map((card) => cardWrap(card)).join('')}</div>
+        ${
+          spares.length
+            ? `<h3 class="viewer-section">Other cards</h3>
+        <div class="viewer-grid">${spares.map((card) => cardWrap(card)).join('')}</div>`
+            : ''
+        }
+        <button class="btn btn-block" data-action="close-viewer">Close</button>
+      </div>
+    </div>
+  `;
+}
+
+function revealOverlayHTML() {
+  const player = state.players.find((p) => p.id === ui.reveal.playerId);
+  if (!player) return '';
+  const card = player.cards.find((c) => c.id === ui.reveal.cardId);
+  if (!card) return '';
+  if (ui.reveal.stage === 1) {
+    return `
+    <div class="overlay reveal-overlay" role="dialog" aria-modal="true"
+         aria-label="${esc(player.name)} draws" data-action="reveal-continue">
+      <div class="reveal-stage">
+        <div class="reveal-card">${cardWrap(card, { flip: true })}</div>
+        <p class="reveal-caption">${esc(player.name)} draws…</p>
+      </div>
+    </div>`;
+  }
+  const hand = evaluateHand(player.cards);
+  return `
+    <div class="overlay reveal-overlay" role="dialog" aria-modal="true"
+         aria-label="${esc(player.name)}'s best hand" data-action="reveal-done">
+      <div class="reveal-stage">
+        ${ui.reveal.tookLead ? SPARKLES : ''}
+        ${ui.reveal.tookLead ? `<div class="lead-ribbon">${ICONS.crown}<span>Takes the lead</span></div>` : ''}
+        <div class="reveal-best">${hand.bestFive
+          .map((c) => cardWrap(c, { group: c.id === ui.reveal.cardId ? 'just' : '' }))
+          .join('')}</div>
+        <p class="reveal-hand">${esc(hand.name)}</p>
+        <p class="reveal-caption">${esc(player.name)}</p>
+        <button class="btn btn-primary" data-action="reveal-done">Done</button>
+      </div>
+    </div>`;
 }
 
 function gameScreen() {
+  const overlayOpen = ui.viewerFor !== null || ui.sheetFor !== null || ui.reveal !== null;
   return `
-    ${dealerBar()}
-    ${state.players.map(playerPanel).join('')}
-    ${leaderboardHTML()}
+    <div class="board"${overlayOpen ? ' inert' : ''}>
+      ${dealerBar()}
+      ${state.players.map(playerPanel).join('')}
+      ${leaderboardHTML()}
+    </div>
+    ${ui.viewerFor !== null ? viewerHTML() : ''}
     ${ui.sheetFor !== null ? sheetHTML() : ''}
+    ${ui.reveal ? revealOverlayHTML() : ''}
   `;
 }
 
@@ -512,8 +646,8 @@ function resumeOverlay() {
 }
 
 function render() {
-  app.innerHTML =
-    (state.phase === 'setup' ? setupScreen() : gameScreen()) + (ui.resume ? resumeOverlay() : '');
+  const screen = state.phase === 'setup' ? setupScreen() : gameScreen();
+  app.innerHTML = ui.resume ? `<div class="board" inert>${screen}</div>${resumeOverlay()}` : screen;
 }
 
 // --- events (delegated once) -----------------------------------------------------
@@ -543,9 +677,27 @@ app.addEventListener('click', (event) => {
       break;
     case 'pick': {
       const sheetPlayer = ui.sheetFor;
-      if (sheetPlayer !== null) assignCard(sheetPlayer, target.dataset.card);
+      if (sheetPlayer !== null) pickCard(sheetPlayer, Number(target.dataset.index));
       break;
     }
+    case 'view-cards':
+      ui.viewerFor = playerId;
+      render();
+      break;
+    case 'close-viewer':
+      ui.viewerFor = null;
+      render();
+      break;
+    case 'reveal-continue':
+      clearTimeout(revealTimer);
+      if (ui.reveal) {
+        ui.reveal.stage = 2;
+        render();
+      }
+      break;
+    case 'reveal-done':
+      dismissReveal();
+      break;
     case 'undo':
       undoLastDraw();
       break;
@@ -610,8 +762,27 @@ app.addEventListener('change', (event) => {
   }
 });
 
+app.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const fan = event.target.closest('[data-action="view-cards"]');
+  if (!fan) return;
+  event.preventDefault();
+  ui.viewerFor = Number(fan.dataset.player);
+  render();
+});
+
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && ui.sheetFor !== null) {
+  if (event.key !== 'Escape') return;
+  if (ui.reveal) {
+    dismissReveal();
+    return;
+  }
+  if (ui.viewerFor !== null) {
+    ui.viewerFor = null;
+    render();
+    return;
+  }
+  if (ui.sheetFor !== null) {
     ui.sheetFor = null;
     render();
   }

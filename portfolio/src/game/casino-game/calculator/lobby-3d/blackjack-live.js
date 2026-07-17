@@ -350,11 +350,25 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     return mesh;
   }
   const dealTo = (mesh, plan, opts = {}) => {
-    // fire-and-forget: the arm mimes the deal while the card flies
-    bj.dealerRig?.play(C.app, 'dealCard', {
-      refs: { shoe: toWorld(bj.shoeLocal), target: toWorld(plan.pos) },
-    });
-    return C.cards.dealCardTo(C.app, mesh, toWorld(bj.shoeLocal), toWorld(plan.pos), { ms: 420, sound: true, ...opts });
+    const from = toWorld(bj.shoeLocal), to = toWorld(plan.pos);
+    const fly = (fromPos) => C.cards.dealCardTo(C.app, mesh, fromPos, to, { ms: 420, sound: true, ...opts });
+    // GLB dealer: the card leaves the HAND on the pitch's release event —
+    // same mandatory-fallback idiom as baccarat-show.js's dealVia (a
+    // superseded path never fires its remaining events, and the procedural
+    // rig ignores `on` entirely, so both fallbacks stay reachable).
+    if (C.character?.ready === 'ready' && bj.dealerRig) {
+      return new Promise((resolve) => {
+        let fired = false;
+        const playDone = bj.dealerRig.play(C.app, 'dealCard', {
+          refs: { shoe: from, target: to },
+          on: { release: (h) => { fired = true; resolve(fly([h.x, h.y, h.z])); } },
+        });
+        playDone.then(() => { if (!fired) resolve(fly(from)); });
+      });
+    }
+    // procedural rig: arm mimes while the card flies straight from the shoe
+    bj.dealerRig?.play(C.app, 'dealCard', { refs: { shoe: from, target: to } });
+    return fly(from);
   };
 
   function actionBar() {
@@ -624,6 +638,10 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
       else if (outcome === 'win') bj.dealerRig?.play(C.app, 'payChips', { refs: { rack: toWorld(bj.trayLocal), target: spotW } });
       return stacks.settle(spotId, outcome, Math.max(0, ret - h.stake));
     });
+    // dealCard v2 chains end hovering at the shoe (no rest key). sweep/pay
+    // finish at rest themselves; an all-push round plays neither, so drop
+    // the arm explicitly or the dealer holds the shoe hover forever.
+    if (hands.every((h, i) => rets[i] === h.stake)) bj.dealerRig?.play(C.app, 'armsRest');
 
     const title = settleTitle(hands, rets, dealerCards);
     const sub = payoutFailed

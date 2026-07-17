@@ -15,8 +15,11 @@ export const SRC_ORDER = [
   'src/engine/cards.js',
   'src/engine/chips3d.js',
   'src/engine/rig.js',
+  'src/engine/character.js',
   'src/logic/layouts.js',
   'src/logic/gestures.js',
+  'src/logic/ik.js',
+  'src/logic/hand-paths.js',
   'src/logic/music-plan.js',
   'src/logic/roulette-cover.js',
   'src/logic/baccarat-roads.js',
@@ -41,7 +44,8 @@ const guard = (name, code) => {
 };
 
 export function build() {
-  const vendor = guard('vendor', read('vendor/three-0.149.0.min.js'));
+  const vendor = guard('vendor', read('vendor/three-0.149.0.min.js'))
+    + '\n' + guard('three-addons', read('vendor/three-addons-0.149.js'));
   const css = read('src/style.css');
   const app = SRC_ORDER.map((p) => `\n// ===== ${p} =====\n` + guard(p, read(p))).join('\n');
   let html = read('template.html');

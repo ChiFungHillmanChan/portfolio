@@ -17,4 +17,6 @@ test('build produces the lobby index.html', async () => {
   assert.ok(!html.includes('/*__CSS__*/'), 'css marker replaced');
   assert.ok(!html.includes('//__APP__'), 'app marker replaced');
   assert.ok(!/src\s*=\s*"http/.test(html), 'no external resources');
+  assert.ok(html.includes('THREE.GLTFLoader = GLTFLoader'), 'wrapped GLTFLoader inlined');
+  assert.ok(html.includes('THREE.SkeletonUtils'), 'wrapped SkeletonUtils inlined');
 });

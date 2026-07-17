@@ -631,7 +631,7 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed });
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
       dealer.position.set(0.2, 0, -1.15);
       g.add(dealer);
       dealer.userData.idle(C.app);
@@ -684,8 +684,12 @@
     const RACK_LOCAL = [-1.44, FELT_Y + 0.12, 0];
     const RIM_LOCAL = [-1.72, 1.02, 0];
     const toW = (p) => g.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
-    const rigPlay = (name, refs, ms) =>
-      dealerRig ? dealerRig.play(C.app, name, { refs, ms }) : Promise.resolve();
+    // Third arg is an options bag (ms / on) forwarded straight through to
+    // dealerRig.play — Task 9 needs `on: { release/contact }` threaded here
+    // for the wheel-kick and chip-contact sync; previously this only ever
+    // forwarded `ms`, silently dropping any `on` a caller passed.
+    const rigPlay = (name, refs, opts = {}) =>
+      dealerRig ? dealerRig.play(C.app, name, { refs, ...opts }) : Promise.resolve();
 
     // dolly: gold cylinder marker, parked (hidden) at the rack
     const dolly = new THREE.Group();
@@ -712,20 +716,51 @@
     g.userData.placeDolly = async (n) => {
       const [x, z] = C.layouts.rouletteSpotPos('n' + n);
       dolly.visible = true;
-      rigPlay('placeDolly', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
-      await glideLocal(dolly, [x, FELT_Y + 0.02, z], 750);
+      // NOTE: `dealer` (the const from the `if (opts.withDealer)` block
+      // above) is block-scoped and NOT visible here — `dealerRig` (the
+      // facade itself, hoisted to this function's scope) is the equivalent
+      // handle and is what every other call site in this file already uses.
+      if (dealerRig && C.character.ready === 'ready') {
+        let released = false;
+        await dealerRig.play(C.app, 'placeDolly', {
+          refs: { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) },
+          on: {
+            // Object3D.attach() preserves world transform on its own — no
+            // need to snapshot the dolly's world position first.
+            grab: () => { dealerRig.handBone?.('R')?.attach(dolly); },
+            release: () => { released = true; g.attach(dolly); dolly.position.set(x, FELT_Y + 0.02, z); },
+          },
+        });
+        // Safety net: playPath's promise always resolves (supersession
+        // included), but a path cancelled mid-flight NEVER fires its
+        // remaining waypoint events — if `release` never fired, the dolly
+        // is still parented to the hand bone. Reattach to the table so
+        // liftDolly (which always assumes the dolly hangs off `g`) keeps
+        // working and the prop is never left orphaned on a detached hand.
+        if (dolly.parent !== g) { g.attach(dolly); dolly.position.set(x, FELT_Y + 0.02, z); }
+      } else {
+        rigPlay('placeDolly', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
+        await glideLocal(dolly, [x, FELT_Y + 0.02, z], 750);
+      }
     };
     g.userData.liftDolly = async () => {
       await glideLocal(dolly, RACK_LOCAL, 500);
       dolly.visible = false;
     };
 
-    // Fly a chip-stack group along a small arc, then run onDone.
+    // Fly a chip-stack group along a small arc, then run onDone. Landing
+    // ends with a brief settle wobble (scale pulse 1 -> 1.06 -> 1, 120ms
+    // total) so a stack reads as settling under its own weight rather than
+    // just stopping dead — skipped in REDUCED along with the rest of the arc.
     const flyStack = (stack, to, ms, onDone) => {
       if (C.app.REDUCED) { stack.position.set(to[0], to[1], to[2]); onDone && onDone(); return; }
       C.tween.to(stack.position, { y: stack.position.y + 0.16 }, ms * 0.3, 'outCubic', () => {
         C.tween.to(stack.position, { x: to[0], z: to[2] }, ms * 0.45, 'inOutCubic', () => {
-          C.tween.to(stack.position, { y: to[1] }, ms * 0.25, 'outCubic', onDone);
+          C.tween.to(stack.position, { y: to[1] }, ms * 0.25, 'outCubic', () => {
+            C.tween.to(stack.scale, { x: 1.06, y: 1.06, z: 1.06 }, 60, 'outCubic', () => {
+              C.tween.to(stack.scale, { x: 1, y: 1, z: 1 }, 60, 'inOutCubic', onDone);
+            });
+          });
         });
       });
     };
@@ -737,18 +772,35 @@
       (s) => Math.hypot(s.position.x - x, s.position.z - z) < 0.02);
 
     g.userData.settleBets = async ({ losingSpots = [], winningSpots = [] }) => {
-      // sweep losing stacks into the rack, dealer raking alongside
+      // sweep losing stacks into the rack, dealer raking alongside — each
+      // sweep is a deferred thunk so the setTimeout stagger only starts once
+      // the rake actually touches the felt (the `contact` waypoint), not at
+      // call time. Fallback: playPath's promise always resolves even when
+      // superseded/cancelled, but a cancelled path never fires `contact` —
+      // if that happens (or the procedural rig, which ignores `on`
+      // entirely), start the sweep immediately so losing chips are never
+      // stranded on the felt.
       if (losingSpots.length) {
         const first = losingSpots[0];
-        rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) });
+        const sweeps = losingSpots.map(({ x, z }, i) => () => new Promise((res) => {
+          const stack = stackNear(x, z);
+          if (!stack) return res();
+          setTimeout(() => flyStack(stack, RACK_LOCAL, 420, () => { disposeStack(stack); res(); }),
+            C.app.REDUCED ? 0 : i * 90);
+        }));
+        let sweepsDone = null;
+        const startSweeps = () => { sweepsDone = Promise.all(sweeps.map((fn) => fn())); };
+        if (C.character.ready === 'ready') {
+          let fired = false;
+          await rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) },
+            { on: { contact: () => { fired = true; startSweeps(); } } });
+          if (!fired) startSweeps();
+        } else {
+          rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) });
+          startSweeps();
+        }
+        await sweepsDone;
       }
-      const sweeps = losingSpots.map(({ x, z }, i) => new Promise((res) => {
-        const stack = stackNear(x, z);
-        if (!stack) return res();
-        setTimeout(() => flyStack(stack, RACK_LOCAL, 420, () => { disposeStack(stack); res(); }),
-          C.app.REDUCED ? 0 : i * 90);
-      }));
-      await Promise.all(sweeps);
       // pay each winning spot from the rack
       for (let i = 0; i < winningSpots.length; i++) {
         const { x, z, amount, factor } = winningSpots[i];
@@ -781,11 +833,23 @@
       g.remove(stk);
     };
 
-    // wrap spinTo: the dealer reaches to the rim, flicks, wheel spins
+    // wrap spinTo: the dealer reaches to the rim, flicks, wheel spins — the
+    // wheel now starts exactly on the flick's `release` waypoint instead of
+    // the instant spinFollow is fired. Fallback: a 400ms race against the
+    // release event covers both the procedural rig (ignores `on` entirely)
+    // and a spinFollow cancelled mid-flight (e.g. a room switch), so the
+    // wheel can never hang waiting for an event that will never fire.
     const rawSpinTo = wheel.spinTo;
     g.userData.spinTo = async (pocket) => {
       await rigPlay('spinReach', { rim: toW(RIM_LOCAL) });
-      rigPlay('spinFollow', {});
+      if (C.character.ready === 'ready') {
+        let kicked = null;
+        const kick = new Promise((res) => { kicked = res; });
+        rigPlay('spinFollow', { rim: toW(RIM_LOCAL) }, { on: { release: () => kicked() } });
+        await Promise.race([kick, new Promise((r) => setTimeout(r, 400))]);
+      } else {
+        rigPlay('spinFollow', {});
+      }
       return rawSpinTo(pocket);
     };
 

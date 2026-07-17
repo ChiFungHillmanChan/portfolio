@@ -204,32 +204,118 @@ export function handName(score) {
   }
 }
 
+// How many cards in `deck` would, drawn as one more card, make this pile
+// strictly beat `leaderScore`. O(deck) evaluateHand calls; only a pile already
+// holding both jokers is expensive (~54 x 2704 plain evals worst case).
+export function countOuts(playerCards, leaderScore, deck) {
+  let outs = 0;
+  for (const card of deck) {
+    const hand = evaluateHand([...playerCards, card]);
+    if (compareScores(hand.score, leaderScore) > 0) outs++;
+  }
+  return outs;
+}
+
+// Given concrete cards (no jokers; wild substitutes allowed as tagged copies)
+// and the score evaluatePlain produced for them, pick the actual card objects
+// that form the hand, in score-priority order. Each object is used at most
+// once. Deterministic: naturals listed before wild extras are preferred.
+function selectFive(cards, score) {
+  const [category, ...ranks] = score;
+  const pool = cards.slice();
+  const takeByRank = (rank, howMany, suit = null) => {
+    const out = [];
+    for (let i = 0; i < pool.length && out.length < howMany; i++) {
+      if (pool[i].rank === rank && (suit === null || pool[i].suit === suit)) {
+        out.push(pool[i]);
+        pool.splice(i, 1);
+        i--;
+      }
+    }
+    return out;
+  };
+  const straightRanks = (high) =>
+    high === 5 ? [5, 4, 3, 2, 14] : [high, high - 1, high - 2, high - 3, high - 4];
+
+  switch (category) {
+    case CATEGORY.FIVE_OF_A_KIND:
+      return takeByRank(ranks[0], 5);
+    case CATEGORY.ROYAL_FLUSH:
+    case CATEGORY.STRAIGHT_FLUSH: {
+      const run = straightRanks(category === CATEGORY.ROYAL_FLUSH ? 14 : ranks[0]);
+      const suit = SUITS.find((s) =>
+        run.every((r) => pool.some((card) => card.suit === s && card.rank === r))
+      );
+      return run.map((r) => takeByRank(r, 1, suit)[0]);
+    }
+    case CATEGORY.QUADS:
+      return [...takeByRank(ranks[0], 4), ...ranks.slice(1).map((r) => takeByRank(r, 1)[0])];
+    case CATEGORY.FULL_HOUSE:
+      return [...takeByRank(ranks[0], 3), ...takeByRank(ranks[1], 2)];
+    case CATEGORY.FLUSH: {
+      const suit = SUITS.find((s) => {
+        const bag = new Map();
+        for (const card of pool) {
+          if (card.suit !== s) continue;
+          bag.set(card.rank, (bag.get(card.rank) || 0) + 1);
+        }
+        const need = new Map();
+        for (const r of ranks) need.set(r, (need.get(r) || 0) + 1);
+        return [...need].every(([r, n]) => (bag.get(r) || 0) >= n);
+      });
+      return ranks.map((r) => takeByRank(r, 1, suit)[0]);
+    }
+    case CATEGORY.STRAIGHT:
+      return straightRanks(ranks[0]).map((r) => takeByRank(r, 1)[0]);
+    case CATEGORY.TRIPS:
+      return [...takeByRank(ranks[0], 3), ...ranks.slice(1).map((r) => takeByRank(r, 1)[0])];
+    case CATEGORY.TWO_PAIR:
+      return [
+        ...takeByRank(ranks[0], 2),
+        ...takeByRank(ranks[1], 2),
+        ...ranks.slice(2).map((r) => takeByRank(r, 1)[0]),
+      ];
+    case CATEGORY.PAIR:
+      return [...takeByRank(ranks[0], 2), ...ranks.slice(1).map((r) => takeByRank(r, 1)[0])];
+    default:
+      return ranks.map((r) => takeByRank(r, 1)[0]);
+  }
+}
+
 // Best 5-card hand of a pile that may contain wild jokers. Each wild is
 // brute-forced over all 52 concrete card values (duplicates allowed); with a
-// single deck W <= 2, so at most 52x52 = 2704 plain evaluations.
+// single deck W <= 2, so at most 52x52 = 2704 plain evaluations. The brute
+// force is score-only; card selection runs once, on the winning assignment.
 export function evaluateHand(cards) {
   if (!cards || cards.length === 0) return null;
   const naturals = cards.filter((card) => !card.joker);
-  const wildCount = cards.length - naturals.length;
+  const wilds = cards.filter((card) => card.joker);
 
   let best = null;
-  const consider = (score) => {
-    if (!best || compareScores(score, best) > 0) best = score;
+  let bestExtras = [];
+  const consider = (score, extras) => {
+    if (!best || compareScores(score, best) > 0) {
+      best = score;
+      bestExtras = extras.slice();
+    }
   };
   const assign = (wildsLeft, extras) => {
     if (wildsLeft === 0) {
-      consider(evaluatePlain(naturals.concat(extras)));
+      consider(evaluatePlain(naturals.concat(extras)), extras);
       return;
     }
     for (const suit of SUITS) {
       for (const rank of RANKS) {
-        extras.push({ rank, suit });
+        extras.push({ rank, suit, wildOf: wilds[extras.length] });
         assign(wildsLeft - 1, extras);
         extras.pop();
       }
     }
   };
-  assign(wildCount, []);
+  assign(wilds.length, []);
 
-  return { category: best[0], score: best, name: handName(best) };
+  const bestFive = selectFive(naturals.concat(bestExtras), best).map(
+    (card) => card.wildOf || card
+  );
+  return { category: best[0], score: best, name: handName(best), bestFive };
 }

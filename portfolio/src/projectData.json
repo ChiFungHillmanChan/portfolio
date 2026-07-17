@@ -190,6 +190,25 @@
         ]
     },
     {
+        "id": 18,
+        "title": "Card Drawer",
+        "shortDescription": "A pass-and-play card dealer and poker-hand scorepad for 2–10 players, with hand-drawn SVG cards, optional jokers, and automatic poker hand ranking.",
+        "fullDescription": "Card Drawer replaces a physical deck for tabletop play: pass one device around and each player draws from a shared, shuffled 52-card deck, with optional jokers. It supports 2–10 players in two modes — Random, where the app deals a card, and Manual, where players pick a specific card from a suit sheet. Every player's cards are evaluated as poker hands and the table is ranked automatically, with ties detected, a crown for the leader, undo, and full state persistence in localStorage so a game survives a page reload. Every card face and UI glyph is hand-drawn inline SVG — no images, no icon fonts, no emoji — and the pure logic (deck construction, shuffling, poker hand evaluation and comparison) lives in standalone modules covered by unit tests. Built as a dependency-free vanilla JavaScript ES-module app, it also runs standalone at card-drawer.hillmanchan.com.",
+        "image": "card_drawer.png",
+        "url": "https://card-drawer.hillmanchan.com",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/card-drawer",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "JavaScript",
+            "SVG",
+            "HTML5",
+            "CSS",
+            "Poker Hand Evaluation"
+        ]
+    },
+    {
         "id": 6,
         "title": "Never Have I Ever Card Game",
         "shortDescription": "A multilingual interactive “Never Have I Ever” card game built in React, featuring dynamic prompts, custom question input, and language selection.",
@@ -257,7 +276,7 @@
         "fullDescription": "Casino Edge Calculator is a suite of tools for understanding the mathematical edge in casino games. It includes three fully-featured games: Roulette with European/American variants, physics-based wheel simulation, and hot/cold number tracking; Blackjack with Hi-Lo card counting, true count calculation, Kelly Criterion bet sizing, basic strategy with Illustrious 18 deviations, and practice modes; Baccarat with card counting tools, Egalité side bet analysis, Dragon Bonus tracking, and real-time EV calculations. The project demonstrates advanced JavaScript skills including state management, complex probability calculations, responsive UI design, and educational game mechanics. Built as a pure HTML/CSS/JS application with no dependencies.",
         "image": "casino_game.png",
         "url": "https://casino-game.hillmanchan.com",
-        "category": "website",
+        "category": "game",
         "sourceCode": "no-source-code",
         "demoUrl": "/casino-game",
         "liveDemo": "no-demo",
