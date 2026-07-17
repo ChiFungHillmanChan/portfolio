@@ -145,3 +145,18 @@ test('connect4: runtime references are precached (reverse drift guard)', () => {
     assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
   }
 });
+
+test('math-memory: fonts are self-hosted (no Google Fonts requests)', () => {
+  const html = read(GAMES_DIR, 'math-memory', 'index.html');
+  assert.ok(!html.includes('fonts.googleapis.com'), 'Google Fonts CSS link must be gone');
+  assert.ok(!html.includes('fonts.gstatic.com'), 'gstatic preconnect must be gone');
+  assert.match(html, /href="fonts\/fonts\.css"/);
+  const css = read(GAMES_DIR, 'math-memory', 'fonts', 'fonts.css');
+  assert.match(css, /font-family: ?'Fraunces'/);
+  assert.match(css, /font-family: ?'Spline Sans Mono'/);
+  const files = [...css.matchAll(/url\(([^)]+\.woff2)\)/g)].map((m) => m[1]);
+  assert.ok(files.length >= 2, 'expected at least one woff2 per family');
+  for (const f of files) {
+    assert.ok(existsSync(join(GAMES_DIR, 'math-memory', 'fonts', f)), `missing font file ${f}`);
+  }
+});
