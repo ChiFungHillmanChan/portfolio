@@ -360,29 +360,38 @@ test('bestFive: full house from seven cards picks the trips then the pair', () =
 });
 
 test('bestFive: flush returns five cards of the flush suit, best first', () => {
-  const hand = evaluateHand([
+  const pile = [
     c(14, 'hearts'),
     c(2, 'spades'),
     c(11, 'hearts'),
     c(9, 'hearts'),
     c(6, 'hearts'),
     c(3, 'hearts'),
-  ]);
+  ];
+  const hand = evaluateHand(pile);
   assert.equal(hand.category, CATEGORY.FLUSH);
   assert.deepEqual(hand.bestFive.map((card) => card.rank), [14, 11, 9, 6, 3]);
   assert.ok(hand.bestFive.every((card) => card.suit === 'hearts'));
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
 });
 
 test('bestFive: straight is ordered high to low', () => {
-  const hand = evaluateHand(mixed(2, 9, 5, 6, 7, 8, 11));
+  const pile = mixed(2, 9, 5, 6, 7, 8, 11);
+  const hand = evaluateHand(pile);
   assert.deepEqual(hand.score, [CATEGORY.STRAIGHT, 9]);
   assert.deepEqual(hand.bestFive.map((card) => card.rank), [9, 8, 7, 6, 5]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
 });
 
 test('bestFive: wheel straight ends with the ace card', () => {
-  const hand = evaluateHand(mixed(14, 2, 3, 4, 5));
+  const pile = mixed(14, 2, 3, 4, 5);
+  const hand = evaluateHand(pile);
   assert.deepEqual(hand.score, [CATEGORY.STRAIGHT, 5]);
   assert.deepEqual(hand.bestFive.map((card) => card.rank), [5, 4, 3, 2, 14]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
 });
 
 test('bestFive: joker object itself appears in the winning five', () => {
@@ -428,6 +437,53 @@ test('bestFive: royal flush picks the suited run even among distractors', () => 
   assert.deepEqual(hand.bestFive, suited);
 });
 
+test('bestFive: four of a kind takes all four plus the best kicker', () => {
+  const pile = [c(9, 'spades'), c(13, 'hearts'), c(9, 'hearts'), c(9, 'diamonds'), c(2, 'clubs'), c(9, 'clubs')];
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.QUADS, 9, 13]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [9, 9, 9, 9, 13]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
+});
+
+test('bestFive: trips takes the three plus the two best kickers', () => {
+  const pile = mixed(12, 12, 12, 7, 2, 9);
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.TRIPS, 12, 9, 7]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [12, 12, 12, 9, 7]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
+});
+
+test('bestFive: two pair takes both pairs plus the best kicker', () => {
+  const pile = mixed(14, 14, 9, 9, 5, 12);
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.TWO_PAIR, 14, 9, 12]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [14, 14, 9, 9, 12]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
+});
+
+test('bestFive: pair with kickers from a six-card pile', () => {
+  const pile = mixed(13, 13, 8, 6, 2, 11);
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.PAIR, 13, 11, 8, 6]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [13, 13, 11, 8, 6]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
+});
+
+test('bestFive: both joker objects appear distinctly alongside trips', () => {
+  const w1 = joker();
+  const w2 = joker();
+  const pile = [c(9, 'spades'), c(9, 'hearts'), c(9, 'diamonds'), w1, w2];
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.FIVE_OF_A_KIND, 9]);
+  assert.ok(hand.bestFive.includes(w1));
+  assert.ok(hand.bestFive.includes(w2));
+  assert.equal(new Set(hand.bestFive).size, 5);
+});
+
 // --- countOuts ---------------------------------------------------------------
 
 test('countOuts: counts only cards that strictly beat the leader', () => {
@@ -454,4 +510,17 @@ test('countOuts: a tie does not count as an out', () => {
 
 test('countOuts: empty deck yields zero', () => {
   assert.equal(countOuts([c(5, 'spades')], [CATEGORY.HIGH_CARD, 14], []), 0);
+});
+
+test('countOuts: empty player pile — no single card beats a made pair', () => {
+  const leaderScore = [CATEGORY.PAIR, 7, 11, 9, 6];
+  const deck = [c(14, 'hearts'), c(2, 'clubs'), joker()];
+  assert.equal(countOuts([], leaderScore, deck), 0);
+});
+
+test('countOuts: a losing joker candidate is not counted', () => {
+  const player = [c(10, 'spades'), c(10, 'hearts')];
+  const leaderScore = [CATEGORY.QUADS, 9, 14];
+  const deck = [joker()];
+  assert.equal(countOuts(player, leaderScore, deck), 0);
 });
