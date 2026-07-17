@@ -119,3 +119,29 @@ test('card-game: every runtime chunk is precached (root /assets drift guard)', (
   }
   assert.ok(!existsSync(join(GAMES_DIR, 'card-game', 'assets')), 'stale card-game/assets/ must stay deleted');
 });
+
+test('card-drawer: runtime references are precached (reverse drift guard)', () => {
+  const assets = extractJsonConst(read(GAMES_DIR, 'card-drawer', 'sw.js'), 'ASSETS');
+  const html = read(GAMES_DIR, 'card-drawer', 'index.html');
+  const htmlRefs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((u) => !u.startsWith('http') && !u.startsWith('#'));
+  const js = read(GAMES_DIR, 'card-drawer', 'game.js');
+  const imports = [...js.matchAll(/from '\.\/([^']+)'/g), ...js.matchAll(/import\('\.\/([^']+)'\)/g)]
+    .map((m) => m[1]);
+  for (const ref of [...htmlRefs, ...imports]) {
+    assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
+  }
+});
+
+test('connect4: runtime references are precached (reverse drift guard)', () => {
+  const assets = extractJsonConst(read(GAMES_DIR, 'connect4', 'sw.js'), 'ASSETS');
+  const html = read(GAMES_DIR, 'connect4', 'index.html');
+  const htmlRefs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((u) => !u.startsWith('http') && !u.startsWith('#'));
+  const fetches = [...html.matchAll(/fetch\('\.\/([^']+)'\)/g)].map((m) => m[1]);
+  for (const ref of [...htmlRefs, ...fetches]) {
+    assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
+  }
+});
