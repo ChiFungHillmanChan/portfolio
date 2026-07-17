@@ -183,6 +183,12 @@ test('shell: root service worker precaches the app shell', () => {
   assert.match(cacheName, /^portfolio-shell-v\d+$/);
   const precache = extractJsonConst(sw, 'PRECACHE');
   assert.ok(precache.includes('/index.html'), 'PRECACHE must include /index.html');
+
+  assert.match(sw, /pathname\.startsWith\('\/games\/'\)/, 'shell SW must bypass /games/');
+  assert.match(sw, /mode === 'navigate'/, 'shell SW must special-case navigations');
+  assert.ok(sw.includes('/\\.[0-9a-f]{8}\\./'), 'shell SW must only cache hashed /static/ files');
+  assert.match(sw, /req\.headers\.has\('range'\)/, 'shell SW must skip range requests');
+  assert.match(sw, /text\/html/, 'shell SW must only cache HTML under the fallback key');
 });
 
 test('shell: index.html registers /sw.js and maps game subdomains to /pwa/ manifests', () => {
@@ -207,5 +213,24 @@ test('shell: subdomain install manifests are valid and icons exist', () => {
       assert.ok(icon.src.startsWith('/'), `${f}: icon src must be root-absolute`);
       assert.ok(existsSync(join(PUBLIC_DIR, icon.src.slice(1))), `${f}: missing icon ${icon.src}`);
     }
+  }
+});
+
+test('game service workers share one canonical body (parity guard)', () => {
+  function normalize(src) {
+    return src
+      .replace(/^\/\*[\s\S]*?\*\//, '')
+      .replace(/const CACHE = [^\n]*;\n/, '')
+      .replace(/const ASSETS = \[[\s\S]*?\];\n/, '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .join('\n');
+  }
+  const canonical = normalize(read(GAMES_DIR, 'card-drawer', 'sw.js'));
+  for (const game of GAMES) {
+    if (game.dir === 'card-drawer') continue;
+    const body = normalize(read(GAMES_DIR, game.dir, 'sw.js'));
+    assert.equal(body, canonical, `${game.dir}/sw.js body diverges from card-drawer's canonical body`);
   }
 });
