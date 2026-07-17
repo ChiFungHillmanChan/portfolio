@@ -1,7 +1,7 @@
 // Card Drawer — UI + state. Pure logic lives in hand-eval.js (poker) and
 // card-svg.js (rendering); this module only composes them and manages state.
 
-import { createDeck, shuffle, evaluateHand, compareScores } from './hand-eval.js';
+import { createDeck, shuffle, evaluateHand, compareScores, countOuts } from './hand-eval.js';
 import { renderCardSVG } from './card-svg.js';
 
 const STORAGE_KEY = 'card-drawer:v1';
@@ -261,6 +261,14 @@ function rankedEntries() {
       (entry.hand && prev.hand && compareScores(entry.hand.score, prev.hand.score) === 0);
     entry.rank = tied ? prev.rank : i + 1;
   });
+  const leader = entries[0];
+  if (leader && leader.hand && state.deck.length) {
+    for (const entry of entries) {
+      if (entry.rank > 1) {
+        entry.outs = countOuts(entry.player.cards, leader.hand.score, state.deck);
+      }
+    }
+  }
   return entries;
 }
 
@@ -390,6 +398,15 @@ function leaderboardHTML() {
         <span class="lb-body">
           <span class="lb-name">${esc(entry.player.name)}</span>
           <span class="lb-hand">${entry.hand ? esc(entry.hand.name) : 'No cards yet'}</span>
+          ${
+            entry.outs === undefined
+              ? ''
+              : `<span class="lb-outs">${
+                  entry.outs
+                    ? `${entry.outs} card${entry.outs === 1 ? '' : 's'} can take the lead`
+                    : 'No single card takes the lead'
+                }</span>`
+          }
         </span>
         <span class="lb-count">${entry.player.cards.length}c</span>
       </li>`;
