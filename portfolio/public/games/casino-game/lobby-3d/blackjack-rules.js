@@ -100,10 +100,18 @@ export function validateBets(bets, betTypes, balance, maxTotalBet = Infinity) {
 }
 
 // Chip rack denominations for the tier (chip meshes exist for all of these).
-// No chip below the main-bet min: every stack of rack chips is a clean
-// multiple of a playable amount, and one chip of the smallest denom is
-// already a valid main bet.
-export const chipRack = ({ main }) => {
-  const fit = [50, 100, 500, 1000, 5000].filter((v) => v >= main.min && v <= main.max);
+// Real-table shape: chips span the CHEAPEST playable bet (usually a side-bet
+// min, below the main min) up to the main max — small chips exist for the
+// side bets, and validateBets still rejects a sub-min main at DEAL.
+export const chipRack = (betTypes) => {
+  const lo = Math.min(...Object.values(betTypes).map((b) => b.min));
+  const fit = [50, 100, 500, 1000, 5000].filter((v) => v >= lo && v <= betTypes.main.max);
   return fit.length ? fit : [5000];
+};
+
+// Default selected chip: the smallest rack chip that is a valid main bet on
+// its own — one tap on MAIN always works.
+export const defaultChip = (betTypes) => {
+  const rack = chipRack(betTypes);
+  return rack.find((v) => v >= betTypes.main.min) ?? rack[rack.length - 1];
 };

@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Hillman Chan",
+  "name": "Hillman Chan — Portfolio",
   "icons": [
     {
       "src": "favicon.ico",
@@ -10,12 +10,7 @@
     {
       "src": "port_logo.png",
       "type": "image/png",
-      "sizes": "192x192"
-    },
-    {
-      "src": "port_logo.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "1024x1024"
     }
   ],
   "start_url": ".",

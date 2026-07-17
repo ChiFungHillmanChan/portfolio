@@ -155,19 +155,25 @@ function startWalletGame(balance) {
 }
 
 /**
- * Limit the chip rack to the active tier: no chip below the main-bet min
- * (one chip of the smallest visible denom is already a valid main bet) and
- * none above the main max. If the selected chip got hidden, select the
- * smallest visible one.
+ * Limit the chip rack to the active tier: chips span the cheapest playable
+ * bet (usually a side-bet min, below the main min — small chips exist for
+ * the side bets) up to the main max. If the selected chip got hidden,
+ * select the smallest visible chip that covers the main min, so one tap on
+ * a main spot is always a valid bet.
  */
 function applyTableChipLimits() {
     var table = window.blackjackTable;
     if (!table || !table.main) return;
+    var mins = [];
+    Object.keys(table).forEach(function(k) {
+        if (table[k] && typeof table[k].min === 'number') mins.push(table[k].min);
+    });
+    var lo = Math.min.apply(null, mins);
     var chips = document.querySelectorAll('.chip-rack .chip, .chip-rack-inline .chip');
     var visible = [];
     chips.forEach(function(chip) {
         var v = parseInt(chip.dataset.value);
-        var ok = v >= table.main.min && v <= table.main.max;
+        var ok = v >= lo && v <= table.main.max;
         chip.style.display = ok ? '' : 'none';
         if (ok) visible.push(v);
     });
@@ -176,7 +182,8 @@ function applyTableChipLimits() {
         return;
     }
     if (visible.indexOf(GameState.selectedChip) === -1) {
-        selectChip(Math.min.apply(null, visible));
+        var mainReady = visible.filter(function(v) { return v >= table.main.min; });
+        selectChip(Math.min.apply(null, mainReady.length ? mainReady : visible));
     }
 }
 
