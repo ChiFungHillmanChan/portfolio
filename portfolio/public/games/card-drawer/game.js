@@ -1,21 +1,12 @@
 // Card Drawer — UI + state. Pure logic lives in hand-eval.js (poker) and
 // card-svg.js (rendering); this module only composes them and manages state.
 
-import {
-  createDeck,
-  shuffle,
-  evaluateHand,
-  compareScores,
-  rankLabel,
-  SUITS,
-} from './hand-eval.js';
+import { createDeck, shuffle, evaluateHand, compareScores } from './hand-eval.js';
 import { renderCardSVG } from './card-svg.js';
 
 const STORAGE_KEY = 'card-drawer:v1';
 const MAX_PLAYERS = 10;
 const MIN_PLAYERS = 2;
-
-const SUIT_TITLES = { spades: 'Spades', hearts: 'Hearts', diamonds: 'Diamonds', clubs: 'Clubs' };
 
 // Hand-drawn UI glyphs — inline SVG paths, never emoji.
 const ICONS = {
@@ -61,7 +52,7 @@ function defaultState() {
 
 let state = defaultState();
 // Transient UI state — never persisted.
-const ui = { sheetFor: null, justDrawn: null, justPicked: null, confirmReset: false, resume: null };
+const ui = { sheetFor: null, justDrawn: null, confirmReset: false, resume: null };
 let resetTimer = null;
 
 const nextPlayerId = () => state.players.reduce((m, p) => Math.max(m, p.id), 0) + 1;
@@ -214,18 +205,17 @@ function dealRandom(playerId) {
   ui.justDrawn = null;
 }
 
-function assignCard(playerId, cardId) {
+function pickCard(playerId, index) {
   const player = state.players.find((p) => p.id === playerId);
-  const index = state.deck.findIndex((card) => card.id === cardId);
-  if (!player || index === -1) return;
+  if (!player || index < 0 || index >= state.deck.length) return;
   const [card] = state.deck.splice(index, 1);
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
-  ui.justPicked = { playerId, cardId: card.id };
+  ui.justDrawn = { playerId, cardId: card.id };
   ui.sheetFor = null;
   saveState();
   render();
-  ui.justPicked = null;
+  ui.justDrawn = null;
 }
 
 function undoLastDraw() {
@@ -362,8 +352,7 @@ function playerPanel(player) {
     ? player.cards
         .map((card) => {
           const flip = ui.justDrawn && ui.justDrawn.cardId === card.id;
-          const pop = ui.justPicked && ui.justPicked.cardId === card.id;
-          return cardWrap(card, { flip, pop });
+          return cardWrap(card, { flip });
         })
         .join('')
     : '<span class="fan-empty">No cards yet</span>';
@@ -434,7 +423,7 @@ function dealerBar() {
       </div>
       <div class="mode-toggle" role="group" aria-label="Draw mode">
         <button class="btn" data-action="mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
-        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Manual</button>
+        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Pick</button>
       </div>
     </div>
   `;
@@ -443,48 +432,26 @@ function dealerBar() {
 function sheetHTML() {
   const player = state.players.find((p) => p.id === ui.sheetFor);
   if (!player) return '';
-  const remaining = new Set(state.deck.map((card) => card.id));
-  const full = createDeck({ includeJokers: state.includeJokers });
-
-  const sections = SUITS.map((suit) => {
-    const cards = full
-      .filter((card) => card.suit === suit)
-      .sort((a, b) => b.rank - a.rank)
-      .map((card) => pickButton(card, remaining))
-      .join('');
-    return `<h3 class="sheet-suit">${SUIT_TITLES[suit]}</h3><div class="pick-grid">${cards}</div>`;
-  }).join('');
-
-  const jokers = state.includeJokers
-    ? `<h3 class="sheet-suit">Jokers</h3><div class="pick-grid">${full
-        .filter((card) => card.joker)
-        .map((card) => pickButton(card, remaining))
-        .join('')}</div>`
-    : '';
-
+  const left = state.deck.length;
+  const backs = state.deck
+    .map(
+      (_, i) =>
+        `<button class="pick-card" data-action="pick" data-index="${i}" ` +
+        `aria-label="Face-down card ${i + 1} of ${left}">${renderCardSVG('back')}</button>`
+    )
+    .join('');
   return `
     <div class="sheet-backdrop" data-action="close-sheet"></div>
     <div class="sheet" role="dialog" aria-modal="true" aria-label="Pick a card for ${esc(player.name)}">
       <div class="sheet-head">
         <h2>Pick a card for ${esc(player.name)}
-          <span class="sheet-sub">${state.deck.length} in the deck — drawn cards are dimmed</span>
+          <span class="sheet-sub">${left} face-down card${left === 1 ? '' : 's'} — tap one</span>
         </h2>
         <button class="btn btn-quiet btn-icon" data-action="close-sheet" aria-label="Close">${ICONS.cross}</button>
       </div>
-      <div class="sheet-body">${sections}${jokers}</div>
+      <div class="sheet-body"><div class="pick-grid">${backs}</div></div>
     </div>
   `;
-}
-
-function pickButton(card, remaining) {
-  const taken = !remaining.has(card.id);
-  const name = card.joker ? 'Joker' : `${rankLabel(card.rank)} of ${SUIT_TITLES[card.suit]}`;
-  return (
-    `<button class="pick-card" data-action="pick" data-card="${card.id}" ${taken ? 'disabled' : ''} ` +
-    `aria-label="${taken ? `${name} (already drawn)` : name}">` +
-    renderCardSVG(card, { dimmed: taken }) +
-    '</button>'
-  );
 }
 
 function gameScreen() {
@@ -543,7 +510,7 @@ app.addEventListener('click', (event) => {
       break;
     case 'pick': {
       const sheetPlayer = ui.sheetFor;
-      if (sheetPlayer !== null) assignCard(sheetPlayer, target.dataset.card);
+      if (sheetPlayer !== null) pickCard(sheetPlayer, Number(target.dataset.index));
       break;
     }
     case 'undo':

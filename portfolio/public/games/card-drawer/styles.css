@@ -640,19 +640,11 @@ button {
   overscroll-behavior: contain;
 }
 
-.sheet-suit {
-  margin: 10px 0 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-
 .pick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 8px;
+  padding-top: 6px;
 }
 
 .pick-card {
@@ -662,8 +654,6 @@ button {
   border-radius: 6px;
   background: transparent;
 }
-
-.pick-card:disabled { cursor: not-allowed; }
 
 .pick-card .card-svg { width: 100%; border-radius: 5px; }
 
