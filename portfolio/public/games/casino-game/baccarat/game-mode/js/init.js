@@ -61,10 +61,16 @@ async function loadComponents() {
 document.addEventListener('wallet:ready', () => {
     startNewGame(window.baccaratWallet.getBalance());
     // The rack only deals the tier's denominations — a restored selection
-    // (or the pre-wallet default) below the table min must snap to the
-    // smallest chip the table deals in.
+    // (or the pre-wallet default) outside them snaps to the smallest chip
+    // that covers the player/banker min, so one tap on a main spot is
+    // always a valid bet.
     const denoms = tableChipDenominations();
-    if (!denoms.includes(getSelectedChip())) setSelectedChip(denoms[0]);
+    if (!denoms.includes(getSelectedChip())) {
+        const main = window.baccaratTable && window.baccaratTable.betTypes
+            && window.baccaratTable.betTypes.player;
+        const mainReady = main ? denoms.filter((v) => v >= main.min) : [];
+        setSelectedChip(mainReady.length ? mainReady[0] : denoms[0]);
+    }
     showGameScreen();
     renderAll();
     initBettingTableHandlers();

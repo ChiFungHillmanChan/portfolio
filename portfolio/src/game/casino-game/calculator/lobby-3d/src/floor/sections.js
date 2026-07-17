@@ -13,7 +13,10 @@
   // it's the only way four 4.7m-long tables fit the section. The other games
   // face the aisle directly.
   const ROWS = {
-    roulette:  { z: -6.3, dir: 1,  xs: [-12.8, -8.8, -4.8, -0.8], yaw: -Math.PI / 2 },
+    // Roulette shifted east + tightened from the original [-12.8..-0.8] to open
+    // a ~4.7m bar bay at the west end of the north field (x < -9.85). All four
+    // stake tiers are kept; obstacles/anchors/rigs derive from these xs.
+    roulette:  { z: -6.3, dir: 1,  xs: [-8.7, -5.4, -2.1, 1.2], yaw: -Math.PI / 2 },
     blackjack: { z: -6.5, dir: 1,  xs: [4.2, 8.1, 12.0, 15.9] },
     baccarat:  { z: 6.5,  dir: -1, xs: [-13.4, -9.0, -4.6, -0.2] },
     uth:       { z: 6.5,  dir: -1, xs: [5.2], reserved: [8.8, 11.4, 14.0, 16.6] },
@@ -40,7 +43,7 @@
   // uth neon hangs OVER the (closed) table itself — at 8.4 it hung over the
   // reserved pads, which read as "the UTH area is open floor, the cage is
   // something else off to the side".
-  const SIGN_X = { roulette: -6.8, blackjack: 10.0, baccarat: -6.8, uth: 5.4 };
+  const SIGN_X = { roulette: -3.75, blackjack: 10.0, baccarat: -6.8, uth: 5.4 };
 
   const highlights = new Map();   // table.id → group.userData.highlight
 

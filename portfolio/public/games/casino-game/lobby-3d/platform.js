@@ -231,7 +231,7 @@ function showProximityCard(anchor) {
   if (rouletteLiveActive() || blackjackLiveActive()) return;
   if (cards.kind() === 'checkin' || cards.kind() === 'unavailable') return;
   if (!anchor) {
-    if (['sitdown', 'closed', 'cashier', 'practice'].includes(cards.kind())) cards.hide();
+    if (['sitdown', 'closed', 'cashier', 'practice', 'bar'].includes(cards.kind())) cards.hide();
     return;
   }
   if (anchor.kind === 'table') {
@@ -268,6 +268,15 @@ function showProximityCard(anchor) {
     }));
   } else if (anchor.kind === 'practice') {
     cards.show('practice', UI.practiceCard());
+  } else if (anchor.kind === 'bar') {
+    const tip = UI.nextBarTip();
+    cards.show('bar', UI.barCard({
+      tip,
+      onPractice: () => { cards.hide('bar'); stage.goTo('practice'); },
+      onDismiss: () => cards.hide('bar'),
+    }));
+    // bartender speaks the same tip the card shows
+    if (stage && stage.barSay) stage.barSay(`${tip.game ? tip.game + ' tip — ' : ''}${tip.tip}`);
   }
 }
 
