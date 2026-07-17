@@ -148,17 +148,19 @@ function getSelectedChip() {
 }
 
 /**
- * Chip denominations offered at the active wallet table: nothing below the
- * main (player/banker) min — one chip of the smallest denom is already a
- * valid main bet — and nothing above the main max. Practice mode (no
- * window.baccaratTable) offers the full rack.
+ * Chip denominations offered at the active wallet table: chips span the
+ * cheapest playable bet (a side-bet min — tie/pairs sit below the
+ * player/banker min, and small chips exist for them) up to the main
+ * (player/banker) max. Practice mode (no window.baccaratTable) offers the
+ * full rack.
  * @returns {Array} Denominations the table deals in
  */
 function tableChipDenominations() {
     const table = typeof window !== 'undefined' ? window.baccaratTable : null;
     const main = table && table.betTypes && table.betTypes.player;
     if (!main) return CHIP_DENOMINATIONS;
-    const fit = CHIP_DENOMINATIONS.filter(chip => chip >= main.min && chip <= main.max);
+    const lo = Math.min(...Object.values(table.betTypes).map(b => b.min));
+    const fit = CHIP_DENOMINATIONS.filter(chip => chip >= lo && chip <= main.max);
     return fit.length ? fit : CHIP_DENOMINATIONS;
 }
 

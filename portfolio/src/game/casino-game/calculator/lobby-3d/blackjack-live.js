@@ -6,7 +6,7 @@
 // player, dealer up-card, player — no hole card; dealer draws after actions.
 import {
   makeShoe, handValue, isBlackjack, dealerPlay, canSplit,
-  settleMain, perfectPairReturn, twentyOnePlus3Return, validateBets, chipRack,
+  settleMain, perfectPairReturn, twentyOnePlus3Return, validateBets, chipRack, defaultChip,
 } from './blackjack-rules.js';
 import { getTable, formatChips } from '../js/wallet/table-config.js';
 
@@ -134,7 +134,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   const bets = { main: 0, perfectPair: 0, twentyOnePlus3: 0 };
   const placed = { main: [], perfectPair: [], twentyOnePlus3: [] };
   const history = [];
-  let selectedDenom = rack[0];   // smallest rack chip = the table's main min
+  let selectedDenom = defaultChip(cfg.betTypes);   // one tap on MAIN = valid bet
   let roundInFlight = false;
 
   const wrap = document.createElement('div');

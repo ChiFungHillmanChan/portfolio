@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   makeShoe, handValue, isBlackjack, dealerPlay, canSplit,
-  settleMain, perfectPairReturn, twentyOnePlus3Return, validateBets, chipRack,
+  settleMain, perfectPairReturn, twentyOnePlus3Return, validateBets, chipRack, defaultChip,
 } from '../blackjack-rules.js';
 
 const c = (r, s = 0) => ({ r, s });
@@ -89,13 +89,34 @@ test('validateBets against tier betTypes', () => {
   assert.equal(validateBets({ main: 1000, perfectPair: 250, twentyOnePlus3: 250 }, MICRO, 99999, 1400).reason, 'table-max');
 });
 
-test('chipRack scales with the tier — no chip below the main min', () => {
+// Standard/High betTypes mirrors of table-config.js (side mins sit BELOW the
+// main min — the rack must deal side-sized chips, like real online tables).
+const STD = {
+  main:           { min: 500, max: 10000 },
+  perfectPair:    { min: 100, max: 2500 },
+  twentyOnePlus3: { min: 100, max: 2500 },
+};
+const HIGH = {
+  main:           { min: 1000, max: 20000 },
+  perfectPair:    { min: 200,  max: 5000 },
+  twentyOnePlus3: { min: 200,  max: 5000 },
+};
+
+test('chipRack spans the cheapest playable bet up to the main max', () => {
   assert.deepEqual(chipRack(MICRO), [50, 100, 500, 1000]);
-  assert.deepEqual(chipRack({ main: { min: 100, max: 2500 } }), [100, 500, 1000]);
-  assert.deepEqual(chipRack({ main: { min: 500, max: 10000 } }), [500, 1000, 5000]);
-  assert.deepEqual(chipRack({ main: { min: 1000, max: 20000 } }), [1000, 5000]);
+  assert.deepEqual(chipRack(STD), [100, 500, 1000, 5000]);
+  assert.deepEqual(chipRack(HIGH), [500, 1000, 5000]);
+  // main-only table (shoe): the main min IS the cheapest bet
+  assert.deepEqual(chipRack({ main: { min: 100, max: 2000 } }), [100, 500, 1000]);
   // degenerate config (min above every denom) still yields a usable rack
   assert.deepEqual(chipRack({ main: { min: 20000, max: 50000 } }), [5000]);
+});
+
+test('defaultChip is the smallest rack chip that covers the main min', () => {
+  assert.equal(defaultChip(MICRO), 50);
+  assert.equal(defaultChip(STD), 500);
+  assert.equal(defaultChip(HIGH), 1000);
+  assert.equal(defaultChip({ main: { min: 20000, max: 50000 } }), 5000); // degenerate: best available
 });
 
 test('makeShoe: 6 decks, injectable rand is deterministic', () => {
