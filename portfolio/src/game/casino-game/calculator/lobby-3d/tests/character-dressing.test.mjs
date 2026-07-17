@@ -314,11 +314,11 @@ test('body geometry carries a per-dealer color attribute (itemSize 3), and the t
   );
 });
 
-test('shoe region (foot_l-dominant vertex) tints WHITE — shoes are painted final in the texture', () => {
+test('shoe region (foot_l-dominant vertex) tints near-black — dark shoes hide the mesh toe shading', () => {
   const mesh = findBodyMesh(implA.group);
   const vi = findFullWeightVertexForBone(mesh, 'foot_l');
   assert.notEqual(vi, -1, 'expected a full-weight foot_l vertex (asset pack should have clean skinning)');
-  assertColorApprox(vertexColor(mesh, vi), { r: 1, g: 1, b: 1 }, 'foot_l vertex');
+  assertColorApprox(vertexColor(mesh, vi), { r: 0.05, g: 0.05, b: 0.055 }, 'foot_l vertex');
 });
 
 test('skin region (Head-dominant vertex) tints to SKINS[pick]/skinBase (texture re-tone ratio)', () => {

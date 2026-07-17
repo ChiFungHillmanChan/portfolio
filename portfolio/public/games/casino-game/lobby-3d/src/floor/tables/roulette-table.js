@@ -337,6 +337,10 @@
     // over the last 28% and parking at world angle 0 — so the rotor must
     // stop at rotation.y ≡ +idx*STEP (three.js puts local angle a at world
     // angle a - rotation.y; sign verified empirically in the v1 room).
+    // Sign care: rotor.rotation.y INCREASING makes every pocket's world
+    // angle DECREASE (a - θ above), so the ball's own world angle must
+    // INCREASE (+b1) to actually run against the wheel on screen — a
+    // negative b1 sent both spinning the same way (user-reported).
     function spinTo(pocket) {
       return new Promise((resolve) => {
         const idx = EU_WHEEL.indexOf(pocket);
@@ -346,7 +350,7 @@
         const ms = C.app.REDUCED ? 2200 : 4200 + Math.random() * 1600;
         const w0 = rotor.rotation.y % (Math.PI * 2);
         const w1 = w0 + wheelTurns * Math.PI * 2 + ((idx * STEP - w0) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-        const b1 = -ballTurns * Math.PI * 2;   // counter-rotation, ends at world angle 0
+        const b1 = ballTurns * Math.PI * 2;   // counter-rotation (see sign note above), ends at world angle 0
         const t0 = performance.now();
         const ease = C.tween.easings.outQuart;
         rotor.remove(ball);
@@ -631,7 +635,11 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // walk-in enters from the aisle end of the dealer's own corridor
+      // (world +Z = south): the table sits perpendicular to the aisle, so a
+      // pit-lane (±X) entry would cross the neighbouring table, and the old
+      // local -x path spawned him at the wheel end INSIDE the tote board.
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [0, 2.2] });
       dealer.position.set(0.2, 0, -1.15);
       g.add(dealer);
       dealer.userData.idle(C.app);

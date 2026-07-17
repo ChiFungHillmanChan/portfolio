@@ -73,7 +73,149 @@
     return pts;
   }
 
-  // opts: { rect: {x0,x1,z0,z1}, signLines, trainer: {pos:[x,z], lookAt:[x,z]} }
+  // ---- ambient training show ----
+  // The cage says DEALER TRAINING — so train. When the player is near, the
+  // closed table's dealer (the trainee) runs randomized dealing drills —
+  // card wash, riffle, pitching real cards to the slots, rack taps — while
+  // the supervisor watches, nods or shakes their head, and coaches through
+  // speech bubbles. Same proximity-gated loop idiom as baccarat-show.js;
+  // every rig call carries its own roomGen guard so a room rebuild mid-
+  // drill just falls through.
+  const TRAIN_NEAR = 9, TRAIN_CHECK = 0.8;
+  const TRAINER_OPEN = {
+    wash: '洗牌 Wash — big circles',
+    riffle: 'Riffle — even halves',
+    pitch: 'Pitch drill — keep it low',
+    rack: 'Rack drill — count them out',
+  };
+  const TRAINER_PRAISE = ['Good rhythm — keep it', '幾好 Nice hands', 'Clean — again', '好 Smooth'];
+  const TRAINER_FIX = ['再嚟一次 Again', 'Keep the deck low', '大圈啲 Bigger circles', 'Slow down — accuracy first'];
+  const TRAINEE_REPLY = ['明白 Got it', '收到 Yes', 'Ready — again'];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  function startTrainingShow(opts, trainerRoot) {
+    const app = C.app;
+    const tableGroup = opts.tableGroup;
+    const trainee = tableGroup?.userData.dealerRig;
+    const trainerRig = trainerRoot.userData.rig;
+    if (!trainee || !trainerRig || app.REDUCED) return;
+    const gen = app.roomGen;
+    const alive = () => app.roomGen === gen;
+    const L = C.layouts.uth;
+    tableGroup.updateMatrixWorld(true);
+    const toW = (p) => tableGroup.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    const trainerHead = [opts.trainer.pos[0], 1.55, opts.trainer.pos[1]];
+    const traineeHead = toW([0, 1.55, -1.05]);
+    const feltTarget = toW([0, L.feltY, -0.30]);
+    const deckRef = toW(L.deckPos);
+    const rackRef = toW(L.dealerChipPos);
+
+    // four reusable face-down practice cards — never disposed, just
+    // parked back at the deck between pitch drills (dealCardTo re-adds
+    // them to the scene each flight)
+    let cards = null;
+    const practiceCards = () => (cards ??= [0, 1, 2, 3].map(() => {
+      const m = C.cards.makeCard(null);
+      m.rotation.set(-Math.PI / 2, 0, 0);
+      m.rotateY(Math.PI);
+      return m;
+    }));
+    const collectCards = async () => {
+      if (!cards) return;
+      await Promise.all(cards.filter((m) => m.parent).map((m) => new Promise((res) =>
+        C.tween.to(m.position, { x: deckRef[0], y: deckRef[1] + 0.05, z: deckRef[2] }, 300, 'inOutCubic', res))));
+      cards.forEach((m) => m.parent && m.parent.remove(m));
+    };
+
+    const drills = {
+      wash: async () => {
+        for (let i = 0; i < 2 && alive(); i++) {
+          // eslint-disable-next-line no-await-in-loop
+          await trainee.play(app, 'washCards', { refs: { target: feltTarget } });
+        }
+        await trainee.play(app, 'armsRest');
+      },
+      riffle: async () => {
+        for (let i = 0; i < 2 && alive(); i++) {
+          // eslint-disable-next-line no-await-in-loop
+          await trainee.play(app, 'shuffleRiffle', { refs: { target: feltTarget } });
+        }
+        await trainee.play(app, 'armsRest');
+      },
+      pitch: async () => {
+        const slots = [L.playerSlots[0], L.playerSlots[1], L.dealerSlots[0], L.dealerSlots[1]];
+        const meshes = practiceCards();
+        for (let i = 0; i < slots.length && alive(); i++) {
+          const slot = toW(slots[i]);
+          trainee.play(app, 'dealCard', { refs: { shoe: deckRef, target: slot } });
+          // eslint-disable-next-line no-await-in-loop
+          await C.cards.dealCardTo(app, meshes[i], deckRef, [slot[0], slot[1] + 0.004, slot[2]], { ms: 430 });
+          // eslint-disable-next-line no-await-in-loop
+          await wait(150);
+        }
+        await wait(900);
+        await trainee.play(app, 'armsRest');
+        await collectCards();
+      },
+      rack: async () => {
+        await trainee.play(app, 'tapRack', { refs: { rack: rackRef } });
+      },
+    };
+    const drillKeys = Object.keys(drills);
+
+    async function verdict() {
+      trainerRig.lookAt(app, traineeHead);
+      if (Math.random() < 0.6) {
+        trainerRig.play(app, 'nod');
+        trainerRig.say(app, pick(TRAINER_PRAISE), { ms: 2200 });
+      } else {
+        trainerRig.play(app, 'headShake');
+        trainerRig.say(app, pick(TRAINER_FIX), { ms: 2200 });
+        trainee.lookAt(app, trainerHead);
+        trainee.play(app, 'nod');
+        trainee.say(app, pick(TRAINEE_REPLY), { ms: 1800 });
+      }
+      await wait(1400);
+      trainee.lookAt(app, feltTarget);
+    }
+
+    let running = false, wantRun = false, acc = 0;
+    async function loop() {
+      running = true;
+      await wait(2600);
+      while (wantRun && alive()) {
+        const key = pick(drillKeys);
+        trainerRig.say(app, TRAINER_OPEN[key], { ms: 2200 });
+        // eslint-disable-next-line no-await-in-loop
+        await drills[key]().catch((err) => { console.error('[training]', err); return wait(1500); });
+        if (!alive()) break;
+        // eslint-disable-next-line no-await-in-loop
+        await verdict();
+        // eslint-disable-next-line no-await-in-loop
+        await wait(1200 + Math.random() * 1800);
+      }
+      running = false;
+    }
+
+    const cx = (opts.rect.x0 + opts.rect.x1) / 2, cz = (opts.rect.z0 + opts.rect.z1) / 2;
+    const hook = (dt) => {
+      if (!alive()) return app.offFrame(hook);
+      acc += dt;
+      if (acc < TRAIN_CHECK) return;
+      acc = 0;
+      const p = app.player;
+      wantRun = Math.hypot(p.x - cx, p.z - cz) < TRAIN_NEAR;
+      if (wantRun && !running) loop();
+    };
+    hook.cancel = () => app.offFrame(hook);
+    app.onFrame(hook);
+  }
+
+  // opts: { rect: {x0,x1,z0,z1}, signLines, trainer: {pos:[x,z], lookAt:[x,z]},
+  //         tableGroup } — tableGroup is the closed table's own group; its
+  //         dealerRig becomes the trainee for the ambient training show.
   C.floor.buildMaintenanceZone = (opts) => {
     const s = C.app.scene, A = C.assets;
     const { x0, x1, z0, z1 } = opts.rect;
@@ -216,13 +358,14 @@
 
     // ---- supervisor watching the dealer — it IS dealer training
     if (opts.trainer) {
-      const t = A.makeDealer({ suit: '#2a3247', shirt: '#e8e4d8' });
+      const t = A.makeDealer({ seed: 'trainer-supervisor', suit: '#2a3247', shirt: '#e8e4d8' });
       const [tx, tz] = opts.trainer.pos;
       const [lx, lz] = opts.trainer.lookAt;
       t.position.set(tx, 0, tz);
       t.rotation.y = Math.atan2(lx - tx, lz - tz);
       g.add(t);
       t.userData.idle(C.app);
+      startTrainingShow(opts, t);
     }
 
     s.add(g);

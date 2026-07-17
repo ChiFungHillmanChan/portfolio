@@ -159,14 +159,20 @@
   // bake — the numbers travel inside the GLB (scene.extras.dealerLandmarks),
   // so bake and runtime can never drift apart. Boundary triangles blend the
   // tint across one edge; the crisp texture lines dominate visually.
-  const TROUSERS_TINT = [0.106, 0.118, 0.149];   // #1b1e26
+  // Rendered through the linear pipeline the old #1b1e26 trousers displayed
+  // as ~0.37 sRGB — pale gray that read as BARE LEGS from a few metres, and
+  // the white-tinted feet kept the mesh's toe shading visible ("barefoot
+  // dealer"). Trousers now sit just above the jacket's darkness and the
+  // feet get their own near-black tint so the toe geometry reads as shoes.
+  const TROUSERS_TINT = [0.045, 0.05, 0.062];
+  const SHOES_TINT = [0.05, 0.05, 0.055];
 
   // Tint group of a bind-pose vertex — mirrors classify() in
-  // tools/build-dealer-assets.mjs, collapsed to the four tint groups.
+  // tools/build-dealer-assets.mjs, collapsed to the five tint groups.
   function tintGroupAt(x, y, z, L) {
     const ax = Math.abs(x);
     if (y > L.collarY || ax > L.wristX) return 'SKIN';
-    if (y < L.ankleY) return 'WHITE';                    // shoes: painted final
+    if (y < L.ankleY) return 'SHOES';
     if (ax > L.cuffX && y > 1.30) return 'WHITE';        // shirt cuffs
     if (y > L.collarBandY && z > 0 && ax < 0.09) return 'WHITE';  // collar edge
     if (y < L.beltTop) return 'TROUSERS';                // trousers + belt band
@@ -187,7 +193,7 @@
   // this dealer's tint onto all the others (see the call site).
   function bakeTintColors(geometry, L, skinTint, suitTint) {
     const pos = geometry.attributes.position;
-    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, WHITE: [1, 1, 1] };
+    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, SHOES: SHOES_TINT, WHITE: [1, 1, 1] };
     const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
       const g = groups[tintGroupAt(pos.getX(i), pos.getY(i), pos.getZ(i), L)];
@@ -333,17 +339,33 @@
     // bone to its child in the bone's LOCAL space (rest pose). Aiming =
     // rotate the bone so restDir points along a desired world direction.
     const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
+    const _v4 = new THREE.Vector3();
     const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+    const _m1 = new THREE.Matrix4();
     const armChains = {};
+    group.updateMatrixWorld(true);   // bind-pose world matrices for the wrist capture below
     for (const side of ['L', 'R']) {
       const upper = bones['upperArm' + side], fore = bones['foreArm' + side], hand = bones['hand' + side];
       if (!upper || !fore || !hand) continue;
       const upperLen = fore.position.length() * upper.getWorldScale(_v1).x;
       const foreLen = hand.position.length() * fore.getWorldScale(_v1).x;
+      // Bind wrist frame for the hand-orientation layer: at T-pose the
+      // fingers run along the arm (hand away from elbow) with the palm flat
+      // DOWN (same bind-pose fact the finger-curl layer relies on). Captured
+      // as an orthonormal basis + the hand bone's bind world quaternion, so
+      // at runtime a target basis (fingers along the SOLVED forearm, palm
+      // down) maps to an absolute world orientation for the hand.
+      const bindFingers = hand.getWorldPosition(new THREE.Vector3())
+        .sub(fore.getWorldPosition(_v1)).normalize();
+      const bindPalm = new THREE.Vector3(0, -1, 0)
+        .addScaledVector(bindFingers, -bindFingers.dot(_v2.set(0, -1, 0))).normalize();
+      _m1.makeBasis(bindFingers, bindPalm, _v1.crossVectors(bindFingers, bindPalm));
       armChains[side] = {
         upper, fore, hand, upperLen, foreLen,
         restDirUpper: fore.position.clone().normalize(),   // child dir in upper's local space
         restDirFore: hand.position.clone().normalize(),
+        handBindWorldQ: hand.getWorldQuaternion(new THREE.Quaternion()),
+        handBindBasisInvQ: new THREE.Quaternion().setFromRotationMatrix(_m1).invert(),
       };
     }
     // bind-pose spine rotation — the torso-lean layer restores this before
@@ -419,6 +441,39 @@
       ch.fore.getWorldPosition(_v3);
       aimBone(ch.fore, ch.restDirFore,
         _v1.set(r.hand[0] - _v3.x, r.hand[1] - _v3.y, r.hand[2] - _v3.z), weight);
+    }
+
+    // Wrist layer: aimBone() places the upper arm and forearm but says
+    // nothing about the HAND bone — it kept whatever local rotation the
+    // mocap idle last wrote, on top of a swing-only (twist-less) forearm
+    // aim, so mid-path the palm routinely froze twisted up/outward at
+    // anatomically impossible wrist angles. Every IK frame this re-derives
+    // the hand's world orientation from human constraints instead: fingers
+    // continue along the ACTUAL solved forearm axis, palm kept flat DOWN
+    // over the table (the dealing posture every routed path wants), then
+    // maps it through the captured bind frame and blends at the same
+    // weight as the arm solve so it ramps in/out with the path.
+    function applyHandOrient(side, weight) {
+      const ch = armChains[side];
+      if (!ch || weight <= 0) return;
+      ch.fore.updateWorldMatrix(true, false);
+      const fingers = ch.hand.getWorldPosition(_v4).sub(ch.fore.getWorldPosition(_v1));
+      if (fingers.lengthSq() < 1e-8) return;
+      fingers.normalize();
+      const palm = _v1.set(0, -1, 0);
+      if (Math.abs(fingers.dot(palm)) > 0.96) {
+        // forearm near-vertical: "down" is degenerate — face the palm the
+        // way the character faces so the wrist never snaps
+        group.getWorldQuaternion(_q1);
+        palm.set(0, 0, 1).applyQuaternion(_q1);
+      }
+      palm.addScaledVector(fingers, -fingers.dot(palm)).normalize();
+      _m1.makeBasis(fingers, palm, _v2.crossVectors(fingers, palm));
+      const targetWorldQ = _q1.setFromRotationMatrix(_m1)
+        .multiply(ch.handBindBasisInvQ).multiply(ch.handBindWorldQ);
+      const localQ = ch.fore.getWorldQuaternion(_q2).invert().multiply(targetWorldQ);
+      if (weight >= 1) ch.hand.quaternion.copy(localQ);
+      else ch.hand.quaternion.slerp(localQ, weight);
     }
 
     // ---- IK path runner (single-hand for Task 7; Task 8 extends to
@@ -639,6 +694,7 @@
       // pass 2: IK solve + events against the leaned torso
       for (const h of ap.hands) {
         applyArmIK(h.side, h._pathPos, w);
+        applyHandOrient(h.side, w);
         // Finding 2 (task-7 review): firing used to be tied to the CURRENT
         // segment's eased tail (`cur.event && st>=0.995`) — for a fast
         // segment (e.g. tapRack's first waypoint) that's a sub-millisecond
@@ -826,29 +882,37 @@
     }
 
     // ---- shift-change walk (v2 spec) ----
-    // The dealer walks in along the pit lane and takes position. Pathing is
-    // LOCAL-space: impl.group sits inside the table's own root, so moving
-    // group.position.x walks parallel to the table row no matter how the
-    // table is rotated in the world. Enters from local -x (toward the floor
-    // aisles — local +x runs into the cashier wall on the blackjack row).
-    // Uses the 'body' track token so a roomGen change or a repeat call
-    // cancels it; holds a drive ref for full-rate mixer updates while
+    // The dealer walks in and takes position. The entry point is a WORLD-
+    // space offset from the post ([dx, dz], chosen by each table builder so
+    // the path stays in open floor — the old hardcoded local -x path sent
+    // the perpendicular roulette dealers THROUGH their own tote board and
+    // wheel end, which read as "a person standing inside the table").
+    // The offset is converted into the parent's local space at call time so
+    // any table rotation is handled uniformly. Facing is derived from the
+    // travel direction itself (absolute, in parent space) — the old
+    // baseYaw ± π/2 guess walked sideways whenever the dealer's rest yaw
+    // wasn't 0. Uses the 'body' track token so a roomGen change or a repeat
+    // call cancels it; holds a drive ref for full-rate mixer updates while
     // walking (same contract as every other one-shot).
-    function walkIn() {
+    function walkIn(enterWorld) {
       if (app.REDUCED) return Promise.resolve();
       const walkClip = findClip('Walk_Formal_Loop');
       if (!walkClip || !idleAction) return Promise.resolve();
       const token = ++tokens.body;
       const gen = app.roomGen;
       const SPEED = 1.25;             // m/s — matches the formal stride's cadence
-      const ENTER_FROM = -3.2;        // local-x offset of the entry point
+      const [wdx, wdz] = Array.isArray(enterWorld) ? enterWorld : [-2.4, 0];
       const release = acquireDrive();
-      const targetX = group.position.x;
+      const targetX = group.position.x, targetZ = group.position.z;
       const baseYaw = group.rotation.y;
-      // facing the travel direction: walking toward +x local => forward
-      // (sin yaw, 0, cos yaw) must point +x => yaw = +π/2 (relative to base)
-      const walkYaw = baseYaw + (ENTER_FROM < 0 ? Math.PI / 2 : -Math.PI / 2);
-      group.position.x = targetX + ENTER_FROM;
+      // world offset -> parent-local offset (handles rotated table roots)
+      const qi = new THREE.Quaternion();
+      (group.parent || group).getWorldQuaternion(qi).invert();
+      const enter = new THREE.Vector3(wdx, 0, wdz).applyQuaternion(qi);
+      // face where you walk: travel dir is (-enter), absolute in parent space
+      const walkYaw = Math.atan2(-enter.x, -enter.z);
+      group.position.x = targetX + enter.x;
+      group.position.z = targetZ + enter.z;
       group.rotation.y = walkYaw;
       group.updateMatrixWorld(true);
       const walkAction = mixer.clipAction(walkClip);
@@ -862,6 +926,7 @@
         const finish = () => {
           app.offFrame(hook);
           group.position.x = targetX;
+          group.position.z = targetZ;
           group.rotation.y = baseYaw;
           idleAction.enabled = true;
           idleAction.reset(); idleAction.play();
@@ -874,11 +939,15 @@
           const now = performance.now();
           const dt = Math.min(0.1, (now - last) / 1000);
           last = now;
-          const remaining = targetX - group.position.x;
+          const rx = targetX - group.position.x, rz = targetZ - group.position.z;
+          const rlen = Math.hypot(rx, rz);
           if (!arrived) {
-            const step = Math.min(Math.abs(remaining), SPEED * dt) * Math.sign(remaining || 1);
-            group.position.x += step;
-            if (Math.abs(targetX - group.position.x) < 0.02) {
+            const step = Math.min(rlen, SPEED * dt);
+            if (rlen > 1e-4) {
+              group.position.x += (rx / rlen) * step;
+              group.position.z += (rz / rlen) * step;
+            }
+            if (Math.hypot(targetX - group.position.x, targetZ - group.position.z) < 0.02) {
               arrived = true;
               idleAction.enabled = true;
               idleAction.reset(); idleAction.play();
