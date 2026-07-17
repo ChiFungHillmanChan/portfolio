@@ -338,3 +338,91 @@ test('full category ladder orders correctly, high to low', () => {
     );
   }
 });
+
+// --- bestFive --------------------------------------------------------------
+
+test('bestFive: full house from seven cards picks the trips then the pair', () => {
+  const pile = [
+    c(2, 'clubs'),
+    c(13, 'hearts'),
+    c(9, 'hearts'),
+    c(13, 'diamonds'),
+    c(7, 'diamonds'),
+    c(13, 'spades'),
+    c(9, 'clubs'),
+  ];
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.FULL_HOUSE, 13, 9]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [13, 13, 13, 9, 9]);
+  assert.equal(new Set(hand.bestFive).size, 5);
+  for (const card of hand.bestFive) assert.ok(pile.includes(card));
+});
+
+test('bestFive: flush returns five cards of the flush suit, best first', () => {
+  const hand = evaluateHand([
+    c(14, 'hearts'),
+    c(2, 'spades'),
+    c(11, 'hearts'),
+    c(9, 'hearts'),
+    c(6, 'hearts'),
+    c(3, 'hearts'),
+  ]);
+  assert.equal(hand.category, CATEGORY.FLUSH);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [14, 11, 9, 6, 3]);
+  assert.ok(hand.bestFive.every((card) => card.suit === 'hearts'));
+});
+
+test('bestFive: straight is ordered high to low', () => {
+  const hand = evaluateHand(mixed(2, 9, 5, 6, 7, 8, 11));
+  assert.deepEqual(hand.score, [CATEGORY.STRAIGHT, 9]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [9, 8, 7, 6, 5]);
+});
+
+test('bestFive: wheel straight ends with the ace card', () => {
+  const hand = evaluateHand(mixed(14, 2, 3, 4, 5));
+  assert.deepEqual(hand.score, [CATEGORY.STRAIGHT, 5]);
+  assert.deepEqual(hand.bestFive.map((card) => card.rank), [5, 4, 3, 2, 14]);
+});
+
+test('bestFive: joker object itself appears in the winning five', () => {
+  const w = joker();
+  const pile = [c(9, 'spades'), c(9, 'hearts'), c(9, 'diamonds'), c(9, 'clubs'), w];
+  const hand = evaluateHand(pile);
+  assert.equal(hand.category, CATEGORY.FIVE_OF_A_KIND);
+  assert.ok(hand.bestFive.includes(w));
+  assert.equal(new Set(hand.bestFive).size, 5);
+});
+
+test('bestFive: joker completing the wheel is in the five', () => {
+  const w = joker();
+  const pile = [c(14, 'spades'), c(2, 'hearts'), c(3, 'diamonds'), c(4, 'clubs'), w];
+  const hand = evaluateHand(pile);
+  assert.deepEqual(hand.score, [CATEGORY.STRAIGHT, 5]);
+  assert.ok(hand.bestFive.includes(w));
+  assert.equal(hand.bestFive.length, 5);
+});
+
+test('bestFive: fewer than five cards returns the whole pile, best first', () => {
+  const kh = c(13, 'hearts');
+  const qs = c(12, 'spades');
+  const hand = evaluateHand([qs, kh]);
+  assert.deepEqual(hand.bestFive, [kh, qs]);
+});
+
+test('bestFive: pair {K, Joker} returns both cards', () => {
+  const w = joker();
+  const kh = c(13, 'hearts');
+  const hand = evaluateHand([kh, w]);
+  assert.deepEqual(hand.score, [CATEGORY.PAIR, 13]);
+  assert.equal(hand.bestFive.length, 2);
+  assert.ok(hand.bestFive.includes(kh));
+  assert.ok(hand.bestFive.includes(w));
+});
+
+test('bestFive: royal flush picks the suited run even among distractors', () => {
+  const suited = [c(14, 'spades'), c(13, 'spades'), c(12, 'spades'), c(11, 'spades'), c(10, 'spades')];
+  const pile = [c(14, 'hearts'), ...suited, c(9, 'clubs')];
+  const hand = evaluateHand(pile);
+  assert.equal(hand.category, CATEGORY.ROYAL_FLUSH);
+  assert.deepEqual(hand.bestFive, suited);
+});
