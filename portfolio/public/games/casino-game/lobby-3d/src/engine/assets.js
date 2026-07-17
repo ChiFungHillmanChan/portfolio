@@ -246,6 +246,24 @@
         root.remove(procedural.group);
         impl = charImpl;
         if (idleWanted) impl.setIdle(app);
+        // Shift-change walk (v2 spec): table dealers (opts.walkIn) walk in
+        // along the pit lane the FIRST time the player gets near their
+        // table this roomGen. GLB impl only — the procedural rig has no
+        // walk cycle, and this whole branch never runs for it anyway.
+        if (opts.walkIn && impl.walkIn) {
+          const gen = app.roomGen;
+          const wp = new THREE.Vector3();
+          const watch = () => {
+            if (app.roomGen !== gen) return app.offFrame(watch);
+            const p = app.player;
+            if (!p) return;
+            root.getWorldPosition(wp);
+            const dx = p.x - wp.x, dz = p.z - wp.z;
+            if (dx * dx + dz * dz < 36) { app.offFrame(watch); impl.walkIn(); }
+          };
+          watch.cancel = () => app.offFrame(watch);
+          app.onFrame(watch);
+        }
       });
     }
     root.userData.rig = facade;

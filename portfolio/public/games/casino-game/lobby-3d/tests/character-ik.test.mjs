@@ -74,7 +74,14 @@ before(async () => {
     navigator: { userAgent: 'node-test-harness' },
     performance: { now: () => mockNow },
     TextDecoder,
+    // v2 GLBs embed PNG textures; GLTFLoader's ImageBitmapLoader path needs
+    // these to exist. The stubs never decode pixels — tests only touch
+    // geometry/bones/tints, never rendered texels.
+    Blob,
+    URL: { createObjectURL: () => 'blob:stub', revokeObjectURL() {} },
+    createImageBitmap: async () => ({ width: 2, height: 2, close() {} }),
   };
+  sandbox.self = sandbox;   // GLTFLoader's loaders reference `self`
   vm.createContext(sandbox);
 
   loadScript(sandbox, 'vendor/three-0.149.0.min.js');
@@ -171,39 +178,43 @@ test('dealCard: hand bone reaches the shoe ref (+offset) at the grab waypoint, t
     },
   });
 
-  // dealCard: dur 520ms, hands.R = [
-  //   {at:0.28, ref:'shoe',   offset:[0,0.03,0], ease:'outCubic', event:'grab'},
-  //   {at:0.72, ref:'target', offset:[0,0.04,0], arc:0.10, event:'release'},
-  //   {at:1.00, rest:true},
-  // ]
+  // Timings/offsets read from the LIVE path data (v2 reshaped dealCard into
+  // a shoe -> pitch -> shoe-hover chain and retimed it to the 420ms card
+  // flight — hardcoding those numbers here made every retune a test edit).
   // Finding 2's fix removed the old segment-tail `st>=0.995` firing
   // mechanism in favour of catch-up semantics keyed on `wp.at <= t` (raw
-  // path fraction, not eased within-segment progress). Land just PAST the
-  // grab waypoint's own `at` (0.28) — t_frac 0.2805 — so `wp.at <= t` holds
-  // and the event fires. Position is sampled a fraction of a waypoint span
-  // into the FOLLOWING segment at that point, but the eased blend at
-  // st~0.001 there is negligible (sub-millimetre) — still comfortably
-  // inside the 1cm epsilon, so the hand still reads as being at shoe+offset.
-  mockNow = 0.2805 * 520;
+  // path fraction, not eased within-segment progress). Land just PAST each
+  // event waypoint's own `at` so `wp.at <= t` holds and the event fires.
+  // Position is sampled a fraction of a waypoint span into the FOLLOWING
+  // segment at that point, but the eased blend at st~0.001 is negligible
+  // (sub-millimetre) — still comfortably inside the 1cm epsilon.
+  const path = CTX_CASINO.handPaths.PATHS.dealCard;
+  const grabWp = path.hands.R.find((w) => w.event === 'grab');
+  const relWp = path.hands.R.find((w) => w.event === 'release');
+  mockNow = (grabWp.at + 0.0005) * path.dur;
   app.tick(1 / 60);
   handPos.copy(impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3()));
-  vecClose(handPos, [shoe[0], shoe[1] + 0.03, shoe[2]], 'grab waypoint');
+  vecClose(handPos, [shoe[0] + grabWp.offset[0], shoe[1] + grabWp.offset[1], shoe[2] + grabWp.offset[2]], 'grab waypoint');
   assert.ok(events.grab, 'grab event must have fired via wp.at<=t catch-up semantics');
 
-  // Release: same idea, just past the release waypoint's own `at` (0.72).
-  mockNow = 0.7205 * 520;
+  mockNow = (relWp.at + 0.0005) * path.dur;
   app.tick(1 / 60);
   handPos.copy(impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3()));
-  vecClose(handPos, [target[0], target[1] + 0.04, target[2]], 'release waypoint');
+  vecClose(handPos, [target[0] + relWp.offset[0], target[1] + relWp.offset[1], target[2] + relWp.offset[2]], 'release waypoint');
   assert.ok(events.release, 'release event must have fired via wp.at<=t catch-up semantics');
 
-  // Completion: t=1 -> playPath's promise must resolve (not hang).
-  mockNow = 520;
+  // Completion: t=1 -> playPath's promise must resolve (not hang). v2's
+  // dealCard ends at a shoe hover (holdAtEnd), so resolution happens via
+  // the holding branch; end the hold afterwards to release the drive.
+  mockNow = path.dur;
   app.tick(1 / 60);
   let resolved = false;
   p.then(() => { resolved = true; });
   await p;
   assert.ok(resolved || true);   // await above already proves resolution; assert.ok is belt-and-braces
+  await impl.play(app, 'armsRest');
+  mockNow += 16;
+  app.tick(1 / 60);
 });
 
 test('playPath with a missing ref resolves immediately, warns exactly once per path name, and never hands NaN to the IK solver', async () => {
@@ -298,8 +309,8 @@ test('Finding 1 — a second playPath supersedes an in-flight one: the outgoing 
   p1.then(() => { p1Resolved = true; });
 
   // A second dealCard call while the first is still running — this is the
-  // blackjack-live.js:352-429 shape (dealTo fires 'dealCard' every ~420ms
-  // while the IK path itself lasts 520ms).
+  // blackjack-live.js dealTo shape (consecutive deals chain by design in v2:
+  // each pitch supersedes the previous one's shoe hover).
   const p2 = impl.play(app, 'dealCard', { refs: { shoe, target } });
 
   // Finding 1's fix finishes the outgoing entry SYNCHRONOUSLY inside
@@ -310,10 +321,16 @@ test('Finding 1 — a second playPath supersedes an in-flight one: the outgoing 
   assert.equal(app.hookCount(), baseline + 1,
     'drive hook count is unchanged across the handoff — the outgoing release() and the incoming acquireDrive() overlap, so the hook is never torn down and re-created');
 
-  mockNow = 520;
+  mockNow = CTX_CASINO.handPaths.PATHS.dealCard.dur + 20;
   app.tick(1 / 60);
-  await p2;   // the superseding path must still run to completion normally
-  assert.equal(app.hookCount(), baseline, 'drive hook count returns to baseline once both paths have settled — no leaked hook');
+  await p2;   // the superseding path must still resolve at t>=1
+  // v2 dealCard ends on a shoe hover (holdAtEnd): the drive hook is
+  // intentionally still held during the hold; armsRest ends it.
+  assert.equal(app.hookCount(), baseline + 1, 'the completed pitch holds at the shoe — drive hook intentionally retained');
+  await impl.play(app, 'armsRest');
+  mockNow += 16;
+  app.tick(1 / 60);
+  assert.equal(app.hookCount(), baseline, 'drive hook count returns to baseline once armsRest ends the hold — no leaked hook');
 });
 
 test('Finding 2 — tapRack: a single jank-frame jump straight past BOTH \'contact\' waypoints still fires both events, in order, via wp.at<=t catch-up (not the removed segment-tail 0.995 mechanism)', async () => {
@@ -495,13 +512,16 @@ test('Fix 2 — a dealer rotated π (baccarat/uth pit orientation): a waypoint X
   const { target } = reachRefs(impl);
 
   // Throwaway path: a single R waypoint at t=1, ref 'target', offset
-  // [0.1, 0, 0] — X-only so a rotation bug (raw-add vs. rotate-then-add) is
-  // unambiguous. Rotating [0.1,0,0] by rotation.y=π negates X (Z stays 0
+  // [0.05, 0, 0] — X-only so a rotation bug (raw-add vs. rotate-then-add) is
+  // unambiguous. Rotating [0.05,0,0] by rotation.y=π negates X (Z stays 0
   // since the offset has none), so the CORRECT landing spot is
-  // target - [0.1,0,0]; the OLD raw-add bug would have landed at
-  // target + [0.1,0,0] instead — a ~0.2m error, way outside EPS.
+  // target - [0.05,0,0]; the OLD raw-add bug would have landed at
+  // target + [0.05,0,0] instead — a ~0.1m error, way outside EPS. (Offset
+  // kept small enough that target+offset stays inside v2's pitch-point
+  // reach clamp — a clamped waypoint would fail this test for the wrong
+  // reason.)
   CTX_CASINO.handPaths.PATHS.__testXOffsetPi = {
-    dur: 300, hands: { R: [{ at: 1.0, ref: 'target', offset: [0.1, 0, 0] }] },
+    dur: 300, hands: { R: [{ at: 1.0, ref: 'target', offset: [0.05, 0, 0] }] },
   };
   try {
     mockNow = 0;
@@ -511,7 +531,7 @@ test('Fix 2 — a dealer rotated π (baccarat/uth pit orientation): a waypoint X
     await p;
 
     const handPos = impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3());
-    vecClose(handPos, [target[0] - 0.1, target[1], target[2]], 'π-rotated X-offset waypoint');
+    vecClose(handPos, [target[0] - 0.05, target[1], target[2]], 'π-rotated X-offset waypoint');
   } finally {
     delete CTX_CASINO.handPaths.PATHS.__testXOffsetPi;
   }
