@@ -143,3 +143,17 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 @media (prefers-reduced-motion: reduce) {
   #rouletteLive { transition: none; }
 }
+
+/* ---- portrait gate (mobile only — html.is-mobile set by app.js) ----
+   Sits above the splash (50) and fader (40): a portrait phone sees ONLY
+   the rotate prompt, whatever state the lobby is in underneath. */
+#rotate-gate { display: none; }
+@media (orientation: portrait) {
+  html.is-mobile #rotate-gate {
+    display: flex; position: fixed; inset: 0; z-index: 60;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: .55rem; text-align: center; background: #0a0c10; color: #d7b45c;
+  }
+  html.is-mobile #rotate-gate h2 { font-size: 1.25rem; letter-spacing: .14em; font-weight: 500; }
+  html.is-mobile #rotate-gate p { color: #9aa0b4; font-size: .9rem; }
+}

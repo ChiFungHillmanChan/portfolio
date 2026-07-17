@@ -635,7 +635,11 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // walk-in enters from the aisle end of the dealer's own corridor
+      // (world +Z = south): the table sits perpendicular to the aisle, so a
+      // pit-lane (±X) entry would cross the neighbouring table, and the old
+      // local -x path spawned him at the wheel end INSIDE the tote board.
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [0, 2.2] });
       dealer.position.set(0.2, 0, -1.15);
       g.add(dealer);
       dealer.userData.idle(C.app);

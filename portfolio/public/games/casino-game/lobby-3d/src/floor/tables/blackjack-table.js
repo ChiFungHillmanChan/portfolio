@@ -199,7 +199,9 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // west pit-lane entry, short enough to stay clear of the neighbouring
+      // table's dealer (row spacing 3.9m — the old 3.2m walked through him)
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [-2.4, 0] });
       dealer.position.set(0, 0, -0.55);
       g.add(dealer);
       dealer.userData.idle(C.app);

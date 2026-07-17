@@ -112,8 +112,11 @@
     let dealerRig = null;
     if (opts.withDealer) {
       // a closed table's dealer is mid-training — already at the table, so
-      // no shift-change walk-in (it would collide with the training drills)
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: !opts.closed });
+      // no shift-change walk-in (it would collide with the training drills).
+      // Open table enters from the WEST (2.6m keeps the path clear of the
+      // OPENING-SOON dais at +3.6 world-x — the old east entry spawned him
+      // inside its rope posts).
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: opts.closed ? false : [-2.6, 0] });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);

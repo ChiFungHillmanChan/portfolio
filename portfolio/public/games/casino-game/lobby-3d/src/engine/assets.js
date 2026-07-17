@@ -269,7 +269,10 @@
             if (!p) return;
             root.getWorldPosition(wp);
             const dx = p.x - wp.x, dz = p.z - wp.z;
-            if (dx * dx + dz * dz < 36) { app.offFrame(watch); impl.walkIn(); }
+            // opts.walkIn is the world-space [dx, dz] entry offset picked by
+            // the table builder (walkIn() falls back to a west pit-lane
+            // entry when the legacy `true` comes through).
+            if (dx * dx + dz * dz < 36) { app.offFrame(watch); impl.walkIn(opts.walkIn); }
           };
           watch.cancel = () => app.offFrame(watch);
           app.onFrame(watch);

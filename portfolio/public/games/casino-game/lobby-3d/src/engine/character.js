@@ -159,14 +159,20 @@
   // bake — the numbers travel inside the GLB (scene.extras.dealerLandmarks),
   // so bake and runtime can never drift apart. Boundary triangles blend the
   // tint across one edge; the crisp texture lines dominate visually.
-  const TROUSERS_TINT = [0.106, 0.118, 0.149];   // #1b1e26
+  // Rendered through the linear pipeline the old #1b1e26 trousers displayed
+  // as ~0.37 sRGB — pale gray that read as BARE LEGS from a few metres, and
+  // the white-tinted feet kept the mesh's toe shading visible ("barefoot
+  // dealer"). Trousers now sit just above the jacket's darkness and the
+  // feet get their own near-black tint so the toe geometry reads as shoes.
+  const TROUSERS_TINT = [0.045, 0.05, 0.062];
+  const SHOES_TINT = [0.05, 0.05, 0.055];
 
   // Tint group of a bind-pose vertex — mirrors classify() in
-  // tools/build-dealer-assets.mjs, collapsed to the four tint groups.
+  // tools/build-dealer-assets.mjs, collapsed to the five tint groups.
   function tintGroupAt(x, y, z, L) {
     const ax = Math.abs(x);
     if (y > L.collarY || ax > L.wristX) return 'SKIN';
-    if (y < L.ankleY) return 'WHITE';                    // shoes: painted final
+    if (y < L.ankleY) return 'SHOES';
     if (ax > L.cuffX && y > 1.30) return 'WHITE';        // shirt cuffs
     if (y > L.collarBandY && z > 0 && ax < 0.09) return 'WHITE';  // collar edge
     if (y < L.beltTop) return 'TROUSERS';                // trousers + belt band
@@ -187,7 +193,7 @@
   // this dealer's tint onto all the others (see the call site).
   function bakeTintColors(geometry, L, skinTint, suitTint) {
     const pos = geometry.attributes.position;
-    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, WHITE: [1, 1, 1] };
+    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, SHOES: SHOES_TINT, WHITE: [1, 1, 1] };
     const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
       const g = groups[tintGroupAt(pos.getX(i), pos.getY(i), pos.getZ(i), L)];
@@ -876,29 +882,37 @@
     }
 
     // ---- shift-change walk (v2 spec) ----
-    // The dealer walks in along the pit lane and takes position. Pathing is
-    // LOCAL-space: impl.group sits inside the table's own root, so moving
-    // group.position.x walks parallel to the table row no matter how the
-    // table is rotated in the world. Enters from local -x (toward the floor
-    // aisles — local +x runs into the cashier wall on the blackjack row).
-    // Uses the 'body' track token so a roomGen change or a repeat call
-    // cancels it; holds a drive ref for full-rate mixer updates while
+    // The dealer walks in and takes position. The entry point is a WORLD-
+    // space offset from the post ([dx, dz], chosen by each table builder so
+    // the path stays in open floor — the old hardcoded local -x path sent
+    // the perpendicular roulette dealers THROUGH their own tote board and
+    // wheel end, which read as "a person standing inside the table").
+    // The offset is converted into the parent's local space at call time so
+    // any table rotation is handled uniformly. Facing is derived from the
+    // travel direction itself (absolute, in parent space) — the old
+    // baseYaw ± π/2 guess walked sideways whenever the dealer's rest yaw
+    // wasn't 0. Uses the 'body' track token so a roomGen change or a repeat
+    // call cancels it; holds a drive ref for full-rate mixer updates while
     // walking (same contract as every other one-shot).
-    function walkIn() {
+    function walkIn(enterWorld) {
       if (app.REDUCED) return Promise.resolve();
       const walkClip = findClip('Walk_Formal_Loop');
       if (!walkClip || !idleAction) return Promise.resolve();
       const token = ++tokens.body;
       const gen = app.roomGen;
       const SPEED = 1.25;             // m/s — matches the formal stride's cadence
-      const ENTER_FROM = -3.2;        // local-x offset of the entry point
+      const [wdx, wdz] = Array.isArray(enterWorld) ? enterWorld : [-2.4, 0];
       const release = acquireDrive();
-      const targetX = group.position.x;
+      const targetX = group.position.x, targetZ = group.position.z;
       const baseYaw = group.rotation.y;
-      // facing the travel direction: walking toward +x local => forward
-      // (sin yaw, 0, cos yaw) must point +x => yaw = +π/2 (relative to base)
-      const walkYaw = baseYaw + (ENTER_FROM < 0 ? Math.PI / 2 : -Math.PI / 2);
-      group.position.x = targetX + ENTER_FROM;
+      // world offset -> parent-local offset (handles rotated table roots)
+      const qi = new THREE.Quaternion();
+      (group.parent || group).getWorldQuaternion(qi).invert();
+      const enter = new THREE.Vector3(wdx, 0, wdz).applyQuaternion(qi);
+      // face where you walk: travel dir is (-enter), absolute in parent space
+      const walkYaw = Math.atan2(-enter.x, -enter.z);
+      group.position.x = targetX + enter.x;
+      group.position.z = targetZ + enter.z;
       group.rotation.y = walkYaw;
       group.updateMatrixWorld(true);
       const walkAction = mixer.clipAction(walkClip);
@@ -912,6 +926,7 @@
         const finish = () => {
           app.offFrame(hook);
           group.position.x = targetX;
+          group.position.z = targetZ;
           group.rotation.y = baseYaw;
           idleAction.enabled = true;
           idleAction.reset(); idleAction.play();
@@ -924,11 +939,15 @@
           const now = performance.now();
           const dt = Math.min(0.1, (now - last) / 1000);
           last = now;
-          const remaining = targetX - group.position.x;
+          const rx = targetX - group.position.x, rz = targetZ - group.position.z;
+          const rlen = Math.hypot(rx, rz);
           if (!arrived) {
-            const step = Math.min(Math.abs(remaining), SPEED * dt) * Math.sign(remaining || 1);
-            group.position.x += step;
-            if (Math.abs(targetX - group.position.x) < 0.02) {
+            const step = Math.min(rlen, SPEED * dt);
+            if (rlen > 1e-4) {
+              group.position.x += (rx / rlen) * step;
+              group.position.z += (rz / rlen) * step;
+            }
+            if (Math.hypot(targetX - group.position.x, targetZ - group.position.z) < 0.02) {
               arrived = true;
               idleAction.enabled = true;
               idleAction.reset(); idleAction.play();

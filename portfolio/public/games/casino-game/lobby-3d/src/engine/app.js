@@ -6,7 +6,14 @@
   let fadeGen = 0;
 
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
+  // A phone held LANDSCAPE is wider than 768px, so the old max-width test
+  // silently gave phones the desktop budget (shadows, antialias, 2x pixel
+  // ratio). Detect the DEVICE instead: coarse pointer + a screen whose
+  // short side is phone/small-tablet sized (orientation-proof via min()).
+  const IS_MOBILE = matchMedia('(pointer: coarse)').matches &&
+    Math.min(screen.width, screen.height) <= 820;
+  // gates #rotate-gate (style.css): portrait phones must turn landscape
+  if (IS_MOBILE) document.documentElement.classList.add('is-mobile');
 
   // First-person player: position on the floor plane + yaw/pitch. yaw 0 faces
   // +Z (south); yaw π/2 faces +X (east, into the casino).
@@ -160,10 +167,12 @@
         const s = locked ? 0 : (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
         if (f || s) {
           glide = null; cancelFly();
+          // sprint: hold E or Shift while moving
+          const speed = SPEED * (keys.KeyE || keys.ShiftLeft || keys.ShiftRight ? 1.8 : 1);
           const len = Math.hypot(f, s) || 1;
           const dx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) / len;
           const dz = (Math.cos(P.yaw) * f - Math.sin(P.yaw) * s) / len;
-          if (tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt)) stepAccum += dt;
+          if (tryMove(P.x + dx * speed * dt, P.z + dz * speed * dt)) stepAccum += dt;
         } else if (glide) {
           const dx = glide.x - P.x, dz = glide.z - P.z, d = Math.hypot(dx, dz);
           if (d < 0.05) { const done = glide.onDone; glide = null; done?.(); }
