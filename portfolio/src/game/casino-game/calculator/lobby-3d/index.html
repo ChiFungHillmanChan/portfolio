@@ -8604,6 +8604,47 @@ THREE.SkeletonUtils = { clone };
         restDirFore: hand.position.clone().normalize(),
       };
     }
+    // bind-pose spine rotation — the torso-lean layer restores this before
+    // adding its offset whenever no mixer action rewrote the spine this
+    // frame (idle not yet started), so the additive lean can't accumulate
+    const spineRestQ = bones.spine ? bones.spine.quaternion.clone() : null;
+
+    // ---- relaxed-hand layer ----
+    // The pack's clips leave the fingers in a clenched mocap fist (and some
+    // clips don't drive them at all, so additive math would accumulate).
+    // Every frame the finger bones are SET to a precomputed bind-pose ×
+    // fixed-relaxed-curl local quaternion — absolute, so it can never
+    // drift, and uniform across clips. Curl axis derived from the bind
+    // geometry itself: at T-pose the fingers point along the arm with palms
+    // down, so the curl axis is fingerDir × worldDown converted into each
+    // bone's local frame (handles left/right automatically via the cross
+    // product's sign).
+    const fingerCurl = [];
+    {
+      const CURL = { index: [0.30, 0.45, 0.35], middle: [0.32, 0.48, 0.38], ring: [0.34, 0.50, 0.40], pinky: [0.36, 0.52, 0.42], thumb: [0.10, 0.18, 0.15] };
+      const DOWN = new THREE.Vector3(0, -1, 0);
+      group.updateMatrixWorld(true);
+      group.traverse((b) => {
+        if (!b.isBone) return;
+        const m = b.name.match(/^(index|middle|ring|pinky|thumb)_(01|02|03)_[lr]$/);
+        if (!m || !b.children[0]) return;
+        const dirW = b.children[0].getWorldPosition(new THREE.Vector3())
+          .sub(b.getWorldPosition(new THREE.Vector3())).normalize();
+        const axisW = dirW.clone().cross(DOWN);
+        if (axisW.lengthSq() < 0.25) return;   // degenerate: finger ~vertical at bind
+        axisW.normalize();
+        const invQ = b.getWorldQuaternion(new THREE.Quaternion()).invert();
+        // rotation expressed in the bone's own frame, applied after its
+        // bind-local orientation: qL' = qLbind ⊗ (qWbind⁻¹ ΔW qWbind)
+        const axisL = axisW.applyQuaternion(invQ).normalize();
+        const angle = CURL[m[1]][Number(m[2]) - 1];
+        const q = b.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(axisL, angle));
+        fingerCurl.push({ bone: b, q });
+      });
+    }
+    function applyFingerCurl() {
+      for (const f of fingerCurl) f.bone.quaternion.copy(f.q);
+    }
 
     // Rotate `bone` so that `restDir` (local) points at world direction `dirW`.
     function aimBone(bone, restDir, dirW, weight) {
@@ -8660,6 +8701,24 @@ THREE.SkeletonUtils = { clone };
       return base.clone();
     }
 
+    // Pitch-point clamp (v2 spec): a dealer PITCHES cards — the hand never
+    // stretches past a comfortable fraction of its actual reach; the card
+    // (or chip) flies the rest of the way from the release event. Without
+    // this, table targets ~1.4m away pin the ~0.55m arm at full extension
+    // and the whole gesture collapses into the frozen chest-height wobble
+    // that was v1's core complaint. Applied to every resolved waypoint, so
+    // near targets pass through untouched and only far ones pull in.
+    const REACH_FRACTION = 0.85;
+    function clampToReach(side, posV) {
+      const ch = armChains[side];
+      if (!ch) return posV;
+      ch.upper.getWorldPosition(_v3);
+      const maxD = (ch.upperLen + ch.foreLen) * REACH_FRACTION;
+      const d = posV.distanceTo(_v3);
+      if (d <= maxD) return posV;
+      return posV.sub(_v3).multiplyScalar(maxD / d).add(_v3);
+    }
+
     // Table setups sometimes omit a ref that was already supplied by an
     // immediately-preceding call on the same arm (e.g. roulette-table.js
     // fires spinReach with a `rim` ref, then spinFollow with `{}` — that call
@@ -8708,14 +8767,27 @@ THREE.SkeletonUtils = { clone };
       // here (dealers don't rotate mid-path) and reused for every waypoint's
       // offset in resolveWaypointPos — not re-queried per waypoint/frame.
       group.getWorldQuaternion(_q1);
-      const hands = Object.entries(path.hands).map(([side, wps]) => ({
+      // mirrorBySide (hand-paths.js): single-R paths anchored on a ref that
+      // sits on the dealer's LEFT (group-local +x) swap to the left arm with
+      // X-offsets negated — drawing from a left-side shoe with the right
+      // hand crosses the chest (user-reported as "totally broken").
+      let handsDef = path.hands;
+      if (path.mirrorBySide && refs[path.mirrorBySide] && path.hands.R && !path.hands.L) {
+        _v1.set(...refs[path.mirrorBySide]);
+        if (group.worldToLocal(_v1).x > 0.05) {
+          handsDef = {
+            L: path.hands.R.map((w) => (w.offset ? { ...w, offset: [-w.offset[0], w.offset[1], w.offset[2]] } : w)),
+          };
+        }
+      }
+      const hands = Object.entries(handsDef).map(([side, wps]) => ({
         side,
         chain: armChains[side],
         start: null,               // filled on first frame (current hand pos)
         wps: wps.map((w) => ({
           at: w.at, ease: C.tween.easings[w.ease || 'inOutCubic'],
           arc: w.arc || 0, event: w.event || null, fired: false,
-          pos: resolveWaypointPos(w, refs, side, _q1),
+          pos: clampToReach(side, resolveWaypointPos(w, refs, side, _q1)),
         })),
       })).filter((h) => h.chain);
       if (!hands.length) return Promise.resolve();
@@ -8786,6 +8858,11 @@ THREE.SkeletonUtils = { clone };
       const t = Math.min(1, (now - ap.t0) / ap.dur);
       const w = Math.min(1, (now - ap.t0) / RAMP)
         * (ap.path.cycle || ap.holdAtEnd ? 1 : Math.min(1, ((1 - t) * ap.dur) / RAMP + 0.001));
+      // pass 1: resolve each hand's current path position. Split from the
+      // IK pass because the torso lean below moves the SHOULDERS — it must
+      // be applied before the solve so the solver compensates within the
+      // same frame (lean-after-IK left the hand short of its target by the
+      // lean amount, caught by the character-ik waypoint-accuracy tests).
       for (const h of ap.hands) {
         if (!h.start) { h.chain.hand.getWorldPosition(_v3); h.start = _v3.clone(); }
         // find current segment
@@ -8799,7 +8876,27 @@ THREE.SkeletonUtils = { clone };
         const e = cur.ease(st);
         const pos = _v1.copy(prevPos).lerp(cur.pos, e);
         pos.y += cur.arc * 4 * st * (1 - st);
-        applyArmIK(h.side, pos, w);
+        if (!h._pathPos) h._pathPos = new THREE.Vector3();
+        h._pathPos.copy(pos);
+      }
+      // Additive torso lean toward the working hand's current target —
+      // post-mixer like every other layer, ramped by the same IK weight so
+      // it fades in/out with the arm. Small on purpose: it sells the pitch
+      // without moving the hips or fighting the idle sway.
+      if (ap.hands.length && bones.spine) {
+        // no running idle action -> nothing rewrote the spine this frame, so
+        // restore rest first or the += below compounds frame over frame
+        if (spineRestQ && (!idleAction || !idleAction.isRunning())) bones.spine.quaternion.copy(spineRestQ);
+        const local = group.worldToLocal(_v2.copy(ap.hands[0]._pathPos));
+        const yaw = Math.max(-0.18, Math.min(0.18, Math.atan2(local.x, Math.abs(local.z) + 1e-3) * 0.35));
+        const fwd = Math.max(0, Math.min(0.20, (local.z - 0.30) * 0.35));
+        bones.spine.rotation.y += yaw * w;
+        bones.spine.rotation.x += fwd * w;
+        bones.spine.updateWorldMatrix(true, false);
+      }
+      // pass 2: IK solve + events against the leaned torso
+      for (const h of ap.hands) {
+        applyArmIK(h.side, h._pathPos, w);
         // Finding 2 (task-7 review): firing used to be tied to the CURRENT
         // segment's eased tail (`cur.event && st>=0.995`) — for a fast
         // segment (e.g. tapRack's first waypoint) that's a sub-millisecond
@@ -8910,6 +9007,7 @@ THREE.SkeletonUtils = { clone };
       applyLook();          // look-at layer, below
       applyHeadGesture();    // procedural nod/headShake layer, below
       applyArmPath();        // IK arm layer, above — also must run post-mixer
+      applyFingerCurl();     // relaxed-hand layer, above — absolute SET, post-mixer
     }
 
     function setIdle() {
@@ -9462,11 +9560,21 @@ THREE.SkeletonUtils = { clone };
   const EASINGS = ['inOutCubic', 'outCubic', 'outQuart', 'outBack'];
 
   const PATHS = {
-    // draw from the shoe, sweep to the card spot, hand back to rest
-    dealCard: { dur: 520, hands: { R: [
-      { at: 0.28, ref: 'shoe', offset: [0, 0.03, 0], ease: 'outCubic', event: 'grab' },
-      { at: 0.72, ref: 'target', offset: [0, 0.04, 0], arc: 0.10, event: 'release' },
-      { at: 1.00, rest: true },
+    // draw from the shoe, PITCH toward the seat, hover back over the shoe —
+    // deliberately NO rest key: consecutive deals chain into one continuous
+    // pitching rhythm (washCards' chaining idiom), and between rounds the
+    // hand waits by the shoe. dur matches the 420ms card flight so a full
+    // multi-card deal reads as one motion. The hand target itself never
+    // reaches a distant seat — character.js clamps every waypoint to a
+    // comfortable fraction of the arm's reach and the card flies the rest
+    // of the way from the release event. sweep/pay/armsRest end the chain.
+    // mirrorBySide: engine swaps this to the LEFT arm when the shoe ref
+    // sits on the dealer's left (group-local +x) — a right-handed draw from
+    // a left-side shoe crosses the chest and reads broken.
+    dealCard: { dur: 420, mirrorBySide: 'shoe', hands: { R: [
+      { at: 0.30, ref: 'shoe', offset: [0, 0.03, 0], ease: 'outCubic', event: 'grab' },
+      { at: 0.74, ref: 'target', offset: [0, 0.05, 0], arc: 0.08, event: 'release' },
+      { at: 1.00, ref: 'shoe', offset: [0, 0.07, 0.03] },
     ] } },
     // rake losing chips: touch the stack, drag to the rack
     sweepChips: { dur: 700, hands: { R: [
