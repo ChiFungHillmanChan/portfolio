@@ -9,6 +9,7 @@ const PUBLIC_DIR = resolve(GAMES_DIR, '..');               // portfolio/public
 
 const GAMES = [
   { dir: 'card-drawer', manifest: 'manifest.webmanifest' },
+  { dir: 'connect4', manifest: 'manifest.webmanifest' },
 ];
 
 const read = (...p) => readFileSync(join(...p), 'utf8');
@@ -91,5 +92,14 @@ test('connect4: fonts are self-hosted (no Google Fonts requests)', () => {
   assert.ok(files.length >= 2, 'expected at least one woff2 per family');
   for (const f of files) {
     assert.ok(existsSync(join(GAMES_DIR, 'connect4', 'fonts', f)), `missing font file ${f}`);
+  }
+});
+
+test('connect4: every self-hosted font file is precached', () => {
+  const assets = extractJsonConst(read(GAMES_DIR, 'connect4', 'sw.js'), 'ASSETS');
+  assert.ok(assets.includes('./fonts/fonts.css'));
+  const css = read(GAMES_DIR, 'connect4', 'fonts', 'fonts.css');
+  for (const [, f] of css.matchAll(/url\(([^)]+\.woff2)\)/g)) {
+    assert.ok(assets.includes(`./fonts/${f}`), `font ${f} missing from ASSETS`);
   }
 });
