@@ -52,7 +52,7 @@ function defaultState() {
 
 let state = defaultState();
 // Transient UI state — never persisted.
-const ui = { sheetFor: null, justDrawn: null, confirmReset: false, resume: null };
+const ui = { sheetFor: null, justDrawn: null, confirmReset: false, resume: null, viewerFor: null };
 let resetTimer = null;
 
 const nextPlayerId = () => state.players.reduce((m, p) => Math.max(m, p.id), 0) + 1;
@@ -234,6 +234,7 @@ function resetGame() {
   clearTimeout(resetTimer);
   ui.confirmReset = false;
   ui.sheetFor = null;
+  ui.viewerFor = null;
   const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [] }));
   state = { ...defaultState(), includeJokers: state.includeJokers, players: names };
   saveState();
@@ -371,6 +372,10 @@ function playerPanel(player) {
   }
   const actionLabel = state.drawMode === 'random' ? `Deal to ${esc(player.name)}` : `Pick for ${esc(player.name)}`;
   const action = state.drawMode === 'random' ? 'deal' : 'open-sheet';
+  const fanAttrs = player.cards.length
+    ? ` data-action="view-cards" data-player="${player.id}" role="button" tabindex="0"` +
+      ` aria-label="View ${esc(player.name)}'s cards"`
+    : '';
 
   return `
     <section class="panel player-panel">
@@ -378,7 +383,7 @@ function playerPanel(player) {
         <h3 class="player-name">${esc(player.name)}</h3>
         <span class="card-count">${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</span>
       </div>
-      <div class="fan">${fan}</div>
+      <div class="fan"${fanAttrs}>${fan}</div>
       ${hand ? `<p class="hand-label">${esc(hand.name)}</p>` : ''}
       <button class="btn btn-block" data-action="${action}" data-player="${player.id}" ${deckEmpty ? 'disabled' : ''}>
         ${deckEmpty ? 'Deck empty' : actionLabel}
@@ -476,11 +481,44 @@ function sheetHTML() {
   `;
 }
 
+function viewerHTML() {
+  const player = state.players.find((p) => p.id === ui.viewerFor);
+  if (!player || !player.cards.length) return '';
+  const hand = evaluateHand(player.cards);
+  const bestSet = new Set(hand.bestFive);
+  const spares = player.cards
+    .filter((card) => !bestSet.has(card))
+    .sort((a, b) => (b.rank || 15) - (a.rank || 15));
+  return `
+    <div class="viewer" role="dialog" aria-modal="true" aria-label="${esc(player.name)}'s cards">
+      <div class="viewer-head">
+        <div>
+          <h2 class="viewer-name">${esc(player.name)}</h2>
+          <p class="viewer-sub">${esc(hand.name)} — ${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</p>
+        </div>
+        <button class="btn btn-quiet btn-icon" data-action="close-viewer" aria-label="Close">${ICONS.cross}</button>
+      </div>
+      <div class="viewer-body">
+        <h3 class="viewer-section">Best hand</h3>
+        <div class="viewer-grid viewer-grid-best">${hand.bestFive.map((card) => cardWrap(card)).join('')}</div>
+        ${
+          spares.length
+            ? `<h3 class="viewer-section">Other cards</h3>
+        <div class="viewer-grid">${spares.map((card) => cardWrap(card)).join('')}</div>`
+            : ''
+        }
+        <button class="btn btn-block" data-action="close-viewer">Close</button>
+      </div>
+    </div>
+  `;
+}
+
 function gameScreen() {
   return `
     ${dealerBar()}
     ${state.players.map(playerPanel).join('')}
     ${leaderboardHTML()}
+    ${ui.viewerFor !== null ? viewerHTML() : ''}
     ${ui.sheetFor !== null ? sheetHTML() : ''}
   `;
 }
@@ -535,6 +573,14 @@ app.addEventListener('click', (event) => {
       if (sheetPlayer !== null) pickCard(sheetPlayer, Number(target.dataset.index));
       break;
     }
+    case 'view-cards':
+      ui.viewerFor = playerId;
+      render();
+      break;
+    case 'close-viewer':
+      ui.viewerFor = null;
+      render();
+      break;
     case 'undo':
       undoLastDraw();
       break;
@@ -599,8 +645,23 @@ app.addEventListener('change', (event) => {
   }
 });
 
+app.addEventListener('keydown', (event) => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const fan = event.target.closest('[data-action="view-cards"]');
+  if (!fan) return;
+  event.preventDefault();
+  ui.viewerFor = Number(fan.dataset.player);
+  render();
+});
+
 document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && ui.sheetFor !== null) {
+  if (event.key !== 'Escape') return;
+  if (ui.viewerFor !== null) {
+    ui.viewerFor = null;
+    render();
+    return;
+  }
+  if (ui.sheetFor !== null) {
     ui.sheetFor = null;
     render();
   }
