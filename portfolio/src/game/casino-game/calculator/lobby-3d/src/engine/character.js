@@ -825,6 +825,79 @@
       };
     }
 
+    // ---- shift-change walk (v2 spec) ----
+    // The dealer walks in along the pit lane and takes position. Pathing is
+    // LOCAL-space: impl.group sits inside the table's own root, so moving
+    // group.position.x walks parallel to the table row no matter how the
+    // table is rotated in the world. Enters from local -x (toward the floor
+    // aisles — local +x runs into the cashier wall on the blackjack row).
+    // Uses the 'body' track token so a roomGen change or a repeat call
+    // cancels it; holds a drive ref for full-rate mixer updates while
+    // walking (same contract as every other one-shot).
+    function walkIn() {
+      if (app.REDUCED) return Promise.resolve();
+      const walkClip = findClip('Walk_Formal_Loop');
+      if (!walkClip || !idleAction) return Promise.resolve();
+      const token = ++tokens.body;
+      const gen = app.roomGen;
+      const SPEED = 1.25;             // m/s — matches the formal stride's cadence
+      const ENTER_FROM = -3.2;        // local-x offset of the entry point
+      const release = acquireDrive();
+      const targetX = group.position.x;
+      const baseYaw = group.rotation.y;
+      // facing the travel direction: walking toward +x local => forward
+      // (sin yaw, 0, cos yaw) must point +x => yaw = +π/2 (relative to base)
+      const walkYaw = baseYaw + (ENTER_FROM < 0 ? Math.PI / 2 : -Math.PI / 2);
+      group.position.x = targetX + ENTER_FROM;
+      group.rotation.y = walkYaw;
+      group.updateMatrixWorld(true);
+      const walkAction = mixer.clipAction(walkClip);
+      walkAction.reset();
+      walkAction.setLoop(THREE.LoopRepeat, Infinity);
+      walkAction.play();
+      idleAction.crossFadeTo(walkAction, 0.2, false);
+      return new Promise((resolve) => {
+        let last = performance.now();
+        let arrived = false;
+        const finish = () => {
+          app.offFrame(hook);
+          group.position.x = targetX;
+          group.rotation.y = baseYaw;
+          idleAction.enabled = true;
+          idleAction.reset(); idleAction.play();
+          walkAction.crossFadeTo(idleAction, 0.25, false);
+          release();
+          resolve();
+        };
+        const hook = () => {
+          if (tokens.body !== token || app.roomGen !== gen) { finish(); return; }
+          const now = performance.now();
+          const dt = Math.min(0.1, (now - last) / 1000);
+          last = now;
+          const remaining = targetX - group.position.x;
+          if (!arrived) {
+            const step = Math.min(Math.abs(remaining), SPEED * dt) * Math.sign(remaining || 1);
+            group.position.x += step;
+            if (Math.abs(targetX - group.position.x) < 0.02) {
+              arrived = true;
+              idleAction.enabled = true;
+              idleAction.reset(); idleAction.play();
+              walkAction.crossFadeTo(idleAction, 0.25, false);
+            }
+          } else {
+            // settle the yaw back toward the table
+            let d = baseYaw - group.rotation.y;
+            while (d > Math.PI) d -= 2 * Math.PI;
+            while (d < -Math.PI) d += 2 * Math.PI;
+            group.rotation.y += d * 0.14;
+            if (Math.abs(d) < 0.03) { finish(); }
+          }
+        };
+        hook.cancel = finish;
+        app.onFrame(hook);
+      });
+    }
+
     function playHeadGesture(name, ms) {
       const spec = HEAD_GESTURES[name];
       const token = ++tokens.head;
@@ -913,7 +986,7 @@
       group.parent?.remove(group);
     }
 
-    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, dispose };
+    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, walkIn, dispose };
   }
 
   function attach(app, root, opts, onReady) {

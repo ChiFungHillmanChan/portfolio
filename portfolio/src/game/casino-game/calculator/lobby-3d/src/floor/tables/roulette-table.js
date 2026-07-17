@@ -631,7 +631,7 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed });
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
       dealer.position.set(0.2, 0, -1.15);
       g.add(dealer);
       dealer.userData.idle(C.app);
