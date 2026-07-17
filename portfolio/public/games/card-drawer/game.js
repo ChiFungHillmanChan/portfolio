@@ -216,27 +216,33 @@ function startGame() {
   render();
 }
 
-// Leader's player id right now — cheap (no outs computation). Strict > keeps
-// the earlier player on ties, matching rankedEntries' stable sort.
-function currentLeaderId() {
+// Leader snapshot { id, score } or null. Ties keep the earlier player,
+// matching rankedEntries' stable sort.
+function currentLeader() {
   let best = null;
   for (const p of state.players) {
     const hand = evaluateHand(p.cards);
     if (!hand) continue;
     if (!best || compareScores(hand.score, best.score) > 0) best = { id: p.id, score: hand.score };
   }
-  return best ? best.id : null;
+  return best;
+}
+
+// A draw "takes the lead" only when someone else genuinely led before and the
+// drawer's new hand STRICTLY beats that score — a tie never celebrates.
+function tookLeadAfterDraw(prevLeader, player) {
+  if (!prevLeader || prevLeader.id === player.id) return false;
+  return compareScores(evaluateHand(player.cards).score, prevLeader.score) > 0;
 }
 
 function dealRandom(playerId) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player || state.deck.length === 0) return;
-  const prevLeader = currentLeaderId();
+  const prevLeader = currentLeader();
   const card = state.deck.pop();
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
-  const newLeader = currentLeaderId();
-  if (prevLeader !== null && newLeader === playerId && newLeader !== prevLeader) {
+  if (tookLeadAfterDraw(prevLeader, player)) {
     ui.leadGlow = playerId;
   }
   ui.justDrawn = { playerId, cardId: card.id };
@@ -249,12 +255,11 @@ function dealRandom(playerId) {
 function pickCard(playerId, index) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player || index < 0 || index >= state.deck.length) return;
-  const prevLeader = currentLeaderId();
+  const prevLeader = currentLeader();
   const [card] = state.deck.splice(index, 1);
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
-  const newLeader = currentLeaderId();
-  const tookLead = prevLeader !== null && newLeader === playerId && newLeader !== prevLeader;
+  const tookLead = tookLeadAfterDraw(prevLeader, player);
   ui.sheetFor = null;
   ui.reveal = { playerId, cardId: card.id, stage: 1, tookLead };
   clearTimeout(revealTimer);
@@ -641,8 +646,8 @@ function resumeOverlay() {
 }
 
 function render() {
-  app.innerHTML =
-    (state.phase === 'setup' ? setupScreen() : gameScreen()) + (ui.resume ? resumeOverlay() : '');
+  const screen = state.phase === 'setup' ? setupScreen() : gameScreen();
+  app.innerHTML = ui.resume ? `<div class="board" inert>${screen}</div>${resumeOverlay()}` : screen;
 }
 
 // --- events (delegated once) -----------------------------------------------------

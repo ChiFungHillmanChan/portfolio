@@ -746,6 +746,7 @@ button {
 .reveal-overlay {
   z-index: 60;
   cursor: pointer;
+  overflow-y: auto;
 }
 
 .reveal-stage {
@@ -756,6 +757,7 @@ button {
   gap: 14px;
   padding: 22px;
   max-width: min(92vw, 460px);
+  margin: auto;
 }
 
 .reveal-card .card-wrap {
@@ -865,6 +867,7 @@ button {
 @media (prefers-reduced-motion: reduce) {
   * {
     animation-duration: 0.01ms !important;
+    animation-delay: 0ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
