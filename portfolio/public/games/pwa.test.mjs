@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -174,5 +174,38 @@ test('math-memory: runtime references are precached (reverse drift guard)', () =
   const css = read(GAMES_DIR, 'math-memory', 'fonts', 'fonts.css');
   for (const [, f] of css.matchAll(/url\(([^)]+\.woff2)\)/g)) {
     assert.ok(assets.includes(`./fonts/${f}`), `font ${f} missing from ASSETS`);
+  }
+});
+
+test('shell: root service worker precaches the app shell', () => {
+  const sw = read(PUBLIC_DIR, 'sw.js');
+  const cacheName = extractJsonConst(sw, 'CACHE');
+  assert.match(cacheName, /^portfolio-shell-v\d+$/);
+  const precache = extractJsonConst(sw, 'PRECACHE');
+  assert.ok(precache.includes('/index.html'), 'PRECACHE must include /index.html');
+});
+
+test('shell: index.html registers /sw.js and maps game subdomains to /pwa/ manifests', () => {
+  const html = read(PUBLIC_DIR, 'index.html');
+  assert.match(html, /register\('\/sw\.js'\)/);
+  const mapped = [...html.matchAll(/'([a-z0-9-]+)': 1/g)].map((m) => m[1]);
+  const manifests = readdirSync(join(PUBLIC_DIR, 'pwa'))
+    .filter((f) => f.endsWith('.webmanifest'))
+    .map((f) => f.replace(/\.webmanifest$/, ''));
+  assert.ok(manifests.length >= 4, 'expected a /pwa manifest per PWA game');
+  assert.deepEqual(mapped.sort(), manifests.sort());
+});
+
+test('shell: subdomain install manifests are valid and icons exist', () => {
+  for (const f of readdirSync(join(PUBLIC_DIR, 'pwa')).filter((n) => n.endsWith('.webmanifest'))) {
+    const m = JSON.parse(read(PUBLIC_DIR, 'pwa', f));
+    assert.equal(m.start_url, '/', `${f}: start_url must be /`);
+    assert.equal(m.scope, '/', `${f}: scope must be /`);
+    assert.equal(m.display, 'standalone');
+    assert.ok(m.name && m.short_name, `${f}: name/short_name required`);
+    for (const icon of m.icons) {
+      assert.ok(icon.src.startsWith('/'), `${f}: icon src must be root-absolute`);
+      assert.ok(existsSync(join(PUBLIC_DIR, icon.src.slice(1))), `${f}: missing icon ${icon.src}`);
+    }
   }
 });
