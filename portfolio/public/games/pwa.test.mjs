@@ -11,6 +11,7 @@ const GAMES = [
   { dir: 'card-drawer', manifest: 'manifest.webmanifest' },
   { dir: 'connect4', manifest: 'manifest.webmanifest' },
   { dir: 'card-game', manifest: 'manifest.json' },
+  { dir: 'math-memory', manifest: 'manifest.webmanifest' },
 ];
 
 const read = (...p) => readFileSync(join(...p), 'utf8');
@@ -158,5 +159,20 @@ test('math-memory: fonts are self-hosted (no Google Fonts requests)', () => {
   assert.ok(files.length >= 2, 'expected at least one woff2 per family');
   for (const f of files) {
     assert.ok(existsSync(join(GAMES_DIR, 'math-memory', 'fonts', f)), `missing font file ${f}`);
+  }
+});
+
+test('math-memory: runtime references are precached (reverse drift guard)', () => {
+  const assets = extractJsonConst(read(GAMES_DIR, 'math-memory', 'sw.js'), 'ASSETS');
+  const html = read(GAMES_DIR, 'math-memory', 'index.html');
+  const htmlRefs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((u) => !u.startsWith('http') && !u.startsWith('#'));
+  for (const ref of htmlRefs) {
+    assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
+  }
+  const css = read(GAMES_DIR, 'math-memory', 'fonts', 'fonts.css');
+  for (const [, f] of css.matchAll(/url\(([^)]+\.woff2)\)/g)) {
+    assert.ok(assets.includes(`./fonts/${f}`), `font ${f} missing from ASSETS`);
   }
 });

@@ -10,6 +10,8 @@
 <meta name="description" content="Maths Memory — memorise five ahead, answer five behind. A working-memory drill that times you.">
 <title>Maths Memory</title>
 <link href="fonts/fonts.css" rel="stylesheet">
+<link rel="manifest" href="manifest.webmanifest" />
+<link rel="apple-touch-icon" href="icon-192.png" />
 <style>
   :root{
     --bg:#0e1014;--panel:#171a21;--panel-2:#1f2530;--ink:#f4f1ea;
@@ -262,5 +264,14 @@
   document.getElementById('againBtn').addEventListener('click',()=>{results.classList.add('hidden');menu.classList.remove('hidden');});
 })();
 </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function (err) {
+          console.warn('[pwa] service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
