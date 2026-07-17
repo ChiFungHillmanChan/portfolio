@@ -100,6 +100,7 @@
           accent,
           withDealer: true,
           dealerSeed: table.id,
+          closed: table.closed,
           // rotated roulette: counter-rotate the plaque so it faces the aisle
           plaqueYaw: rotated ? Math.PI / 2 + 0.15 : undefined,
         });
@@ -143,8 +144,10 @@
 
         // closed table: build the maintenance enclosure (rails + sign +
         // collision chain) — the anchor stays, but its approach pulls back
-        // so the camera lands OUTSIDE the barrier looking through it.
-        if (table.closed) C.floor.buildMaintenanceZone(CLOSED_ZONE);
+        // so the camera lands OUTSIDE the barrier looking through it. The
+        // table's own group rides along so its dealer becomes the trainee
+        // in the zone's ambient training show.
+        if (table.closed) C.floor.buildMaintenanceZone({ ...CLOSED_ZONE, tableGroup: group });
 
         if (rotated) {
           // Approach = the players' long side, across the felt facing the

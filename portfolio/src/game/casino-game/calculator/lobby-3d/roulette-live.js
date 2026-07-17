@@ -42,9 +42,11 @@ export function openRouletteLive({ table }) {
   const poses = {
     // player side of the printed layout, looking across the whole felt
     betting: { pos: clampWest(toWorld(0.45, 0, 2.05)), look: toWorld(-0.1, 0.86, -0.3) },
-    // on the recessed bowl with the tote board framed beside it, so the
-    // ball drop and the result display read in one view
-    wheel: { pos: clampWest(toWorld(-0.5, 0, 2.05)), look: toWorld(-2.3, 0.88, 0.15) },
+    // overhead wheel shot: the camera rises over the table edge beside the
+    // bowl and looks steeply down at its centre, so the number ring and the
+    // counter-rotating ball read clearly during the whole spin (the old
+    // eye-height side pose showed the wheel edge-on)
+    wheel: { pos: clampWest(toWorld(-1.95, 0, 0.95)), look: toWorld(-2.35, 0.95, 0), eyeY: 2.75 },
   };
 
   const wrap = document.createElement('div');
@@ -85,7 +87,7 @@ export function openRouletteLive({ table }) {
     status.textContent = 'No more bets — spinning…';
     C.sound?.sayNoMoreBets();
     wrap.classList.add('rl-hidden');
-    await C.app.glideTo(poses.wheel.pos, poses.wheel.look, 1000);
+    await C.app.glideTo(poses.wheel.pos, poses.wheel.look, 1000, { eyeY: poses.wheel.eyeY });
     if (closed) return;
     const spinSound = C.sound?.ballSpin(5000);   // spinTo runs ~4.2–5.8s; stop() syncs the end
     await rig.userData.spinTo(result);

@@ -111,7 +111,9 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // a closed table's dealer is mid-training — already at the table, so
+      // no shift-change walk-in (it would collide with the training drills)
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: !opts.closed });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);

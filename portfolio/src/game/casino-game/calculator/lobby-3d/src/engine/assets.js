@@ -55,10 +55,15 @@
     });
     const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
     const sprite = new THREE.Sprite(mat);
-    const W = 0.95;
-    sprite.scale.set(W, W * PH / PW, 1);
-    sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
+    const W = 0.95, SH = W * PH / PW;
+    const baseY = 1.62 + 0.35 + SH / 2;
+    sprite.scale.set(W, SH, 1);
+    sprite.position.set(0, baseY, 0);
     sprite.renderOrder = 5;
+    // pop-in + idle bob (driven from the frame hook below; REDUCED keeps
+    // the bubble static at full size) — a bubble that just appears reads
+    // as a label, one that pops and floats reads as someone talking
+    if (!app.REDUCED) sprite.scale.set(W * 0.01, SH * 0.01, 1);
     group.add(sprite);
     const bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
     group.userData._bubble = bubble;
@@ -78,6 +83,11 @@
       const hook = () => {
         if (mouthTokens.get(key) !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
         const t = (performance.now() - t0);
+        // pop-in over the first 220ms (outBack overshoot), then a gentle
+        // float so the bubble keeps living while its dealer talks
+        const k = C.tween.easings.outBack(Math.min(1, t / 220));
+        sprite.scale.set(W * Math.max(0.01, k), SH * Math.max(0.01, k), 1);
+        sprite.position.y = baseY + Math.sin(t / 420) * 0.018;
         mouthPulse && mouthPulse(t);
         if (t >= ms) { app.offFrame(hook); cleanup(); }
       };

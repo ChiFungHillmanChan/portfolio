@@ -413,6 +413,49 @@ test('Finding 3 — spinReach (holdAtEnd, single rim waypoint): the promise reso
 });
 
 // ---------------------------------------------------------------------
+// Wrist layer (UIUX follow-up): applyHandOrient keeps the dealing palm flat
+// DOWN while an IK path drives the arm. Before it, the hand bone was never
+// oriented at all — it kept the mocap idle's stale wrist rotation on top of
+// a swing-only forearm aim, freezing the palm twisted up/outward at
+// impossible wrist angles mid-deal (user-reported with a screenshot).
+// The palm's world direction is read as: bind-palm (world -Y at T-pose,
+// same bind fact the finger-curl layer documents) transformed by the hand
+// bone's rotation-since-bind (qNow * qBind⁻¹).
+// ---------------------------------------------------------------------
+
+test('wrist layer — at dealCard\'s release waypoint the palm faces down (not the mocap\'s stale twisted-up wrist)', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-palm', app);
+  const { shoe, target } = reachRefs(impl);
+
+  // bind reference: an untouched clone of the SAME skeleton (seed only
+  // affects tints) gives the hand bone's bind world quaternion
+  let ref;
+  CTX_CASINO.character.attach(app, new CTX_THREE.Group(), { seed: 'ik-palm' }, (i) => { ref = i; });
+  const bindQ = ref.bones.handR.getWorldQuaternion(new CTX_THREE.Quaternion());
+
+  mockNow = 0;
+  const p = impl.play(app, 'dealCard', { refs: { shoe, target } });
+  const path = CTX_CASINO.handPaths.PATHS.dealCard;
+  const relWp = path.hands.R.find((w) => w.event === 'release');
+  mockNow = (relWp.at + 0.0005) * path.dur;   // past the 120ms ramp -> weight 1
+  app.tick(1 / 60);
+
+  const qNow = impl.bones.handR.getWorldQuaternion(new CTX_THREE.Quaternion());
+  const palm = new CTX_THREE.Vector3(0, -1, 0)
+    .applyQuaternion(qNow.multiply(bindQ.clone().invert()));
+  assert.ok(palm.y < -0.7,
+    `palm must face down at the release waypoint, got world palm dir y=${palm.y.toFixed(3)}`);
+
+  mockNow = path.dur;
+  app.tick(1 / 60);
+  await p;
+  await impl.play(app, 'armsRest');
+  mockNow += 16;
+  app.tick(1 / 60);
+});
+
+// ---------------------------------------------------------------------
 // Task 8: assets.js facade's handWorld(side) — src/floor/baccarat-show.js's
 // wash/riffle read this to track the dealer's real palms. Exercises the
 // REAL C.assets.makeDealer() facade (not character.js directly) against
