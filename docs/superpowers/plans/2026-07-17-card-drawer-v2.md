@@ -525,7 +525,7 @@ And inside the existing `@media (max-width: 380px)` block add:
 
 - [ ] **Step 3: Regression check**
 
-Run: `node --test portfolio/public/games/card-drawer/ && node --input-type=module --check < portfolio/public/games/card-drawer/game.js`
+Run: `node --test portfolio/public/games/card-drawer/*.test.js  && node --input-type=module --check < portfolio/public/games/card-drawer/game.js`
 Expected: ALL tests PASS; no syntax errors.
 
 - [ ] **Step 4: Commit**
@@ -595,7 +595,7 @@ Add to the `/* --- leaderboard --- */` section, after `.leaderboard .lb-hand`:
 
 - [ ] **Step 4: Regression check**
 
-Run: `node --test portfolio/public/games/card-drawer/ && node --input-type=module --check < portfolio/public/games/card-drawer/game.js`
+Run: `node --test portfolio/public/games/card-drawer/*.test.js  && node --input-type=module --check < portfolio/public/games/card-drawer/game.js`
 Expected: ALL tests PASS; no syntax errors.
 
 - [ ] **Step 5: Commit**
