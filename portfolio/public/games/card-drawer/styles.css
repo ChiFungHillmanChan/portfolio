@@ -475,7 +475,27 @@ button {
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
 }
 
-.fan .card-wrap + .card-wrap { margin-left: -36px; }
+.fan .card-wrap + .card-wrap { margin-left: -28px; }
+
+.fan .card-wrap.spare {
+  opacity: 0.82;
+  filter: saturate(0.85) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
+}
+
+.fan .card-wrap.best + .card-wrap.spare {
+  margin-left: 18px;
+  position: relative;
+}
+
+.fan .card-wrap.best + .card-wrap.spare::before {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 8%;
+  height: 84%;
+  width: 1px;
+  background: var(--ink-faint);
+}
 
 .fan .card-wrap:last-child {
   transform: translateY(-5px);
@@ -671,7 +691,7 @@ button {
 
 @media (max-width: 380px) {
   .fan .card-wrap { width: 56px; }
-  .fan .card-wrap + .card-wrap { margin-left: -34px; }
+  .fan .card-wrap + .card-wrap { margin-left: -26px; }
   .masthead h1 { font-size: 29px; }
 }
 
