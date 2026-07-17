@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -11,6 +11,7 @@ const GAMES = [
   { dir: 'card-drawer', manifest: 'manifest.webmanifest' },
   { dir: 'connect4', manifest: 'manifest.webmanifest' },
   { dir: 'card-game', manifest: 'manifest.json' },
+  { dir: 'math-memory', manifest: 'manifest.webmanifest' },
 ];
 
 const read = (...p) => readFileSync(join(...p), 'utf8');
@@ -143,5 +144,93 @@ test('connect4: runtime references are precached (reverse drift guard)', () => {
   const fetches = [...html.matchAll(/fetch\('\.\/([^']+)'\)/g)].map((m) => m[1]);
   for (const ref of [...htmlRefs, ...fetches]) {
     assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
+  }
+});
+
+test('math-memory: fonts are self-hosted (no Google Fonts requests)', () => {
+  const html = read(GAMES_DIR, 'math-memory', 'index.html');
+  assert.ok(!html.includes('fonts.googleapis.com'), 'Google Fonts CSS link must be gone');
+  assert.ok(!html.includes('fonts.gstatic.com'), 'gstatic preconnect must be gone');
+  assert.match(html, /href="fonts\/fonts\.css"/);
+  const css = read(GAMES_DIR, 'math-memory', 'fonts', 'fonts.css');
+  assert.match(css, /font-family: ?'Fraunces'/);
+  assert.match(css, /font-family: ?'Spline Sans Mono'/);
+  const files = [...css.matchAll(/url\(([^)]+\.woff2)\)/g)].map((m) => m[1]);
+  assert.ok(files.length >= 2, 'expected at least one woff2 per family');
+  for (const f of files) {
+    assert.ok(existsSync(join(GAMES_DIR, 'math-memory', 'fonts', f)), `missing font file ${f}`);
+  }
+});
+
+test('math-memory: runtime references are precached (reverse drift guard)', () => {
+  const assets = extractJsonConst(read(GAMES_DIR, 'math-memory', 'sw.js'), 'ASSETS');
+  const html = read(GAMES_DIR, 'math-memory', 'index.html');
+  const htmlRefs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((u) => !u.startsWith('http') && !u.startsWith('#'));
+  for (const ref of htmlRefs) {
+    assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
+  }
+  const css = read(GAMES_DIR, 'math-memory', 'fonts', 'fonts.css');
+  for (const [, f] of css.matchAll(/url\(([^)]+\.woff2)\)/g)) {
+    assert.ok(assets.includes(`./fonts/${f}`), `font ${f} missing from ASSETS`);
+  }
+});
+
+test('shell: root service worker precaches the app shell', () => {
+  const sw = read(PUBLIC_DIR, 'sw.js');
+  const cacheName = extractJsonConst(sw, 'CACHE');
+  assert.match(cacheName, /^portfolio-shell-v\d+$/);
+  const precache = extractJsonConst(sw, 'PRECACHE');
+  assert.ok(precache.includes('/index.html'), 'PRECACHE must include /index.html');
+
+  assert.match(sw, /pathname\.startsWith\('\/games\/'\)/, 'shell SW must bypass /games/');
+  assert.match(sw, /mode === 'navigate'/, 'shell SW must special-case navigations');
+  assert.ok(sw.includes('/\\.[0-9a-f]{8}\\./'), 'shell SW must only cache hashed /static/ files');
+  assert.match(sw, /req\.headers\.has\('range'\)/, 'shell SW must skip range requests');
+  assert.match(sw, /text\/html/, 'shell SW must only cache HTML under the fallback key');
+});
+
+test('shell: index.html registers /sw.js and maps game subdomains to /pwa/ manifests', () => {
+  const html = read(PUBLIC_DIR, 'index.html');
+  assert.match(html, /register\('\/sw\.js'\)/);
+  const mapped = [...html.matchAll(/'([a-z0-9-]+)': 1/g)].map((m) => m[1]);
+  const manifests = readdirSync(join(PUBLIC_DIR, 'pwa'))
+    .filter((f) => f.endsWith('.webmanifest'))
+    .map((f) => f.replace(/\.webmanifest$/, ''));
+  assert.ok(manifests.length >= 4, 'expected a /pwa manifest per PWA game');
+  assert.deepEqual(mapped.sort(), manifests.sort());
+});
+
+test('shell: subdomain install manifests are valid and icons exist', () => {
+  for (const f of readdirSync(join(PUBLIC_DIR, 'pwa')).filter((n) => n.endsWith('.webmanifest'))) {
+    const m = JSON.parse(read(PUBLIC_DIR, 'pwa', f));
+    assert.equal(m.start_url, '/', `${f}: start_url must be /`);
+    assert.equal(m.scope, '/', `${f}: scope must be /`);
+    assert.equal(m.display, 'standalone');
+    assert.ok(m.name && m.short_name, `${f}: name/short_name required`);
+    for (const icon of m.icons) {
+      assert.ok(icon.src.startsWith('/'), `${f}: icon src must be root-absolute`);
+      assert.ok(existsSync(join(PUBLIC_DIR, icon.src.slice(1))), `${f}: missing icon ${icon.src}`);
+    }
+  }
+});
+
+test('game service workers share one canonical body (parity guard)', () => {
+  function normalize(src) {
+    return src
+      .replace(/^\/\*[\s\S]*?\*\//, '')
+      .replace(/const CACHE = [^\n]*;\n/, '')
+      .replace(/const ASSETS = \[[\s\S]*?\];\n/, '')
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0)
+      .join('\n');
+  }
+  const canonical = normalize(read(GAMES_DIR, 'card-drawer', 'sw.js'));
+  for (const game of GAMES) {
+    if (game.dir === 'card-drawer') continue;
+    const body = normalize(read(GAMES_DIR, game.dir, 'sw.js'));
+    assert.equal(body, canonical, `${game.dir}/sw.js body diverges from card-drawer's canonical body`);
   }
 });

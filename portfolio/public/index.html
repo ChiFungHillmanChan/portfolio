@@ -20,6 +20,25 @@
       user's mobile device or desktop. See https://developers.google.com/web/fundamentals/web-app-manifest/
     -->
     <link rel="manifest" href="%PUBLIC_URL%/manifest.json" />
+    <script>
+      (function () {
+        var gameSubdomains = { 'card-drawer': 1, 'connect4': 1, 'card-game': 1, 'math-memory': 1 };
+        var sub = window.location.hostname.split('.')[0];
+        if (gameSubdomains[sub]) {
+          var link = document.querySelector('link[rel="manifest"]');
+          if (link) link.setAttribute('href', '/pwa/' + sub + '.webmanifest');
+          var touch = document.querySelector('link[rel="apple-touch-icon"]');
+          if (touch) touch.setAttribute('href', '/games/' + sub + '/icon-192.png');
+        }
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', function () {
+            navigator.serviceWorker.register('/sw.js').catch(function (err) {
+              console.warn('[pwa] shell service worker registration failed:', err);
+            });
+          });
+        }
+      })();
+    </script>
     <!--
       Notice the use of %PUBLIC_URL% in the tags above.
       It will be replaced with the URL of the `public` folder during the build.
