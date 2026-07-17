@@ -30,6 +30,20 @@ const ICONS = {
     '<path d="M66 1 L72 7 L66 13 L60 7 Z" fill="currentColor"/></svg>',
 };
 
+// Celebration sparkles — 4-point-star paths generated from fixed positions.
+const SPARKLES =
+  '<svg class="sparkles" viewBox="0 0 320 320" aria-hidden="true">' +
+  ['160 34 18', '58 84 12', '258 72 14', '36 190 10', '284 196 12', '104 262 12', '216 272 14', '160 132 8']
+    .map((s) => {
+      const [x, y, r] = s.split(' ').map(Number);
+      return (
+        `<path d="M ${x} ${y - r} Q ${x} ${y} ${x + r} ${y} Q ${x} ${y} ${x} ${y + r} ` +
+        `Q ${x} ${y} ${x - r} ${y} Q ${x} ${y} ${x} ${y - r} Z" fill="currentColor"/>`
+      );
+    })
+    .join('') +
+  '</svg>';
+
 const esc = (s) =>
   String(s)
     .replace(/&/g, '&amp;')
@@ -52,8 +66,17 @@ function defaultState() {
 
 let state = defaultState();
 // Transient UI state — never persisted.
-const ui = { sheetFor: null, justDrawn: null, confirmReset: false, resume: null, viewerFor: null };
+const ui = {
+  sheetFor: null,
+  justDrawn: null,
+  confirmReset: false,
+  resume: null,
+  viewerFor: null,
+  reveal: null,
+  leadGlow: null,
+};
 let resetTimer = null;
+let revealTimer = null;
 
 const nextPlayerId = () => state.players.reduce((m, p) => Math.max(m, p.id), 0) + 1;
 
@@ -193,29 +216,67 @@ function startGame() {
   render();
 }
 
+// Leader's player id right now — cheap (no outs computation). Strict > keeps
+// the earlier player on ties, matching rankedEntries' stable sort.
+function currentLeaderId() {
+  let best = null;
+  for (const p of state.players) {
+    const hand = evaluateHand(p.cards);
+    if (!hand) continue;
+    if (!best || compareScores(hand.score, best.score) > 0) best = { id: p.id, score: hand.score };
+  }
+  return best ? best.id : null;
+}
+
 function dealRandom(playerId) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player || state.deck.length === 0) return;
+  const prevLeader = currentLeaderId();
   const card = state.deck.pop();
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
+  const newLeader = currentLeaderId();
+  if (prevLeader !== null && newLeader === playerId && newLeader !== prevLeader) {
+    ui.leadGlow = playerId;
+  }
   ui.justDrawn = { playerId, cardId: card.id };
   saveState();
   render();
   ui.justDrawn = null;
+  ui.leadGlow = null;
 }
 
 function pickCard(playerId, index) {
   const player = state.players.find((p) => p.id === playerId);
   if (!player || index < 0 || index >= state.deck.length) return;
+  const prevLeader = currentLeaderId();
   const [card] = state.deck.splice(index, 1);
   player.cards.push(card);
   state.history.push({ playerId, cardId: card.id });
-  ui.justDrawn = { playerId, cardId: card.id };
+  const newLeader = currentLeaderId();
+  const tookLead = prevLeader !== null && newLeader === playerId && newLeader !== prevLeader;
   ui.sheetFor = null;
+  ui.reveal = { playerId, cardId: card.id, stage: 1, tookLead };
+  clearTimeout(revealTimer);
+  revealTimer = setTimeout(() => {
+    if (ui.reveal && ui.reveal.stage === 1) {
+      ui.reveal.stage = 2;
+      render();
+    }
+  }, 900);
   saveState();
   render();
-  ui.justDrawn = null;
+}
+
+function dismissReveal() {
+  clearTimeout(revealTimer);
+  const reveal = ui.reveal;
+  ui.reveal = null;
+  if (reveal && reveal.tookLead) {
+    ui.leadGlow = reveal.playerId;
+  }
+  render();
+  ui.leadGlow = null;
 }
 
 function undoLastDraw() {
@@ -226,6 +287,8 @@ function undoLastDraw() {
   if (player && player.cards.length && player.cards[player.cards.length - 1].id === last.cardId) {
     state.deck.push(player.cards.pop());
   }
+  const viewed = state.players.find((p) => p.id === ui.viewerFor);
+  if (viewed && viewed.cards.length === 0) ui.viewerFor = null;
   saveState();
   render();
 }
@@ -235,6 +298,9 @@ function resetGame() {
   ui.confirmReset = false;
   ui.sheetFor = null;
   ui.viewerFor = null;
+  clearTimeout(revealTimer);
+  ui.reveal = null;
+  ui.leadGlow = null;
   const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [] }));
   state = { ...defaultState(), includeJokers: state.includeJokers, players: names };
   saveState();
@@ -397,7 +463,7 @@ function leaderboardHTML() {
     .map((entry) => {
       const leader = entry.rank === 1 && entry.hand;
       return `
-      <li class="${leader ? 'lb-leader' : ''}">
+      <li class="${leader ? 'lb-leader' : ''}${ui.leadGlow === entry.player.id ? ' lb-glow' : ''}">
         <span class="lb-rank">${entry.rank}</span>
         ${leader ? `<span class="lb-crown">${ICONS.crown}</span>` : ''}
         <span class="lb-body">
@@ -513,13 +579,47 @@ function viewerHTML() {
   `;
 }
 
-function gameScreen() {
+function revealOverlayHTML() {
+  const player = state.players.find((p) => p.id === ui.reveal.playerId);
+  if (!player) return '';
+  const card = player.cards.find((c) => c.id === ui.reveal.cardId);
+  if (!card) return '';
+  if (ui.reveal.stage === 1) {
+    return `
+    <div class="overlay reveal-overlay" data-action="reveal-continue">
+      <div class="reveal-stage">
+        <div class="reveal-card">${cardWrap(card, { flip: true })}</div>
+        <p class="reveal-caption">${esc(player.name)} draws…</p>
+      </div>
+    </div>`;
+  }
+  const hand = evaluateHand(player.cards);
   return `
-    ${dealerBar()}
-    ${state.players.map(playerPanel).join('')}
-    ${leaderboardHTML()}
+    <div class="overlay reveal-overlay" data-action="reveal-done">
+      <div class="reveal-stage">
+        ${ui.reveal.tookLead ? SPARKLES : ''}
+        ${ui.reveal.tookLead ? `<div class="lead-ribbon">${ICONS.crown}<span>Takes the lead</span></div>` : ''}
+        <div class="reveal-best">${hand.bestFive
+          .map((c) => cardWrap(c, { group: c.id === ui.reveal.cardId ? 'just' : '' }))
+          .join('')}</div>
+        <p class="reveal-hand">${esc(hand.name)}</p>
+        <p class="reveal-caption">${esc(player.name)}</p>
+        <button class="btn btn-primary" data-action="reveal-done">Done</button>
+      </div>
+    </div>`;
+}
+
+function gameScreen() {
+  const overlayOpen = ui.viewerFor !== null || ui.sheetFor !== null || ui.reveal !== null;
+  return `
+    <div class="board"${overlayOpen ? ' inert' : ''}>
+      ${dealerBar()}
+      ${state.players.map(playerPanel).join('')}
+      ${leaderboardHTML()}
+    </div>
     ${ui.viewerFor !== null ? viewerHTML() : ''}
     ${ui.sheetFor !== null ? sheetHTML() : ''}
+    ${ui.reveal ? revealOverlayHTML() : ''}
   `;
 }
 
@@ -580,6 +680,16 @@ app.addEventListener('click', (event) => {
     case 'close-viewer':
       ui.viewerFor = null;
       render();
+      break;
+    case 'reveal-continue':
+      clearTimeout(revealTimer);
+      if (ui.reveal) {
+        ui.reveal.stage = 2;
+        render();
+      }
+      break;
+    case 'reveal-done':
+      dismissReveal();
       break;
     case 'undo':
       undoLastDraw();
@@ -656,6 +766,10 @@ app.addEventListener('keydown', (event) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
+  if (ui.reveal) {
+    dismissReveal();
+    return;
+  }
   if (ui.viewerFor !== null) {
     ui.viewerFor = null;
     render();
