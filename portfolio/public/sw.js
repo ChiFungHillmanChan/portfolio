@@ -29,6 +29,7 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const req = event.request;
   if (req.method !== 'GET') return;
+  if (req.headers.has('range')) return;
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/games/')) return;
@@ -36,7 +37,7 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req).then((resp) => {
-        if (resp.ok) {
+        if (resp.ok && (resp.headers.get('content-type') || '').includes('text/html')) {
           const copy = resp.clone();
           caches.open(CACHE).then((cache) => cache.put('/index.html', copy));
         }
@@ -46,12 +47,12 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (url.pathname.startsWith('/static/')) {
+  if (url.pathname.startsWith('/static/') && /\.[0-9a-f]{8}\./.test(url.pathname)) {
     event.respondWith(
       caches.match(req).then((hit) => {
         if (hit) return hit;
         return fetch(req).then((resp) => {
-          if (resp.ok) {
+          if (resp.status === 200) {
             const copy = resp.clone();
             caches.open(CACHE).then((cache) => cache.put(req, copy));
           }
