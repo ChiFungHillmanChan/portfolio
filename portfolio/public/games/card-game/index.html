@@ -16,8 +16,20 @@
     </script>
     <script type="module" crossorigin src="/assets/index-DNDvMiOj.js"></script>
     <link rel="stylesheet" crossorigin href="/assets/index-_EUB7mlz.css">
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#0b2c4a" />
+    <link rel="apple-touch-icon" href="icon-192.png" />
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('./sw.js').catch(function (err) {
+            console.warn('[pwa] service worker registration failed:', err);
+          });
+        });
+      }
+    </script>
   </body>
 </html>

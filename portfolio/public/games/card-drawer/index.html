@@ -6,6 +6,9 @@
   <meta name="description" content="Card Drawer — a pass-and-play card dealer and poker-hand scorepad." />
   <title>Card Drawer</title>
   <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#111830" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
 </head>
 <body>
   <noscript>
@@ -13,5 +16,14 @@
   </noscript>
   <div id="app"></div>
   <script type="module" src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function (err) {
+          console.warn('[pwa] service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
 </body>
 </html>
