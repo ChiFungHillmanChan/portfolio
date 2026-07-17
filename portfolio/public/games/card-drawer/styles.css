@@ -477,9 +477,19 @@ button {
 
 .fan .card-wrap + .card-wrap { margin-left: -36px; }
 
-.fan .card-wrap:last-child {
-  transform: translateY(-5px);
+.fan .card-wrap.best { transform: translateY(-4px); }
+
+.fan .card-wrap.best .card-svg {
+  box-shadow: 0 0 0 2px var(--brass);
 }
+
+.fan .card-wrap.spare {
+  width: 52px;
+  opacity: 0.55;
+  filter: saturate(0.7) drop-shadow(0 3px 5px rgba(0, 0, 0, 0.35));
+}
+
+.fan .card-wrap.best + .card-wrap.spare { margin-left: 12px; }
 
 .fan-empty {
   align-self: center;
@@ -521,13 +531,6 @@ button {
 @keyframes flip-in {
   from { transform: rotateY(180deg); }
   to { transform: rotateY(0deg); }
-}
-
-.pop-in { animation: pop-in 260ms ease-out; }
-
-@keyframes pop-in {
-  from { transform: scale(0.6); opacity: 0; }
-  to { transform: scale(1); opacity: 1; }
 }
 
 /* --- leaderboard ------------------------------------------------------------------ */
@@ -574,6 +577,13 @@ button {
 .leaderboard .lb-hand {
   font-size: 14px;
   color: var(--ink-dim);
+}
+
+.leaderboard .lb-outs {
+  display: block;
+  font-size: 12px;
+  font-style: italic;
+  color: var(--ink-faint);
 }
 
 .leaderboard li.lb-leader .lb-hand { color: var(--brass); }
@@ -640,19 +650,11 @@ button {
   overscroll-behavior: contain;
 }
 
-.sheet-suit {
-  margin: 10px 0 4px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.2em;
-  text-transform: uppercase;
-  color: var(--ink-dim);
-}
-
 .pick-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
-  gap: 6px;
+  grid-template-columns: repeat(auto-fill, minmax(52px, 1fr));
+  gap: 8px;
+  padding-top: 6px;
 }
 
 .pick-card {
@@ -663,8 +665,6 @@ button {
   background: transparent;
 }
 
-.pick-card:disabled { cursor: not-allowed; }
-
 .pick-card .card-svg { width: 100%; border-radius: 5px; }
 
 /* --- small screens / misc ------------------------------------------------------------ */
@@ -672,6 +672,7 @@ button {
 @media (max-width: 380px) {
   .fan .card-wrap { width: 56px; }
   .fan .card-wrap + .card-wrap { margin-left: -34px; }
+  .fan .card-wrap.spare { width: 46px; }
   .masthead h1 { font-size: 29px; }
 }
 
