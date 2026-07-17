@@ -268,16 +268,17 @@ function rankedEntries() {
 
 const app = document.getElementById('app');
 
-function cardWrap(card, { flip = false, pop = false } = {}) {
+function cardWrap(card, { flip = false, group = '' } = {}) {
+  const cls = `card-wrap${group ? ` ${group}` : ''}`;
   if (flip) {
     return (
-      '<span class="card-wrap flip"><span class="flip-inner">' +
+      `<span class="${cls} flip"><span class="flip-inner">` +
       `<span class="flip-face">${renderCardSVG(card)}</span>` +
       `<span class="flip-back">${renderCardSVG('back')}</span>` +
       '</span></span>'
     );
   }
-  return `<span class="card-wrap${pop ? ' pop-in' : ''}">${renderCardSVG(card)}</span>`;
+  return `<span class="${cls}">${renderCardSVG(card)}</span>`;
 }
 
 function setupScreen() {
@@ -348,14 +349,18 @@ function setupScreen() {
 function playerPanel(player) {
   const hand = evaluateHand(player.cards);
   const deckEmpty = state.deck.length === 0;
-  const fan = player.cards.length
-    ? player.cards
-        .map((card) => {
-          const flip = ui.justDrawn && ui.justDrawn.cardId === card.id;
-          return cardWrap(card, { flip });
-        })
-        .join('')
-    : '<span class="fan-empty">No cards yet</span>';
+  let fan = '<span class="fan-empty">No cards yet</span>';
+  if (player.cards.length) {
+    const bestSet = new Set(hand.bestFive);
+    const spares = player.cards
+      .filter((card) => !bestSet.has(card))
+      .sort((a, b) => (b.rank || 15) - (a.rank || 15));
+    const wrap = (card, group) =>
+      cardWrap(card, { flip: ui.justDrawn && ui.justDrawn.cardId === card.id, group });
+    fan =
+      hand.bestFive.map((card) => wrap(card, 'best')).join('') +
+      spares.map((card) => wrap(card, 'spare')).join('');
+  }
   const actionLabel = state.drawMode === 'random' ? `Deal to ${esc(player.name)}` : `Pick for ${esc(player.name)}`;
   const action = state.drawMode === 'random' ? 'deal' : 'open-sheet';
 
