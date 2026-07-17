@@ -9,6 +9,7 @@ import {
   evaluateHand,
   compareScores,
   rankLabel,
+  countOuts,
 } from './hand-eval.js';
 
 // --- helpers -------------------------------------------------------------
@@ -425,4 +426,32 @@ test('bestFive: royal flush picks the suited run even among distractors', () => 
   const hand = evaluateHand(pile);
   assert.equal(hand.category, CATEGORY.ROYAL_FLUSH);
   assert.deepEqual(hand.bestFive, suited);
+});
+
+// --- countOuts ---------------------------------------------------------------
+
+test('countOuts: counts only cards that strictly beat the leader', () => {
+  const player = [c(13, 'spades'), c(13, 'hearts')]; // pair of kings
+  const leaderScore = [CATEGORY.PAIR, 14]; // pair of aces
+  const deck = [c(13, 'diamonds'), c(2, 'clubs'), c(14, 'hearts')];
+  // KD -> trips kings (beats); 2C, AH -> still pair of kings (lose to pair of aces).
+  assert.equal(countOuts(player, leaderScore, deck), 1);
+});
+
+test('countOuts: a joker in the deck counts when it wins as a wild', () => {
+  const player = [c(10, 'spades'), c(10, 'hearts')];
+  const leaderScore = [CATEGORY.TRIPS, 9, 8, 2];
+  const deck = [joker(), c(3, 'clubs')];
+  assert.equal(countOuts(player, leaderScore, deck), 1); // joker -> trips 10s
+});
+
+test('countOuts: a tie does not count as an out', () => {
+  const player = [c(13, 'spades')];
+  const leaderScore = [CATEGORY.HIGH_CARD, 14, 13];
+  const deck = [c(14, 'hearts')]; // makes exactly A-K high — equal, not better
+  assert.equal(countOuts(player, leaderScore, deck), 0);
+});
+
+test('countOuts: empty deck yields zero', () => {
+  assert.equal(countOuts([c(5, 'spades')], [CATEGORY.HIGH_CARD, 14], []), 0);
 });

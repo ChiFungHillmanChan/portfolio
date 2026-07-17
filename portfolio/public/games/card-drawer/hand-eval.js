@@ -204,6 +204,18 @@ export function handName(score) {
   }
 }
 
+// How many cards in `deck` would, drawn as one more card, make this pile
+// strictly beat `leaderScore`. O(deck) evaluateHand calls; only a pile already
+// holding both jokers is expensive (~54 x 2704 plain evals worst case).
+export function countOuts(playerCards, leaderScore, deck) {
+  let outs = 0;
+  for (const card of deck) {
+    const hand = evaluateHand([...playerCards, card]);
+    if (compareScores(hand.score, leaderScore) > 0) outs++;
+  }
+  return outs;
+}
+
 // Given concrete cards (no jokers; wild substitutes allowed as tagged copies)
 // and the score evaluatePlain produced for them, pick the actual card objects
 // that form the hand, in score-priority order. Each object is used at most
