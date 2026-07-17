@@ -69,8 +69,8 @@ joker cards themselves**.
 **Player panel rendering**
 
 - One row, sorted: `bestFive` first with a highlight treatment (lift + accent
-  ring), then the leftover cards sorted by rank descending (suit order for
-  ties), slightly smaller and dimmed.
+  ring), then the leftover cards sorted by rank descending (stable sort — draw
+  order breaks ties), slightly smaller and dimmed.
 - The row re-sorts automatically after every draw and undo; flip/pop animations
   key off card id, so the new card animates wherever it lands in the order.
 - The existing hand-name label stays under the row.
@@ -112,7 +112,10 @@ iframe wrapper in `portfolio/src/game/card-drawer/` is untouched):
 ## 6. Edge cases
 
 - **Undo after blind pick:** card returns to the deck (existing behavior); the
-  face-down grid regains a slot.
+  face-down grid regains a slot. The returned card lands at the end of the
+  deck, so its position (last grid slot / next random deal) is knowable —
+  accepted trade-off: the knowledge is symmetric on a shared device and
+  strictly less revealing than v1's face-up picker.
 - **Deck empty:** Pick button disabled (existing "Deck empty" state); outs line
   omitted.
 - **< 5 cards held:** whole pile renders in the highlighted group; no spares.
