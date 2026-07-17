@@ -32,11 +32,16 @@ a separate worktree, pushed as its own PR).
   JetBrains Mono) and Firebase SDK from `www.gstatic.com` for the leaderboard.
   Firebase init failure already degrades gracefully (`index.html:360`,
   "leaderboard offline") — the game vs AI is fully client-side.
-- **Never Have I Ever / card-game** (640KB): built Vite/React app. Firebase
-  RTDB sync is a lazily imported chunk (`FirebaseSyncManager-*.js`) used only
-  for cross-device rooms; local pass-the-phone play is client-side. Folder
-  already contains `manifest.json`, `logo192.png`, `logo512.png`,
-  `favicon.ico`.
+- **Never Have I Ever / card-game**: built Vite/React app. Its `index.html`
+  loads root-absolute `/assets/index-DNDvMiOj.js` + `/assets/index-_EUB7mlz.css`
+  from the portfolio's shared root `public/assets/` folder (which also holds
+  prompt-hunter's chunks), NOT from `games/card-game/assets/` — that subfolder
+  (`index-Bb2xmmzs.js`, `index-DQDnql7j.css`) is a stale, unreferenced copy.
+  The only lazy chunks are `/assets/FirebaseSyncManager-Bkfq24lo.js` (online
+  rooms) and `/assets/TempSyncManager-B5kJ8VAi.js` (verified: the entry JS has
+  exactly these two `import()` calls). The folder's `manifest.json`,
+  `logo192/512.png`, `favicon.ico` are untouched CRA boilerplate ("React App",
+  React atom logos) and nothing in `index.html` links them.
 - No service worker exists anywhere in the portfolio today (nothing registered
   in `portfolio/src/index.js`).
 
@@ -68,11 +73,12 @@ Each of the three folders gets:
 | icons | 192px + 512px PNG (SVG-designed, rasterized — **no emoji**) |
 | `index.html` edits | manifest `<link>`, `theme-color` meta, `apple-touch-icon`, SW registration snippet |
 
-card-game reuses its existing `logo192.png`/`logo512.png` and its existing
-`manifest.json` (edited in place: relative `start_url`/`scope`,
-`display: standalone`) — no new `manifest.webmanifest` there, since the built
-`index.html` already links `manifest.json`. Only card-drawer and connect4 get
-a new `manifest.webmanifest`.
+card-game's existing `manifest.json`/logos are unused CRA boilerplate (React
+atom logos, "React App" name), so card-game is treated like the other two:
+designed icons replace `logo192/512.png`, `manifest.json` is rewritten in
+place (kept under its existing name), and a manifest `<link>` + SW
+registration are added to the built `index.html`. All three games therefore
+get game-specific SVG-designed icons.
 
 ### 4.2 Service worker behavior (identical pattern, per-game file list)
 
@@ -119,13 +125,17 @@ if ('serviceWorker' in navigator) {
   `fonts.css`, manifest, icons. (Opening-book JSONs are build-time inputs, not
   fetched at runtime — verified no runtime fetch besides the wasm; `.mjs`
   files are dev scripts.)
-- **card-game:** `index.html`, `assets/index-*.js`, `assets/index-*.css`,
-  `assets/FirebaseSyncManager-*.js`, `assets/TempSyncManager-*.js`,
-  `favicon.ico`, `logo192.png`, `logo512.png`, manifest. The lazy Firebase
-  chunk is precached so `import()` resolves offline; actual RTDB traffic still
-  requires network and fails into the app's existing error paths.
-  `sw.js` carries a comment: **regenerate ASSETS whenever the built app is
-  re-synced into this folder** (hashed filenames change).
+- **card-game:** `./index.html`, `/assets/index-DNDvMiOj.js`,
+  `/assets/index-_EUB7mlz.css`, `/assets/FirebaseSyncManager-Bkfq24lo.js`,
+  `/assets/TempSyncManager-B5kJ8VAi.js` (root-absolute paths — a SW controls
+  its pages' requests to ANY same-origin URL, so caching outside `/games/
+  card-game/` works; only the SW's *page control* is limited to its scope),
+  plus `./manifest.json` and the new icons. The lazy Firebase chunk is
+  precached so `import()` resolves offline; actual RTDB traffic still requires
+  network and fails into the app's existing error paths. `sw.js` carries a
+  comment: **regenerate ASSETS whenever the built app is re-synced** (hashed
+  filenames change). Cleanup folded in: delete the stale, unreferenced
+  `games/card-game/assets/` folder.
 
 ### 4.5 Connect 4 font self-hosting
 
