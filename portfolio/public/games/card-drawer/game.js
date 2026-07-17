@@ -586,7 +586,8 @@ function revealOverlayHTML() {
   if (!card) return '';
   if (ui.reveal.stage === 1) {
     return `
-    <div class="overlay reveal-overlay" data-action="reveal-continue">
+    <div class="overlay reveal-overlay" role="dialog" aria-modal="true"
+         aria-label="${esc(player.name)} draws" data-action="reveal-continue">
       <div class="reveal-stage">
         <div class="reveal-card">${cardWrap(card, { flip: true })}</div>
         <p class="reveal-caption">${esc(player.name)} draws…</p>
@@ -595,7 +596,8 @@ function revealOverlayHTML() {
   }
   const hand = evaluateHand(player.cards);
   return `
-    <div class="overlay reveal-overlay" data-action="reveal-done">
+    <div class="overlay reveal-overlay" role="dialog" aria-modal="true"
+         aria-label="${esc(player.name)}'s best hand" data-action="reveal-done">
       <div class="reveal-stage">
         ${ui.reveal.tookLead ? SPARKLES : ''}
         ${ui.reveal.tookLead ? `<div class="lead-ribbon">${ICONS.crown}<span>Takes the lead</span></div>` : ''}
