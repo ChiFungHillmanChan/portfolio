@@ -27,6 +27,8 @@
         if (gameSubdomains[sub]) {
           var link = document.querySelector('link[rel="manifest"]');
           if (link) link.setAttribute('href', '/pwa/' + sub + '.webmanifest');
+          var touch = document.querySelector('link[rel="apple-touch-icon"]');
+          if (touch) touch.setAttribute('href', '/games/' + sub + '/icon-192.png');
         }
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', function () {
