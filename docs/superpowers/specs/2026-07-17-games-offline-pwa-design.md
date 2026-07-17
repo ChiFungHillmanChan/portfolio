@@ -195,7 +195,9 @@ Per game, in Chrome (via claude-in-chrome or headless):
    message.
 5. `node --test` in `card-drawer/` still passes (`hand-eval.test.js`,
    `card-svg.test.js`).
-6. Lighthouse PWA installability check passes per game (manifest + SW + icons).
+6. Installability requirements (manifest fields, icon sizes, SW registration)
+   validated statically by `pwa.test.mjs` — Lighthouse dropped its PWA
+   category in v12, so there is no Lighthouse step.
 
 ## 7. Out of band (not in the PR)
 
