@@ -124,6 +124,13 @@
       state.template = charGltf.scene;
       state.clips = clipGltf.animations.concat(charGltf.animations);
       if (!state.clips.find((c) => c.name === IDLE_CLIP)) throw new Error(`idle clip missing: ${IDLE_CLIP}`);
+      // v2 GLBs carry the tuxedo-bake landmarks in scene.extras (GLTFLoader
+      // surfaces extras as userData) — without them the tint regions can't
+      // be computed, so treat their absence as a load failure (fallback).
+      const extras = charGltf.scene.userData || {};
+      if (!extras.dealerLandmarks?.skinBase) throw new Error('dealerLandmarks missing from GLB');
+      state.landmarks = extras.dealerLandmarks;
+      state.hairstyles = extras.hairstyles || [];
       state.ready = 'ready';
       state.pending.splice(0).forEach((fn) => fn());
     } catch (err) {
@@ -136,231 +143,56 @@
   function findClip(name) { return state.clips.find((c) => c.name === name) || null; }
 
   // ---------------------------------------------------------------------
-  // Task 5b: dress the dealers. This asset pack's body mesh (material
-  // MI_Superhero_Male) is the ENTIRE figure — face, hands, torso, legs —
-  // in one draw call with no separate clothing geometry (see
-  // task-5-report.md). Task 5 could only tint that one material a flat
-  // skin tone (readable but "naked"). This bakes a per-vertex 'color'
-  // attribute from the mesh's own skinIndex/skinWeight so different bone
-  // regions read as different uniform pieces, with soft blending exactly
-  // where the skin weights blend (collar, cuffs, waistband) instead of a
-  // hard per-triangle cutoff.
-  //
-  // v2 (dealer uniform v2 — see task-5b-report.md "v2" section): the v1
-  // light SHIRT sleeves read as bare skin at distance on this muscled
-  // model. Sleeves now fold into VEST (dark suit-jacket arms + torso as one
-  // fitted suit), and a separate position-gated "bib" override paints a
-  // narrow white shirt-front onto the front-central-chest VEST vertices
-  // (spine_02/spine_03-dominant) so there's still a visible shirt collar
-  // under the bow tie, just no longer bare-looking sleeves.
-  //
-  // Bone -> region bucketing table (all 65 bones in assets/manifest.json;
-  // see task-5b-report.md for the full reasoning):
-  //   SKIN     Head, neck_01, hand_l/r, every finger bone (index/middle/
-  //            ring/pinky/thumb, incl. the _04_leaf tip bones)
-  //   VEST     spine_01/02/03, clavicle_l/r, upperarm_l/r, lowerarm_l/r
-  //            (per-dealer, VESTS — v2: sleeves moved here from SHIRT, see
-  //            above; torso + arms now read as one dark suit)
-  //   TROUSERS pelvis, thigh_l/r, calf_l/r                (fixed dark charcoal)
-  //   SHOES    foot_l/r, ball_l/r, ball_leaf_l/r          (fixed near-black)
-  //   (none of the above) root, and anything unforeseen  -> walk up to the
-  //            nearest ancestor BONE that resolves; if none does (root's
-  //            own parent is the non-bone "Armature" node), default SHIRT
-  //            (the light fabric tone — no bone maps here directly anymore,
-  //            it only survives as this fallback + the bib override color).
-  //            No actual vertices are expected to weight to 'root' — this
-  //            path exists purely as a safety net for asset-pack surprises.
-  const REGION_SHIRT_HEX = '#f2f0e8';     // rig.js's shirt tone; also the bib color (v2)
-  const REGION_TROUSERS_HEX = '#1b1e26';  // dark charcoal
-  const REGION_SHOES_HEX = '#14100c';     // near-black
+  // v2 dressing (docs/superpowers/specs/2026-07-17-dealer-glb-v2-fixes-
+  // design.md). The tuxedo is BAKED into the body base-color texture by
+  // tools/build-dealer-assets.mjs — crisp lapel/placket/cuff/belt lines in
+  // UV space, face + hand skin texels kept from the original pack texture
+  // (so the face has real shading and the eyes mesh has its pupil texture
+  // back). The texture is painted in light NEUTRAL tones; per-dealer variety
+  // comes from a per-vertex tint multiplied with the texture in the shader:
+  //   SKIN     tint = SKINS[seed] / landmarks.skinBase (ratio keeps the
+  //            texture's own face shading, just shifts the tone)
+  //   SUIT     tint = VESTS[seed] (jacket painted ~0.79 gray -> dark suit)
+  //   TROUSERS fixed charcoal (belt texels are near-black already)
+  //   WHITE    shirt/cuffs/buttons/shoes — painted final in the texture
+  // Vertex regions use the SAME bind-pose position rules as the texture
+  // bake — the numbers travel inside the GLB (scene.extras.dealerLandmarks),
+  // so bake and runtime can never drift apart. Boundary triangles blend the
+  // tint across one edge; the crisp texture lines dominate visually.
+  const TROUSERS_TINT = [0.106, 0.118, 0.149];   // #1b1e26
 
-  function regionForBoneName(name) {
-    if (name === 'Head' || name === 'neck_01') return 'SKIN';
-    if (/^hand_[lr]$/.test(name)) return 'SKIN';
-    if (/^(index|middle|ring|pinky|thumb)_(0[1-3]|04_leaf)_[lr]$/.test(name)) return 'SKIN';
-    // v2: sleeves (clavicle/upperarm/lowerarm) now VEST, not a separate light
-    // SHIRT tone — see task-5b-report.md "v2" section for why (bare-skin
-    // read at distance on this model).
-    if (/^(clavicle|upperarm|lowerarm)_[lr]$/.test(name)) return 'VEST';
-    if (/^spine_0[1-3]$/.test(name)) return 'VEST';
-    if (name === 'pelvis' || /^(thigh|calf)_[lr]$/.test(name)) return 'TROUSERS';
-    if (/^(foot|ball)(_leaf)?_[lr]$/.test(name)) return 'SHOES';
-    return null;
-  }
-  function resolveBoneRegion(bone) {
-    let cur = bone;
-    while (cur) {
-      const r = regionForBoneName(cur.name);
-      if (r) return r;
-      cur = cur.isBone ? cur.parent : null;
-    }
-    return 'SHIRT';
-  }
-
-  // Per-vertex "dominant" bone index = the single skinIndex/skinWeight slot
-  // with the highest weight for that vertex (distinct from the full 4-slot
-  // BLEND used elsewhere: the bib override needs a categorical yes/no —
-  // "is this vertex primarily owned by spine_02/03" — not a blended color).
-  function dominantBoneIndexAt(i, iArr, wArr, size) {
-    let bestW = -1, bestIdx = -1;
-    for (let k = 0; k < size; k++) {
-      const w = wArr[i * size + k];
-      if (w > bestW) { bestW = w; bestIdx = iArr[i * size + k]; }
-    }
-    return bestIdx;
-  }
-
-  // Computes the "shirt-front bib" bounding box directly from THIS mesh's
-  // own bind-pose vertex positions (never guessed/hardcoded — see
-  // task-5b-report.md "v2" for the node-probe numbers this was verified
-  // against). All bounds are derived proportionally from real geometry:
-  //   - lateralThresh: 15% of the chest's own lateral (X) extent, measured
-  //     from spine_02/03-dominant vertices only (NOT the full body bbox —
-  //     the full mesh bbox is T-pose arms-out and would give a wildly wrong
-  //     "chest width").
-  //   - forwardZMin: this body mesh is two open shells (front torso surface
-  //     + back/spine surface) with a real gap between them near the
-  //     centerline — confirmed empirically: restricted to |x| < lateralThresh,
-  //     spine_02/03-dominant vertices split cleanly into a back cluster
-  //     (z ~ -0.16..-0.07) and a front cluster (z ~ +0.06..+0.13) with
-  //     nothing in between. forwardZMin is the midpoint of that real gap.
-  //     (Away from the centerline the two shells nearly touch at the sides
-  //     of the ribcage — this is why the gap MUST be measured only within
-  //     the lateral band already established above, not across the whole
-  //     chest.)
-  //   - bibYMin/bibYMax: the vertical band actually spanned by those same
-  //     front-cluster, laterally-centered spine_02/03 vertices, capped above
-  //     by the base of the neck (min Y among neck_01-dominant vertices) —
-  //     i.e. "upper chest, below the neck", matching the brief's wording.
-  //   - Axis convention (+Z forward) is NOT guessed: task-5b-report.md
-  //     already established +Z is forward for this rig (Eyes mesh sits at a
-  //     more positive world Z than the Head bone itself, in this same rest
-  //     pose). This function reuses that same convention for "front".
-  function computeBibBounds(geometry, skeletonBones) {
-    const posAttr = geometry.attributes.position;
-    const skinIndexAttr = geometry.attributes.skinIndex;
-    const skinWeightAttr = geometry.attributes.skinWeight;
-    const pArr = posAttr.array, iArr = skinIndexAttr.array, wArr = skinWeightAttr.array;
-    const size = skinIndexAttr.itemSize;
-    const count = posAttr.count;
-    const spine02Idx = skeletonBones.findIndex((b) => b.name === 'spine_02');
-    const spine03Idx = skeletonBones.findIndex((b) => b.name === 'spine_03');
-    const neckIdx = skeletonBones.findIndex((b) => b.name === 'neck_01');
-    const isChestBone = (idx) => idx === spine02Idx || idx === spine03Idx;
-
-    // Pass 1: chest lateral extent -> lateral threshold.
-    let chestMinX = Infinity, chestMaxX = -Infinity;
-    for (let i = 0; i < count; i++) {
-      if (!isChestBone(dominantBoneIndexAt(i, iArr, wArr, size))) continue;
-      const x = pArr[i * 3];
-      if (x < chestMinX) chestMinX = x;
-      if (x > chestMaxX) chestMaxX = x;
-    }
-    const lateralThresh = 0.15 * (chestMaxX - chestMinX);
-
-    // Pass 2: within that lateral band only, find the real front/back gap.
-    let negMaxZ = -Infinity, posMinZ = Infinity;
-    for (let i = 0; i < count; i++) {
-      if (!isChestBone(dominantBoneIndexAt(i, iArr, wArr, size))) continue;
-      const x = pArr[i * 3];
-      if (Math.abs(x) >= lateralThresh) continue;
-      const z = pArr[i * 3 + 2];
-      if (z < 0) { if (z > negMaxZ) negMaxZ = z; } else if (z < posMinZ) posMinZ = z;
-    }
-    const forwardZMin = (negMaxZ + posMinZ) / 2;
-
-    // Pass 3: vertical band actually spanned by the front-cluster chest
-    // vertices, capped above by the base of the neck.
-    let neckBaseY = Infinity;
-    let bibYMin = Infinity, bibYMax = -Infinity;
-    for (let i = 0; i < count; i++) {
-      const bi = dominantBoneIndexAt(i, iArr, wArr, size);
-      const y = pArr[i * 3 + 1];
-      if (bi === neckIdx && y < neckBaseY) neckBaseY = y;
-      if (isChestBone(bi)) {
-        const x = pArr[i * 3], z = pArr[i * 3 + 2];
-        if (Math.abs(x) < lateralThresh && z > forwardZMin) {
-          if (y < bibYMin) bibYMin = y;
-          if (y > bibYMax) bibYMax = y;
-        }
+  // Tint group of a bind-pose vertex — mirrors classify() in
+  // tools/build-dealer-assets.mjs, collapsed to the four tint groups.
+  function tintGroupAt(x, y, z, L) {
+    const ax = Math.abs(x);
+    if (y > L.collarY || ax > L.wristX) return 'SKIN';
+    if (y < L.ankleY) return 'WHITE';                    // shoes: painted final
+    if (ax > L.cuffX && y > 1.30) return 'WHITE';        // shirt cuffs
+    if (y > L.collarBandY && z > 0 && ax < 0.09) return 'WHITE';  // collar edge
+    if (y < L.beltTop) return 'TROUSERS';                // trousers + belt band
+    if (z > L.frontZMin) {
+      if (y >= L.vBottomY && y <= L.vTopY) {
+        const half = L.vHalfTop * (y - L.vBottomY) / (L.vTopY - L.vBottomY);
+        if (ax < half) return 'WHITE';                   // shirt V
+      } else if (y < L.vBottomY && ax < L.placketHalf) {
+        return 'WHITE';                                  // button placket
       }
     }
-    if (Number.isFinite(neckBaseY)) bibYMax = neckBaseY;
-
-    // Reviewer guard: if the chest-vertex filter found nothing (no
-    // spine_02/03-dominant vertices at all, or none within the lateral
-    // band, or none in the front cluster) any of these bounds comes out
-    // non-finite (±Infinity from the untouched min/max seeds, or NaN from
-    // averaging two of them — see the passes above). A future asset swap
-    // or bone-name/region change could silently hit this on a mesh whose
-    // topology doesn't match this pack's assumptions. Fail loud instead of
-    // baking a garbage (possibly Infinity-sized) box: warn once and return
-    // a sentinel bakeUniformColors() treats as "skip the bib override" —
-    // affected vertices simply keep their normal region-blend (VEST) color.
-    const degenerate = !Number.isFinite(lateralThresh) || !Number.isFinite(forwardZMin)
-      || !Number.isFinite(bibYMin) || !Number.isFinite(bibYMax) || bibYMin > bibYMax;
-    if (degenerate) {
-      console.warn('[character] bib bounds degenerate — skipping bib');
-      return null;
-    }
-
-    return { lateralThresh, forwardZMin, bibYMin, bibYMax, spine02Idx, spine03Idx };
+    return 'SUIT';
   }
 
-  // Bakes a per-vertex 'color' BufferAttribute onto `geometry` (which the
-  // caller MUST already have cloned — see the call site for why) by
-  // blending each region's color across a vertex's (up to 4) skinIndex
-  // bones weighted by skinWeight. `skeletonBones` must be the mesh's own
-  // `skeleton.bones` array — that's the ONLY array whose order matches the
-  // skinIndex values baked into this geometry (NOT assets/manifest.json's
-  // order, which is alphabetical).
-  //
-  // v2: after the normal region blend, a second pass overrides the narrow
-  // front-central-chest patch of VEST (spine_02/03-dominant) vertices to the
-  // light shirt tone — a "shirt-front bib" peeking out under the bow tie,
-  // between what reads as an open dark suit jacket.
-  function bakeUniformColors(geometry, skeletonBones, regionColors) {
-    const skinIndexAttr = geometry.attributes.skinIndex;
-    const skinWeightAttr = geometry.attributes.skinWeight;
-    const posAttr = geometry.attributes.position;
-    const count = posAttr.count;
-    const boneColor = skeletonBones.map((b) => regionColors[resolveBoneRegion(b)]);
-    const iArr = skinIndexAttr.array, wArr = skinWeightAttr.array, pArr = posAttr.array;
-    const size = skinIndexAttr.itemSize; // 4
-    const colors = new Float32Array(count * 3);
-    for (let i = 0; i < count; i++) {
-      let r = 0, g = 0, b = 0, wSum = 0;
-      for (let k = 0; k < size; k++) {
-        const w = wArr[i * size + k];
-        if (w <= 0) continue;
-        const c = boneColor[iArr[i * size + k]] || regionColors.SHIRT;
-        r += c.r * w; g += c.g * w; b += c.b * w;
-        wSum += w;
-      }
-      if (wSum > 0) { r /= wSum; g /= wSum; b /= wSum; }
-      else { r = regionColors.SHIRT.r; g = regionColors.SHIRT.g; b = regionColors.SHIRT.b; }
-      colors[i * 3] = r; colors[i * 3 + 1] = g; colors[i * 3 + 2] = b;
+  // Bakes the per-dealer tint as a 'color' BufferAttribute. The caller MUST
+  // have cloned the geometry first — SkeletonUtils.clone() shares geometry
+  // across every dealer clone, so writing here without cloning would leak
+  // this dealer's tint onto all the others (see the call site).
+  function bakeTintColors(geometry, L, skinTint, suitTint) {
+    const pos = geometry.attributes.position;
+    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, WHITE: [1, 1, 1] };
+    const colors = new Float32Array(pos.count * 3);
+    for (let i = 0; i < pos.count; i++) {
+      const g = groups[tintGroupAt(pos.getX(i), pos.getY(i), pos.getZ(i), L)];
+      colors[i * 3] = g[0]; colors[i * 3 + 1] = g[1]; colors[i * 3 + 2] = g[2];
     }
-
-    // v2 bib override — see computeBibBounds() for how every threshold here
-    // is derived from this mesh's own bind-pose geometry, not guessed. A
-    // null result means the geometry didn't have the chest landmarks this
-    // needs (see the guard at the end of computeBibBounds()) — skip the
-    // override entirely rather than bake against garbage bounds; affected
-    // vertices simply keep whatever the region blend above already gave them.
-    const bib = computeBibBounds(geometry, skeletonBones);
-    if (bib) {
-      const bibColor = regionColors.SHIRT;
-      for (let i = 0; i < count; i++) {
-        const bi = dominantBoneIndexAt(i, iArr, wArr, size);
-        if (bi !== bib.spine02Idx && bi !== bib.spine03Idx) continue;
-        const x = pArr[i * 3], y = pArr[i * 3 + 1], z = pArr[i * 3 + 2];
-        if (Math.abs(x) < bib.lateralThresh && y >= bib.bibYMin && y <= bib.bibYMax && z > bib.forwardZMin) {
-          colors[i * 3] = bibColor.r; colors[i * 3 + 1] = bibColor.g; colors[i * 3 + 2] = bibColor.b;
-        }
-      }
-    }
-
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   }
 
@@ -420,56 +252,71 @@
     for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 0x9e3779b1);
     h = Math.abs(h >>> 0);
     const group = THREE.SkeletonUtils.clone(state.template);
-    // Variation: tint + height. Palettes shared with rig.js via C.rigPalettes
-    // (exported from rig.js Step 3). Real materials on this pack (see
-    // assets/manifest.json + task-5-report.md inspection): MI_Hair_1 (the
-    // Eyebrows mesh), MI_Eyes (the Eyes mesh), MI_Superhero_Male (the ENTIRE
-    // body incl. face — this base-character pack has no separate clothing
-    // mesh/material at all, textures were stripped in Task 1).
+    const L = state.landmarks;
     const P = C.rigPalettes;
-    const regionColors = {
-      SKIN: new THREE.Color(P.SKINS[h % P.SKINS.length]),
-      SHIRT: new THREE.Color(REGION_SHIRT_HEX),
-      VEST: new THREE.Color(P.VESTS[(h >>> 6) % P.VESTS.length]),
-      TROUSERS: new THREE.Color(REGION_TROUSERS_HEX),
-      SHOES: new THREE.Color(REGION_SHOES_HEX),
-    };
+    // skin tint = target palette tone / the texture's own average skin tone
+    // (skinBase, measured by the bake tool) — a multiplier that re-tones the
+    // textured face/hands without flattening their shading. Capped at 1.35
+    // so pale palette entries can't blow out highlights.
+    const base = L.skinBase;
+    const skinC = new THREE.Color(P.SKINS[h % P.SKINS.length]);
+    const skinTint = [
+      Math.min(1.35, skinC.r * 255 / base[0]),
+      Math.min(1.35, skinC.g * 255 / base[1]),
+      Math.min(1.35, skinC.b * 255 / base[2]),
+    ];
+    const suitC = new THREE.Color(P.VESTS[(h >>> 6) % P.VESTS.length]);
+    // jacket texels are painted ~0.79 gray — lift the dark vest palette a
+    // touch so the suit reads as fabric, not a silhouette
+    const suitTint = [Math.min(1, suitC.r * 2.2), Math.min(1, suitC.g * 2.2), Math.min(1, suitC.b * 2.2)];
+    const hairColor = P.HAIRS[(h >>> 3) % P.HAIRS.length];
+
+    // hairstyle pick: null = bald stays in rotation; beard composes on top.
+    // Hair meshes ship in the GLB as static Armature children at bind-pose
+    // world position; Object3D.attach() reparents one to the Head bone
+    // keeping that placement, so it rides head animation rigidly (same trick
+    // as the bow tie, minus the manual matrix math).
+    const styles = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buns', 'Hair_Long'];
+    const hairPick = styles[(h >>> 9) % styles.length];
+    const wantBeard = ((h >>> 13) % 10) < 3;
+
     group.traverse((o) => {
       if (!o.isMesh && !o.isSkinnedMesh) return;
       o.castShadow = true; o.receiveShadow = true;
       o.material = o.material.clone();            // per-dealer tinting
+      // match the flat-color lighting of the rest of the lobby: treat texel
+      // values as-is instead of sRGB-decoding them (every other material in
+      // the scene feeds plain hex colors through the same linear pipeline)
+      if (o.material.map) o.material.map.encoding = THREE.LinearEncoding;
       const n = (o.material.name || '').toLowerCase();
-      if (n.includes('eye')) return;                                   // MI_Eyes: leave as-is
-      if (n.includes('hair')) { o.material.color.set(P.HAIRS[(h >>> 3) % P.HAIRS.length]); return; }
-      // MI_Superhero_Male: body + face, one mesh, one material — bake a
-      // bone-weighted vertex-color uniform instead of a flat tint (Task 5b).
-      // SkeletonUtils.clone() shares GEOMETRY across every cloned dealer
-      // (only materials + the scene graph get duplicated per clone) —
-      // baking a per-dealer 'color' attribute onto the shared geometry
-      // would leak across every OTHER dealer sharing this template, so the
-      // geometry must be cloned here first. Cost: BufferGeometry.clone()
-      // duplicates ALL attributes (position/normal/uv/skinIndex/skinWeight),
-      // not just the new color one — roughly 7.3k verts x ~68 bytes/vert
-      // (~0.5MB) of EXTRA memory per dealer clone, on top of what Task 5
-      // already carried. With 5-6 dealers on screen at once that's a low
-      // single-digit MB of duplicated geometry — not free, but small next
-      // to the ~1MB GLB payload itself, and there's no cheaper option in
-      // this three.js version (no per-instance vertex-color mechanism for
-      // SkinnedMesh).
-      if (o.isSkinnedMesh && o.geometry.attributes.skinIndex) {
+      if (n.includes('eye')) return;              // MI_Eyes: pupil texture restored
+      if (n.includes('hair')) { o.material.color.set(hairColor); return; }
+      // MI_Superhero_Male: tuxedo texture × per-vertex tint
+      if (o.isSkinnedMesh && o.geometry.attributes.position) {
         o.geometry = o.geometry.clone();
-        bakeUniformColors(o.geometry, o.skeleton.bones, regionColors);
+        bakeTintColors(o.geometry, L, skinTint, suitTint);
         o.material.vertexColors = true;
-        o.material.color.set('#ffffff');            // show baked colors unmodified
-        return;
+        o.material.color.set('#ffffff');
       }
-      o.material.color.set(regionColors.SKIN);       // fallback safety net (not expected to hit)
     });
-    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
+
     const bones = {};
     for (const [logical, real] of Object.entries(BONE_MAP)) {
       bones[logical] = group.getObjectByName(real);
     }
+
+    // attach the picked hairstyle (and maybe beard) to the Head bone; remove
+    // the rest. updateMatrixWorld first so attach() sees bind-pose matrices.
+    group.updateMatrixWorld(true);
+    for (const name of state.hairstyles) {
+      const node = group.getObjectByName(name);
+      if (!node) continue;
+      const keep = name === hairPick || (name === 'Hair_Beard' && wantBeard);
+      if (keep && bones.head) bones.head.attach(node);
+      else node.parent?.remove(node);
+    }
+
+    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
     const bowTie = attachBowTie(group, bones.neck);
     return { group, bones, mixer: new THREE.AnimationMixer(group), hash: h, bowTie };
   }
@@ -498,6 +345,47 @@
         restDirUpper: fore.position.clone().normalize(),   // child dir in upper's local space
         restDirFore: hand.position.clone().normalize(),
       };
+    }
+    // bind-pose spine rotation — the torso-lean layer restores this before
+    // adding its offset whenever no mixer action rewrote the spine this
+    // frame (idle not yet started), so the additive lean can't accumulate
+    const spineRestQ = bones.spine ? bones.spine.quaternion.clone() : null;
+
+    // ---- relaxed-hand layer ----
+    // The pack's clips leave the fingers in a clenched mocap fist (and some
+    // clips don't drive them at all, so additive math would accumulate).
+    // Every frame the finger bones are SET to a precomputed bind-pose ×
+    // fixed-relaxed-curl local quaternion — absolute, so it can never
+    // drift, and uniform across clips. Curl axis derived from the bind
+    // geometry itself: at T-pose the fingers point along the arm with palms
+    // down, so the curl axis is fingerDir × worldDown converted into each
+    // bone's local frame (handles left/right automatically via the cross
+    // product's sign).
+    const fingerCurl = [];
+    {
+      const CURL = { index: [0.30, 0.45, 0.35], middle: [0.32, 0.48, 0.38], ring: [0.34, 0.50, 0.40], pinky: [0.36, 0.52, 0.42], thumb: [0.10, 0.18, 0.15] };
+      const DOWN = new THREE.Vector3(0, -1, 0);
+      group.updateMatrixWorld(true);
+      group.traverse((b) => {
+        if (!b.isBone) return;
+        const m = b.name.match(/^(index|middle|ring|pinky|thumb)_(01|02|03)_[lr]$/);
+        if (!m || !b.children[0]) return;
+        const dirW = b.children[0].getWorldPosition(new THREE.Vector3())
+          .sub(b.getWorldPosition(new THREE.Vector3())).normalize();
+        const axisW = dirW.clone().cross(DOWN);
+        if (axisW.lengthSq() < 0.25) return;   // degenerate: finger ~vertical at bind
+        axisW.normalize();
+        const invQ = b.getWorldQuaternion(new THREE.Quaternion()).invert();
+        // rotation expressed in the bone's own frame, applied after its
+        // bind-local orientation: qL' = qLbind ⊗ (qWbind⁻¹ ΔW qWbind)
+        const axisL = axisW.applyQuaternion(invQ).normalize();
+        const angle = CURL[m[1]][Number(m[2]) - 1];
+        const q = b.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(axisL, angle));
+        fingerCurl.push({ bone: b, q });
+      });
+    }
+    function applyFingerCurl() {
+      for (const f of fingerCurl) f.bone.quaternion.copy(f.q);
     }
 
     // Rotate `bone` so that `restDir` (local) points at world direction `dirW`.
@@ -555,6 +443,24 @@
       return base.clone();
     }
 
+    // Pitch-point clamp (v2 spec): a dealer PITCHES cards — the hand never
+    // stretches past a comfortable fraction of its actual reach; the card
+    // (or chip) flies the rest of the way from the release event. Without
+    // this, table targets ~1.4m away pin the ~0.55m arm at full extension
+    // and the whole gesture collapses into the frozen chest-height wobble
+    // that was v1's core complaint. Applied to every resolved waypoint, so
+    // near targets pass through untouched and only far ones pull in.
+    const REACH_FRACTION = 0.85;
+    function clampToReach(side, posV) {
+      const ch = armChains[side];
+      if (!ch) return posV;
+      ch.upper.getWorldPosition(_v3);
+      const maxD = (ch.upperLen + ch.foreLen) * REACH_FRACTION;
+      const d = posV.distanceTo(_v3);
+      if (d <= maxD) return posV;
+      return posV.sub(_v3).multiplyScalar(maxD / d).add(_v3);
+    }
+
     // Table setups sometimes omit a ref that was already supplied by an
     // immediately-preceding call on the same arm (e.g. roulette-table.js
     // fires spinReach with a `rim` ref, then spinFollow with `{}` — that call
@@ -603,14 +509,27 @@
       // here (dealers don't rotate mid-path) and reused for every waypoint's
       // offset in resolveWaypointPos — not re-queried per waypoint/frame.
       group.getWorldQuaternion(_q1);
-      const hands = Object.entries(path.hands).map(([side, wps]) => ({
+      // mirrorBySide (hand-paths.js): single-R paths anchored on a ref that
+      // sits on the dealer's LEFT (group-local +x) swap to the left arm with
+      // X-offsets negated — drawing from a left-side shoe with the right
+      // hand crosses the chest (user-reported as "totally broken").
+      let handsDef = path.hands;
+      if (path.mirrorBySide && refs[path.mirrorBySide] && path.hands.R && !path.hands.L) {
+        _v1.set(...refs[path.mirrorBySide]);
+        if (group.worldToLocal(_v1).x > 0.05) {
+          handsDef = {
+            L: path.hands.R.map((w) => (w.offset ? { ...w, offset: [-w.offset[0], w.offset[1], w.offset[2]] } : w)),
+          };
+        }
+      }
+      const hands = Object.entries(handsDef).map(([side, wps]) => ({
         side,
         chain: armChains[side],
         start: null,               // filled on first frame (current hand pos)
         wps: wps.map((w) => ({
           at: w.at, ease: C.tween.easings[w.ease || 'inOutCubic'],
           arc: w.arc || 0, event: w.event || null, fired: false,
-          pos: resolveWaypointPos(w, refs, side, _q1),
+          pos: clampToReach(side, resolveWaypointPos(w, refs, side, _q1)),
         })),
       })).filter((h) => h.chain);
       if (!hands.length) return Promise.resolve();
@@ -681,6 +600,11 @@
       const t = Math.min(1, (now - ap.t0) / ap.dur);
       const w = Math.min(1, (now - ap.t0) / RAMP)
         * (ap.path.cycle || ap.holdAtEnd ? 1 : Math.min(1, ((1 - t) * ap.dur) / RAMP + 0.001));
+      // pass 1: resolve each hand's current path position. Split from the
+      // IK pass because the torso lean below moves the SHOULDERS — it must
+      // be applied before the solve so the solver compensates within the
+      // same frame (lean-after-IK left the hand short of its target by the
+      // lean amount, caught by the character-ik waypoint-accuracy tests).
       for (const h of ap.hands) {
         if (!h.start) { h.chain.hand.getWorldPosition(_v3); h.start = _v3.clone(); }
         // find current segment
@@ -694,7 +618,27 @@
         const e = cur.ease(st);
         const pos = _v1.copy(prevPos).lerp(cur.pos, e);
         pos.y += cur.arc * 4 * st * (1 - st);
-        applyArmIK(h.side, pos, w);
+        if (!h._pathPos) h._pathPos = new THREE.Vector3();
+        h._pathPos.copy(pos);
+      }
+      // Additive torso lean toward the working hand's current target —
+      // post-mixer like every other layer, ramped by the same IK weight so
+      // it fades in/out with the arm. Small on purpose: it sells the pitch
+      // without moving the hips or fighting the idle sway.
+      if (ap.hands.length && bones.spine) {
+        // no running idle action -> nothing rewrote the spine this frame, so
+        // restore rest first or the += below compounds frame over frame
+        if (spineRestQ && (!idleAction || !idleAction.isRunning())) bones.spine.quaternion.copy(spineRestQ);
+        const local = group.worldToLocal(_v2.copy(ap.hands[0]._pathPos));
+        const yaw = Math.max(-0.18, Math.min(0.18, Math.atan2(local.x, Math.abs(local.z) + 1e-3) * 0.35));
+        const fwd = Math.max(0, Math.min(0.20, (local.z - 0.30) * 0.35));
+        bones.spine.rotation.y += yaw * w;
+        bones.spine.rotation.x += fwd * w;
+        bones.spine.updateWorldMatrix(true, false);
+      }
+      // pass 2: IK solve + events against the leaned torso
+      for (const h of ap.hands) {
+        applyArmIK(h.side, h._pathPos, w);
         // Finding 2 (task-7 review): firing used to be tied to the CURRENT
         // segment's eased tail (`cur.event && st>=0.995`) — for a fast
         // segment (e.g. tapRack's first waypoint) that's a sub-millisecond
@@ -805,6 +749,7 @@
       applyLook();          // look-at layer, below
       applyHeadGesture();    // procedural nod/headShake layer, below
       applyArmPath();        // IK arm layer, above — also must run post-mixer
+      applyFingerCurl();     // relaxed-hand layer, above — absolute SET, post-mixer
     }
 
     function setIdle() {
@@ -878,6 +823,79 @@
         tempDriveRefs = Math.max(0, tempDriveRefs - 1);
         if (tempDriveRefs === 0 && tempDriveHook) { app.offFrame(tempDriveHook); tempDriveHook = null; }
       };
+    }
+
+    // ---- shift-change walk (v2 spec) ----
+    // The dealer walks in along the pit lane and takes position. Pathing is
+    // LOCAL-space: impl.group sits inside the table's own root, so moving
+    // group.position.x walks parallel to the table row no matter how the
+    // table is rotated in the world. Enters from local -x (toward the floor
+    // aisles — local +x runs into the cashier wall on the blackjack row).
+    // Uses the 'body' track token so a roomGen change or a repeat call
+    // cancels it; holds a drive ref for full-rate mixer updates while
+    // walking (same contract as every other one-shot).
+    function walkIn() {
+      if (app.REDUCED) return Promise.resolve();
+      const walkClip = findClip('Walk_Formal_Loop');
+      if (!walkClip || !idleAction) return Promise.resolve();
+      const token = ++tokens.body;
+      const gen = app.roomGen;
+      const SPEED = 1.25;             // m/s — matches the formal stride's cadence
+      const ENTER_FROM = -3.2;        // local-x offset of the entry point
+      const release = acquireDrive();
+      const targetX = group.position.x;
+      const baseYaw = group.rotation.y;
+      // facing the travel direction: walking toward +x local => forward
+      // (sin yaw, 0, cos yaw) must point +x => yaw = +π/2 (relative to base)
+      const walkYaw = baseYaw + (ENTER_FROM < 0 ? Math.PI / 2 : -Math.PI / 2);
+      group.position.x = targetX + ENTER_FROM;
+      group.rotation.y = walkYaw;
+      group.updateMatrixWorld(true);
+      const walkAction = mixer.clipAction(walkClip);
+      walkAction.reset();
+      walkAction.setLoop(THREE.LoopRepeat, Infinity);
+      walkAction.play();
+      idleAction.crossFadeTo(walkAction, 0.2, false);
+      return new Promise((resolve) => {
+        let last = performance.now();
+        let arrived = false;
+        const finish = () => {
+          app.offFrame(hook);
+          group.position.x = targetX;
+          group.rotation.y = baseYaw;
+          idleAction.enabled = true;
+          idleAction.reset(); idleAction.play();
+          walkAction.crossFadeTo(idleAction, 0.25, false);
+          release();
+          resolve();
+        };
+        const hook = () => {
+          if (tokens.body !== token || app.roomGen !== gen) { finish(); return; }
+          const now = performance.now();
+          const dt = Math.min(0.1, (now - last) / 1000);
+          last = now;
+          const remaining = targetX - group.position.x;
+          if (!arrived) {
+            const step = Math.min(Math.abs(remaining), SPEED * dt) * Math.sign(remaining || 1);
+            group.position.x += step;
+            if (Math.abs(targetX - group.position.x) < 0.02) {
+              arrived = true;
+              idleAction.enabled = true;
+              idleAction.reset(); idleAction.play();
+              walkAction.crossFadeTo(idleAction, 0.25, false);
+            }
+          } else {
+            // settle the yaw back toward the table
+            let d = baseYaw - group.rotation.y;
+            while (d > Math.PI) d -= 2 * Math.PI;
+            while (d < -Math.PI) d += 2 * Math.PI;
+            group.rotation.y += d * 0.14;
+            if (Math.abs(d) < 0.03) { finish(); }
+          }
+        };
+        hook.cancel = finish;
+        app.onFrame(hook);
+      });
     }
 
     function playHeadGesture(name, ms) {
@@ -968,7 +986,7 @@
       group.parent?.remove(group);
     }
 
-    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, dispose };
+    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, walkIn, dispose };
   }
 
   function attach(app, root, opts, onReady) {

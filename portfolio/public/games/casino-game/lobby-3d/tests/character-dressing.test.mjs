@@ -44,11 +44,11 @@ import { fileURLToPath } from 'node:url';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const read = (p) => readFileSync(join(ROOT, p), 'utf8');
 
-// Hex constants documented in character.js (private, not exported — mirrored
-// here deliberately, same values the brief itself specifies as the expected
-// baked colors).
-const SHOE_HEX = '#14100c';
-const BIB_HEX = '#f2f0e8';
+// v2 dressing (2026-07-17 spec): the tuxedo lives in the TEXTURE; the baked
+// per-vertex 'color' attribute is a TINT multiplied over it. Expected tint
+// values mirror character.js's buildCharacter(): WHITE [1,1,1] for regions
+// painted final in the texture (shirt/cuffs/shoes), SKINS[pick]/skinBase for
+// skin, VESTS[pick]*2.2 (clamped) for the suit, fixed charcoal for trousers.
 const COLOR_EPS = 0.01;
 
 // Same seed hash as character.js's buildCharacter() / rig.js's hashSeed() —
@@ -95,7 +95,14 @@ function makeSandbox() {
     navigator: { userAgent: 'node-test-harness' },
     performance: { now: () => Date.now() },
     TextDecoder,
+    // v2 GLBs embed PNG textures; GLTFLoader's ImageBitmapLoader path needs
+    // these to exist. The stubs never decode pixels — tests only touch
+    // geometry/bones/tints, never rendered texels.
+    Blob,
+    URL: { createObjectURL: () => 'blob:stub', revokeObjectURL() {} },
+    createImageBitmap: async () => ({ width: 2, height: 2, close() {} }),
   };
+  sandbox.self = sandbox;   // GLTFLoader's loaders reference `self`
   vm.createContext(sandbox);
   return sandbox;
 }
@@ -307,32 +314,40 @@ test('body geometry carries a per-dealer color attribute (itemSize 3), and the t
   );
 });
 
-test('shoe region (foot_l-dominant vertex) bakes to the fixed near-black shoe color', () => {
+test('shoe region (foot_l-dominant vertex) tints WHITE — shoes are painted final in the texture', () => {
   const mesh = findBodyMesh(implA.group);
   const vi = findFullWeightVertexForBone(mesh, 'foot_l');
   assert.notEqual(vi, -1, 'expected a full-weight foot_l vertex (asset pack should have clean skinning)');
-  assertColorApprox(vertexColor(mesh, vi), expectedColor(SHOE_HEX), 'foot_l vertex');
+  assertColorApprox(vertexColor(mesh, vi), { r: 1, g: 1, b: 1 }, 'foot_l vertex');
 });
 
-test('skin region (Head-dominant vertex) bakes to this seed\'s SKINS pick', () => {
+test('skin region (Head-dominant vertex) tints to SKINS[pick]/skinBase (texture re-tone ratio)', () => {
+  const L = capturedTemplate.userData.dealerLandmarks;
+  assert.ok(L && L.skinBase, 'landmarks travel in the GLB scene extras');
   for (const [impl, seed] of [[implA, SEED_A], [implB, SEED_B]]) {
     const mesh = findBodyMesh(impl.group);
     const vi = findFullWeightVertexForBone(mesh, 'Head');
     assert.notEqual(vi, -1, `expected a full-weight Head vertex for ${seed}`);
     const h = hashSeed(seed);
-    const skinHex = CTX_CASINO.rigPalettes.SKINS[h % CTX_CASINO.rigPalettes.SKINS.length];
-    assertColorApprox(vertexColor(mesh, vi), expectedColor(skinHex), `Head vertex (${seed})`);
+    const skin = expectedColor(CTX_CASINO.rigPalettes.SKINS[h % CTX_CASINO.rigPalettes.SKINS.length]);
+    const expected = {
+      r: Math.min(1.35, skin.r * 255 / L.skinBase[0]),
+      g: Math.min(1.35, skin.g * 255 / L.skinBase[1]),
+      b: Math.min(1.35, skin.b * 255 / L.skinBase[2]),
+    };
+    assertColorApprox(vertexColor(mesh, vi), expected, `Head vertex (${seed})`);
   }
 });
 
-test('sleeve region (upperarm-dominant vertex) bakes to this seed\'s VESTS pick (suit sleeves, not bare-skin shirt)', () => {
+test('sleeve region (upperarm-dominant vertex) tints to the lifted VESTS pick (suit sleeves, not bare skin)', () => {
   for (const [impl, seed] of [[implA, SEED_A], [implB, SEED_B]]) {
     const mesh = findBodyMesh(impl.group);
     const vi = findFullWeightVertexForBone(mesh, 'upperarm_l');
     assert.notEqual(vi, -1, `expected a full-weight upperarm_l vertex for ${seed}`);
     const h = hashSeed(seed);
-    const vestHex = CTX_CASINO.rigPalettes.VESTS[(h >>> 6) % CTX_CASINO.rigPalettes.VESTS.length];
-    assertColorApprox(vertexColor(mesh, vi), expectedColor(vestHex), `upperarm_l vertex (${seed})`);
+    const vest = expectedColor(CTX_CASINO.rigPalettes.VESTS[(h >>> 6) % CTX_CASINO.rigPalettes.VESTS.length]);
+    const expected = { r: Math.min(1, vest.r * 2.2), g: Math.min(1, vest.g * 2.2), b: Math.min(1, vest.b * 2.2) };
+    assertColorApprox(vertexColor(mesh, vi), expected, `upperarm_l vertex (${seed})`);
   }
 });
 
@@ -349,11 +364,21 @@ test('the two seeds yield different vest colors (per-dealer variation actually v
   assert.ok(different, `expected dealer-A vest ${JSON.stringify(colorA)} != dealer-B vest ${JSON.stringify(colorB)}`);
 });
 
-test('shirt-front bib: a central-front chest vertex bakes to the fixed bib color', () => {
+test('shirt placket: a central-front vertex between belt and V-bottom tints WHITE (texture shows the shirt)', () => {
+  const L = capturedTemplate.userData.dealerLandmarks;
   for (const [impl, seed] of [[implA, SEED_A], [implB, SEED_B]]) {
     const mesh = findBodyMesh(impl.group);
-    const vi = findBibVertex(mesh, expectedColor(BIB_HEX));
-    assert.notEqual(vi, -1, `expected at least one central-front chest vertex painted the bib color for ${seed}`);
+    const pos = mesh.geometry.attributes.position;
+    const col = mesh.geometry.attributes.color.array;
+    let found = -1;
+    for (let i = 0; i < pos.count; i++) {
+      const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i);
+      if (Math.abs(x) >= L.placketHalf || z <= L.frontZMin) continue;
+      if (y <= L.beltTop || y >= L.vBottomY) continue;
+      if (Math.abs(col[i * 3] - 1) < COLOR_EPS && Math.abs(col[i * 3 + 1] - 1) < COLOR_EPS
+        && Math.abs(col[i * 3 + 2] - 1) < COLOR_EPS) { found = i; break; }
+    }
+    assert.notEqual(found, -1, `expected at least one WHITE-tinted placket vertex for ${seed}`);
   }
 });
 

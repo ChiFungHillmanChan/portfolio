@@ -10,11 +10,21 @@
   const EASINGS = ['inOutCubic', 'outCubic', 'outQuart', 'outBack'];
 
   const PATHS = {
-    // draw from the shoe, sweep to the card spot, hand back to rest
-    dealCard: { dur: 520, hands: { R: [
-      { at: 0.28, ref: 'shoe', offset: [0, 0.03, 0], ease: 'outCubic', event: 'grab' },
-      { at: 0.72, ref: 'target', offset: [0, 0.04, 0], arc: 0.10, event: 'release' },
-      { at: 1.00, rest: true },
+    // draw from the shoe, PITCH toward the seat, hover back over the shoe —
+    // deliberately NO rest key: consecutive deals chain into one continuous
+    // pitching rhythm (washCards' chaining idiom), and between rounds the
+    // hand waits by the shoe. dur matches the 420ms card flight so a full
+    // multi-card deal reads as one motion. The hand target itself never
+    // reaches a distant seat — character.js clamps every waypoint to a
+    // comfortable fraction of the arm's reach and the card flies the rest
+    // of the way from the release event. sweep/pay/armsRest end the chain.
+    // mirrorBySide: engine swaps this to the LEFT arm when the shoe ref
+    // sits on the dealer's left (group-local +x) — a right-handed draw from
+    // a left-side shoe crosses the chest and reads broken.
+    dealCard: { dur: 420, mirrorBySide: 'shoe', hands: { R: [
+      { at: 0.30, ref: 'shoe', offset: [0, 0.03, 0], ease: 'outCubic', event: 'grab' },
+      { at: 0.74, ref: 'target', offset: [0, 0.05, 0], arc: 0.08, event: 'release' },
+      { at: 1.00, ref: 'shoe', offset: [0, 0.07, 0.03] },
     ] } },
     // rake losing chips: touch the stack, drag to the rack
     sweepChips: { dur: 700, hands: { R: [
