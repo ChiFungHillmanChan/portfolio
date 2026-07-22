@@ -1,0 +1,41 @@
+:root { --paper: #e8c95a; --ink: #2a1a10; --bg: #1a0f0a; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { height: 100%; background: var(--bg); overflow: hidden;
+  font-family: "Kaiti TC", 楷體, DFKai-SB, BiauKai, serif; color: #f3e6c8;
+  -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+.noscript { padding: 2rem; text-align: center; }
+#app { height: 100%; display: flex; align-items: center; justify-content: center;
+  background:
+    repeating-linear-gradient(0deg, #241511 0 6px, #1f120d 6px 12px); }
+#stage-wrap { position: relative; height: 100%; aspect-ratio: 9 / 16; max-width: 100vw; }
+#stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
+  background: #000; cursor: none; }
+.overlay { position: absolute; inset: 0; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 14px; padding: 24px;
+  background: rgba(16, 8, 5, 0.92); text-align: center; z-index: 2;
+  overflow-y: auto; }
+.overlay[hidden] { display: none; }
+.overlay h1 { font-size: 3rem; letter-spacing: 0.3em; text-indent: 0.3em; color: var(--paper); }
+.overlay .sub { font-size: 0.95rem; opacity: 0.75; line-height: 1.6; }
+.overlay label { font-size: 1rem; }
+.overlay input[type="text"] { font: inherit; font-size: 1.2rem; text-align: center;
+  padding: 10px 14px; width: min(320px, 80%); border-radius: 8px;
+  border: 1px solid #7a5a30; background: #120a06; color: var(--paper); }
+.file-btn, .mode-btn, .end-btn { font: inherit; font-size: 1.1rem; padding: 12px 26px;
+  border-radius: 10px; border: 1px solid #7a5a30; background: #2c1a0e;
+  color: #f3e6c8; cursor: pointer; }
+.mode-btn.primary { background: #7c1f14; border-color: #a8442f; font-size: 1.35rem; }
+.toggle { display: flex; gap: 8px; }
+.toggle button { font: inherit; padding: 8px 18px; border-radius: 999px;
+  border: 1px solid #7a5a30; background: #120a06; color: #f3e6c8; cursor: pointer; }
+.toggle button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+.fineprint { font-size: 0.75rem; opacity: 0.55; line-height: 1.7; }
+#photo-input { display: none; }
+#end-video { width: min(300px, 70%); aspect-ratio: 9 / 16; border-radius: 12px;
+  border: 1px solid #7a5a30; background: #000; }
+.end-row { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+#hud-stop { position: absolute; top: 12px; left: 12px; z-index: 1; font: inherit;
+  font-size: 0.95rem; padding: 8px 16px; border-radius: 999px;
+  border: 1px solid #7a5a30; background: rgba(18, 10, 6, 0.75); color: #f3e6c8;
+  cursor: pointer; }
+#hud-stop[hidden] { display: none; }
