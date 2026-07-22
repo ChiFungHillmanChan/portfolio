@@ -29,7 +29,7 @@ test('combo counts fast hits and bursts at 5', () => {
   for (let i = 0; i < 5; i++) r = d.hit(0, 0, i * 400); // 400ms gaps
   assert.equal(r.combo, 5);
   assert.equal(r.comboBurst, true);
-  r = d.hit(0, 0, 5 * 400 + 100);
+  r = d.hit(0, 0, 2000);        // 400ms after the 5th hit — still in window
   assert.equal(r.combo, 6);
   assert.equal(r.comboBurst, false);
   r = d.hit(0, 0, 60000);       // slow hit resets
