@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1a0f0a"/>
+  <radialGradient id="glow" cx="0.5" cy="0.55" r="0.7">
+    <stop offset="0" stop-color="#ffb450" stop-opacity="0.28"/>
+    <stop offset="1" stop-color="#ffb450" stop-opacity="0"/>
+  </radialGradient>
+  <rect width="512" height="512" rx="96" fill="url(#glow)"/>
+  <!-- yellow effigy paper -->
+  <g transform="rotate(-6 256 290)">
+    <rect x="146" y="130" width="220" height="330" rx="10" fill="#e8c95a" stroke="#7a4014" stroke-width="6"/>
+    <circle cx="256" cy="220" r="34" fill="#2a1a10"/>
+    <path d="M224 262 L288 262 L300 372 L212 372 Z" fill="#2a1a10"/>
+    <line x1="226" y1="274" x2="188" y2="330" stroke="#2a1a10" stroke-width="14" stroke-linecap="round"/>
+    <line x1="286" y1="274" x2="322" y2="330" stroke="#2a1a10" stroke-width="14" stroke-linecap="round"/>
+    <line x1="234" y1="372" x2="226" y2="432" stroke="#2a1a10" stroke-width="14" stroke-linecap="round"/>
+    <line x1="278" y1="372" x2="290" y2="432" stroke="#2a1a10" stroke-width="14" stroke-linecap="round"/>
+  </g>
+  <!-- slipper swinging in from top-right -->
+  <g transform="rotate(38 400 150)">
+    <path d="M400 40 C438 40 442 92 433 148 C427 186 373 186 367 148 C358 92 362 40 400 40 Z" fill="#8a2b1e"/>
+    <path d="M400 52 C430 52 434 96 427 142 C422 172 378 172 373 142 C366 96 370 52 400 52 Z" fill="#a8442f"/>
+    <line x1="372" y1="104" x2="428" y2="82" stroke="#5d1c12" stroke-width="16" stroke-linecap="round"/>
+  </g>
+</svg>

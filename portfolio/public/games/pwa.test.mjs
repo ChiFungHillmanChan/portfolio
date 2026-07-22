@@ -12,6 +12,7 @@ const GAMES = [
   { dir: 'connect4', manifest: 'manifest.webmanifest' },
   { dir: 'card-game', manifest: 'manifest.json' },
   { dir: 'math-memory', manifest: 'manifest.webmanifest' },
+  { dir: 'da-siu-yan', manifest: 'manifest.webmanifest' },
 ];
 
 const read = (...p) => readFileSync(join(...p), 'utf8');
@@ -133,6 +134,26 @@ test('card-drawer: runtime references are precached (reverse drift guard)', () =
   for (const ref of [...htmlRefs, ...imports]) {
     assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
   }
+});
+
+test('da-siu-yan: runtime references are precached (reverse drift guard)', () => {
+  const assets = extractJsonConst(read(GAMES_DIR, 'da-siu-yan', 'sw.js'), 'ASSETS');
+  const html = read(GAMES_DIR, 'da-siu-yan', 'index.html');
+  const htmlRefs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
+    .map((m) => m[1])
+    .filter((u) => !u.startsWith('http') && !u.startsWith('#'));
+  const js = read(GAMES_DIR, 'da-siu-yan', 'game.js');
+  const imports = [...js.matchAll(/from '\.\/([^']+)'/g)].map((m) => m[1]);
+  for (const ref of [...htmlRefs, ...imports]) {
+    assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
+  }
+  const voices = JSON.parse(read(GAMES_DIR, 'da-siu-yan', 'voice', 'manifest.json'));
+  for (const variant of Object.keys(voices)) {
+    for (const clip of voices[variant]) {
+      assert.ok(assets.includes(`./voice/${clip.file}`), `voice clip ${clip.file} not precached`);
+    }
+  }
+  assert.ok(assets.includes('./voice/manifest.json'), 'voice manifest not precached');
 });
 
 test('connect4: runtime references are precached (reverse drift guard)', () => {

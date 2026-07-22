@@ -209,6 +209,26 @@
         ]
     },
     {
+        "id": 19,
+        "title": "打小人 Da Siu Yan",
+        "shortDescription": "網上打小人:寫個名或者上載相,一路聽阿婆咒語一路用拖鞋摑小人紙,一分鐘儀式自動錄成 9:16 影片,儲存或分享俾朋友。",
+        "fullDescription": "打小人 recreates the Canal Road villain-hitting ritual in the browser. Write the villain's name (drawn onto the yellow effigy paper in brush type) or clip their photo into the paper doll, then spank it with a slipper while an AI-generated Cantonese granny chants curses line by line — two voice registers included. The one-minute ritual mode records the canvas and audio mix into a 9:16 video entirely on-device via MediaRecorder, ready to save or share through the native share sheet; nothing is ever uploaded, and the endless mode is a pure stress-relief sandbox. Progressive paper damage, shoe prints, combo streaks and a paper-burning finale are all hand-drawn canvas geometry. Built dependency-free in vanilla JavaScript with unit-tested pure logic, it runs offline as a PWA and standalone at da-siu-yan.hillmanchan.com.",
+        "image": "da_siu_yan.png",
+        "url": "https://da-siu-yan.hillmanchan.com",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/da-siu-yan",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "JavaScript",
+            "Canvas",
+            "Web Audio",
+            "MediaRecorder",
+            "PWA",
+            "Gemini TTS"
+        ]
+    },
+    {
         "id": 6,
         "title": "Never Have I Ever Card Game",
         "shortDescription": "A multilingual interactive “Never Have I Ever” card game built in React, featuring dynamic prompts, custom question input, and language selection.",
