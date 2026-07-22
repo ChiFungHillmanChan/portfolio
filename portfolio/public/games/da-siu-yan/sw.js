@@ -2,7 +2,7 @@
    Bump the version in CACHE whenever ANY file listed in ASSETS changes,
    otherwise returning players keep the old files. CACHE and ASSETS must
    stay strict JSON (double quotes) — pwa.test.mjs parses them. */
-const CACHE = "da-siu-yan-v1";
+const CACHE = "da-siu-yan-v2";
 const ASSETS = [
   "./index.html",
   "./styles.css",
@@ -36,6 +36,17 @@ const ASSETS = [
   "./voice/std/line-15.mp3",
   "./voice/std/line-16.mp3",
   "./voice/std/line-17.mp3",
+  "./voice/std/line-18.mp3",
+  "./voice/std/line-19.mp3",
+  "./voice/std/line-20.mp3",
+  "./voice/std/line-21.mp3",
+  "./voice/std/line-22.mp3",
+  "./voice/std/line-23.mp3",
+  "./voice/std/line-24.mp3",
+  "./voice/std/line-25.mp3",
+  "./voice/std/line-26.mp3",
+  "./voice/std/line-27.mp3",
+  "./voice/std/line-28.mp3",
   "./voice/low/finale.mp3",
   "./voice/low/intro.mp3",
   "./voice/low/line-01.mp3",
@@ -54,7 +65,18 @@ const ASSETS = [
   "./voice/low/line-14.mp3",
   "./voice/low/line-15.mp3",
   "./voice/low/line-16.mp3",
-  "./voice/low/line-17.mp3"
+  "./voice/low/line-17.mp3",
+  "./voice/low/line-18.mp3",
+  "./voice/low/line-19.mp3",
+  "./voice/low/line-20.mp3",
+  "./voice/low/line-21.mp3",
+  "./voice/low/line-22.mp3",
+  "./voice/low/line-23.mp3",
+  "./voice/low/line-24.mp3",
+  "./voice/low/line-25.mp3",
+  "./voice/low/line-26.mp3",
+  "./voice/low/line-27.mp3",
+  "./voice/low/line-28.mp3"
 ];
 
 self.addEventListener('install', (event) => {

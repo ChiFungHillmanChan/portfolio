@@ -15,9 +15,10 @@ const RATE = 24000;
 const PAD_S = 0.4;
 const TRIM_THRESHOLD = 700; // int16 abs, ≈ -33 dBFS
 
+const CANTO_RULE = '你必須由頭到尾用香港廣東話(粵語)發音讀出每一個字,特別係句尾嗰幾個字都一定要用粵語讀音,絕對唔可以用普通話讀任何一個字。';
 const VARIANTS = {
-  std: '你係香港鵝頸橋底打小人嘅老婆婆,把聲又嗲又惡,好有節奏咁一路打一路鬧。用大聲、憤怒、拉長音嘅廣東話嗌出以下呢句咒語:',
-  low: '你係香港鵝頸橋底打小人嘅老婆婆,把聲低沉沙啞,慢慢地、陰陰沉沉又惡死咁用廣東話讀出以下呢句咒語:'
+  std: `你係香港鵝頸橋底打小人嘅老婆婆,把聲又嗲又惡,好有節奏咁一路打一路鬧。${CANTO_RULE}用大聲、憤怒、拉長音嘅廣東話嗌出以下呢句咒語:`,
+  low: `你係香港鵝頸橋底打小人嘅老婆婆,把聲低沉沙啞,慢慢地、陰陰沉沉又惡死。${CANTO_RULE}用低沉嘅廣東話讀出以下呢句咒語:`
 };
 
 const OUT = join(dirname(fileURLToPath(import.meta.url)), '..', 'portfolio', 'public', 'games', 'da-siu-yan', 'voice');

@@ -5,6 +5,7 @@ import { createDamage } from './damage-model.js';
 import { buildRitualSchedule, createSequencer, createShuffleLooper, RITUAL_SECONDS, BURN_AT } from './chant-sequencer.js';
 import { createRecorder, extFor } from './recorder.js';
 import { createAudioEngine } from './audio.js';
+import { INTRO, LINES } from './chant-lines.js';
 
 const app = document.getElementById('app');
 app.innerHTML = `
@@ -168,8 +169,7 @@ async function start(which) {
     rec = createRecorder(stream);
     if (rec) rec.start();
   } else {
-    const ids = ['intro'];
-    for (let i = 1; i <= 17; i++) ids.push(`line-${String(i).padStart(2, '0')}`);
+    const ids = [INTRO.id, ...LINES.map((l) => l.id)];
     looper = createShuffleLooper(ids, Math.random);
     nextFreeClipAt = nowS + 0.6;
   }

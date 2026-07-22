@@ -74,35 +74,26 @@ with the right energy — verified by ear on 2026-07-22.
 - Gemini API terms permit use of generated audio output; a small "voice:
   AI-generated" credit goes in the about/footer.
 
-### Chant script (user-approved 2026-07-22)
+### Chant script (updated 2026-07-22, second revision)
 
-Reconstructed from the traditional per-body-part chant structure (folklore,
-no copyright); comedic consequences are our own wording, not copied from any
-performer's recording.
+The classic 打小人口訣 as circulated in HK internet folklore — user supplied
+the full transcript of the well-known version and asked to use it verbatim.
+28 lines curated for a public game (a handful of crude/dated lines dropped:
+娼妓/絕後/葉利欽 etc.). No 呀 particles — user feedback: they sound off in
+the AI voice. Canonical source of truth: `chant-lines.js`.
 
 **Intro:** 今日打小人!等我幫你出啖氣!
-
-| # | Line |
-|---|------|
-| 1 | 打你個頭呀,打你個死人頭呀! |
-| 2 | 打你隻手呀,打到你攞乜跌乜呀! |
-| 3 | 打你隻腳呀,打到你有鞋唔識著呀! |
-| 4 | 打你個口呀,打到你食親嘢都嘔呀! |
-| 5 | 打你個肚呀,打到你眼都反白呀! |
-| 6 | 打你隻眼呀,打到你返工唔敢偷懶呀! |
-| 7 | 打你個腦呀,打到你諗咩都諗唔到呀! |
-| 8 | 打你條腰呀,打到你日日發燒呀! |
-| 9 | 打你個胃呀,打到你見人就跪呀! |
-| 10 | 打你條頸呀,打到你瞓極都瞓唔着呀! |
-| 11 | 打你條腸呀,打到你放屁特別響呀! |
-| 12 | 打你個心呀,打到你成世冇運行呀! |
-| 13 | 打你塊皮呀,打到你唔死都出奇呀! |
-| 14 | 打你個膝頭哥呀,打到你上樓梯都跌親呀! |
-| 15 | 打你嚿肉呀,打到你唔敢返屋企呀! |
-| 16 | 打你條脷呀,打到你講嘢冇人信呀! |
-| 17 | 打你條神經呀,打到你痴痴呆呆呀! |
-
+**Lines 1–10 (basic body parts):** 頭/手/腳/口/鼻/肚/胸/耳/眼/腦 — e.g.
+打你個頭,打你個死人頭!/ 打你隻手,打到你有氣無定抖!
+**Lines 11–20 (organs, rhyming):** 腰/胃/頸/腸/牙/肝/脾/肺/腎/喉 — e.g.
+打你條腰,打到你發高燒!/ 打你條腸,打到你放屁特別響!
+**Lines 21–28 (limbs + modern):** 膝頭哥/排骨/髀/左右臂/腮/皮/背脊骨/支氣管 —
+e.g. 打你層皮,打到你唔死就出奇!/ 打你條支氣管,打到你食飯打爛碗!
 **Finale:** 打完小人!化走是非!出入平安!貴人扶持!
+
+TTS note: the generation prompt hard-requires Cantonese pronunciation for
+every syllable (user reported line-final words like 發燒 slipping into
+Mandarin without it).
 
 **Sequencing:** ritual mode plays intro → ~12 lines spaced across ~50s →
 finale in the last ~8s. Freeform mode shuffles all 17 lines and loops.
