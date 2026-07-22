@@ -7,7 +7,9 @@ html, body { height: 100%; background: var(--bg); overflow: hidden;
 #app { height: 100%; display: flex; align-items: center; justify-content: center;
   background:
     repeating-linear-gradient(0deg, #241511 0 6px, #1f120d 6px 12px); }
-#stage-wrap { position: relative; height: 100%; aspect-ratio: 9 / 16; max-width: 100vw; }
+#stage-wrap { position: relative; aspect-ratio: 9 / 16;
+  height: min(100vh, calc(100vw * 16 / 9));
+  height: min(100dvh, calc(100vw * 16 / 9)); }
 #stage { position: absolute; inset: 0; width: 100%; height: 100%; display: block;
   background: #000; cursor: none; }
 .overlay { position: absolute; inset: 0; display: flex; flex-direction: column;
