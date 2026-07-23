@@ -207,33 +207,60 @@ function tookLeadAfterDraw(prevLeader, player) {
   return compareScores(evaluateHand(player.cards).score, prevLeader.score) > 0;
 }
 
-function dealRandom(playerId) {
-  const player = state.players.find((p) => p.id === playerId);
-  if (!player || state.deck.length === 0) return;
-  const prevLeader = currentLeader();
-  const card = state.deck.pop();
-  player.cards.push(card);
-  state.history.push({ playerId, cardId: card.id });
-  if (tookLeadAfterDraw(prevLeader, player)) {
-    ui.leadGlow = playerId;
+// Shared driver: the card is already in the drawer's hand and the record
+// begun. Advances until done or a target is needed; on done, commits history
+// and starts the resolution reveal queue.
+function advanceRecord(record, viaTarget = false, targetId = null) {
+  const result = viaTarget
+    ? applyTarget(state, record, targetId)
+    : advanceDraw(state, record);
+  if (result.status === 'need-target') {
+    state.pending = record;
+    ui.target = { effect: result.effect, cardId: result.cardId };
+    saveState();
+    render();
+    return;
   }
-  ui.justDrawn = { playerId, cardId: card.id };
+  state.pending = null;
+  ui.target = null;
+  state.history.push(record);
+  const fxSteps = record.steps.filter((s) => s.kind !== 'draw');
+  ui.fxQueue = fxSteps.length ? fxSteps : null;
+  if (!ui.fxQueue) celebrateIfLeadTaken(record.playerId);
   saveState();
   render();
   ui.justDrawn = null;
   ui.leadGlow = null;
 }
 
+// The celebration is judged AFTER full resolution (a sabotage can change the
+// leader as much as the draw itself).
+function celebrateIfLeadTaken(playerId) {
+  const player = state.players.find((p) => p.id === playerId);
+  if (player && tookLeadAfterDraw(ui.prevLeader, player)) ui.leadGlow = playerId;
+  ui.prevLeader = null;
+}
+
+function dealRandom(playerId) {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player || state.deck.length === 0 || state.pending) return;
+  ui.prevLeader = currentLeader();
+  const card = state.deck.pop();
+  player.cards.push(card);
+  ui.justDrawn = { playerId, cardId: card.id };
+  advanceRecord(beginRecord(playerId, 'deal', card.id, state.deck.length));
+}
+
 function pickCard(playerId, index) {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player || index < 0 || index >= state.deck.length) return;
-  const prevLeader = currentLeader();
+  if (!player || index < 0 || index >= state.deck.length || state.pending) return;
+  ui.prevLeader = currentLeader();
   const [card] = state.deck.splice(index, 1);
   player.cards.push(card);
-  state.history.push({ playerId, cardId: card.id });
-  const tookLead = tookLeadAfterDraw(prevLeader, player);
+  const record = beginRecord(playerId, 'pick', card.id, index);
   ui.sheetFor = null;
-  ui.reveal = { playerId, cardId: card.id, stage: 1, tookLead };
+  // Two-stage flip reveal first; effects resolve when it's dismissed.
+  ui.reveal = { playerId, cardId: card.id, stage: 1, record };
   clearTimeout(revealTimer);
   revealTimer = setTimeout(() => {
     if (ui.reveal && ui.reveal.stage === 1) {
@@ -249,21 +276,18 @@ function dismissReveal() {
   clearTimeout(revealTimer);
   const reveal = ui.reveal;
   ui.reveal = null;
-  if (reveal && reveal.tookLead) {
-    ui.leadGlow = reveal.playerId;
+  if (reveal && reveal.record) {
+    advanceRecord(reveal.record);
+    return;
   }
   render();
-  ui.leadGlow = null;
 }
 
 function undoLastDraw() {
-  const last = state.history.pop();
-  if (!last) return;
-  const player = state.players.find((p) => p.id === last.playerId);
-  // Piles are append-only, so the most recent draw is that player's last card.
-  if (player && player.cards.length && player.cards[player.cards.length - 1].id === last.cardId) {
-    state.deck.push(player.cards.pop());
-  }
+  if (state.pending) return; // mid-choice; resolve or reset first
+  const record = state.history.pop();
+  if (!record) return;
+  undoRecord(state, record);
   const viewed = state.players.find((p) => p.id === ui.viewerFor);
   if (viewed && viewed.cards.length === 0) ui.viewerFor = null;
   saveState();
@@ -278,6 +302,9 @@ function resetGame() {
   clearTimeout(revealTimer);
   ui.reveal = null;
   ui.leadGlow = null;
+  ui.target = null;
+  ui.fxQueue = null;
+  ui.prevLeader = null;
   const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [], shield: false }));
   state = {
     ...defaultState(),
@@ -632,8 +659,6 @@ function revealOverlayHTML() {
     <div class="overlay reveal-overlay" role="dialog" aria-modal="true"
          aria-label="${esc(player.name)}'s best hand" data-action="reveal-done">
       <div class="reveal-stage">
-        ${ui.reveal.tookLead ? SPARKLES : ''}
-        ${ui.reveal.tookLead ? `<div class="lead-ribbon">${ICONS.crown}<span>Takes the lead</span></div>` : ''}
         <div class="reveal-best">${hand.bestFive
           .map((c) => cardWrap(c, { group: c.id === ui.reveal.cardId ? 'just' : '' }))
           .join('')}</div>
@@ -666,13 +691,109 @@ function gameScreen() {
   `;
 }
 
-// Task 9 replaces these with real target-selection and effect-queue overlays.
 function targetOverlayHTML() {
-  return '';
+  const record = state.pending;
+  if (!record || !ui.target) return '';
+  const drawer = state.players.find((p) => p.id === record.playerId);
+  const fx = EFFECTS[ui.target.effect];
+  const card = drawer.cards.find((c) => c.id === ui.target.cardId);
+  const rows = legalTargets(state, record.playerId)
+    .map(
+      (p) => `
+      <li>
+        <button class="btn target-row" data-action="choose-target" data-target="${p.id}">
+          <span class="target-name">${esc(p.name)}</span>
+          ${p.shield ? `<span class="target-shield">${ICONS.shield} shielded</span>` : ''}
+          <span class="target-count">${p.cards.length}c</span>
+        </button>
+      </li>`
+    )
+    .join('');
+  return `
+    <div class="overlay target-overlay" role="dialog" aria-modal="true" aria-label="${esc(fx.label)}">
+      <div class="panel">
+        <h2 class="fx-title fx-${ui.target.effect}">${esc(fx.label)}</h2>
+        <div class="target-card">${card ? cardWrap(card) : ''}</div>
+        <p class="target-copy">${esc(drawer.name)} — choose an opponent.</p>
+        <ul class="target-list">${rows}</ul>
+      </div>
+    </div>
+  `;
 }
 
+// One overlay per resolution step; tap advances the queue.
 function fxOverlayHTML() {
-  return '';
+  const step = ui.fxQueue[0];
+  const record = state.history[state.history.length - 1];
+  const drawer = state.players.find((p) => p.id === record.playerId);
+  const targetPlayer =
+    step.targetId !== undefined ? state.players.find((p) => p.id === step.targetId) : null;
+  const cardById = (id) => {
+    const all = state.players.flatMap((p) => p.cards).concat(state.deck, state.graveyard);
+    return all.find((c) => c.id === id) || null;
+  };
+  let effect = '';
+  let shown = null;
+  let caption = '';
+  switch (step.kind) {
+    case 'bonus-draw':
+      effect = 'bonus';
+      shown = cardById(step.cardId);
+      caption = `${esc(drawer.name)} draws again`;
+      break;
+    case 'burn':
+      effect = 'burn';
+      shown = cardById(step.burnedId);
+      caption = 'Burned from the deck';
+      break;
+    case 'sabotage':
+      effect = 'sabotage';
+      shown = cardById(step.destroyedId);
+      caption = `${esc(targetPlayer.name)}'s card is destroyed`;
+      break;
+    case 'steal':
+      effect = 'steal';
+      shown = cardById(step.stolenId);
+      caption = `${esc(drawer.name)} steals from ${esc(targetPlayer.name)}`;
+      break;
+    case 'swap':
+      effect = 'swap';
+      caption = `${esc(drawer.name)} swaps hands with ${esc(targetPlayer.name)}`;
+      break;
+    case 'shield-gain':
+      effect = 'shield';
+      caption = `${esc(drawer.name)} raises a shield`;
+      break;
+    case 'shield-noop':
+      effect = 'shield';
+      caption = `${esc(drawer.name)} is already shielded`;
+      break;
+    case 'blocked':
+      effect = 'shield';
+      caption = `${esc(targetPlayer.name)}'s shield blocks it`;
+      break;
+    case 'fizzle':
+      effect = step.effect;
+      caption = 'No effect';
+      break;
+    default:
+      break;
+  }
+  const label = EFFECTS[effect] ? EFFECTS[effect].label : '';
+  return `
+    <div class="overlay reveal-overlay fx-overlay" role="dialog" aria-modal="true"
+         aria-label="${esc(label)}" data-action="fx-continue">
+      <div class="reveal-stage">
+        <p class="fx-title fx-${effect}">${esc(label)}</p>
+        ${shown ? `<div class="reveal-card">${cardWrap(shown)}</div>` : ''}
+        ${effect === 'shield' && !shown ? `<div class="fx-big-shield">${ICONS.shield}</div>` : ''}
+        <p class="reveal-caption">${caption}</p>
+        <button class="btn btn-primary" data-action="fx-continue">
+          ${ui.fxQueue.length > 1 ? 'Next' : 'Done'}
+        </button>
+      </div>
+    </div>
+  `;
 }
 
 function resumeOverlay() {
@@ -747,6 +868,21 @@ app.addEventListener('click', (event) => {
     case 'undo':
       undoLastDraw();
       break;
+    case 'choose-target': {
+      const record = state.pending;
+      if (record) advanceRecord(record, true, Number(target.dataset.target));
+      break;
+    }
+    case 'fx-continue': {
+      ui.fxQueue = ui.fxQueue && ui.fxQueue.length > 1 ? ui.fxQueue.slice(1) : null;
+      if (!ui.fxQueue) {
+        const last = state.history[state.history.length - 1];
+        if (last) celebrateIfLeadTaken(last.playerId);
+      }
+      render();
+      ui.leadGlow = null;
+      break;
+    }
     case 'set-mode':
       state.drawMode = target.dataset.mode === 'manual' ? 'manual' : 'random';
       saveState();
@@ -783,6 +919,15 @@ app.addEventListener('click', (event) => {
     case 'resume':
       state = ui.resume;
       ui.resume = null;
+      if (state.pending) {
+        const result = advanceDraw(state, state.pending);
+        if (result.status === 'need-target') {
+          ui.target = { effect: result.effect, cardId: result.cardId };
+        } else {
+          state.history.push(state.pending);
+          state.pending = null;
+        }
+      }
       saveState();
       render();
       break;
@@ -840,6 +985,12 @@ app.addEventListener('keydown', (event) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
+  if (ui.target) return;
+  if (ui.fxQueue) {
+    ui.fxQueue = ui.fxQueue.length > 1 ? ui.fxQueue.slice(1) : null;
+    render();
+    return;
+  }
   if (ui.reveal) {
     dismissReveal();
     return;
