@@ -12,6 +12,7 @@ import {
   beginRecord,
   advanceDraw,
   applyTarget,
+  undoRecord,
 } from './effects.js';
 
 const FULL_DECK = createDeck({ includeJokers: true });
@@ -260,4 +261,86 @@ test('applyTarget: chain continues after the target resolves', () => {
   // Sabotage took KH, then nothing else was queued, done with 4C untouched.
   assert.deepEqual(state.graveyard.map((c) => c.id), ['KH']);
   assert.deepEqual(state.deck.map((c) => c.id), ['4C']);
+});
+
+test('undoRecord: plain draw returns the card to its deck position', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['KC']), seat(2, 'Ben', ['3H'])],
+    deck: [card('4C'), card('9S')],
+  });
+  // KC was picked from index 1 (between 4C and 9S).
+  const record = beginRecord(1, 'pick', 'KC', 1);
+  advanceDraw(state, record);
+  undoRecord(state, record);
+  assert.deepEqual(state.players[0].cards, []);
+  assert.deepEqual(state.deck.map((c) => c.id), ['4C', 'KC', '9S']);
+});
+
+test('undoRecord: full chain (bonus, bonus, sabotage) restores everything', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['7H']), seat(2, 'Ben', ['KH'])],
+    deck: [card('2S'), card('7D')],
+  });
+  const record = beginRecord(1, 'deal', '7H', 2);
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  assert.deepEqual(applyTarget(state, record, 2, rig(0)), { status: 'done' });
+  assert.deepEqual(state.graveyard.map((c) => c.id), ['KH']);
+
+  undoRecord(state, record);
+  assert.deepEqual(state.players[0].cards, []);
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['KH']);
+  assert.deepEqual(state.graveyard, []);
+  // 2S and 7D back at their original indices, 7H back on top.
+  assert.deepEqual(state.deck.map((c) => c.id), ['2S', '7D', '7H']);
+});
+
+test('undoRecord: swap restores both hands in original order', () => {
+  const state = makeState({
+    effectMap: { 12: 'swap' },
+    players: [seat(1, 'Anna', ['QS', '3C']), seat(2, 'Ben', ['KH'])],
+    deck: [],
+  });
+  const record = beginRecord(1, 'deal', 'QS', 0);
+  advanceDraw(state, record);
+  applyTarget(state, record, 2);
+  undoRecord(state, record);
+  assert.deepEqual(state.players[0].cards.map((c) => c.id), ['3C']);
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['KH']);
+  assert.deepEqual(state.deck.map((c) => c.id), ['QS']);
+});
+
+test('undoRecord: blocked restores the broken shield; shield-gain removes it', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['2S']), seat(2, 'Ben', ['KH'], true)],
+  });
+  const record = beginRecord(1, 'deal', '2S', 0);
+  advanceDraw(state, record);
+  applyTarget(state, record, 2);
+  assert.equal(state.players[1].shield, false);
+  undoRecord(state, record);
+  assert.equal(state.players[1].shield, true);
+
+  const state2 = makeState({
+    effectMap: { 5: 'shield' },
+    players: [seat(1, 'Anna', ['5C']), seat(2, 'Ben', ['KH'])],
+  });
+  const record2 = beginRecord(1, 'deal', '5C', 0);
+  advanceDraw(state2, record2);
+  assert.equal(state2.players[0].shield, true);
+  undoRecord(state2, record2);
+  assert.equal(state2.players[0].shield, false);
+});
+
+test('undoRecord: steal returns the card to its original slot', () => {
+  const state = makeState({
+    effectMap: { 10: 'steal' },
+    players: [seat(1, 'Anna', ['10S']), seat(2, 'Ben', ['KH', 'QD'])],
+  });
+  const record = beginRecord(1, 'deal', '10S', 0);
+  advanceDraw(state, record);
+  applyTarget(state, record, 2, rig(0.9)); // index 1 -> QD
+  assert.deepEqual(state.players[0].cards.map((c) => c.id), ['10S', 'QD']);
+  undoRecord(state, record);
+  assert.deepEqual(state.players[0].cards, []);
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['KH', 'QD']);
 });

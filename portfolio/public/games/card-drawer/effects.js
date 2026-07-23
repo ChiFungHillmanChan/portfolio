@@ -150,3 +150,57 @@ export function applyTarget(state, record, targetId, rng = Math.random) {
   record.queue.shift();
   return advanceDraw(state, record, rng);
 }
+
+// Reverse every step of a record, newest first. Indices recorded at apply
+// time restore exact positions, so undo never re-randomizes. Defensive
+// against corrupted saves: a step whose card can't be found is skipped.
+export function undoRecord(state, record) {
+  const player = findPlayer(state, record.playerId);
+  const takeById = (arr, id) => {
+    const i = arr.findIndex((c) => c.id === id);
+    return i === -1 ? null : arr.splice(i, 1)[0];
+  };
+  for (let s = record.steps.length - 1; s >= 0; s--) {
+    const step = record.steps[s];
+    const target = step.targetId !== undefined ? findPlayer(state, step.targetId) : null;
+    switch (step.kind) {
+      case 'draw':
+      case 'bonus-draw': {
+        const drawn = takeById(player.cards, step.cardId);
+        if (drawn) state.deck.splice(step.deckIndex, 0, drawn);
+        break;
+      }
+      case 'burn': {
+        const burned = takeById(state.graveyard, step.burnedId);
+        if (burned) state.deck.splice(step.deckIndex, 0, burned);
+        break;
+      }
+      case 'sabotage': {
+        const destroyed = takeById(state.graveyard, step.destroyedId);
+        if (destroyed && target) target.cards.splice(step.targetIndex, 0, destroyed);
+        break;
+      }
+      case 'steal': {
+        const stolen = takeById(player.cards, step.stolenId);
+        if (stolen && target) target.cards.splice(step.targetIndex, 0, stolen);
+        break;
+      }
+      case 'swap': {
+        if (target) {
+          const byId = new Map(player.cards.concat(target.cards).map((c) => [c.id, c]));
+          player.cards = step.drawerCardIds.map((id) => byId.get(id)).filter(Boolean);
+          target.cards = step.targetCardIds.map((id) => byId.get(id)).filter(Boolean);
+        }
+        break;
+      }
+      case 'shield-gain':
+        player.shield = false;
+        break;
+      case 'blocked':
+        if (target) target.shield = true;
+        break;
+      default:
+        break; // shield-noop, fizzle — nothing to reverse
+    }
+  }
+}
