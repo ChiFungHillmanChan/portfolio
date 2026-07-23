@@ -156,6 +156,7 @@ export function applyTarget(state, record, targetId, rng = Math.random) {
 // against corrupted saves: a step whose card can't be found is skipped.
 export function undoRecord(state, record) {
   const player = findPlayer(state, record.playerId);
+  if (!player) return; // corrupted save — nothing safe to reverse
   const takeById = (arr, id) => {
     const i = arr.findIndex((c) => c.id === id);
     return i === -1 ? null : arr.splice(i, 1)[0];
@@ -176,13 +177,15 @@ export function undoRecord(state, record) {
         break;
       }
       case 'sabotage': {
+        if (!target) break;
         const destroyed = takeById(state.graveyard, step.destroyedId);
-        if (destroyed && target) target.cards.splice(step.targetIndex, 0, destroyed);
+        if (destroyed) target.cards.splice(step.targetIndex, 0, destroyed);
         break;
       }
       case 'steal': {
+        if (!target) break;
         const stolen = takeById(player.cards, step.stolenId);
-        if (stolen && target) target.cards.splice(step.targetIndex, 0, stolen);
+        if (stolen) target.cards.splice(step.targetIndex, 0, stolen);
         break;
       }
       case 'swap': {

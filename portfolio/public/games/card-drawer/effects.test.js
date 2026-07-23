@@ -344,3 +344,23 @@ test('undoRecord: steal returns the card to its original slot', () => {
   assert.deepEqual(state.players[0].cards, []);
   assert.deepEqual(state.players[1].cards.map((c) => c.id), ['KH', 'QD']);
 });
+
+test('undoRecord: missing drawer is a no-op, never throws', () => {
+  const state = makeState({ players: [seat(2, 'Ben', ['KH'])] });
+  const record = beginRecord(1, 'deal', '2S', 0); // player 1 absent
+  assert.doesNotThrow(() => undoRecord(state, record));
+  assert.deepEqual(state.players[0].cards.map((c) => c.id), ['KH']);
+});
+
+test('undoRecord: missing target leaves the moved card in place (no vanish)', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['2S'])],
+    graveyard: [card('KH')],
+  });
+  const record = beginRecord(1, 'deal', '2S', 0);
+  record.steps.push({ kind: 'sabotage', cardId: '2S', targetId: 9, destroyedId: 'KH', targetIndex: 0 });
+  record.queue = [];
+  undoRecord(state, record);
+  assert.deepEqual(state.graveyard.map((c) => c.id), ['KH']); // untouched
+  assert.deepEqual(state.deck.map((c) => c.id), ['2S']); // draw still reversed
+});
