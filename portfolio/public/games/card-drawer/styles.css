@@ -490,12 +490,6 @@ button {
   padding: 6px 4px;
 }
 
-.hand-label {
-  margin: 2px 0 10px;
-  font-size: 15px;
-  color: var(--brass);
-}
-
 /* flip-in animation for a fresh random deal */
 .flip {
   position: relative;

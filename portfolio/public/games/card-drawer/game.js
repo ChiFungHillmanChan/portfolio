@@ -117,9 +117,10 @@ function loadSaved() {
   const migrated = migrateLegacy(readJson(LEGACY_STORAGE_KEY));
   if (migrated) {
     try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
       localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch {
-      /* ignore */
+      /* keep the v1 key if the v2 copy could not be persisted */
     }
   }
   return migrated;
@@ -170,6 +171,7 @@ function startGame() {
   state.history = [];
   state.pending = null;
   state.phase = 'playing';
+  ui.fxPickerFor = null;
   saveState();
   render();
 }
@@ -292,6 +294,7 @@ function resetGame() {
   ui.target = null;
   ui.fxQueue = null;
   ui.prevLeader = null;
+  ui.fxPickerFor = null;
   const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [], shield: false }));
   state = {
     ...defaultState(),
@@ -907,13 +910,10 @@ app.addEventListener('click', (event) => {
       state = ui.resume;
       ui.resume = null;
       if (state.pending) {
-        const result = advanceDraw(state, state.pending);
-        if (result.status === 'need-target') {
-          ui.target = { effect: result.effect, cardId: result.cardId };
-        } else {
-          state.history.push(state.pending);
-          state.pending = null;
-        }
+        const record = state.pending;
+        state.pending = null;
+        advanceRecord(record);
+        break;
       }
       saveState();
       render();
