@@ -65,3 +65,51 @@ export function beginRecord(playerId, via, cardId, deckIndex) {
     queue: [cardId],
   };
 }
+
+// Process the record's queue until every drawn card's effect is resolved or a
+// target choice is required. Immediate effects (bonus/burn/shield) apply here;
+// bonus chains by drawing again and queueing the new card.
+export function advanceDraw(state, record, rng = Math.random) {
+  const player = findPlayer(state, record.playerId);
+  while (record.queue.length) {
+    const cardId = record.queue[0];
+    const drawn = player.cards.find((c) => c.id === cardId);
+    const effect = drawn ? effectForCard(state, drawn) : null;
+    if (!effect) {
+      record.queue.shift();
+      continue;
+    }
+    if (EFFECTS[effect].needsTarget) {
+      if (legalTargets(state, record.playerId).length === 0) {
+        record.steps.push({ kind: 'fizzle', effect, cardId });
+        record.queue.shift();
+        continue;
+      }
+      return { status: 'need-target', effect, cardId };
+    }
+    if (effect === 'bonus') {
+      if (state.deck.length === 0) {
+        record.steps.push({ kind: 'fizzle', effect, cardId });
+      } else {
+        const extra = state.deck.pop();
+        player.cards.push(extra);
+        record.steps.push({ kind: 'bonus-draw', cardId: extra.id, deckIndex: state.deck.length });
+        record.queue.push(extra.id);
+      }
+    } else if (effect === 'burn') {
+      if (state.deck.length === 0) {
+        record.steps.push({ kind: 'fizzle', effect, cardId });
+      } else {
+        const i = Math.floor(rng() * state.deck.length);
+        const [burned] = state.deck.splice(i, 1);
+        state.graveyard.push(burned);
+        record.steps.push({ kind: 'burn', cardId, burnedId: burned.id, deckIndex: i });
+      }
+    } else if (effect === 'shield') {
+      record.steps.push({ kind: player.shield ? 'shield-noop' : 'shield-gain', cardId });
+      player.shield = true;
+    }
+    record.queue.shift();
+  }
+  return { status: 'done' };
+}
