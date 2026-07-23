@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 420" width="380" height="420">
+  <!-- Granny's striking arm + red slipper, authored in the RAISED pose.
+       Shoulder pivot is at (300,360) in this viewBox — scene-illustrated.js
+       rotates the whole file around that point (drawImage offset -300,-360).
+       At rotation 0 the slipper is overhead; ARM_STRIKE sweeps it down-left. -->
+  <g stroke="#3a2317" stroke-linejoin="round" stroke-linecap="round">
+    <!-- slipper: sole seen from behind, toe up-left -->
+    <g transform="rotate(-38 100 60)">
+      <ellipse cx="100" cy="60" rx="80" ry="34" fill="#8a2b1e" stroke-width="7"/>
+      <ellipse cx="100" cy="56" rx="66" ry="24" fill="#a8442f" stroke-width="5"/>
+      <path d="M52 52 Q100 20 148 50" fill="none" stroke="#5d1c12" stroke-width="16"/>
+      <path d="M52 52 Q100 24 148 50" fill="none" stroke="#71241a" stroke-width="9"/>
+    </g>
+    <!-- forearm: bare skin, tapered from wrist to elbow -->
+    <path d="M170 90 L272 152 Q286 162 278 178 L252 194 L146 126 Q136 114 144 102 Z"
+          fill="#d99a63" stroke-width="7"/>
+    <!-- fist gripping the slipper heel -->
+    <ellipse cx="150" cy="102" rx="32" ry="28" fill="#d99a63" stroke-width="7"/>
+    <path d="M130 88 q12 -10 26 -6" fill="none" stroke-width="5"/>
+    <path d="M128 104 q14 -8 30 -4" fill="none" stroke-width="5"/>
+    <!-- sleeve: slim tapered upper arm, elbow cuff down to the shoulder -->
+    <path d="M240 170 Q228 178 232 194 L268 356 Q272 376 300 372 Q326 368 322 344 L286 176 Q280 158 258 162 Z"
+          fill="#d8a93a" stroke-width="7"/>
+    <path d="M238 186 Q262 174 284 188" fill="none" stroke="#b8892a" stroke-width="7"/>
+    <path d="M252 262 Q272 252 296 264" fill="none" stroke="#b8892a" stroke-width="6"/>
+    <!-- shoulder cap: hides the rotation seam against the body -->
+    <circle cx="300" cy="360" r="36" fill="#d8a93a" stroke-width="7"/>
+  </g>
+</svg>

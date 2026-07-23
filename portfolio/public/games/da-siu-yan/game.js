@@ -1,6 +1,7 @@
 // Orchestrator: screens, input, modes, recording. All gameplay renders into
 // the fixed 720x1280 stage canvas; DOM overlays handle entry/end screens.
 import { createScene, PAPER, STAGE_W, STAGE_H } from './scene.js';
+import { createIllustratedScene, inPaper as inIllustratedPaper } from './scene-illustrated.js';
 import { createDamage } from './damage-model.js';
 import { buildRitualSchedule, createSequencer, createShuffleLooper, RITUAL_SECONDS, BURN_AT } from './chant-sequencer.js';
 import { createRecorder, extFor } from './recorder.js';
@@ -22,6 +23,10 @@ app.innerHTML = `
         <button id="voice-std" type="button" aria-pressed="true">標準阿婆</button>
         <button id="voice-low" type="button" aria-pressed="false">低沉版</button>
       </div>
+      <div class="toggle" role="group" aria-label="畫風">
+        <button id="style-illu" type="button" aria-pressed="true">插畫版</button>
+        <button id="style-classic" type="button" aria-pressed="false">經典版</button>
+      </div>
       <button id="start-ritual" class="mode-btn primary" type="button">開壇(一分鐘・自動錄影)</button>
       <button id="start-free" class="mode-btn" type="button">任摑(無限熱身)</button>
       <p class="fineprint">名同相只喺你部機處理,唔會上載去任何地方。<br>娛樂用途,旨在祈福減壓。聲音由 AI 生成。</p>
@@ -37,8 +42,11 @@ const nameInput = document.getElementById('name-input');
 const photoBtn = document.getElementById('photo-btn');
 const photoInput = document.getElementById('photo-input');
 const voiceBtns = { std: document.getElementById('voice-std'), low: document.getElementById('voice-low') };
+const styleBtns = { illu: document.getElementById('style-illu'), classic: document.getElementById('style-classic') };
 
-const scene = createScene(canvas);
+const scenes = { classic: createScene(canvas), illu: createIllustratedScene(canvas) };
+let style = 'illu';
+const scene = () => scenes[style];
 let audio = null;               // created on first user gesture
 let variant = 'std';
 let photoCanvas = null;
@@ -101,6 +109,14 @@ for (const [key, btn] of Object.entries(voiceBtns)) {
   });
 }
 
+for (const [key, btn] of Object.entries(styleBtns)) {
+  btn.addEventListener('click', () => {
+    style = key;
+    styleBtns.illu.setAttribute('aria-pressed', String(key === 'illu'));
+    styleBtns.classic.setAttribute('aria-pressed', String(key === 'classic'));
+  });
+}
+
 document.getElementById('start-ritual').addEventListener('click', () => start('ritual'));
 document.getElementById('start-free').addEventListener('click', () => start('free'));
 stopBtn.addEventListener('click', () => stop());
@@ -122,11 +138,14 @@ canvas.addEventListener('pointerdown', (e) => {
   audio.smack();
   if (navigator.vibrate) navigator.vibrate(30);
   spawnDust(p.x, p.y);
-  const inPaper = p.x >= PAPER.x && p.x <= PAPER.x + PAPER.w && p.y >= PAPER.y && p.y <= PAPER.y + PAPER.h;
+  const inPaper = style === 'illu'
+    ? inIllustratedPaper(p.x, p.y)
+    : p.x >= PAPER.x && p.x <= PAPER.x + PAPER.w && p.y >= PAPER.y && p.y <= PAPER.y + PAPER.h;
   if (inPaper) {
     const r = damage.hit(p.x, p.y, performance.now());
     lastCombo = r.combo;
     if (r.comboBurst) comboFlash = 1.4;
+    if (style === 'illu') scenes.illu.strike(p.x, p.y, performance.now() / 1000);
   }
 });
 canvas.addEventListener('pointerup', () => { pointer.down = false; });
@@ -147,7 +166,8 @@ async function start(which) {
   entryEl.hidden = true;
   stopBtn.textContent = which === 'ritual' ? '早收陣' : '收手';
   stopBtn.hidden = false;
-  scene.setEffigy({ name: nameInput.value, photo: photoCanvas });
+  scene().setEffigy({ name: nameInput.value, photo: photoCanvas });
+  if (style === 'illu') await scenes.illu.ready;   // sprites in before first frame
   try {
     await audio.loadVariant(variant);
   } catch (err) {
@@ -215,7 +235,7 @@ function frame(nowMs) {
   for (let i = dust.length - 1; i >= 0; i--) if (dust[i].life <= 0) dust.splice(i, 1);
 
   const d = damage.state();
-  scene.draw({
+  scene().draw({
     t: nowS,
     pointer,
     prints: d.prints,
@@ -327,7 +347,7 @@ document.addEventListener('visibilitychange', () => {
 // idle attract loop behind the entry overlay
 (function idle() {
   if (!mode) {
-    scene.draw({ t: performance.now() / 1000, pointer, prints: [], stage: 0, count: 0, combo: 0, comboFlash: 0, burnT: 0, dust, mode: null, remain: 0 });
+    scene().draw({ t: performance.now() / 1000, pointer, prints: [], stage: 0, count: 0, combo: 0, comboFlash: 0, burnT: 0, dust, mode: null, remain: 0 });
     requestAnimationFrame(idle);
   } else {
     requestAnimationFrame(idle);
