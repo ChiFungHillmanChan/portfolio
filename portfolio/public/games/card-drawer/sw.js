@@ -2,13 +2,15 @@
    Bump the version in CACHE whenever ANY file listed in ASSETS changes,
    otherwise returning players keep the old files. CACHE and ASSETS must
    stay strict JSON (double quotes) — pwa.test.mjs parses them. */
-const CACHE = "card-drawer-v1";
+const CACHE = "card-drawer-v2";
 const ASSETS = [
   "./index.html",
   "./styles.css",
   "./game.js",
   "./card-svg.js",
   "./hand-eval.js",
+  "./effects.js",
+  "./state.js",
   "./manifest.webmanifest",
   "./icon-192.png",
   "./icon-512.png"
