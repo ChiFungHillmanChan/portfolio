@@ -1,12 +1,28 @@
-// Card Drawer — UI + state. Pure logic lives in hand-eval.js (poker) and
-// card-svg.js (rendering); this module only composes them and manages state.
+// Card Drawer — UI + state wiring. Pure logic lives in hand-eval.js (poker),
+// effects.js (card effects), state.js (shape + persistence) and card-svg.js
+// (rendering); this module only composes them and manages the DOM.
 
-import { createDeck, shuffle, evaluateHand, compareScores, countOuts } from './hand-eval.js';
+import { createDeck, shuffle, evaluateHand, compareScores, countOuts, rankLabel, RANKS } from './hand-eval.js';
 import { renderCardSVG } from './card-svg.js';
-
-const STORAGE_KEY = 'card-drawer:v1';
-const MAX_PLAYERS = 10;
-const MIN_PLAYERS = 2;
+import {
+  EFFECTS,
+  EFFECT_IDS,
+  effectForCard,
+  legalTargets,
+  beginRecord,
+  advanceDraw,
+  applyTarget,
+  undoRecord,
+} from './effects.js';
+import {
+  STORAGE_KEY,
+  LEGACY_STORAGE_KEY,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  defaultState,
+  normalizeState,
+  migrateLegacy,
+} from './state.js';
 
 // Hand-drawn UI glyphs — inline SVG paths, never emoji.
 const ICONS = {
@@ -53,17 +69,6 @@ const esc = (s) =>
 
 // --- state -----------------------------------------------------------------
 
-function defaultState() {
-  return {
-    phase: 'setup',
-    includeJokers: false,
-    drawMode: 'random',
-    players: [],
-    deck: [],
-    history: [],
-  };
-}
-
 let state = defaultState();
 // Transient UI state — never persisted.
 const ui = {
@@ -99,75 +104,31 @@ function clearSaved() {
 }
 
 function loadSaved() {
-  let raw;
-  try {
-    raw = localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  return normalizeState(parsed);
-}
-
-// Validate the shape and card integrity of a stored state; returns a clean
-// state (cards re-mapped onto canonical deck objects) or null.
-function normalizeState(s) {
-  if (!s || typeof s !== 'object') return null;
-  if (s.phase !== 'setup' && s.phase !== 'playing') return null;
-  if (s.drawMode !== 'random' && s.drawMode !== 'manual') return null;
-  if (typeof s.includeJokers !== 'boolean') return null;
-  if (!Array.isArray(s.players) || s.players.length > MAX_PLAYERS) return null;
-  if (!Array.isArray(s.deck) || !Array.isArray(s.history)) return null;
-
-  const universe = new Map(
-    createDeck({ includeJokers: s.includeJokers }).map((card) => [card.id, card])
-  );
-  const seen = new Set();
-  const mapCard = (card) => {
-    if (!card || typeof card.id !== 'string') return null;
-    if (!universe.has(card.id) || seen.has(card.id)) return null;
-    seen.add(card.id);
-    return universe.get(card.id);
+  const readJson = (key) => {
+    let raw;
+    try {
+      raw = localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   };
-
-  const players = [];
-  for (const p of s.players) {
-    if (!p || typeof p.id !== 'number' || typeof p.name !== 'string' || !p.name.trim()) return null;
-    if (!Array.isArray(p.cards)) return null;
-    const cards = p.cards.map(mapCard);
-    if (cards.some((card) => card === null)) return null;
-    players.push({ id: p.id, name: p.name.trim().slice(0, 24), cards });
+  const v2 = normalizeState(readJson(STORAGE_KEY));
+  if (v2) return v2;
+  const migrated = migrateLegacy(readJson(LEGACY_STORAGE_KEY));
+  if (migrated) {
+    try {
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
   }
-  if (new Set(players.map((p) => p.id)).size !== players.length) return null;
-
-  const deck = s.deck.map(mapCard);
-  if (deck.some((card) => card === null)) return null;
-
-  if (s.phase === 'playing') {
-    if (players.length < MIN_PLAYERS) return null;
-    if (seen.size !== universe.size) return null; // every card accounted for
-  }
-
-  const history = [];
-  for (const h of s.history) {
-    if (!h || typeof h.cardId !== 'string' || !players.some((p) => p.id === h.playerId)) return null;
-    history.push({ playerId: h.playerId, cardId: h.cardId });
-  }
-
-  return {
-    phase: s.phase,
-    includeJokers: s.includeJokers,
-    drawMode: s.drawMode,
-    players,
-    deck,
-    history,
-  };
+  return migrated;
 }
 
 // --- actions ------------------------------------------------------------------
