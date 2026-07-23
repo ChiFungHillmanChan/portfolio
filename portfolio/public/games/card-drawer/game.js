@@ -989,7 +989,12 @@ document.addEventListener('keydown', (event) => {
   if (ui.target) return;
   if (ui.fxQueue) {
     ui.fxQueue = ui.fxQueue.length > 1 ? ui.fxQueue.slice(1) : null;
+    if (!ui.fxQueue) {
+      const last = state.history[state.history.length - 1];
+      if (last) celebrateIfLeadTaken(last.playerId);
+    }
     render();
+    ui.leadGlow = null;
     return;
   }
   if (ui.reveal) {
