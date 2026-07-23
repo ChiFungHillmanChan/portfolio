@@ -11,6 +11,7 @@ import {
   legalTargets,
   beginRecord,
   advanceDraw,
+  applyTarget,
 } from './effects.js';
 
 const FULL_DECK = createDeck({ includeJokers: true });
@@ -168,4 +169,95 @@ test('advanceDraw: targeted effect with no legal target auto-fizzles', () => {
   const record = beginRecord(1, 'deal', '2S', 0);
   assert.deepEqual(advanceDraw(state, record), { status: 'done' });
   assert.deepEqual(record.steps[1], { kind: 'fizzle', effect: 'sabotage', cardId: '2S' });
+});
+
+test('applyTarget: sabotage destroys a rigged card from the chosen hand', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['2S']), seat(2, 'Ben', ['KH', 'QD', '9C'])],
+  });
+  const record = beginRecord(1, 'deal', '2S', 0);
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  // rng 0.5 * 3 = index 1 -> QD
+  assert.deepEqual(applyTarget(state, record, 2, rig(0.5)), { status: 'done' });
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['KH', '9C']);
+  assert.deepEqual(state.graveyard.map((c) => c.id), ['QD']);
+  assert.deepEqual(record.steps[1], {
+    kind: 'sabotage', cardId: '2S', targetId: 2, destroyedId: 'QD', targetIndex: 1,
+  });
+  assert.deepEqual(record.queue, []);
+});
+
+test('applyTarget: steal moves a rigged card into the drawer hand', () => {
+  const state = makeState({
+    effectMap: { 10: 'steal' },
+    players: [seat(1, 'Anna', ['10S']), seat(2, 'Ben', ['KH', 'QD'])],
+  });
+  const record = beginRecord(1, 'deal', '10S', 0);
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  assert.deepEqual(applyTarget(state, record, 2, rig(0)), { status: 'done' });
+  assert.deepEqual(state.players[0].cards.map((c) => c.id), ['10S', 'KH']);
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['QD']);
+  assert.deepEqual(record.steps[1], {
+    kind: 'steal', cardId: '10S', targetId: 2, stolenId: 'KH', targetIndex: 0,
+  });
+});
+
+test('applyTarget: swap trades entire hands and records both id lists', () => {
+  const state = makeState({
+    effectMap: { 12: 'swap' },
+    players: [seat(1, 'Anna', ['QS', '3C']), seat(2, 'Ben', ['KH'])],
+  });
+  const record = beginRecord(1, 'deal', 'QS', 0);
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  assert.deepEqual(applyTarget(state, record, 2), { status: 'done' });
+  assert.deepEqual(state.players[0].cards.map((c) => c.id), ['KH']);
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['QS', '3C']);
+  assert.deepEqual(record.steps[1], {
+    kind: 'swap', cardId: 'QS', targetId: 2,
+    drawerCardIds: ['QS', '3C'], targetCardIds: ['KH'],
+  });
+});
+
+test('applyTarget: shield absorbs the hit and breaks', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['2S']), seat(2, 'Ben', ['KH'], true)],
+  });
+  const record = beginRecord(1, 'deal', '2S', 0);
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  assert.deepEqual(applyTarget(state, record, 2), { status: 'done' });
+  assert.equal(state.players[1].shield, false);
+  assert.deepEqual(state.players[1].cards.map((c) => c.id), ['KH']);
+  assert.deepEqual(record.steps[1], { kind: 'blocked', effect: 'sabotage', cardId: '2S', targetId: 2 });
+});
+
+test('applyTarget: invalid target keeps the prompt open, mutates nothing', () => {
+  const state = makeState({
+    players: [seat(1, 'Anna', ['2S']), seat(2, 'Ben', ['KH']), seat(3, 'Carol', [])],
+  });
+  const record = beginRecord(1, 'deal', '2S', 0);
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  // Carol has no cards; the drawer can't target themself either.
+  assert.equal(applyTarget(state, record, 3).status, 'need-target');
+  assert.equal(applyTarget(state, record, 1).status, 'need-target');
+  assert.equal(record.steps.length, 1);
+  assert.deepEqual(record.queue, ['2S']);
+});
+
+test('applyTarget: chain continues after the target resolves', () => {
+  // Mid-chain state: Anna's 7H already bonus-drew 2S (sabotage), which is the
+  // queue head. After the target resolves, advanceDraw finishes the record
+  // without touching the rest of the deck.
+  const state = makeState({
+    players: [seat(1, 'Anna', ['7H', '2S']), seat(2, 'Ben', ['KH', 'QD'])],
+    deck: [card('4C')],
+  });
+  const record = beginRecord(1, 'deal', '7H', 1);
+  // Simulate mid-chain: 7H drew 2S already, 2S is queue head, 7H consumed.
+  record.steps.push({ kind: 'bonus-draw', cardId: '2S', deckIndex: 1 });
+  record.queue = ['2S'];
+  assert.equal(advanceDraw(state, record).status, 'need-target');
+  assert.deepEqual(applyTarget(state, record, 2, rig(0)), { status: 'done' });
+  // Sabotage took KH, then nothing else was queued, done with 4C untouched.
+  assert.deepEqual(state.graveyard.map((c) => c.id), ['KH']);
+  assert.deepEqual(state.deck.map((c) => c.id), ['4C']);
 });

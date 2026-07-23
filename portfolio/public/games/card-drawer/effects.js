@@ -113,3 +113,40 @@ export function advanceDraw(state, record, rng = Math.random) {
   }
   return { status: 'done' };
 }
+
+// Resolve the queue-head targeted effect with the chosen opponent, then
+// continue the chain via advanceDraw. An illegal target (self, empty hand,
+// unknown id) returns need-target unchanged so the prompt stays open.
+export function applyTarget(state, record, targetId, rng = Math.random) {
+  const player = findPlayer(state, record.playerId);
+  const cardId = record.queue[0];
+  const drawn = player.cards.find((c) => c.id === cardId);
+  const effect = drawn ? effectForCard(state, drawn) : null;
+  const target = legalTargets(state, record.playerId).find((p) => p.id === targetId);
+  if (!effect || !EFFECTS[effect].needsTarget || !target) {
+    return { status: 'need-target', effect, cardId };
+  }
+  if (target.shield) {
+    target.shield = false;
+    record.steps.push({ kind: 'blocked', effect, cardId, targetId });
+  } else if (effect === 'sabotage') {
+    const i = Math.floor(rng() * target.cards.length);
+    const [destroyed] = target.cards.splice(i, 1);
+    state.graveyard.push(destroyed);
+    record.steps.push({ kind: 'sabotage', cardId, targetId, destroyedId: destroyed.id, targetIndex: i });
+  } else if (effect === 'steal') {
+    const i = Math.floor(rng() * target.cards.length);
+    const [stolen] = target.cards.splice(i, 1);
+    player.cards.push(stolen);
+    record.steps.push({ kind: 'steal', cardId, targetId, stolenId: stolen.id, targetIndex: i });
+  } else if (effect === 'swap') {
+    const drawerCardIds = player.cards.map((c) => c.id);
+    const targetCardIds = target.cards.map((c) => c.id);
+    const tmp = player.cards;
+    player.cards = target.cards;
+    target.cards = tmp;
+    record.steps.push({ kind: 'swap', cardId, targetId, drawerCardIds, targetCardIds });
+  }
+  record.queue.shift();
+  return advanceDraw(state, record, rng);
+}
