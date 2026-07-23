@@ -472,9 +472,12 @@ function effectsSection() {
   `;
 }
 
-function playerPanel(player) {
+// One tile per seat. Rank/crown/outs come from rankedEntries so the tiles ARE
+// the leaderboard; seat order never changes, only the badges update.
+function playerTile(player, meta) {
   const hand = evaluateHand(player.cards);
   const deckEmpty = state.deck.length === 0;
+  const locked = state.pending !== null;
   let fan = '<span class="fan-empty">No cards yet</span>';
   if (player.cards.length) {
     const bestSet = new Set(hand.bestFive);
@@ -487,63 +490,45 @@ function playerPanel(player) {
       hand.bestFive.map((card) => wrap(card, 'best')).join('') +
       spares.map((card) => wrap(card, 'spare')).join('');
   }
-  const actionLabel = state.drawMode === 'random' ? `Deal to ${esc(player.name)}` : `Pick for ${esc(player.name)}`;
+  const isLeader = meta.rank === 1 && hand;
+  const actionLabel = state.drawMode === 'random' ? 'Deal' : 'Pick';
   const action = state.drawMode === 'random' ? 'deal' : 'open-sheet';
   const fanAttrs = player.cards.length
     ? ` data-action="view-cards" data-player="${player.id}" role="button" tabindex="0"` +
       ` aria-label="View ${esc(player.name)}'s cards"`
     : '';
+  const outs =
+    meta.outs === undefined
+      ? ''
+      : `<span class="tile-outs">${
+          meta.outs
+            ? `${meta.outs} card${meta.outs === 1 ? '' : 's'} can take the lead`
+            : 'No single card takes the lead'
+        }</span>`;
 
   return `
-    <section class="panel player-panel">
-      <div class="player-head">
-        <h3 class="player-name">${esc(player.name)}</h3>
-        <span class="card-count">${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</span>
+    <section class="tile${isLeader ? ' tile-leader' : ''}${ui.leadGlow === player.id ? ' tile-glow' : ''}">
+      <div class="tile-head">
+        <span class="tile-rank${isLeader ? ' lead' : ''}">${meta.rank}</span>
+        ${isLeader ? `<span class="tile-crown">${ICONS.crown}</span>` : ''}
+        <h3 class="tile-name">${esc(player.name)}</h3>
+        ${player.shield ? `<span class="tile-shield" aria-label="Shielded">${ICONS.shield}</span>` : ''}
+        <span class="tile-count">${player.cards.length}c</span>
       </div>
-      <div class="fan"${fanAttrs}>${fan}</div>
-      ${hand ? `<p class="hand-label">${esc(hand.name)}</p>` : ''}
-      <button class="btn btn-block" data-action="${action}" data-player="${player.id}" ${deckEmpty ? 'disabled' : ''}>
+      <div class="fan tile-fan"${fanAttrs}>${fan}</div>
+      <p class="tile-hand">${hand ? esc(hand.name) : '&nbsp;'}</p>
+      ${outs}
+      <button class="btn tile-btn" data-action="${action}" data-player="${player.id}"
+              ${deckEmpty || locked ? 'disabled' : ''}>
         ${deckEmpty ? 'Deck empty' : actionLabel}
       </button>
     </section>
   `;
 }
 
-function leaderboardHTML() {
-  const rows = rankedEntries()
-    .map((entry) => {
-      const leader = entry.rank === 1 && entry.hand;
-      return `
-      <li class="${leader ? 'lb-leader' : ''}${ui.leadGlow === entry.player.id ? ' lb-glow' : ''}">
-        <span class="lb-rank">${entry.rank}</span>
-        ${leader ? `<span class="lb-crown">${ICONS.crown}</span>` : ''}
-        <span class="lb-body">
-          <span class="lb-name">${esc(entry.player.name)}</span>
-          <span class="lb-hand">${entry.hand ? esc(entry.hand.name) : 'No cards yet'}</span>
-          ${
-            entry.outs === undefined
-              ? ''
-              : `<span class="lb-outs">${
-                  entry.outs
-                    ? `${entry.outs} card${entry.outs === 1 ? '' : 's'} can take the lead`
-                    : 'No single card takes the lead'
-                }</span>`
-          }
-        </span>
-        <span class="lb-count">${entry.player.cards.length}c</span>
-      </li>`;
-    })
-    .join('');
-  return `
-    <section class="panel leaderboard" aria-labelledby="lb-h">
-      <h2 id="lb-h">Leaderboard</h2>
-      <ol>${rows}</ol>
-    </section>
-  `;
-}
-
 function dealerBar() {
   const left = state.deck.length;
+  const burned = state.graveyard.length;
   const empty = left === 0;
   return `
     <div class="dealer-bar">
@@ -554,12 +539,13 @@ function dealerBar() {
         <div class="deck-meta" aria-live="polite">
           <p class="eyebrow" style="margin:0">Card Drawer</p>
           <span class="deck-count${empty ? ' deck-empty-note' : ''}">
-            ${empty ? 'Deck empty' : `${left} <span class="unit">card${left === 1 ? '' : 's'} left</span>`}
+            ${empty ? 'Deck empty' : `${left} <span class="unit">left</span>`}
+            ${burned ? `<span class="burned-count">&middot; ${burned} burned</span>` : ''}
           </span>
         </div>
         <div class="dealer-actions">
           <button class="btn btn-quiet btn-icon" data-action="undo" aria-label="Undo last draw"
-                  ${state.history.length ? '' : 'disabled'}>${ICONS.undo}</button>
+                  ${state.history.length && !state.pending ? '' : 'disabled'}>${ICONS.undo}</button>
           <button class="btn ${ui.confirmReset ? 'btn-danger' : 'btn-quiet'}" data-action="reset">
             ${ui.confirmReset ? 'Confirm' : 'Reset'}
           </button>
@@ -659,17 +645,34 @@ function revealOverlayHTML() {
 }
 
 function gameScreen() {
-  const overlayOpen = ui.viewerFor !== null || ui.sheetFor !== null || ui.reveal !== null;
+  const metas = new Map(
+    rankedEntries().map((entry) => [entry.player.id, { rank: entry.rank, outs: entry.outs }])
+  );
+  const overlayOpen =
+    ui.viewerFor !== null || ui.sheetFor !== null || ui.reveal !== null ||
+    ui.target !== null || ui.fxQueue !== null;
   return `
-    <div class="board"${overlayOpen ? ' inert' : ''}>
+    <div class="board board-play"${overlayOpen ? ' inert' : ''}>
       ${dealerBar()}
-      ${state.players.map(playerPanel).join('')}
-      ${leaderboardHTML()}
+      <div class="tile-grid tile-grid-${Math.min(state.players.length, 10)}">
+        ${state.players.map((p) => playerTile(p, metas.get(p.id))).join('')}
+      </div>
     </div>
     ${ui.viewerFor !== null ? viewerHTML() : ''}
     ${ui.sheetFor !== null ? sheetHTML() : ''}
     ${ui.reveal ? revealOverlayHTML() : ''}
+    ${ui.target ? targetOverlayHTML() : ''}
+    ${ui.fxQueue ? fxOverlayHTML() : ''}
   `;
+}
+
+// Task 9 replaces these with real target-selection and effect-queue overlays.
+function targetOverlayHTML() {
+  return '';
+}
+
+function fxOverlayHTML() {
+  return '';
 }
 
 function resumeOverlay() {
@@ -688,6 +691,7 @@ function resumeOverlay() {
 }
 
 function render() {
+  document.body.classList.toggle('in-game', state.phase === 'playing' && !ui.resume);
   const screen = state.phase === 'setup' ? setupScreen() : gameScreen();
   app.innerHTML = ui.resume ? `<div class="board" inert>${screen}</div>${resumeOverlay()}` : screen;
 }
