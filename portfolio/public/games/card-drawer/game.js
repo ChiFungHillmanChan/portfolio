@@ -44,6 +44,10 @@ const ICONS = {
     '<svg class="ornament" width="132" height="14" viewBox="0 0 132 14" aria-hidden="true">' +
     '<path d="M0 7 H54 M78 7 H132" stroke="currentColor" stroke-width="1"/>' +
     '<path d="M66 1 L72 7 L66 13 L60 7 Z" fill="currentColor"/></svg>',
+  shield:
+    '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">' +
+    '<path d="M12 3 L19 6 V11 C19 15.5 16 19.5 12 21 C8 19.5 5 15.5 5 11 V6 Z" ' +
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
 };
 
 // Celebration sparkles — 4-point-star paths generated from fixed positions.
@@ -79,6 +83,10 @@ const ui = {
   viewerFor: null,
   reveal: null,
   leadGlow: null,
+  fxPickerFor: null,
+  target: null,
+  fxQueue: null,
+  prevLeader: null,
 };
 let resetTimer = null;
 let revealTimer = null;
@@ -145,7 +153,7 @@ function defaultPlayerName() {
 function addPlayer(name) {
   if (state.players.length >= MAX_PLAYERS) return false;
   const trimmed = name.trim().slice(0, 24) || defaultPlayerName();
-  state.players.push({ id: nextPlayerId(), name: trimmed, cards: [] });
+  state.players.push({ id: nextPlayerId(), name: trimmed, cards: [], shield: false });
   saveState();
   return true;
 }
@@ -169,9 +177,12 @@ function startGame() {
   if (state.players.length < MIN_PLAYERS) return;
   state.players.forEach((p) => {
     p.cards = [];
+    p.shield = false;
   });
   state.deck = shuffle(createDeck({ includeJokers: state.includeJokers }));
+  state.graveyard = [];
   state.history = [];
+  state.pending = null;
   state.phase = 'playing';
   saveState();
   render();
@@ -267,8 +278,15 @@ function resetGame() {
   clearTimeout(revealTimer);
   ui.reveal = null;
   ui.leadGlow = null;
-  const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [] }));
-  state = { ...defaultState(), includeJokers: state.includeJokers, players: names };
+  const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [], shield: false }));
+  state = {
+    ...defaultState(),
+    includeJokers: state.includeJokers,
+    drawMode: state.drawMode,
+    effectsEnabled: state.effectsEnabled,
+    effectMap: { ...state.effectMap },
+    players: names,
+  };
   saveState();
   render();
 }
@@ -366,6 +384,19 @@ function setupScreen() {
       }</p>
     </section>
 
+    <section class="panel" aria-labelledby="mode-h">
+      <h2 id="mode-h">Draw mode</h2>
+      <div class="mode-toggle" role="group" aria-label="Draw mode">
+        <button class="btn" data-action="set-mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
+        <button class="btn" data-action="set-mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Pick</button>
+      </div>
+      <p class="setup-hint">${
+        state.drawMode === 'random'
+          ? 'Cards are dealt from the top of the shuffled deck.'
+          : 'The deck fans out face-down and each player taps a card.'
+      }</p>
+    </section>
+
     <section class="panel" aria-labelledby="deck-h">
       <h2 id="deck-h">Deck</h2>
       <div class="toggle-row">
@@ -381,9 +412,63 @@ function setupScreen() {
       </div>
     </section>
 
+    ${effectsSection()}
+
     <button class="btn btn-primary btn-block" data-action="start" ${canStart ? '' : 'disabled'}>
       Start game
     </button>
+  `;
+}
+
+// Effect chips are colored per effect id via the fx-<id> class; the picker
+// opens inline under the grid for the tapped rank.
+function effectsSection() {
+  const grid = RANKS.map((rank) => {
+    const fx = state.effectMap[rank];
+    return (
+      `<button class="rank-chip${fx ? ` has-fx fx-${fx}` : ''}${ui.fxPickerFor === rank ? ' open' : ''}"` +
+      ` data-action="fx-chip" data-rank="${rank}"` +
+      ` aria-label="${rankLabel(rank)}: ${fx ? EFFECTS[fx].label : 'no effect'}">` +
+      `${rankLabel(rank)}${fx ? '<span class="fx-dot"></span>' : ''}</button>`
+    );
+  }).join('');
+
+  let picker = '';
+  if (ui.fxPickerFor !== null) {
+    const rank = ui.fxPickerFor;
+    const current = state.effectMap[rank] || null;
+    const options = [
+      `<button class="fx-opt${current === null ? ' sel' : ''}" data-action="fx-assign" data-rank="${rank}" data-fx="">` +
+        '<strong>None</strong><span>Just a normal card.</span></button>',
+      ...EFFECT_IDS.map(
+        (id) =>
+          `<button class="fx-opt fx-${id}${current === id ? ' sel' : ''}" data-action="fx-assign" data-rank="${rank}" data-fx="${id}">` +
+          `<strong>${EFFECTS[id].label}</strong><span>${EFFECTS[id].desc}</span></button>`
+      ),
+    ].join('');
+    picker = `
+      <div class="fx-picker" role="group" aria-label="Effect for ${rankLabel(rank)}">
+        <p class="fx-picker-title">Effect for <strong>${rankLabel(rank)}</strong></p>
+        ${options}
+      </div>`;
+  }
+
+  return `
+    <section class="panel" aria-labelledby="fx-h">
+      <h2 id="fx-h">Card effects</h2>
+      <div class="toggle-row">
+        <div class="toggle-copy">
+          <strong>Enable effects</strong>
+          <p>Ranks carry abilities that fire when drawn.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" data-toggle="effects" ${state.effectsEnabled ? 'checked' : ''}
+                 aria-label="Enable card effects" />
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+      ${state.effectsEnabled ? `<div class="rank-grid">${grid}</div>${picker}` : ''}
+    </section>
   `;
 }
 
@@ -479,10 +564,6 @@ function dealerBar() {
             ${ui.confirmReset ? 'Confirm' : 'Reset'}
           </button>
         </div>
-      </div>
-      <div class="mode-toggle" role="group" aria-label="Draw mode">
-        <button class="btn" data-action="mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
-        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Pick</button>
       </div>
     </div>
   `;
@@ -662,11 +743,26 @@ app.addEventListener('click', (event) => {
     case 'undo':
       undoLastDraw();
       break;
-    case 'mode':
+    case 'set-mode':
       state.drawMode = target.dataset.mode === 'manual' ? 'manual' : 'random';
       saveState();
       render();
       break;
+    case 'fx-chip': {
+      const rank = Number(target.dataset.rank);
+      ui.fxPickerFor = ui.fxPickerFor === rank ? null : rank;
+      render();
+      break;
+    }
+    case 'fx-assign': {
+      const rank = Number(target.dataset.rank);
+      if (target.dataset.fx) state.effectMap[rank] = target.dataset.fx;
+      else delete state.effectMap[rank];
+      ui.fxPickerFor = null;
+      saveState();
+      render();
+      break;
+    }
     case 'reset':
       if (ui.confirmReset) {
         resetGame();
@@ -718,6 +814,12 @@ app.addEventListener('change', (event) => {
   }
   if (event.target.closest('[data-toggle="jokers"]')) {
     state.includeJokers = event.target.checked;
+    saveState();
+    render();
+  }
+  if (event.target.closest('[data-toggle="effects"]')) {
+    state.effectsEnabled = event.target.checked;
+    ui.fxPickerFor = null;
     saveState();
     render();
   }

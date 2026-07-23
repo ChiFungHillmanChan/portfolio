@@ -872,3 +872,91 @@ button {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* --- effects configurator (setup) ------------------------------------------ */
+
+:root {
+  --fx-sabotage: #d06556;
+  --fx-bonus: #6fae7c;
+  --fx-burn: #a06ddc;
+  --fx-steal: #d3a952;
+  --fx-swap: #5f8fd6;
+  --fx-shield: #7cc4c9;
+}
+
+.rank-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.rank-chip {
+  position: relative;
+  min-height: var(--tap);
+  border-radius: 8px;
+  border: 1px solid var(--ink-faint);
+  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.rank-chip.has-fx { border-color: rgba(211, 169, 82, 0.6); background: rgba(211, 169, 82, 0.14); }
+.rank-chip.open { outline: 2px solid var(--brass); outline-offset: 1px; }
+
+.rank-chip .fx-dot {
+  position: absolute;
+  top: 5px;
+  right: 5px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.rank-chip.fx-sabotage .fx-dot { background: var(--fx-sabotage); }
+.rank-chip.fx-bonus .fx-dot { background: var(--fx-bonus); }
+.rank-chip.fx-burn .fx-dot { background: var(--fx-burn); }
+.rank-chip.fx-steal .fx-dot { background: var(--fx-steal); }
+.rank-chip.fx-swap .fx-dot { background: var(--fx-swap); }
+.rank-chip.fx-shield .fx-dot { background: var(--fx-shield); }
+
+.fx-picker {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px dashed rgba(211, 169, 82, 0.4);
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fx-picker-title { margin: 0 0 2px; font-size: 14px; color: var(--ink-dim); }
+
+.fx-opt {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-height: var(--tap);
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--ink-faint);
+  background: rgba(0, 0, 0, 0.2);
+  color: var(--ink);
+  text-align: left;
+}
+
+.fx-opt span { font-size: 13px; color: var(--ink-dim); }
+.fx-opt.sel { border-color: var(--brass); background: rgba(211, 169, 82, 0.16); }
+.fx-opt.fx-sabotage.sel { border-color: var(--fx-sabotage); }
+.fx-opt.fx-bonus.sel { border-color: var(--fx-bonus); }
+.fx-opt.fx-burn.sel { border-color: var(--fx-burn); }
+.fx-opt.fx-steal.sel { border-color: var(--fx-steal); }
+.fx-opt.fx-swap.sel { border-color: var(--fx-swap); }
+.fx-opt.fx-shield.sel { border-color: var(--fx-shield); }
+
+@media (max-width: 380px) {
+  .rank-grid { grid-template-columns: repeat(5, 1fr); }
+}
