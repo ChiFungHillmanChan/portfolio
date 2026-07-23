@@ -2,74 +2,198 @@
   <!-- Seated granny, facing left, WITHOUT her right (striking) arm — that is
        art/granny-arm.svg, rotated at the shoulder. Drawn at stage (350,425)
        1:1, so the shoulder pivot (290,215) here = stage (640,640). Floor is
-       at y≈680 in this viewBox. -->
+       at y≈680 in this viewBox. Feet stay right of x≈95; bun/back ≤ x≈318. -->
+  <defs>
+    <radialGradient id="gb-blush" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#cf7d52" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#cf7d52" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="gb-skirt" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#a83527"/>
+      <stop offset="0.55" stop-color="#9c2f22"/>
+      <stop offset="1" stop-color="#82271c"/>
+    </linearGradient>
+    <linearGradient id="gb-top" x1="0" y1="0" x2="1" y2="0.25">
+      <stop offset="0" stop-color="#e0b246"/>
+      <stop offset="0.55" stop-color="#d8a93a"/>
+      <stop offset="1" stop-color="#c3922e"/>
+    </linearGradient>
+  </defs>
+
+  <!-- ground shadow -->
+  <ellipse cx="222" cy="678" rx="146" ry="9" fill="#3a2317" opacity="0.1"/>
+
   <g stroke="#3a2317" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
-    <!-- stool -->
-    <line x1="272" y1="505" x2="268" y2="655" stroke="#5a3a20" stroke-width="12"/>
-    <path d="M185 468 Q265 452 348 460 L352 500 Q268 514 192 510 Z" fill="#8a5a33"/>
-    <path d="M188 486 Q266 474 350 480" fill="none" stroke="#6e4526" stroke-width="5"/>
-    <line x1="205" y1="507" x2="195" y2="675" stroke="#6e4526" stroke-width="13"/>
-    <line x1="330" y1="500" x2="342" y2="672" stroke="#6e4526" stroke-width="13"/>
-    <line x1="199" y1="600" x2="337" y2="596" stroke="#6e4526" stroke-width="9"/>
 
-    <!-- lower legs + bare feet -->
-    <path d="M152 570 L138 660 Q136 672 124 670 L94 668 Q80 666 84 654 Q90 648 104 650 L118 652 L130 566 Z"
-          fill="#d99a63"/>
-    <path d="M210 580 L200 664 Q198 676 186 674 L154 672 Q142 670 146 658 Q152 652 164 654 L180 656 L190 576 Z"
-          fill="#c98c55"/>
-    <path d="M94 668 q-6 -8 -2 -14" fill="none" stroke-width="4"/>
-    <path d="M154 672 q-6 -8 -2 -14" fill="none" stroke-width="4"/>
+    <!-- ============ STOOL ============ -->
+    <path d="M270 506 L281 508 L271 660 L260 658 Z" fill="#4f3118" stroke-width="5"/>
+    <path d="M192 468 Q270 450 350 458 L354 500 Q268 514 190 506 Z" fill="#8a5a33"/>
+    <path d="M196 486 Q270 472 350 478" fill="none" stroke="#6e4526" stroke-width="4"/>
+    <path d="M214 461 Q272 452 332 456" fill="none" stroke="#a06a3d" stroke-width="3"/>
+    <path d="M204 502 L220 504 L206 676 L191 674 Z" fill="#7a4c29"/>
+    <path d="M330 500 L344 502 L345 672 L331 671 Z" fill="#7a4c29"/>
+    <path d="M212 520 L202 640" fill="none" stroke="#a06a3d" stroke-width="2.5"/>
+    <path d="M336 516 L340 640" fill="none" stroke="#a06a3d" stroke-width="2.5"/>
+    <path d="M203 600 L338 594 L337 604 L204 610 Z" fill="#6e4526" stroke-width="5"/>
 
-    <!-- skirt: dark red, draping from waist over the stool, knees left -->
-    <path d="M168 372 Q140 420 100 470 Q66 516 60 570 Q58 594 82 596 L230 614 Q286 618 308 560 L318 470 Q322 420 305 372 Q240 356 168 372 Z"
-          fill="#9c2f22"/>
-    <path d="M150 420 Q120 480 104 552" fill="none" stroke="#7e251b" stroke-width="6"/>
-    <path d="M204 412 Q186 490 176 580" fill="none" stroke="#7e251b" stroke-width="6"/>
-    <path d="M258 408 Q252 490 246 596" fill="none" stroke="#7e251b" stroke-width="6"/>
+    <!-- ============ FAR LEG + FOOT (her left, in shadow) ============ -->
+    <path d="M122 558 Q114 600 120 642 L142 645 Q138 602 143 558 Z" fill="#bd7f4b" stroke-width="6"/>
+    <path d="M116 639 L142 643 Q147 658 145 667 Q143 674 133 674 L106 672 Q97 671 98 664 Q100 658 109 659 Q113 649 116 639 Z" fill="#bd7f4b" stroke-width="6"/>
+    <path d="M110 663 L110 670 M118 664 L118 671" fill="none" stroke="#a96a3d" stroke-width="2.2"/>
 
-    <!-- torso: yellow top, leaning slightly forward -->
-    <path d="M158 214 Q136 262 134 322 Q133 366 165 388 Q238 404 306 390 Q318 330 310 262 Q306 226 292 212 Q224 194 158 214 Z"
-          fill="#d8a93a"/>
-    <path d="M150 300 Q200 322 300 314" fill="none" stroke="#b8892a" stroke-width="6"/>
-    <path d="M160 352 Q220 370 298 360" fill="none" stroke="#b8892a" stroke-width="6"/>
+    <!-- ============ NEAR LEG + FOOT (her right) ============ -->
+    <path d="M150 560 Q143 604 152 645 L178 646 Q183 606 186 560 Z" fill="#d99a63"/>
+    <path d="M180 572 Q184 610 176 642" fill="none" stroke="#c07f4a" stroke-width="3"/>
+    <path d="M150 640 L177 642 Q185 654 184 664 Q184 676 171 676 Q146 675 129 674 Q111 673 106 668 Q101 664 105 657 Q110 651 120 653 Q137 649 150 640 Z" fill="#d99a63"/>
+    <path d="M171 648 q5 3 3 8" fill="none" stroke="#c07f4a" stroke-width="3"/>
+    <path d="M113 657 L113 668 M121 658 L122 669 M130 659 L131 670" fill="none" stroke="#a96a3d" stroke-width="2.4"/>
+    <path d="M107 661 q4 -2 6 1" fill="none" stroke="#a96a3d" stroke-width="2"/>
+    <path d="M137 671 Q153 666 169 670" fill="none" stroke="#c07f4a" stroke-width="3"/>
+    <!-- cast shadow of the skirt hem on both shins -->
+    <path d="M118 558 L186 560 L183 580 Q150 576 121 578 Z" fill="#a96a3d" opacity="0.45" stroke="none"/>
 
-    <!-- her left arm: bent sleeve hugging the chest, hand on the belly -->
-    <path d="M188 216 Q146 240 141 296 Q138 336 170 352 Q188 360 196 346 Q202 332 184 322 Q168 312 170 278 Q172 246 192 232 Z"
-          fill="#c99a2f"/>
-    <ellipse cx="192" cy="346" rx="21" ry="16" fill="#d99a63"/>
-    <path d="M176 340 q10 -8 24 -4" fill="none" stroke-width="4"/>
-    <path d="M178 352 q12 -6 26 -2" fill="none" stroke-width="4"/>
+    <!-- ============ SKIRT (seated: belly tucks in, lap shelf out to the knee, then drops) ============ -->
+    <path d="M148 370
+             Q146 386 142 396
+             Q128 404 112 414 Q100 420 97 432
+             Q93 444 98 458
+             Q102 478 102 505 Q102 540 108 560 Q112 572 122 576
+             Q148 586 174 582 Q192 580 196 568
+             Q214 528 246 510 Q278 496 288 480
+             Q293 472 286 466 Q296 456 298 442 L301 392 Q301 372 296 366
+             Q230 352 148 370 Z" fill="url(#gb-skirt)"/>
+    <!-- folds fanning from the hip over the lap -->
+    <path d="M262 388 Q195 400 120 418" fill="none" stroke="#7e251b" stroke-width="5"/>
+    <path d="M266 412 Q220 460 194 562" fill="none" stroke="#7e251b" stroke-width="6"/>
+    <path d="M128 434 Q112 442 102 452" fill="none" stroke="#7e251b" stroke-width="4"/>
+    <path d="M136 452 Q128 510 130 556" fill="none" stroke="#7e251b" stroke-width="4"/>
+    <path d="M198 562 Q226 516 274 482" fill="none" stroke="#6c1f15" stroke-width="5" opacity="0.6"/>
+    <!-- knee ridge catches the light -->
+    <path d="M96 434 Q105 442 103 464" fill="none" stroke="#b6473a" stroke-width="5" opacity="0.9"/>
+    <path d="M99 470 Q106 478 104 496" fill="none" stroke="#b6473a" stroke-width="4" opacity="0.7"/>
+    <path d="M138 402 Q118 410 102 424" fill="none" stroke="#c0503f" stroke-width="6" opacity="0.8"/>
+    <path d="M120 574 Q148 582 172 578 Q188 576 194 566" fill="none" stroke="#6c1f15" stroke-width="7" opacity="0.75"/>
+    <!-- her weight shadows the seat just behind her -->
+    <path d="M288 478 L314 470 Q306 484 294 490 Z" fill="#5a3a20" opacity="0.5" stroke="none"/>
 
-    <!-- neck -->
-    <path d="M196 168 L192 208 Q216 220 244 210 L240 168 Z" fill="#c98c55"/>
+    <!-- ============ TORSO (mustard top, forward lean) ============ -->
+    <path d="M162 220 Q150 248 146 276 Q136 316 136 348 Q135 368 146 378
+             Q216 394 296 384 Q302 370 303 348 Q306 312 310 292
+             Q315 258 305 233 Q297 213 284 205 Q268 197 254 202
+             Q240 206 236 210 Q198 202 162 220 Z" fill="url(#gb-top)"/>
+    <path d="M302 240 Q311 292 298 378 L288 376 Q301 300 293 244 Z" fill="#b8892a" opacity="0.6" stroke="none"/>
+    <path d="M160 300 Q196 314 230 312" fill="none" stroke="#b8892a" stroke-width="4.5"/>
+    <path d="M162 348 Q202 362 240 358" fill="none" stroke="#b8892a" stroke-width="4.5"/>
+    <path d="M264 248 Q250 272 246 300" fill="none" stroke="#b8892a" stroke-width="4"/>
+    <path d="M150 370 Q216 384 292 375" fill="none" stroke="#b8892a" stroke-width="3.5"/>
+    <path d="M166 244 Q152 284 144 330" fill="none" stroke="#e8c260" stroke-width="5" opacity="0.55"/>
+    <path d="M162 222 Q198 202 240 208 L242 220 Q202 214 166 234 Z" fill="#c99a2f" stroke-width="4"/>
 
-    <!-- head: skin, jaw toward the left -->
-    <path d="M150 58 Q124 84 128 132 Q131 172 162 190 Q196 206 232 192 Q268 178 272 132 Q276 84 250 56 Q200 36 150 58 Z"
-          fill="#d99a63"/>
+    <!-- ============ HER LEFT ARM (far side, braced stiff on the mid-thigh) ============ -->
+    <path d="M160 254 Q132 270 124 306 Q118 330 124 362 Q128 380 142 388 L164 378
+             Q150 356 150 324 Q152 290 176 268 Z" fill="#cf9c31"/>
+    <path d="M126 312 Q136 319 148 316" fill="none" stroke="#a9812a" stroke-width="4"/>
+    <path d="M128 352 Q138 358 150 354" fill="none" stroke="#a9812a" stroke-width="4"/>
+    <path d="M136 380 Q150 390 166 382 L162 398 Q148 403 138 395 Z" fill="#b8892a" stroke-width="4"/>
+    <!-- jade bangle -->
+    <path d="M138 398 Q152 406 166 398" fill="none" stroke="#4e8f5b" stroke-width="6"/>
+    <path d="M144 401 Q152 404 159 400" fill="none" stroke="#79b98a" stroke-width="2"/>
+    <!-- hand pressing the thigh: back of hand + four fingers + thumb -->
+    <path d="M156 396 Q142 396 132 404 Q120 413 113 424 Q108 432 114 436 Q120 439 124 432
+             Q124 441 131 442 Q138 443 140 435 Q142 443 149 442 Q156 441 155 433
+             Q159 439 165 435 Q169 431 166 422 Q163 405 160 398 Q159 395 156 396 Z"
+          fill="#d99a63" stroke-width="5.5"/>
+    <path d="M126 421 L123 432 M138 424 L136 436 M150 424 L149 436" fill="none" stroke-width="2.8"/>
+    <path d="M158 406 Q150 397 139 400 Q133 402 136 408 Q144 404 152 409 Q157 412 158 406 Z" fill="#d99a63" stroke-width="3.5"/>
+    <path d="M128 414 q5 -3 9 0 M140 415 q5 -3 9 0" fill="none" stroke="#b5723f" stroke-width="2.4"/>
 
-    <!-- hair: grey, swept back into a bun -->
-    <path d="M143 92 Q136 48 176 34 Q220 20 258 42 Q284 58 280 100 Q270 82 252 74 Q246 92 232 84 Q220 76 214 62 Q196 74 178 68 Q168 84 152 82 Q146 88 143 92 Z"
-          fill="#6d655e"/>
-    <circle cx="284" cy="58" r="34" fill="#6d655e"/>
-    <path d="M270 46 q20 -6 28 12 q4 16 -12 24" fill="none" stroke="#57504a" stroke-width="5"/>
-    <path d="M160 62 q30 -18 74 -8" fill="none" stroke="#8a837c" stroke-width="5"/>
+    <!-- ============ NECK + HEAD + HAIR (scaled 0.93 about the neck top for
+         grandma proportions: head ≈ 1/4.5 of seated height) ============ -->
+    <g transform="translate(14 14) scale(0.93)">
+    <path d="M166 194 L157 230 Q196 216 240 220 L232 182 Q198 200 166 194 Z" fill="#cf9159" stroke-width="6"/>
+    <path d="M170 198 Q202 208 228 192 L230 204 Q202 216 172 208 Z" fill="#b5723f" opacity="0.55" stroke="none"/>
+    <path d="M172 214 Q198 222 226 212" fill="none" stroke="#b5723f" stroke-width="3"/>
+    <path d="M170 224 Q198 231 228 221" fill="none" stroke="#b5723f" stroke-width="3"/>
 
-    <!-- angry face -->
-    <path d="M190 88 L134 106" stroke-width="10"/>
-    <path d="M252 92 L206 106" stroke-width="10"/>
-    <ellipse cx="162" cy="120" rx="18" ry="9" fill="#fdf6e6" stroke-width="5"/>
-    <circle cx="155" cy="121" r="6" fill="#3a2317" stroke="none"/>
-    <ellipse cx="226" cy="118" rx="15" ry="8" fill="#fdf6e6" stroke-width="5"/>
-    <circle cx="219" cy="119" r="5" fill="#3a2317" stroke="none"/>
-    <path d="M152 108 Q133 124 130 144 Q130 152 142 152" fill="none" stroke-width="6"/>
-    <!-- shouting mouth -->
-    <path d="M140 160 Q170 150 202 160 Q210 178 196 190 Q166 202 146 190 Q132 174 140 160 Z"
-          fill="#5a1410" stroke-width="6"/>
-    <path d="M144 162 Q170 154 198 162 L196 172 Q170 165 146 172 Z" fill="#fdf6e6" stroke="none"/>
-    <path d="M154 190 Q170 180 190 188 Q172 196 154 190 Z" fill="#b0402f" stroke="none"/>
-    <!-- wrinkles -->
-    <path d="M158 46 q40 -12 64 0" fill="none" stroke="#c07f4a" stroke-width="4"/>
-    <path d="M212 146 q8 14 4 26" fill="none" stroke="#c07f4a" stroke-width="4"/>
-    <path d="M248 112 l14 -4 M248 122 l14 2" fill="none" stroke="#c07f4a" stroke-width="4"/>
+    <!-- ============ HEAD (3/4 view, glaring down-left) ============ -->
+    <path d="M186 54 Q158 58 148 74 Q138 88 134 104 L133 110 Q131 114 126 122
+             Q114 134 111 142 Q109 147 115 149 L125 151 Q129 152 128 157 L126 162
+             Q124 168 128 172 Q132 178 131 182 Q130 186 135 190 Q145 197 158 198
+             Q176 200 194 195 Q216 189 228 180 Q240 171 244 160 L246 150
+             Q258 128 260 104 Q258 74 232 60 Q212 50 186 54 Z" fill="#d99a63"/>
+    <!-- side shadow toward the ear -->
+    <path d="M238 96 Q250 130 240 166 L232 178 Q244 138 234 100 Z" fill="#c98c55" opacity="0.7" stroke="none"/>
+    <!-- forehead highlight -->
+    <path d="M158 70 Q146 84 141 100 L146 103 Q152 86 164 74 Z" fill="#ecb684" opacity="0.7" stroke="none"/>
+    <!-- cheek blush -->
+    <circle cx="168" cy="150" r="24" fill="url(#gb-blush)" stroke="none"/>
+    <!-- nose: shadow, flared nostril, highlight -->
+    <path d="M132 114 Q122 130 114 144 L121 147 Q127 132 137 119 Z" fill="#c07f4a" opacity="0.75" stroke="none"/>
+    <ellipse cx="121" cy="146" rx="3.5" ry="2.4" fill="#7a4526" stroke="none"/>
+    <path d="M118 147 Q123 150 128 149" fill="none" stroke-width="2.6"/>
+    <path d="M124 124 Q118 132 115 140" fill="none" stroke="#ecb684" stroke-width="2.6"/>
+    <!-- nasolabial fold + mouth-corner crease -->
+    <path d="M139 148 Q166 148 187 164" fill="none" stroke="#b5723f" stroke-width="3.2"/>
+    <path d="M185 165 Q191 175 186 185" fill="none" stroke="#b5723f" stroke-width="2.8"/>
+    <!-- jowl sag -->
+    <path d="M206 174 Q218 169 228 159" fill="none" stroke="#b5723f" stroke-width="2.8"/>
+    <!-- angry knitted brows -->
+    <path d="M135 116 Q139 105 155 101 Q158 104 156 107 Q145 108 139 118 Z" fill="#4a423c" stroke-width="2.5"/>
+    <path d="M163 118 Q173 104 197 102 Q203 103 201 108 Q182 108 168 121 Z" fill="#4a423c" stroke-width="2.5"/>
+    <path d="M159 106 Q158 111 159 116" fill="none" stroke="#b5723f" stroke-width="2.5"/>
+    <!-- far eye (foreshortened) -->
+    <path d="M138 121 Q147 116 157 117" fill="none" stroke-width="4"/>
+    <path d="M139 123 Q147 119 156 120 Q154 127 146 128 Q141 127 139 123 Z" fill="#f3e6cf" stroke-width="2.5"/>
+    <circle cx="145" cy="124" r="3.6" fill="#3a2317" stroke="none"/>
+    <path d="M140 128 Q147 131 155 127" fill="none" stroke="#b5723f" stroke-width="2.5"/>
+    <path d="M139 133 Q147 136 156 132" fill="none" stroke="#c07f4a" stroke-width="2.5"/>
+    <!-- near eye -->
+    <path d="M167 120 Q181 113 197 115" fill="none" stroke-width="4.5"/>
+    <path d="M168 122 Q181 116 196 118 Q193 128 179 129 Q170 127 168 122 Z" fill="#f3e6cf" stroke-width="2.5"/>
+    <circle cx="177" cy="123" r="4.6" fill="#3a2317" stroke="none"/>
+    <circle cx="175.5" cy="121.5" r="1.3" fill="#f3e6cf" stroke="none"/>
+    <path d="M170 129 Q181 133 194 128" fill="none" stroke="#b5723f" stroke-width="2.5"/>
+    <path d="M169 135 Q181 139 195 133" fill="none" stroke="#c07f4a" stroke-width="2.5"/>
+    <path d="M199 117 L209 114 M200 122 L210 122 M199 127 L208 130" fill="none" stroke="#b5723f" stroke-width="2.5"/>
+    <!-- shouting mouth: cavity, upper teeth, tongue, lower lip -->
+    <g transform="translate(0 -6)">
+      <path d="M132 161 Q152 151 176 155 Q186 158 184 168 Q180 186 163 192 Q144 197 135 188 Q127 176 132 161 Z"
+            fill="#4d120c" stroke-width="5"/>
+      <path d="M136 162 Q154 154 176 158 L174 167 Q152 162 138 169 Z" fill="#f6ecd8" stroke="none"/>
+      <path d="M147 158 L147 166 M157 156.5 L157 164.5 M166 157 L166 165" fill="none" stroke="#cbb89a" stroke-width="1.8"/>
+      <path d="M141 187 Q155 175 172 182 Q166 192 153 193 Q144 192 141 187 Z" fill="#b0402f" stroke="#7e251b" stroke-width="2.5"/>
+      <path d="M150 186 Q157 181 165 184" fill="none" stroke="#8c2f22" stroke-width="1.8"/>
+      <path d="M134 189 Q150 199 167 193 Q176 189 181 180 L184 184 Q179 194 166 199 Q148 203 132 195 Z"
+            fill="#c9765a" stroke-width="3"/>
+      <path d="M141 200 Q152 197 163 200" fill="none" stroke="#b5723f" stroke-width="2.6"/>
+    </g>
+    <!-- forehead wrinkles -->
+    <path d="M144 84 Q162 76 186 76" fill="none" stroke="#b5723f" stroke-width="2.8"/>
+    <path d="M140 94 Q160 86 184 87" fill="none" stroke="#b5723f" stroke-width="2.8"/>
+    <!-- ear + gold stud -->
+    <path d="M240 112 Q252 104 259 114 Q265 126 261 140 Q257 152 246 156 Q238 157 237 147 Q236 128 240 112 Z"
+          fill="#cf9159" stroke-width="4.5"/>
+    <path d="M245 121 Q252 118 255 126 Q257 135 251 141" fill="none" stroke="#b5723f" stroke-width="3"/>
+    <circle cx="245" cy="152" r="2.8" fill="#d8a93a" stroke-width="2"/>
+
+    <!-- ============ HAIR (grey, swept back to a bun) ============ -->
+    <path d="M151 80 Q142 62 162 52 Q186 41 214 44 Q246 49 257 68 Q267 88 262 110
+             Q259 134 249 148 L242 140 Q246 122 242 108 Q233 94 220 90
+             Q207 84 199 86 Q193 78 186 86 Q170 84 160 88 Q152 86 151 80 Z" fill="#8d857c" stroke-width="6"/>
+    <path d="M156 84 Q180 78 216 88" fill="none" stroke="#6d655e" stroke-width="3"/>
+    <path d="M162 62 Q200 48 240 58" fill="none" stroke="#b5aca1" stroke-width="2.8"/>
+    <path d="M154 74 Q196 58 248 72" fill="none" stroke="#b5aca1" stroke-width="2.8"/>
+    <path d="M178 50 Q210 44 236 51" fill="none" stroke="#cfc8bd" stroke-width="2.5"/>
+    <path d="M247 122 Q252 136 246 148" fill="none" stroke="#6d655e" stroke-width="2.5"/>
+    <!-- bun -->
+    <circle cx="284" cy="84" r="30" fill="#8d857c" stroke-width="6"/>
+    <path d="M268 76 Q292 62 300 86 Q304 104 283 108 Q270 105 271 93" fill="none" stroke="#6d655e" stroke-width="3.5"/>
+    <path d="M272 68 Q290 60 299 72" fill="none" stroke="#cfc8bd" stroke-width="2.8"/>
+    <path d="M302 100 L316 110" fill="none" stroke="#57504a" stroke-width="4"/>
+    <!-- flyaway strands -->
+    <path d="M258 58 Q266 46 278 44" fill="none" stroke="#8d857c" stroke-width="2.2"/>
+    <path d="M300 60 Q309 52 316 55" fill="none" stroke="#8d857c" stroke-width="2.2"/>
+    <path d="M251 150 Q257 162 252 170" fill="none" stroke="#8d857c" stroke-width="2.2"/>
+    </g>
   </g>
 </svg>
