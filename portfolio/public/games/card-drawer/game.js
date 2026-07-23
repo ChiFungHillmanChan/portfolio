@@ -50,20 +50,6 @@ const ICONS = {
     'fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
 };
 
-// Celebration sparkles — 4-point-star paths generated from fixed positions.
-const SPARKLES =
-  '<svg class="sparkles" viewBox="0 0 320 320" aria-hidden="true">' +
-  ['160 34 18', '58 84 12', '258 72 14', '36 190 10', '284 196 12', '104 262 12', '216 272 14', '160 132 8']
-    .map((s) => {
-      const [x, y, r] = s.split(' ').map(Number);
-      return (
-        `<path d="M ${x} ${y - r} Q ${x} ${y} ${x + r} ${y} Q ${x} ${y} ${x} ${y + r} ` +
-        `Q ${x} ${y} ${x - r} ${y} Q ${x} ${y} ${x} ${y - r} Z" fill="currentColor"/>`
-      );
-    })
-    .join('') +
-  '</svg>';
-
 const esc = (s) =>
   String(s)
     .replace(/&/g, '&amp;')
