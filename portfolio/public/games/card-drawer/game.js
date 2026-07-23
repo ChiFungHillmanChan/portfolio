@@ -1,12 +1,28 @@
-// Card Drawer — UI + state. Pure logic lives in hand-eval.js (poker) and
-// card-svg.js (rendering); this module only composes them and manages state.
+// Card Drawer — UI + state wiring. Pure logic lives in hand-eval.js (poker),
+// effects.js (card effects), state.js (shape + persistence) and card-svg.js
+// (rendering); this module only composes them and manages the DOM.
 
-import { createDeck, shuffle, evaluateHand, compareScores, countOuts } from './hand-eval.js';
+import { createDeck, shuffle, evaluateHand, compareScores, countOuts, rankLabel, RANKS } from './hand-eval.js';
 import { renderCardSVG } from './card-svg.js';
-
-const STORAGE_KEY = 'card-drawer:v1';
-const MAX_PLAYERS = 10;
-const MIN_PLAYERS = 2;
+import {
+  EFFECTS,
+  EFFECT_IDS,
+  effectForCard,
+  legalTargets,
+  beginRecord,
+  advanceDraw,
+  applyTarget,
+  undoRecord,
+} from './effects.js';
+import {
+  STORAGE_KEY,
+  LEGACY_STORAGE_KEY,
+  MAX_PLAYERS,
+  MIN_PLAYERS,
+  defaultState,
+  normalizeState,
+  migrateLegacy,
+} from './state.js';
 
 // Hand-drawn UI glyphs — inline SVG paths, never emoji.
 const ICONS = {
@@ -28,21 +44,11 @@ const ICONS = {
     '<svg class="ornament" width="132" height="14" viewBox="0 0 132 14" aria-hidden="true">' +
     '<path d="M0 7 H54 M78 7 H132" stroke="currentColor" stroke-width="1"/>' +
     '<path d="M66 1 L72 7 L66 13 L60 7 Z" fill="currentColor"/></svg>',
+  shield:
+    '<svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true">' +
+    '<path d="M12 3 L19 6 V11 C19 15.5 16 19.5 12 21 C8 19.5 5 15.5 5 11 V6 Z" ' +
+    'fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>',
 };
-
-// Celebration sparkles — 4-point-star paths generated from fixed positions.
-const SPARKLES =
-  '<svg class="sparkles" viewBox="0 0 320 320" aria-hidden="true">' +
-  ['160 34 18', '58 84 12', '258 72 14', '36 190 10', '284 196 12', '104 262 12', '216 272 14', '160 132 8']
-    .map((s) => {
-      const [x, y, r] = s.split(' ').map(Number);
-      return (
-        `<path d="M ${x} ${y - r} Q ${x} ${y} ${x + r} ${y} Q ${x} ${y} ${x} ${y + r} ` +
-        `Q ${x} ${y} ${x - r} ${y} Q ${x} ${y} ${x} ${y - r} Z" fill="currentColor"/>`
-      );
-    })
-    .join('') +
-  '</svg>';
 
 const esc = (s) =>
   String(s)
@@ -52,17 +58,6 @@ const esc = (s) =>
     .replace(/"/g, '&quot;');
 
 // --- state -----------------------------------------------------------------
-
-function defaultState() {
-  return {
-    phase: 'setup',
-    includeJokers: false,
-    drawMode: 'random',
-    players: [],
-    deck: [],
-    history: [],
-  };
-}
 
 let state = defaultState();
 // Transient UI state — never persisted.
@@ -74,6 +69,10 @@ const ui = {
   viewerFor: null,
   reveal: null,
   leadGlow: null,
+  fxPickerFor: null,
+  target: null,
+  fxQueue: null,
+  prevLeader: null,
 };
 let resetTimer = null;
 let revealTimer = null;
@@ -99,75 +98,32 @@ function clearSaved() {
 }
 
 function loadSaved() {
-  let raw;
-  try {
-    raw = localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
-  if (!raw) return null;
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return null;
-  }
-  return normalizeState(parsed);
-}
-
-// Validate the shape and card integrity of a stored state; returns a clean
-// state (cards re-mapped onto canonical deck objects) or null.
-function normalizeState(s) {
-  if (!s || typeof s !== 'object') return null;
-  if (s.phase !== 'setup' && s.phase !== 'playing') return null;
-  if (s.drawMode !== 'random' && s.drawMode !== 'manual') return null;
-  if (typeof s.includeJokers !== 'boolean') return null;
-  if (!Array.isArray(s.players) || s.players.length > MAX_PLAYERS) return null;
-  if (!Array.isArray(s.deck) || !Array.isArray(s.history)) return null;
-
-  const universe = new Map(
-    createDeck({ includeJokers: s.includeJokers }).map((card) => [card.id, card])
-  );
-  const seen = new Set();
-  const mapCard = (card) => {
-    if (!card || typeof card.id !== 'string') return null;
-    if (!universe.has(card.id) || seen.has(card.id)) return null;
-    seen.add(card.id);
-    return universe.get(card.id);
+  const readJson = (key) => {
+    let raw;
+    try {
+      raw = localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+    if (!raw) return null;
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   };
-
-  const players = [];
-  for (const p of s.players) {
-    if (!p || typeof p.id !== 'number' || typeof p.name !== 'string' || !p.name.trim()) return null;
-    if (!Array.isArray(p.cards)) return null;
-    const cards = p.cards.map(mapCard);
-    if (cards.some((card) => card === null)) return null;
-    players.push({ id: p.id, name: p.name.trim().slice(0, 24), cards });
+  const v2 = normalizeState(readJson(STORAGE_KEY));
+  if (v2) return v2;
+  const migrated = migrateLegacy(readJson(LEGACY_STORAGE_KEY));
+  if (migrated) {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {
+      /* keep the v1 key if the v2 copy could not be persisted */
+    }
   }
-  if (new Set(players.map((p) => p.id)).size !== players.length) return null;
-
-  const deck = s.deck.map(mapCard);
-  if (deck.some((card) => card === null)) return null;
-
-  if (s.phase === 'playing') {
-    if (players.length < MIN_PLAYERS) return null;
-    if (seen.size !== universe.size) return null; // every card accounted for
-  }
-
-  const history = [];
-  for (const h of s.history) {
-    if (!h || typeof h.cardId !== 'string' || !players.some((p) => p.id === h.playerId)) return null;
-    history.push({ playerId: h.playerId, cardId: h.cardId });
-  }
-
-  return {
-    phase: s.phase,
-    includeJokers: s.includeJokers,
-    drawMode: s.drawMode,
-    players,
-    deck,
-    history,
-  };
+  return migrated;
 }
 
 // --- actions ------------------------------------------------------------------
@@ -184,7 +140,7 @@ function defaultPlayerName() {
 function addPlayer(name) {
   if (state.players.length >= MAX_PLAYERS) return false;
   const trimmed = name.trim().slice(0, 24) || defaultPlayerName();
-  state.players.push({ id: nextPlayerId(), name: trimmed, cards: [] });
+  state.players.push({ id: nextPlayerId(), name: trimmed, cards: [], shield: false });
   saveState();
   return true;
 }
@@ -208,10 +164,14 @@ function startGame() {
   if (state.players.length < MIN_PLAYERS) return;
   state.players.forEach((p) => {
     p.cards = [];
+    p.shield = false;
   });
   state.deck = shuffle(createDeck({ includeJokers: state.includeJokers }));
+  state.graveyard = [];
   state.history = [];
+  state.pending = null;
   state.phase = 'playing';
+  ui.fxPickerFor = null;
   saveState();
   render();
 }
@@ -235,33 +195,60 @@ function tookLeadAfterDraw(prevLeader, player) {
   return compareScores(evaluateHand(player.cards).score, prevLeader.score) > 0;
 }
 
-function dealRandom(playerId) {
-  const player = state.players.find((p) => p.id === playerId);
-  if (!player || state.deck.length === 0) return;
-  const prevLeader = currentLeader();
-  const card = state.deck.pop();
-  player.cards.push(card);
-  state.history.push({ playerId, cardId: card.id });
-  if (tookLeadAfterDraw(prevLeader, player)) {
-    ui.leadGlow = playerId;
+// Shared driver: the card is already in the drawer's hand and the record
+// begun. Advances until done or a target is needed; on done, commits history
+// and starts the resolution reveal queue.
+function advanceRecord(record, viaTarget = false, targetId = null) {
+  const result = viaTarget
+    ? applyTarget(state, record, targetId)
+    : advanceDraw(state, record);
+  if (result.status === 'need-target') {
+    state.pending = record;
+    ui.target = { effect: result.effect, cardId: result.cardId };
+    saveState();
+    render();
+    return;
   }
-  ui.justDrawn = { playerId, cardId: card.id };
+  state.pending = null;
+  ui.target = null;
+  state.history.push(record);
+  const fxSteps = record.steps.filter((s) => s.kind !== 'draw');
+  ui.fxQueue = fxSteps.length ? fxSteps : null;
+  if (!ui.fxQueue) celebrateIfLeadTaken(record.playerId);
   saveState();
   render();
   ui.justDrawn = null;
   ui.leadGlow = null;
 }
 
+// The celebration is judged AFTER full resolution (a sabotage can change the
+// leader as much as the draw itself).
+function celebrateIfLeadTaken(playerId) {
+  const player = state.players.find((p) => p.id === playerId);
+  if (player && tookLeadAfterDraw(ui.prevLeader, player)) ui.leadGlow = playerId;
+  ui.prevLeader = null;
+}
+
+function dealRandom(playerId) {
+  const player = state.players.find((p) => p.id === playerId);
+  if (!player || state.deck.length === 0 || state.pending) return;
+  ui.prevLeader = currentLeader();
+  const card = state.deck.pop();
+  player.cards.push(card);
+  ui.justDrawn = { playerId, cardId: card.id };
+  advanceRecord(beginRecord(playerId, 'deal', card.id, state.deck.length));
+}
+
 function pickCard(playerId, index) {
   const player = state.players.find((p) => p.id === playerId);
-  if (!player || index < 0 || index >= state.deck.length) return;
-  const prevLeader = currentLeader();
+  if (!player || index < 0 || index >= state.deck.length || state.pending) return;
+  ui.prevLeader = currentLeader();
   const [card] = state.deck.splice(index, 1);
   player.cards.push(card);
-  state.history.push({ playerId, cardId: card.id });
-  const tookLead = tookLeadAfterDraw(prevLeader, player);
+  const record = beginRecord(playerId, 'pick', card.id, index);
   ui.sheetFor = null;
-  ui.reveal = { playerId, cardId: card.id, stage: 1, tookLead };
+  // Two-stage flip reveal first; effects resolve when it's dismissed.
+  ui.reveal = { playerId, cardId: card.id, stage: 1, record };
   clearTimeout(revealTimer);
   revealTimer = setTimeout(() => {
     if (ui.reveal && ui.reveal.stage === 1) {
@@ -269,6 +256,7 @@ function pickCard(playerId, index) {
       render();
     }
   }, 900);
+  state.pending = record;
   saveState();
   render();
 }
@@ -277,21 +265,18 @@ function dismissReveal() {
   clearTimeout(revealTimer);
   const reveal = ui.reveal;
   ui.reveal = null;
-  if (reveal && reveal.tookLead) {
-    ui.leadGlow = reveal.playerId;
+  if (reveal && reveal.record) {
+    advanceRecord(reveal.record);
+    return;
   }
   render();
-  ui.leadGlow = null;
 }
 
 function undoLastDraw() {
-  const last = state.history.pop();
-  if (!last) return;
-  const player = state.players.find((p) => p.id === last.playerId);
-  // Piles are append-only, so the most recent draw is that player's last card.
-  if (player && player.cards.length && player.cards[player.cards.length - 1].id === last.cardId) {
-    state.deck.push(player.cards.pop());
-  }
+  if (state.pending) return; // mid-choice; resolve or reset first
+  const record = state.history.pop();
+  if (!record) return;
+  undoRecord(state, record);
   const viewed = state.players.find((p) => p.id === ui.viewerFor);
   if (viewed && viewed.cards.length === 0) ui.viewerFor = null;
   saveState();
@@ -306,8 +291,19 @@ function resetGame() {
   clearTimeout(revealTimer);
   ui.reveal = null;
   ui.leadGlow = null;
-  const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [] }));
-  state = { ...defaultState(), includeJokers: state.includeJokers, players: names };
+  ui.target = null;
+  ui.fxQueue = null;
+  ui.prevLeader = null;
+  ui.fxPickerFor = null;
+  const names = state.players.map((p) => ({ id: p.id, name: p.name, cards: [], shield: false }));
+  state = {
+    ...defaultState(),
+    includeJokers: state.includeJokers,
+    drawMode: state.drawMode,
+    effectsEnabled: state.effectsEnabled,
+    effectMap: { ...state.effectMap },
+    players: names,
+  };
   saveState();
   render();
 }
@@ -405,6 +401,19 @@ function setupScreen() {
       }</p>
     </section>
 
+    <section class="panel" aria-labelledby="mode-h">
+      <h2 id="mode-h">Draw mode</h2>
+      <div class="mode-toggle" role="group" aria-label="Draw mode">
+        <button class="btn" data-action="set-mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
+        <button class="btn" data-action="set-mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Pick</button>
+      </div>
+      <p class="setup-hint">${
+        state.drawMode === 'random'
+          ? 'Cards are dealt from the top of the shuffled deck.'
+          : 'The deck fans out face-down and each player taps a card.'
+      }</p>
+    </section>
+
     <section class="panel" aria-labelledby="deck-h">
       <h2 id="deck-h">Deck</h2>
       <div class="toggle-row">
@@ -420,15 +429,72 @@ function setupScreen() {
       </div>
     </section>
 
+    ${effectsSection()}
+
     <button class="btn btn-primary btn-block" data-action="start" ${canStart ? '' : 'disabled'}>
       Start game
     </button>
   `;
 }
 
-function playerPanel(player) {
+// Effect chips are colored per effect id via the fx-<id> class; the picker
+// opens inline under the grid for the tapped rank.
+function effectsSection() {
+  const grid = RANKS.map((rank) => {
+    const fx = state.effectMap[rank];
+    return (
+      `<button class="rank-chip${fx ? ` has-fx fx-${fx}` : ''}${ui.fxPickerFor === rank ? ' open' : ''}"` +
+      ` data-action="fx-chip" data-rank="${rank}"` +
+      ` aria-label="${rankLabel(rank)}: ${fx ? EFFECTS[fx].label : 'no effect'}">` +
+      `${rankLabel(rank)}${fx ? '<span class="fx-dot"></span>' : ''}</button>`
+    );
+  }).join('');
+
+  let picker = '';
+  if (ui.fxPickerFor !== null) {
+    const rank = ui.fxPickerFor;
+    const current = state.effectMap[rank] || null;
+    const options = [
+      `<button class="fx-opt${current === null ? ' sel' : ''}" data-action="fx-assign" data-rank="${rank}" data-fx="">` +
+        '<strong>None</strong><span>Just a normal card.</span></button>',
+      ...EFFECT_IDS.map(
+        (id) =>
+          `<button class="fx-opt fx-${id}${current === id ? ' sel' : ''}" data-action="fx-assign" data-rank="${rank}" data-fx="${id}">` +
+          `<strong>${EFFECTS[id].label}</strong><span>${EFFECTS[id].desc}</span></button>`
+      ),
+    ].join('');
+    picker = `
+      <div class="fx-picker" role="group" aria-label="Effect for ${rankLabel(rank)}">
+        <p class="fx-picker-title">Effect for <strong>${rankLabel(rank)}</strong></p>
+        ${options}
+      </div>`;
+  }
+
+  return `
+    <section class="panel" aria-labelledby="fx-h">
+      <h2 id="fx-h">Card effects</h2>
+      <div class="toggle-row">
+        <div class="toggle-copy">
+          <strong>Enable effects</strong>
+          <p>Ranks carry abilities that fire when drawn.</p>
+        </div>
+        <label class="switch">
+          <input type="checkbox" data-toggle="effects" ${state.effectsEnabled ? 'checked' : ''}
+                 aria-label="Enable card effects" />
+          <span class="track"></span><span class="thumb"></span>
+        </label>
+      </div>
+      ${state.effectsEnabled ? `<div class="rank-grid">${grid}</div>${picker}` : ''}
+    </section>
+  `;
+}
+
+// One tile per seat. Rank/crown/outs come from rankedEntries so the tiles ARE
+// the leaderboard; seat order never changes, only the badges update.
+function playerTile(player, meta) {
   const hand = evaluateHand(player.cards);
   const deckEmpty = state.deck.length === 0;
+  const locked = state.pending !== null;
   let fan = '<span class="fan-empty">No cards yet</span>';
   if (player.cards.length) {
     const bestSet = new Set(hand.bestFive);
@@ -441,63 +507,45 @@ function playerPanel(player) {
       hand.bestFive.map((card) => wrap(card, 'best')).join('') +
       spares.map((card) => wrap(card, 'spare')).join('');
   }
-  const actionLabel = state.drawMode === 'random' ? `Deal to ${esc(player.name)}` : `Pick for ${esc(player.name)}`;
+  const isLeader = meta.rank === 1 && hand;
+  const actionLabel = state.drawMode === 'random' ? 'Deal' : 'Pick';
   const action = state.drawMode === 'random' ? 'deal' : 'open-sheet';
   const fanAttrs = player.cards.length
     ? ` data-action="view-cards" data-player="${player.id}" role="button" tabindex="0"` +
       ` aria-label="View ${esc(player.name)}'s cards"`
     : '';
+  const outs =
+    meta.outs === undefined
+      ? ''
+      : `<span class="tile-outs">${
+          meta.outs
+            ? `${meta.outs} card${meta.outs === 1 ? '' : 's'} can take the lead`
+            : 'No single card takes the lead'
+        }</span>`;
 
   return `
-    <section class="panel player-panel">
-      <div class="player-head">
-        <h3 class="player-name">${esc(player.name)}</h3>
-        <span class="card-count">${player.cards.length} card${player.cards.length === 1 ? '' : 's'}</span>
+    <section class="tile${isLeader ? ' tile-leader' : ''}${ui.leadGlow === player.id ? ' tile-glow' : ''}">
+      <div class="tile-head">
+        <span class="tile-rank${isLeader ? ' lead' : ''}">${meta.rank}</span>
+        ${isLeader ? `<span class="tile-crown">${ICONS.crown}</span>` : ''}
+        <h3 class="tile-name">${esc(player.name)}</h3>
+        ${player.shield ? `<span class="tile-shield" aria-label="Shielded">${ICONS.shield}</span>` : ''}
+        <span class="tile-count">${player.cards.length}c</span>
       </div>
-      <div class="fan"${fanAttrs}>${fan}</div>
-      ${hand ? `<p class="hand-label">${esc(hand.name)}</p>` : ''}
-      <button class="btn btn-block" data-action="${action}" data-player="${player.id}" ${deckEmpty ? 'disabled' : ''}>
+      <div class="fan tile-fan"${fanAttrs}>${fan}</div>
+      <p class="tile-hand">${hand ? esc(hand.name) : '&nbsp;'}</p>
+      ${outs}
+      <button class="btn tile-btn" data-action="${action}" data-player="${player.id}"
+              ${deckEmpty || locked ? 'disabled' : ''}>
         ${deckEmpty ? 'Deck empty' : actionLabel}
       </button>
     </section>
   `;
 }
 
-function leaderboardHTML() {
-  const rows = rankedEntries()
-    .map((entry) => {
-      const leader = entry.rank === 1 && entry.hand;
-      return `
-      <li class="${leader ? 'lb-leader' : ''}${ui.leadGlow === entry.player.id ? ' lb-glow' : ''}">
-        <span class="lb-rank">${entry.rank}</span>
-        ${leader ? `<span class="lb-crown">${ICONS.crown}</span>` : ''}
-        <span class="lb-body">
-          <span class="lb-name">${esc(entry.player.name)}</span>
-          <span class="lb-hand">${entry.hand ? esc(entry.hand.name) : 'No cards yet'}</span>
-          ${
-            entry.outs === undefined
-              ? ''
-              : `<span class="lb-outs">${
-                  entry.outs
-                    ? `${entry.outs} card${entry.outs === 1 ? '' : 's'} can take the lead`
-                    : 'No single card takes the lead'
-                }</span>`
-          }
-        </span>
-        <span class="lb-count">${entry.player.cards.length}c</span>
-      </li>`;
-    })
-    .join('');
-  return `
-    <section class="panel leaderboard" aria-labelledby="lb-h">
-      <h2 id="lb-h">Leaderboard</h2>
-      <ol>${rows}</ol>
-    </section>
-  `;
-}
-
 function dealerBar() {
   const left = state.deck.length;
+  const burned = state.graveyard.length;
   const empty = left === 0;
   return `
     <div class="dealer-bar">
@@ -508,20 +556,17 @@ function dealerBar() {
         <div class="deck-meta" aria-live="polite">
           <p class="eyebrow" style="margin:0">Card Drawer</p>
           <span class="deck-count${empty ? ' deck-empty-note' : ''}">
-            ${empty ? 'Deck empty' : `${left} <span class="unit">card${left === 1 ? '' : 's'} left</span>`}
+            ${empty ? 'Deck empty' : `${left} <span class="unit">left</span>`}
+            ${burned ? `<span class="burned-count">&middot; ${burned} burned</span>` : ''}
           </span>
         </div>
         <div class="dealer-actions">
           <button class="btn btn-quiet btn-icon" data-action="undo" aria-label="Undo last draw"
-                  ${state.history.length ? '' : 'disabled'}>${ICONS.undo}</button>
+                  ${state.history.length && !state.pending ? '' : 'disabled'}>${ICONS.undo}</button>
           <button class="btn ${ui.confirmReset ? 'btn-danger' : 'btn-quiet'}" data-action="reset">
             ${ui.confirmReset ? 'Confirm' : 'Reset'}
           </button>
         </div>
-      </div>
-      <div class="mode-toggle" role="group" aria-label="Draw mode">
-        <button class="btn" data-action="mode" data-mode="random" aria-pressed="${state.drawMode === 'random'}">Random</button>
-        <button class="btn" data-action="mode" data-mode="manual" aria-pressed="${state.drawMode === 'manual'}">Pick</button>
       </div>
     </div>
   `;
@@ -604,8 +649,6 @@ function revealOverlayHTML() {
     <div class="overlay reveal-overlay" role="dialog" aria-modal="true"
          aria-label="${esc(player.name)}'s best hand" data-action="reveal-done">
       <div class="reveal-stage">
-        ${ui.reveal.tookLead ? SPARKLES : ''}
-        ${ui.reveal.tookLead ? `<div class="lead-ribbon">${ICONS.crown}<span>Takes the lead</span></div>` : ''}
         <div class="reveal-best">${hand.bestFive
           .map((c) => cardWrap(c, { group: c.id === ui.reveal.cardId ? 'just' : '' }))
           .join('')}</div>
@@ -617,16 +660,129 @@ function revealOverlayHTML() {
 }
 
 function gameScreen() {
-  const overlayOpen = ui.viewerFor !== null || ui.sheetFor !== null || ui.reveal !== null;
+  const metas = new Map(
+    rankedEntries().map((entry) => [entry.player.id, { rank: entry.rank, outs: entry.outs }])
+  );
+  const overlayOpen =
+    ui.viewerFor !== null || ui.sheetFor !== null || ui.reveal !== null ||
+    ui.target !== null || ui.fxQueue !== null;
   return `
-    <div class="board"${overlayOpen ? ' inert' : ''}>
+    <div class="board board-play"${overlayOpen ? ' inert' : ''}>
       ${dealerBar()}
-      ${state.players.map(playerPanel).join('')}
-      ${leaderboardHTML()}
+      <div class="tile-grid tile-grid-${Math.min(state.players.length, 10)}">
+        ${state.players.map((p) => playerTile(p, metas.get(p.id))).join('')}
+      </div>
     </div>
     ${ui.viewerFor !== null ? viewerHTML() : ''}
     ${ui.sheetFor !== null ? sheetHTML() : ''}
     ${ui.reveal ? revealOverlayHTML() : ''}
+    ${ui.target ? targetOverlayHTML() : ''}
+    ${ui.fxQueue ? fxOverlayHTML() : ''}
+  `;
+}
+
+function targetOverlayHTML() {
+  const record = state.pending;
+  if (!record || !ui.target) return '';
+  const drawer = state.players.find((p) => p.id === record.playerId);
+  const fx = EFFECTS[ui.target.effect];
+  const card = drawer.cards.find((c) => c.id === ui.target.cardId);
+  const rows = legalTargets(state, record.playerId)
+    .map(
+      (p) => `
+      <li>
+        <button class="btn target-row" data-action="choose-target" data-target="${p.id}">
+          <span class="target-name">${esc(p.name)}</span>
+          ${p.shield ? `<span class="target-shield">${ICONS.shield} shielded</span>` : ''}
+          <span class="target-count">${p.cards.length}c</span>
+        </button>
+      </li>`
+    )
+    .join('');
+  return `
+    <div class="overlay target-overlay" role="dialog" aria-modal="true" aria-label="${esc(fx.label)}">
+      <div class="panel">
+        <h2 class="fx-title fx-${ui.target.effect}">${esc(fx.label)}</h2>
+        <div class="target-card">${card ? cardWrap(card) : ''}</div>
+        <p class="target-copy">${esc(drawer.name)} — choose an opponent.</p>
+        <ul class="target-list">${rows}</ul>
+      </div>
+    </div>
+  `;
+}
+
+// One overlay per resolution step; tap advances the queue.
+function fxOverlayHTML() {
+  const step = ui.fxQueue[0];
+  const record = state.history[state.history.length - 1];
+  const drawer = state.players.find((p) => p.id === record.playerId);
+  const targetPlayer =
+    step.targetId !== undefined ? state.players.find((p) => p.id === step.targetId) : null;
+  const cardById = (id) => {
+    const all = state.players.flatMap((p) => p.cards).concat(state.deck, state.graveyard);
+    return all.find((c) => c.id === id) || null;
+  };
+  let effect = '';
+  let shown = null;
+  let caption = '';
+  switch (step.kind) {
+    case 'bonus-draw':
+      effect = 'bonus';
+      shown = cardById(step.cardId);
+      caption = `${esc(drawer.name)} draws again`;
+      break;
+    case 'burn':
+      effect = 'burn';
+      shown = cardById(step.burnedId);
+      caption = 'Burned from the deck';
+      break;
+    case 'sabotage':
+      effect = 'sabotage';
+      shown = cardById(step.destroyedId);
+      caption = `${esc(targetPlayer.name)}'s card is destroyed`;
+      break;
+    case 'steal':
+      effect = 'steal';
+      shown = cardById(step.stolenId);
+      caption = `${esc(drawer.name)} steals from ${esc(targetPlayer.name)}`;
+      break;
+    case 'swap':
+      effect = 'swap';
+      caption = `${esc(drawer.name)} swaps hands with ${esc(targetPlayer.name)}`;
+      break;
+    case 'shield-gain':
+      effect = 'shield';
+      caption = `${esc(drawer.name)} raises a shield`;
+      break;
+    case 'shield-noop':
+      effect = 'shield';
+      caption = `${esc(drawer.name)} is already shielded`;
+      break;
+    case 'blocked':
+      effect = 'shield';
+      caption = `${esc(targetPlayer.name)}'s shield blocks it`;
+      break;
+    case 'fizzle':
+      effect = step.effect;
+      caption = 'No effect';
+      break;
+    default:
+      break;
+  }
+  const label = EFFECTS[effect] ? EFFECTS[effect].label : '';
+  return `
+    <div class="overlay reveal-overlay fx-overlay" role="dialog" aria-modal="true"
+         aria-label="${esc(label)}" data-action="fx-continue">
+      <div class="reveal-stage">
+        <p class="fx-title fx-${effect}">${esc(label)}</p>
+        ${shown ? `<div class="reveal-card">${cardWrap(shown)}</div>` : ''}
+        ${effect === 'shield' && !shown ? `<div class="fx-big-shield">${ICONS.shield}</div>` : ''}
+        <p class="reveal-caption">${caption}</p>
+        <button class="btn btn-primary" data-action="fx-continue">
+          ${ui.fxQueue.length > 1 ? 'Next' : 'Done'}
+        </button>
+      </div>
+    </div>
   `;
 }
 
@@ -646,6 +802,7 @@ function resumeOverlay() {
 }
 
 function render() {
+  document.body.classList.toggle('in-game', state.phase === 'playing' && !ui.resume);
   const screen = state.phase === 'setup' ? setupScreen() : gameScreen();
   app.innerHTML = ui.resume ? `<div class="board" inert>${screen}</div>${resumeOverlay()}` : screen;
 }
@@ -701,11 +858,41 @@ app.addEventListener('click', (event) => {
     case 'undo':
       undoLastDraw();
       break;
-    case 'mode':
+    case 'choose-target': {
+      const record = state.pending;
+      if (record) advanceRecord(record, true, Number(target.dataset.target));
+      break;
+    }
+    case 'fx-continue': {
+      ui.fxQueue = ui.fxQueue && ui.fxQueue.length > 1 ? ui.fxQueue.slice(1) : null;
+      if (!ui.fxQueue) {
+        const last = state.history[state.history.length - 1];
+        if (last) celebrateIfLeadTaken(last.playerId);
+      }
+      render();
+      ui.leadGlow = null;
+      break;
+    }
+    case 'set-mode':
       state.drawMode = target.dataset.mode === 'manual' ? 'manual' : 'random';
       saveState();
       render();
       break;
+    case 'fx-chip': {
+      const rank = Number(target.dataset.rank);
+      ui.fxPickerFor = ui.fxPickerFor === rank ? null : rank;
+      render();
+      break;
+    }
+    case 'fx-assign': {
+      const rank = Number(target.dataset.rank);
+      if (target.dataset.fx) state.effectMap[rank] = target.dataset.fx;
+      else delete state.effectMap[rank];
+      ui.fxPickerFor = null;
+      saveState();
+      render();
+      break;
+    }
     case 'reset':
       if (ui.confirmReset) {
         resetGame();
@@ -722,6 +909,12 @@ app.addEventListener('click', (event) => {
     case 'resume':
       state = ui.resume;
       ui.resume = null;
+      if (state.pending) {
+        const record = state.pending;
+        state.pending = null;
+        advanceRecord(record);
+        break;
+      }
       saveState();
       render();
       break;
@@ -760,6 +953,12 @@ app.addEventListener('change', (event) => {
     saveState();
     render();
   }
+  if (event.target.closest('[data-toggle="effects"]')) {
+    state.effectsEnabled = event.target.checked;
+    ui.fxPickerFor = null;
+    saveState();
+    render();
+  }
 });
 
 app.addEventListener('keydown', (event) => {
@@ -773,6 +972,17 @@ app.addEventListener('keydown', (event) => {
 
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape') return;
+  if (ui.target) return;
+  if (ui.fxQueue) {
+    ui.fxQueue = ui.fxQueue.length > 1 ? ui.fxQueue.slice(1) : null;
+    if (!ui.fxQueue) {
+      const last = state.history[state.history.length - 1];
+      if (last) celebrateIfLeadTaken(last.playerId);
+    }
+    render();
+    ui.leadGlow = null;
+    return;
+  }
   if (ui.reveal) {
     dismissReveal();
     return;
