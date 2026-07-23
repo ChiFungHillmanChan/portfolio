@@ -268,6 +268,7 @@ function pickCard(playerId, index) {
       render();
     }
   }, 900);
+  state.pending = record;
   saveState();
   render();
 }
