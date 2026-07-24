@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 420" width="380" height="420">
+  <!-- Granny's striking right arm + red slipper, authored in the RAISED pose.
+       Shoulder pivot is at (300,360) in this viewBox — scene-illustrated.js
+       rotates the whole file around that point (drawImage offset -300,-360).
+       At rotation 0 the slipper is overhead; ARM_STRIKE (-1.15 rad) sweeps it
+       down-left onto the paper. Slipper centre stays at (100,60).
+       The arm is drawn nearly straight (elbow ≈(238,225)) so that at the
+       strike frame the slim forearm — not the wide sleeve — passes the face. -->
+  <g stroke="#3a2317" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
+
+    <!-- ============ RED SLIPPER (local frame: +x = heel, toward the hand) ============ -->
+    <g transform="translate(100 60) rotate(39)">
+      <!-- sole: wide footprint, big rounded toe up-left; the fist grips the heel
+           so red rim shows above the fingers and below the thumb -->
+      <path d="M-80 0 Q-83 -23 -60 -31 Q-32 -40 -2 -33 Q34 -26 56 -22 Q74 -18 75 0
+               Q75 20 57 24 Q34 29 -2 30 Q-40 34 -62 25 Q-78 18 -80 0 Z" fill="#8a2b1e"/>
+      <!-- insole (lighter, we look at the top of the slipper) -->
+      <path d="M-68 0 Q-70 -17 -52 -23 Q-30 -30 -2 -24 Q28 -18 48 -14 Q62 -11 62 0
+               Q62 13 48 16 Q28 20 -2 21 Q-38 24 -55 17 Q-67 12 -68 0 Z" fill="#b5533a" stroke-width="4"/>
+      <!-- heel + ball-of-foot pads -->
+      <ellipse cx="44" cy="2" rx="13" ry="7" fill="#8f3320" stroke-width="2.5"/>
+      <ellipse cx="2" cy="2" rx="15" ry="8" fill="#8f3320" stroke-width="2.5"/>
+      <!-- rim stitching -->
+      <path d="M-74 0 Q-76 -19 -56 -26 Q-31 -34 -2 -28 Q32 -21 54 -17 Q68 -14 68 0
+               Q68 15 52 19" fill="none" stroke="#e8b790" stroke-width="2.2" stroke-dasharray="5 6" opacity="0.85"/>
+      <!-- vamp band across the mid-foot, insole showing on both sides -->
+      <path d="M-48 -28 Q-34 -34 -16 -31 L-20 16 Q-38 20 -54 15 Z" fill="#7e2418" stroke-width="5"/>
+      <path d="M-44 -20 Q-33 -24 -22 -21 M-47 6 Q-35 10 -24 7" fill="none" stroke="#a8442f" stroke-width="2.5"/>
+    </g>
+
+    <!-- ============ BARE FOREARM (slim: wrist up-left, elbow down-right) ============ -->
+    <path d="M170 115 Q159 119 156 130 Q154 141 163 147 Q189 190 221 237 Q230 248 243 242 Q254 235 250 222 Q226 172 196 128 Q188 116 170 115 Z" fill="#d99a63"/>
+    <path d="M166 142 Q196 190 224 232" fill="none" stroke="#c07f4a" stroke-width="4.5" opacity="0.8"/>
+    <path d="M188 132 Q214 172 236 206" fill="none" stroke="#c98c55" stroke-width="3" opacity="0.6"/>
+
+    <!-- ============ SLEEVE (slim taper from the elbow down into the cap) ============ -->
+    <path d="M260 214 Q276 238 292 268 Q308 300 322 334 Q330 352 314 362 Q296 372 278 364
+             Q262 356 254 334 Q240 300 228 272 Q216 246 214 236 Q210 220 224 210 Q244 200 260 214 Z" fill="#d8a93a"/>
+    <path d="M230 262 Q246 252 268 264" fill="none" stroke="#b8892a" stroke-width="5"/>
+    <path d="M244 296 Q260 286 284 298" fill="none" stroke="#b8892a" stroke-width="5"/>
+    <path d="M256 326 Q272 318 296 328" fill="none" stroke="#b8892a" stroke-width="4"/>
+    <path d="M222 244 Q238 292 256 328" fill="none" stroke="#e8c260" stroke-width="4" opacity="0.6"/>
+
+    <!-- rolled cuff band across the sleeve end -->
+    <path d="M214 236 Q210 220 224 210 Q244 200 260 214 Q268 224 272 236 Q252 248 232 246 Q220 244 214 236 Z"
+          fill="#c3922e" stroke-width="4"/>
+    <path d="M218 230 Q240 242 268 234" fill="none" stroke="#9a7020" stroke-width="3.5"/>
+    <path d="M223 218 Q243 230 265 224" fill="none" stroke="#9a7020" stroke-width="3.5"/>
+
+    <!-- ============ HAND: fist around the slipper heel ============ -->
+    <!-- four fingers curled over onto the insole (ink underlay + skin) -->
+    <path d="M130 60 L152 86 M141 68 L163 94 M152 76 L174 102 M163 85 L183 108"
+          fill="none" stroke="#3a2317" stroke-width="17"/>
+    <path d="M130 60 L152 86 M141 68 L163 94 M152 76 L174 102 M163 85 L183 108"
+          fill="none" stroke="#d99a63" stroke-width="11"/>
+    <!-- back of the hand over the finger bases -->
+    <path d="M150 88 Q139 94 138 108 Q138 124 152 130 Q168 136 181 128 Q191 120 189 106
+             Q187 91 172 87 Q159 83 150 88 Z" fill="#d99a63" stroke-width="6"/>
+    <!-- knuckle dimples -->
+    <path d="M150 96 q6 -4 11 0 M163 94 q6 -4 11 0" fill="none" stroke="#b5723f" stroke-width="2.4"/>
+    <!-- thumb pressing the sole's lower rim -->
+    <path d="M150 116 L132 103" fill="none" stroke="#3a2317" stroke-width="16"/>
+    <path d="M150 116 L132 103" fill="none" stroke="#d99a63" stroke-width="10"/>
+    <!-- wrist crease -->
+    <path d="M170 124 q8 5 9 13" fill="none" stroke="#b5723f" stroke-width="2.6"/>
+
+    <!-- ============ SHOULDER CAP (hides the rotation seam) ============ -->
+    <circle cx="300" cy="360" r="36" fill="#d8a93a"/>
+    <path d="M281 346 Q290 358 294 372" fill="none" stroke="#b8892a" stroke-width="4"/>
+    <path d="M285 340 Q300 332 316 340" fill="none" stroke="#e8c260" stroke-width="4"/>
+  </g>
+</svg>

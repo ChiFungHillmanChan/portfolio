@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="description" content="打小人 — 網上打小人,寫個名、上載相,用拖鞋幫你出啖氣。" />
+  <title>打小人</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <meta name="theme-color" content="#1a0f0a" />
+  <link rel="apple-touch-icon" href="icon-192.png" />
+</head>
+<body>
+  <noscript><p class="noscript">打小人需要 JavaScript 先開得壇。請開啟 JavaScript 再入嚟。</p></noscript>
+  <div id="app"></div>
+  <script type="module" src="game.js"></script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js').catch(function (err) {
+          console.warn('[pwa] service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
