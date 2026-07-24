@@ -18,10 +18,11 @@ export const HIP = { x: 620, y: 980 };       // lean pivot, stage coords
 export const UPPER = { w: 380, h: 420, shx: 300, shy: 360, ex: 242, ey: 232 };
 export const FORE = { w: 380, h: 420, ex: 242, ey: 232, slx: 100, sly: 60 };
 
-// Swing timing. Contact at 0.105s keeps the tap feeling responsive while
-// leaving room for a real wind-up; the smack is scheduled to land there.
-export const ANTICIPATE_S = 0.04;   // rock back
-export const DRIVE_S = 0.065;       // accelerate onto the paper
+// Swing timing. The smack is scheduled to land at contact, so this doubles as
+// the tap-to-sound latency — kept at 0.09s because touch players feel anything
+// past ~0.1s as lag, while still leaving the wind-up two frames to read.
+export const ANTICIPATE_S = 0.035;  // rock back
+export const DRIVE_S = 0.055;       // accelerate onto the paper
 export const CONTACT_S = ANTICIPATE_S + DRIVE_S;
 export const HOLD_S = 0.035;        // slipper pressed on the paper
 export const RECOIL_S = 0.13;

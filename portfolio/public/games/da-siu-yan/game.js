@@ -3,7 +3,7 @@
 import { createScene, PAPER, STAGE_W, STAGE_H } from './scene.js';
 import { createIllustratedScene, inPaper as inIllustratedPaper } from './scene-illustrated.js';
 import { createDamage } from './damage-model.js';
-import { buildRitualSchedule, createSequencer, createShuffleLooper, RITUAL_SECONDS, BURN_AT } from './chant-sequencer.js';
+import { buildRitualSchedule, createSequencer, createShuffleLooper, RITUAL_SECONDS, BURN_AT, LINE_GAP } from './chant-sequencer.js';
 import { createRecorder, extFor } from './recorder.js';
 import { createAudioEngine } from './audio.js';
 import { INTRO, LINES } from './chant-lines.js';
@@ -131,6 +131,9 @@ canvas.addEventListener('pointermove', (e) => {
   pointer.x = p.x; pointer.y = p.y;
 });
 canvas.addEventListener('pointerdown', (e) => {
+  // stop the touch turning into a scroll/selection/compat mouse event — with
+  // touch-action:none on the canvas this is what keeps mashing instant
+  e.preventDefault();
   const p = toStage(e);
   pointer.x = p.x; pointer.y = p.y;
   if (!mode) return;
@@ -194,7 +197,7 @@ async function start(which) {
   } else {
     const ids = [INTRO.id, ...LINES.map((l) => l.id)];
     looper = createShuffleLooper(ids, Math.random);
-    nextFreeClipAt = nowS + 0.6;
+    nextFreeClipAt = nowS + LINE_GAP;
   }
   lastFrame = performance.now();
   rafId = requestAnimationFrame(frame);
@@ -228,7 +231,7 @@ function frame(nowMs) {
     if (t >= RITUAL_SECONDS) { stop(); return; }
   } else if (mode === 'free' && nowS >= nextFreeClipAt) {
     const dur = audio.playClip(looper());
-    nextFreeClipAt = nowS + dur + 1.2;
+    nextFreeClipAt = nowS + dur + LINE_GAP;   // same breath as the ritual
   }
 
   comboFlash = Math.max(0, comboFlash - dt * 0.9);
