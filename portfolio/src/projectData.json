@@ -20,6 +20,47 @@
         ]
     },
     {
+        "id": 15,
+        "title": "Scene — macOS Workspace Switcher",
+        "shortDescription": "A native macOS menu-bar app that switches apps, window layouts, and Focus modes with one shortcut. 11 pre-built layouts, ⌘⌃1–9 global hotkeys, and automation triggers — keyboard-first and fully open source.",
+        "fullDescription": "Scene is a SwiftUI menu-bar app that collapses multi-app workflows into a single keystroke. Each 'scene' bundles the apps you want open, a window layout (11 customisable pre-builds — halves, thirds, grids, L-shapes), and a macOS Focus mode; pressing ⌘⌃1–9 launches missing apps, snaps windows into place, and toggles the matching Focus system-wide. It supports drag-swap between windows and automation triggers (monitor connection, time-of-day, calendar events) so workspaces can appear without any input at all. Runs with zero telemetry, ships notarised by Apple, supports both Apple Silicon and Intel on macOS 14+, and is released open source under MIT. The accompanying landing page at scene.hillmanchan.com is a keyboard-first marketing site — calm, hotkey-driven, and out of the user's way — designed to mirror the product's 'one click, your workspace appears' feel.",
+        "image": "scene.jpg",
+        "url": "https://scene.hillmanchan.com",
+        "category": "program",
+        "sourceCode": "https://github.com/ChiFungHillmanChan/macbook-resizer",
+        "demoUrl": "https://scene.hillmanchan.com",
+        "liveDemo": "scene_demo.mp4",
+        "technologies": [
+            "Swift",
+            "SwiftUI",
+            "AppKit",
+            "macOS",
+            "Accessibility API",
+            "Focus Modes"
+        ]
+    },
+    {
+        "id": 2,
+        "title": "AceInterview — Interview Prep & Resume Tools",
+        "shortDescription": "An AI-powered interview preparation platform — job requirement analysis, resume analysis and building, an adaptive AI interview coach, and coding assessments, all in one workspace.",
+        "fullDescription": "AceInterview is a Django platform that turns a job posting into a preparation plan. Paste a role, company, and job description and it extracts the required skills, experience level, and keywords, then scores your resume against them and highlights the gaps. On top of that analysis it runs a personal AI interview coach that builds a private Career Memory from your own history, asks adaptive follow-up questions, and gives evidence-based feedback rather than generic praise — plus a coding assessment mode for technical rounds. Powered by Google Gemini on the backend, it is deployed on Vercel and free to try in the browser.",
+        "image": "ace_interview.png",
+        "url": "https://interviewprep-ruby.vercel.app",
+        "category": "fullstack",
+        "sourceCode": "https://github.com/ChiFungHillmanChan/interview_prep_proj",
+        "demoUrl": "https://interviewprep-ruby.vercel.app",
+        "liveDemo": "dashboard-demo.mp4",
+        "technologies": [
+            "Python",
+            "Django",
+            "Google Gemini",
+            "JavaScript",
+            "HTML",
+            "CSS",
+            "Vercel"
+        ]
+    },
+    {
         "id": 16,
         "title": "Cosy Loops — Handmade Crochet E-Commerce",
         "shortDescription": "A multilingual e-commerce storefront for a UK-based handmade crochet brand — plushies, charms, keyrings, home décor, and bags, with cart, newsletter, and Etsy/Instagram integration.",
@@ -63,26 +104,6 @@
         ]
     },
     {
-        "id": 15,
-        "title": "Scene — macOS Workspace Switcher",
-        "shortDescription": "A native macOS menu-bar app that switches apps, window layouts, and Focus modes with one shortcut. 11 pre-built layouts, ⌘⌃1–9 global hotkeys, and automation triggers — keyboard-first and fully open source.",
-        "fullDescription": "Scene is a SwiftUI menu-bar app that collapses multi-app workflows into a single keystroke. Each 'scene' bundles the apps you want open, a window layout (11 customisable pre-builds — halves, thirds, grids, L-shapes), and a macOS Focus mode; pressing ⌘⌃1–9 launches missing apps, snaps windows into place, and toggles the matching Focus system-wide. It supports drag-swap between windows and automation triggers (monitor connection, time-of-day, calendar events) so workspaces can appear without any input at all. Runs with zero telemetry, ships notarised by Apple, supports both Apple Silicon and Intel on macOS 14+, and is released open source under MIT. The accompanying landing page at scene.hillmanchan.com is a keyboard-first marketing site — calm, hotkey-driven, and out of the user's way — designed to mirror the product's 'one click, your workspace appears' feel.",
-        "image": "scene.jpg",
-        "url": "https://scene.hillmanchan.com",
-        "category": "program",
-        "sourceCode": "https://github.com/ChiFungHillmanChan/macbook-resizer",
-        "demoUrl": "https://scene.hillmanchan.com",
-        "liveDemo": "scene_demo.mp4",
-        "technologies": [
-            "Swift",
-            "SwiftUI",
-            "AppKit",
-            "macOS",
-            "Accessibility API",
-            "Focus Modes"
-        ]
-    },
-    {
         "id": 11,
         "title": "System Design",
         "shortDescription": "An interactive system design learning platform covering 28 topics — from load balancers and caches to payment systems and AI agent security — with inline SVG architecture diagrams.",
@@ -99,27 +120,6 @@
             "TailwindCSS",
             "JavaScript",
             "System Design"
-        ]
-    },
-    {
-        "id": 2,
-        "title": "AceInterview — Interview Prep & Resume Tools",
-        "shortDescription": "An AI-powered interview preparation platform — job requirement analysis, resume analysis and building, an adaptive AI interview coach, and coding assessments, all in one workspace.",
-        "fullDescription": "AceInterview is a Django platform that turns a job posting into a preparation plan. Paste a role, company, and job description and it extracts the required skills, experience level, and keywords, then scores your resume against them and highlights the gaps. On top of that analysis it runs a personal AI interview coach that builds a private Career Memory from your own history, asks adaptive follow-up questions, and gives evidence-based feedback rather than generic praise — plus a coding assessment mode for technical rounds. Powered by Google Gemini on the backend, it is deployed on Vercel and free to try in the browser.",
-        "image": "ace_interview.png",
-        "url": "https://interviewprep-ruby.vercel.app",
-        "category": "fullstack",
-        "sourceCode": "https://github.com/ChiFungHillmanChan/interview_prep_proj",
-        "demoUrl": "https://interviewprep-ruby.vercel.app",
-        "liveDemo": "dashboard-demo.mp4",
-        "technologies": [
-            "Python",
-            "Django",
-            "Google Gemini",
-            "JavaScript",
-            "HTML",
-            "CSS",
-            "Vercel"
         ]
     },
     {
