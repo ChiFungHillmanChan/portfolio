@@ -1,11 +1,19 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 420" width="380" height="420">
-  <!-- Granny's striking right arm + red slipper, authored in the RAISED pose.
-       Shoulder pivot is at (300,360) in this viewBox — scene-illustrated.js
-       rotates the whole file around that point (drawImage offset -300,-360).
-       At rotation 0 the slipper is overhead; ARM_STRIKE (-1.15 rad) sweeps it
-       down-left onto the paper. Slipper centre stays at (100,60).
-       The arm is drawn nearly straight (elbow ≈(238,225)) so that at the
-       strike frame the slim forearm — not the wide sleeve — passes the face. -->
+  <!-- Granny's FOREARM segment: bare forearm + fist + red slipper. The other
+       half of the arm is art/granny-arm-upper.svg. Both files keep the original
+       single-sprite coordinates, so composing them with the forearm rotated 0
+       about the elbow reproduces the old art/granny-arm.svg exactly.
+
+       Elbow pivot is (242,232) in this viewBox — scene-illustrated.js rotates
+       this file around that point (drawImage offset -242,-232) by
+       shoulder+elbow. Slipper centre stays at (100,60).
+
+       Draw this file BEFORE granny-arm-upper.svg: the upper arm's rolled cuff
+       is what hides the elbow seam, the same way its shoulder cap hides the
+       shoulder seam. -->
+  <!-- elbow filler: rotation-invariant (centred on the pivot), so the joint
+       never opens a gap. Stays under the cuff at every angle we animate. -->
+  <circle cx="242" cy="232" r="23" fill="#d99a63" stroke="none"/>
   <g stroke="#3a2317" stroke-width="7" stroke-linejoin="round" stroke-linecap="round">
 
     <!-- ============ RED SLIPPER (local frame: +x = heel, toward the hand) ============ -->
@@ -33,20 +41,6 @@
     <path d="M166 142 Q196 190 224 232" fill="none" stroke="#c07f4a" stroke-width="4.5" opacity="0.8"/>
     <path d="M188 132 Q214 172 236 206" fill="none" stroke="#c98c55" stroke-width="3" opacity="0.6"/>
 
-    <!-- ============ SLEEVE (slim taper from the elbow down into the cap) ============ -->
-    <path d="M260 214 Q276 238 292 268 Q308 300 322 334 Q330 352 314 362 Q296 372 278 364
-             Q262 356 254 334 Q240 300 228 272 Q216 246 214 236 Q210 220 224 210 Q244 200 260 214 Z" fill="#d8a93a"/>
-    <path d="M230 262 Q246 252 268 264" fill="none" stroke="#b8892a" stroke-width="5"/>
-    <path d="M244 296 Q260 286 284 298" fill="none" stroke="#b8892a" stroke-width="5"/>
-    <path d="M256 326 Q272 318 296 328" fill="none" stroke="#b8892a" stroke-width="4"/>
-    <path d="M222 244 Q238 292 256 328" fill="none" stroke="#e8c260" stroke-width="4" opacity="0.6"/>
-
-    <!-- rolled cuff band across the sleeve end -->
-    <path d="M214 236 Q210 220 224 210 Q244 200 260 214 Q268 224 272 236 Q252 248 232 246 Q220 244 214 236 Z"
-          fill="#c3922e" stroke-width="4"/>
-    <path d="M218 230 Q240 242 268 234" fill="none" stroke="#9a7020" stroke-width="3.5"/>
-    <path d="M223 218 Q243 230 265 224" fill="none" stroke="#9a7020" stroke-width="3.5"/>
-
     <!-- ============ HAND: fist around the slipper heel ============ -->
     <!-- four fingers curled over onto the insole (ink underlay + skin) -->
     <path d="M130 60 L152 86 M141 68 L163 94 M152 76 L174 102 M163 85 L183 108"
@@ -63,10 +57,5 @@
     <path d="M150 116 L132 103" fill="none" stroke="#d99a63" stroke-width="10"/>
     <!-- wrist crease -->
     <path d="M170 124 q8 5 9 13" fill="none" stroke="#b5723f" stroke-width="2.6"/>
-
-    <!-- ============ SHOULDER CAP (hides the rotation seam) ============ -->
-    <circle cx="300" cy="360" r="36" fill="#d8a93a"/>
-    <path d="M281 346 Q290 358 294 372" fill="none" stroke="#b8892a" stroke-width="4"/>
-    <path d="M285 340 Q300 332 316 340" fill="none" stroke="#e8c260" stroke-width="4"/>
   </g>
 </svg>

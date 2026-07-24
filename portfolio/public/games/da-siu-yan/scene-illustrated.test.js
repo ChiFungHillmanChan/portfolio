@@ -1,49 +1,192 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  swingPhase, armAngle, ARM_IDLE, ARM_STRIKE, SWING_DOWN_S, SWING_BACK_S,
+  swingPose, armPose, swingActivity, slipperPoint, aimFor,
+  ANTICIPATE_S, DRIVE_S, CONTACT_S, HOLD_S, RECOIL_S, SETTLE_S, SWING_S,
+  SHOULDER_READY, SHOULDER_COCK, SHOULDER_STRIKE,
+  ELBOW_READY, ELBOW_COCK, ELBOW_STRIKE, AIM_LIMIT, LEAN_STRIKE, PIVOT,
   IPAPER, paperLocal, inPaper
 } from './scene-illustrated.js';
 
-test('swingPhase is 0 before a strike and for invalid input', () => {
-  assert.equal(swingPhase(-1), 0);
-  assert.equal(swingPhase(NaN), 0);
-  assert.equal(swingPhase(Infinity), 0);
-});
+// ── rig: resting stance ────────────────────────────────────────────────────
 
-test('swingPhase rises monotonically to 1 during the down-swing', () => {
-  let prev = -1;
-  for (let i = 0; i <= 10; i++) {
-    const p = swingPhase((i / 10) * SWING_DOWN_S);
-    assert.ok(p >= prev, `phase must not decrease (t=${i})`);
-    assert.ok(p >= 0 && p <= 1);
-    prev = p;
+test('swingPose rests in the ready stance before, outside and long after a swing', () => {
+  for (const since of [-1, NaN, Infinity, SWING_S, SWING_S + 10]) {
+    const p = swingPose(since);
+    assert.equal(p.shoulder, SHOULDER_READY, `shoulder at since=${since}`);
+    assert.equal(p.elbow, ELBOW_READY, `elbow at since=${since}`);
+    assert.equal(p.lean, 0, `lean at since=${since}`);
   }
-  assert.equal(swingPhase(SWING_DOWN_S), 1);
 });
 
-test('swingPhase falls monotonically back to 0 during the return', () => {
-  let prev = 2;
-  for (let i = 0; i <= 10; i++) {
-    const p = swingPhase(SWING_DOWN_S + (i / 10) * SWING_BACK_S);
-    assert.ok(p <= prev, `phase must not increase on return (t=${i})`);
-    assert.ok(p >= 0 && p <= 1);
-    prev = p;
-  }
-  assert.equal(swingPhase(SWING_DOWN_S + SWING_BACK_S), 0);
-  assert.equal(swingPhase(SWING_DOWN_S + SWING_BACK_S + 5), 0);
+test('the ready stance keeps the elbow bent — she must not idle as a straight pole', () => {
+  assert.ok(Math.abs(ELBOW_READY) > 0.15, `ready elbow ${ELBOW_READY} is nearly straight`);
 });
 
-test('armAngle hits full strike angle at the bottom of the swing', () => {
-  assert.equal(armAngle(123.4, SWING_DOWN_S), ARM_STRIKE);
-});
-
-test('armAngle idles near ARM_IDLE with only a small waggle', () => {
+test('armPose idles around the ready stance with only a small waggle', () => {
   for (const t of [0, 1.3, 7.7, 42]) {
-    const a = armAngle(t, Infinity);
-    assert.ok(Math.abs(a - ARM_IDLE) < 0.08, `idle angle drifted: ${a}`);
+    const p = armPose(t, Infinity);
+    assert.ok(Math.abs(p.shoulder - SHOULDER_READY) < 0.08, `shoulder drifted: ${p.shoulder}`);
+    assert.ok(Math.abs(p.elbow - ELBOW_READY) < 0.08, `elbow drifted: ${p.elbow}`);
   }
 });
+
+test('the two joints do not breathe in lockstep', () => {
+  // identical waggle on both joints would read as one rigid piece again
+  let differing = 0;
+  for (let i = 0; i < 200; i++) {
+    const t = i * 0.05;
+    const p = armPose(t, Infinity);
+    if (Math.abs((p.shoulder - SHOULDER_READY) - (p.elbow - ELBOW_READY)) > 0.01) differing++;
+  }
+  assert.ok(differing > 150, `joints moved together on ${200 - differing}/200 samples`);
+});
+
+// ── rig: the blow ──────────────────────────────────────────────────────────
+
+test('the wind-up lifts the slipper up and back, away from the paper', () => {
+  const peak = swingPose(ANTICIPATE_S * 0.999);
+  assert.ok(peak.shoulder > SHOULDER_READY, 'shoulder should rock back, not straight down');
+  assert.ok(Math.abs(peak.shoulder - SHOULDER_COCK) < 0.01);
+  assert.ok(Math.abs(peak.elbow - ELBOW_COCK) < 0.01);
+  // what the player actually sees: the blow visibly loads before it lands
+  const rest = slipperPoint(swingPose(Infinity));
+  const cocked = slipperPoint(peak);
+  assert.ok(cocked.y < rest.y - 20, `wind-up barely lifted the slipper (${rest.y - cocked.y})`);
+  assert.ok(cocked.x > rest.x + 20, `wind-up barely pulled the slipper back (${cocked.x - rest.x})`);
+});
+
+test('contact lands exactly on the strike pose', () => {
+  const p = swingPose(CONTACT_S);
+  assert.ok(Math.abs(p.shoulder - SHOULDER_STRIKE) < 1e-9);
+  assert.ok(Math.abs(p.elbow - ELBOW_STRIKE) < 1e-9);
+  assert.ok(Math.abs(p.lean - LEAN_STRIKE) < 1e-9);
+});
+
+test('an aimed blow shifts the contact shoulder angle by exactly the aim', () => {
+  for (const aim of [-AIM_LIMIT, -0.1, 0, 0.13, AIM_LIMIT]) {
+    const p = swingPose(CONTACT_S, aim);
+    assert.ok(Math.abs(p.shoulder - (SHOULDER_STRIKE + aim)) < 1e-9, `aim ${aim}`);
+  }
+});
+
+test('the forearm trails the upper arm through the drive, then snaps open', () => {
+  // whip: mid-drive the elbow must be further from its contact value than the
+  // shoulder is from its own, or the arm is moving as one rigid piece
+  for (const u of [0.3, 0.5, 0.7]) {
+    const p = swingPose(ANTICIPATE_S + DRIVE_S * u);
+    const shoulderDone = (p.shoulder - SHOULDER_COCK) / (SHOULDER_STRIKE - SHOULDER_COCK);
+    const elbowDone = (p.elbow - ELBOW_COCK) / (ELBOW_STRIKE - ELBOW_COCK);
+    assert.ok(elbowDone < shoulderDone, `elbow led the shoulder at u=${u}`);
+  }
+});
+
+test('the slipper is held on the paper through the contact hold', () => {
+  for (let i = 0; i <= 10; i++) {
+    const p = swingPose(CONTACT_S + (i / 10) * HOLD_S * 0.999);
+    assert.ok(Math.abs(p.shoulder - SHOULDER_STRIKE) < 1e-9, 'shoulder must not slide during contact');
+    assert.ok(Math.abs(p.lean - LEAN_STRIKE) < 1e-9);
+  }
+});
+
+test('the recoil lifts back past neutral before settling', () => {
+  let overshot = false;
+  for (let i = 0; i <= 60; i++) {
+    const p = swingPose(CONTACT_S + HOLD_S + (i / 60) * (RECOIL_S + SETTLE_S));
+    if (p.shoulder > SHOULDER_READY + 0.02) overshot = true;
+  }
+  assert.ok(overshot, 'recoil never rose past the ready stance — no follow-through');
+});
+
+test('the pose is continuous across every phase handoff', () => {
+  const step = 0.001;
+  let prev = swingPose(0);
+  for (let s = step; s <= SWING_S + 0.05; s += step) {
+    const p = swingPose(s);
+    for (const k of ['shoulder', 'elbow', 'lean']) {
+      assert.ok(Math.abs(p[k] - prev[k]) < 0.06,
+        `${k} jumped ${Math.abs(p[k] - prev[k]).toFixed(4)} at since=${s.toFixed(3)}`);
+    }
+    prev = p;
+  }
+});
+
+test('a mid-swing restrike skips the wind-up and lands sooner', () => {
+  const p = swingPose(0, 0, 0);
+  assert.ok(Math.abs(p.shoulder - SHOULDER_COCK) < 1e-9, 'restrike should start from the cocked pose');
+  const contact = swingPose(DRIVE_S, 0, 0);
+  assert.ok(Math.abs(contact.shoulder - SHOULDER_STRIKE) < 1e-9);
+  assert.ok(Math.abs(contact.elbow - ELBOW_STRIKE) < 1e-9);
+});
+
+// ── rig: swing activity gate ───────────────────────────────────────────────
+
+test('swingActivity is 0 at rest and full while the blow is thrown', () => {
+  for (const since of [-1, NaN, Infinity, SWING_S, SWING_S + 5]) {
+    assert.equal(swingActivity(since), 0, `activity at since=${since}`);
+  }
+  assert.equal(swingActivity(CONTACT_S * 0.5), 1);
+  assert.equal(swingActivity(CONTACT_S + HOLD_S * 0.5), 1);
+  const fading = swingActivity(CONTACT_S + HOLD_S + RECOIL_S);
+  assert.ok(fading > 0 && fading < 1, `recoil should fade, got ${fading}`);
+});
+
+// ── rig: forward kinematics guards the landing-point contract ──────────────
+
+test('the slipper lands inside the paper for every aim in range', () => {
+  for (let i = -20; i <= 20; i++) {
+    const aim = (i / 20) * AIM_LIMIT;
+    const p = slipperPoint(swingPose(CONTACT_S, aim));
+    assert.ok(inPaper(p.x, p.y),
+      `aim ${aim.toFixed(3)} landed off the paper at (${p.x.toFixed(0)},${p.y.toFixed(0)})`);
+  }
+});
+
+test('the slipper stays on the paper for the whole contact hold', () => {
+  for (const aim of [-AIM_LIMIT, 0, AIM_LIMIT]) {
+    for (let i = 0; i <= 10; i++) {
+      const p = slipperPoint(swingPose(CONTACT_S + (i / 10) * HOLD_S * 0.999, aim));
+      assert.ok(inPaper(p.x, p.y), `aim ${aim} hold ${i} left the paper`);
+    }
+  }
+});
+
+test('the slipper is clear of the paper while she is at rest', () => {
+  const p = slipperPoint(swingPose(Infinity));
+  assert.ok(!inPaper(p.x, p.y), `resting slipper sits on the paper at (${p.x},${p.y})`);
+  assert.ok(p.y < IPAPER.cy - IPAPER.h / 2, 'resting slipper should be held up above the paper');
+});
+
+test('slipperPoint respects the reach the two bones actually have', () => {
+  const p = slipperPoint({ shoulder: SHOULDER_STRIKE, elbow: ELBOW_STRIKE });
+  const reach = Math.hypot(p.x - PIVOT.x, p.y - PIVOT.y);
+  assert.ok(reach > 300 && reach < 365, `reach ${reach.toFixed(1)} is outside the rig's 140+223px`);
+});
+
+// ── rig: aiming ────────────────────────────────────────────────────────────
+
+test('aimFor clamps to the reachable arc and ignores rubbish input', () => {
+  assert.equal(aimFor(NaN, 700), 0);
+  assert.equal(aimFor(300, undefined), 0);
+  for (const [x, y] of [[0, 0], [720, 1280], [0, 1280], [720, 0]]) {
+    assert.ok(Math.abs(aimFor(x, y)) <= AIM_LIMIT + 1e-9, `aim at (${x},${y}) exceeded the clamp`);
+  }
+});
+
+test('aimFor leans the blow toward where the player tapped', () => {
+  const high = aimFor(IPAPER.cx, IPAPER.cy - IPAPER.h / 2 + 20);
+  const low = aimFor(IPAPER.cx, IPAPER.cy + IPAPER.h / 2 - 20);
+  assert.notEqual(high, low, 'the aim must respond to where the player tapped');
+  // what matters is the landing, not the sign of the bias
+  const landHigh = slipperPoint(swingPose(CONTACT_S, high));
+  const landLow = slipperPoint(swingPose(CONTACT_S, low));
+  assert.ok(landHigh.y < landLow.y,
+    `a high tap should land the slipper higher (${landHigh.y.toFixed(0)} vs ${landLow.y.toFixed(0)})`);
+  // and both must still be blows that land on the paper
+  assert.ok(inPaper(landHigh.x, landHigh.y) && inPaper(landLow.x, landLow.y));
+});
+
+// ── paper geometry (unchanged) ─────────────────────────────────────────────
 
 test('paperLocal maps the paper centre to itself', () => {
   const p = paperLocal(IPAPER.cx, IPAPER.cy);

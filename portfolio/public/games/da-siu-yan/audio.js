@@ -32,8 +32,11 @@ export function createAudioEngine() {
     return buf.duration;
   }
 
-  function smack() {
-    const t = ctx.currentTime, vary = () => 0.8 + Math.random() * 0.4;
+  // delayS lets the caller land the slap on the frame the slipper actually
+  // makes contact, rather than on the tap that started the swing.
+  function smack(delayS = 0) {
+    const t = ctx.currentTime + Math.max(0, delayS || 0);
+    const vary = () => 0.8 + Math.random() * 0.4;
     const noise = ctx.createBufferSource();
     const len = Math.floor(ctx.sampleRate * 0.09);
     const buf = ctx.createBuffer(1, len, ctx.sampleRate);

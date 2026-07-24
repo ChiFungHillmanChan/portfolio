@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 780" width="360" height="780">
   <!-- Seated granny, facing left, WITHOUT her right (striking) arm — that is
-       art/granny-arm.svg, rotated at the shoulder. Drawn at stage (350,425)
+       art/granny-arm-upper.svg + art/granny-arm-fore.svg, hinged at the
+       shoulder and the elbow. Drawn at stage (350,425)
        1:1, so the shoulder pivot (290,215) here = stage (640,640). Floor is
        at y≈680 in this viewBox. Feet stay right of x≈95; bun/back ≤ x≈318. -->
   <defs>

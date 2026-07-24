@@ -135,18 +135,21 @@ canvas.addEventListener('pointerdown', (e) => {
   pointer.x = p.x; pointer.y = p.y;
   if (!mode) return;
   pointer.down = true;
-  audio.smack();
+  // dust and haptics acknowledge the tap instantly; the slap waits for the
+  // slipper, so what you hear matches what you see
   if (navigator.vibrate) navigator.vibrate(30);
   spawnDust(p.x, p.y);
   const inPaper = style === 'illu'
     ? inIllustratedPaper(p.x, p.y)
     : p.x >= PAPER.x && p.x <= PAPER.x + PAPER.w && p.y >= PAPER.y && p.y <= PAPER.y + PAPER.h;
+  let smackDelay = 0;
   if (inPaper) {
     const r = damage.hit(p.x, p.y, performance.now());
     lastCombo = r.combo;
     if (r.comboBurst) comboFlash = 1.4;
-    if (style === 'illu') scenes.illu.strike(p.x, p.y, performance.now() / 1000);
+    if (style === 'illu') smackDelay = scenes.illu.strike(p.x, p.y, performance.now() / 1000);
   }
+  audio.smack(smackDelay);
 });
 canvas.addEventListener('pointerup', () => { pointer.down = false; });
 canvas.addEventListener('pointercancel', () => { pointer.down = false; });
