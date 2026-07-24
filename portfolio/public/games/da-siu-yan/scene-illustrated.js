@@ -6,29 +6,132 @@ import { STAGE_W, STAGE_H } from './scene.js';
 const KAI = '"Kaiti TC","楷體","DFKai-SB","BiauKai",serif';
 const INK = '#3a2317';
 
-// ── pure: arm swing ────────────────────────────────────────────────────────
-export const ARM_IDLE = 0;          // authored pose: slipper raised overhead
-export const ARM_STRIKE = -1.15;    // counterclockwise sweep down onto the paper
-export const SWING_DOWN_S = 0.09;
-export const SWING_BACK_S = 0.26;
+// ── pure: two-bone arm rig ─────────────────────────────────────────────────
+// The arm is two sprites hinged at the elbow: granny-arm-upper.svg pivots at
+// the shoulder, granny-arm-fore.svg pivots at the elbow and inherits the
+// shoulder's rotation. Angles below are canvas rotations in radians — a MORE
+// NEGATIVE elbow folds the forearm back (flexes), 0 is the authored pose.
 
-// 0 = raised/idle, 1 = slipper on the paper. NaN/negative/ancient → 0.
-export function swingPhase(since) {
-  if (!(since >= 0)) return 0;
-  if (since <= SWING_DOWN_S) {
-    const u = since / SWING_DOWN_S;
-    return u * u;                            // ease-in: the arm accelerates
-  }
-  const b = (since - SWING_DOWN_S) / SWING_BACK_S;
-  if (b >= 1) return 0;
-  const e = 1 - b;
-  return e * e;                              // fast recoil, soft settle
+// Skeleton, in the shared 380x420 sprite coordinate system.
+export const PIVOT = { x: 640, y: 640 };     // her right shoulder, stage coords
+export const HIP = { x: 620, y: 980 };       // lean pivot, stage coords
+export const UPPER = { w: 380, h: 420, shx: 300, shy: 360, ex: 242, ey: 232 };
+export const FORE = { w: 380, h: 420, ex: 242, ey: 232, slx: 100, sly: 60 };
+
+// Swing timing. Contact at 0.105s keeps the tap feeling responsive while
+// leaving room for a real wind-up; the smack is scheduled to land there.
+export const ANTICIPATE_S = 0.04;   // rock back
+export const DRIVE_S = 0.065;       // accelerate onto the paper
+export const CONTACT_S = ANTICIPATE_S + DRIVE_S;
+export const HOLD_S = 0.035;        // slipper pressed on the paper
+export const RECOIL_S = 0.13;
+export const SETTLE_S = 0.26;
+export const SWING_S = CONTACT_S + HOLD_S + RECOIL_S + SETTLE_S;
+
+// Poses. READY holds the slipper loaded with the elbow bent ~50° — the old rig
+// idled at the top of the swing with the arm locked straight, which is what
+// made her look broken. COCK lifts it further back so the wind-up reads.
+export const SHOULDER_READY = 0.30;
+export const SHOULDER_COCK = 0.48;
+export const SHOULDER_STRIKE = -1.15;
+export const ELBOW_READY = -0.62;
+export const ELBOW_COCK = -0.56;
+export const ELBOW_STRIKE = 0;
+export const ELBOW_GIVE = 0.05;     // the joint absorbing the blow on contact
+export const LEAN_STRIKE = -0.085;
+export const AIM_LIMIT = 0.25;      // how far a tap may swing the strike angle
+
+const lerp = (a, b, u) => a + (b - a) * u;
+
+// Where the slipper ends up for a given pose, in stage coords. Forward
+// kinematics for the exact transform chain drawGranny applies, minus the
+// ±3px idle bob (which is ~0 during a swing). This is the guard on the
+// landing-point contract — see scene-illustrated.test.js.
+export function slipperPoint({ shoulder, elbow, lean = 0 }) {
+  const ux = UPPER.ex - UPPER.shx, uy = UPPER.ey - UPPER.shy;
+  const fx = FORE.slx - FORE.ex, fy = FORE.sly - FORE.ey;
+  const c1 = Math.cos(shoulder), s1 = Math.sin(shoulder);
+  const c2 = Math.cos(shoulder + elbow), s2 = Math.sin(shoulder + elbow);
+  const x = PIVOT.x + ux * c1 - uy * s1 + fx * c2 - fy * s2;
+  const y = PIVOT.y + ux * s1 + uy * c1 + fx * s2 + fy * c2;
+  const cl = Math.cos(lean), sl = Math.sin(lean);
+  const dx = x - HIP.x, dy = y - HIP.y;
+  return { x: HIP.x + dx * cl - dy * sl, y: HIP.y + dx * sl + dy * cl };
 }
 
-export function armAngle(t, sinceStrike) {
-  const phase = swingPhase(sinceStrike);
-  const waggle = (Math.sin(t * 1.7) * 0.035 + Math.sin(t * 4.3) * 0.012) * (1 - phase);
-  return ARM_IDLE + waggle + (ARM_STRIKE - ARM_IDLE) * phase;
+// Direction from the shoulder to the unaimed landing point, so aimFor can
+// express a tap as an offset from it rather than a magic bearing.
+const STRIKE_DIR = (() => {
+  const p = slipperPoint({ shoulder: SHOULDER_STRIKE, elbow: ELBOW_STRIKE });
+  return Math.atan2(p.y - PIVOT.y, p.x - PIVOT.x);
+})();
+
+// Extra shoulder rotation that swings the blow toward a tap. Her reach is only
+// ~360px from the shoulder, so most of the paper is physically out of range —
+// the clamp means a far tap leans the strike that way rather than pretending
+// she can get there.
+export function aimFor(x, y) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return 0;
+  let bias = Math.atan2(y - PIVOT.y, x - PIVOT.x) - STRIKE_DIR;
+  while (bias > Math.PI) bias -= Math.PI * 2;
+  while (bias < -Math.PI) bias += Math.PI * 2;
+  return Math.max(-AIM_LIMIT, Math.min(AIM_LIMIT, bias));
+}
+
+// 1 while the blow is being thrown, fading out through the recoil so the idle
+// breathing can fade back in. NaN/negative/ancient → 0.
+export function swingActivity(since, anticipate = ANTICIPATE_S) {
+  const total = anticipate + DRIVE_S + HOLD_S + RECOIL_S + SETTLE_S;
+  if (!(since >= 0) || since >= total) return 0;
+  return Math.min(1, (total - since) / (RECOIL_S + SETTLE_S));
+}
+
+// The blow itself, as joint angles. Every phase hands off continuously to the
+// next. `anticipate` drops to 0 when a strike lands mid-swing, so mash-tapping
+// re-drives from the current pose instead of visibly rewinding.
+export function swingPose(since, aim = 0, anticipate = ANTICIPATE_S) {
+  const ready = { shoulder: SHOULDER_READY, elbow: ELBOW_READY, lean: 0 };
+  if (!(since >= 0)) return ready;
+  const strike = SHOULDER_STRIKE + aim;
+
+  if (since < anticipate) {                    // wind-up: rock back, fold the elbow
+    const u = Math.sin((since / anticipate) * Math.PI / 2);
+    return { shoulder: lerp(SHOULDER_READY, SHOULDER_COCK, u),
+             elbow: lerp(ELBOW_READY, ELBOW_COCK, u), lean: 0 };
+  }
+  const t = since - anticipate;
+  if (t < DRIVE_S) {                           // drive: the forearm trails, then whips open
+    const p = (t / DRIVE_S) ** 2;              // ease-in — the blow gathers speed
+    return { shoulder: lerp(SHOULDER_COCK, strike, p),
+             elbow: lerp(ELBOW_COCK, ELBOW_STRIKE, p ** 2.2),
+             lean: LEAN_STRIKE * p };
+  }
+  const h = t - DRIVE_S;
+  if (h < HOLD_S) {                            // contact: slipper stays on the paper
+    return { shoulder: strike,
+             elbow: ELBOW_STRIKE - ELBOW_GIVE * Math.sin((h / HOLD_S) * Math.PI),
+             lean: LEAN_STRIKE };
+  }
+  const r = h - HOLD_S;
+  if (r >= RECOIL_S + SETTLE_S) return ready;
+  // recoil past neutral, then a damped settle back to the ready stance
+  const u = r / (RECOIL_S + SETTLE_S);
+  const k = Math.exp(-5.2 * u) * Math.cos(u * Math.PI * 2.3);
+  return { shoulder: lerp(SHOULDER_READY, strike, k),
+           elbow: lerp(ELBOW_READY, ELBOW_STRIKE, k),
+           lean: LEAN_STRIKE * k };
+}
+
+// Swing plus idle life. The two joints breathe on different frequencies so the
+// stance never freezes into a pose.
+export function armPose(t, since, aim = 0, anticipate = ANTICIPATE_S) {
+  const pose = swingPose(since, aim, anticipate);
+  const idle = 1 - swingActivity(since, anticipate);
+  return {
+    shoulder: pose.shoulder + (Math.sin(t * 1.6) * 0.030 + Math.sin(t * 3.7 + 1.1) * 0.011) * idle,
+    elbow: pose.elbow + (Math.sin(t * 1.15 + 0.6) * 0.035 + Math.sin(t * 2.9) * 0.013) * idle,
+    lean: pose.lean
+  };
 }
 
 // ── pure: tilted paper geometry ────────────────────────────────────────────
@@ -47,9 +150,6 @@ export function inPaper(x, y, paper = IPAPER) {
 
 // ── renderer ───────────────────────────────────────────────────────────────
 const BODY = { x: 350, y: 425, w: 360, h: 780 };
-const PIVOT = { x: 640, y: 640 };            // her right shoulder, stage coords
-const ARM = { w: 380, h: 420, shx: 300, shy: 360 }; // shoulder point inside the SVG
-const HIP = { x: 620, y: 980 };              // lean pivot
 const BRICKS = { x: 0, y: 858, w: 432, h: 356 };
 
 export function createIllustratedScene(canvas) {
@@ -58,10 +158,12 @@ export function createIllustratedScene(canvas) {
   let photo = null;
   let strikeAt = -Infinity;                  // seconds, performance.now()/1000
   let strikeX = IPAPER.cx, strikeY = IPAPER.cy;
+  let strikeAim = 0;
+  let strikeAnticipate = ANTICIPATE_S;
   const art = {};
 
   const ready = Promise.all(
-    ['granny-body', 'granny-arm', 'bricks'].map((n) => new Promise((resolve, reject) => {
+    ['granny-body', 'granny-arm-fore', 'granny-arm-upper', 'bricks'].map((n) => new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => { art[n] = img; resolve(); };
       img.onerror = () => reject(new Error(`art/${n}.svg failed to load`));
@@ -74,9 +176,16 @@ export function createIllustratedScene(canvas) {
     photo = e.photo || null;
   }
 
-  function strike(x, y, nowS) {
+  // Throws a blow at (x,y). Returns how many seconds until the slipper lands,
+  // so the caller can schedule the smack to hit at contact instead of at tap.
+  function strike(x, y, nowS, rng = Math.random) {
+    const mid = swingActivity(nowS - strikeAt, strikeAnticipate) > 0;
+    strikeAnticipate = mid ? 0 : ANTICIPATE_S;   // no visible rewind when mashing
+    const jitter = (rng() - 0.5) * 0.06;         // no two blows land identically
+    strikeAim = Math.max(-AIM_LIMIT, Math.min(AIM_LIMIT, aimFor(x, y) + jitter));
     strikeAt = nowS;
     strikeX = x; strikeY = y;
+    return strikeAnticipate + DRIVE_S;
   }
 
   function drawBackdrop(t) {
@@ -288,29 +397,40 @@ export function createIllustratedScene(canvas) {
   }
 
   function drawGranny(t, sinceStrike) {
-    const phase = swingPhase(sinceStrike);
+    const pose = armPose(t, sinceStrike, strikeAim, strikeAnticipate);
     ctx.save();
     // whole granny (body + arm pivot) leans into the blow
     ctx.translate(HIP.x, HIP.y);
-    ctx.rotate(-0.05 * phase);
+    ctx.rotate(pose.lean);
     ctx.translate(-HIP.x, -HIP.y);
     // gentle breathing bob while idle
-    const bob = Math.sin(t * 1.7) * 3 * (1 - phase);
+    const bob = Math.sin(t * 1.7) * 3 * (1 - swingActivity(sinceStrike, strikeAnticipate));
     if (art['granny-body']) {
       ctx.drawImage(art['granny-body'], BODY.x, BODY.y + bob, BODY.w, BODY.h);
     }
-    if (art['granny-arm']) {
+    // forearm first, upper arm over it — the rolled cuff hides the elbow seam
+    const c = Math.cos(pose.shoulder), s = Math.sin(pose.shoulder);
+    const ux = UPPER.ex - UPPER.shx, uy = UPPER.ey - UPPER.shy;
+    if (art['granny-arm-fore']) {
+      ctx.save();
+      ctx.translate(PIVOT.x + ux * c - uy * s, PIVOT.y + bob + ux * s + uy * c);
+      ctx.rotate(pose.shoulder + pose.elbow);
+      ctx.drawImage(art['granny-arm-fore'], -FORE.ex, -FORE.ey, FORE.w, FORE.h);
+      ctx.restore();
+    }
+    if (art['granny-arm-upper']) {
       ctx.save();
       ctx.translate(PIVOT.x, PIVOT.y + bob);
-      ctx.rotate(armAngle(t, sinceStrike));
-      ctx.drawImage(art['granny-arm'], -ARM.shx, -ARM.shy, ARM.w, ARM.h);
+      ctx.rotate(pose.shoulder);
+      ctx.drawImage(art['granny-arm-upper'], -UPPER.shx, -UPPER.shy, UPPER.w, UPPER.h);
       ctx.restore();
     }
     ctx.restore();
   }
 
   function drawImpact(nowS) {
-    const since = nowS - strikeAt - SWING_DOWN_S;   // star lands with the arm
+    // star lands with the slipper, whatever wind-up this blow was given
+    const since = nowS - strikeAt - strikeAnticipate - DRIVE_S;
     if (since < 0 || since > 0.16) return;
     const k = 1 - since / 0.16;
     ctx.save();

@@ -3,304 +3,304 @@
   {
    "id": "intro",
    "file": "std/intro.mp3",
-   "duration": 4.01
+   "duration": 1.99
   },
   {
    "id": "line-01",
    "file": "std/line-01.mp3",
-   "duration": 5.42
+   "duration": 2.69
   },
   {
    "id": "line-02",
    "file": "std/line-02.mp3",
-   "duration": 4.65
+   "duration": 2.32
   },
   {
    "id": "line-03",
    "file": "std/line-03.mp3",
-   "duration": 4.4
+   "duration": 2.18
   },
   {
    "id": "line-04",
    "file": "std/line-04.mp3",
-   "duration": 3.83
+   "duration": 1.91
   },
   {
    "id": "line-05",
    "file": "std/line-05.mp3",
-   "duration": 4.75
+   "duration": 2.36
   },
   {
    "id": "line-06",
    "file": "std/line-06.mp3",
-   "duration": 5.94
+   "duration": 2.95
   },
   {
    "id": "line-07",
    "file": "std/line-07.mp3",
-   "duration": 3.64
+   "duration": 1.81
   },
   {
    "id": "line-08",
    "file": "std/line-08.mp3",
-   "duration": 3.76
+   "duration": 1.86
   },
   {
    "id": "line-09",
    "file": "std/line-09.mp3",
-   "duration": 4.16
+   "duration": 2.07
   },
   {
    "id": "line-10",
    "file": "std/line-10.mp3",
-   "duration": 4.27
+   "duration": 2.12
   },
   {
    "id": "line-11",
    "file": "std/line-11.mp3",
-   "duration": 3.38
+   "duration": 1.67
   },
   {
    "id": "line-12",
    "file": "std/line-12.mp3",
-   "duration": 4.24
+   "duration": 2.11
   },
   {
    "id": "line-13",
    "file": "std/line-13.mp3",
-   "duration": 4.67
+   "duration": 2.32
   },
   {
    "id": "line-14",
    "file": "std/line-14.mp3",
-   "duration": 3.91
+   "duration": 1.95
   },
   {
    "id": "line-15",
    "file": "std/line-15.mp3",
-   "duration": 3.82
+   "duration": 1.9
   },
   {
    "id": "line-16",
    "file": "std/line-16.mp3",
-   "duration": 3.35
+   "duration": 1.67
   },
   {
    "id": "line-17",
    "file": "std/line-17.mp3",
-   "duration": 4.51
+   "duration": 2.25
   },
   {
    "id": "line-18",
    "file": "std/line-18.mp3",
-   "duration": 4.67
+   "duration": 2.32
   },
   {
    "id": "line-19",
    "file": "std/line-19.mp3",
-   "duration": 4.78
+   "duration": 2.39
   },
   {
    "id": "line-20",
    "file": "std/line-20.mp3",
-   "duration": 4.13
+   "duration": 2.06
   },
   {
    "id": "line-21",
    "file": "std/line-21.mp3",
-   "duration": 4.77
+   "duration": 2.38
   },
   {
    "id": "line-22",
    "file": "std/line-22.mp3",
-   "duration": 4.02
+   "duration": 1.99
   },
   {
    "id": "line-23",
    "file": "std/line-23.mp3",
-   "duration": 3.98
+   "duration": 1.97
   },
   {
    "id": "line-24",
    "file": "std/line-24.mp3",
-   "duration": 4.6
+   "duration": 2.3
   },
   {
    "id": "line-25",
    "file": "std/line-25.mp3",
-   "duration": 3.93
+   "duration": 1.94
   },
   {
    "id": "line-26",
    "file": "std/line-26.mp3",
-   "duration": 4.12
+   "duration": 2.05
   },
   {
    "id": "line-27",
    "file": "std/line-27.mp3",
-   "duration": 4.92
+   "duration": 2.44
   },
   {
    "id": "line-28",
    "file": "std/line-28.mp3",
-   "duration": 5.54
+   "duration": 2.76
   },
   {
    "id": "finale",
    "file": "std/finale.mp3",
-   "duration": 6.54
+   "duration": 3.26
   }
  ],
  "low": [
   {
    "id": "intro",
    "file": "low/intro.mp3",
-   "duration": 6.99
+   "duration": 3.5
   },
   {
    "id": "line-01",
    "file": "low/line-01.mp3",
-   "duration": 4.91
+   "duration": 2.43
   },
   {
    "id": "line-02",
    "file": "low/line-02.mp3",
-   "duration": 5.92
+   "duration": 2.96
   },
   {
    "id": "line-03",
    "file": "low/line-03.mp3",
-   "duration": 5.81
+   "duration": 2.88
   },
   {
    "id": "line-04",
    "file": "low/line-04.mp3",
-   "duration": 5.9
+   "duration": 2.94
   },
   {
    "id": "line-05",
    "file": "low/line-05.mp3",
-   "duration": 5.12
+   "duration": 2.56
   },
   {
    "id": "line-06",
    "file": "low/line-06.mp3",
-   "duration": 6.02
+   "duration": 2.99
   },
   {
    "id": "line-07",
    "file": "low/line-07.mp3",
-   "duration": 7.13
+   "duration": 3.54
   },
   {
    "id": "line-08",
    "file": "low/line-08.mp3",
-   "duration": 7.11
+   "duration": 3.55
   },
   {
    "id": "line-09",
    "file": "low/line-09.mp3",
-   "duration": 6.68
+   "duration": 3.33
   },
   {
    "id": "line-10",
    "file": "low/line-10.mp3",
-   "duration": 6.83
+   "duration": 3.4
   },
   {
    "id": "line-11",
    "file": "low/line-11.mp3",
-   "duration": 5.72
+   "duration": 2.84
   },
   {
    "id": "line-12",
    "file": "low/line-12.mp3",
-   "duration": 6.82
+   "duration": 3.4
   },
   {
    "id": "line-13",
    "file": "low/line-13.mp3",
-   "duration": 6.24
+   "duration": 3.11
   },
   {
    "id": "line-14",
    "file": "low/line-14.mp3",
-   "duration": 6.56
+   "duration": 3.27
   },
   {
    "id": "line-15",
    "file": "low/line-15.mp3",
-   "duration": 6.34
+   "duration": 3.16
   },
   {
    "id": "line-16",
    "file": "low/line-16.mp3",
-   "duration": 6.55
+   "duration": 3.27
   },
   {
    "id": "line-17",
    "file": "low/line-17.mp3",
-   "duration": 6.47
+   "duration": 3.22
   },
   {
    "id": "line-18",
    "file": "low/line-18.mp3",
-   "duration": 6.26
+   "duration": 3.12
   },
   {
    "id": "line-19",
    "file": "low/line-19.mp3",
-   "duration": 6.51
+   "duration": 3.25
   },
   {
    "id": "line-20",
    "file": "low/line-20.mp3",
-   "duration": 7.44
+   "duration": 3.71
   },
   {
    "id": "line-21",
    "file": "low/line-21.mp3",
-   "duration": 5.13
+   "duration": 2.55
   },
   {
    "id": "line-22",
    "file": "low/line-22.mp3",
-   "duration": 6.27
+   "duration": 3.13
   },
   {
    "id": "line-23",
    "file": "low/line-23.mp3",
-   "duration": 5.76
+   "duration": 2.86
   },
   {
    "id": "line-24",
    "file": "low/line-24.mp3",
-   "duration": 9.48
+   "duration": 4.72
   },
   {
    "id": "line-25",
    "file": "low/line-25.mp3",
-   "duration": 6.34
+   "duration": 3.17
   },
   {
    "id": "line-26",
    "file": "low/line-26.mp3",
-   "duration": 6.3
+   "duration": 3.14
   },
   {
    "id": "line-27",
    "file": "low/line-27.mp3",
-   "duration": 6.56
+   "duration": 3.28
   },
   {
    "id": "line-28",
    "file": "low/line-28.mp3",
-   "duration": 7.81
+   "duration": 3.89
   },
   {
    "id": "finale",
    "file": "low/finale.mp3",
-   "duration": 13.25
+   "duration": 6.62
   }
  ]
 }

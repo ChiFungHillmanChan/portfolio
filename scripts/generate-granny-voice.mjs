@@ -14,6 +14,12 @@ const VOICE = 'Gacrux';
 const RATE = 24000;
 const PAD_S = 0.4;
 const TRIM_THRESHOLD = 700; // int16 abs, ≈ -33 dBFS
+// Gemini reads the chants too slowly, so every clip is time-stretched on the
+// way out. atempo preserves pitch, so the granny still sounds like the granny.
+// Keep this in [0.5, 2] — one atempo instance only. To ship a different speed
+// without burning API calls, use scripts/respeed-granny-voice.mjs instead.
+const TEMPO = 2;
+if (!(TEMPO >= 0.5 && TEMPO <= 2)) { console.error(`TEMPO ${TEMPO} outside atempo's [0.5, 2]`); process.exit(1); }
 
 const CANTO_RULE = '你必須由頭到尾用香港廣東話(粵語)發音讀出每一個字,特別係句尾嗰幾個字都一定要用粵語讀音,絕對唔可以用普通話讀任何一個字。';
 const VARIANTS = {
@@ -56,6 +62,7 @@ function trimAndPad(pcm) {
 
 function encodeMp3(pcm, file) {
   execFileSync('ffmpeg', ['-y', '-f', 's16le', '-ar', String(RATE), '-ac', '1', '-i', 'pipe:0',
+    '-filter:a', `atempo=${TEMPO}`,
     '-codec:a', 'libmp3lame', '-b:a', '64k', file], { input: pcm, stdio: ['pipe', 'ignore', 'ignore'] });
 }
 
@@ -71,7 +78,7 @@ for (const variant of Object.keys(VARIANTS)) {
       console.log(`skip  ${rel} (${duration.toFixed(2)}s)`);
     } else {
       const pcm = trimAndPad(await tts(VARIANTS[variant], clip.text));
-      duration = pcm.byteLength / 2 / RATE;
+      duration = pcm.byteLength / 2 / RATE / TEMPO;   // encodeMp3 time-stretches
       encodeMp3(pcm, file);
       console.log(`wrote ${rel} (${duration.toFixed(2)}s)`);
       await new Promise((r) => setTimeout(r, 1100));
