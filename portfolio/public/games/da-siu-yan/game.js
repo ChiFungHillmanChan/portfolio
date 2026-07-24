@@ -183,6 +183,7 @@ async function start(which) {
   damage = createDamage();
   comboFlash = 0; lastCombo = 0; burnT = 0; recBlob = null;
   mode = which;
+  window.__daSiuYanPlaying = true;   // hold off any service-worker reload
   const nowS = performance.now() / 1000;
   if (which === 'ritual') {
     const manifest = await (await fetch('./voice/manifest.json')).json();
@@ -207,6 +208,7 @@ async function stop() {
   if (!mode) return;
   const finished = mode;
   mode = null;
+  window.__daSiuYanPlaying = false;
   cancelAnimationFrame(rafId);
   stopBtn.hidden = true;
   audio.stopAll();
@@ -328,6 +330,16 @@ function showEnd(finished) {
 }
 
 function backToEntry() {
+  // Hiding the overlay does not stop a <video> that is mid-playback — it keeps
+  // going behind the entry screen, so you hear the recording over the new
+  // round. Stop it and tear the element down before anything else.
+  const video = document.getElementById('end-video');
+  if (video) {
+    video.pause();
+    video.removeAttribute('src');
+    video.load();                       // drops the decoder + any buffered audio
+  }
+  endEl.innerHTML = '';
   if (videoUrl) { URL.revokeObjectURL(videoUrl); videoUrl = null; }
   recBlob = null;
   endEl.hidden = true;

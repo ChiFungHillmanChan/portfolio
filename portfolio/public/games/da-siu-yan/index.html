@@ -16,6 +16,22 @@
   <script type="module" src="game.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
+      // A new worker calls skipWaiting + clients.claim, but THIS page already
+      // loaded its modules from the old cache — so without the reload below a
+      // deploy only reaches the player on their second visit. Only arm this
+      // when a controller already exists, otherwise the very first visit
+      // (no previous worker) would reload itself for nothing.
+      if (navigator.serviceWorker.controller) {
+        var reloading = false;
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (reloading) return;
+          // never yank the page out from under a running ritual — it would bin
+          // the recording. They will get the update on the next load anyway.
+          if (window.__daSiuYanPlaying) return;
+          reloading = true;
+          window.location.reload();
+        });
+      }
       window.addEventListener('load', function () {
         navigator.serviceWorker.register('./sw.js').catch(function (err) {
           console.warn('[pwa] service worker registration failed:', err);
