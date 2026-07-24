@@ -29,6 +29,17 @@ const tempo = Number(flag('tempo', '2'));
 const ref = flag('from', ORIGIN_REF);
 if (!(tempo > 0)) { console.error(`--tempo must be a positive number, got ${flag('tempo')}`); process.exit(1); }
 
+// Per-clip overrides. The intro is the first thing anyone hears and sets the
+// tone, so it needs room to land; the chant lines want to rattle along.
+// Override from the CLI with e.g. --tempo-intro 1.6.
+const CLIP_TEMPO = { intro: 1.4 };
+function tempoFor(id) {
+  const cli = flag(`tempo-${id}`);
+  const t = cli !== undefined ? Number(cli) : (CLIP_TEMPO[id] ?? tempo);
+  if (!(t > 0)) { console.error(`--tempo-${id} must be a positive number, got ${cli}`); process.exit(1); }
+  return t;
+}
+
 // ffmpeg's atempo is only well-behaved within [0.5, 2] per instance, so a
 // larger or smaller factor is expressed as a chain of in-range instances.
 function atempoChain(rate) {
@@ -53,16 +64,17 @@ try {
       const src = join(tmp, 'src.mp3');
       writeFileSync(src, git(['show', `${ref}:${VOICE_REL}/${clip.file}`]));
       const dest = join(OUT, clip.file);
-      if (tempo === 1) {
+      const rate = tempoFor(clip.id);
+      if (rate === 1) {
         writeFileSync(dest, git(['show', `${ref}:${VOICE_REL}/${clip.file}`]));
       } else {
-        execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', src, '-filter:a', atempoChain(tempo),
+        execFileSync('ffmpeg', ['-y', '-v', 'error', '-i', src, '-filter:a', atempoChain(rate),
           '-codec:a', 'libmp3lame', '-b:a', '64k', dest]);
       }
       const duration = parseFloat(execFileSync('ffprobe',
         ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', dest], { encoding: 'utf8' }));
       manifest[variant].push({ id: clip.id, file: clip.file, duration: Math.round(duration * 100) / 100 });
-      console.log(`${clip.file}  ${clip.duration.toFixed(2)}s -> ${duration.toFixed(2)}s`);
+      console.log(`${clip.file}  ${clip.duration.toFixed(2)}s -> ${duration.toFixed(2)}s  (${rate}x)`);
       clips++;
     }
   }
@@ -71,5 +83,6 @@ try {
 }
 
 writeFileSync(join(OUT, 'manifest.json'), JSON.stringify(manifest, null, 1));
-console.log(`\n${clips} clips at ${tempo}x from ${ref}; voice/manifest.json written.`);
+const overrides = Object.entries(CLIP_TEMPO).map(([id, t]) => `${id} ${t}x`).join(', ');
+console.log(`\n${clips} clips from ${ref} at ${tempo}x${overrides ? ` (${overrides})` : ''}; voice/manifest.json written.`);
 console.log('Remember to bump CACHE in portfolio/public/games/da-siu-yan/sw.js.');
