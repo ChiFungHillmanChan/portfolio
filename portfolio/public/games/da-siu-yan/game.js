@@ -52,6 +52,7 @@ let variant = 'std';
 let photoCanvas = null;
 
 let mode = null;                // null | 'ritual' | 'free'
+let modeStartS = 0;             // seconds; feeds the free-mode elapsed HUD
 let damage = null;
 let seq = null;
 let looper = null;
@@ -185,6 +186,7 @@ async function start(which) {
   mode = which;
   window.__daSiuYanPlaying = true;   // hold off any service-worker reload
   const nowS = performance.now() / 1000;
+  modeStartS = nowS;
   if (which === 'ritual') {
     const manifest = await (await fetch('./voice/manifest.json')).json();
     seq = createSequencer(buildRitualSchedule(manifest[variant], Math.random));
@@ -256,7 +258,8 @@ function frame(nowMs) {
     burnT,
     dust,
     mode,
-    remain: mode === 'ritual' && seq ? RITUAL_SECONDS - seq.elapsed(nowS) : 0
+    remain: mode === 'ritual' && seq ? RITUAL_SECONDS - seq.elapsed(nowS) : 0,
+    elapsed: nowS - modeStartS
   });
   rafId = requestAnimationFrame(frame);
 }

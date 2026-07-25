@@ -36,17 +36,16 @@ export const RECOIL_S = 0.13;
 export const SETTLE_S = 0.26;
 export const SWING_S = CONTACT_S + HOLD_S + RECOIL_S + SETTLE_S;
 
-// Poses. READY holds the slipper up beside her head — through the gap
-// between the paper's top-right corner (~x360 at that height) and her
-// hairline (~x400), so the resting hand never covers the effigy. COCK lifts
-// it higher and further back; STRIKE sweeps the shoulder down-left with the
-// elbow opening in step, landing on the paper (solved against the bones the
-// sprites actually have — the shoulder sits close to the paper, so contact
-// keeps the elbow bent).
-export const SHOULDER_READY = 0.38;
-export const SHOULDER_COCK = 0.68;
+// Poses. READY holds the slipper high above her head, the whole forearm
+// sprite clear of the paper (pixel-verified, incl. the idle waggle range);
+// COCK pulls it further back behind her crown; STRIKE sweeps the shoulder
+// down-left with the elbow opening in step, landing on the paper (solved
+// against the bones the sprites actually have — the shoulder sits close to
+// the paper, so contact keeps the elbow bent).
+export const SHOULDER_READY = 0.60;
+export const SHOULDER_COCK = 0.85;
 export const SHOULDER_STRIKE = -1.7;
-export const ELBOW_READY = -0.15;
+export const ELBOW_READY = -0.28;
 export const ELBOW_COCK = -0.55;
 export const ELBOW_STRIKE = 0.965;
 export const ELBOW_GIVE = 0.10;     // the joint absorbing the blow on contact
@@ -148,7 +147,10 @@ export function armPose(t, since, aim = 0, anticipate = ANTICIPATE_S) {
 }
 
 // ── pure: tilted paper geometry ────────────────────────────────────────────
-export const IPAPER = { cx: 250, cy: 800, w: 300, h: 460, rot: -0.17 };
+// Sized so the granny's resting forearm sprite clears the sheet entirely —
+// verified pixel-against-polygon by scripts/da-siu-yan/cut-granny-sprites.py's
+// companion search; grow it back only if the stance moves too.
+export const IPAPER = { cx: 232, cy: 812, w: 264, h: 424, rot: -0.17 };
 
 export function paperLocal(x, y, paper = IPAPER) {
   const dx = x - paper.cx, dy = y - paper.cy;
@@ -522,6 +524,9 @@ export function createIllustratedScene(canvas) {
     if (state.mode === 'ritual') {
       ctx.textAlign = 'left';
       ctx.fillText(`淨返 ${Math.max(0, Math.ceil(state.remain))} 秒`, 26, 70);
+    } else if (state.mode === 'free') {
+      ctx.textAlign = 'left';
+      ctx.fillText(`打咗 ${Math.max(0, Math.floor(state.elapsed || 0))} 秒`, 26, 70);
     }
     if (state.comboFlash > 0 && state.combo >= 5) {
       ctx.globalAlpha = Math.min(1, state.comboFlash);

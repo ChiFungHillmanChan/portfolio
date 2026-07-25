@@ -314,6 +314,9 @@ export function createScene(canvas) {
     if (state.mode === 'ritual') {
       ctx.textAlign = 'left';
       ctx.fillText(`淨返 ${Math.max(0, Math.ceil(state.remain))} 秒`, 26, 70);
+    } else if (state.mode === 'free') {
+      ctx.textAlign = 'left';
+      ctx.fillText(`打咗 ${Math.max(0, Math.floor(state.elapsed || 0))} 秒`, 26, 70);
     }
     if (state.comboFlash > 0 && state.combo >= 5) {
       ctx.globalAlpha = Math.min(1, state.comboFlash);
