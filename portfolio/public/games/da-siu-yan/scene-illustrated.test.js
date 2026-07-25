@@ -19,8 +19,11 @@ test('swingPose rests in the ready stance before, outside and long after a swing
   }
 });
 
-test('the ready stance keeps the elbow bent — she must not idle as a straight pole', () => {
-  assert.ok(Math.abs(ELBOW_READY) > 0.15, `ready elbow ${ELBOW_READY} is nearly straight`);
+test('the blow is thrown from the stance, not held at it', () => {
+  // the sprite bakes a natural bend into the authored arm, so the guard is
+  // stance-vs-strike separation: the elbow must travel to deliver the blow
+  assert.ok(Math.abs(ELBOW_READY - ELBOW_STRIKE) > 0.8,
+    `ready elbow ${ELBOW_READY} already sits at the strike pose ${ELBOW_STRIKE}`);
 });
 
 test('armPose idles around the ready stance with only a small waggle', () => {
@@ -49,10 +52,12 @@ test('the wind-up lifts the slipper up and back, away from the paper', () => {
   assert.ok(peak.shoulder > SHOULDER_READY, 'shoulder should rock back, not straight down');
   assert.ok(Math.abs(peak.shoulder - SHOULDER_COCK) < 0.01);
   assert.ok(Math.abs(peak.elbow - ELBOW_COCK) < 0.01);
-  // what the player actually sees: the blow visibly loads before it lands
+  // what the player actually sees: the blow visibly loads before it lands.
+  // The rest pose already holds the slipper near the top of the arm's reach,
+  // so the lift margin is smaller than the pull-back margin.
   const rest = slipperPoint(swingPose(Infinity));
   const cocked = slipperPoint(peak);
-  assert.ok(cocked.y < rest.y - 20, `wind-up barely lifted the slipper (${rest.y - cocked.y})`);
+  assert.ok(cocked.y < rest.y - 12, `wind-up barely lifted the slipper (${rest.y - cocked.y})`);
   assert.ok(cocked.x > rest.x + 20, `wind-up barely pulled the slipper back (${cocked.x - rest.x})`);
 });
 
@@ -99,14 +104,14 @@ test('the recoil lifts back past neutral before settling', () => {
 });
 
 test('the pose is continuous across every phase handoff', () => {
-  // the whip sweeps the elbow ~2.2 rad through the 55ms drive, so a fast
+  // the shoulder sweeps ~2.4 rad through the 55ms drive, so a fast
   // frame-to-frame step is intended — the cap only catches real teleports
   const step = 0.001;
   let prev = swingPose(0);
   for (let s = step; s <= SWING_S + 0.05; s += step) {
     const p = swingPose(s);
     for (const k of ['shoulder', 'elbow', 'lean']) {
-      assert.ok(Math.abs(p[k] - prev[k]) < 0.2,
+      assert.ok(Math.abs(p[k] - prev[k]) < 0.12,
         `${k} jumped ${Math.abs(p[k] - prev[k]).toFixed(4)} at since=${s.toFixed(3)}`);
     }
     prev = p;

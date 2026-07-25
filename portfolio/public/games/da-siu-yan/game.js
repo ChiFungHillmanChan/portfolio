@@ -196,9 +196,11 @@ async function start(which) {
     rec = createRecorder(stream);
     if (rec) rec.start();
   } else {
-    const ids = [INTRO.id, ...LINES.map((l) => l.id)];
-    looper = createShuffleLooper(ids, Math.random);
-    nextFreeClipAt = nowS + LINE_GAP;
+    // The intro line is an opening, not a chant — play it once here and keep
+    // it out of the shuffle bag so the endless loop only cycles 打你個… lines.
+    looper = createShuffleLooper(LINES.map((l) => l.id), Math.random);
+    const introDur = audio.playClip(INTRO.id);
+    nextFreeClipAt = nowS + introDur + LINE_GAP;
   }
   lastFrame = performance.now();
   rafId = requestAnimationFrame(frame);

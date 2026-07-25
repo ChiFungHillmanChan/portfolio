@@ -36,16 +36,18 @@ export const RECOIL_S = 0.13;
 export const SETTLE_S = 0.26;
 export const SWING_S = CONTACT_S + HOLD_S + RECOIL_S + SETTLE_S;
 
-// Poses. READY holds the slipper raised with a light elbow fold; COCK snaps
-// the arm nearly straight up; STRIKE windmills the shoulder down while the
-// elbow opens forward, landing the slipper on the paper's upper middle
-// (solved against the bones the sprites actually have — the shoulder sits
-// close to the paper, so contact keeps the elbow bent).
-export const SHOULDER_READY = 0.15;
-export const SHOULDER_COCK = 0.75;
+// Poses. READY holds the slipper up beside her head — through the gap
+// between the paper's top-right corner (~x360 at that height) and her
+// hairline (~x400), so the resting hand never covers the effigy. COCK lifts
+// it higher and further back; STRIKE sweeps the shoulder down-left with the
+// elbow opening in step, landing on the paper (solved against the bones the
+// sprites actually have — the shoulder sits close to the paper, so contact
+// keeps the elbow bent).
+export const SHOULDER_READY = 0.38;
+export const SHOULDER_COCK = 0.68;
 export const SHOULDER_STRIKE = -1.7;
-export const ELBOW_READY = -0.25;
-export const ELBOW_COCK = -0.75;
+export const ELBOW_READY = -0.15;
+export const ELBOW_COCK = -0.55;
 export const ELBOW_STRIKE = 0.965;
 export const ELBOW_GIVE = 0.10;     // the joint absorbing the blow on contact
 export const LEAN_STRIKE = -0.085;
@@ -109,10 +111,12 @@ export function swingPose(since, aim = 0, anticipate = ANTICIPATE_S) {
              elbow: lerp(ELBOW_READY, ELBOW_COCK, u), lean: 0 };
   }
   const t = since - anticipate;
-  if (t < DRIVE_S) {                           // drive: the forearm trails, then whips open
+  if (t < DRIVE_S) {                           // drive: the forearm trails just behind
     const p = (t / DRIVE_S) ** 2;              // ease-in — the blow gathers speed
+    // 1.15: enough lag for the whip to read, but close enough that the
+    // slipper tracks the arc instead of overshooting left and hooking back
     return { shoulder: lerp(SHOULDER_COCK, strike, p),
-             elbow: lerp(ELBOW_COCK, ELBOW_STRIKE, p ** 2.2),
+             elbow: lerp(ELBOW_COCK, ELBOW_STRIKE, p ** 1.15),
              lean: LEAN_STRIKE * p };
   }
   const h = t - DRIVE_S;
