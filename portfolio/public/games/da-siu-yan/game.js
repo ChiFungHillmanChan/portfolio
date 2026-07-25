@@ -52,6 +52,7 @@ let variant = 'std';
 let photoCanvas = null;
 
 let mode = null;                // null | 'ritual' | 'free'
+let modeStartS = 0;             // seconds; feeds the free-mode elapsed HUD
 let damage = null;
 let seq = null;
 let looper = null;
@@ -185,6 +186,7 @@ async function start(which) {
   mode = which;
   window.__daSiuYanPlaying = true;   // hold off any service-worker reload
   const nowS = performance.now() / 1000;
+  modeStartS = nowS;
   if (which === 'ritual') {
     const manifest = await (await fetch('./voice/manifest.json')).json();
     seq = createSequencer(buildRitualSchedule(manifest[variant], Math.random));
@@ -196,9 +198,11 @@ async function start(which) {
     rec = createRecorder(stream);
     if (rec) rec.start();
   } else {
-    const ids = [INTRO.id, ...LINES.map((l) => l.id)];
-    looper = createShuffleLooper(ids, Math.random);
-    nextFreeClipAt = nowS + LINE_GAP;
+    // The intro line is an opening, not a chant — play it once here and keep
+    // it out of the shuffle bag so the endless loop only cycles 打你個… lines.
+    looper = createShuffleLooper(LINES.map((l) => l.id), Math.random);
+    const introDur = audio.playClip(INTRO.id);
+    nextFreeClipAt = nowS + introDur + LINE_GAP;
   }
   lastFrame = performance.now();
   rafId = requestAnimationFrame(frame);
@@ -254,7 +258,8 @@ function frame(nowMs) {
     burnT,
     dust,
     mode,
-    remain: mode === 'ritual' && seq ? RITUAL_SECONDS - seq.elapsed(nowS) : 0
+    remain: mode === 'ritual' && seq ? RITUAL_SECONDS - seq.elapsed(nowS) : 0,
+    elapsed: nowS - modeStartS
   });
   rafId = requestAnimationFrame(frame);
 }
