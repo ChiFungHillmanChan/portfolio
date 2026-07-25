@@ -1,22 +1,29 @@
-// Illustrated scene renderer: warm daylight, SVG-sprite granny who swings her
-// slipper at the paper. Same draw(state) contract as scene.js. Pure helpers
-// (swing envelope, rotated-paper hit test) are exported for node --test.
+// Illustrated scene renderer: warm daylight, sprite granny (cut from the
+// Canva artwork) who swings her slipper at the paper. Same draw(state)
+// contract as scene.js. Pure helpers (swing envelope, rotated-paper hit test)
+// are exported for node --test.
 import { STAGE_W, STAGE_H } from './scene.js';
 
 const KAI = '"Kaiti TC","楷體","DFKai-SB","BiauKai",serif';
 const INK = '#3a2317';
 
 // ── pure: two-bone arm rig ─────────────────────────────────────────────────
-// The arm is two sprites hinged at the elbow: granny-arm-upper.svg pivots at
-// the shoulder, granny-arm-fore.svg pivots at the elbow and inherits the
-// shoulder's rotation. Angles below are canvas rotations in radians — a MORE
-// NEGATIVE elbow folds the forearm back (flexes), 0 is the authored pose.
+// The granny is four sprites sharing one 525x799 frame cut from the source
+// painting (scripts/da-siu-yan/granny-src.png, cut by cut-granny-sprites.py):
+// body, forearm+slipper, upper-arm sleeve, and a head overlay. The arm is
+// her FAR arm — it tucks behind her jaw — so the draw order is
+// body → bricks → paper → forearm → sleeve → head overlay.
+// Angles are canvas rotations in radians; (0,0) is the authored pose with
+// the slipper held high. The blow windmills the shoulder ~2.4 rad while the
+// elbow opens forward, so the slipper arcs over the top onto the paper.
 
-// Skeleton, in the shared 380x420 sprite coordinate system.
-export const PIVOT = { x: 640, y: 640 };     // her right shoulder, stage coords
-export const HIP = { x: 620, y: 980 };       // lean pivot, stage coords
-export const UPPER = { w: 380, h: 420, shx: 300, shy: 360, ex: 242, ey: 232 };
-export const FORE = { w: 380, h: 420, ex: 242, ey: 232, slx: 100, sly: 60 };
+const SCALE = 0.95;                          // frame px → stage px
+export const FRAME = { x: 220, y: 440, w: 525 * SCALE, h: 799 * SCALE };
+// joints in frame coords: shoulder (190,345), elbow (82,235), slipper (100,72)
+export const PIVOT = { x: FRAME.x + 190 * SCALE, y: FRAME.y + 345 * SCALE };
+export const HIP = { x: FRAME.x + 260 * SCALE, y: FRAME.y + 500 * SCALE };
+export const UPPER = { w: FRAME.w, h: FRAME.h, shx: 190 * SCALE, shy: 345 * SCALE, ex: 82 * SCALE, ey: 235 * SCALE };
+export const FORE = { w: FRAME.w, h: FRAME.h, ex: 82 * SCALE, ey: 235 * SCALE, slx: 100 * SCALE, sly: 72 * SCALE };
 
 // Swing timing. The smack is scheduled to land at contact, so this doubles as
 // the tap-to-sound latency — kept at 0.09s because touch players feel anything
@@ -29,23 +36,25 @@ export const RECOIL_S = 0.13;
 export const SETTLE_S = 0.26;
 export const SWING_S = CONTACT_S + HOLD_S + RECOIL_S + SETTLE_S;
 
-// Poses. READY holds the slipper loaded with the elbow bent ~50° — the old rig
-// idled at the top of the swing with the arm locked straight, which is what
-// made her look broken. COCK lifts it further back so the wind-up reads.
-export const SHOULDER_READY = 0.30;
-export const SHOULDER_COCK = 0.48;
-export const SHOULDER_STRIKE = -1.15;
-export const ELBOW_READY = -0.62;
-export const ELBOW_COCK = -0.56;
-export const ELBOW_STRIKE = 0;
-export const ELBOW_GIVE = 0.05;     // the joint absorbing the blow on contact
+// Poses. READY holds the slipper raised with a light elbow fold; COCK snaps
+// the arm nearly straight up; STRIKE windmills the shoulder down while the
+// elbow opens forward, landing the slipper on the paper's upper middle
+// (solved against the bones the sprites actually have — the shoulder sits
+// close to the paper, so contact keeps the elbow bent).
+export const SHOULDER_READY = 0.15;
+export const SHOULDER_COCK = 0.75;
+export const SHOULDER_STRIKE = -1.7;
+export const ELBOW_READY = -0.25;
+export const ELBOW_COCK = -0.75;
+export const ELBOW_STRIKE = 0.965;
+export const ELBOW_GIVE = 0.10;     // the joint absorbing the blow on contact
 export const LEAN_STRIKE = -0.085;
 export const AIM_LIMIT = 0.25;      // how far a tap may swing the strike angle
 
 const lerp = (a, b, u) => a + (b - a) * u;
 
 // Where the slipper ends up for a given pose, in stage coords. Forward
-// kinematics for the exact transform chain drawGranny applies, minus the
+// kinematics for the exact transform chain the renderer applies, minus the
 // ±3px idle bob (which is ~0 during a swing). This is the guard on the
 // landing-point contract — see scene-illustrated.test.js.
 export function slipperPoint({ shoulder, elbow, lean = 0 }) {
@@ -67,10 +76,9 @@ const STRIKE_DIR = (() => {
   return Math.atan2(p.y - PIVOT.y, p.x - PIVOT.x);
 })();
 
-// Extra shoulder rotation that swings the blow toward a tap. Her reach is only
-// ~360px from the shoulder, so most of the paper is physically out of range —
-// the clamp means a far tap leans the strike that way rather than pretending
-// she can get there.
+// Extra shoulder rotation that swings the blow toward a tap. Most of the
+// paper is within reach, but the clamp keeps extreme taps as a lean of the
+// strike rather than a contortion.
 export function aimFor(x, y) {
   if (!Number.isFinite(x) || !Number.isFinite(y)) return 0;
   let bias = Math.atan2(y - PIVOT.y, x - PIVOT.x) - STRIKE_DIR;
@@ -150,8 +158,14 @@ export function inPaper(x, y, paper = IPAPER) {
 }
 
 // ── renderer ───────────────────────────────────────────────────────────────
-const BODY = { x: 350, y: 425, w: 360, h: 780 };
 const BRICKS = { x: 0, y: 858, w: 432, h: 356 };
+const ART_FILES = {
+  'granny-body': 'granny-body.png',
+  'granny-arm-fore': 'granny-arm-fore.png',
+  'granny-arm-upper': 'granny-arm-upper.png',
+  'granny-head': 'granny-head.png',
+  bricks: 'bricks.svg'
+};
 
 export function createIllustratedScene(canvas) {
   const ctx = canvas.getContext('2d');
@@ -164,11 +178,11 @@ export function createIllustratedScene(canvas) {
   const art = {};
 
   const ready = Promise.all(
-    ['granny-body', 'granny-arm-fore', 'granny-arm-upper', 'bricks'].map((n) => new Promise((resolve, reject) => {
+    Object.entries(ART_FILES).map(([n, file]) => new Promise((resolve, reject) => {
       const img = new Image();
       img.onload = () => { art[n] = img; resolve(); };
-      img.onerror = () => reject(new Error(`art/${n}.svg failed to load`));
-      img.src = `./art/${n}.svg`;
+      img.onerror = () => reject(new Error(`art/${file} failed to load`));
+      img.src = `./art/${file}`;
     }))
   ).catch((err) => console.warn('[illustrated scene]', err));
 
@@ -219,7 +233,7 @@ export function createIllustratedScene(canvas) {
     // contact shadows
     ctx.fillStyle = 'rgba(90,60,30,0.18)';
     ctx.beginPath(); ctx.ellipse(255, 1195, 235, 30, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(560, 1180, 170, 26, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(475, 1190, 235, 28, 0, 0, Math.PI * 2); ctx.fill();
   }
 
   function paperPathLocal(inset) {
@@ -397,19 +411,38 @@ export function createIllustratedScene(canvas) {
     ctx.restore();
   }
 
-  function drawGranny(t, sinceStrike) {
+  // Shared per-frame granny numbers so the behind-the-altar body pass and the
+  // in-front arm pass stay in lockstep.
+  function grannyFrame(t, sinceStrike) {
     const pose = armPose(t, sinceStrike, strikeAim, strikeAnticipate);
-    ctx.save();
+    const bob = Math.sin(t * 1.7) * 3 * (1 - swingActivity(sinceStrike, strikeAnticipate));
+    return { pose, bob };
+  }
+
+  function leanIn(pose) {
     // whole granny (body + arm pivot) leans into the blow
+    ctx.save();
     ctx.translate(HIP.x, HIP.y);
     ctx.rotate(pose.lean);
     ctx.translate(-HIP.x, -HIP.y);
-    // gentle breathing bob while idle
-    const bob = Math.sin(t * 1.7) * 3 * (1 - swingActivity(sinceStrike, strikeAnticipate));
-    if (art['granny-body']) {
-      ctx.drawImage(art['granny-body'], BODY.x, BODY.y + bob, BODY.w, BODY.h);
-    }
-    // forearm first, upper arm over it — the rolled cuff hides the elbow seam
+  }
+
+  // Body only — drawn before the bricks and paper so she sits behind the
+  // altar, exactly like the source artwork's composition.
+  function drawGrannyBack(t, sinceStrike) {
+    if (!art['granny-body']) return;
+    const { pose, bob } = grannyFrame(t, sinceStrike);
+    leanIn(pose);
+    ctx.drawImage(art['granny-body'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+    ctx.restore();
+  }
+
+  // The swinging arm and the head overlay — drawn after the paper so the
+  // slipper lands on it, with the sleeve tucking behind her jaw.
+  function drawGrannyFront(t, sinceStrike) {
+    const { pose, bob } = grannyFrame(t, sinceStrike);
+    leanIn(pose);
+    // forearm first, sleeve over it — the cuff hides the elbow seam
     const c = Math.cos(pose.shoulder), s = Math.sin(pose.shoulder);
     const ux = UPPER.ex - UPPER.shx, uy = UPPER.ey - UPPER.shy;
     if (art['granny-arm-fore']) {
@@ -425,6 +458,9 @@ export function createIllustratedScene(canvas) {
       ctx.rotate(pose.shoulder);
       ctx.drawImage(art['granny-arm-upper'], -UPPER.shx, -UPPER.shy, UPPER.w, UPPER.h);
       ctx.restore();
+    }
+    if (art['granny-head']) {
+      ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
     }
     ctx.restore();
   }
@@ -499,9 +535,10 @@ export function createIllustratedScene(canvas) {
   function draw(state) {
     const sinceStrike = state.t - strikeAt;
     drawBackdrop(state.t);
+    drawGrannyBack(state.t, sinceStrike);
     if (art.bricks) ctx.drawImage(art.bricks, BRICKS.x, BRICKS.y, BRICKS.w, BRICKS.h);
     drawPaper(state);
-    drawGranny(state.t, sinceStrike);
+    drawGrannyFront(state.t, sinceStrike);
     drawImpact(state.t);
     drawDust(state.dust);
     drawTarget(state.pointer, state.mode);
