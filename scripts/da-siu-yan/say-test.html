@@ -1,0 +1,573 @@
+<!--
+  Dev-only tool. Tests whether homophone respelling fixes the characters Gemini
+  TTS mispronounces, WITHOUT changing the granny voice.
+
+  Gemini TTS is the only engine that takes a style prompt, so it is the only one
+  that can act the 鵝頸橋 婆婆 — but it has no Cantonese dictionary and no
+  phoneme/jyutping input (both verified against the API). So each bad character
+  is fed to the model as a different character with the identical Cantonese
+  reading. That substitution is TTS-input only: the chant players see is
+  untouched, which is why this does not conflict with the handoff prompt's rule
+  about not rewriting the 口訣.
+
+  Generate first, then serve from the repo root:
+
+    node scripts/da-siu-yan/gen-say-test.mjs
+    python3 -m http.server 8899
+
+  Then open:
+
+    http://localhost:8899/scripts/da-siu-yan/say-test.html
+
+  Everything comes from compare/say.json. Ticks save to localStorage.
+-->
+<title>打小人 — 同音字修正測試</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --smoke: #14100e; --smoke-2: #1e1815;
+    --paper: #e8dcc4; --paper-edge: #cbbb99;
+    --ink: #241d17; --ink-soft: #6b6252;
+    --vermilion: #c6301e; --vermilion-lt: #e8503c;
+    --gold: #a8802c; --gold-lt: #c89a3c;
+    --ember: #e8792b; --jade: #3f7d5a;
+    --serif: "Songti TC", "Noto Serif HK", "Source Han Serif HK", "Songti SC", serif;
+    --sans: "PingFang HK", "PingFang TC", "Noto Sans HK", -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--smoke); }
+  body {
+    margin: 0; padding: 0 1rem 6rem;
+    background: radial-gradient(120% 80% at 50% 0%, #241c17 0%, var(--smoke) 60%);
+    color: var(--paper); font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+
+  .masthead { padding: 2.5rem 0 0.5rem; }
+  .masthead h1 {
+    font-family: var(--serif); font-size: clamp(1.8rem, 4.6vw, 2.7rem);
+    font-weight: 600; letter-spacing: 0.05em; margin: 0;
+  }
+  .masthead .lede { max-width: 64ch; margin: 0.6rem 0 0; color: #b6a98f; font-size: 0.95rem; }
+  .masthead .lede strong { color: var(--gold-lt); font-weight: 600; }
+
+  .ledger {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+    padding: 0.7rem 0.9rem; margin: 1rem -0.9rem 0;
+    background: rgba(20,16,14,0.93); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #3a3129;
+  }
+  .tally { font-family: var(--mono); font-size: 0.85rem; color: #b6a98f; }
+  .tally b { color: var(--paper); }
+  .tally .win { color: #6fbf90; }
+  .tally .lose { color: var(--vermilion-lt); }
+  .spacer { flex: 1 1 auto; }
+  .act {
+    font: inherit; font-size: 0.8rem; padding: 0.32rem 0.7rem;
+    border: 1px solid #3a3129; border-radius: 3px;
+    background: transparent; color: #a2957c; cursor: pointer;
+  }
+  .act:hover { color: var(--paper); border-color: #574a3d; }
+  .act.go { background: var(--vermilion); border-color: var(--vermilion); color: #fff; }
+  .act.go:hover { background: var(--vermilion-lt); }
+  .hint { font-size: 0.76rem; color: #7d7261; margin: 0.7rem 0 0; }
+  .hint kbd {
+    font-family: var(--mono); font-size: 0.72rem; border: 1px solid #3a3129;
+    border-radius: 2px; padding: 0.02rem 0.3rem; color: #b6a98f;
+  }
+
+  .slip {
+    position: relative; margin: 1.1rem 0 0; padding: 0.85rem 1rem 1rem;
+    background:
+      repeating-linear-gradient(90deg, rgba(120,100,70,0.045) 0 1px, transparent 1px 4px),
+      var(--paper);
+    color: var(--ink); border-radius: 2px;
+    box-shadow: 0 1px 0 var(--paper-edge), 0 10px 24px -14px rgba(0,0,0,0.8);
+    scroll-margin-top: 5rem;
+  }
+  .slip.is-current { box-shadow: 0 0 0 2px var(--ember), 0 10px 30px -12px rgba(232,121,43,0.5); }
+  .slip::after {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
+    border-radius: 2px 0 0 2px; background: transparent;
+  }
+  .slip.all-fixed::after { background: var(--jade); }
+  .slip.any-bad::after { background: var(--vermilion); }
+
+  .head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .rank { font-family: var(--serif); font-size: 1.3rem; line-height: 1; color: var(--vermilion); min-width: 2.2ch; }
+  .cid { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-soft); }
+  .swaps { margin-left: auto; font-family: var(--serif); font-size: 1.15rem; }
+  .swaps .arrow { color: var(--ink-soft); font-size: 0.85rem; margin: 0 0.15rem; }
+  .swaps .to { color: var(--jade); }
+
+  .lines { margin: 0.45rem 0 0.7rem; }
+  .lines .row { display: flex; gap: 0.55rem; align-items: baseline; }
+  .lines .tag {
+    font-family: var(--mono); font-size: 0.66rem; color: var(--ink-soft);
+    border: 1px solid var(--paper-edge); border-radius: 2px;
+    padding: 0 0.28rem; white-space: nowrap; margin-top: 0.28rem;
+  }
+  .lines .zh {
+    font-family: var(--serif); font-size: clamp(1.05rem, 2.8vw, 1.3rem);
+    letter-spacing: 0.05em;
+  }
+  .lines .zh mark { background: rgba(63,125,90,0.22); color: var(--jade); font-weight: 600; border-radius: 2px; padding: 0 0.06em; }
+  .lines .zh del { background: rgba(198,48,30,0.15); color: var(--vermilion); text-decoration: none; border-radius: 2px; padding: 0 0.06em; }
+
+  .take { border-top: 1px solid var(--paper-edge); padding: 0.6rem 0 0; margin-top: 0.5rem; }
+  .take-bar { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .vlabel {
+    font-family: var(--mono); font-size: 0.75rem; font-weight: 600;
+    background: rgba(36,29,23,0.08); border-radius: 2px; padding: 0.08rem 0.38rem;
+  }
+  .side { font-family: var(--mono); font-size: 0.68rem; color: var(--ink-soft); margin-left: 0.3rem; }
+  .play {
+    display: inline-flex; align-items: center; gap: 0.28rem;
+    font: inherit; font-size: 0.77rem; padding: 0.24rem 0.5rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: rgba(255,255,255,0.5); color: var(--ink); cursor: pointer;
+  }
+  .play.new { background: rgba(63,125,90,0.1); border-color: #9db8a6; }
+  .play:hover { border-color: var(--ink-soft); background: #fff; }
+  .play.is-playing { background: var(--ember); border-color: var(--ember); color: #fff; }
+  .play svg { width: 8px; height: 10px; fill: currentColor; display: block; }
+  .play .d { font-family: var(--mono); font-size: 0.68rem; opacity: 0.7; }
+  .grow { flex: 1 1 auto; }
+  .allok {
+    font: inherit; font-size: 0.77rem; padding: 0.24rem 0.6rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: transparent; color: var(--ink-soft); cursor: pointer;
+  }
+  .allok:hover { color: var(--ink); border-color: var(--ink-soft); }
+  .allok[aria-pressed="true"] { background: var(--jade); border-color: var(--jade); color: #fff; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0 0; }
+  .chip {
+    position: relative; font: inherit; text-align: left;
+    padding: 0.3rem 0.5rem; border: 1px solid var(--paper-edge); border-radius: 2px;
+    background: rgba(255,255,255,0.45); color: var(--ink); cursor: pointer;
+  }
+  .chip:hover { border-color: var(--ink-soft); }
+  .chip .pair { font-family: var(--serif); font-size: 1.1rem; }
+  .chip .pair .to { color: var(--jade); }
+  .chip .jy { font-family: var(--mono); font-size: 0.68rem; color: var(--gold); margin-left: 0.3rem; }
+  .chip .conf {
+    font-family: var(--mono); font-size: 0.58rem; margin-left: 0.3rem;
+    border: 1px solid currentColor; border-radius: 2px; padding: 0 0.2rem;
+  }
+  .chip .conf.low { color: var(--vermilion); }
+  .chip .conf.medium { color: var(--ember); }
+  .chip .conf.high { color: var(--ink-soft); }
+  .chip[aria-pressed="true"] { background: rgba(198,48,30,0.14); border-color: var(--vermilion); }
+  .chip[aria-pressed="true"] .pair, .chip[aria-pressed="true"] .pair .to { color: var(--vermilion); }
+  .chip .strike {
+    position: absolute; left: 4%; right: 4%; top: 48%; height: 2px;
+    background: var(--vermilion); transform: scaleX(0); transform-origin: left center;
+    transition: transform 180ms cubic-bezier(0.5,0,0.35,1); pointer-events: none; border-radius: 2px;
+  }
+  .chip[aria-pressed="true"] .strike { transform: scaleX(1); }
+  .why { margin: 0.4rem 0 0; font-size: 0.75rem; color: var(--ink-soft); }
+  .noteWrap { margin: 0.45rem 0 0; }
+  .noteWrap input {
+    width: 100%; font: inherit; font-size: 0.8rem; padding: 0.26rem 0.5rem;
+    border: 1px solid var(--paper-edge); border-radius: 2px;
+    background: rgba(255,255,255,0.6); color: var(--ink);
+  }
+
+  #report { margin: 2rem 0 0; display: none; }
+  #report h2 { font-family: var(--serif); font-size: 1.1rem; margin: 0 0 0.5rem; color: var(--gold-lt); }
+  #report pre {
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+    padding: 0.9rem 1rem; border: 1px solid #3a3129; border-radius: 2px;
+    background: var(--smoke-2); color: #cfc3a9;
+  }
+  #reportMsg { font-size: 0.8rem; color: var(--ember); min-height: 1.2em; }
+  .fail {
+    margin: 1.5rem 0; padding: 1rem 1.1rem;
+    border: 1px solid var(--vermilion); border-radius: 2px;
+    background: rgba(198,48,30,0.12); color: #f0d9d4; font-size: 0.9rem;
+  }
+  .fail code { font-family: var(--mono); color: var(--ember); }
+  @media (prefers-reduced-motion: reduce) { .chip .strike { transition: none; } * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>同音字修正測試</h1>
+    <p class="lede">
+      把聲冇變 —— 一樣係你覺得完美嘅 Gemini 婆婆。變嘅只係<strong>餵俾 TTS 嘅字</strong>:
+      每個讀錯嘅字換成一個<strong>粵音完全相同、但模型讀得準</strong>嘅字。
+      玩家見到嘅口訣<strong>一個字都冇改</strong>。
+      聽落新版嗰個字仍然錯,就㩒嗰個字;全部修好就㩒<strong>全部修好</strong>。
+    </p>
+  </header>
+
+  <div class="ledger">
+    <span class="tally" id="tally">載入中…</span>
+    <span class="spacer"></span>
+    <button type="button" class="act go" id="reportBtn">出報告</button>
+    <button type="button" class="act" id="resetBtn">清空</button>
+  </div>
+
+  <p class="hint">
+    <kbd>Space</kbd> 播舊版 · <kbd>N</kbd> 播新版 · <kbd>S</kbd> 慢播舊 · <kbd>D</kbd> 慢播新 ·
+    <kbd>1</kbd>–<kbd>9</kbd> 標第 n 個字仍然錯 · <kbd>Enter</kbd> 全部修好並跳下一段 ·
+    <kbd>↓</kbd><kbd>↑</kbd> 上下段
+  </p>
+
+  <div id="report">
+    <h2>報告</h2>
+    <p id="reportMsg"></p>
+    <pre id="reportText"></pre>
+  </div>
+
+  <main id="app"></main>
+</div>
+
+<script type="module">
+  const MANIFEST = './compare/say.json';
+  const BASE = './compare/';
+  const OLD_DIR = '../../portfolio/public/games/da-siu-yan/voice/';
+  const STORAGE_KEY = 'da-siu-yan-say-test-v1';
+  const HANZI = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十', '十一'];
+  const PLAY = '<svg viewBox="0 0 9 11" aria-hidden="true"><path d="M0 0l9 5.5L0 11z"/></svg>';
+  const CONF_LABEL = { high: '高', medium: '中', low: '低' };
+
+  const appEl = document.getElementById('app');
+  const tallyEl = document.getElementById('tally');
+  const reportEl = document.getElementById('report');
+  const reportTextEl = document.getElementById('reportText');
+  const reportMsgEl = document.getElementById('reportMsg');
+
+  let marks = load();
+  let man = null;
+  let takes = [];
+  let cursor = 0;
+  let playingBtn = null;
+  const audios = [];
+
+  function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); } catch { return {}; } }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(marks)); }
+  function entry(id, v) { return (marks[`${v}:${id}`] ||= { fixed: false, bad: [], note: '' }); }
+  function reviewed(e) { return e.fixed || e.bad.length > 0; }
+
+  function mkPlay(label, src, dur, rate, isNew) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'play' + (isNew ? ' new' : '');
+    b.innerHTML = `${PLAY}<span></span>${dur ? `<span class="d">${dur.toFixed(2)}s</span>` : ''}`;
+    b.querySelector('span').textContent = label;
+    const audio = new Audio(src);
+    audio.preload = 'none';
+    audios.push(audio);
+    audio.addEventListener('ended', () => b.classList.remove('is-playing'));
+    audio.addEventListener('pause', () => b.classList.remove('is-playing'));
+    b.addEventListener('click', () => playAudio(audio, rate, b, src));
+    return { btn: b, audio };
+  }
+
+  function playAudio(audio, rate, btn, src) {
+    for (const a of audios) if (a !== audio && !a.paused) a.pause();
+    if (playingBtn && playingBtn !== btn) playingBtn.classList.remove('is-playing');
+    playingBtn = btn;
+    audio.playbackRate = rate;
+    audio.currentTime = 0;
+    audio.play().then(() => btn?.classList.add('is-playing')).catch(() => {
+      reportEl.style.display = 'block';
+      reportMsgEl.textContent = `播唔到 ${src} — 要用 http 開,同確認已跑 gen-say-test.mjs。`;
+    });
+  }
+
+  /**
+   * Render the line with the changed characters highlighted.
+   * `run.at` indexes the ORIGINAL text, so the `say` side needs its own offset:
+   * it drifts by the accumulated length difference of the preceding runs.
+   * (Today every substitution is 1:1 so the drift is zero — this keeps the
+   * highlight correct if a future respelling changes a character count.)
+   */
+  function markup(str, runs, which) {
+    const el = document.createElement('span');
+    el.className = 'zh';
+    let pos = 0, drift = 0;
+    for (const r of runs) {
+      const seg = which === 'was' ? r.was : r.now;
+      const start = which === 'was' ? r.at : r.at + drift;
+      drift += r.now.length - r.was.length;
+      if (start > pos) el.append(str.slice(pos, start));
+      if (seg.length) {
+        const tag = document.createElement(which === 'was' ? 'del' : 'mark');
+        tag.textContent = seg;
+        el.append(tag);
+      }
+      pos = start + seg.length;
+    }
+    if (pos < str.length) el.append(str.slice(pos));
+    return el;
+  }
+
+  async function init() {
+    try {
+      const res = await fetch(MANIFEST);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      man = await res.json();
+    } catch (err) {
+      const d = document.createElement('div');
+      d.className = 'fail';
+      d.innerHTML = `讀唔到 <code>${MANIFEST}</code>(${err.message})。<br><br>` +
+        '先跑 <code>node scripts/da-siu-yan/gen-say-test.mjs</code>,再由 repo root 用 ' +
+        '<code>python3 -m http.server 8899</code> 開(file:// 唔會 work)。';
+      appEl.append(d);
+      return;
+    }
+    render();
+  }
+
+  function render() {
+    appEl.textContent = '';
+    takes = [];
+    man.clips.forEach((clip, i) => {
+      const slip = document.createElement('article');
+      slip.className = 'slip';
+
+      const head = document.createElement('div');
+      head.className = 'head';
+      const rank = document.createElement('span');
+      rank.className = 'rank';
+      rank.textContent = HANZI[i + 1] ?? String(i + 1);
+      const cid = document.createElement('span');
+      cid.className = 'cid';
+      cid.textContent = clip.id;
+      const swaps = document.createElement('span');
+      swaps.className = 'swaps';
+      clip.targets.forEach((t, k) => {
+        if (k) swaps.append('  ');
+        const f = document.createElement('span'); f.textContent = t.from;
+        const a = document.createElement('span'); a.className = 'arrow'; a.textContent = '→';
+        const to = document.createElement('span'); to.className = 'to'; to.textContent = t.to;
+        swaps.append(f, a, to);
+      });
+      head.append(rank, cid, swaps);
+
+      const lines = document.createElement('div');
+      lines.className = 'lines';
+      for (const [tagText, str, which] of [
+        ['玩家見到', clip.text, 'was'], ['餵 TTS', clip.say, 'now']
+      ]) {
+        const row = document.createElement('div');
+        row.className = 'row';
+        const tag = document.createElement('span');
+        tag.className = 'tag';
+        tag.textContent = tagText;
+        row.append(tag, markup(str, clip.diff, which));
+        lines.append(row);
+      }
+
+      slip.append(head, lines);
+
+      for (const take of clip.takes) {
+        slip.append(buildTake(clip, take, slip));
+      }
+      appEl.append(slip);
+    });
+    refreshTally();
+    const first = takes.findIndex((t) => !reviewed(entry(t.clip.id, t.take.variant)));
+    setCursor(first === -1 ? 0 : first, { scroll: false });
+  }
+
+  function buildTake(clip, take, slip) {
+    const wrap = document.createElement('div');
+    wrap.className = 'take';
+    const bar = document.createElement('div');
+    bar.className = 'take-bar';
+
+    const v = document.createElement('span');
+    v.className = 'vlabel';
+    v.textContent = take.variant;
+
+    const oldSide = document.createElement('span');
+    oldSide.className = 'side';
+    oldSide.textContent = '舊';
+    const oldP = mkPlay('播', `${OLD_DIR}${take.variant}/${clip.id}.mp3`, take.shipped, 1, false);
+    const oldS = mkPlay('慢', `${OLD_DIR}${take.variant}/${clip.id}.mp3`, null, 0.5, false);
+
+    const newSide = document.createElement('span');
+    newSide.className = 'side';
+    newSide.textContent = '新';
+    const newP = mkPlay('播', BASE + take.file, take.duration, 1, true);
+    const newS = mkPlay('慢', BASE + take.file, null, 0.5, true);
+
+    const grow = document.createElement('span');
+    grow.className = 'grow';
+    const allok = document.createElement('button');
+    allok.type = 'button';
+    allok.className = 'allok';
+    allok.textContent = '全部修好';
+
+    bar.append(v, oldSide, oldP.btn, oldS.btn, newSide, newP.btn, newS.btn, grow, allok);
+
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    const chipRefs = [];
+    for (const t of clip.targets) {
+      const c = document.createElement('button');
+      c.type = 'button';
+      c.className = 'chip';
+      c.title = `${t.from} 應讀 ${t.jyut};舊版聽到 ${t.heard}。餵咗「${t.to}」(同音)。㩒一下 = 新版都仍然錯`;
+      c.innerHTML =
+        `<span class="pair">${t.from}<span style="color:var(--ink-soft);font-size:0.8rem">→</span><span class="to">${t.to}</span></span>` +
+        `<span class="jy">${t.jyut}</span>` +
+        `<span class="conf ${t.confidence}">信心${CONF_LABEL[t.confidence] ?? '?'}</span>` +
+        '<span class="strike"></span>';
+      c.addEventListener('click', () => {
+        const e = entry(clip.id, take.variant);
+        const i = e.bad.indexOf(t.from);
+        if (i === -1) { e.bad.push(t.from); e.fixed = false; } else { e.bad.splice(i, 1); }
+        save(); sync(ref);
+      });
+      chips.append(c);
+      chipRefs.push({ from: t.from, el: c });
+    }
+
+    const lowConf = clip.targets.filter((t) => t.confidence !== 'high' && t.why);
+    wrap.append(bar, chips);
+    for (const t of lowConf) {
+      const p = document.createElement('p');
+      p.className = 'why';
+      p.textContent = `${t.from} → ${t.to}:${t.why}`;
+      wrap.append(p);
+    }
+
+    const noteWrap = document.createElement('div');
+    noteWrap.className = 'noteWrap';
+    const note = document.createElement('input');
+    note.type = 'text';
+    note.placeholder = '新版聽到咩?(例如:讀對咗但聲調唔對 / 個字讀成第二個字)';
+    note.addEventListener('input', () => { entry(clip.id, take.variant).note = note.value; save(); });
+    noteWrap.append(note);
+    wrap.append(noteWrap);
+
+    const ref = { clip, take, slip, wrap, allok, chipRefs, note, oldP, newP, oldS, newS };
+    takes.push(ref);
+    allok.addEventListener('click', () => {
+      const e = entry(clip.id, take.variant);
+      e.fixed = !e.fixed;
+      if (e.fixed) e.bad = [];
+      save(); sync(ref);
+      if (e.fixed) setCursor(takes.indexOf(ref) + 1);
+    });
+    wrap.addEventListener('click', (ev) => {
+      if (ev.target.closest('button, input')) return;
+      setCursor(takes.indexOf(ref), { scroll: false });
+    });
+    sync(ref);
+    return wrap;
+  }
+
+  function sync(ref) {
+    const e = entry(ref.clip.id, ref.take.variant);
+    for (const c of ref.chipRefs) c.el.setAttribute('aria-pressed', String(e.bad.includes(c.from)));
+    ref.allok.setAttribute('aria-pressed', String(e.fixed));
+    if (ref.note.value !== e.note) ref.note.value = e.note;
+    const all = ref.clip.takes.map((t) => entry(ref.clip.id, t.variant));
+    ref.slip.classList.toggle('any-bad', all.some((x) => x.bad.length));
+    ref.slip.classList.toggle('all-fixed', all.every((x) => x.fixed));
+    refreshTally();
+  }
+
+  function setCursor(i, { scroll = true } = {}) {
+    if (!takes.length) return;
+    cursor = Math.max(0, Math.min(i, takes.length - 1));
+    for (const t of takes) t.slip.classList.remove('is-current');
+    const cur = takes[cursor];
+    cur.slip.classList.add('is-current');
+    if (scroll) cur.slip.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function refreshTally() {
+    const total = takes.length;
+    const done = takes.filter((t) => reviewed(entry(t.clip.id, t.take.variant))).length;
+    const stillBad = new Set();
+    let okChars = 0;
+    for (const t of takes) {
+      const e = entry(t.clip.id, t.take.variant);
+      for (const ch of e.bad) stillBad.add(ch);
+      if (e.fixed) okChars += t.clip.targets.length;
+    }
+    tallyEl.innerHTML = `已判 <b>${done}</b> / ${total} 段 · ` +
+      `<span class="win">修好 <b>${okChars}</b> 字</span> · ` +
+      `<span class="lose">仍然錯 <b>${stillBad.size}</b> 個字</span>`;
+  }
+
+  document.getElementById('reportBtn').addEventListener('click', async () => {
+    const fixed = [], broken = [], todo = [];
+    for (const t of takes) {
+      const e = entry(t.clip.id, t.take.variant);
+      const label = `${t.take.variant}/${t.clip.id}`;
+      const swaps = t.clip.targets.map((x) => `${x.from}→${x.to}(${x.jyut})`).join(' ');
+      if (!reviewed(e)) { todo.push(`  ${label.padEnd(16)} ${swaps}`); continue; }
+      if (e.fixed) fixed.push(`  ${label.padEnd(16)} ${swaps}${e.note ? `  — ${e.note}` : ''}`);
+      else broken.push(`  ${label.padEnd(16)} 仍然錯: ${e.bad.map((ch) => {
+        const t2 = t.clip.targets.find((x) => x.from === ch);
+        return `${ch}→${t2.to}`;
+      }).join(', ')}${e.note ? `  — ${e.note}` : ''}`);
+    }
+    const out = [];
+    out.push('打小人 — 同音字修正測試結果');
+    out.push(`引擎 ${man.model} / ${man.voice}(把聲不變)`);
+    out.push('');
+    out.push(`修好 (${fixed.length} 段):`);
+    out.push(...(fixed.length ? fixed : ['  (冇)']));
+    out.push('');
+    out.push(`仍然錯 (${broken.length} 段):`);
+    out.push(...(broken.length ? broken : ['  (冇)']));
+    if (todo.length) { out.push(''); out.push(`未判 (${todo.length} 段):`); out.push(...todo); }
+    if (!todo.length) {
+      out.push('');
+      out.push(broken.length
+        ? '下一步:仍然錯嘅字要換另一個同音字,或者接受。其餘可以入 chant-lines.js 嘅 say 欄位。'
+        : '下一步:全部修好 → 把 say 欄位寫入 chant-lines.js,重生全部 60 條,bump sw.js v8→v9。');
+    }
+    const text = out.join('\n');
+    reportEl.style.display = 'block';
+    reportTextEl.textContent = text;
+    reportEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    try {
+      await navigator.clipboard.writeText(text);
+      reportMsgEl.textContent = '已複製到剪貼板 — 貼返俾我。';
+    } catch {
+      reportMsgEl.textContent = '剪貼板被擋 — 自己 copy 下面段文字。';
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('清空全部標記?')) return;
+    marks = {}; save(); render();
+    reportEl.style.display = 'none';
+    reportMsgEl.textContent = '';
+  });
+
+  window.addEventListener('keydown', (ev) => {
+    if (!takes.length) return;
+    if (['INPUT', 'TEXTAREA'].includes(ev.target.tagName)) return;
+    const t = takes[cursor];
+    const k = ev.key.toLowerCase();
+    if (ev.key === ' ') { ev.preventDefault(); t.oldP.btn.click(); }
+    else if (k === 's') { ev.preventDefault(); t.oldS.btn.click(); }
+    else if (k === 'n') { ev.preventDefault(); t.newP.btn.click(); }
+    else if (k === 'd') { ev.preventDefault(); t.newS.btn.click(); }
+    else if (ev.key === 'Enter') { ev.preventDefault(); t.allok.click(); }
+    else if (ev.key === 'ArrowDown' || k === 'j') { ev.preventDefault(); setCursor(cursor + 1); }
+    else if (ev.key === 'ArrowUp' || k === 'k') { ev.preventDefault(); setCursor(cursor - 1); }
+    else if (/^[1-9]$/.test(ev.key)) {
+      const c = t.chipRefs[Number(ev.key) - 1];
+      if (c) { ev.preventDefault(); c.el.click(); }
+    }
+  });
+
+  init();
+</script>

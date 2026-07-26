@@ -1,7 +1,7 @@
 // Dev-time only: generates the granny voice clips for da-siu-yan.
 // Usage: GEMINI_API_KEY=... node scripts/generate-granny-voice.mjs [--force] [--only id,id]
 // Requires ffmpeg on PATH. Never runs at game runtime.
-import { INTRO, FINALE, LINES } from '../portfolio/public/games/da-siu-yan/chant-lines.js';
+import { INTRO, FINALE, LINES, ttsText } from '../portfolio/public/games/da-siu-yan/chant-lines.js';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
@@ -20,6 +20,12 @@ const TRIM_THRESHOLD = 700; // int16 abs, ≈ -33 dBFS
 // without burning API calls, use scripts/respeed-granny-voice.mjs instead.
 const TEMPO = 2;
 if (!(TEMPO >= 0.5 && TEMPO <= 2)) { console.error(`TEMPO ${TEMPO} outside atempo's [0.5, 2]`); process.exit(1); }
+// Per-clip overrides, kept in step with CLIP_TEMPO in respeed-granny-voice.mjs.
+// The intro is the first thing anyone hears; PR #77 slowed it to 1.4x on
+// purpose. Without this, regenerating the intro at the blanket 2x would
+// silently undo that.
+const CLIP_TEMPO = { intro: 1.4 };
+const tempoFor = (id) => CLIP_TEMPO[id] ?? TEMPO;
 
 const CANTO_RULE = '你必須由頭到尾用香港廣東話(粵語)發音讀出每一個字,特別係句尾嗰幾個字都一定要用粵語讀音,絕對唔可以用普通話讀任何一個字。';
 const VARIANTS = {
@@ -60,9 +66,9 @@ function trimAndPad(pcm) {
   return Buffer.from(out.buffer);
 }
 
-function encodeMp3(pcm, file) {
+function encodeMp3(pcm, file, tempo) {
   execFileSync('ffmpeg', ['-y', '-f', 's16le', '-ar', String(RATE), '-ac', '1', '-i', 'pipe:0',
-    '-filter:a', `atempo=${TEMPO}`,
+    '-filter:a', `atempo=${tempo}`,
     '-codec:a', 'libmp3lame', '-b:a', '64k', file], { input: pcm, stdio: ['pipe', 'ignore', 'ignore'] });
 }
 
@@ -77,9 +83,10 @@ for (const variant of Object.keys(VARIANTS)) {
       duration = parseFloat(execFileSync('ffprobe', ['-v', 'quiet', '-show_entries', 'format=duration', '-of', 'csv=p=0', file], { encoding: 'utf8' }));
       console.log(`skip  ${rel} (${duration.toFixed(2)}s)`);
     } else {
-      const pcm = trimAndPad(await tts(VARIANTS[variant], clip.text));
-      duration = pcm.byteLength / 2 / RATE / TEMPO;   // encodeMp3 time-stretches
-      encodeMp3(pcm, file);
+      const tempo = tempoFor(clip.id);
+      const pcm = trimAndPad(await tts(VARIANTS[variant], ttsText(clip)));
+      duration = pcm.byteLength / 2 / RATE / tempo;   // encodeMp3 time-stretches
+      encodeMp3(pcm, file, tempo);
       console.log(`wrote ${rel} (${duration.toFixed(2)}s)`);
       await new Promise((r) => setTimeout(r, 1100));
     }
