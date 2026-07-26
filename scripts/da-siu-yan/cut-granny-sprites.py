@@ -129,6 +129,11 @@ def main(debug_only=False):
     bd = ImageDraw.Draw(bone)
     bd.line([WRIST, ELBOW], fill=skin + (255,), width=44)
     bd.ellipse([WRIST[0]-22, WRIST[1]-22, WRIST[0]+22, WRIST[1]+22], fill=skin + (255,))
+    # clip to the source's own silhouette: the line/ellipse footprint is a
+    # geometric approximation of the limb, not a measured trace of it, so it
+    # can poke past the real ink outline into background wherever the
+    # painted arm is narrower or curves off the straight synthetic line
+    bone.putalpha(ImageChops.multiply(bone.split()[3], alpha))
     fore = Image.alpha_composite(bone, fore)
     slim(fore).save('granny-arm-fore.png')
 
@@ -138,6 +143,7 @@ def main(debug_only=False):
     wd = ImageDraw.Draw(wcap)
     wd.ellipse([WRIST[0]-20, WRIST[1]-20, WRIST[0]+20, WRIST[1]+20], fill=skin + (255,))
     wcap = wcap.filter(ImageFilter.GaussianBlur(0.5))
+    wcap.putalpha(ImageChops.multiply(wcap.split()[3], alpha))  # same silhouette clip
     hand = Image.alpha_composite(wcap, hand)
     slim(hand).save('granny-hand.png')
 
