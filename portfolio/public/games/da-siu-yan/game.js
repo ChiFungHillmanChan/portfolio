@@ -152,8 +152,12 @@ canvas.addEventListener('pointerdown', (e) => {
     lastCombo = r.combo;
     if (r.comboBurst) comboFlash = 1.4;
     if (style === 'illu') smackDelay = scenes.illu.strike(p.x, p.y, performance.now() / 1000);
+    audio.smack(smackDelay);
+  } else {
+    // missed the paper (e.g. tapped the brick slab) — a quiet, duller thud
+    // acknowledges the tap without sounding like a landed blow
+    audio.thud();
   }
-  audio.smack(smackDelay);
 });
 canvas.addEventListener('pointerup', () => { pointer.down = false; });
 canvas.addEventListener('pointercancel', () => { pointer.down = false; });

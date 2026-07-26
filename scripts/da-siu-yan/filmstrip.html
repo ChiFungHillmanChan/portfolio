@@ -1,0 +1,68 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>da-siu-yan swing filmstrip</title>
+<!-- Committed, rerunnable version of the design-time harness. The scene loads
+     its sprites with document-relative './art/...' paths (see
+     scene-illustrated.js), so the document base has to BE the game
+     directory. A relative <base href> resolves against this file's own
+     location, so this works from any checkout without a symlink: it also
+     bends the `import` specifiers below onto the real game modules, since
+     inline module scripts resolve against the document base URL too. -->
+<base href="../../portfolio/public/games/da-siu-yan/">
+<style>
+  html, body { margin: 0; background: #ffffff; }
+  canvas { display: block; }
+</style>
+<canvas id="strip"></canvas>
+<script type="module">
+import { createIllustratedScene } from './scene-illustrated.js';
+import { planeToScreen } from './plane.js';
+
+const TIMES = [0, 0.035, 0.065, 0.09, 0.115, 0.16, 0.25, 0.40];
+const NOTE = { 0: 'ready', 0.035: 'cocked', 0.09: 'CONTACT', 0.115: 'hold', 0.4: 'settle' };
+const CROP = { x: 0, y: 400, w: 720, h: 860 };
+const K = 0.43;                       // crop px -> filmstrip px
+const COLS = 4, LABEL = 22;
+const CW = Math.round(CROP.w * K), CH = Math.round(CROP.h * K);
+
+const off = document.createElement('canvas');
+off.width = 720; off.height = 1280;
+
+const scene = createIllustratedScene(off);
+scene.setEffigy({ name: '陳大文', photo: null });
+await scene.ready;
+
+// one blow at the sheet centre, thrown at t=0 with the jitter pinned out
+const target = planeToScreen(0, 0);
+scene.strike(target.x, target.y, 0, () => 0.5);
+
+const rows = Math.ceil(TIMES.length / COLS);
+const strip = document.getElementById('strip');
+strip.width = COLS * CW;
+strip.height = rows * (CH + LABEL);
+const g = strip.getContext('2d');
+g.fillStyle = '#ffffff';
+g.fillRect(0, 0, strip.width, strip.height);
+
+TIMES.forEach((t, i) => {
+  scene.draw({
+    t,
+    pointer: { x: NaN, y: NaN, down: false },
+    prints: [], stage: 0, count: 8, combo: 0, comboFlash: 0,
+    burnT: 0, dust: [], mode: null, remain: 0, elapsed: 4
+  });
+  const col = i % COLS, row = Math.floor(i / COLS);
+  const x = col * CW, y = row * (CH + LABEL);
+  g.fillStyle = '#111';
+  g.font = '15px -apple-system, Helvetica, sans-serif';
+  g.textAlign = 'left';
+  g.textBaseline = 'middle';
+  g.fillText(`t = ${t.toFixed(3)}s${NOTE[t] ? '  — ' + NOTE[t] : ''}`, x + 8, y + LABEL / 2);
+  g.drawImage(off, CROP.x, CROP.y, CROP.w, CROP.h, x, y + LABEL, CW, CH);
+  g.strokeStyle = 'rgba(0,0,0,0.35)';
+  g.lineWidth = 1;
+  g.strokeRect(x + 0.5, y + LABEL + 0.5, CW - 1, CH - 1);
+});
+
+document.title = 'filmstrip ready';
+</script>

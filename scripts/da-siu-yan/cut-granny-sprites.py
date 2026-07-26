@@ -17,14 +17,32 @@ W, H = 525, 799
 # joints (image coords)
 SHOULDER = (190, 345)
 ELBOW = (82, 235)
+WRIST = (61, 196)       # measured: narrowest section before the fist widens
 SLIPPER = (100, 72)     # centre of the slipper face
 
-# forearm + hand + slipper: skin cut along the cuff-opening V; everywhere
-# else the boundary runs through transparency, so it can be generous
-POLY_FORE = [
+# hand + slipper: everything beyond the wrist. The cut runs perpendicular to
+# the forearm across the wrist; elsewhere the boundary sits in transparency,
+# so it can be generous. The (84,200)..(61,169) run loops around WRIST at a
+# ~27px margin (bigger than the wrist-cap disc drawn in main()) rather than
+# touching it — the disc is unmasked, so if HAND's own polygon doesn't reach
+# past its footprint, hand.png shows the flat cap color instead of real
+# pixels there and it overwrites fore's real content when composited on top.
+POLY_HAND = [
     (0, 0), (205, 0), (205, 95), (150, 140), (128, 185), (100, 188),
-    (84, 200), (78, 214), (74, 228), (60, 256), (48, 248), (36, 242),
-    (6, 236), (0, 238),
+    (84, 200), (82, 213), (61, 223), (40, 213), (34, 196), (44, 175),
+    (61, 169), (30, 170), (0, 178),
+]
+
+# forearm stub: elbow up to the wrist cut. Short — most of what the old
+# single sprite called "forearm" was actually fist + slipper. The right edge
+# (92,180)-(81,210) is pushed a few px past where POLY_UPPER's own boundary
+# sits (measured: a hairline gap otherwise runs along that edge, invisible
+# in the old single-piece art but exposed here by the wrist bone/cap fill
+# sitting right on top of it — the overlap is free since both pieces sample
+# the same source photo).
+POLY_FORE = [
+    (0, 170), (30, 168), (60, 166), (92, 180), (81, 210), (74, 228),
+    (60, 256), (48, 248), (36, 242), (6, 236), (0, 238),
 ]
 
 # the sleeve (upper arm): boundary follows the cuff-opening V and the elbow
@@ -69,17 +87,19 @@ def main(debug_only=False):
         dbg = img.copy()
         d = ImageDraw.Draw(dbg)
         d.polygon(POLY_FORE, outline=(255, 0, 0, 255), width=2)
+        d.polygon(POLY_HAND, outline=(255, 200, 0, 255), width=2)
         d.polygon(POLY_UPPER, outline=(0, 0, 255, 255), width=2)
         d.polygon(POLY_HEAD, outline=(0, 180, 0, 255), width=2)
         d.polygon(POLY_PATCH, outline=(255, 0, 255, 255), width=2)
         for p, c in [(SHOULDER, (255, 0, 255, 255)), (ELBOW, (0, 200, 0, 255)),
-                     (SLIPPER, (255, 140, 0, 255))]:
+                     (WRIST, (0, 220, 220, 255)), (SLIPPER, (255, 140, 0, 255))]:
             d.ellipse([p[0]-6, p[1]-6, p[0]+6, p[1]+6], outline=c, width=3)
         dbg.save('debug-polys.png')
         print('wrote debug-polys.png')
         return
 
     m_fore = mask_from_poly(POLY_FORE)
+    m_hand = mask_from_poly(POLY_HAND)
     m_upper = mask_from_poly(POLY_UPPER)
     m_head = mask_from_poly(POLY_HEAD)
 
@@ -107,10 +127,25 @@ def main(debug_only=False):
     fore = extract(m_fore)
     bone = Image.new('RGBA', (W, H), (0, 0, 0, 0))
     bd = ImageDraw.Draw(bone)
-    bd.line([(58, 200), ELBOW], fill=skin + (255,), width=44)
-    bd.ellipse([ELBOW[0]-22, ELBOW[1]-22, ELBOW[0]+22, ELBOW[1]+22], fill=skin + (255,))
+    bd.line([WRIST, ELBOW], fill=skin + (255,), width=44)
+    bd.ellipse([WRIST[0]-22, WRIST[1]-22, WRIST[0]+22, WRIST[1]+22], fill=skin + (255,))
+    # clip to the source's own silhouette: the line/ellipse footprint is a
+    # geometric approximation of the limb, not a measured trace of it, so it
+    # can poke past the real ink outline into background wherever the
+    # painted arm is narrower or curves off the straight synthetic line
+    bone.putalpha(ImageChops.multiply(bone.split()[3], alpha))
     fore = Image.alpha_composite(bone, fore)
     slim(fore).save('granny-arm-fore.png')
+
+    # ── hand sprite: fist + slipper, pivoting at the wrist ──
+    hand = extract(m_hand)
+    wcap = Image.new('RGBA', (W, H), (0, 0, 0, 0))
+    wd = ImageDraw.Draw(wcap)
+    wd.ellipse([WRIST[0]-20, WRIST[1]-20, WRIST[0]+20, WRIST[1]+20], fill=skin + (255,))
+    wcap = wcap.filter(ImageFilter.GaussianBlur(0.5))
+    wcap.putalpha(ImageChops.multiply(wcap.split()[3], alpha))  # same silhouette clip
+    hand = Image.alpha_composite(wcap, hand)
+    slim(hand).save('granny-hand.png')
 
     # ── upper arm sprite: yellow half-disc cap under the sleeve pixels ──
     # only the elbow-facing half: the body-side half is the patch's job, and a
@@ -141,7 +176,8 @@ def main(debug_only=False):
 
     # ── body sprite: original minus both arm pieces, shoulder patched ──
     # dilate the union so no sliver of arm survives between the two cut lines
-    union = ImageChops.lighter(m_fore, m_upper).filter(ImageFilter.MaxFilter(9))
+    union = ImageChops.lighter(ImageChops.lighter(m_fore, m_upper),
+                               m_hand).filter(ImageFilter.MaxFilter(9))
     body = img.copy()
     body.putalpha(ImageChops.multiply(alpha, ImageChops.invert(union)))
     patch = Image.new('RGBA', (W, H), (0, 0, 0, 0))
@@ -156,8 +192,8 @@ def main(debug_only=False):
     body.save('granny-body.png')
 
     # ── reconstruction check: authored pose should look like the original ──
-    recon = Image.alpha_composite(
-        Image.alpha_composite(Image.alpha_composite(body, fore), upper), head)
+    recon = Image.alpha_composite(Image.alpha_composite(Image.alpha_composite(
+        Image.alpha_composite(body, fore), hand), upper), head)
     recon.save('debug-recon.png')
 
     # rotated-pose seam checks (shoulder deg, elbow deg — canvas sign, so
@@ -168,8 +204,14 @@ def main(debug_only=False):
         canvas.alpha_composite(body)
         f = fore.rotate(-el_deg, center=ELBOW, resample=Image.BICUBIC)
         f = f.rotate(-sh_deg, center=SHOULDER, resample=Image.BICUBIC)
+        # hand has no independent wrist bend yet (that's task 3's IK job) —
+        # carry it through the same elbow+shoulder transform as the forearm
+        # so it stays glued at the wrist for this seam check
+        h = hand.rotate(-el_deg, center=ELBOW, resample=Image.BICUBIC)
+        h = h.rotate(-sh_deg, center=SHOULDER, resample=Image.BICUBIC)
         u = upper.rotate(-sh_deg, center=SHOULDER, resample=Image.BICUBIC)
         canvas.alpha_composite(f)
+        canvas.alpha_composite(h)
         canvas.alpha_composite(u)
         canvas.alpha_composite(head)
         canvas.save(f'debug-pose-{name}.png')

@@ -60,6 +60,35 @@ export function createAudioEngine() {
     noise.start(t); thump.start(t); thump.stop(t + 0.13);
   }
 
+  // a miss (tapped the slab, not the paper) — same shape as smack() but
+  // lowpassed instead of bandpassed (no crack, just a dull knock) and much
+  // quieter, so it acknowledges the tap without reading as a landed blow.
+  function thud(delayS = 0) {
+    const t = ctx.currentTime + Math.max(0, delayS || 0);
+    const vary = () => 0.8 + Math.random() * 0.4;
+    const noise = ctx.createBufferSource();
+    const len = Math.floor(ctx.sampleRate * 0.06);
+    const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len) ** 2;
+    noise.buffer = buf;
+    const lp = ctx.createBiquadFilter();
+    lp.type = 'lowpass'; lp.Q.value = 0.7;
+    lp.frequency.setValueAtTime(500 * vary(), t);
+    lp.frequency.exponentialRampToValueAtTime(160 * vary(), t + 0.05);
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.25, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.06);
+    noise.connect(lp).connect(g).connect(master);
+    const thump = ctx.createOscillator();
+    thump.frequency.setValueAtTime(45 * vary(), t);
+    const tg = ctx.createGain();
+    tg.gain.setValueAtTime(0.18, t);
+    tg.gain.exponentialRampToValueAtTime(0.001, t + 0.09);
+    thump.connect(tg).connect(master);
+    noise.start(t); thump.start(t); thump.stop(t + 0.1);
+  }
+
   function startAmbient() {
     if (ambient) return;
     const len = ctx.sampleRate * 2;
@@ -77,7 +106,7 @@ export function createAudioEngine() {
   return {
     ctx, dest,
     unlock: () => (ctx.state === 'suspended' ? ctx.resume() : Promise.resolve()),
-    loadVariant, playClip, smack, startAmbient,
+    loadVariant, playClip, smack, thud, startAmbient,
     stopAll: () => { live.forEach((s) => { try { s.stop(); } catch { /* already ended */ } }); if (ambient) { ambient.stop(); ambient = null; } }
   };
 }

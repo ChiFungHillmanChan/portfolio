@@ -1,176 +1,134 @@
-// Illustrated scene renderer: warm daylight, sprite granny (cut from the
-// Canva artwork) who swings her slipper at the paper. Same draw(state)
-// contract as scene.js. Pure helpers (swing envelope, rotated-paper hit test)
-// are exported for node --test.
+// Illustrated scene renderer: warm daylight, sprite granny (cut from the Canva
+// artwork) who swings her slipper at the 小人紙 lying FLAT on the altar. Same
+// draw(state) contract as scene.js.
+//
+// The geometry is no longer in this file: plane.js owns the ground plane the
+// sheet lies in, rig.js owns the three-bone arm (shoulder → elbow → wrist →
+// slipper) and its IK-solved strike pose. This file is only the paint pass, so
+// the pure-function tests live in plane.test.js / rig.test.js.
 import { STAGE_W, STAGE_H } from './scene.js';
+import { PLANE, planeMatrix, planeToScreen, screenToPlane } from './plane.js';
+import {
+  FRAME, PIVOT, HIP, UPPERA, FOREA, HANDA,
+  elbowAt, wristAt, armPose, swingActivity, aimFor, slipperPoint,
+  ANTICIPATE_S, DRIVE_S, AIM_LIMIT, HOLD_S
+} from './rig.js';
+
+// game.js hit-tests the sheet through this module; the test itself is the
+// plane's, so just pass it through.
+export { inPaper } from './plane.js';
 
 const KAI = '"Kaiti TC","楷體","DFKai-SB","BiauKai",serif';
 const INK = '#3a2317';
 
-// ── pure: two-bone arm rig ─────────────────────────────────────────────────
-// The granny is four sprites sharing one 525x799 frame cut from the source
-// painting (scripts/da-siu-yan/granny-src.png, cut by cut-granny-sprites.py):
-// body, forearm+slipper, upper-arm sleeve, and a head overlay. The arm is
-// her FAR arm — it tucks behind her jaw — so the draw order is
-// body → bricks → paper → forearm → sleeve → head overlay.
-// Angles are canvas rotations in radians; (0,0) is the authored pose with
-// the slipper held high. The blow windmills the shoulder ~2.4 rad while the
-// elbow opens forward, so the slipper arcs over the top onto the paper.
+// ── the altar ──────────────────────────────────────────────────────────────
+// A slab whose TOP FACE IS THE SHEET'S OWN PLANE, oversailing it, with
+// verticals dropped from the near edge for the front face. Built this way the
+// paper cannot help but read as lying on the brick — the two come out of one
+// matrix, so they foreshorten together.
+// The oversail is deliberately asymmetric: you see much more of a table top in
+// FRONT of what is on it than behind, and that unequal band is most of what
+// tells the eye the brick is horizontal rather than a wall behind the sheet.
+// The TOP face must be the dominant visible surface — that is the whole cue.
+// At tilt 0.30 the top face is ~238 screen px deep against a 110px front face,
+// so the eye reads a slab you are looking down onto, not a wall you are facing.
+// `u` has to cover the convergence too: at converge 0.84 the far edge keeps
+// only 84% of its half-width, so the sheet's far corners would graze the slab
+// unless the oversail is wide enough to absorb it (250 → 210 vs the sheet's 170).
+const ALTAR = { u: 80, vFar: 90, vNear: 210, drop: 110, converge: 0.84 };
+// Chips and speckle scattered on the top face, in sheet-plane units. Courses
+// deliberately do NOT go here: a brick GRID in this plane is indistinguishable
+// from a brick wall behind the sheet, which is exactly the misread we are
+// fixing. Courses belong on the front face, where a vertical surface is
+// actually what we mean.
+const SPECKLE = [
+  [-196, -270, 34], [-96, -286, 22], [64, -292, 28], [176, -262, 24],
+  [-210, 268, 30], [-104, 292, 26], [40, 286, 34], [178, 262, 22],
+  [-208, 40, 26], [190, -60, 26], [-204, -120, 20], [196, 150, 30]
+];
+const BRICK_TOP = '#8a5a3b';
+const BRICK_FRONT = '#6d4529';
+const BRICK_LINE = 'rgba(58,35,23,0.45)';
 
-const SCALE = 0.95;                          // frame px → stage px
-export const FRAME = { x: 220, y: 440, w: 525 * SCALE, h: 799 * SCALE };
-// joints in frame coords: shoulder (190,345), elbow (82,235), slipper (100,72)
-export const PIVOT = { x: FRAME.x + 190 * SCALE, y: FRAME.y + 345 * SCALE };
-export const HIP = { x: FRAME.x + 260 * SCALE, y: FRAME.y + 500 * SCALE };
-export const UPPER = { w: FRAME.w, h: FRAME.h, shx: 190 * SCALE, shy: 345 * SCALE, ex: 82 * SCALE, ey: 235 * SCALE };
-export const FORE = { w: FRAME.w, h: FRAME.h, ex: 82 * SCALE, ey: 235 * SCALE, slx: 100 * SCALE, sly: 72 * SCALE };
+// Where the wall stops and the ground begins. This HAS to sit above the
+// altar's far corner (y≈812): a sheet lying on the ground cannot cross the
+// horizon, and while it did, the whole slab read as a framed poster propped
+// against a wall no matter how correct the plane maths was.
+const FLOOR_Y = 780;
 
-// Swing timing. The smack is scheduled to land at contact, so this doubles as
-// the tap-to-sound latency — kept at 0.09s because touch players feel anything
-// past ~0.1s as lag, while still leaving the wind-up two frames to read.
-export const ANTICIPATE_S = 0.035;  // rock back
-export const DRIVE_S = 0.055;       // accelerate onto the paper
-export const CONTACT_S = ANTICIPATE_S + DRIVE_S;
-export const HOLD_S = 0.035;        // slipper pressed on the paper
-export const RECOIL_S = 0.13;
-export const SETTLE_S = 0.26;
-export const SWING_S = CONTACT_S + HOLD_S + RECOIL_S + SETTLE_S;
+// ── the arm ────────────────────────────────────────────────────────────────
+// Joint STUBS, drawn under each posed sprite. A flat-colour disc was the first
+// attempt and it failed in a way worth recording: sampled at contact, the pixel
+// over her jaw was exactly rgb(210,159,2) — the disc itself, showing as a
+// paint-by-numbers blob because it has no shading and no ink outline, and it
+// necessarily spills past the body wherever the body's cut edge is concave.
+//
+// Instead each stub re-draws the limb's OWN sprite, unrotated (shoulder) or
+// carrying only its parent's rotation (elbow), clipped to a disc at the joint.
+// That gives a shoulder made of real paint — shading, outline and all — which
+// by construction cannot escape the painting's silhouette, and which coincides
+// pixel-for-pixel with the artwork when the arm is near its painted pose.
+// Radii are joint-sized, not limb-sized: big enough to plug the socket, small
+// enough that the stub reads as a shoulder rather than a ghost of a second arm.
+const ELBOW_R = 26;
+const SHOULDER_R = 50;
 
-// Poses. READY holds the slipper high above her head, the whole forearm
-// sprite clear of the paper (pixel-verified, incl. the idle waggle range);
-// COCK pulls it further back behind her crown; STRIKE sweeps the shoulder
-// down-left with the elbow opening in step, landing on the paper (solved
-// against the bones the sprites actually have — the shoulder sits close to
-// the paper, so contact keeps the elbow bent).
-export const SHOULDER_READY = 0.60;
-export const SHOULDER_COCK = 0.85;
-export const SHOULDER_STRIKE = -1.7;
-export const ELBOW_READY = -0.28;
-export const ELBOW_COCK = -0.55;
-export const ELBOW_STRIKE = 0.965;
-export const ELBOW_GIVE = 0.10;     // the joint absorbing the blow on contact
-export const LEAN_STRIKE = -0.085;
-export const AIM_LIMIT = 0.25;      // how far a tap may swing the strike angle
+// At contact the hand's world rotation is shoulder+elbow+wrist ≈ -3.45 rad
+// (~-197°), which is forced by the IK — the wrist has no freedom left once the
+// two-bone solve has pinned the other joints. So the painted slipper arrives
+// sole-up. FLIP_HAND mirrors the sprite across its own wrist→slipper axis,
+// which turns the sole back down WITHOUT moving the slipper: the axis is
+// fixed by the mirror, so the landing point rig.test.js guards is untouched.
+// Flip it here to switch the whole scene.
+const FLIP_HAND = false;
+const HAND_ANG = Math.atan2(HANDA.sly - HANDA.wy, HANDA.slx - HANDA.wx);
 
-const lerp = (a, b, u) => a + (b - a) * u;
+// ── impact feedback ─────────────────────────────────────────────────────────
+// Everything here reads a single "hc" = seconds since contact (negative
+// before the slipper lands). hc is computed per-strike inside the closure
+// (sinceContact, below) because it depends on strikeAnticipate, which can
+// change strike to strike when the player is mashing.
+const SHAKE_S = 0.08;               // stage-shake decay window
+const HEAD_SNAP_S = 0.028;          // head-snap rise-to-peak time
+// No neck joint is measured in rig.js (cut-granny-sprites.py only marks the
+// arm chain) — this sits just above the measured shoulder pivot, close
+// enough for a ~0.05rad wobble to read as coming from the neck.
+const NECK = { x: PIVOT.x + 60, y: PIVOT.y - 70 };
 
-// Where the slipper ends up for a given pose, in stage coords. Forward
-// kinematics for the exact transform chain the renderer applies, minus the
-// ±3px idle bob (which is ~0 during a swing). This is the guard on the
-// landing-point contract — see scene-illustrated.test.js.
-export function slipperPoint({ shoulder, elbow, lean = 0 }) {
-  const ux = UPPER.ex - UPPER.shx, uy = UPPER.ey - UPPER.shy;
-  const fx = FORE.slx - FORE.ex, fy = FORE.sly - FORE.ey;
-  const c1 = Math.cos(shoulder), s1 = Math.sin(shoulder);
-  const c2 = Math.cos(shoulder + elbow), s2 = Math.sin(shoulder + elbow);
-  const x = PIVOT.x + ux * c1 - uy * s1 + fx * c2 - fy * s2;
-  const y = PIVOT.y + ux * s1 + uy * c1 + fx * s2 + fy * c2;
-  const cl = Math.cos(lean), sl = Math.sin(lean);
-  const dx = x - HIP.x, dy = y - HIP.y;
-  return { x: HIP.x + dx * cl - dy * sl, y: HIP.y + dx * sl + dy * cl };
+// Up to 4px, decaying to ~0 by SHAKE_S: an exponential envelope times a fast
+// sine so the stage jitters rather than bounces once. Applied to the whole
+// canvas before anything is drawn, so the HUD shakes with the scene.
+function stageShake(hc) {
+  if (!(hc >= 0 && hc < SHAKE_S)) return { x: 0, y: 0 };
+  const k = 4 * Math.exp(-26 * hc) * Math.sin(130 * hc);
+  return { x: k, y: k * 0.5 };
 }
 
-// Direction from the shoulder to the unaimed landing point, so aimFor can
-// express a tap as an offset from it rather than a magic bearing.
-const STRIKE_DIR = (() => {
-  const p = slipperPoint({ shoulder: SHOULDER_STRIKE, elbow: ELBOW_STRIKE });
-  return Math.atan2(p.y - PIVOT.y, p.x - PIVOT.x);
-})();
-
-// Extra shoulder rotation that swings the blow toward a tap. Most of the
-// paper is within reach, but the clamp keeps extreme taps as a lean of the
-// strike rather than a contortion.
-export function aimFor(x, y) {
-  if (!Number.isFinite(x) || !Number.isFinite(y)) return 0;
-  let bias = Math.atan2(y - PIVOT.y, x - PIVOT.x) - STRIKE_DIR;
-  while (bias > Math.PI) bias -= Math.PI * 2;
-  while (bias < -Math.PI) bias += Math.PI * 2;
-  return Math.max(-AIM_LIMIT, Math.min(AIM_LIMIT, bias));
+// u*e^(1-u) is 0 at contact and peaks at exactly 1 when u=1 (hc=HEAD_SNAP_S,
+// a frame or two after contact), then decays away — so the head follows the
+// blow instead of moving with it. Positive because it is a COUNTER-rotation
+// to LEAN_STRIKE's negative lean.
+function headSnapAngle(hc) {
+  if (!(hc >= 0 && hc < 0.4)) return 0;
+  const u = hc / HEAD_SNAP_S;
+  return 0.05 * u * Math.exp(1 - u);
 }
 
-// 1 while the blow is being thrown, fading out through the recoil so the idle
-// breathing can fade back in. NaN/negative/ancient → 0.
-export function swingActivity(since, anticipate = ANTICIPATE_S) {
-  const total = anticipate + DRIVE_S + HOLD_S + RECOIL_S + SETTLE_S;
-  if (!(since >= 0) || since >= total) return 0;
-  return Math.min(1, (total - since) / (RECOIL_S + SETTLE_S));
-}
+// The effigy art was laid out for the old upright 264×424 poster; sy stretches
+// it back to a readable screen height through the 0.30 foreshorten. `u` parks
+// it in the strip of sheet the slipper never lands on: the hand's painted
+// footprint at contact is a band running from (u≈0..70, far) to (u≈-70..10,
+// near), so u ≤ -80 is clear at EVERY depth — measured, not guessed. An aimed
+// blow still reaches the figure; a centre blow leaves its head and torso clear.
+const EFFIGY = { u: -66, v: -18, sx: 0.82, sy: 1.28 };
+const TEXT_STRETCH = 1.8;
 
-// The blow itself, as joint angles. Every phase hands off continuously to the
-// next. `anticipate` drops to 0 when a strike lands mid-swing, so mash-tapping
-// re-drives from the current pose instead of visibly rewinding.
-export function swingPose(since, aim = 0, anticipate = ANTICIPATE_S) {
-  const ready = { shoulder: SHOULDER_READY, elbow: ELBOW_READY, lean: 0 };
-  if (!(since >= 0)) return ready;
-  const strike = SHOULDER_STRIKE + aim;
-
-  if (since < anticipate) {                    // wind-up: rock back, fold the elbow
-    const u = Math.sin((since / anticipate) * Math.PI / 2);
-    return { shoulder: lerp(SHOULDER_READY, SHOULDER_COCK, u),
-             elbow: lerp(ELBOW_READY, ELBOW_COCK, u), lean: 0 };
-  }
-  const t = since - anticipate;
-  if (t < DRIVE_S) {                           // drive: the forearm trails just behind
-    const p = (t / DRIVE_S) ** 2;              // ease-in — the blow gathers speed
-    // 1.15: enough lag for the whip to read, but close enough that the
-    // slipper tracks the arc instead of overshooting left and hooking back
-    return { shoulder: lerp(SHOULDER_COCK, strike, p),
-             elbow: lerp(ELBOW_COCK, ELBOW_STRIKE, p ** 1.15),
-             lean: LEAN_STRIKE * p };
-  }
-  const h = t - DRIVE_S;
-  if (h < HOLD_S) {                            // contact: slipper stays on the paper
-    return { shoulder: strike,
-             elbow: ELBOW_STRIKE - ELBOW_GIVE * Math.sin((h / HOLD_S) * Math.PI),
-             lean: LEAN_STRIKE };
-  }
-  const r = h - HOLD_S;
-  if (r >= RECOIL_S + SETTLE_S) return ready;
-  // recoil past neutral, then a damped settle back to the ready stance
-  const u = r / (RECOIL_S + SETTLE_S);
-  const k = Math.exp(-5.2 * u) * Math.cos(u * Math.PI * 2.3);
-  return { shoulder: lerp(SHOULDER_READY, strike, k),
-           elbow: lerp(ELBOW_READY, ELBOW_STRIKE, k),
-           lean: LEAN_STRIKE * k };
-}
-
-// Swing plus idle life. The two joints breathe on different frequencies so the
-// stance never freezes into a pose.
-export function armPose(t, since, aim = 0, anticipate = ANTICIPATE_S) {
-  const pose = swingPose(since, aim, anticipate);
-  const idle = 1 - swingActivity(since, anticipate);
-  return {
-    shoulder: pose.shoulder + (Math.sin(t * 1.6) * 0.030 + Math.sin(t * 3.7 + 1.1) * 0.011) * idle,
-    elbow: pose.elbow + (Math.sin(t * 1.15 + 0.6) * 0.035 + Math.sin(t * 2.9) * 0.013) * idle,
-    lean: pose.lean
-  };
-}
-
-// ── pure: tilted paper geometry ────────────────────────────────────────────
-// Sized so the granny's resting forearm sprite clears the sheet entirely —
-// verified pixel-against-polygon by scripts/da-siu-yan/cut-granny-sprites.py's
-// companion search; grow it back only if the stance moves too.
-export const IPAPER = { cx: 232, cy: 812, w: 264, h: 424, rot: -0.17 };
-
-export function paperLocal(x, y, paper = IPAPER) {
-  const dx = x - paper.cx, dy = y - paper.cy;
-  const c = Math.cos(-paper.rot), s = Math.sin(-paper.rot);
-  return { x: dx * c - dy * s + paper.cx, y: dx * s + dy * c + paper.cy };
-}
-
-export function inPaper(x, y, paper = IPAPER) {
-  const p = paperLocal(x, y, paper);
-  return Math.abs(p.x - paper.cx) <= paper.w / 2 && Math.abs(p.y - paper.cy) <= paper.h / 2;
-}
-
-// ── renderer ───────────────────────────────────────────────────────────────
-const BRICKS = { x: 0, y: 858, w: 432, h: 356 };
 const ART_FILES = {
   'granny-body': 'granny-body.png',
   'granny-arm-fore': 'granny-arm-fore.png',
+  'granny-hand': 'granny-hand.png',
   'granny-arm-upper': 'granny-arm-upper.png',
-  'granny-head': 'granny-head.png',
-  bricks: 'bricks.svg'
+  'granny-head': 'granny-head.png'
 };
 
 export function createIllustratedScene(canvas) {
@@ -178,9 +136,10 @@ export function createIllustratedScene(canvas) {
   let name = '';
   let photo = null;
   let strikeAt = -Infinity;                  // seconds, performance.now()/1000
-  let strikeX = IPAPER.cx, strikeY = IPAPER.cy;
+  let strikeX = PLANE.cx, strikeY = PLANE.cy;
   let strikeAim = 0;
   let strikeAnticipate = ANTICIPATE_S;
+  let lastDustStrikeAt = -Infinity;           // guards the one-shot contact burst
   const art = {};
 
   const ready = Promise.all(
@@ -209,31 +168,66 @@ export function createIllustratedScene(canvas) {
     return strikeAnticipate + DRIVE_S;
   }
 
+  // Seconds since the slipper made contact (negative before it lands, growing
+  // afterward). Matches drawImpact's own inline math — kept as one function so
+  // every impact effect (squash, recoil, dust, snap) agrees on "contact".
+  function sinceContact(sinceStrike) {
+    return sinceStrike - strikeAnticipate - DRIVE_S;
+  }
+
+  // Fires exactly once per strike, on the frame contact first reads as landed.
+  // Spawns AT the slipper's solved landing point (game.js already put dust at
+  // the tap point on pointerdown), so this burst reads as coming off the sheet
+  // rather than off the finger. hc has no upper bound here — Number.isFinite
+  // is what keeps this from firing during the idle attract loop, where
+  // strikeAt is still -Infinity and hc would otherwise be +Infinity >= 0.
+  function maybeSpawnContactDust(state, sinceStrike, hc) {
+    if (!Number.isFinite(hc) || hc < 0 || strikeAt === lastDustStrikeAt || !Array.isArray(state.dust)) return;
+    lastDustStrikeAt = strikeAt;
+    const { pose } = grannyFrame(state.t, sinceStrike);
+    const p = slipperPoint({ shoulder: pose.shoulder, elbow: pose.elbow, wrist: pose.wrist, lean: pose.lean });
+    for (let i = 0; i < 6; i++) {
+      const a = Math.random() * Math.PI * 2;
+      state.dust.push({
+        x: p.x, y: p.y,
+        vx: Math.cos(a) * (30 + Math.random() * 70),
+        vy: Math.sin(a) * (30 + Math.random() * 70) - 30,
+        r: 1.5 + Math.random() * 2.5,
+        life: 1
+      });
+    }
+  }
+
   function drawBackdrop(t) {
     ctx.fillStyle = '#f2e3c8';
     ctx.fillRect(0, 0, STAGE_W, STAGE_H);
     // floor
     ctx.fillStyle = '#e6d1ab';
-    ctx.fillRect(0, 1105, STAGE_W, STAGE_H - 1105);
+    ctx.fillRect(0, FLOOR_Y, STAGE_W, STAGE_H - FLOOR_Y);
     ctx.strokeStyle = 'rgba(58,35,23,0.35)';
     ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.moveTo(0, 1105); ctx.lineTo(STAGE_W, 1105); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, FLOOR_Y); ctx.lineTo(STAGE_W, FLOOR_Y); ctx.stroke();
     // soft vignette
     const g = ctx.createRadialGradient(360, 620, 260, 360, 640, 900);
     g.addColorStop(0, 'rgba(255,246,224,0.28)');
     g.addColorStop(1, 'rgba(140,90,40,0.16)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, STAGE_W, STAGE_H);
-    // one incense stick planted at the left, thin smoke curling up
+    // A long joss stick planted on the floor to the LEFT of the slab. It has to
+    // clear the slab's converged far corner (x≈24) or all you see is the ember
+    // hovering with no stick under it.
     ctx.strokeStyle = '#8a2b1e'; ctx.lineWidth = 5;
-    ctx.beginPath(); ctx.moveTo(38, 1105); ctx.lineTo(44, 890); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(21, 1190); ctx.lineTo(16, 848); ctx.stroke();
     ctx.fillStyle = `rgba(255,${150 + Math.floor(Math.sin(t * 5) * 50 + 50)},60,0.95)`;
-    ctx.beginPath(); ctx.arc(44, 888, 4, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = 'rgba(120,110,100,0.30)'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(16, 846, 4, 0, Math.PI * 2); ctx.fill();
+    // smooth curls: the old straight-segment zigzag read as a crack in the wall
+    ctx.strokeStyle = 'rgba(120,110,100,0.26)'; ctx.lineWidth = 3;
     ctx.beginPath();
-    ctx.moveTo(44, 882);
-    for (let i = 1; i <= 5; i++) {
-      ctx.lineTo(44 + Math.sin(t * 1.2 + i * 1.6) * (6 + i * 5), 882 - i * 30);
+    ctx.moveTo(16, 840);
+    for (let i = 1; i <= 4; i++) {
+      const y0 = 840 - (i - 1) * 42, y1 = 840 - i * 42;
+      ctx.quadraticCurveTo(16 + Math.sin(t * 1.2 + i * 1.7) * (5 + i * 6), (y0 + y1) / 2,
+        16 + Math.sin(t * 1.2 + (i + 1) * 1.7) * (3 + i * 4), y1);
     }
     ctx.stroke();
     // contact shadows
@@ -242,14 +236,114 @@ export function createIllustratedScene(canvas) {
     ctx.beginPath(); ctx.ellipse(475, 1190, 235, 28, 0, 0, Math.PI * 2); ctx.fill();
   }
 
+  function drawAltar() {
+    const hu = PLANE.w / 2 + ALTAR.u;
+    const vFar = -(PLANE.h / 2 + ALTAR.vFar), vNear = PLANE.h / 2 + ALTAR.vNear;
+    const bl = planeToScreen(-hu, vNear), br = planeToScreen(hu, vNear);
+    // planeMatrix is affine, so its parallel edges stay parallel and the eye
+    // never gets the one cue it most wants for a ground plane: convergence.
+    // The SLAB is not bound by that matrix, so its far edge is pulled in — a
+    // painted-in vanishing point. This is the single change that stopped the
+    // whole thing reading as a board propped against a wall.
+    const pull = (p, q) => ({ x: q.x + (p.x - q.x) * ALTAR.converge, y: p.y });
+    const fl0 = planeToScreen(-hu, vFar), fr0 = planeToScreen(hu, vFar);
+    const mid = { x: (fl0.x + fr0.x) / 2, y: (fl0.y + fr0.y) / 2 };
+    const fl = pull(fl0, mid), fr = pull(fr0, mid);
+    ctx.save();                                  // lineJoin/lineCap stay local
+    // front face, in screen space: verticals dropped from the near edge
+    ctx.fillStyle = BRICK_FRONT;
+    ctx.beginPath();
+    ctx.moveTo(bl.x, bl.y); ctx.lineTo(br.x, br.y);
+    ctx.lineTo(br.x, br.y + ALTAR.drop); ctx.lineTo(bl.x, bl.y + ALTAR.drop);
+    ctx.closePath();
+    ctx.fill();
+    ctx.strokeStyle = BRICK_LINE; ctx.lineJoin = 'round';
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    // two courses and staggered joints — this face IS vertical, so brick
+    // coursing is the right texture for it
+    ctx.lineWidth = 3;
+    for (const k of [1 / 3, 2 / 3]) {
+      ctx.beginPath();
+      ctx.moveTo(bl.x, bl.y + ALTAR.drop * k);
+      ctx.lineTo(br.x, br.y + ALTAR.drop * k);
+      ctx.stroke();
+    }
+    for (const [s, k0, k1] of [[0.18, 0, 1 / 3], [0.46, 0, 1 / 3], [0.74, 0, 1 / 3],
+      [0.32, 1 / 3, 2 / 3], [0.62, 1 / 3, 2 / 3], [0.88, 1 / 3, 2 / 3],
+      [0.2, 2 / 3, 1], [0.5, 2 / 3, 1], [0.8, 2 / 3, 1]]) {
+      const px = bl.x + (br.x - bl.x) * s, py = bl.y + (br.y - bl.y) * s;
+      ctx.beginPath();
+      ctx.moveTo(px, py + ALTAR.drop * k0);
+      ctx.lineTo(px, py + ALTAR.drop * k1);
+      ctx.stroke();
+    }
+    // top face: the trapezoid, in screen space
+    const topPath = () => {
+      ctx.beginPath();
+      ctx.moveTo(fl.x, fl.y); ctx.lineTo(fr.x, fr.y);
+      ctx.lineTo(br.x, br.y); ctx.lineTo(bl.x, bl.y);
+      ctx.closePath();
+    };
+    topPath();
+    // lit at the front, falling off toward the far edge — a surface takes light
+    // across its depth, a wall facing you does not
+    const tg = ctx.createLinearGradient(0, fl.y, 0, bl.y);
+    tg.addColorStop(0, '#744a30');
+    tg.addColorStop(0.55, BRICK_TOP);
+    tg.addColorStop(1, '#9a6743');
+    ctx.fillStyle = tg;
+    ctx.fill();
+    ctx.save();
+    ctx.clip();
+    // worn chips, foreshortened with the surface — texture, not architecture
+    ctx.transform(...planeMatrix());
+    ctx.strokeStyle = 'rgba(58,35,23,0.28)';
+    ctx.lineWidth = 7;
+    ctx.lineCap = 'round';
+    for (const [u, v, len] of SPECKLE) {
+      ctx.beginPath(); ctx.moveTo(u, v); ctx.lineTo(u + len, v - 6); ctx.stroke();
+    }
+    ctx.strokeStyle = 'rgba(217,144,108,0.40)';
+    ctx.lineWidth = 6;
+    for (const [u, v, len] of SPECKLE) {
+      ctx.beginPath(); ctx.moveTo(u + 6, v + 16); ctx.lineTo(u + len - 4, v + 11); ctx.stroke();
+    }
+    ctx.restore();
+    topPath();
+    ctx.strokeStyle = BRICK_LINE;
+    ctx.lineWidth = 5;
+    ctx.stroke();
+    ctx.restore();                               // lineJoin/lineCap
+  }
+
+  // Anything PRINTED on the sheet is drawn through this: the plane squashes the
+  // v axis to 0.30, which would render a 34px glyph 10px tall on screen. The
+  // stretch is an anamorphic cheat — the ink is "drawn" too tall on the paper so
+  // that it lands the right height in the player's eye. Nobody ever sees the
+  // sheet face-on, so the cheat is unobservable and the alternative is a
+  // talisman you cannot read.
+  function sheetText(str, u, v, px) {
+    ctx.save();
+    ctx.translate(u, v);
+    ctx.scale(1, TEXT_STRETCH);
+    ctx.font = `${px}px ${KAI}`;
+    ctx.fillText(str, 0, 0);
+    ctx.restore();
+  }
+
   function paperPathLocal(inset) {
     ctx.beginPath();
-    ctx.roundRect(-IPAPER.w / 2 + inset, -IPAPER.h / 2 + inset,
-      IPAPER.w - inset * 2, IPAPER.h - inset * 2, 8);
+    ctx.roundRect(-PLANE.w / 2 + inset, -PLANE.h / 2 + inset,
+      PLANE.w - inset * 2, PLANE.h - inset * 2, 8);
   }
 
   function drawVillainLocal() {
-    // paper-local coords: origin at paper centre
+    // sheet-local coords: origin at the sheet centre, v already foreshortened
+    // by the plane matrix the caller installed
+    ctx.save();
+    ctx.translate(EFFIGY.u, EFFIGY.v);
+    ctx.scale(EFFIGY.sx, EFFIGY.sy);
     ctx.strokeStyle = INK;
     ctx.fillStyle = INK;
     ctx.lineCap = 'round';
@@ -280,14 +374,17 @@ export function createIllustratedScene(canvas) {
       ctx.beginPath(); ctx.moveTo(-38, 60); ctx.lineTo(-56, 158); ctx.stroke();
       ctx.beginPath(); ctx.moveTo(2, 60); ctx.lineTo(22, 158); ctx.stroke();
     }
+    ctx.restore();
     if (name) {
       ctx.fillStyle = INK;
-      ctx.font = `40px ${KAI}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       const chars = [...name].slice(0, 8);
-      const gap = Math.min(46, (IPAPER.h - 120) / chars.length);
-      chars.forEach((ch, i) => ctx.fillText(ch, IPAPER.w / 2 - 34, -IPAPER.h / 2 + 96 + i * gap));
+      const gap = Math.min(46, (PLANE.h - 120) / chars.length);
+      // 34px stretched reads at the same height as the old 40px did, and its
+      // ink box (~44) still clears the 46 gap, so long names do not collide
+      chars.forEach((ch, i) =>
+        sheetText(ch, PLANE.w / 2 - 48, -PLANE.h / 2 + 96 + i * gap, 34));
     }
   }
 
@@ -307,17 +404,17 @@ export function createIllustratedScene(canvas) {
       ctx.lineTo(c, d); ctx.stroke();
     }
     if (stage >= 2) {
-      // torn corners — backdrop-coloured bites
-      ctx.fillStyle = '#f2e3c8';
+      // torn corners — the bite now reveals the brick under the sheet
+      ctx.fillStyle = BRICK_TOP;
       ctx.beginPath();
-      ctx.moveTo(-IPAPER.w / 2 - 2, -IPAPER.h / 2 - 2);
-      ctx.lineTo(-IPAPER.w / 2 + 40, -IPAPER.h / 2 - 2);
-      ctx.lineTo(-IPAPER.w / 2 - 2, -IPAPER.h / 2 + 34);
+      ctx.moveTo(-PLANE.w / 2 - 2, -PLANE.h / 2 - 2);
+      ctx.lineTo(-PLANE.w / 2 + 40, -PLANE.h / 2 - 2);
+      ctx.lineTo(-PLANE.w / 2 - 2, -PLANE.h / 2 + 34);
       ctx.closePath(); ctx.fill();
       ctx.beginPath();
-      ctx.moveTo(IPAPER.w / 2 + 2, IPAPER.h / 2 + 2);
-      ctx.lineTo(IPAPER.w / 2 - 44, IPAPER.h / 2 + 2);
-      ctx.lineTo(IPAPER.w / 2 + 2, IPAPER.h / 2 - 36);
+      ctx.moveTo(PLANE.w / 2 + 2, PLANE.h / 2 + 2);
+      ctx.lineTo(PLANE.w / 2 - 44, PLANE.h / 2 + 2);
+      ctx.lineTo(PLANE.w / 2 + 2, PLANE.h / 2 - 36);
       ctx.closePath(); ctx.fill();
     }
     if (stage >= 3) {
@@ -331,11 +428,10 @@ export function createIllustratedScene(canvas) {
   function drawPrintsLocal(prints) {
     for (let i = 0; i < prints.length; i++) {
       const p = prints[i];
-      const local = paperLocal(p.x, p.y);
-      const lx = local.x - IPAPER.cx, ly = local.y - IPAPER.cy;
+      const { u, v } = screenToPlane(p.x, p.y);
       const alpha = 0.12 + 0.26 * ((i + 1) / prints.length);
       ctx.save();
-      ctx.translate(lx, ly);
+      ctx.translate(u, v);
       ctx.rotate(p.angle);
       ctx.fillStyle = `rgba(96,44,26,${alpha})`;
       ctx.beginPath(); ctx.ellipse(0, 0, 27, 50, 0, 0, Math.PI * 2); ctx.fill();
@@ -358,17 +454,36 @@ export function createIllustratedScene(canvas) {
   }
 
   function drawPaper(state) {
+    // Flames belong to the air, not to the sheet: collect them in sheet-local
+    // coords, then draw them in SCREEN space once the plane transform is off,
+    // so the tongues rise vertically instead of leaning with the paper.
+    const flames = [];
+    // Sheet recoil: a LOCAL copy of PLANE with cy nudged for the hold window
+    // only. The exported PLANE is never assigned to — inPaper/screenToPlane
+    // keep hit-testing the untouched plane, so the tap target does not drift
+    // under the player's finger.
+    const hc = sinceContact(state.t - strikeAt);
+    const recoil = (hc >= 0 && hc < HOLD_S) ? 6 * Math.sin(Math.PI * hc / HOLD_S) : 0;
+    const localPlane = recoil ? { ...PLANE, cy: PLANE.cy + recoil } : PLANE;
     ctx.save();
-    ctx.translate(IPAPER.cx, IPAPER.cy);
-    ctx.rotate(IPAPER.rot + (state.stage - 1.5) * 0.005 * Math.min(state.stage, 1));
-    ctx.shadowColor = 'rgba(58,35,23,0.35)';
-    ctx.shadowBlur = 18;
-    ctx.shadowOffsetY = 8;
+    const [a, b, c, d, e, f] = planeMatrix(localPlane);
+    ctx.transform(a, b, c, d, e, f);
+    ctx.rotate((state.stage - 1.5) * 0.005 * Math.min(state.stage, 1));
+    // Contact shadow, cast IN the plane rather than by ctx.shadow*: canvas
+    // shadow offsets ignore the transform, so they always fall straight down
+    // the screen and read as "this thing is floating in front of a wall". A
+    // copy of the sheet nudged along the plane's own axes reads as paper lying
+    // on brick with the light coming over her shoulder.
+    ctx.save();
+    ctx.translate(-10, 16);
+    ctx.fillStyle = 'rgba(58,35,23,0.34)';
+    paperPathLocal(0);
+    ctx.fill();
+    ctx.restore();
     ctx.fillStyle = '#eed155';
     paperPathLocal(0);
     ctx.fill();
-    ctx.shadowColor = 'transparent';
-    const pg = ctx.createLinearGradient(-IPAPER.w / 2, -IPAPER.h / 2, IPAPER.w / 2, IPAPER.h / 2);
+    const pg = ctx.createLinearGradient(-PLANE.w / 2, -PLANE.h / 2, PLANE.w / 2, PLANE.h / 2);
     pg.addColorStop(0, 'rgba(255,244,196,0.5)');
     pg.addColorStop(1, 'rgba(190,140,50,0.25)');
     ctx.fillStyle = pg;
@@ -383,38 +498,39 @@ export function createIllustratedScene(canvas) {
     paperPathLocal(20);
     ctx.stroke();
     ctx.fillStyle = '#b3261e';
-    ctx.font = `34px ${KAI}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('打小人', 0, -IPAPER.h / 2 + 44);
+    sheetText('打小人', 0, -PLANE.h / 2 + 50, 34);
     drawVillainLocal();
     drawDamageLocal(state.stage);
     drawPrintsLocal(state.prints);
     if (state.burnT > 0) {
-      const burnH = state.burnT * (IPAPER.h + 40);
-      const edgeY = IPAPER.h / 2 - burnH;
+      const burnH = state.burnT * (PLANE.h + 40);
+      const edgeY = PLANE.h / 2 - burnH;
       ctx.save();
       paperPathLocal(0);
       ctx.clip();
       ctx.fillStyle = 'rgba(24,12,7,0.94)';
       ctx.beginPath();
-      ctx.moveTo(-IPAPER.w / 2 - 10, IPAPER.h / 2 + 20);
-      ctx.lineTo(-IPAPER.w / 2 - 10, edgeY);
-      for (let x = -IPAPER.w / 2 - 10; x <= IPAPER.w / 2 + 10; x += 20) {
+      ctx.moveTo(-PLANE.w / 2 - 10, PLANE.h / 2 + 20);
+      ctx.lineTo(-PLANE.w / 2 - 10, edgeY);
+      for (let x = -PLANE.w / 2 - 10; x <= PLANE.w / 2 + 10; x += 20) {
         ctx.lineTo(x, edgeY + Math.sin(x * 0.13 + state.t * 2.2) * 12 - (Math.round(x) % 40 ? 6 : -6));
       }
-      ctx.lineTo(IPAPER.w / 2 + 10, IPAPER.h / 2 + 20);
+      ctx.lineTo(PLANE.w / 2 + 10, PLANE.h / 2 + 20);
       ctx.closePath();
       ctx.fill();
-      for (let x = -IPAPER.w / 2 + 6; x < IPAPER.w / 2; x += 34) {
+      for (let x = -PLANE.w / 2 + 6; x < PLANE.w / 2; x += 34) {
         const fy = edgeY + Math.sin(x * 0.13 + state.t * 2.2) * 12;
         ctx.fillStyle = 'rgba(255,120,30,0.55)';
-        ctx.fillRect(x - 12, fy - 3, 26, 6);
-        drawFlame(x, fy, 0.8 + (Math.abs(Math.round(x)) % 3) * 0.3, state.t, x);
+        ctx.fillRect(x - 12, fy - 3, 26, 6);       // the ember line is on the sheet
+        const p = planeToScreen(x, fy);
+        flames.push({ x: p.x, y: p.y, s: 0.8 + (Math.abs(Math.round(x)) % 3) * 0.3, seed: x });
       }
       ctx.restore();
     }
     ctx.restore();
+    for (const fl of flames) drawFlame(fl.x, fl.y, fl.s, state.t, fl.seed);
   }
 
   // Shared per-frame granny numbers so the behind-the-altar body pass and the
@@ -433,8 +549,24 @@ export function createIllustratedScene(canvas) {
     ctx.translate(-HIP.x, -HIP.y);
   }
 
-  // Body only — drawn before the bricks and paper so she sits behind the
-  // altar, exactly like the source artwork's composition.
+  // Re-draw `sprite` at the joint, carrying only the rotation of the bone ABOVE
+  // the joint, clipped to a disc. `angle` 0 puts the sprite exactly where the
+  // painting has it, so at rest the stub is invisible; as the limb swings away
+  // the stub stays behind as the socket it rotated out of.
+  function jointStub(sprite, x, y, r, angle, ax, ay) {
+    if (!sprite) return;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+    ctx.drawImage(sprite, -ax, -ay, FRAME.w, FRAME.h);
+    ctx.restore();
+  }
+
+  // Body only — drawn before the altar and sheet so she sits behind them,
+  // exactly like the source artwork's composition.
   function drawGrannyBack(t, sinceStrike) {
     if (!art['granny-body']) return;
     const { pose, bob } = grannyFrame(t, sinceStrike);
@@ -443,30 +575,78 @@ export function createIllustratedScene(canvas) {
     ctx.restore();
   }
 
-  // The swinging arm and the head overlay — drawn after the paper so the
-  // slipper lands on it, with the sleeve tucking behind her jaw.
+  // The swinging arm and the head overlay — drawn after the sheet so the
+  // slipper lands ON it. Order is forearm → hand → sleeve → head: each sprite
+  // covers the seam of the one before it, and the sleeve tucks under her jaw.
   function drawGrannyFront(t, sinceStrike) {
     const { pose, bob } = grannyFrame(t, sinceStrike);
+    const hc = sinceContact(sinceStrike);
     leanIn(pose);
-    // forearm first, sleeve over it — the cuff hides the elbow seam
-    const c = Math.cos(pose.shoulder), s = Math.sin(pose.shoulder);
-    const ux = UPPER.ex - UPPER.shx, uy = UPPER.ey - UPPER.shy;
+    const el = elbowAt(pose.shoulder);
+    const wr = wristAt(pose.shoulder, pose.elbow);
     if (art['granny-arm-fore']) {
+      // socket carries the upper arm's rotation only — it is the straight-elbow
+      // pose, so the stub continues the sleeve instead of stubbing across it
+      jointStub(art['granny-arm-fore'], el.x, el.y + bob, ELBOW_R,
+        pose.shoulder, FOREA.ex, FOREA.ey);
       ctx.save();
-      ctx.translate(PIVOT.x + ux * c - uy * s, PIVOT.y + bob + ux * s + uy * c);
+      ctx.translate(el.x, el.y + bob);
       ctx.rotate(pose.shoulder + pose.elbow);
-      ctx.drawImage(art['granny-arm-fore'], -FORE.ex, -FORE.ey, FORE.w, FORE.h);
+      ctx.drawImage(art['granny-arm-fore'], -FOREA.ex, -FOREA.ey, FRAME.w, FRAME.h);
+      ctx.restore();
+    }
+    if (art['granny-hand']) {
+      ctx.save();
+      ctx.translate(wr.x, wr.y + bob);
+      ctx.rotate(pose.shoulder + pose.elbow + pose.wrist);
+      if (FLIP_HAND) {
+        // mirror across the wrist→slipper axis: the sole turns over, the
+        // slipper does not move
+        ctx.rotate(HAND_ANG);
+        ctx.scale(1, -1);
+        ctx.rotate(-HAND_ANG);
+      }
+      if (hc >= 0 && hc < HOLD_S) {
+        // Squash on impact, about the wrist: scale down along the wrist→
+        // slipper axis and up across it by the exact inverse, so the two
+        // factors multiply to 1 and the silhouette reads as impact without
+        // losing volume. HAND_ANG is the same wrist→slipper axis FLIP_HAND
+        // mirrors across, so this composes with it regardless of order —
+        // both are diagonal scales in the same rotated frame.
+        const squash = 1 - 0.10 * Math.sin(Math.PI * hc / HOLD_S);
+        ctx.rotate(HAND_ANG);
+        ctx.scale(squash, 1 / squash);
+        ctx.rotate(-HAND_ANG);
+      }
+      ctx.drawImage(art['granny-hand'], -HANDA.wx, -HANDA.wy, FRAME.w, FRAME.h);
       ctx.restore();
     }
     if (art['granny-arm-upper']) {
+      // the shoulder never moves, so its socket is the sleeve exactly as painted
+      jointStub(art['granny-arm-upper'], PIVOT.x, PIVOT.y + bob, SHOULDER_R,
+        0, UPPERA.shx, UPPERA.shy);
       ctx.save();
       ctx.translate(PIVOT.x, PIVOT.y + bob);
       ctx.rotate(pose.shoulder);
-      ctx.drawImage(art['granny-arm-upper'], -UPPER.shx, -UPPER.shy, UPPER.w, UPPER.h);
+      ctx.drawImage(art['granny-arm-upper'], -UPPERA.shx, -UPPERA.shy, FRAME.w, FRAME.h);
       ctx.restore();
     }
     if (art['granny-head']) {
-      ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+      // Counter-rotation about the neck, peaking a frame after contact: the
+      // head follows the blow instead of moving with it (LEAN_STRIKE already
+      // leans the hips in sync with the swing — this is deliberately out of
+      // phase with that).
+      const snap = headSnapAngle(hc);
+      if (snap) {
+        ctx.save();
+        ctx.translate(NECK.x, NECK.y);
+        ctx.rotate(snap);
+        ctx.translate(-NECK.x, -NECK.y);
+        ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+      }
     }
     ctx.restore();
   }
@@ -543,15 +723,23 @@ export function createIllustratedScene(canvas) {
 
   function draw(state) {
     const sinceStrike = state.t - strikeAt;
+    const hc = sinceContact(sinceStrike);
+    // Whole-stage shake, applied before everything else so the HUD shakes
+    // with the scene rather than sitting still over a jolting background.
+    const shake = stageShake(hc);
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
     drawBackdrop(state.t);
     drawGrannyBack(state.t, sinceStrike);
-    if (art.bricks) ctx.drawImage(art.bricks, BRICKS.x, BRICKS.y, BRICKS.w, BRICKS.h);
+    drawAltar();
     drawPaper(state);
     drawGrannyFront(state.t, sinceStrike);
     drawImpact(state.t);
     drawDust(state.dust);
     drawTarget(state.pointer, state.mode);
     drawHud(state);
+    ctx.restore();
+    maybeSpawnContactDust(state, sinceStrike, hc);
   }
 
   return { setEffigy, draw, strike, ready };

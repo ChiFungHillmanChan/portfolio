@@ -1,0 +1,409 @@
+<!--
+  Dev-only tool. Not shipped to players, not linked from the game.
+
+  Lets a human reviewer (who can hear) flag which of the 60 granny voice
+  clips (30 lines x 2 variants) came out in Mandarin instead of Cantonese,
+  so scripts/generate-granny-voice.mjs can be re-run with --only for just
+  the broken ones. This page does NOT regenerate anything itself.
+
+  SERVE FROM THE REPO ROOT (ES module imports + fetch() need http, not
+  file://, and the relative paths below assume this exact working dir):
+
+    cd /Users/hillmanchan/Desktop/HillmanChan_portfolio
+    python3 -m http.server 8899
+
+  Then open:
+
+    http://localhost:8899/scripts/da-siu-yan/review-voice.html
+
+  It pulls the Cantonese text straight from chant-lines.js (the same file
+  the game and the generator use) so this page can never drift from the
+  actual script, and it reads voice/manifest.json for the clip list + mp3
+  paths. Marks are saved to localStorage as you go.
+-->
+<title>打小人 voice clip review</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    color-scheme: light dark;
+    --ok: #1a7f37;
+    --bad: #c9392f;
+    --accent: #7a3ff2;
+    --border: #d9d5e8;
+    --bg-current: #efe8ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --border: #3a3550;
+      --bg-current: #332a55;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "PingFang HK", "Noto Sans HK", sans-serif;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 1.25rem 1rem 4rem;
+    line-height: 1.5;
+  }
+  h1 { font-size: 1.3rem; margin-bottom: 0.25rem; }
+  h2 {
+    font-size: 1.05rem;
+    margin: 2rem 0 0.5rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 2px solid var(--border);
+  }
+  .sub { opacity: 0.75; font-size: 0.9rem; margin: 0 0 1rem; }
+  .toolbar {
+    position: sticky;
+    top: 0;
+    background: Canvas;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem;
+    z-index: 5;
+  }
+  .progress { font-variant-numeric: tabular-nums; font-weight: 600; }
+  .keys {
+    font-size: 0.85rem;
+    opacity: 0.8;
+  }
+  kbd {
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.05rem 0.4rem;
+    font-family: monospace;
+    background: rgba(127, 127, 127, 0.12);
+  }
+  button {
+    font: inherit;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.4rem 0.8rem;
+    background: Canvas;
+    color: inherit;
+  }
+  button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .row {
+    display: grid;
+    grid-template-columns: 4.5rem 1fr auto auto;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+    border-radius: 6px;
+  }
+  .row.current { background: var(--bg-current); }
+  .row .id { font-family: monospace; font-size: 0.85rem; opacity: 0.8; }
+  .row .text { font-size: 1.05rem; }
+  .row .dur { font-size: 0.75rem; opacity: 0.6; display: block; }
+  .row audio { width: 220px; height: 32px; }
+  .marks { display: flex; gap: 0.6rem; font-size: 0.9rem; white-space: nowrap; }
+  .marks label { display: flex; align-items: center; gap: 0.2rem; cursor: pointer; }
+  .row.marked-ok { border-left: 4px solid var(--ok); }
+  .row.marked-bad { border-left: 4px solid var(--bad); }
+  #status { font-size: 0.85rem; min-height: 1.2em; opacity: 0.85; }
+  #exportBox {
+    margin-top: 0.75rem;
+    display: none;
+  }
+  #exportBox pre {
+    background: rgba(127, 127, 127, 0.12);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-size: 0.85rem;
+  }
+  .error {
+    color: var(--bad);
+    font-weight: 600;
+    padding: 1rem;
+    border: 1px solid var(--bad);
+    border-radius: 6px;
+    margin-top: 1rem;
+  }
+  @media (max-width: 640px) {
+    .row { grid-template-columns: 1fr; }
+    .row audio { width: 100%; }
+  }
+</style>
+
+<h1>打小人 — voice clip review</h1>
+<p class="sub">
+  Listen to each clip. Mark <strong>啱音</strong> if it's genuinely Cantonese
+  end-to-end, <strong>走音</strong> if any character slipped into Mandarin
+  pronunciation (e.g. 燒 read as Mandarin "shāo" instead of Cantonese "siu1").
+  This page only records your marks — it does not change any audio.
+</p>
+
+<div class="toolbar">
+  <span class="progress" id="progress">loading…</span>
+  <span class="keys">
+    <kbd>Space</kbd> play current &nbsp;
+    <kbd>1</kbd> 啱音 (correct) &nbsp;
+    <kbd>2</kbd> 走音 (wrong) — both advance
+  </span>
+  <button id="exportBtn" class="primary">Export 走音 ids</button>
+  <button id="clearBtn" title="Wipe all marks on this page">Clear marks</button>
+</div>
+
+<div id="exportBox">
+  <div id="status"></div>
+  <pre id="exportText"></pre>
+</div>
+
+<div id="app">Loading manifest…</div>
+
+<script type="module">
+  // Single source of truth for the chant text — never duplicate this here.
+  import { INTRO, FINALE, LINES } from '../../portfolio/public/games/da-siu-yan/chant-lines.js';
+
+  const VOICE_DIR = '../../portfolio/public/games/da-siu-yan/voice/';
+  const MANIFEST_URL = VOICE_DIR + 'manifest.json';
+  const STORAGE_KEY = 'da-siu-yan-voice-review-v1';
+  const VARIANT_LABEL = { std: 'std — 大聲/有節奏版', low: 'low — 低沉沙啞版' };
+
+  const TEXT_BY_ID = new Map();
+  TEXT_BY_ID.set(INTRO.id, INTRO.text);
+  TEXT_BY_ID.set(FINALE.id, FINALE.text);
+  for (const line of LINES) TEXT_BY_ID.set(line.id, line.text);
+  // Canonical clip order, matches CLIPS in generate-granny-voice.mjs.
+  const CLIP_ORDER = [INTRO.id, ...LINES.map((l) => l.id), FINALE.id];
+
+  const appEl = document.getElementById('app');
+  const progressEl = document.getElementById('progress');
+  const exportBtn = document.getElementById('exportBtn');
+  const clearBtn = document.getElementById('clearBtn');
+  const exportBox = document.getElementById('exportBox');
+  const exportText = document.getElementById('exportText');
+  const statusEl = document.getElementById('status');
+
+  function loadMarks() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    } catch {
+      return {};
+    }
+  }
+  function saveMarks(marks) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(marks));
+  }
+
+  let marks = loadMarks(); // key: `${variant}:${id}` -> 'ok' | 'bad'
+  let flatRows = []; // [{ variant, id, rowEl, audioEl, radioOk, radioBad }]
+  let currentIndex = 0;
+
+  async function init() {
+    let manifest;
+    try {
+      const res = await fetch(MANIFEST_URL);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      manifest = await res.json();
+    } catch (err) {
+      appEl.innerHTML = '';
+      const div = document.createElement('div');
+      div.className = 'error';
+      div.textContent =
+        `Could not load ${MANIFEST_URL} (${err.message}). ` +
+        'This page must be served over http from the repo root — see the comment ' +
+        'at the top of review-voice.html for the exact command. Opening the file ' +
+        'directly (file://) will not work.';
+      appEl.appendChild(div);
+      return;
+    }
+
+    appEl.innerHTML = '';
+    for (const variant of ['std', 'low']) {
+      const clips = manifest[variant] || [];
+      const heading = document.createElement('h2');
+      heading.textContent = VARIANT_LABEL[variant] || variant;
+      appEl.appendChild(heading);
+
+      for (const clip of clips) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'row';
+        rowEl.dataset.variant = variant;
+        rowEl.dataset.id = clip.id;
+
+        const idEl = document.createElement('div');
+        idEl.className = 'id';
+        idEl.textContent = clip.id;
+
+        const textEl = document.createElement('div');
+        textEl.className = 'text';
+        const text = TEXT_BY_ID.get(clip.id) ?? '(no text found in chant-lines.js)';
+        textEl.textContent = text;
+        const durEl = document.createElement('span');
+        durEl.className = 'dur';
+        durEl.textContent = typeof clip.duration === 'number' ? `${clip.duration.toFixed(2)}s` : '';
+        textEl.appendChild(durEl);
+
+        const audioEl = document.createElement('audio');
+        audioEl.controls = true;
+        audioEl.preload = 'none';
+        audioEl.src = VOICE_DIR + clip.file;
+
+        const marksEl = document.createElement('div');
+        marksEl.className = 'marks';
+        const name = `mark-${variant}-${clip.id}`;
+        const radioOk = document.createElement('input');
+        radioOk.type = 'radio';
+        radioOk.name = name;
+        radioOk.value = 'ok';
+        const labelOk = document.createElement('label');
+        labelOk.append(radioOk, '啱音');
+        const radioBad = document.createElement('input');
+        radioBad.type = 'radio';
+        radioBad.name = name;
+        radioBad.value = 'bad';
+        const labelBad = document.createElement('label');
+        labelBad.append(radioBad, '走音');
+        marksEl.append(labelOk, labelBad);
+
+        rowEl.append(idEl, textEl, audioEl, marksEl);
+        appEl.appendChild(rowEl);
+
+        const rowRef = { variant, id: clip.id, rowEl, audioEl, radioOk, radioBad };
+        const key = `${variant}:${clip.id}`;
+        radioOk.addEventListener('change', () => mark(rowRef, 'ok', { advance: false }));
+        radioBad.addEventListener('change', () => mark(rowRef, 'bad', { advance: false }));
+        rowEl.addEventListener('click', (e) => {
+          // Don't steal focus/selection when clicking the interactive controls.
+          if (e.target === audioEl || e.target.closest('audio')) return;
+          setCurrent(flatRows.indexOf(rowRef));
+        });
+
+        applyMarkClass(rowRef, marks[key]);
+        flatRows.push(rowRef);
+      }
+    }
+
+    updateProgress();
+    // Resume at the first unreviewed row, or the first row if all are done.
+    const firstUnreviewed = flatRows.findIndex((r) => !marks[`${r.variant}:${r.id}`]);
+    setCurrent(firstUnreviewed === -1 ? 0 : firstUnreviewed);
+  }
+
+  function applyMarkClass(rowRef, value) {
+    rowRef.rowEl.classList.remove('marked-ok', 'marked-bad');
+    if (value === 'ok') {
+      rowRef.rowEl.classList.add('marked-ok');
+      rowRef.radioOk.checked = true;
+    } else if (value === 'bad') {
+      rowRef.rowEl.classList.add('marked-bad');
+      rowRef.radioBad.checked = true;
+    }
+  }
+
+  function mark(rowRef, value, { advance }) {
+    const key = `${rowRef.variant}:${rowRef.id}`;
+    marks[key] = value;
+    saveMarks(marks);
+    applyMarkClass(rowRef, value);
+    updateProgress();
+    if (advance) {
+      const idx = flatRows.indexOf(rowRef);
+      setCurrent(Math.min(idx + 1, flatRows.length - 1));
+    }
+  }
+
+  function updateProgress() {
+    const total = flatRows.length;
+    const reviewed = flatRows.filter((r) => marks[`${r.variant}:${r.id}`]).length;
+    progressEl.textContent = `${reviewed} / ${total} reviewed`;
+  }
+
+  function setCurrent(index) {
+    if (!flatRows.length) return;
+    index = Math.max(0, Math.min(index, flatRows.length - 1));
+    for (const r of flatRows) r.rowEl.classList.remove('current');
+    currentIndex = index;
+    const row = flatRows[currentIndex];
+    row.rowEl.classList.add('current');
+    row.rowEl.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function playCurrent() {
+    const row = flatRows[currentIndex];
+    if (!row) return;
+    for (const r of flatRows) {
+      if (r !== row && !r.audioEl.paused) r.audioEl.pause();
+    }
+    row.audioEl.currentTime = 0;
+    row.audioEl.play().catch(() => {
+      statusEl.textContent = `Could not play ${row.id} — check the file exists and the page is served over http.`;
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (!flatRows.length) return;
+    if (e.key === ' ') {
+      e.preventDefault();
+      playCurrent();
+    } else if (e.key === '1') {
+      e.preventDefault();
+      mark(flatRows[currentIndex], 'ok', { advance: true });
+    } else if (e.key === '2') {
+      e.preventDefault();
+      mark(flatRows[currentIndex], 'bad', { advance: true });
+    }
+  });
+
+  function buildExport() {
+    const badIds = new Set();
+    for (const [key, value] of Object.entries(marks)) {
+      if (value !== 'bad') continue;
+      const id = key.split(':')[1];
+      badIds.add(id);
+    }
+    // Stable order matching CLIPS in generate-granny-voice.mjs.
+    const ids = CLIP_ORDER.filter((id) => badIds.has(id));
+    const jsonArray = JSON.stringify(ids);
+    const command = ids.length
+      ? `node scripts/generate-granny-voice.mjs --only ${ids.join(',')}`
+      : '(no clips marked 走音 yet — nothing to regenerate)';
+    return { ids, jsonArray, command };
+  }
+
+  exportBtn.addEventListener('click', async () => {
+    const { ids, jsonArray, command } = buildExport();
+    const blob = `${jsonArray}\n\n${command}`;
+    exportText.textContent = blob;
+    exportBox.style.display = 'block';
+    if (!ids.length) {
+      statusEl.textContent = 'No clips marked 走音 yet.';
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(blob);
+      statusEl.textContent = `Copied ${ids.length} id(s) to clipboard.`;
+    } catch (err) {
+      statusEl.textContent =
+        `Clipboard write blocked (${err.message}) — copy the text below manually.`;
+    }
+  });
+
+  clearBtn.addEventListener('click', () => {
+    if (!confirm('Clear all marks on this page? This cannot be undone.')) return;
+    marks = {};
+    saveMarks(marks);
+    for (const r of flatRows) {
+      applyMarkClass(r, undefined);
+      r.radioOk.checked = false;
+      r.radioBad.checked = false;
+    }
+    updateProgress();
+    exportBox.style.display = 'none';
+    statusEl.textContent = '';
+  });
+
+  init();
+</script>
