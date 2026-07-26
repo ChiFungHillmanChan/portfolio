@@ -28,6 +28,7 @@ portfolio/public/games/system-design/assets/
 .env
 .env.local
 .env.*.local
+.gemini-key
 
 # Firebase
 .firebase/
@@ -46,3 +47,6 @@ lambda/data/users.json
 
 # OS files
 .DS_Store
+
+# da-siu-yan yue-HK A/B experiment output (not shipped)
+scripts/da-siu-yan/compare/
