@@ -2,7 +2,7 @@
 // five sprites sharing one 525x799 frame cut from the source painting. The
 // strike pose is SOLVED by IK against the flat sheet, not hand-tuned: the old
 // hand-tuned constants folded the elbow 97deg and laid it on the paper.
-import { PLANE, planeToScreen } from './plane.js';
+import { planeToScreen } from './plane.js';
 
 const SCALE = 0.95;
 export const FRAME = { x: 220, y: 440, w: 525 * SCALE, h: 799 * SCALE };
