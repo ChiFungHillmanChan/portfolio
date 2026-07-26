@@ -3,7 +3,10 @@
 // plain rotation the standing poster used. Canvas 2D cannot do true
 // perspective; at this size the affine reads correctly as "lying flat", and it
 // buys us zero changes to every bit of drawing done in sheet-local coords.
-export const PLANE = { cx: 245, cy: 975, w: 340, h: 500, rot: -0.12, tilt: 0.5 };
+// tilt is sin(camera elevation): 0.30 puts the eye ~17° above the ground, which
+// is what finally reads as "on the floor". At 0.5 (30°) the sheet stayed tall
+// enough on screen that the eye kept resolving it as a board leaning on a wall.
+export const PLANE = { cx: 245, cy: 975, w: 340, h: 500, rot: -0.12, tilt: 0.30 };
 
 export function planeMatrix(plane = PLANE) {
   const c = Math.cos(plane.rot), s = Math.sin(plane.rot);
