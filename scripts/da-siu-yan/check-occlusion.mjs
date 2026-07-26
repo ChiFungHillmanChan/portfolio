@@ -48,8 +48,18 @@
 // the *gate*, not the rig: a shoe cannot teleport off the paper the instant
 // HOLD_S ends, and the measured breach was entirely a spike 11ms after the
 // window closed, gone again by 38ms after. The window below adds a budgeted
-// liftoff grace instead of assuming instantaneous liftoff. See task-6-report
-// .md's Fix Round 1 section for the full adjudication and evidence.
+// liftoff grace instead of assuming instantaneous liftoff.
+//
+// ── Fix Round 2 (2026-07-26) ────────────────────────────────────────────
+// Re-verifying Round 1's fix surfaced the mirror-image error: the window's
+// LEADING edge sat at exactly CONTACT_S, with the same "instantaneous"
+// assumption Round 1 had already corrected on the trailing edge — except
+// here it's the sprite's leading edge reaching the sheet before the wrist
+// anchor's own scripted timestamp, not liftoff travel time. APPROACH_GRACE_S
+// budgets that. Two independently measured, independently justified grace
+// constants are the limit here — a third would mean the motion itself needs
+// fixing, not the gate. See task-6-report.md's Fix Round 1 and Fix Round 2
+// sections for the full adjudication and evidence on both.
 
 import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
@@ -70,18 +80,45 @@ const {
 
 // ── the gate window and thresholds ──────────────────────────────────────
 // STRIKE_WINDOW = when the slipper touching the sheet is the FEATURE, not a
-// bug. CONTACT_S..CONTACT_S+HOLD_S is the scripted contact + hold. The shoe
-// cannot teleport off the paper the instant HOLD_S ends, though — recoil
-// has to physically carry it clear of the sheet's footprint, which takes
-// real time. LIFTOFF_GRACE_S budgets that: measured (and visually confirmed
-// against a headless-Chrome render, see task-6-report.md) the slipper is
-// still resting on the sheet's corner 25ms after HOLD_S ends and fully
-// clear by 38ms after, so 40ms gives that with a small margin. Fix Round 1:
-// the original gate gave zero grace, which made this physically-necessary
-// travel time look like the "hand parked on the sheet" bug it was actually
-// meant to catch.
+// bug. CONTACT_S..CONTACT_S+HOLD_S is the scripted contact + hold, widened
+// on BOTH sides for real sprite extent — CONTACT_S/HOLD_S describe the IK
+// wrist anchor's schedule, not the moment the painted slipper's silhouette
+// (which has real size, ~123px) actually starts or stops touching the sheet.
+//
+// LIFTOFF_GRACE_S (trailing edge): the shoe cannot teleport off the paper
+// the instant HOLD_S ends — recoil has to physically carry it clear of the
+// sheet's footprint, which takes real time. Measured (and visually
+// confirmed against a headless-Chrome render, see task-6-report.md) the
+// slipper is still resting on the sheet's corner 25ms after HOLD_S ends and
+// fully clear by 38ms after, so 40ms gives that with a small margin.
+// Fix Round 1: the original gate gave zero grace here, which made this
+// physically-necessary travel time look like the "hand parked on the
+// sheet" bug it was actually meant to catch.
+//
+// APPROACH_GRACE_S (leading edge): the mirror-image error, found while
+// re-verifying Round 1's fix. The slipper sprite's leading edge reaches the
+// sheet before the wrist anchor hits the nominal CONTACT_S timestamp — the
+// sprite has extent, the anchor is a point. The 200-step confirmation sweep
+// measured the true onset at since=0.0813, i.e. 8.7ms before CONTACT_S
+// (0.090); 12ms budgets that with margin. Fix Round 2: the Round 1 window
+// set STRIKE_LO to exactly CONTACT_S with no grace on this side either,
+// which made this same category of error look like a NEW bug rather than
+// the mirror of the one just fixed.
+//
+// WHY THIS IS NOT "WIDEN UNTIL GREEN": the window still requires ZERO
+// coverage across since=[0, 0.078) and (0.165, SWING_S] — roughly 68% of
+// the swing's 0.515s, including the entire wind-up, most of the drive, and
+// most of the recoil and settle. The ORIGINAL defect (a broad forearm
+// plateau across since~0.05 through ~0.20, not a spike — see
+// check-occlusion.test.js's "broad-plateau" case) lands substantial
+// coverage in BOTH forbidden zones and still fails this gate. Only the
+// narrow interval where the shoe is genuinely in contact with the paper is
+// exempted, and by design that interval is bounded by the two independently
+// measured, independently justified grace constants above — not tuned to
+// swallow whatever the current geometry happens to produce.
 const LIFTOFF_GRACE_S = 0.040;
-export const STRIKE_LO = CONTACT_S;
+const APPROACH_GRACE_S = 0.012;
+export const STRIKE_LO = CONTACT_S - APPROACH_GRACE_S;
 export const STRIKE_HI = CONTACT_S + HOLD_S + LIFTOFF_GRACE_S;
 
 // Inside the strike window, the shoe (and a sliver of forearm right at
