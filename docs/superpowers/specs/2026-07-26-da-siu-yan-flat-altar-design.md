@@ -94,8 +94,18 @@ sprite whose angle is chosen to keep the sole aimed at the sheet.
 
 - `cut-granny-sprites.py` gains `POLY_HAND`; `POLY_FORE` is trimmed to end at
   the wrist. Same polygon-cut + alpha-multiply technique already in the script.
-- New anchor `WRIST` in image coords (~(60, 178); to be pinned exactly using
-  the script's existing `debug-polys.png` mode).
+- **`WRIST = (61, 196)`**, measured — not estimated. Scanning sprite alpha
+  cross-sections along the elbow→slipper axis, widths fall monotonically
+  67→48px from the elbow and then jump to 69px where the fist begins; that
+  knee is the wrist.
+
+**The measurement changed the rig for the better.** Segment lengths in stage px
+are upper **146.4**, fore **42.1**, hand **123.5** — i.e. most of what the old
+code called "forearm" was really fist + slipper. Re-solving with the wrist
+placed one hand-length directly above the contact point puts the elbow at
+**(261, 812)** against a sheet top edge of y=847 — **35px clearance**, better
+than the 27px the 2-bone solve gave, and only the hand+slipper (a 124px
+vertical band) ever crosses the sheet.
 - Sprites become: body, upper (sleeve), fore, **hand**, head — all still
   sharing the one 525×799 frame.
 - Draw order: body → altar → sheet → fore → hand → upper → head.
@@ -184,5 +194,8 @@ Therefore:
 
 ## 7. Open question deferred to implementation
 
-Exact `WRIST` image coordinate — pinned from `debug-polys.png` rather than
-guessed.
+The **hand angle at contact** (`WRIST_STRIKE`) is solved by IK, but the painted
+slipper's footbed faces the viewer in the source art, so a large hand rotation
+may read as sole-up. This is a visual judgement, not a computable one: it is
+tuned against the filmstrip during Task 4, and if a near-180° hand rotation is
+unavoidable the fallback is a vertical flip of the hand sprite.
