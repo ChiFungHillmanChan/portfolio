@@ -10,8 +10,8 @@ import { STAGE_W, STAGE_H } from './scene.js';
 import { PLANE, planeMatrix, planeToScreen, screenToPlane } from './plane.js';
 import {
   FRAME, PIVOT, HIP, UPPERA, FOREA, HANDA,
-  elbowAt, wristAt, armPose, swingActivity, aimFor,
-  ANTICIPATE_S, DRIVE_S, AIM_LIMIT
+  elbowAt, wristAt, armPose, swingActivity, aimFor, slipperPoint,
+  ANTICIPATE_S, DRIVE_S, AIM_LIMIT, HOLD_S
 } from './rig.js';
 
 // game.js hit-tests the sheet through this module; the test itself is the
@@ -83,6 +83,37 @@ const SHOULDER_R = 50;
 const FLIP_HAND = false;
 const HAND_ANG = Math.atan2(HANDA.sly - HANDA.wy, HANDA.slx - HANDA.wx);
 
+// ── impact feedback ─────────────────────────────────────────────────────────
+// Everything here reads a single "hc" = seconds since contact (negative
+// before the slipper lands). hc is computed per-strike inside the closure
+// (sinceContact, below) because it depends on strikeAnticipate, which can
+// change strike to strike when the player is mashing.
+const SHAKE_S = 0.08;               // stage-shake decay window
+const HEAD_SNAP_S = 0.028;          // head-snap rise-to-peak time
+// No neck joint is measured in rig.js (cut-granny-sprites.py only marks the
+// arm chain) — this sits just above the measured shoulder pivot, close
+// enough for a ~0.05rad wobble to read as coming from the neck.
+const NECK = { x: PIVOT.x + 60, y: PIVOT.y - 70 };
+
+// Up to 4px, decaying to ~0 by SHAKE_S: an exponential envelope times a fast
+// sine so the stage jitters rather than bounces once. Applied to the whole
+// canvas before anything is drawn, so the HUD shakes with the scene.
+function stageShake(hc) {
+  if (!(hc >= 0 && hc < SHAKE_S)) return { x: 0, y: 0 };
+  const k = 4 * Math.exp(-26 * hc) * Math.sin(130 * hc);
+  return { x: k, y: k * 0.5 };
+}
+
+// u*e^(1-u) is 0 at contact and peaks at exactly 1 when u=1 (hc=HEAD_SNAP_S,
+// a frame or two after contact), then decays away — so the head follows the
+// blow instead of moving with it. Positive because it is a COUNTER-rotation
+// to LEAN_STRIKE's negative lean.
+function headSnapAngle(hc) {
+  if (!(hc >= 0 && hc < 0.4)) return 0;
+  const u = hc / HEAD_SNAP_S;
+  return 0.05 * u * Math.exp(1 - u);
+}
+
 // The effigy art was laid out for the old upright 264×424 poster; sy stretches
 // it back to a readable screen height through the 0.30 foreshorten. `u` parks
 // it in the strip of sheet the slipper never lands on: the hand's painted
@@ -108,6 +139,7 @@ export function createIllustratedScene(canvas) {
   let strikeX = PLANE.cx, strikeY = PLANE.cy;
   let strikeAim = 0;
   let strikeAnticipate = ANTICIPATE_S;
+  let lastDustStrikeAt = -Infinity;           // guards the one-shot contact burst
   const art = {};
 
   const ready = Promise.all(
@@ -134,6 +166,36 @@ export function createIllustratedScene(canvas) {
     strikeAt = nowS;
     strikeX = x; strikeY = y;
     return strikeAnticipate + DRIVE_S;
+  }
+
+  // Seconds since the slipper made contact (negative before it lands, growing
+  // afterward). Matches drawImpact's own inline math — kept as one function so
+  // every impact effect (squash, recoil, dust, snap) agrees on "contact".
+  function sinceContact(sinceStrike) {
+    return sinceStrike - strikeAnticipate - DRIVE_S;
+  }
+
+  // Fires exactly once per strike, on the frame contact first reads as landed.
+  // Spawns AT the slipper's solved landing point (game.js already put dust at
+  // the tap point on pointerdown), so this burst reads as coming off the sheet
+  // rather than off the finger. hc has no upper bound here — Number.isFinite
+  // is what keeps this from firing during the idle attract loop, where
+  // strikeAt is still -Infinity and hc would otherwise be +Infinity >= 0.
+  function maybeSpawnContactDust(state, sinceStrike, hc) {
+    if (!Number.isFinite(hc) || hc < 0 || strikeAt === lastDustStrikeAt || !Array.isArray(state.dust)) return;
+    lastDustStrikeAt = strikeAt;
+    const { pose } = grannyFrame(state.t, sinceStrike);
+    const p = slipperPoint({ shoulder: pose.shoulder, elbow: pose.elbow, wrist: pose.wrist, lean: pose.lean });
+    for (let i = 0; i < 6; i++) {
+      const a = Math.random() * Math.PI * 2;
+      state.dust.push({
+        x: p.x, y: p.y,
+        vx: Math.cos(a) * (30 + Math.random() * 70),
+        vy: Math.sin(a) * (30 + Math.random() * 70) - 30,
+        r: 1.5 + Math.random() * 2.5,
+        life: 1
+      });
+    }
   }
 
   function drawBackdrop(t) {
@@ -396,8 +458,15 @@ export function createIllustratedScene(canvas) {
     // coords, then draw them in SCREEN space once the plane transform is off,
     // so the tongues rise vertically instead of leaning with the paper.
     const flames = [];
+    // Sheet recoil: a LOCAL copy of PLANE with cy nudged for the hold window
+    // only. The exported PLANE is never assigned to — inPaper/screenToPlane
+    // keep hit-testing the untouched plane, so the tap target does not drift
+    // under the player's finger.
+    const hc = sinceContact(state.t - strikeAt);
+    const recoil = (hc >= 0 && hc < HOLD_S) ? 6 * Math.sin(Math.PI * hc / HOLD_S) : 0;
+    const localPlane = recoil ? { ...PLANE, cy: PLANE.cy + recoil } : PLANE;
     ctx.save();
-    const [a, b, c, d, e, f] = planeMatrix();
+    const [a, b, c, d, e, f] = planeMatrix(localPlane);
     ctx.transform(a, b, c, d, e, f);
     ctx.rotate((state.stage - 1.5) * 0.005 * Math.min(state.stage, 1));
     // Contact shadow, cast IN the plane rather than by ctx.shadow*: canvas
@@ -511,6 +580,7 @@ export function createIllustratedScene(canvas) {
   // covers the seam of the one before it, and the sleeve tucks under her jaw.
   function drawGrannyFront(t, sinceStrike) {
     const { pose, bob } = grannyFrame(t, sinceStrike);
+    const hc = sinceContact(sinceStrike);
     leanIn(pose);
     const el = elbowAt(pose.shoulder);
     const wr = wristAt(pose.shoulder, pose.elbow);
@@ -536,6 +606,18 @@ export function createIllustratedScene(canvas) {
         ctx.scale(1, -1);
         ctx.rotate(-HAND_ANG);
       }
+      if (hc >= 0 && hc < HOLD_S) {
+        // Squash on impact, about the wrist: scale down along the wrist→
+        // slipper axis and up across it by the exact inverse, so the two
+        // factors multiply to 1 and the silhouette reads as impact without
+        // losing volume. HAND_ANG is the same wrist→slipper axis FLIP_HAND
+        // mirrors across, so this composes with it regardless of order —
+        // both are diagonal scales in the same rotated frame.
+        const squash = 1 - 0.10 * Math.sin(Math.PI * hc / HOLD_S);
+        ctx.rotate(HAND_ANG);
+        ctx.scale(squash, 1 / squash);
+        ctx.rotate(-HAND_ANG);
+      }
       ctx.drawImage(art['granny-hand'], -HANDA.wx, -HANDA.wy, FRAME.w, FRAME.h);
       ctx.restore();
     }
@@ -550,7 +632,21 @@ export function createIllustratedScene(canvas) {
       ctx.restore();
     }
     if (art['granny-head']) {
-      ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+      // Counter-rotation about the neck, peaking a frame after contact: the
+      // head follows the blow instead of moving with it (LEAN_STRIKE already
+      // leans the hips in sync with the swing — this is deliberately out of
+      // phase with that).
+      const snap = headSnapAngle(hc);
+      if (snap) {
+        ctx.save();
+        ctx.translate(NECK.x, NECK.y);
+        ctx.rotate(snap);
+        ctx.translate(-NECK.x, -NECK.y);
+        ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(art['granny-head'], FRAME.x, FRAME.y + bob, FRAME.w, FRAME.h);
+      }
     }
     ctx.restore();
   }
@@ -627,6 +723,12 @@ export function createIllustratedScene(canvas) {
 
   function draw(state) {
     const sinceStrike = state.t - strikeAt;
+    const hc = sinceContact(sinceStrike);
+    // Whole-stage shake, applied before everything else so the HUD shakes
+    // with the scene rather than sitting still over a jolting background.
+    const shake = stageShake(hc);
+    ctx.save();
+    ctx.translate(shake.x, shake.y);
     drawBackdrop(state.t);
     drawGrannyBack(state.t, sinceStrike);
     drawAltar();
@@ -636,6 +738,8 @@ export function createIllustratedScene(canvas) {
     drawDust(state.dust);
     drawTarget(state.pointer, state.mode);
     drawHud(state);
+    ctx.restore();
+    maybeSpawnContactDust(state, sinceStrike, hc);
   }
 
   return { setEffigy, draw, strike, ready };
