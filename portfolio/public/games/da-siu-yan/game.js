@@ -7,6 +7,7 @@ import { buildRitualSchedule, createSequencer, createShuffleLooper, RITUAL_SECON
 import { createRecorder, extFor } from './recorder.js';
 import { createAudioEngine } from './audio.js';
 import { INTRO, LINES } from './chant-lines.js';
+import { createConsent } from './consent.js';
 
 const app = document.getElementById('app');
 app.innerHTML = `
@@ -19,6 +20,10 @@ app.innerHTML = `
       <input id="name-input" type="text" maxlength="12" placeholder="小人姓名(可留空)" />
       <button id="photo-btn" class="file-btn" type="button">上載小人相(可留空)</button>
       <input id="photo-input" type="file" accept="image/*" />
+      <label id="photo-consent" class="consent" hidden>
+        <input id="photo-consent-box" type="checkbox" />
+        <span>我確認我擁有此圖片的使用權,且此圖片不涉及未成年人、私密影像或未經同意的他人肖像。</span>
+      </label>
       <div class="toggle" role="group" aria-label="聲線">
         <button id="voice-std" type="button" aria-pressed="true">標準阿婆</button>
         <button id="voice-low" type="button" aria-pressed="false">低沉版</button>
@@ -43,6 +48,9 @@ const photoBtn = document.getElementById('photo-btn');
 const photoInput = document.getElementById('photo-input');
 const voiceBtns = { std: document.getElementById('voice-std'), low: document.getElementById('voice-low') };
 const styleBtns = { illu: document.getElementById('style-illu'), classic: document.getElementById('style-classic') };
+const consentRow = document.getElementById('photo-consent');
+const consentBox = document.getElementById('photo-consent-box');
+const modeBtns = [document.getElementById('start-ritual'), document.getElementById('start-free')];
 
 const scenes = { classic: createScene(canvas), illu: createIllustratedScene(canvas) };
 let style = 'illu';
@@ -50,6 +58,7 @@ const scene = () => scenes[style];
 let audio = null;               // created on first user gesture
 let variant = 'std';
 let photoCanvas = null;
+const consent = createConsent();
 
 let mode = null;                // null | 'ritual' | 'free'
 let modeStartS = 0;             // seconds; feeds the free-mode elapsed HUD
@@ -68,6 +77,26 @@ const pointer = { x: NaN, y: NaN, down: false };
 const dust = [];
 
 // ── entry screen wiring ────────────────────────────────────────────────────
+// The consent row exists only while there is a photo to consent to. The mode
+// buttons stay CLICKABLE while locked — a `disabled` attribute would swallow
+// the click and there would be no way to say why nothing happened.
+function syncConsentUI() {
+  const { hasPhoto, confirmed } = consent.state();
+  consentRow.hidden = !hasPhoto;
+  consentBox.checked = confirmed;
+  const locked = !consent.canStart();
+  for (const btn of modeBtns) {
+    btn.classList.toggle('is-locked', locked);
+    btn.setAttribute('aria-disabled', String(locked));
+  }
+}
+
+function nudgeConsent() {
+  consentRow.classList.remove('consent--nudge');
+  void consentRow.offsetWidth;          // reflow, so repeat taps replay it
+  consentRow.classList.add('consent--nudge');
+}
+
 photoBtn.addEventListener('click', () => photoInput.click());
 photoInput.addEventListener('change', async () => {
   const file = photoInput.files && photoInput.files[0];
@@ -75,11 +104,19 @@ photoInput.addEventListener('change', async () => {
   try {
     photoCanvas = await downscale(file, 1024);
     photoBtn.textContent = '相已上載(撳一下再換)';
+    consent.photoChanged(true);
   } catch (err) {
     console.warn('photo decode failed', err);
     photoBtn.textContent = '張相讀唔到,試過另一張';
     photoCanvas = null;
+    consent.photoChanged(false);
   }
+  syncConsentUI();
+});
+
+consentBox.addEventListener('change', () => {
+  consent.setConfirmed(consentBox.checked);
+  syncConsentUI();
 });
 
 async function downscale(file, cap) {
@@ -118,8 +155,9 @@ for (const [key, btn] of Object.entries(styleBtns)) {
   });
 }
 
-document.getElementById('start-ritual').addEventListener('click', () => start('ritual'));
-document.getElementById('start-free').addEventListener('click', () => start('free'));
+modeBtns[0].addEventListener('click', () => start('ritual'));
+modeBtns[1].addEventListener('click', () => start('free'));
+syncConsentUI();
 stopBtn.addEventListener('click', () => stop());
 
 // ── input on the stage ─────────────────────────────────────────────────────
@@ -172,6 +210,7 @@ function spawnDust(x, y) {
 // ── mode lifecycle ─────────────────────────────────────────────────────────
 async function start(which) {
   if (mode) return;
+  if (!consent.canStart()) { nudgeConsent(); return; }
   if (!audio) audio = createAudioEngine();
   await audio.unlock();                       // must stay inside the gesture
   entryEl.hidden = true;
