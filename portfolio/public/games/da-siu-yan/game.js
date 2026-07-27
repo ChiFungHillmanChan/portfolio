@@ -14,6 +14,9 @@ app.innerHTML = `
   <div id="stage-wrap">
     <canvas id="stage" width="${STAGE_W}" height="${STAGE_H}"></canvas>
     <button id="hud-stop" hidden>收手</button>
+    <a id="coffee-btn" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="請我飲杯咖啡,支持呢個遊戲" title="請我飲杯咖啡">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 8h14v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4z"/><path d="M18 10h2a2 2 0 0 1 0 4h-2"/><path d="M7 2v3M11 2v3M15 2v3"/></svg>
+    </a>
     <div id="entry" class="overlay">
       <h1>打小人</h1>
       <p class="sub">寫低個小人係邊個,或者上載佢張相,<br>等阿婆同你出啖氣。</p>
@@ -43,6 +46,7 @@ const canvas = document.getElementById('stage');
 const entryEl = document.getElementById('entry');
 const endEl = document.getElementById('end');
 const stopBtn = document.getElementById('hud-stop');
+const coffeeBtn = document.getElementById('coffee-btn');
 const nameInput = document.getElementById('name-input');
 const photoBtn = document.getElementById('photo-btn');
 const photoInput = document.getElementById('photo-input');
@@ -216,6 +220,7 @@ async function start(which) {
   entryEl.hidden = true;
   stopBtn.textContent = which === 'ritual' ? '早收陣' : '收手';
   stopBtn.hidden = false;
+  coffeeBtn.hidden = true;          // no stray tap target while mashing
   scene().setEffigy({ name: nameInput.value, photo: photoCanvas });
   if (style === 'illu') await scenes.illu.ready;   // sprites in before first frame
   try {
@@ -258,6 +263,7 @@ async function stop() {
   window.__daSiuYanPlaying = false;
   cancelAnimationFrame(rafId);
   stopBtn.hidden = true;
+  coffeeBtn.hidden = false;
   audio.stopAll();
   seq = null; looper = null;
   if (rec) {
@@ -329,15 +335,12 @@ function showEnd(finished) {
       const row = document.createElement('div');
       row.className = 'end-row';
       const ext = extFor(recBlob.type);
-      const save = document.createElement('a');
-      save.className = 'end-btn';
-      save.textContent = '儲存';
-      save.href = videoUrl;
-      save.download = `da-siu-yan.${ext}`;
-      row.appendChild(save);
-
       const file = new File([recBlob], `da-siu-yan.${ext}`, { type: recBlob.type });
-      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      // 分享 goes FIRST because it is the only path that reaches the phone's
+      // camera roll: on iOS an <a download> lands in Files, and in-app browsers
+      // (IG/LINE/WeChat) often ignore `download` outright and fail silently.
+      const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+      if (canShare) {
         const share = document.createElement('button');
         share.className = 'end-btn';
         share.textContent = '分享';
@@ -346,11 +349,23 @@ function showEnd(finished) {
         });
         row.appendChild(share);
       }
+      const save = document.createElement('a');
+      save.className = 'end-btn';
+      save.textContent = '儲存';
+      save.href = videoUrl;
+      save.download = `da-siu-yan.${ext}`;
+      row.appendChild(save);
       endEl.appendChild(row);
       const note = document.createElement('p');
       note.className = 'fineprint';
       note.textContent = '條片淨係喺你部機入面,唔儲存就會冇咗。';
       endEl.appendChild(note);
+      const how = document.createElement('p');
+      how.className = 'fineprint';
+      how.textContent = canShare
+        ? '手機撳「分享」先入到相簿,「儲存」會存落「檔案」。'
+        : '手機可以長撳條片,揀「儲存影片」。';
+      endEl.appendChild(how);
       const care = document.createElement('p');
       care.className = 'fineprint';
       care.textContent = '如果用咗真人個名或者張相,後果你要自己負責 —— 唔好用嚟騷擾、恐嚇或者公開針對任何人。';

@@ -74,3 +74,20 @@ html, body { height: 100%; background: var(--bg); overflow: hidden;
   cursor: pointer; touch-action: manipulation;
   -webkit-tap-highlight-color: transparent; }
 #hud-stop[hidden] { display: none; }
+/* Support link, mirroring #hud-stop across the top edge. z-index 3 puts it
+   ABOVE .overlay (2) — at 1 it would be buried under the near-opaque entry
+   screen, i.e. invisible exactly when it is meant to be seen. It is hidden
+   while a mode runs so a mash near the top edge cannot navigate away. */
+#coffee-btn { position: absolute; z-index: 3;
+  /* The canvas HUD draws "打咗 N 下" right-aligned at stage y 26 with 34px text,
+     i.e. down to y 60 of 1280 — 4.7% of stage height. A fixed px offset would
+     collide with it at some viewport sizes, so sit below it proportionally. */
+  top: calc(6% + env(safe-area-inset-top));
+  right: calc(12px + env(safe-area-inset-right));
+  display: flex; align-items: center; justify-content: center;
+  width: 44px; height: 44px; border-radius: 999px;
+  border: 1px solid #7a5a30; background: rgba(18, 10, 6, 0.75); color: #f3e6c8;
+  text-decoration: none; touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent; }
+#coffee-btn:hover { background: rgba(44, 26, 14, 0.9); color: var(--paper); }
+#coffee-btn[hidden] { display: none; }
