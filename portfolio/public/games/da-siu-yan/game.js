@@ -34,7 +34,7 @@ app.innerHTML = `
       </div>
       <button id="start-ritual" class="mode-btn primary" type="button">開壇(一分鐘・自動錄影)</button>
       <button id="start-free" class="mode-btn" type="button">任摑(無限熱身)</button>
-      <p class="fineprint">名同相只喺你部機處理,唔會上載去任何地方。<br>娛樂用途,旨在祈福減壓。聲音由 AI 生成。</p>
+      <p class="fineprint">名同相只喺你部機處理,唔會上載去任何地方。<br>本遊戲只係模仿民間習俗,唔係宗教服務,亦冇任何實際效力。<br>口訣有咒罵字句,建議成年人玩。聲音由 AI 生成。</p>
     </div>
     <div id="end" class="overlay" hidden></div>
   </div>`;
@@ -351,6 +351,10 @@ function showEnd(finished) {
       note.className = 'fineprint';
       note.textContent = '條片淨係喺你部機入面,唔儲存就會冇咗。';
       endEl.appendChild(note);
+      const care = document.createElement('p');
+      care.className = 'fineprint';
+      care.textContent = '如果用咗真人個名或者張相,後果你要自己負責 —— 唔好用嚟騷擾、恐嚇或者公開針對任何人。';
+      endEl.appendChild(care);
     } else {
       const p = document.createElement('p');
       p.className = 'sub';
