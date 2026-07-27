@@ -1,18 +1,25 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+const categories = [
+  { value: 'all', label: 'All' },
+  { value: 'game', label: 'Game' },
+  { value: 'program', label: 'Program' },
+  { value: 'fullstack', label: 'Full stack' },
+  { value: 'website', label: 'Website' },
+];
 
 const Projects = () => {
-  const categories = [
-    { value: 'all', label: 'All' },
-    { value: 'game', label: 'Game' },
-    { value: 'program', label: 'Program' },
-    { value: 'fullstack', label: 'Full stack' },
-    { value: 'website', label: 'Website' },
-  ];
+  const [searchParams] = useSearchParams();
 
-  const [activeCategory, setActiveCategory] = useState('all');
+  // Preselect the tab the visitor was already browsing on the home page.
+  // Anything unrecognised falls back to 'all'.
+  const [activeCategory, setActiveCategory] = useState(() => {
+    const requested = searchParams.get('category');
+    return categories.some(({ value }) => value === requested) ? requested : 'all';
+  });
   const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
   const navigate = useNavigate();
 
