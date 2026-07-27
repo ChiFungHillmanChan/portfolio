@@ -43,6 +43,23 @@ html, body { height: 100%; background: var(--bg); overflow: hidden;
   border: 1px solid #7a5a30; background: #120a06; color: #f3e6c8; cursor: pointer;
   touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 .toggle button[aria-pressed="true"] { background: var(--paper); color: var(--ink); }
+/* Consent row — only rendered while a photo is loaded. The [hidden] rule is
+   NOT redundant: `display: flex` here would otherwise beat the UA's
+   [hidden] { display: none }, exactly as it does for .overlay above. */
+.consent { display: flex; gap: 10px; align-items: flex-start; text-align: left;
+  max-width: min(340px, 86%); font-size: 0.8rem; line-height: 1.6;
+  padding: 10px 12px; border-radius: 8px; border: 1px solid #7a5a30;
+  background: #120a06; cursor: pointer; }
+.consent[hidden] { display: none; }
+.consent input { flex: 0 0 auto; width: 22px; height: 22px; margin-top: 1px;
+  accent-color: var(--paper); }
+/* pressing a locked mode button points at the reason instead of doing nothing */
+.consent--nudge { animation: consent-nudge 0.6s ease-out; }
+@keyframes consent-nudge {
+  0%, 100% { border-color: #7a5a30; background: #120a06; }
+  25%, 75% { border-color: #a8442f; background: #2a1008; }
+}
+.mode-btn.is-locked { opacity: 0.4; }
 .fineprint { font-size: 0.75rem; opacity: 0.55; line-height: 1.7; }
 #photo-input { display: none; }
 #end-video { width: min(300px, 70%); aspect-ratio: 9 / 16; border-radius: 12px;

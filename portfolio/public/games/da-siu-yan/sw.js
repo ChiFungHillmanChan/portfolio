@@ -2,11 +2,12 @@
    Bump the version in CACHE whenever ANY file listed in ASSETS changes,
    otherwise returning players keep the old files. CACHE and ASSETS must
    stay strict JSON (double quotes) — pwa.test.mjs parses them. */
-const CACHE = "da-siu-yan-v9";
+const CACHE = "da-siu-yan-v10";
 const ASSETS = [
   "./index.html",
   "./styles.css",
   "./game.js",
+  "./consent.js",
   "./scene.js",
   "./scene-illustrated.js",
   "./plane.js",
