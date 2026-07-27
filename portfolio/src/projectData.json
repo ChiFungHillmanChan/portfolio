@@ -292,21 +292,22 @@
     },
     {
         "id": 9,
-        "title": "Casino Edge Calculator",
-        "shortDescription": "A comprehensive casino game calculator featuring Roulette, Blackjack, and Baccarat with card counting, EV tracking, and betting strategy tools.",
-        "fullDescription": "Casino Edge Calculator is a suite of tools for understanding the mathematical edge in casino games. It includes three fully-featured games: Roulette with European/American variants, physics-based wheel simulation, and hot/cold number tracking; Blackjack with Hi-Lo card counting, true count calculation, Kelly Criterion bet sizing, basic strategy with Illustrious 18 deviations, and practice modes; Baccarat with card counting tools, Egalité side bet analysis, Dragon Bonus tracking, and real-time EV calculations. The project demonstrates advanced JavaScript skills including state management, complex probability calculations, responsive UI design, and educational game mechanics. Built as a pure HTML/CSS/JS application with no dependencies.",
-        "image": "casino_game.png",
+        "title": "3D Casino Game & Practice",
+        "shortDescription": "A walkable 3D casino floor — sit down at Roulette, Blackjack, Baccarat and Ultimate Texas Hold'em tables, plus practice trainers for counting and payouts.",
+        "fullDescription": "A browser-based casino you can actually walk through. A Three.js floor renders the vestibule, reception, cashier and every game pit in real time — you move around in first person, walk up to a table and sit down. The floor covers Roulette (European and American), Blackjack, Baccarat and multiplayer Ultimate Texas Hold'em, all played against a shared server-authoritative chip wallet, so your balance follows you between games and devices. Alongside it sits a free practice mode: a dealer payout trainer with four difficulty tiers and full call-bet support (Tiers, Voisins, Orphelins), Hi-Lo and true-count Blackjack trainers, Baccarat road maps with EV tools, a GGPoker hand-history recorder that plots bb/100 and EV curves, and a complete house-edge reference. The project spans real-time 3D rendering and rigged character animation, probability and EV mathematics, and a Firebase + AWS Lambda backend that keeps every wallet, table and payout decision on the server.",
+        "image": "casino_3d.jpg",
         "url": "https://casino-game.hillmanchan.com",
         "category": "game",
         "sourceCode": "no-source-code",
         "demoUrl": "/casino-game",
         "liveDemo": "no-demo",
         "technologies": [
-            "HTML",
-            "CSS",
+            "Three.js",
+            "WebGL",
             "JavaScript",
-            "Probability Math",
-            "Physics Simulation"
+            "Firebase",
+            "AWS Lambda",
+            "Probability Math"
         ]
     },
     {
