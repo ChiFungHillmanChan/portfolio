@@ -267,7 +267,12 @@ async function stop() {
   audio.stopAll();
   seq = null; looper = null;
   if (rec) {
-    recBlob = await rec.stop();
+    try {
+      recBlob = await rec.stop();
+    } catch (err) {
+      console.warn('recording failed', err);
+      recBlob = null;
+    }
     rec = null;
   }
   showEnd(finished);
