@@ -204,9 +204,39 @@ const MainContent = () => {
                         </motion.div>
                     ))}
                 </div>
+
+                {filteredProjects.length > 3 && (
+                    <div className="mt-8 md:mt-10 flex justify-center">
+                        <button
+                            onClick={() => {
+                                navigate(`/projects?category=${activeCategory}`);
+                                window.scrollTo(0, 0);
+                            }}
+                            className="w-full sm:w-auto px-6 py-3 rounded-full border-2 border-gray-800 text-gray-800 font-medium
+                                       flex items-center justify-center gap-2 transition-colors duration-300
+                                       hover:bg-gray-800 hover:text-white
+                                       dark:border-gray-300 dark:text-gray-200 dark:hover:bg-gray-600 dark:hover:border-gray-600 dark:hover:text-white"
+                        >
+                            <span>View more projects</span>
+                            <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M9 5l7 7-7 7"
+                                />
+                            </svg>
+                        </button>
+                    </div>
+                )}
             </section>
 
-            
+
         </div>
     );
 }
