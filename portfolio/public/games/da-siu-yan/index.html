@@ -1,44 +1,14 @@
 <!DOCTYPE html>
 <html lang="zh-HK">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-  <meta name="description" content="打小人 — 網上打小人,寫個名、上載相,用拖鞋幫你出啖氣。" />
-  <title>打小人</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="manifest" href="manifest.webmanifest" />
-  <meta name="theme-color" content="#1a0f0a" />
-  <link rel="apple-touch-icon" href="icon-192.png" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>打小人 — 搬咗新屋</title>
+  <meta http-equiv="refresh" content="0;url=https://da-siu-yan.hillmanchan.com/">
+  <script>location.replace('https://da-siu-yan.hillmanchan.com/');</script>
+  <style>body{font-family:sans-serif;background:#1a0f0a;color:#e8d5b0;display:grid;place-items:center;min-height:100vh;margin:0}a{color:#f0c060}</style>
 </head>
 <body>
-  <noscript><p class="noscript">打小人需要 JavaScript 先開得壇。請開啟 JavaScript 再入嚟。</p></noscript>
-  <div id="app"></div>
-  <script src="vendor/fix-webm-duration.js"></script>
-  <script type="module" src="game.js"></script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      // A new worker calls skipWaiting + clients.claim, but THIS page already
-      // loaded its modules from the old cache — so without the reload below a
-      // deploy only reaches the player on their second visit. Only arm this
-      // when a controller already exists, otherwise the very first visit
-      // (no previous worker) would reload itself for nothing.
-      if (navigator.serviceWorker.controller) {
-        var reloading = false;
-        navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (reloading) return;
-          // never yank the page out from under a running ritual — it would bin
-          // the recording. They will get the update on the next load anyway.
-          if (window.__daSiuYanPlaying) return;
-          reloading = true;
-          window.location.reload();
-        });
-      }
-      window.addEventListener('load', function () {
-        navigator.serviceWorker.register('./sw.js').catch(function (err) {
-          console.warn('[pwa] service worker registration failed:', err);
-        });
-      });
-    }
-  </script>
+  <p>打小人搬咗去新地址:<a href="https://da-siu-yan.hillmanchan.com/">da-siu-yan.hillmanchan.com</a></p>
 </body>
 </html>
