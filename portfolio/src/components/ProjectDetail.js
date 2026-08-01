@@ -199,6 +199,12 @@ const ProjectDetail = () => {
   // Check if project has valid source code
   const hasValidSourceCode = project.sourceCode && project.sourceCode !== 'no-source-code' && project.sourceCode.trim() !== '';
   
+  // App-store links (mobile projects). 'not-available' means the platform has no build yet.
+  const isStoreLink = (value) => Boolean(value) && value !== 'not-available' && value.trim() !== '';
+  const iosStoreUrl = isStoreLink(project.iosUrl) ? project.iosUrl.trim() : null;
+  const androidStoreUrl = isStoreLink(project.androidUrl) ? project.androidUrl.trim() : null;
+  const hasStoreLinks = Boolean(iosStoreUrl || androidStoreUrl);
+
   // Check if project has valid demo URL
   const hasValidDemoUrl = Boolean(resolvedDemoUrl);
   const isInternalDemo = hasValidDemoUrl && isInternalDemoLink;
@@ -354,6 +360,44 @@ const ProjectDetail = () => {
                   </div>
                 )}
                 <div className="space-y-3">
+                  {/* App store links — shown for mobile projects */}
+                  {hasStoreLinks && (
+                    <>
+                      {iosStoreUrl ? (
+                        <motion.a
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          href={iosStoreUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                        >
+                          Download from iOS
+                        </motion.a>
+                      ) : (
+                        <div className="bg-gray-400 text-gray-600 px-6 py-3 rounded-md text-center w-full cursor-not-allowed">
+                          iOS Not Available
+                        </div>
+                      )}
+                      {androidStoreUrl ? (
+                        <motion.a
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          href={androidStoreUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-indigo-600 text-white px-6 py-3 rounded-md hover:bg-indigo-500 transition-colors duration-300 text-center cursor-pointer w-full block"
+                        >
+                          Download from Android
+                        </motion.a>
+                      ) : (
+                        <div className="bg-gray-400 text-gray-600 px-6 py-3 rounded-md text-center w-full cursor-not-allowed">
+                          Android Not Available
+                        </div>
+                      )}
+                    </>
+                  )}
+
                   {/* Case 1: Only source code available */}
                   {hasValidSourceCode && !hasValidDemoUrl && (
                     <motion.a
@@ -431,7 +475,7 @@ const ProjectDetail = () => {
                   )}
 
                   {/* Case 4: Neither available - show disabled button */}
-                  {!hasValidSourceCode && !hasValidDemoUrl && (
+                  {!hasValidSourceCode && !hasValidDemoUrl && !hasStoreLinks && (
                     <div className="bg-gray-400 text-gray-600 px-6 py-3 rounded-md text-center w-full cursor-not-allowed">
                       No Links Available
                     </div>

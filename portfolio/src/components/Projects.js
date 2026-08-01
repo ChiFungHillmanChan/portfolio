@@ -9,6 +9,7 @@ const categories = [
   { value: 'program', label: 'Program' },
   { value: 'fullstack', label: 'Full stack' },
   { value: 'website', label: 'Website' },
+  { value: 'mobile', label: 'Mobile' },
 ];
 
 const Projects = () => {

@@ -267,6 +267,31 @@
         ]
     },
     {
+        "id": 20,
+        "title": "Dream Record — Mobile App",
+        "shortDescription": "The iOS edition of Dream Record: an AI-powered dream journal with voice recording, dream analysis, weekly reports, and streak tracking.",
+        "fullDescription": "Dream Record on mobile brings the full dream journaling experience to iPhone. Capture a dream the moment you wake up with voice-to-text recording, get AI-powered analysis of what you dreamt, receive weekly insight reports with generated imagery, and keep a streak going to build the habit. It shares the same account, subscription and dream history as the web app, so anything you record on your phone is there on the web and vice versa. The app includes tagging, an interactive calendar to search your history, personalised psychological insights based on your dream patterns, and full Traditional Chinese (Cantonese) localisation with a dark theme built for night-time use.",
+        "image": "dream_record.png",
+        "url": "https://apps.apple.com/us/app/dream-record/id6792341192",
+        "category": "mobile",
+        "sourceCode": "no-source-code",
+        "demoUrl": "no-demo-url",
+        "liveDemo": "no-demo",
+        "iosUrl": "https://apps.apple.com/us/app/dream-record/id6792341192",
+        "androidUrl": "not-available",
+        "technologies": [
+            "iOS",
+            "React",
+            "TypeScript",
+            "Next.js",
+            "Prisma",
+            "PostgreSQL",
+            "OpenAI GPT-4",
+            "Stripe",
+            "JWT Auth"
+        ]
+    },
+    {
         "id": 8,
         "title": "Dream Record",
         "shortDescription": "A beautiful AI-powered dream journal app with voice recording, dream analysis, weekly reports, and streak tracking.",
