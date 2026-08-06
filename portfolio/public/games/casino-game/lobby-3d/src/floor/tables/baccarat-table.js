@@ -522,7 +522,9 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // east pit-lane entry (matches the old local -x direction on this
+      // rotated south row), kept short of the 4.4m neighbour spacing
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [2.6, 0] });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);

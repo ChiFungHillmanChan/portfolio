@@ -6,11 +6,18 @@
   let fadeGen = 0;
 
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
+  // A phone held LANDSCAPE is wider than 768px, so the old max-width test
+  // silently gave phones the desktop budget (shadows, antialias, 2x pixel
+  // ratio). Detect the DEVICE instead: coarse pointer + a screen whose
+  // short side is phone/small-tablet sized (orientation-proof via min()).
+  const IS_MOBILE = matchMedia('(pointer: coarse)').matches &&
+    Math.min(screen.width, screen.height) <= 820;
+  // gates #rotate-gate (style.css): portrait phones must turn landscape
+  if (IS_MOBILE) document.documentElement.classList.add('is-mobile');
 
   // First-person player: position on the floor plane + yaw/pitch. yaw 0 faces
   // +Z (south); yaw π/2 faces +X (east, into the casino).
-  const P = { x: -25.5, z: 0, yaw: Math.PI / 2, pitch: 0 };
+  const P = { x: -25.5, z: 0, yaw: Math.PI / 2, pitch: 0, eyeY: null };   // eyeY: glideTo height override (null = standing EYE)
   const SPEED = 3.2, GLIDE = 5.0, RADIUS = 0.35;
   const keys = Object.create(null);
   let ui = null;
@@ -160,10 +167,12 @@
         const s = locked ? 0 : (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
         if (f || s) {
           glide = null; cancelFly();
+          // sprint: hold E or Shift while moving
+          const speed = SPEED * (keys.KeyE || keys.ShiftLeft || keys.ShiftRight ? 1.8 : 1);
           const len = Math.hypot(f, s) || 1;
           const dx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) / len;
           const dz = (Math.cos(P.yaw) * f - Math.sin(P.yaw) * s) / len;
-          if (tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt)) stepAccum += dt;
+          if (tryMove(P.x + dx * speed * dt, P.z + dz * speed * dt)) stepAccum += dt;
         } else if (glide) {
           const dx = glide.x - P.x, dz = glide.z - P.z, d = Math.hypot(dx, dz);
           if (d < 0.05) { const done = glide.onDone; glide = null; done?.(); }
@@ -199,10 +208,18 @@
           const zone = C.floorplan.ZONES.find((zz) => P.x >= zz.x0 && P.x <= zz.x1 && P.z >= zz.z0 && P.z <= zz.z1);
           if ((zone && zone.id) !== zoneId) { zoneId = zone && zone.id; ui?.onSectionChange?.(zoneId || null); }
         }
-        camera.position.set(P.x, C.floorplan.EYE, P.z);
+        // Raised-eye poses (glideTo's eyeY — e.g. the roulette spin's
+        // overhead wheel shot) hold their height while the camera is
+        // parked; any player-driven movement eases back to standing EYE.
+        if (P.eyeY != null && (f || s || glide)) {
+          P.eyeY += (C.floorplan.EYE - P.eyeY) * Math.min(1, dt * 3.5);
+          if (Math.abs(P.eyeY - C.floorplan.EYE) < 0.01) P.eyeY = null;
+        }
+        const eye = P.eyeY ?? C.floorplan.EYE;
+        camera.position.set(P.x, eye, P.z);
         camera.lookAt(
           P.x + Math.sin(P.yaw) * Math.cos(P.pitch),
-          C.floorplan.EYE + Math.sin(P.pitch),
+          eye + Math.sin(P.pitch),
           P.z + Math.cos(P.yaw) * Math.cos(P.pitch),
         );
         frameHooks.forEach((fn) => fn(dt, now / 1000));
@@ -244,18 +261,23 @@
 
     // Fly the camera to an exact pose (stage.goTo / walkToDesk). Ignores
     // collision — poses are always chosen inside walkable space.
-    glideTo(pos, look, ms = 1100) {
+    // opts.eyeY raises/lowers the camera off the standing EYE height for
+    // this pose (the roulette spin's overhead wheel shot); omitting it
+    // glides any previous override back to the default.
+    glideTo(pos, look, ms = 1100, opts = {}) {
       cancelFly();
       glide = null;
       return new Promise((res) => {
+        const wantEye = opts.eyeY ?? C.floorplan.EYE;
         const wantYaw = Math.atan2(look[0] - pos[0], look[2] - pos[2]);
         const flat = Math.hypot(look[0] - pos[0], look[2] - pos[2]);
-        const wantPitch = Math.atan2(look[1] - C.floorplan.EYE, flat) * 0.9;
+        const wantPitch = Math.atan2(look[1] - wantEye, flat) * 0.9;
         if (REDUCED) {
           Object.assign(P, { x: pos[0], z: pos[2], yaw: wantYaw, pitch: wantPitch });
+          P.eyeY = opts.eyeY == null ? null : wantEye;
           return res();
         }
-        const from = { x: P.x, z: P.z, yaw: P.yaw, pitch: P.pitch };
+        const from = { x: P.x, z: P.z, yaw: P.yaw, pitch: P.pitch, eye: P.eyeY ?? C.floorplan.EYE };
         let dyaw = wantYaw - from.yaw;
         while (dyaw > Math.PI) dyaw -= 2 * Math.PI;
         while (dyaw < -Math.PI) dyaw += 2 * Math.PI;
@@ -267,7 +289,11 @@
           P.z = from.z + (pos[2] - from.z) * e;
           P.yaw = from.yaw + dyaw * e;
           P.pitch = from.pitch + (wantPitch - from.pitch) * e;
-          if (t >= 1) { C.app.offFrame(hook); if (flyHook === hook) flyHook = null; res(); }
+          P.eyeY = from.eye + (wantEye - from.eye) * e;
+          if (t >= 1) {
+            if (opts.eyeY == null) P.eyeY = null;
+            C.app.offFrame(hook); if (flyHook === hook) flyHook = null; res();
+          }
         };
         hook.cancel = () => { C.app.offFrame(hook); res(); };
         flyHook = hook;

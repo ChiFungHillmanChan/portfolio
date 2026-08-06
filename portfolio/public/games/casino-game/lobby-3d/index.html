@@ -149,6 +149,20 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 @media (prefers-reduced-motion: reduce) {
   #rouletteLive { transition: none; }
 }
+
+/* ---- portrait gate (mobile only — html.is-mobile set by app.js) ----
+   Sits above the splash (50) and fader (40): a portrait phone sees ONLY
+   the rotate prompt, whatever state the lobby is in underneath. */
+#rotate-gate { display: none; }
+@media (orientation: portrait) {
+  html.is-mobile #rotate-gate {
+    display: flex; position: fixed; inset: 0; z-index: 60;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: .55rem; text-align: center; background: #0a0c10; color: #d7b45c;
+  }
+  html.is-mobile #rotate-gate h2 { font-size: 1.25rem; letter-spacing: .14em; font-weight: 500; }
+  html.is-mobile #rotate-gate p { color: #9aa0b4; font-size: .9rem; }
+}
 </style>
 </head>
 <body>
@@ -174,6 +188,15 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 <div id="card-root" aria-live="polite"></div>
 <div id="banner" hidden></div>
 <div id="fader"></div>
+<div id="rotate-gate">
+  <svg width="72" height="72" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <rect x="7" y="3" width="10" height="18" rx="2"/>
+    <path d="M3 8a9 9 0 0 1 2.2-3.4M21 16a9 9 0 0 1-2.2 3.4"/>
+    <path d="M3 8l-.5-2.5M3 8l2.5-.5M21 16l.5 2.5M21 16l-2.5.5"/>
+  </svg>
+  <h2>Rotate your phone</h2>
+  <p>The casino floor plays in landscape.</p>
+</div>
 <script>/**
  * @license
  * Copyright 2010-2023 Three.js Authors
@@ -6768,11 +6791,18 @@ THREE.SkeletonUtils = { clone };
   let fadeGen = 0;
 
   const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const IS_MOBILE = matchMedia('(max-width: 768px)').matches;
+  // A phone held LANDSCAPE is wider than 768px, so the old max-width test
+  // silently gave phones the desktop budget (shadows, antialias, 2x pixel
+  // ratio). Detect the DEVICE instead: coarse pointer + a screen whose
+  // short side is phone/small-tablet sized (orientation-proof via min()).
+  const IS_MOBILE = matchMedia('(pointer: coarse)').matches &&
+    Math.min(screen.width, screen.height) <= 820;
+  // gates #rotate-gate (style.css): portrait phones must turn landscape
+  if (IS_MOBILE) document.documentElement.classList.add('is-mobile');
 
   // First-person player: position on the floor plane + yaw/pitch. yaw 0 faces
   // +Z (south); yaw π/2 faces +X (east, into the casino).
-  const P = { x: -25.5, z: 0, yaw: Math.PI / 2, pitch: 0 };
+  const P = { x: -25.5, z: 0, yaw: Math.PI / 2, pitch: 0, eyeY: null };   // eyeY: glideTo height override (null = standing EYE)
   const SPEED = 3.2, GLIDE = 5.0, RADIUS = 0.35;
   const keys = Object.create(null);
   let ui = null;
@@ -6922,10 +6952,12 @@ THREE.SkeletonUtils = { clone };
         const s = locked ? 0 : (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
         if (f || s) {
           glide = null; cancelFly();
+          // sprint: hold E or Shift while moving
+          const speed = SPEED * (keys.KeyE || keys.ShiftLeft || keys.ShiftRight ? 1.8 : 1);
           const len = Math.hypot(f, s) || 1;
           const dx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) / len;
           const dz = (Math.cos(P.yaw) * f - Math.sin(P.yaw) * s) / len;
-          if (tryMove(P.x + dx * SPEED * dt, P.z + dz * SPEED * dt)) stepAccum += dt;
+          if (tryMove(P.x + dx * speed * dt, P.z + dz * speed * dt)) stepAccum += dt;
         } else if (glide) {
           const dx = glide.x - P.x, dz = glide.z - P.z, d = Math.hypot(dx, dz);
           if (d < 0.05) { const done = glide.onDone; glide = null; done?.(); }
@@ -6961,10 +6993,18 @@ THREE.SkeletonUtils = { clone };
           const zone = C.floorplan.ZONES.find((zz) => P.x >= zz.x0 && P.x <= zz.x1 && P.z >= zz.z0 && P.z <= zz.z1);
           if ((zone && zone.id) !== zoneId) { zoneId = zone && zone.id; ui?.onSectionChange?.(zoneId || null); }
         }
-        camera.position.set(P.x, C.floorplan.EYE, P.z);
+        // Raised-eye poses (glideTo's eyeY — e.g. the roulette spin's
+        // overhead wheel shot) hold their height while the camera is
+        // parked; any player-driven movement eases back to standing EYE.
+        if (P.eyeY != null && (f || s || glide)) {
+          P.eyeY += (C.floorplan.EYE - P.eyeY) * Math.min(1, dt * 3.5);
+          if (Math.abs(P.eyeY - C.floorplan.EYE) < 0.01) P.eyeY = null;
+        }
+        const eye = P.eyeY ?? C.floorplan.EYE;
+        camera.position.set(P.x, eye, P.z);
         camera.lookAt(
           P.x + Math.sin(P.yaw) * Math.cos(P.pitch),
-          C.floorplan.EYE + Math.sin(P.pitch),
+          eye + Math.sin(P.pitch),
           P.z + Math.cos(P.yaw) * Math.cos(P.pitch),
         );
         frameHooks.forEach((fn) => fn(dt, now / 1000));
@@ -7006,18 +7046,23 @@ THREE.SkeletonUtils = { clone };
 
     // Fly the camera to an exact pose (stage.goTo / walkToDesk). Ignores
     // collision — poses are always chosen inside walkable space.
-    glideTo(pos, look, ms = 1100) {
+    // opts.eyeY raises/lowers the camera off the standing EYE height for
+    // this pose (the roulette spin's overhead wheel shot); omitting it
+    // glides any previous override back to the default.
+    glideTo(pos, look, ms = 1100, opts = {}) {
       cancelFly();
       glide = null;
       return new Promise((res) => {
+        const wantEye = opts.eyeY ?? C.floorplan.EYE;
         const wantYaw = Math.atan2(look[0] - pos[0], look[2] - pos[2]);
         const flat = Math.hypot(look[0] - pos[0], look[2] - pos[2]);
-        const wantPitch = Math.atan2(look[1] - C.floorplan.EYE, flat) * 0.9;
+        const wantPitch = Math.atan2(look[1] - wantEye, flat) * 0.9;
         if (REDUCED) {
           Object.assign(P, { x: pos[0], z: pos[2], yaw: wantYaw, pitch: wantPitch });
+          P.eyeY = opts.eyeY == null ? null : wantEye;
           return res();
         }
-        const from = { x: P.x, z: P.z, yaw: P.yaw, pitch: P.pitch };
+        const from = { x: P.x, z: P.z, yaw: P.yaw, pitch: P.pitch, eye: P.eyeY ?? C.floorplan.EYE };
         let dyaw = wantYaw - from.yaw;
         while (dyaw > Math.PI) dyaw -= 2 * Math.PI;
         while (dyaw < -Math.PI) dyaw += 2 * Math.PI;
@@ -7029,7 +7074,11 @@ THREE.SkeletonUtils = { clone };
           P.z = from.z + (pos[2] - from.z) * e;
           P.yaw = from.yaw + dyaw * e;
           P.pitch = from.pitch + (wantPitch - from.pitch) * e;
-          if (t >= 1) { C.app.offFrame(hook); if (flyHook === hook) flyHook = null; res(); }
+          P.eyeY = from.eye + (wantEye - from.eye) * e;
+          if (t >= 1) {
+            if (opts.eyeY == null) P.eyeY = null;
+            C.app.offFrame(hook); if (flyHook === hook) flyHook = null; res();
+          }
         };
         hook.cancel = () => { C.app.offFrame(hook); res(); };
         flyHook = hook;
@@ -7139,10 +7188,15 @@ THREE.SkeletonUtils = { clone };
     });
     const mat = new THREE.SpriteMaterial({ map: tx, transparent: true, depthTest: false, fog: false });
     const sprite = new THREE.Sprite(mat);
-    const W = 0.95;
-    sprite.scale.set(W, W * PH / PW, 1);
-    sprite.position.set(0, 1.62 + 0.35 + (W * PH / PW) / 2, 0);
+    const W = 0.95, SH = W * PH / PW;
+    const baseY = 1.62 + 0.35 + SH / 2;
+    sprite.scale.set(W, SH, 1);
+    sprite.position.set(0, baseY, 0);
     sprite.renderOrder = 5;
+    // pop-in + idle bob (driven from the frame hook below; REDUCED keeps
+    // the bubble static at full size) — a bubble that just appears reads
+    // as a label, one that pops and floats reads as someone talking
+    if (!app.REDUCED) sprite.scale.set(W * 0.01, SH * 0.01, 1);
     group.add(sprite);
     const bubble = { sprite, dispose: () => { mat.map.dispose(); mat.dispose(); } };
     group.userData._bubble = bubble;
@@ -7162,6 +7216,11 @@ THREE.SkeletonUtils = { clone };
       const hook = () => {
         if (mouthTokens.get(key) !== token || app.roomGen !== gen) { app.offFrame(hook); return cleanup(); }
         const t = (performance.now() - t0);
+        // pop-in over the first 220ms (outBack overshoot), then a gentle
+        // float so the bubble keeps living while its dealer talks
+        const k = C.tween.easings.outBack(Math.min(1, t / 220));
+        sprite.scale.set(W * Math.max(0.01, k), SH * Math.max(0.01, k), 1);
+        sprite.position.y = baseY + Math.sin(t / 420) * 0.018;
         mouthPulse && mouthPulse(t);
         if (t >= ms) { app.offFrame(hook); cleanup(); }
       };
@@ -7343,7 +7402,10 @@ THREE.SkeletonUtils = { clone };
             if (!p) return;
             root.getWorldPosition(wp);
             const dx = p.x - wp.x, dz = p.z - wp.z;
-            if (dx * dx + dz * dz < 36) { app.offFrame(watch); impl.walkIn(); }
+            // opts.walkIn is the world-space [dx, dz] entry offset picked by
+            // the table builder (walkIn() falls back to a west pit-lane
+            // entry when the legacy `true` comes through).
+            if (dx * dx + dz * dz < 36) { app.offFrame(watch); impl.walkIn(opts.walkIn); }
           };
           watch.cancel = () => app.offFrame(watch);
           app.onFrame(watch);
@@ -8435,14 +8497,20 @@ THREE.SkeletonUtils = { clone };
   // bake — the numbers travel inside the GLB (scene.extras.dealerLandmarks),
   // so bake and runtime can never drift apart. Boundary triangles blend the
   // tint across one edge; the crisp texture lines dominate visually.
-  const TROUSERS_TINT = [0.106, 0.118, 0.149];   // #1b1e26
+  // Rendered through the linear pipeline the old #1b1e26 trousers displayed
+  // as ~0.37 sRGB — pale gray that read as BARE LEGS from a few metres, and
+  // the white-tinted feet kept the mesh's toe shading visible ("barefoot
+  // dealer"). Trousers now sit just above the jacket's darkness and the
+  // feet get their own near-black tint so the toe geometry reads as shoes.
+  const TROUSERS_TINT = [0.045, 0.05, 0.062];
+  const SHOES_TINT = [0.05, 0.05, 0.055];
 
   // Tint group of a bind-pose vertex — mirrors classify() in
-  // tools/build-dealer-assets.mjs, collapsed to the four tint groups.
+  // tools/build-dealer-assets.mjs, collapsed to the five tint groups.
   function tintGroupAt(x, y, z, L) {
     const ax = Math.abs(x);
     if (y > L.collarY || ax > L.wristX) return 'SKIN';
-    if (y < L.ankleY) return 'WHITE';                    // shoes: painted final
+    if (y < L.ankleY) return 'SHOES';
     if (ax > L.cuffX && y > 1.30) return 'WHITE';        // shirt cuffs
     if (y > L.collarBandY && z > 0 && ax < 0.09) return 'WHITE';  // collar edge
     if (y < L.beltTop) return 'TROUSERS';                // trousers + belt band
@@ -8463,7 +8531,7 @@ THREE.SkeletonUtils = { clone };
   // this dealer's tint onto all the others (see the call site).
   function bakeTintColors(geometry, L, skinTint, suitTint) {
     const pos = geometry.attributes.position;
-    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, WHITE: [1, 1, 1] };
+    const groups = { SKIN: skinTint, SUIT: suitTint, TROUSERS: TROUSERS_TINT, SHOES: SHOES_TINT, WHITE: [1, 1, 1] };
     const colors = new Float32Array(pos.count * 3);
     for (let i = 0; i < pos.count; i++) {
       const g = groups[tintGroupAt(pos.getX(i), pos.getY(i), pos.getZ(i), L)];
@@ -8609,17 +8677,33 @@ THREE.SkeletonUtils = { clone };
     // bone to its child in the bone's LOCAL space (rest pose). Aiming =
     // rotate the bone so restDir points along a desired world direction.
     const _v1 = new THREE.Vector3(), _v2 = new THREE.Vector3(), _v3 = new THREE.Vector3();
+    const _v4 = new THREE.Vector3();
     const _q1 = new THREE.Quaternion(), _q2 = new THREE.Quaternion();
+    const _m1 = new THREE.Matrix4();
     const armChains = {};
+    group.updateMatrixWorld(true);   // bind-pose world matrices for the wrist capture below
     for (const side of ['L', 'R']) {
       const upper = bones['upperArm' + side], fore = bones['foreArm' + side], hand = bones['hand' + side];
       if (!upper || !fore || !hand) continue;
       const upperLen = fore.position.length() * upper.getWorldScale(_v1).x;
       const foreLen = hand.position.length() * fore.getWorldScale(_v1).x;
+      // Bind wrist frame for the hand-orientation layer: at T-pose the
+      // fingers run along the arm (hand away from elbow) with the palm flat
+      // DOWN (same bind-pose fact the finger-curl layer relies on). Captured
+      // as an orthonormal basis + the hand bone's bind world quaternion, so
+      // at runtime a target basis (fingers along the SOLVED forearm, palm
+      // down) maps to an absolute world orientation for the hand.
+      const bindFingers = hand.getWorldPosition(new THREE.Vector3())
+        .sub(fore.getWorldPosition(_v1)).normalize();
+      const bindPalm = new THREE.Vector3(0, -1, 0)
+        .addScaledVector(bindFingers, -bindFingers.dot(_v2.set(0, -1, 0))).normalize();
+      _m1.makeBasis(bindFingers, bindPalm, _v1.crossVectors(bindFingers, bindPalm));
       armChains[side] = {
         upper, fore, hand, upperLen, foreLen,
         restDirUpper: fore.position.clone().normalize(),   // child dir in upper's local space
         restDirFore: hand.position.clone().normalize(),
+        handBindWorldQ: hand.getWorldQuaternion(new THREE.Quaternion()),
+        handBindBasisInvQ: new THREE.Quaternion().setFromRotationMatrix(_m1).invert(),
       };
     }
     // bind-pose spine rotation — the torso-lean layer restores this before
@@ -8695,6 +8779,39 @@ THREE.SkeletonUtils = { clone };
       ch.fore.getWorldPosition(_v3);
       aimBone(ch.fore, ch.restDirFore,
         _v1.set(r.hand[0] - _v3.x, r.hand[1] - _v3.y, r.hand[2] - _v3.z), weight);
+    }
+
+    // Wrist layer: aimBone() places the upper arm and forearm but says
+    // nothing about the HAND bone — it kept whatever local rotation the
+    // mocap idle last wrote, on top of a swing-only (twist-less) forearm
+    // aim, so mid-path the palm routinely froze twisted up/outward at
+    // anatomically impossible wrist angles. Every IK frame this re-derives
+    // the hand's world orientation from human constraints instead: fingers
+    // continue along the ACTUAL solved forearm axis, palm kept flat DOWN
+    // over the table (the dealing posture every routed path wants), then
+    // maps it through the captured bind frame and blends at the same
+    // weight as the arm solve so it ramps in/out with the path.
+    function applyHandOrient(side, weight) {
+      const ch = armChains[side];
+      if (!ch || weight <= 0) return;
+      ch.fore.updateWorldMatrix(true, false);
+      const fingers = ch.hand.getWorldPosition(_v4).sub(ch.fore.getWorldPosition(_v1));
+      if (fingers.lengthSq() < 1e-8) return;
+      fingers.normalize();
+      const palm = _v1.set(0, -1, 0);
+      if (Math.abs(fingers.dot(palm)) > 0.96) {
+        // forearm near-vertical: "down" is degenerate — face the palm the
+        // way the character faces so the wrist never snaps
+        group.getWorldQuaternion(_q1);
+        palm.set(0, 0, 1).applyQuaternion(_q1);
+      }
+      palm.addScaledVector(fingers, -fingers.dot(palm)).normalize();
+      _m1.makeBasis(fingers, palm, _v2.crossVectors(fingers, palm));
+      const targetWorldQ = _q1.setFromRotationMatrix(_m1)
+        .multiply(ch.handBindBasisInvQ).multiply(ch.handBindWorldQ);
+      const localQ = ch.fore.getWorldQuaternion(_q2).invert().multiply(targetWorldQ);
+      if (weight >= 1) ch.hand.quaternion.copy(localQ);
+      else ch.hand.quaternion.slerp(localQ, weight);
     }
 
     // ---- IK path runner (single-hand for Task 7; Task 8 extends to
@@ -8915,6 +9032,7 @@ THREE.SkeletonUtils = { clone };
       // pass 2: IK solve + events against the leaned torso
       for (const h of ap.hands) {
         applyArmIK(h.side, h._pathPos, w);
+        applyHandOrient(h.side, w);
         // Finding 2 (task-7 review): firing used to be tied to the CURRENT
         // segment's eased tail (`cur.event && st>=0.995`) — for a fast
         // segment (e.g. tapRack's first waypoint) that's a sub-millisecond
@@ -9102,29 +9220,37 @@ THREE.SkeletonUtils = { clone };
     }
 
     // ---- shift-change walk (v2 spec) ----
-    // The dealer walks in along the pit lane and takes position. Pathing is
-    // LOCAL-space: impl.group sits inside the table's own root, so moving
-    // group.position.x walks parallel to the table row no matter how the
-    // table is rotated in the world. Enters from local -x (toward the floor
-    // aisles — local +x runs into the cashier wall on the blackjack row).
-    // Uses the 'body' track token so a roomGen change or a repeat call
-    // cancels it; holds a drive ref for full-rate mixer updates while
+    // The dealer walks in and takes position. The entry point is a WORLD-
+    // space offset from the post ([dx, dz], chosen by each table builder so
+    // the path stays in open floor — the old hardcoded local -x path sent
+    // the perpendicular roulette dealers THROUGH their own tote board and
+    // wheel end, which read as "a person standing inside the table").
+    // The offset is converted into the parent's local space at call time so
+    // any table rotation is handled uniformly. Facing is derived from the
+    // travel direction itself (absolute, in parent space) — the old
+    // baseYaw ± π/2 guess walked sideways whenever the dealer's rest yaw
+    // wasn't 0. Uses the 'body' track token so a roomGen change or a repeat
+    // call cancels it; holds a drive ref for full-rate mixer updates while
     // walking (same contract as every other one-shot).
-    function walkIn() {
+    function walkIn(enterWorld) {
       if (app.REDUCED) return Promise.resolve();
       const walkClip = findClip('Walk_Formal_Loop');
       if (!walkClip || !idleAction) return Promise.resolve();
       const token = ++tokens.body;
       const gen = app.roomGen;
       const SPEED = 1.25;             // m/s — matches the formal stride's cadence
-      const ENTER_FROM = -3.2;        // local-x offset of the entry point
+      const [wdx, wdz] = Array.isArray(enterWorld) ? enterWorld : [-2.4, 0];
       const release = acquireDrive();
-      const targetX = group.position.x;
+      const targetX = group.position.x, targetZ = group.position.z;
       const baseYaw = group.rotation.y;
-      // facing the travel direction: walking toward +x local => forward
-      // (sin yaw, 0, cos yaw) must point +x => yaw = +π/2 (relative to base)
-      const walkYaw = baseYaw + (ENTER_FROM < 0 ? Math.PI / 2 : -Math.PI / 2);
-      group.position.x = targetX + ENTER_FROM;
+      // world offset -> parent-local offset (handles rotated table roots)
+      const qi = new THREE.Quaternion();
+      (group.parent || group).getWorldQuaternion(qi).invert();
+      const enter = new THREE.Vector3(wdx, 0, wdz).applyQuaternion(qi);
+      // face where you walk: travel dir is (-enter), absolute in parent space
+      const walkYaw = Math.atan2(-enter.x, -enter.z);
+      group.position.x = targetX + enter.x;
+      group.position.z = targetZ + enter.z;
       group.rotation.y = walkYaw;
       group.updateMatrixWorld(true);
       const walkAction = mixer.clipAction(walkClip);
@@ -9138,6 +9264,7 @@ THREE.SkeletonUtils = { clone };
         const finish = () => {
           app.offFrame(hook);
           group.position.x = targetX;
+          group.position.z = targetZ;
           group.rotation.y = baseYaw;
           idleAction.enabled = true;
           idleAction.reset(); idleAction.play();
@@ -9150,11 +9277,15 @@ THREE.SkeletonUtils = { clone };
           const now = performance.now();
           const dt = Math.min(0.1, (now - last) / 1000);
           last = now;
-          const remaining = targetX - group.position.x;
+          const rx = targetX - group.position.x, rz = targetZ - group.position.z;
+          const rlen = Math.hypot(rx, rz);
           if (!arrived) {
-            const step = Math.min(Math.abs(remaining), SPEED * dt) * Math.sign(remaining || 1);
-            group.position.x += step;
-            if (Math.abs(targetX - group.position.x) < 0.02) {
+            const step = Math.min(rlen, SPEED * dt);
+            if (rlen > 1e-4) {
+              group.position.x += (rx / rlen) * step;
+              group.position.z += (rz / rlen) * step;
+            }
+            if (Math.hypot(targetX - group.position.x, targetZ - group.position.z) < 0.02) {
               arrived = true;
               idleAction.enabled = true;
               idleAction.reset(); idleAction.play();
@@ -10499,6 +10630,10 @@ THREE.SkeletonUtils = { clone };
     // over the last 28% and parking at world angle 0 — so the rotor must
     // stop at rotation.y ≡ +idx*STEP (three.js puts local angle a at world
     // angle a - rotation.y; sign verified empirically in the v1 room).
+    // Sign care: rotor.rotation.y INCREASING makes every pocket's world
+    // angle DECREASE (a - θ above), so the ball's own world angle must
+    // INCREASE (+b1) to actually run against the wheel on screen — a
+    // negative b1 sent both spinning the same way (user-reported).
     function spinTo(pocket) {
       return new Promise((resolve) => {
         const idx = EU_WHEEL.indexOf(pocket);
@@ -10508,7 +10643,7 @@ THREE.SkeletonUtils = { clone };
         const ms = C.app.REDUCED ? 2200 : 4200 + Math.random() * 1600;
         const w0 = rotor.rotation.y % (Math.PI * 2);
         const w1 = w0 + wheelTurns * Math.PI * 2 + ((idx * STEP - w0) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-        const b1 = -ballTurns * Math.PI * 2;   // counter-rotation, ends at world angle 0
+        const b1 = ballTurns * Math.PI * 2;   // counter-rotation (see sign note above), ends at world angle 0
         const t0 = performance.now();
         const ease = C.tween.easings.outQuart;
         rotor.remove(ball);
@@ -10793,7 +10928,11 @@ THREE.SkeletonUtils = { clone };
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // walk-in enters from the aisle end of the dealer's own corridor
+      // (world +Z = south): the table sits perpendicular to the aisle, so a
+      // pit-lane (±X) entry would cross the neighbouring table, and the old
+      // local -x path spawned him at the wheel end INSIDE the tote board.
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [0, 2.2] });
       dealer.position.set(0.2, 0, -1.15);
       g.add(dealer);
       dealer.userData.idle(C.app);
@@ -11222,7 +11361,9 @@ THREE.SkeletonUtils = { clone };
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // west pit-lane entry, short enough to stay clear of the neighbouring
+      // table's dealer (row spacing 3.9m — the old 3.2m walked through him)
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [-2.4, 0] });
       dealer.position.set(0, 0, -0.55);
       g.add(dealer);
       dealer.userData.idle(C.app);
@@ -11794,7 +11935,9 @@ THREE.SkeletonUtils = { clone };
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // east pit-lane entry (matches the old local -x direction on this
+      // rotated south row), kept short of the 4.4m neighbour spacing
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [2.6, 0] });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);
@@ -11948,7 +12091,12 @@ THREE.SkeletonUtils = { clone };
 
     let dealerRig = null;
     if (opts.withDealer) {
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: true });
+      // a closed table's dealer is mid-training — already at the table, so
+      // no shift-change walk-in (it would collide with the training drills).
+      // Open table enters from the WEST (2.6m keeps the path clear of the
+      // OPENING-SOON dais at +3.6 world-x — the old east entry spawned him
+      // inside its rope posts).
+      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: opts.closed ? false : [-2.6, 0] });
       dealer.position.set(0, 0, -1.25);
       g.add(dealer);
       dealer.userData.idle(C.app);
@@ -13066,7 +13214,149 @@ THREE.SkeletonUtils = { clone };
     return pts;
   }
 
-  // opts: { rect: {x0,x1,z0,z1}, signLines, trainer: {pos:[x,z], lookAt:[x,z]} }
+  // ---- ambient training show ----
+  // The cage says DEALER TRAINING — so train. When the player is near, the
+  // closed table's dealer (the trainee) runs randomized dealing drills —
+  // card wash, riffle, pitching real cards to the slots, rack taps — while
+  // the supervisor watches, nods or shakes their head, and coaches through
+  // speech bubbles. Same proximity-gated loop idiom as baccarat-show.js;
+  // every rig call carries its own roomGen guard so a room rebuild mid-
+  // drill just falls through.
+  const TRAIN_NEAR = 9, TRAIN_CHECK = 0.8;
+  const TRAINER_OPEN = {
+    wash: '洗牌 Wash — big circles',
+    riffle: 'Riffle — even halves',
+    pitch: 'Pitch drill — keep it low',
+    rack: 'Rack drill — count them out',
+  };
+  const TRAINER_PRAISE = ['Good rhythm — keep it', '幾好 Nice hands', 'Clean — again', '好 Smooth'];
+  const TRAINER_FIX = ['再嚟一次 Again', 'Keep the deck low', '大圈啲 Bigger circles', 'Slow down — accuracy first'];
+  const TRAINEE_REPLY = ['明白 Got it', '收到 Yes', 'Ready — again'];
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+  function startTrainingShow(opts, trainerRoot) {
+    const app = C.app;
+    const tableGroup = opts.tableGroup;
+    const trainee = tableGroup?.userData.dealerRig;
+    const trainerRig = trainerRoot.userData.rig;
+    if (!trainee || !trainerRig || app.REDUCED) return;
+    const gen = app.roomGen;
+    const alive = () => app.roomGen === gen;
+    const L = C.layouts.uth;
+    tableGroup.updateMatrixWorld(true);
+    const toW = (p) => tableGroup.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
+    const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+
+    const trainerHead = [opts.trainer.pos[0], 1.55, opts.trainer.pos[1]];
+    const traineeHead = toW([0, 1.55, -1.05]);
+    const feltTarget = toW([0, L.feltY, -0.30]);
+    const deckRef = toW(L.deckPos);
+    const rackRef = toW(L.dealerChipPos);
+
+    // four reusable face-down practice cards — never disposed, just
+    // parked back at the deck between pitch drills (dealCardTo re-adds
+    // them to the scene each flight)
+    let cards = null;
+    const practiceCards = () => (cards ??= [0, 1, 2, 3].map(() => {
+      const m = C.cards.makeCard(null);
+      m.rotation.set(-Math.PI / 2, 0, 0);
+      m.rotateY(Math.PI);
+      return m;
+    }));
+    const collectCards = async () => {
+      if (!cards) return;
+      await Promise.all(cards.filter((m) => m.parent).map((m) => new Promise((res) =>
+        C.tween.to(m.position, { x: deckRef[0], y: deckRef[1] + 0.05, z: deckRef[2] }, 300, 'inOutCubic', res))));
+      cards.forEach((m) => m.parent && m.parent.remove(m));
+    };
+
+    const drills = {
+      wash: async () => {
+        for (let i = 0; i < 2 && alive(); i++) {
+          // eslint-disable-next-line no-await-in-loop
+          await trainee.play(app, 'washCards', { refs: { target: feltTarget } });
+        }
+        await trainee.play(app, 'armsRest');
+      },
+      riffle: async () => {
+        for (let i = 0; i < 2 && alive(); i++) {
+          // eslint-disable-next-line no-await-in-loop
+          await trainee.play(app, 'shuffleRiffle', { refs: { target: feltTarget } });
+        }
+        await trainee.play(app, 'armsRest');
+      },
+      pitch: async () => {
+        const slots = [L.playerSlots[0], L.playerSlots[1], L.dealerSlots[0], L.dealerSlots[1]];
+        const meshes = practiceCards();
+        for (let i = 0; i < slots.length && alive(); i++) {
+          const slot = toW(slots[i]);
+          trainee.play(app, 'dealCard', { refs: { shoe: deckRef, target: slot } });
+          // eslint-disable-next-line no-await-in-loop
+          await C.cards.dealCardTo(app, meshes[i], deckRef, [slot[0], slot[1] + 0.004, slot[2]], { ms: 430 });
+          // eslint-disable-next-line no-await-in-loop
+          await wait(150);
+        }
+        await wait(900);
+        await trainee.play(app, 'armsRest');
+        await collectCards();
+      },
+      rack: async () => {
+        await trainee.play(app, 'tapRack', { refs: { rack: rackRef } });
+      },
+    };
+    const drillKeys = Object.keys(drills);
+
+    async function verdict() {
+      trainerRig.lookAt(app, traineeHead);
+      if (Math.random() < 0.6) {
+        trainerRig.play(app, 'nod');
+        trainerRig.say(app, pick(TRAINER_PRAISE), { ms: 2200 });
+      } else {
+        trainerRig.play(app, 'headShake');
+        trainerRig.say(app, pick(TRAINER_FIX), { ms: 2200 });
+        trainee.lookAt(app, trainerHead);
+        trainee.play(app, 'nod');
+        trainee.say(app, pick(TRAINEE_REPLY), { ms: 1800 });
+      }
+      await wait(1400);
+      trainee.lookAt(app, feltTarget);
+    }
+
+    let running = false, wantRun = false, acc = 0;
+    async function loop() {
+      running = true;
+      await wait(2600);
+      while (wantRun && alive()) {
+        const key = pick(drillKeys);
+        trainerRig.say(app, TRAINER_OPEN[key], { ms: 2200 });
+        // eslint-disable-next-line no-await-in-loop
+        await drills[key]().catch((err) => { console.error('[training]', err); return wait(1500); });
+        if (!alive()) break;
+        // eslint-disable-next-line no-await-in-loop
+        await verdict();
+        // eslint-disable-next-line no-await-in-loop
+        await wait(1200 + Math.random() * 1800);
+      }
+      running = false;
+    }
+
+    const cx = (opts.rect.x0 + opts.rect.x1) / 2, cz = (opts.rect.z0 + opts.rect.z1) / 2;
+    const hook = (dt) => {
+      if (!alive()) return app.offFrame(hook);
+      acc += dt;
+      if (acc < TRAIN_CHECK) return;
+      acc = 0;
+      const p = app.player;
+      wantRun = Math.hypot(p.x - cx, p.z - cz) < TRAIN_NEAR;
+      if (wantRun && !running) loop();
+    };
+    hook.cancel = () => app.offFrame(hook);
+    app.onFrame(hook);
+  }
+
+  // opts: { rect: {x0,x1,z0,z1}, signLines, trainer: {pos:[x,z], lookAt:[x,z]},
+  //         tableGroup } — tableGroup is the closed table's own group; its
+  //         dealerRig becomes the trainee for the ambient training show.
   C.floor.buildMaintenanceZone = (opts) => {
     const s = C.app.scene, A = C.assets;
     const { x0, x1, z0, z1 } = opts.rect;
@@ -13209,13 +13499,14 @@ THREE.SkeletonUtils = { clone };
 
     // ---- supervisor watching the dealer — it IS dealer training
     if (opts.trainer) {
-      const t = A.makeDealer({ suit: '#2a3247', shirt: '#e8e4d8' });
+      const t = A.makeDealer({ seed: 'trainer-supervisor', suit: '#2a3247', shirt: '#e8e4d8' });
       const [tx, tz] = opts.trainer.pos;
       const [lx, lz] = opts.trainer.lookAt;
       t.position.set(tx, 0, tz);
       t.rotation.y = Math.atan2(lx - tx, lz - tz);
       g.add(t);
       t.userData.idle(C.app);
+      startTrainingShow(opts, t);
     }
 
     s.add(g);
@@ -13330,6 +13621,7 @@ THREE.SkeletonUtils = { clone };
           accent,
           withDealer: true,
           dealerSeed: table.id,
+          closed: table.closed,
           // rotated roulette: counter-rotate the plaque so it faces the aisle
           plaqueYaw: rotated ? Math.PI / 2 + 0.15 : undefined,
         });
@@ -13373,8 +13665,10 @@ THREE.SkeletonUtils = { clone };
 
         // closed table: build the maintenance enclosure (rails + sign +
         // collision chain) — the anchor stays, but its approach pulls back
-        // so the camera lands OUTSIDE the barrier looking through it.
-        if (table.closed) C.floor.buildMaintenanceZone(CLOSED_ZONE);
+        // so the camera lands OUTSIDE the barrier looking through it. The
+        // table's own group rides along so its dealer becomes the trainee
+        // in the zone's ambient training show.
+        if (table.closed) C.floor.buildMaintenanceZone({ ...CLOSED_ZONE, tableGroup: group });
 
         if (rotated) {
           // Approach = the players' long side, across the felt facing the
