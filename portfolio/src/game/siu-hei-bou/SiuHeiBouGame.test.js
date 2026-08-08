@@ -3,7 +3,7 @@
 // 淨係 Worker 同 Firebase 係假。單元測試證明唔到「本簿真係開得到」，呢個先至證明到。
 import 'fake-indexeddb/auto';
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import SiuHeiBouGame from './SiuHeiBouGame';
 import { api } from './api';
 import { getFirebase } from './firebase';
@@ -148,6 +148,40 @@ test('登出嗰刻個 pull 仲喺半空：佢返到嚟唔可以扶返起本已�
     expect(mirror).toBeNull();
     expect(outbox).toHaveLength(1);
   });
+});
+
+// 「先登出、後清個鏡」呢個次序，靠嘅係登出之後真係冇人再 pull。auto-sync 係喺
+// uid 變嗰陣拆（唔係淨係 unmount 先拆）—— 唔係嘅話，個 online listener 同 retry
+// timer 仲喺度，隨時再拉一次，本簿就會喺一部已經登咗出嘅機度返晒嚟。
+test('登出之後 auto-sync 真係拆咗：再有網都唔會自己拉多次', async () => {
+  let authCb;
+  getFirebase.mockResolvedValue({
+    auth: {},
+    provider: {},
+    signInWithPopup: jest.fn(),
+    signOut: jest.fn().mockResolvedValue(undefined),
+    onAuthStateChanged: (auth, cb) => { authCb = cb; cb(USER); return () => {}; },
+  });
+  render(<SiuHeiBouGame />);
+
+  await screen.findByText('阿明');
+  await waitFor(() => expect(api.state).toHaveBeenCalled());
+
+  // 未登出之前，同一個事件係真係會拉多一次嘅 —— 唔先證明呢樣，下面嗰句
+  // 「冇再拉」就淨係證明到個 event 冇用，證明唔到個 listener 拆咗。
+  const beforeOnline = api.state.mock.calls.length;
+  await act(async () => { window.dispatchEvent(new Event('online')); });
+  await waitFor(() => expect(api.state.mock.calls.length).toBeGreaterThan(beforeOnline));
+  const pullsWhileOpen = api.state.mock.calls.length;
+
+  // Firebase 話你登咗出（真實情況：signOut 之後 onAuthStateChanged 派 null 落嚟）
+  await act(async () => { authCb(null); });
+
+  // 有返網。startAutoSync 個 listener 如果仲喺度，佢即刻就會再拉一次。
+  await act(async () => { window.dispatchEvent(new Event('online')); });
+  document.dispatchEvent(new Event('visibilitychange'));
+
+  expect(api.state).toHaveBeenCalledTimes(pullsWhileOpen);
 });
 
 test('冇網嗰陣封面唔會扮到撳得，因為登入真係要打得通 Google', async () => {
