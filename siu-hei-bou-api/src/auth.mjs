@@ -57,5 +57,10 @@ export async function verifyFirebaseToken(token, { projectId = 'system-design-c8
   if (payload.iss !== `https://securetoken.google.com/${projectId}`) throw new AuthError('bad iss');
   if (typeof payload.sub !== 'string' || !payload.sub) throw new AuthError('bad sub');
 
-  return { uid: payload.sub, email: payload.email || '', name: payload.name || '' };
+  return {
+    uid: payload.sub,
+    email: payload.email || '',
+    name: payload.name || '',
+    emailVerified: payload.email_verified === true,
+  };
 }

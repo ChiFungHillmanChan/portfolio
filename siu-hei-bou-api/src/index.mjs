@@ -20,6 +20,7 @@ const ROUTES = [
   ['POST',   /^\/api\/cards$/,                'openCard',     []],
   ['POST',   /^\/api\/cards\/(\d+)\/settle$/, 'settleCard',   ['id']],
   ['GET',    /^\/api\/cards$/,                'listCards',    []],
+  ['GET',    /^\/api\/admin\/users$/,         'adminUsers',   []],
   ['GET',    /^\/public\/cards\/([A-Za-z0-9_-]+)$/,       'publicCard', ['token']],
   ['POST',   /^\/public\/cards\/([A-Za-z0-9_-]+)\/ack$/,  'publicAck',  ['token']],
 ];
@@ -76,7 +77,7 @@ export default {
     const route = matchRoute(request.method, url.pathname);
     if (!route) return respond(404, { error: 'not-found' });
 
-    const ctx = { db: makeDb(env.DB) };
+    const ctx = { db: makeDb(env.DB), superadminEmail: env.SUPERADMIN_EMAIL || '' };
     if (!route.public) {
       const header = request.headers.get('Authorization') || '';
       const token = header.startsWith('Bearer ') ? header.slice(7) : '';

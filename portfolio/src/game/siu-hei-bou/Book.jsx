@@ -1,12 +1,13 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, SHARE_BASE } from './api';
+import { api, SHARE_BASE, SUPERADMIN_EMAIL } from './api';
 import { unitLen, continuesOverleaf } from './paginate';
 import { computeGeom, buildChapter, entryLineMap, indexLinesPerPage } from './geometry';
-import { CoverFront, CoverInside } from './CoverPage';
+import { CoverFront } from './CoverPage';
 import IndexPage from './IndexPage';
 import ChapterPage from './FriendChapter';
 import AddGrudgeSheet from './AddGrudgeSheet';
 import SettingsSheet from './SettingsSheet';
+import AdminSheet from './AdminSheet';
 
 const COLOURS = ['#e8a0a0', '#a0c8e8', '#a8d8b0', '#e8d3a0', '#c9aee5', '#f0b8d0'];
 const FLIP_MS = 520;
@@ -274,6 +275,9 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
           onSelect={(id) => flipToAuto({ section: id, page: 0 })}
           onAddFriend={addFriend} addBusy={addBusy}
           onLogout={handleLogout} interactive={interactive}
+          ownerName={user && user.displayName ? user.displayName : ''}
+          isAdmin={!!user && user.email === SUPERADMIN_EMAIL}
+          onAdmin={() => setSheet('admin')}
         />
       );
     }
@@ -338,9 +342,8 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
           <div className="shb-bcover-frontface">
             <CoverFront onLogin={onLogin} busy={loginBusy} loading={user === undefined} />
           </div>
-          <div className="shb-bcover-backface">
-            <CoverInside name={user ? user.displayName : ''} />
-          </div>
+          <div className="shb-bcover-backface" />
+
         </div>
       </div>
 
@@ -355,6 +358,9 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
           onSaved={(created) => onGrudgeSaved(activeFriend.id, created)}
           toast={toast}
         />
+      )}
+      {sheet === 'admin' && (
+        <AdminSheet onClose={() => setSheet(null)} />
       )}
       {sheet === 'settings' && activeFriend && (
         <SettingsSheet

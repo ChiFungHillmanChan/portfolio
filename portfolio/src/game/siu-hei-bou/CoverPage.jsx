@@ -2,7 +2,9 @@ import React from 'react';
 import { GoogleG, AngryFace } from './svgs';
 
 // 封面正面 — the front of the closed book. Same box as the inside pages;
-// Book.jsx hinges it on the spine and swings it open on login.
+// Book.jsx hinges it on the spine and swings it open on login. The back face is
+// plain paper (styled in CSS) — any text there reads as a glitchy flash while
+// the cover sweeps past on desktop.
 export function CoverFront({ onLogin, busy, loading }) {
   return (
     <div className="shb-cover-front">
@@ -21,16 +23,6 @@ export function CoverFront({ onLogin, busy, loading }) {
         </button>
       )}
       <p className="shb-cover-note">朋友激嬲你嘅事，記低先，儲夠印就搵佢請返餐。</p>
-    </div>
-  );
-}
-
-// 封面內頁 — glimpsed while the cover swings open.
-export function CoverInside({ name }) {
-  return (
-    <div className="shb-cover-inside">
-      <p className="shb-cover-owner-label">呢本簿屬於</p>
-      <p className="shb-cover-owner">{name || '　'}</p>
     </div>
   );
 }

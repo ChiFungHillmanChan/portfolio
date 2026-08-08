@@ -7,6 +7,7 @@ import { Magnifier } from './svgs';
 export default function IndexPage({
   friends, filtered, search, onSearch, pageIdx, linesPerPage,
   onSelect, onAddFriend, addBusy, onLogout, interactive,
+  ownerName, isAdmin, onAdmin,
 }) {
   const [name, setName] = useState('');
   const slice = filtered === null ? null : filtered.slice(pageIdx * linesPerPage, (pageIdx + 1) * linesPerPage);
@@ -19,11 +20,13 @@ export default function IndexPage({
     setName('');
   };
 
+  const title = ownerName ? `${ownerName}的小氣簿` : '小氣簿';
+
   return (
     <div className="shb-bpage">
       <header className="shb-idx-header">
-        <h1>小氣簿</h1>
-        <p>目錄 ·罪人名單</p>
+        <h1 className={title.length > 8 ? 'shb-idx-title-long' : undefined}>{title}</h1>
+        <p>{filtered === null ? '目錄' : `共 ${friends.length} 個罪人 ·目錄`}</p>
       </header>
 
       <div className="shb-idx-search">
@@ -69,6 +72,11 @@ export default function IndexPage({
       </form>
 
       <footer className="shb-idx-foot">
+        {isAdmin && (
+          <button type="button" className="shb-link" onClick={onAdmin} disabled={!interactive}>
+            管理
+          </button>
+        )}
         <button type="button" className="shb-link" onClick={onLogout} disabled={!interactive}>
           合埋本簿（登出）
         </button>
