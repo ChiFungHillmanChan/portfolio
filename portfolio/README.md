@@ -12,6 +12,7 @@ A personal portfolio website showcasing my projects, skills, and interactive gam
 | **Never Have I Ever** | A multilingual interactive card game with dynamic prompts, custom question input, and language selection (EN/FR/ZH-CN/ZH-HK). | [card-game.hillmanchan.com](https://card-game.hillmanchan.com) |
 | **Personal ChatBot** | A customizable keyword-driven chatbot that simulates a personal conversational assistant with mood-based responses. | [chat-box.hillmanchan.com](https://chat-box.hillmanchan.com) |
 | **Dream Record** | AI-powered dream journal with voice recording, dream analysis, weekly reports, and streak tracking. | [dream-record.hillmanchan.com](https://dream-record.hillmanchan.com) |
+| **小氣簿 Siu Hei Bou** | A Cantonese grudge notebook rendered as a physical book — the cover swings open on login, entries are pen-written onto ruled lines, and full stamp cards open a shareable 找數卡. React + Cloudflare Workers/D1 + Firebase Auth. | [siu-hei-bou.hillmanchan.com](https://siu-hei-bou.hillmanchan.com) |
 
 ## Projects Showcased
 

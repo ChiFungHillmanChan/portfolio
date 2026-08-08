@@ -19,6 +19,10 @@ portfolio/
 
 Cantonese-only grudge notebook: log 嬲爆事件 per friend, severity stamps (小嬲/中嬲/勁嬲 = 1/2/3 印), full card (per-friend threshold, default 10) opens a 找數卡 with a public share link (`/card/<token>`, no login) demanding 請食飯; friend can 認數, owner settles.
 
+**Real-book UI (2026-08-08):** the whole app is one fixed-size book — cover swings on auth state (Book.jsx), searchable 目錄 index, per-friend chapters, CJK pagination engine (paginate.js + geometry.js: 18 units/line on a 32px ruled grid; entries split mid-sentence across pages), pen-writing animation on save, （下頁仲有）corner marker. Geometry contract: `LINE_PX`/`H` block heights in geometry.js must mirror the fixed CSS block heights or the ink drifts off the rules.
+
+**Superadmin:** `GET /api/admin/users` on the Worker returns `{total, users:[{name,email,created_at}]}` — gated server-side on the *verified* token email matching the `SUPERADMIN_EMAIL` wrangler var (hillmanchan709@gmail.com) plus `email_verified`. The 管理 link on the 目錄 footer (AdminSheet.jsx) is a cosmetic client gate only; the Worker is the enforcement point. There is NO write path to superadmin — it lives solely in the Worker env, never in the database or client.
+
 | Piece | Where |
 |---|---|
 | Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), Book.jsx (book shell: cover swings on auth, leaf flips, nav, pen ticker), IndexPage (目錄 + search), FriendChapter (chapter pages), paginate.js + geometry.js (32px ruled-line grid — LINE_PX/H must stay in sync with the CSS block heights), AddGrudgeSheet, PublicCardPage, SettingsSheet, svgs.jsx, firebase.js, api.js. Jest: `npx react-scripts test paginate` |
