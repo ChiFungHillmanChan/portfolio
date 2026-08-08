@@ -11,6 +11,9 @@ export function makeDb(d1) {
   }
 
   return {
+    adminListUsers: () => all(d1.prepare(
+      `SELECT display_name, email, created_at FROM users ORDER BY created_at`)),
+
     upsertUser: (uid, email, name) => d1.prepare(
       `INSERT INTO users (uid, email, display_name) VALUES (?1, ?2, ?3)
        ON CONFLICT(uid) DO UPDATE SET email = ?2, display_name = ?3`).bind(uid, email, name).run(),

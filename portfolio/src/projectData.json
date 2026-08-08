@@ -230,6 +230,25 @@
         ]
     },
     {
+        "id": 21,
+        "title": "小氣簿 Siu Hei Bou",
+        "shortDescription": "一本會揭頁嘅網上小氣簿:朋友激嬲你就記低一筆,細字寫喺格仔線上面,儲夠嬲爆印就開張找數卡 send 俾佢認數,請返餐飯一筆勾銷。",
+        "fullDescription": "小氣簿 is a Cantonese grudge notebook rendered as a physical book. Logging in swings the red cover open on its spine; each friend gets their own chapter found through a searchable 目錄 with dotted leaders and stamp counts. Entries are written onto ruled 32px lines by a CJK-aware pagination engine — text wraps at eighteen full-width characters per line, flows mid-sentence onto the next page like real handwriting, and a fountain-pen nib animates each new entry character by character. Grudges carry severity stamps (小嬲/中嬲/勁嬲 = 1–3 印); filling a friend's stamp card opens a 找數卡 with a public share link they can acknowledge without logging in, and settling it crosses the claimed entries out. The React front end talks to a Cloudflare Worker that verifies Firebase ID tokens in-runtime via WebCrypto/JWKS and keeps every query uid-scoped in D1. Live at siu-hei-bou.hillmanchan.com.",
+        "image": "siu_hei_bou.png",
+        "url": "https://siu-hei-bou.hillmanchan.com",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/siu-hei-bou",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "React",
+            "Cloudflare Workers",
+            "Cloudflare D1",
+            "Firebase Auth",
+            "WebCrypto"
+        ]
+    },
+    {
         "id": 6,
         "title": "Never Have I Ever Card Game",
         "shortDescription": "A multilingual interactive “Never Have I Ever” card game built in React, featuring dynamic prompts, custom question input, and language selection.",

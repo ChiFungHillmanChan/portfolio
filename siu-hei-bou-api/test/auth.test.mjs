@@ -21,7 +21,7 @@ async function makeToken(claimOverrides = {}, headerOverrides = {}) {
   const header = { alg: 'RS256', kid: 'test-kid', typ: 'JWT', ...headerOverrides };
   const payload = {
     iss: `https://securetoken.google.com/${PROJECT}`, aud: PROJECT,
-    sub: 'uid-123', user_id: 'uid-123', email: 'a@b.com', name: '阿明',
+    sub: 'uid-123', user_id: 'uid-123', email: 'a@b.com', name: '阿明', email_verified: true,
     iat: nowSec - 10, exp: nowSec + 3600, ...claimOverrides,
   };
   const signingInput = `${enc(header)}.${enc(payload)}`;
@@ -33,7 +33,7 @@ const opts = () => ({ projectId: PROJECT, fetchJwks: async () => jwks });
 
 test('accepts a valid token', async () => {
   const out = await verifyFirebaseToken(await makeToken(), opts());
-  assert.deepEqual(out, { uid: 'uid-123', email: 'a@b.com', name: '阿明' });
+  assert.deepEqual(out, { uid: 'uid-123', email: 'a@b.com', name: '阿明', emailVerified: true });
 });
 
 test('rejects expired token', async () => {

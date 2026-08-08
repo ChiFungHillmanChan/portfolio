@@ -94,3 +94,33 @@ test('publicAck is one-way and idempotent', async () => {
   const missing = await handlers.publicAck({ db: { ackCardByToken: async () => null } }, { params: { token: 'x' } });
   assert.equal(missing.status, 404);
 });
+
+test('adminUsers rejects everyone except the verified superadmin', async () => {
+  const db = { adminListUsers: async () => [{ display_name: 'A', email: 'a@x.com', created_at: '2026-08-08' }] };
+  const superadminEmail = 'boss@x.com';
+
+  const stranger = await handlers.adminUsers(
+    { db, superadminEmail, user: { email: 'a@x.com', emailVerified: true } }, {});
+  assert.equal(stranger.status, 403);
+
+  const unverified = await handlers.adminUsers(
+    { db, superadminEmail, user: { email: 'boss@x.com', emailVerified: false } }, {});
+  assert.equal(unverified.status, 403);
+
+  const noEnv = await handlers.adminUsers(
+    { db, superadminEmail: '', user: { email: 'boss@x.com', emailVerified: true } }, {});
+  assert.equal(noEnv.status, 403);
+
+  const boss = await handlers.adminUsers(
+    { db, superadminEmail, user: { email: 'boss@x.com', emailVerified: true } }, {});
+  assert.equal(boss.status, 200);
+  assert.equal(boss.body.total, 1);
+  assert.deepEqual(boss.body.users[0], { name: 'A', email: 'a@x.com', created_at: '2026-08-08' });
+});
+
+test('adminUsers falls back to email when display_name is empty', async () => {
+  const db = { adminListUsers: async () => [{ display_name: '', email: 'b@x.com', created_at: '2026-08-08' }] };
+  const res = await handlers.adminUsers(
+    { db, superadminEmail: 'boss@x.com', user: { email: 'boss@x.com', emailVerified: true } }, {});
+  assert.equal(res.body.users[0].name, null);
+});

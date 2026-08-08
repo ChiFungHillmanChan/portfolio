@@ -48,6 +48,30 @@ export function StampSeal({ filled = false, size = 34 }) {
   );
 }
 
+// 鋼筆咀 — tip sits at the bottom-left corner (4, 29) so the writing animation can
+// park the nib exactly at the end of the last written character.
+export function PenNib({ size = 34 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      <path d="M4 29 L9 21 C7 14 13 6 24 3 C27 2.2 30 4.6 29 8 C26 19 18 25 11 23 Z"
+        fill="#d8b25c" stroke="var(--shb-ink-dark, #5a4632)" strokeWidth="1.6" strokeLinejoin="round" />
+      <path d="M4 29 L14 16" stroke="var(--shb-ink-dark, #5a4632)" strokeWidth="1.4" strokeLinecap="round" />
+      <circle cx="14.6" cy="15.4" r="1.5" fill="var(--shb-ink-dark, #5a4632)" />
+      <path d="M20 6 C24 4.6 27 5.4 27.6 8" fill="none" stroke="#fff4d8" strokeWidth="1.4" strokeLinecap="round" opacity="0.8" />
+    </svg>
+  );
+}
+
+// 放大鏡 — for the 目錄 search line.
+export function Magnifier({ size = 16 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="13.5" cy="13" r="8.5" fill="none" stroke="currentColor" strokeWidth="2.6" />
+      <path d="M20 20.5 L28 28.5" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function GoogleG({ size = 18 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">

@@ -88,4 +88,17 @@ export const handlers = {
     const row = await db.ackCardByToken(params.token);
     return row ? ok(publicCardView(row)) : err(404, 'not-found');
   },
+
+  // Superadmin only: how many people use the app, and who. Gate is the verified
+  // token email against env SUPERADMIN_EMAIL — no client-side flag is trusted.
+  adminUsers: async ({ db, user, superadminEmail }) => {
+    if (!superadminEmail || !user || user.email !== superadminEmail || !user.emailVerified) {
+      return err(403, 'forbidden');
+    }
+    const users = await db.adminListUsers();
+    return ok({
+      total: users.length,
+      users: users.map((u) => ({ name: u.display_name || null, email: u.email, created_at: u.created_at })),
+    });
+  },
 };

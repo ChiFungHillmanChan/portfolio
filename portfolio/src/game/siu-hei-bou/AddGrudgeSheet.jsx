@@ -15,8 +15,8 @@ export default function AddGrudgeSheet({ friend, onClose, onSaved, toast }) {
     if (!content.trim()) return;
     setBusy(true);
     try {
-      await api.addGrudge({ friend_id: friend.id, content: content.trim(), severity, occurred_at: date });
-      await onSaved();
+      const created = await api.addGrudge({ friend_id: friend.id, content: content.trim(), severity, occurred_at: date });
+      await onSaved(created);
     } catch {
       toast('save 唔到，遲啲再試');
       setBusy(false);

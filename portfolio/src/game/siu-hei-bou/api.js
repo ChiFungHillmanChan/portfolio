@@ -33,4 +33,8 @@ export const api = {
   cards: (friendId) => call('GET', `/api/cards?friend_id=${friendId}`),
   publicCard: (token) => call('GET', `/public/cards/${token}`),
   ackCard: (token) => call('POST', `/public/cards/${token}/ack`),
+  adminUsers: () => call('GET', '/api/admin/users'),
 };
+
+// Cosmetic gate only — the Worker re-checks the verified token email itself.
+export const SUPERADMIN_EMAIL = 'hillmanchan709@gmail.com';
