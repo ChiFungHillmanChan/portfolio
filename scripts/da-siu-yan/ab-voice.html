@@ -1,0 +1,547 @@
+<!--
+  Dev-only tool. Head-to-head comparison for the 10 lines the human review
+  found defective: the shipped Gemini TTS clip versus a Cloud TTS yue-HK
+  Chirp3-HD clip of the same line.
+
+  The question this page answers is narrow and specific: for each character
+  that was reported wrong, does the yue-HK engine get it right? Nothing else.
+
+  Generate the yue-HK side first, then serve from the repo root:
+
+    node scripts/da-siu-yan/gen-yue-compare.mjs
+    python3 -m http.server 8899
+
+  Then open:
+
+    http://localhost:8899/scripts/da-siu-yan/ab-voice.html
+
+  Everything (line text, durations, the defect list) comes from
+  compare/manifest.json, written by gen-yue-compare.mjs, so this page cannot
+  drift from what was actually generated. Verdicts save to localStorage.
+
+  Note the two sides are NOT speed-matched. The shipped clips are time-stretched
+  2x (the intro 1.4x) because Gemini read them too slowly; the yue-HK clips are
+  at their natural pace. Judge pronunciation, not tempo — and use 慢 0.5× on
+  either side, since single characters are hard to hear at 2x.
+-->
+<title>打小人 — Gemini vs yue-HK 對比</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --smoke: #14100e;
+    --smoke-2: #1e1815;
+    --paper: #e8dcc4;
+    --paper-edge: #cbbb99;
+    --ink: #241d17;
+    --ink-soft: #6b6252;
+    --vermilion: #c6301e;
+    --vermilion-lt: #e8503c;
+    --gold: #a8802c;
+    --gold-lt: #c89a3c;
+    --ember: #e8792b;
+    --jade: #3f7d5a;
+
+    --serif: "Songti TC", "Noto Serif HK", "Source Han Serif HK", "Songti SC", serif;
+    --sans: "PingFang HK", "PingFang TC", "Noto Sans HK", -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--smoke); }
+  body {
+    margin: 0;
+    padding: 0 1rem 6rem;
+    background: radial-gradient(120% 80% at 50% 0%, #241c17 0%, var(--smoke) 60%);
+    color: var(--paper);
+    font-family: var(--sans);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 980px; margin: 0 auto; }
+
+  .masthead { padding: 2.5rem 0 1rem; }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 4.6vw, 2.7rem);
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    margin: 0;
+  }
+  .masthead .lede { max-width: 60ch; margin: 0.6rem 0 0; color: #b6a98f; font-size: 0.95rem; }
+  .masthead .lede strong { color: var(--gold-lt); font-weight: 600; }
+  .caveat {
+    margin: 0.9rem 0 0;
+    padding: 0.55rem 0.75rem;
+    border-left: 2px solid var(--ember);
+    background: rgba(232, 121, 43, 0.08);
+    font-size: 0.82rem;
+    color: #cbbb99;
+  }
+
+  .ledger {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+    padding: 0.7rem 0.9rem; margin: 1rem -0.9rem 0;
+    background: rgba(20, 16, 14, 0.93);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #3a3129;
+  }
+  .tally { font-family: var(--mono); font-size: 0.85rem; color: #b6a98f; }
+  .tally b { color: var(--paper); font-size: 1rem; }
+  .tally .win { color: var(--jade); }
+  .tally .lose { color: var(--vermilion-lt); }
+  .spacer { flex: 1 1 auto; }
+  .act {
+    font: inherit; font-size: 0.8rem; padding: 0.32rem 0.7rem;
+    border: 1px solid #3a3129; border-radius: 3px;
+    background: transparent; color: #a2957c; cursor: pointer;
+  }
+  .act:hover { color: var(--paper); border-color: #574a3d; }
+  .act.go { background: var(--vermilion); border-color: var(--vermilion); color: #fff; }
+  .act.go:hover { background: var(--vermilion-lt); }
+  .hint { font-size: 0.76rem; color: #7d7261; margin: 0.7rem 0 0; }
+  .hint kbd {
+    font-family: var(--mono); font-size: 0.72rem;
+    border: 1px solid #3a3129; border-radius: 2px;
+    padding: 0.02rem 0.3rem; color: #b6a98f;
+  }
+
+  .slip {
+    position: relative;
+    margin: 1.1rem 0 0;
+    background:
+      repeating-linear-gradient(90deg, rgba(120,100,70,0.045) 0 1px, transparent 1px 4px),
+      var(--paper);
+    color: var(--ink);
+    border-radius: 2px;
+    box-shadow: 0 1px 0 var(--paper-edge), 0 10px 24px -14px rgba(0,0,0,0.8);
+    scroll-margin-top: 5rem;
+    padding: 0.85rem 1rem 1rem;
+  }
+  .slip.is-current { box-shadow: 0 0 0 2px var(--ember), 0 10px 30px -12px rgba(232,121,43,0.5); }
+  .slip::after {
+    content: ""; position: absolute; inset: 0 auto 0 0; width: 3px;
+    border-radius: 2px 0 0 2px; background: transparent;
+  }
+  .slip.v-fixed::after { background: var(--jade); }
+  .slip.v-same::after  { background: var(--vermilion); }
+  .slip.v-worse::after { background: #7a2318; }
+
+  .head { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .rank { font-family: var(--serif); font-size: 1.3rem; line-height: 1; color: var(--vermilion); min-width: 2.2ch; }
+  .cid { font-family: var(--mono); font-size: 0.78rem; color: var(--ink-soft); }
+
+  .target { margin-left: auto; display: flex; align-items: center; gap: 0.5rem; }
+  .target .han { font-family: var(--serif); font-size: 1.9rem; line-height: 1; }
+  .target .meta { font-size: 0.76rem; color: var(--ink-soft); }
+  .target .meta b { color: var(--gold); font-family: var(--mono); font-weight: 600; }
+  .target .meta i { color: var(--vermilion); font-style: normal; }
+
+  .chant {
+    font-family: var(--serif);
+    font-size: clamp(1.1rem, 3vw, 1.4rem);
+    letter-spacing: 0.05em;
+    margin: 0.4rem 0 0.75rem;
+  }
+
+  .bout { display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .corner { border: 1px solid var(--paper-edge); border-radius: 2px; padding: 0.55rem 0.65rem; background: rgba(255,255,255,0.35); }
+  .corner.new { background: rgba(63, 125, 90, 0.09); border-color: #9db8a6; }
+  .corner h3 {
+    margin: 0 0 0.45rem;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--ink-soft);
+    text-transform: none;
+  }
+  .corner.new h3 { color: var(--jade); }
+  .plays { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+  .play {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font: inherit; font-size: 0.78rem; padding: 0.26rem 0.55rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: rgba(255,255,255,0.5); color: var(--ink); cursor: pointer;
+  }
+  .play:hover { border-color: var(--ink-soft); background: #fff; }
+  .play.is-playing { background: var(--ember); border-color: var(--ember); color: #fff; }
+  .play svg { width: 8px; height: 10px; fill: currentColor; display: block; }
+  .play .d { font-family: var(--mono); font-size: 0.7rem; opacity: 0.7; }
+
+  .verdict { margin: 0.75rem 0 0; display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
+  .verdict .q { font-size: 0.82rem; color: var(--ink-soft); margin-right: 0.15rem; }
+  .verdict button {
+    font: inherit; font-size: 0.8rem; padding: 0.28rem 0.7rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: transparent; color: var(--ink); cursor: pointer;
+  }
+  .verdict button:hover { border-color: var(--ink-soft); }
+  .verdict button[aria-pressed="true"] { color: #fff; }
+  .verdict button.fixed[aria-pressed="true"] { background: var(--jade); border-color: var(--jade); }
+  .verdict button.same[aria-pressed="true"]  { background: var(--vermilion); border-color: var(--vermilion); }
+  .verdict button.worse[aria-pressed="true"] { background: #7a2318; border-color: #7a2318; }
+  .note { flex: 1 1 12rem; min-width: 10rem; }
+  .note input {
+    width: 100%; font: inherit; font-size: 0.8rem;
+    padding: 0.26rem 0.5rem;
+    border: 1px solid var(--paper-edge); border-radius: 2px;
+    background: rgba(255,255,255,0.6); color: var(--ink);
+  }
+
+  #report { margin: 1.75rem 0 0; display: none; }
+  #report h2 { font-family: var(--serif); font-size: 1.1rem; letter-spacing: 0.05em; margin: 0 0 0.5rem; color: var(--gold-lt); }
+  #report pre {
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+    padding: 0.9rem 1rem; border: 1px solid #3a3129; border-radius: 2px;
+    background: var(--smoke-2); color: #cfc3a9;
+  }
+  #reportMsg { font-size: 0.8rem; color: var(--ember); min-height: 1.2em; }
+
+  .fail {
+    margin: 1.5rem 0; padding: 1rem 1.1rem;
+    border: 1px solid var(--vermilion); border-radius: 2px;
+    background: rgba(198,48,30,0.12); color: #f0d9d4; font-size: 0.9rem;
+  }
+  .fail code { font-family: var(--mono); color: var(--ember); }
+
+  @media (max-width: 620px) { .bout { grid-template-columns: 1fr; } }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>Gemini TTS  對  yue-HK</h1>
+    <p class="lede">
+      同一句口訣,左邊係<strong>現時出貨</strong>嘅 Gemini 版,右邊係
+      <strong>Cloud TTS yue-HK Chirp3-HD Gacrux</strong>。
+      每一行只問一個問題:<strong>你之前捉到嗰個字,新版讀啱未?</strong>
+    </p>
+    <p class="caveat">
+      兩邊<strong>冇對速</strong>:舊版做過 2× 加速(intro 1.4×),新版係自然速度。
+      唔好判速度,只判讀音 —— 兩邊都有 <strong>慢 0.5×</strong>,單個字在 2× 之下真係聽唔清。
+    </p>
+  </header>
+
+  <div class="ledger">
+    <span class="tally" id="tally">載入中…</span>
+    <span class="spacer"></span>
+    <button type="button" class="act go" id="reportBtn">出報告</button>
+    <button type="button" class="act" id="resetBtn">清空</button>
+  </div>
+
+  <p class="hint">
+    <kbd>Space</kbd> 播舊版 · <kbd>N</kbd> 播新版 · <kbd>S</kbd> 慢播舊版 ·
+    <kbd>D</kbd> 慢播新版 · <kbd>1</kbd> 讀啱 · <kbd>2</kbd> 仍然錯 · <kbd>3</kbd> 更差 ·
+    <kbd>↓</kbd><kbd>↑</kbd> 上下行
+  </p>
+
+  <div id="report">
+    <h2>報告</h2>
+    <p id="reportMsg"></p>
+    <pre id="reportText"></pre>
+  </div>
+
+  <main id="app"></main>
+</div>
+
+<script type="module">
+  const MANIFEST = './compare/manifest.json';
+  const YUE_DIR = './compare/yue/';
+  const OLD_DIR = '../../portfolio/public/games/da-siu-yan/voice/';
+  const STORAGE_KEY = 'da-siu-yan-ab-verdicts-v1';
+  const HANZI = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
+  const PLAY = '<svg viewBox="0 0 9 11" aria-hidden="true"><path d="M0 0l9 5.5L0 11z"/></svg>';
+  const VERDICTS = [
+    { key: 'fixed', label: '讀啱', cls: 'fixed' },
+    { key: 'same',  label: '仍然錯', cls: 'same' },
+    { key: 'worse', label: '更差', cls: 'worse' }
+  ];
+
+  const appEl = document.getElementById('app');
+  const tallyEl = document.getElementById('tally');
+  const reportEl = document.getElementById('report');
+  const reportTextEl = document.getElementById('reportText');
+  const reportMsgEl = document.getElementById('reportMsg');
+
+  let marks = load();
+  let rows = [];
+  let cursor = 0;
+  let playing = null;
+  let manifest = null;
+
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); }
+    catch { return {}; }
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(marks)); }
+  function entry(id) { return (marks[id] ||= { verdict: null, note: '' }); }
+
+  function fail(msg) {
+    const d = document.createElement('div');
+    d.className = 'fail';
+    d.innerHTML = msg;
+    appEl.append(d);
+  }
+
+  async function init() {
+    try {
+      const res = await fetch(MANIFEST);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      manifest = await res.json();
+    } catch (err) {
+      fail(`讀唔到 <code>${MANIFEST}</code>(${err.message})。<br><br>` +
+        '先跑 <code>node scripts/da-siu-yan/gen-yue-compare.mjs</code> 生成 yue-HK 版本,' +
+        '然後由 repo root 用 <code>python3 -m http.server 8899</code> 開呢一頁(file:// 唔會 work)。');
+      return;
+    }
+    if (!manifest.clips?.length) { fail('manifest 冇任何 clip。'); return; }
+    render();
+  }
+
+  function render() {
+    appEl.textContent = '';
+    rows = [];
+    manifest.clips.forEach((clip, i) => {
+      const d = clip.defects[0];
+      const slip = document.createElement('article');
+      slip.className = 'slip';
+
+      const head = document.createElement('div');
+      head.className = 'head';
+      const rank = document.createElement('span');
+      rank.className = 'rank';
+      rank.textContent = HANZI[i + 1] ?? String(i + 1);
+      const cid = document.createElement('span');
+      cid.className = 'cid';
+      cid.textContent = clip.id;
+
+      const target = document.createElement('div');
+      target.className = 'target';
+      const han = document.createElement('span');
+      han.className = 'han';
+      han.textContent = d.char;
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.innerHTML = `應讀 <b>${d.should}</b><br>舊版 <i>${d.heard}</i>`;
+      target.append(han, meta);
+      head.append(rank, cid, target);
+
+      const chant = document.createElement('p');
+      chant.className = 'chant';
+      chant.textContent = clip.text;
+
+      const bout = document.createElement('div');
+      bout.className = 'bout';
+
+      // old corner — only the variants the review actually flagged
+      const oldC = document.createElement('div');
+      oldC.className = 'corner';
+      const oldH = document.createElement('h3');
+      oldH.textContent = `舊 · Gemini TTS(2×)`;
+      const oldPlays = document.createElement('div');
+      oldPlays.className = 'plays';
+      oldC.append(oldH, oldPlays);
+
+      const oldAudios = [];
+      for (const v of d.variants) {
+        const audio = new Audio(`${OLD_DIR}${v}/${clip.id}.mp3`);
+        audio.preload = 'none';
+        oldAudios.push(audio);
+        const dur = clip.shipped?.[v];
+        oldPlays.append(
+          mkPlay(`${v}`, dur, audio, 1),
+          mkPlay(`${v} 慢`, null, audio, 0.5)
+        );
+      }
+
+      // new corner
+      const newC = document.createElement('div');
+      newC.className = 'corner new';
+      const newH = document.createElement('h3');
+      newH.textContent = '新 · yue-HK Chirp3-HD(自然速)';
+      const newPlays = document.createElement('div');
+      newPlays.className = 'plays';
+      const newAudio = new Audio(`${YUE_DIR}${clip.id}.mp3`);
+      newAudio.preload = 'none';
+      newPlays.append(
+        mkPlay('播', clip.duration, newAudio, 1),
+        mkPlay('慢', null, newAudio, 0.5)
+      );
+      newC.append(newH, newPlays);
+      bout.append(oldC, newC);
+
+      // verdict
+      const verdict = document.createElement('div');
+      verdict.className = 'verdict';
+      const q = document.createElement('span');
+      q.className = 'q';
+      q.textContent = `新版個「${d.char}」:`;
+      verdict.append(q);
+      const btns = {};
+      for (const v of VERDICTS) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = v.cls;
+        b.textContent = v.label;
+        b.addEventListener('click', () => {
+          const e = entry(clip.id);
+          e.verdict = e.verdict === v.key ? null : v.key;
+          save(); sync(row);
+          if (e.verdict) setCursor(cursor + 1);
+        });
+        btns[v.key] = b;
+        verdict.append(b);
+      }
+      const noteWrap = document.createElement('span');
+      noteWrap.className = 'note';
+      const note = document.createElement('input');
+      note.type = 'text';
+      note.placeholder = '新版聽到咩?(例如:讀成 tau2 但聲調唔對)';
+      note.addEventListener('input', () => { entry(clip.id).note = note.value; save(); });
+      noteWrap.append(note);
+      verdict.append(noteWrap);
+
+      slip.append(head, chant, bout, verdict);
+      slip.addEventListener('click', (ev) => {
+        if (ev.target.closest('button, input')) return;
+        setCursor(rows.indexOf(row), { scroll: false });
+      });
+      appEl.append(slip);
+
+      const row = { clip, defect: d, slip, btns, note, oldAudios, newAudio };
+      rows.push(row);
+      sync(row);
+    });
+
+    refreshTally();
+    const first = rows.findIndex((r) => !entry(r.clip.id).verdict);
+    setCursor(first === -1 ? 0 : first, { scroll: false });
+  }
+
+  function mkPlay(label, dur, audio, rate) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'play';
+    b.innerHTML = `${PLAY}<span></span>${dur ? `<span class="d">${dur.toFixed(2)}s</span>` : ''}`;
+    b.querySelector('span').textContent = label;
+    b.addEventListener('click', () => play(audio, rate, b));
+    audio.addEventListener('ended', () => { b.classList.remove('is-playing'); });
+    audio.addEventListener('pause', () => { b.classList.remove('is-playing'); });
+    return b;
+  }
+
+  function play(audio, rate, btn) {
+    for (const r of rows) {
+      for (const a of [...r.oldAudios, r.newAudio]) if (a !== audio && !a.paused) a.pause();
+    }
+    if (playing && playing !== btn) playing.classList.remove('is-playing');
+    playing = btn;
+    audio.playbackRate = rate;
+    audio.currentTime = 0;
+    audio.play().then(() => btn?.classList.add('is-playing')).catch(() => {
+      reportEl.style.display = 'block';
+      reportMsgEl.textContent = `播唔到 ${audio.src.split('/').slice(-2).join('/')} — 要用 http 開呢一頁,同確認檔案生成好。`;
+    });
+  }
+
+  function sync(row) {
+    const e = entry(row.clip.id);
+    for (const v of VERDICTS) row.btns[v.key].setAttribute('aria-pressed', String(e.verdict === v.key));
+    row.slip.classList.remove('v-fixed', 'v-same', 'v-worse');
+    if (e.verdict) row.slip.classList.add(`v-${e.verdict}`);
+    if (row.note.value !== e.note) row.note.value = e.note;
+    refreshTally();
+  }
+
+  function setCursor(i, { scroll = true } = {}) {
+    if (!rows.length) return;
+    cursor = Math.max(0, Math.min(i, rows.length - 1));
+    for (const r of rows) r.slip.classList.remove('is-current');
+    const cur = rows[cursor];
+    cur.slip.classList.add('is-current');
+    if (scroll) cur.slip.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  }
+
+  function refreshTally() {
+    const n = rows.length;
+    const done = rows.filter((r) => entry(r.clip.id).verdict).length;
+    const fixed = rows.filter((r) => entry(r.clip.id).verdict === 'fixed').length;
+    const same = rows.filter((r) => ['same', 'worse'].includes(entry(r.clip.id).verdict)).length;
+    tallyEl.innerHTML = `已判 <b>${done}</b> / ${n} 行 · ` +
+      `<span class="win">讀啱 <b>${fixed}</b></span> · <span class="lose">仍然錯 <b>${same}</b></span>`;
+  }
+
+  document.getElementById('reportBtn').addEventListener('click', async () => {
+    const out = [];
+    const fixed = [], broken = [], undecided = [];
+    for (const r of rows) {
+      const e = entry(r.clip.id);
+      const line = `  ${r.clip.id.padEnd(9)} ${r.defect.char}  應讀 ${r.defect.should}` +
+        `  舊版:${r.defect.heard}` + (e.note ? `  新版聽到:${e.note}` : '');
+      if (e.verdict === 'fixed') fixed.push(line);
+      else if (e.verdict) broken.push(`${line}  [${e.verdict === 'worse' ? '更差' : '仍然錯'}]`);
+      else undecided.push(line);
+    }
+    out.push(`打小人 — Gemini TTS 對 Cloud TTS yue-HK 對比結果`);
+    out.push(`引擎: ${manifest.voice} (${manifest.languageCode})`);
+    out.push(`已判 ${rows.length - undecided.length}/${rows.length} 行`);
+    out.push('');
+    out.push(`yue-HK 讀啱 (${fixed.length}):`);
+    out.push(...(fixed.length ? fixed : ['  (冇)']));
+    out.push('');
+    out.push(`yue-HK 仍然錯 (${broken.length}):`);
+    out.push(...(broken.length ? broken : ['  (冇)']));
+    if (undecided.length) {
+      out.push('');
+      out.push(`未判 (${undecided.length}):`);
+      out.push(...undecided);
+    }
+    out.push('');
+    if (!undecided.length) {
+      const r = fixed.length / rows.length;
+      out.push('結論:');
+      if (r === 1) out.push('  yue-HK 全中 → 值得將整個 pipeline 搬過去,重生 60 條 clip。');
+      else if (r >= 0.6) out.push('  yue-HK 大部分中 → 搬過去,剩低嘅字再單獨處理。');
+      else if (r > 0) out.push('  yue-HK 只中一部分 → 搬之前要再研究,可能要試其他 yue-HK 聲或者人聲錄音。');
+      else out.push('  yue-HK 冇改善 → 唔值得搬,要考慮人聲錄音。');
+    }
+    const text = out.join('\n');
+    reportEl.style.display = 'block';
+    reportTextEl.textContent = text;
+    reportEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    try {
+      await navigator.clipboard.writeText(text);
+      reportMsgEl.textContent = '已複製到剪貼板 — 貼返俾我。';
+    } catch {
+      reportMsgEl.textContent = '剪貼板被擋 — 自己 copy 下面段文字。';
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('清空全部判斷?')) return;
+    marks = {}; save(); render();
+    reportEl.style.display = 'none';
+    reportMsgEl.textContent = '';
+  });
+
+  window.addEventListener('keydown', (ev) => {
+    if (!rows.length) return;
+    if (['INPUT', 'TEXTAREA'].includes(ev.target.tagName)) return;
+    const r = rows[cursor];
+    const k = ev.key.toLowerCase();
+    if (ev.key === ' ') { ev.preventDefault(); r.oldAudios[0] && play(r.oldAudios[0], 1, null); }
+    else if (k === 's') { ev.preventDefault(); r.oldAudios[0] && play(r.oldAudios[0], 0.5, null); }
+    else if (k === 'n') { ev.preventDefault(); play(r.newAudio, 1, null); }
+    else if (k === 'd') { ev.preventDefault(); play(r.newAudio, 0.5, null); }
+    else if (ev.key === 'ArrowDown' || k === 'j') { ev.preventDefault(); setCursor(cursor + 1); }
+    else if (ev.key === 'ArrowUp' || k === 'k') { ev.preventDefault(); setCursor(cursor - 1); }
+    else if (['1', '2', '3'].includes(ev.key)) {
+      ev.preventDefault();
+      r.btns[VERDICTS[Number(ev.key) - 1].key].click();
+    }
+  });
+
+  init();
+</script>
