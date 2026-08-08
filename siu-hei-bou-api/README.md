@@ -30,7 +30,14 @@ D1  siu-hei-bou-db         users / friends / grudges / cards  (schema.sql)
 | `POST /api/cards`, `POST /api/cards/:id/settle`, `GET /api/cards` | Bearer | 找數卡 lifecycle |
 | `GET /public/cards/:token` | none | public card view — field-projected, never leaks uid/ids/tokens |
 | `POST /public/cards/:token/ack` | none (rate-limited) | friend 認數 |
-| `GET /api/admin/users` | Bearer + superadmin | `{total, users:[{name,email,created_at}]}` |
+| `GET /api/admin/users?page=&page_size=&q=` | Bearer + superadmin | paged user list — `{total, q, page, pages, pageSize, users:[{name,email,created_at}]}` |
+
+`/api/admin/users` is paged in SQL (default 20/page, ceiling 100) and ordered
+`created_at DESC, uid` — the uid tiebreak is what keeps OFFSET paging from
+skipping or repeating rows when several accounts share a created_at second.
+`q` substring-matches email or display name (`%`/`_` are escaped, so they match
+literally). Out-of-range `page` is clamped to the last page rather than
+returning an empty list, and `total` always reflects the *matching* count.
 
 ## Security model
 
@@ -57,6 +64,22 @@ npx wrangler deploy   # account hillmanchan709@gmail.com; custom domain
 ```
 
 D1 database: `siu-hei-bou-db` (id `67932535-b39a-4a1f-b7ae-a4fafc9b466d`).
-Schema changes: edit `schema.sql`, apply with
-`npx wrangler d1 execute siu-hei-bou-db --remote --file schema.sql` (fresh DB)
-or an explicit `--command "ALTER TABLE …"` migration.
+Schema changes: edit `schema.sql` (the fresh-DB definition) **and** add a dated,
+idempotent file under `sql/` for the live database:
+
+```bash
+npx wrangler d1 execute siu-hei-bou-db --remote --file=sql/2026-08-09-indexes.sql
+```
+
+## Write/read cost notes
+
+D1 bills rows read and rows written, so two things matter more than they look:
+
+- `upsertUser` runs on every `/api/state`. Its `ON CONFLICT … DO UPDATE …
+  WHERE email/display_name actually differ` makes the ordinary case (same person
+  opening the app again) write **zero** rows. Don't drop that `WHERE`.
+- Any `WHERE` clause that can't reach an index becomes a full table scan billed
+  per row. The one to watch is getState's stamp sum, which filters on
+  `friend_id` alone — the `idx_grudges_uid_friend` index leads on `uid` and
+  cannot serve it, which is why the partial index `idx_grudges_open` exists.
+  Check with `EXPLAIN QUERY PLAN` before adding a query on a growing table.

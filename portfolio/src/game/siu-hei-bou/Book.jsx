@@ -7,7 +7,7 @@ import IndexPage from './IndexPage';
 import ChapterPage from './FriendChapter';
 import AddGrudgeSheet from './AddGrudgeSheet';
 import SettingsSheet from './SettingsSheet';
-import AdminSheet from './AdminSheet';
+import AdminSheet, { clearAdminCache } from './AdminSheet';
 
 const COLOURS = ['#e8a0a0', '#a0c8e8', '#a8d8b0', '#e8d3a0', '#c9aee5', '#f0b8d0'];
 const FLIP_MS = 520;
@@ -214,6 +214,7 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
 
   const handleLogout = () => {
     onLogout();
+    clearAdminCache();
     setNav({ section: 'index', page: 0 });
     setSearch('');
     setGrudgeMap({});
