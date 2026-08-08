@@ -27,7 +27,17 @@ const publicCardView = (card) => ({
 });
 
 export const handlers = {
-  getState: async ({ db, uid }) => ok(await db.getState(uid)),
+  // The whole book in one response: the device mirror is a wholesale copy of
+  // this, so anything left out is a chapter that reads blank offline. Purely
+  // additive — `friends` (with its stamp counts) and `openCards` keep their
+  // exact shape, because the deployed frontend is still reading only those two
+  // while the new one rolls out.
+  getState: async ({ db, uid }) => {
+    const [state, grudges, cards] = await Promise.all([
+      db.getState(uid), db.listAllGrudges(uid), db.listAllCards(uid),
+    ]);
+    return ok({ ...state, grudges, cards });
+  },
 
   createFriend: async ({ db, uid }, { body }) => {
     const v = validateFriend(body);

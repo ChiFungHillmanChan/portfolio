@@ -1,21 +1,22 @@
-import React, { useEffect, useState } from 'react';
-import { api } from './api';
+import React, { useMemo, useState } from 'react';
 
 const COLOURS = ['#e8a0a0', '#a0c8e8', '#a8d8b0', '#e8d3a0', '#c9aee5', '#f0b8d0'];
 const STATUS_LABEL = { open: '未認數', acknowledged: '已認數', settled: '已找數' };
 
-export default function SettingsSheet({ friend, onClose, refresh, toast, onDeleted }) {
+// 改設定同刪罪人都係排隊寫嘅，冇網一樣改得到。找數紀錄亦都係本簿入面已經有嘅
+// 資料，唔會再問 server —— 否則冇網嗰陣會扮到「未開過找數卡」咁。
+export default function SettingsSheet({ friend, cards, onClose, onSave, onDelete, toast, onDeleted }) {
   const [name, setName] = useState(friend.name);
   const [colour, setColour] = useState(friend.colour);
   const [threshold, setThreshold] = useState(friend.threshold);
   const [reward, setReward] = useState(friend.reward);
-  const [history, setHistory] = useState(null);
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  useEffect(() => {
-    api.cards(friend.id).then(setHistory).catch(() => setHistory([]));
-  }, [friend.id]);
+  const history = useMemo(
+    () => [...(cards || [])].sort((a, b) => b.id - a.id),
+    [cards],
+  );
 
   const save = async () => {
     const t = Number(threshold);
@@ -25,8 +26,7 @@ export default function SettingsSheet({ friend, onClose, refresh, toast, onDelet
     }
     setBusy(true);
     try {
-      await api.updateFriend(friend.id, { name: name.trim(), colour, threshold: t, reward: reward.trim() });
-      await refresh();
+      await onSave({ name: name.trim(), colour, threshold: t, reward: reward.trim() });
       toast('save 咗喇');
       onClose();
     } catch {
@@ -38,8 +38,7 @@ export default function SettingsSheet({ friend, onClose, refresh, toast, onDelet
   const del = async () => {
     setBusy(true);
     try {
-      await api.deleteFriend(friend.id);
-      await refresh();
+      await onDelete();
       onDeleted();
     } catch {
       toast('刪唔到，遲啲再試');
@@ -74,12 +73,11 @@ export default function SettingsSheet({ friend, onClose, refresh, toast, onDelet
         </label>
 
         <h4 className="shb-history-title">找數紀錄</h4>
-        {history === null && <div className="shb-loading">睇緊⋯</div>}
-        {history && history.length === 0 && <p className="shb-empty-small">未開過找數卡</p>}
+        {history.length === 0 && <p className="shb-empty-small">未開過找數卡</p>}
         <ul className="shb-history">
-          {(history || []).map((c) => (
+          {history.map((c) => (
             <li key={c.id}>
-              <span>{c.created_at.slice(0, 10)}</span>
+              <span>{(c.created_at || '').slice(0, 10)}</span>
               <span>{c.stamp_total} 印・{c.reward}</span>
               <span className="shb-history-status">{STATUS_LABEL[c.status]}</span>
             </li>

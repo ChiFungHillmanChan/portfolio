@@ -60,9 +60,22 @@ function corsHeaders(origin) {
   return {
     'Access-Control-Allow-Origin': allowed,
     'Access-Control-Allow-Methods': 'GET,POST,PATCH,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'content-type,authorization',
+    // if-none-match is not a CORS-safelisted REQUEST header: without it here the
+    // preflight rejects the conditional GET outright, before the Worker runs.
+    'Access-Control-Allow-Headers': 'content-type,authorization,if-none-match',
+    // ETag is not a CORS-safelisted RESPONSE header either: without this the
+    // browser hides it from JS, the client has no etag to send back, and the
+    // whole 304 path silently never engages.
+    'Access-Control-Expose-Headers': 'ETag',
     'Access-Control-Max-Age': '86400',
   };
+}
+
+// Hex SHA-256 of the serialized body, so the etag is a pure function of the
+// content — two Worker isolates agree on it without sharing any state.
+async function etagOf(serialized) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(serialized));
+  return `"${Array.from(new Uint8Array(digest), (b) => b.toString(16).padStart(2, '0')).join('')}"`;
 }
 
 export default {
@@ -113,6 +126,20 @@ export default {
     try {
       if (route.name === 'getState') await ctx.db.upsertUser(ctx.user.uid, ctx.user.email, ctx.user.name);
       const result = await handlers[route.name](ctx, { params: route.params, body, query });
+      // Only /api/state is etagged — it is the one response the client mirrors
+      // wholesale, and it is fetched on every app open, foreground and reconnect.
+      // cache-control stays no-store: the browser HTTP cache is deliberately not
+      // involved, the client keeps the etag in IndexedDB and sends If-None-Match
+      // by hand. The 304 must carry the CORS headers (or the browser hides it
+      // from JS) and must carry no body.
+      if (route.name === 'getState' && result.status === 200) {
+        const serialized = JSON.stringify(result.body);
+        const etag = await etagOf(serialized);
+        const headers = { 'content-type': 'application/json', 'cache-control': 'no-store', etag, ...cors };
+        return request.headers.get('If-None-Match') === etag
+          ? new Response(null, { status: 304, headers })
+          : new Response(serialized, { status: 200, headers });
+      }
       return respond(result.status, result.body);
     } catch (e) {
       console.error(`[${route.name}]`, e);

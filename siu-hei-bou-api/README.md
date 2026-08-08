@@ -24,7 +24,7 @@ D1  siu-hei-bou-db         users / friends / grudges / cards  (schema.sql)
 
 | Route | Auth | Purpose |
 |---|---|---|
-| `GET /api/state` | Bearer | friends + open cards (also upserts the user row) |
+| `GET /api/state` | Bearer | the whole book — `{friends, openCards, grudges, cards}`, etagged (also upserts the user row) |
 | `GET /api/me` | Bearer | 書末 profile — `{email, name, created_at, counts:{friends,grudges,cards}}` |
 | `DELETE /api/me` | Bearer | 撕爛本簿 — wipes every row this uid owns (see below) |
 | `POST/PATCH/DELETE /api/friends[/:id]` | Bearer | manage 罪人 |
@@ -91,7 +91,12 @@ database. Apply each before/with the deploy that needs it:
 ```bash
 npx wrangler d1 execute siu-hei-bou-db --remote --file=sql/2026-08-09-indexes.sql
 npx wrangler d1 execute siu-hei-bou-db --remote --file=sql/2026-08-09-cards-uid-index.sql
+npx wrangler d1 execute siu-hei-bou-db --remote --file=sql/2026-08-08-client-ids.sql
 ```
+
+`2026-08-08-client-ids.sql` is the one exception to "idempotent": SQLite has no
+`ADD COLUMN IF NOT EXISTS`, so it is one-shot. Apply once, then confirm with
+`PRAGMA table_info(grudges)`.
 
 ## Write/read cost notes
 
@@ -116,3 +121,12 @@ already skips caching for requests bearing an `Authorization` header, but the
 unauthenticated error paths are not covered by that rule — a stale `404` for a
 route that did not exist yet was observed being served from the edge during the
 gap between a frontend deploy and the Worker deploy. `no-store` closes it.
+
+`GET /api/state` additionally carries an `ETag` (hex SHA-256 of the body) and
+answers a matching `If-None-Match` with a bodyless `304`. That is *not* a
+relaxation of `no-store`: the browser HTTP cache stays out of it entirely: the
+client keeps the etag in IndexedDB and sends the conditional header by hand, so
+re-opening an unchanged book costs a header exchange instead of the whole
+notebook. `if-none-match` must stay in `Access-Control-Allow-Headers` and `ETag`
+in `Access-Control-Expose-Headers`, or the request dies at the preflight / the
+etag is invisible to JS.

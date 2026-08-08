@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { api } from './api';
 import { AngryFace } from './svgs';
 
 const LABELS = { 1: '小嬲', 2: '中嬲', 3: '勁嬲' };
 const today = () => new Date().toISOString().slice(0, 10);
 
-export default function AddGrudgeSheet({ friend, onClose, onSaved, toast }) {
+// 記一筆。呢度唔會叫 server —— 寫低咗就係寫低咗，有冇網都好，Book 會排隊寄。
+export default function AddGrudgeSheet({ friend, onClose, onSaved }) {
   const [content, setContent] = useState('');
   const [severity, setSeverity] = useState(1);
   const [date, setDate] = useState(today);
@@ -14,13 +14,7 @@ export default function AddGrudgeSheet({ friend, onClose, onSaved, toast }) {
   const save = async () => {
     if (!content.trim()) return;
     setBusy(true);
-    try {
-      const created = await api.addGrudge({ friend_id: friend.id, content: content.trim(), severity, occurred_at: date });
-      await onSaved(created);
-    } catch {
-      toast('save 唔到，遲啲再試');
-      setBusy(false);
-    }
+    await onSaved({ content: content.trim(), severity, occurred_at: date });
   };
 
   return (

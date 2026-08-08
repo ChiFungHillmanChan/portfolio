@@ -50,6 +50,53 @@ test('validateGrudge rejects bad input', () => {
   assert.equal(validateGrudge({ friend_id: 1, content: 'ok', severity: 1, occurred_at: '2026-13-40' }).ok, false);
 });
 
+/* ---- client_id (offline idempotency key) ---- */
+
+const CID = '3f2b7c10-4d5e-4a6b-8c9d-0e1f2a3b4c5d';
+// uppercase hex, one digit short, trailing junk, leading space, no dashes, wrong type
+const BAD_CIDS = [CID.toUpperCase(), CID.slice(0, -1), `${CID}0`, ` ${CID}`,
+  CID.replace(/-/g, ''), '', 'not-a-uuid', 42, null, {}, []];
+
+test('validateFriend takes an optional client_id', () => {
+  const withId = validateFriend({ name: '阿明', client_id: CID });
+  assert.equal(withId.ok, true);
+  assert.deepEqual(withId.value, { name: '阿明', colour: '#e8a0a0', threshold: 10, reward: '請食飯', client_id: CID });
+
+  // absent → unchanged behaviour, and no client_id key to write
+  assert.equal('client_id' in validateFriend({ name: '阿明' }).value, false);
+
+  for (const bad of BAD_CIDS) {
+    assert.deepEqual(validateFriend({ name: '阿明', client_id: bad }),
+      { ok: false, error: 'bad-request' }, `accepted ${JSON.stringify(bad)}`);
+  }
+});
+
+test('validateGrudge takes an optional client_id', () => {
+  const full = { friend_id: 3, content: '遲到一個鐘', severity: 2, occurred_at: '2026-08-08' };
+  const withId = validateGrudge({ ...full, client_id: CID });
+  assert.equal(withId.ok, true);
+  assert.deepEqual(withId.value, { ...full, client_id: CID });
+
+  assert.equal('client_id' in validateGrudge(full).value, false);
+
+  for (const bad of BAD_CIDS) {
+    assert.deepEqual(validateGrudge({ ...full, client_id: bad }),
+      { ok: false, error: 'bad-request' }, `accepted ${JSON.stringify(bad)}`);
+  }
+});
+
+test('partial mode validates client_id but never puts it in the patch', () => {
+  // An UPDATE must not rewrite the idempotency key of a row that already has one.
+  const f = validateFriend({ threshold: 12, client_id: CID }, { partial: true });
+  assert.deepEqual(f.value, { threshold: 12 });
+  const g = validateGrudge({ content: '改咗字', client_id: CID }, { partial: true });
+  assert.deepEqual(g.value, { content: '改咗字' });
+
+  // still rejected when malformed, rather than quietly ignored
+  assert.equal(validateFriend({ threshold: 12, client_id: 'junk' }, { partial: true }).ok, false);
+  assert.equal(validateGrudge({ content: 'x', client_id: 'junk' }, { partial: true }).ok, false);
+});
+
 test('genShareToken is 24 url-safe chars and unique', () => {
   const a = genShareToken();
   const b = genShareToken();

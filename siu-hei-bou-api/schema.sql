@@ -14,9 +14,14 @@ CREATE TABLE friends (
   threshold  INTEGER NOT NULL DEFAULT 10,      -- 滿卡印數
   reward     TEXT NOT NULL DEFAULT '請食飯',    -- 獎品文字
   archived   INTEGER NOT NULL DEFAULT 0,
+  client_id  TEXT,                        -- client-minted idempotency key (offline writes)
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_friends_uid ON friends(uid);
+-- Partial so pre-existing rows (client_id IS NULL) stay out of it, and so a
+-- client that never sends one can keep inserting. The WHERE must be repeated in
+-- db.mjs's ON CONFLICT target or SQLite refuses to match the index.
+CREATE UNIQUE INDEX idx_friends_client ON friends(uid, client_id) WHERE client_id IS NOT NULL;
 
 CREATE TABLE cards (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,9 +46,11 @@ CREATE TABLE grudges (
   severity    INTEGER NOT NULL CHECK (severity IN (1,2,3)),  -- 印仔數
   occurred_at TEXT NOT NULL,            -- user-editable date (YYYY-MM-DD)
   card_id     INTEGER REFERENCES cards(id),  -- NULL until claimed by a 找數卡
+  client_id   TEXT,                           -- client-minted idempotency key (offline writes)
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_grudges_uid_friend ON grudges(uid, friend_id);
+CREATE UNIQUE INDEX idx_grudges_client ON grudges(uid, client_id) WHERE client_id IS NOT NULL;
 -- getState sums unclaimed stamps by friend_id alone, which cannot use the
 -- uid-leading index above; partial index keeps that hot path off a full scan.
 CREATE INDEX idx_grudges_open ON grudges(friend_id) WHERE card_id IS NULL;

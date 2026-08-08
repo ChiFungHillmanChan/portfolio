@@ -11,7 +11,8 @@ const DOCS = [null, PRIVACY, TERMS];
 const dash = (v) => (v === null || v === undefined ? '⋯' : v);
 
 export default function BackMatter({
-  pageIdx, user, me, interactive, onLogout, onDeleteAll, deleting, onGoPage, onIndex,
+  pageIdx, user, me, interactive, connected = true,
+  onLogout, onDeleteAll, deleting, onGoPage, onIndex,
 }) {
   const [confirm, setConfirm] = useState(false);
   const idx = Math.min(Math.max(0, pageIdx || 0), BACK_PAGES - 1);
@@ -76,11 +77,12 @@ export default function BackMatter({
               <button type="button" className="shb-outline-btn" onClick={onLogout} disabled={!interactive}>
                 合埋本簿（登出）
               </button>
+              {/* 撕書要 server 真係刪到嗰啲 row 先算數，所以冇網連撳都唔俾撳。 */}
               <button
                 type="button" className="shb-danger-btn"
-                onClick={() => setConfirm(true)} disabled={!interactive}
+                onClick={() => setConfirm(true)} disabled={!interactive || !connected}
               >
-                撕爛本簿，刪清所有嘢
+                {connected ? '撕爛本簿，刪清所有嘢' : '撕書要有網絡'}
               </button>
             </>
           )}

@@ -67,9 +67,30 @@ export function makeDb(d1) {
         `SELECT * FROM cards WHERE uid = ?1 AND status != 'settled' ORDER BY id DESC`).bind(uid)),
     }),
 
-    createFriend: (uid, v) => first(d1.prepare(
-      `INSERT INTO friends (uid, name, colour, threshold, reward) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING *`)
-      .bind(uid, v.name, v.colour, v.threshold, v.reward)),
+    // An offline client sends a client_id so its retries are idempotent: the
+    // second POST of the same queued write returns the row the first one made
+    // instead of a duplicate. Three things in that ON CONFLICT are load-bearing:
+    //   · `WHERE client_id IS NOT NULL` — the unique index is PARTIAL, and
+    //     SQLite refuses to match a conflict target to a partial index unless the
+    //     index's own WHERE is repeated ("does not match any ... UNIQUE constraint").
+    //   · `DO UPDATE SET client_id = excluded.client_id` — a deliberate no-op
+    //     write. RETURNING only fires for a row the statement actually touched,
+    //     so DO NOTHING would come back empty on the retry and the client would
+    //     never learn its server id.
+    //   · the row is NOT otherwise overwritten, so a retry returns server truth
+    //     rather than replaying a stale body over a row someone has since edited.
+    // No client_id (older clients) → plain insert; the partial index tolerates
+    // unlimited NULLs.
+    createFriend: (uid, v) => first(v.client_id
+      ? d1.prepare(
+        `INSERT INTO friends (uid, name, colour, threshold, reward, client_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(uid, client_id) WHERE client_id IS NOT NULL
+           DO UPDATE SET client_id = excluded.client_id
+         RETURNING *`).bind(uid, v.name, v.colour, v.threshold, v.reward, v.client_id)
+      : d1.prepare(
+        `INSERT INTO friends (uid, name, colour, threshold, reward) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING *`)
+        .bind(uid, v.name, v.colour, v.threshold, v.reward)),
     getFriend: (uid, id) => first(d1.prepare(`SELECT * FROM friends WHERE id = ?1 AND uid = ?2`).bind(id, uid)),
     updateFriend: (uid, id, patch) => updateByPatch('friends', uid, id, patch),
     deleteFriend: (uid, id) => d1.batch([
@@ -80,12 +101,27 @@ export function makeDb(d1) {
 
     listGrudges: (uid, friendId) => all(d1.prepare(
       `SELECT * FROM grudges WHERE uid = ?1 AND friend_id = ?2 ORDER BY occurred_at DESC, id DESC`).bind(uid, friendId)),
+    // The whole book in one query, for the offline mirror. Bounded by one
+    // person's own grudges and read once per app open, not per chapter. Same
+    // ORDER BY as listGrudges so the client can group by friend_id and keep the
+    // order it already renders. Uses idx_grudges_uid_friend (uid=?) — no scan.
+    listAllGrudges: (uid) => all(d1.prepare(
+      `SELECT * FROM grudges WHERE uid = ?1 ORDER BY occurred_at DESC, id DESC`).bind(uid)),
     listOpenGrudges: (uid, friendId) => all(d1.prepare(
       `SELECT * FROM grudges WHERE uid = ?1 AND friend_id = ?2 AND card_id IS NULL`).bind(uid, friendId)),
     getGrudge: (uid, id) => first(d1.prepare(`SELECT * FROM grudges WHERE id = ?1 AND uid = ?2`).bind(id, uid)),
-    createGrudge: (uid, v) => first(d1.prepare(
-      `INSERT INTO grudges (uid, friend_id, content, severity, occurred_at) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING *`)
-      .bind(uid, v.friend_id, v.content, v.severity, v.occurred_at)),
+    // Same upsert shape as createFriend — see the comment there for why every
+    // clause of the ON CONFLICT is required.
+    createGrudge: (uid, v) => first(v.client_id
+      ? d1.prepare(
+        `INSERT INTO grudges (uid, friend_id, content, severity, occurred_at, client_id)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+         ON CONFLICT(uid, client_id) WHERE client_id IS NOT NULL
+           DO UPDATE SET client_id = excluded.client_id
+         RETURNING *`).bind(uid, v.friend_id, v.content, v.severity, v.occurred_at, v.client_id)
+      : d1.prepare(
+        `INSERT INTO grudges (uid, friend_id, content, severity, occurred_at) VALUES (?1, ?2, ?3, ?4, ?5) RETURNING *`)
+        .bind(uid, v.friend_id, v.content, v.severity, v.occurred_at)),
     updateGrudge: (uid, id, patch) => updateByPatch('grudges', uid, id, patch, 'AND card_id IS NULL'),
     deleteGrudge: (uid, id) => d1.prepare(
       `DELETE FROM grudges WHERE id = ?1 AND uid = ?2 AND card_id IS NULL`).bind(id, uid).run(),
@@ -108,6 +144,11 @@ export function makeDb(d1) {
        WHERE id = ?1 AND uid = ?2 AND status != 'settled' RETURNING *`).bind(id, uid)),
     listCards: (uid, friendId) => all(d1.prepare(
       `SELECT * FROM cards WHERE uid = ?1 AND friend_id = ?2 ORDER BY id DESC`).bind(uid, friendId)),
+    // Every card incl. settled ones — the mirror holds the whole 找數卡 history,
+    // which is what makes a chapter readable offline. Uses idx_cards_uid_friend
+    // (uid=?), the same index listCards and getMe's counts already rely on.
+    listAllCards: (uid) => all(d1.prepare(
+      `SELECT * FROM cards WHERE uid = ?1 ORDER BY id DESC`).bind(uid)),
 
     getPublicCard: async (token) => {
       const card = await first(d1.prepare(`SELECT * FROM cards WHERE share_token = ?1`).bind(token));

@@ -5,6 +5,7 @@
   --shb-line: #d8c9b8;
   --shb-ink: #b3402f;
   --shb-ink-dark: #5a4632;
+  --shb-pencil: #8a8175; /* 未寄出嘅字 —— 石墨灰，唔係淡咗嘅墨 */
   --shb-face: #ffe3e0;
   --shb-cover: #b04a3a;
   --shb-cover-deep: #8e3a2d;
@@ -73,6 +74,11 @@
 .shb-line-dim { opacity: 0.6; font-size: 15px; }
 .shb-line-claimed { opacity: 0.45; }
 .shb-line-text.shb-line-claimed { text-decoration: line-through; text-decoration-thickness: 2px; }
+
+/* 鉛筆 —— 仲未寄到雲端嗰啲，係鉛筆稿；寄咗先落墨。冇 badge、冇轉圈圈：本簿
+   自己講返自己嘅狀態就夠。--shb-ink 一齊改埋，連個嬲爆面都變返鉛筆色。 */
+.shb-pending { color: var(--shb-pencil); --shb-ink: var(--shb-pencil); --shb-face: #ece7dc; }
+.shb-idx-line.shb-pending .shb-idx-count { opacity: 0.6; }
 .shb-entry-del { background: none; border: none; font-size: 20px; color: var(--shb-ink); opacity: 0.6; padding: 0 6px; }
 
 /* ===== 封面（同一個盒，揭開就係內頁）===== */
@@ -190,9 +196,14 @@
   height: 32px; display: flex; align-items: center; gap: 8px;
   border-bottom: 2px solid var(--shb-line); color: var(--shb-ink-dark); opacity: 0.9;
 }
+/* 16px 唔係揀靚：iOS Safari 一 focus 落任何細過 16px 嘅輸入框就會自動放大成版
+   嘢，放大咗之後個 viewport 就會推到啲掣出咗界，撳都撳唔到。呢個 file 入面
+   每一個 input / textarea / select 都一定要 >= 16px（siuHeiBouStyles.test.js 睇實），
+   而修正一定要落喺輸入框度 —— public/index.html 個 viewport meta 係成個
+   portfolio 共用嘅，喺嗰度落 user-scalable=no 會連 pinch zoom 都殺埋。 */
 .shb-idx-search input {
   flex: 1; border: none; background: transparent; font-family: inherit;
-  font-size: 15px; color: inherit; padding: 0;
+  font-size: 16px; color: inherit; padding: 0;
 }
 .shb-idx-search input:focus { outline: none; }
 
@@ -213,9 +224,11 @@
 }
 
 .shb-idx-add { height: 64px; display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+/* 16px — 見上面 .shb-idx-search input。用家就係喺呢個「寫低個名」度撞到部機
+   自己放大，跟住連「記入簿」都撳唔到。 */
 .shb-idx-add input {
-  flex: 1; border: none; border-bottom: 2px dashed var(--shb-line);
-  background: transparent; padding: 6px 2px; font-family: inherit; font-size: 15px; color: inherit;
+  flex: 1; min-width: 0; border: none; border-bottom: 2px dashed var(--shb-line);
+  background: transparent; padding: 6px 2px; font-family: inherit; font-size: 16px; color: inherit;
 }
 .shb-idx-add input:focus { outline: none; border-color: var(--shb-ink); }
 .shb-idx-add button {
@@ -225,9 +238,18 @@
 }
 .shb-idx-add button:disabled { opacity: 0.5; }
 
-/* gap fits three links (管理書本 · 用戶一覽 · 合埋本簿) on a 320px-wide phone */
-.shb-idx-foot { height: 32px; display: flex; align-items: center; justify-content: center; gap: 16px; }
+/* gap fits three links (管理書本 · 用戶一覽 · 合埋本簿) on a 320px-wide phone.
+   未寄出 (n) 係第四條，只喺真係有嘢寄唔出先出現 —— 所以呢行唔可以斷行（成頁
+   嘅 32px 間線會跟住郁），啲字寧願細啲。 */
+.shb-idx-foot { height: 32px; display: flex; align-items: center; justify-content: center; gap: 14px; }
+.shb-idx-foot .shb-link { white-space: nowrap; padding: 0; }
 .shb-link { background: none; border: none; color: var(--shb-ink-dark); opacity: 0.7; font-size: 14px; text-decoration: underline; }
+.shb-link-pending { color: var(--shb-ink); opacity: 0.95; }
+
+@media (max-width: 360px) {
+  .shb-idx-foot { gap: 10px; }
+  .shb-idx-foot .shb-link { font-size: 12.5px; }
+}
 
 /* ===== 罪人章節頁 ===== */
 .shb-ch-header {
@@ -309,9 +331,19 @@
   position: fixed; inset: 0; background: rgba(60, 40, 30, 0.45); z-index: 50;
   display: flex; align-items: flex-end; justify-content: center;
 }
+/* 張 sheet 一定要封頂，同埋自己捲。
+   個 mask 係 align-items: flex-end 嘅，如果張 sheet 高過個 mask，多出嗰截會overflow
+   落個 flex container 個「起點」邊 —— 即係頂部 —— 而嗰截係捲極都捲唔到嘅。用家
+   撳出鍵盤之後見到嘅就係張 sheet 嘅下半橛，「記一筆」個標題同頭幾行間線喺畫面
+   之外。封咗頂 + overflow-y:auto 之後，佢就係一個由頂部開始嘅捲軸。
+   dvh 計埋瀏覽器上下嗰條 bar 同鍵盤；vh 嗰行係俾唔識 dvh 嘅舊機做 fallback，
+   次序唔可以倒轉。 */
 .shb-sheet {
   width: min(100vw, 480px); background: var(--shb-paper);
   border-radius: 22px 22px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  max-height: 88vh;
+  max-height: 88dvh;
+  overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch;
   animation: shb-sheet-up 0.25s ease-out;
 }
 @keyframes shb-sheet-up { from { transform: translateY(40%); } }
@@ -330,7 +362,8 @@
 }
 .shb-sev-on { border-color: var(--shb-ink); background: var(--shb-face); }
 .shb-sheet-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; font-size: 14px; }
-.shb-sheet-row input[type='date'] { font-family: inherit; border: 1px solid var(--shb-line); border-radius: 8px; padding: 4px 8px; background: transparent; color: inherit; }
+/* 16px 要寫明：唔寫嘅話佢會繼承 .shb-sheet-row 嗰 14px，一撳落去部機又放大。 */
+.shb-sheet-row input[type='date'] { font-family: inherit; font-size: 16px; border: 1px solid var(--shb-line); border-radius: 8px; padding: 4px 8px; background: transparent; color: inherit; }
 .shb-count { opacity: 0.6; font-size: 13px; }
 .shb-sheet-actions { display: flex; gap: 12px; align-items: center; }
 .shb-sheet-actions .shb-big-btn { flex: 1; margin: 0; animation: none; }
@@ -383,7 +416,9 @@
 .shb-admin-search { margin-bottom: 10px; }
 .shb-admin-total { margin: 4px 0 10px; font-size: 16px; font-weight: 700; color: var(--shb-ink); }
 .shb-admin-busy { font-size: 13px; font-weight: 400; opacity: 0.6; }
+/* dvh 同上面張 sheet 一樣：vh 喺手機 Safari 當成版嘢係全螢幕咁計，唔計條網址 bar。 */
 .shb-admin-list { min-height: 34vh; max-height: 40vh; overflow-y: auto; }
+.shb-admin-list { min-height: 34dvh; max-height: 40dvh; }
 .shb-admin-date { opacity: 0.6; }
 .shb-admin-pager {
   display: flex; align-items: center; justify-content: space-between;
@@ -444,6 +479,35 @@
 .shb-danger-row button:disabled { opacity: 0.6; }
 .shb-danger-yes { background: #a03030; color: var(--shb-paper); }
 .shb-danger-no { background: var(--shb-paper); color: inherit; box-shadow: 0 2px 0 rgba(90, 50, 30, 0.2); }
+
+/* 未寄出 —— 同私隱條款一樣，唔跟 32px 間線，喺頁入面自己捲。left 30px 一樣係
+   要避開 目錄 書籤（0–22px）。 */
+.shb-pend {
+  position: absolute; left: 30px; right: 22px; top: 54px; bottom: 30px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+.shb-pend-lead { margin: 0 0 12px; font-size: 13px; line-height: 1.7; opacity: 0.75; }
+.shb-pend-empty { margin: 0; font-size: 14px; opacity: 0.6; }
+.shb-pend-list { list-style: none; margin: 0; padding: 0; }
+.shb-pend-item {
+  padding: 10px 0; border-bottom: 1px dashed var(--shb-line);
+  display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 10px;
+}
+.shb-pend-what {
+  margin: 0; grid-column: 1; font-size: 15px; color: var(--shb-pencil);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shb-pend-why { margin: 2px 0 0; grid-column: 1; font-size: 12.5px; opacity: 0.7; line-height: 1.5; white-space: normal; }
+.shb-pend-dead .shb-pend-why { color: #a03030; opacity: 0.9; }
+.shb-pend-drop {
+  grid-column: 2; grid-row: 1 / span 2; align-self: center;
+  border: 2px solid var(--shb-line); background: transparent; color: inherit;
+  border-radius: 10px; padding: 6px 14px; font-size: 14px;
+}
+.shb-pend-drop:disabled { opacity: 0.5; }
+
+.shb-logout-warn { margin: 0 0 10px; font-size: 14px; line-height: 1.7; }
+.shb-logout-warn-hint { opacity: 0.7; font-size: 13px; }
 
 /* 細字 — the fine print scrolls inside the page rather than repaginating onto
    the ruled grid; endmatter in a real notebook is set small and dense too. */

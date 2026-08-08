@@ -7,12 +7,22 @@ import { fileURLToPath } from 'node:url';
 const GAMES_DIR = dirname(fileURLToPath(import.meta.url)); // portfolio/public/games
 const PUBLIC_DIR = resolve(GAMES_DIR, '..');               // portfolio/public
 
+// Live games: served from /games/<dir>/, each with its own precaching worker.
 const GAMES = [
   { dir: 'card-drawer', manifest: 'manifest.webmanifest' },
   { dir: 'connect4', manifest: 'manifest.webmanifest' },
   { dir: 'card-game', manifest: 'manifest.json' },
   { dir: 'math-memory', manifest: 'manifest.webmanifest' },
-  { dir: 'da-siu-yan', manifest: 'manifest.webmanifest' },
+];
+
+/* Games that have moved to their own repo + subdomain. What stays behind under
+   /games/<dir>/ is a redirect index.html and a TOMBSTONE sw.js whose only job
+   is to evict the cache-first worker returning players still hold — it has no
+   CACHE and no ASSETS by design. So they are excluded from every live-game
+   guard above and covered by the tombstone contract below instead. Retiring
+   another game is one line here. */
+const RETIRED = [
+  { dir: 'da-siu-yan', movedTo: 'https://da-siu-yan.hillmanchan.com/' },
 ];
 
 const read = (...p) => readFileSync(join(...p), 'utf8');
@@ -136,25 +146,40 @@ test('card-drawer: runtime references are precached (reverse drift guard)', () =
   }
 });
 
-test('da-siu-yan: runtime references are precached (reverse drift guard)', () => {
-  const assets = extractJsonConst(read(GAMES_DIR, 'da-siu-yan', 'sw.js'), 'ASSETS');
-  const html = read(GAMES_DIR, 'da-siu-yan', 'index.html');
-  const htmlRefs = [...html.matchAll(/(?:src|href)="([^"]+)"/g)]
-    .map((m) => m[1])
-    .filter((u) => !u.startsWith('http') && !u.startsWith('#'));
-  const js = read(GAMES_DIR, 'da-siu-yan', 'game.js');
-  const imports = [...js.matchAll(/from '\.\/([^']+)'/g)].map((m) => m[1]);
-  for (const ref of [...htmlRefs, ...imports]) {
-    assert.ok(assets.includes(`./${ref}`), `${ref} referenced at runtime but not in ASSETS`);
-  }
-  const voices = JSON.parse(read(GAMES_DIR, 'da-siu-yan', 'voice', 'manifest.json'));
-  for (const variant of Object.keys(voices)) {
-    for (const clip of voices[variant]) {
-      assert.ok(assets.includes(`./voice/${clip.file}`), `voice clip ${clip.file} not precached`);
-    }
-  }
-  assert.ok(assets.includes('./voice/manifest.json'), 'voice manifest not precached');
-});
+/* A retired game's sw.js is the ONLY thing that gets returning players off the
+   old cache-first worker they still hold — without it their browser serves the
+   dead game from cache forever and never sees the redirect. Every step below is
+   load-bearing, so pin all of them. */
+for (const game of RETIRED) {
+  const quoted = game.movedTo.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+  test(`${game.dir} (retired): service worker is a tombstone that evicts the old worker`, () => {
+    const sw = read(GAMES_DIR, game.dir, 'sw.js');
+    assert.match(sw, /addEventListener\('install',[^\n]*skipWaiting\(\)/,
+      'must skipWaiting on install, or the old worker stays in control');
+    assert.match(sw, /for \(const key of await caches\.keys\(\)\) await caches\.delete\(key\)/,
+      'must delete every cache key — a surviving cache serves the dead game forever');
+    assert.match(sw, /await self\.registration\.unregister\(\)/,
+      'must unregister itself once the caches are gone');
+    assert.match(sw, /self\.clients\.matchAll\(\{ type: 'window' \}\)/,
+      'must reach every open window');
+    assert.match(sw, /client\.navigate\(client\.url\)/,
+      'must reload open pages so the redirect index.html can run');
+    assert.ok(!/const (?:CACHE|ASSETS) =/.test(sw),
+      'a tombstone must never precache anything — cleanup is its whole job');
+  });
+
+  test(`${game.dir} (retired): index.html redirects and registers no service worker`, () => {
+    const html = read(GAMES_DIR, game.dir, 'index.html');
+    assert.match(html, new RegExp(`http-equiv="refresh" content="0;url=${quoted}"`),
+      'needs a meta refresh so the redirect survives JS being blocked');
+    assert.match(html, new RegExp(`location\\.replace\\('${quoted}'\\)`),
+      'needs the scripted redirect for the instant path');
+    assert.ok(html.includes(`href="${game.movedTo}"`), 'needs a clickable fallback link');
+    assert.ok(!/register\(/.test(html),
+      're-registering a worker here would resurrect the one that just unregistered itself');
+  });
+}
 
 test('connect4: runtime references are precached (reverse drift guard)', () => {
   const assets = extractJsonConst(read(GAMES_DIR, 'connect4', 'sw.js'), 'ASSETS');
@@ -210,6 +235,37 @@ test('shell: root service worker precaches the app shell', () => {
   assert.ok(sw.includes('/\\.[0-9a-f]{8}\\./'), 'shell SW must only cache hashed /static/ files');
   assert.match(sw, /req\.headers\.has\('range'\)/, 'shell SW must skip range requests');
   assert.match(sw, /text\/html/, 'shell SW must only cache HTML under the fallback key');
+});
+
+test('shell: root service worker caches Google Fonts via an explicit two-host allowlist', () => {
+  const sw = read(PUBLIC_DIR, 'sw.js');
+  const hosts = extractJsonConst(sw, 'FONT_HOSTS');
+  assert.deepEqual([...hosts].sort(), ['fonts.googleapis.com', 'fonts.gstatic.com'],
+    'the shell SW cross-origin exception must stay exactly these two font hosts');
+  assert.match(sw, /FONT_HOSTS\.includes\(url\.hostname\)/,
+    'fonts must be matched by exact hostname against the allowlist, never by pattern');
+  assert.match(sw, /mode: 'cors'/,
+    'the no-cors stylesheet must be re-fetched in cors mode so an opaque 404 is not cached as the font');
+});
+
+test('shell: root service worker never intercepts the API (cross-origin allowlist is fonts-only)', () => {
+  const sw = read(PUBLIC_DIR, 'sw.js');
+  const code = sw.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  const fontBranch = code.indexOf('FONT_HOSTS.includes(url.hostname)');
+  const crossOrigin = code.indexOf('url.origin !== self.location.origin');
+  const rangeGuard = code.indexOf("req.headers.has('range')");
+  assert.ok(crossOrigin > 0, 'shell SW must keep the cross-origin early return');
+  assert.ok(rangeGuard > 0 && rangeGuard < fontBranch, 'range requests must still bail before font handling');
+  assert.ok(fontBranch > 0 && fontBranch < crossOrigin,
+    'the font allowlist must sit before the cross-origin return, which still drops every other origin');
+
+  for (const host of extractJsonConst(sw, 'FONT_HOSTS')) {
+    assert.ok(host.startsWith('fonts.') && host.endsWith('.com'),
+      `${host} is not a font host — the shell SW must never cache another origin's responses`);
+  }
+  assert.ok(!/hillmanchan\.com/.test(code), 'shell SW must not special-case any API host');
+  assert.ok(!/['"`/]api\//.test(code), 'shell SW must never touch /api/ — those responses are per-user and authenticated');
 });
 
 test('shell: index.html registers /sw.js and maps game subdomains to /pwa/ manifests', () => {
