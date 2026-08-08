@@ -21,11 +21,32 @@ Cantonese-only grudge notebook: log 嬲爆事件 per friend, severity stamps (�
 
 **Real-book UI (2026-08-08):** the whole app is one fixed-size book — cover swings on auth state (Book.jsx), searchable 目錄 index, per-friend chapters, CJK pagination engine (paginate.js + geometry.js: 18 units/line on a 32px ruled grid; entries split mid-sentence across pages), pen-writing animation on save, （下頁仲有）corner marker. Geometry contract: `LINE_PX`/`H` block heights in geometry.js must mirror the fixed CSS block heights or the ink drifts off the rules.
 
+**書末 — settings/profile/legal (2026-08-09):** the last three pages of the book,
+appended to `sectionOrder` after the friend chapters as section id `'__back__'`,
+so the ordinary ‹ 上一頁 / 下一頁 › corners walk into them. Reached directly via
+管理書本 on the 目錄 footer (the superadmin link there is now 用戶一覽, to stop the
+two reading as the same thing). Page 1 個人檔案 (Google avatar/名/email/開簿日 +
+罪人/嬲爆事/找數卡 counts from `GET /api/me`, 登出, 撕爛本簿), page 2 私隱條款, page 3
+條款及細則. The legal copy is data in `legal.js`, rendered by `LegalDoc.jsx` both
+here and in a sheet linked from the **closed cover** — a privacy policy you can
+only read after logging in isn't one. Fine print does NOT use the 32px ruled
+grid: it scrolls inside `.shb-legal-page`, whose `left: 30px` clears the 目錄
+bookmark tab (0–22px) that would otherwise clip it.
+
+**撕爛本簿:** `DELETE /api/me` wipes every D1 row for the uid, then the client
+signs out (that order matters — `/api/state` upserts the user row, so refreshing
+in between resurrects an empty account). The shared Google account is
+deliberately **not** deleted; it carries paid System Design tiers and poker/casino
+data. That promise is made in three places — `legal.js`, the in-app confirm in
+`BackMatter.jsx`, and `siu-hei-bou-api/README.md` — keep them in sync.
+Tests: `npx react-scripts test --testPathPattern siu-hei-bou` (paginate,
+BackMatter, Book.nav — the last covers 書末 ordering + the delete flow).
+
 **Superadmin:** `GET /api/admin/users` on the Worker returns `{total, users:[{name,email,created_at}]}` — gated server-side on the *verified* token email matching the `SUPERADMIN_EMAIL` wrangler var (hillmanchan709@gmail.com) plus `email_verified`. The 管理 link on the 目錄 footer (AdminSheet.jsx) is a cosmetic client gate only; the Worker is the enforcement point. There is NO write path to superadmin — it lives solely in the Worker env, never in the database or client.
 
 | Piece | Where |
 |---|---|
-| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), Book.jsx (book shell: cover swings on auth, leaf flips, nav, pen ticker), IndexPage (目錄 + search), FriendChapter (chapter pages), paginate.js + geometry.js (32px ruled-line grid — LINE_PX/H must stay in sync with the CSS block heights), AddGrudgeSheet, PublicCardPage, SettingsSheet, svgs.jsx, firebase.js, api.js. Jest: `npx react-scripts test paginate` |
+| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), Book.jsx (book shell: cover swings on auth, leaf flips, nav, pen ticker), IndexPage (目錄 + search), FriendChapter (chapter pages), BackMatter.jsx + legal.js + LegalDoc.jsx (書末: 個人檔案/私隱/條款), paginate.js + geometry.js (32px ruled-line grid — LINE_PX/H must stay in sync with the CSS block heights), AddGrudgeSheet, PublicCardPage, SettingsSheet (per-friend, not app settings), svgs.jsx, firebase.js, api.js. Jest: `npx react-scripts test --testPathPattern siu-hei-bou` |
 | Backend | REPO ROOT `siu-hei-bou-api/` — Cloudflare Worker (`src/index.mjs` router, `auth.mjs` WebCrypto JWT verify, `db.mjs` SQL, `handlers.mjs`, `logic.mjs` pure), tests `npm test` (`node --test`) |
 | Database | Cloudflare D1 `siu-hei-bou-db` (id `67932535-b39a-4a1f-b7ae-a4fafc9b466d`) — tables users/friends/grudges/cards, schema in `siu-hei-bou-api/schema.sql` |
 | API | `https://siu-hei-bou-api.hillmanchan.com` (Workers custom domain) — `/api/*` Bearer Firebase ID token, `/public/cards/:token` no auth (responses field-projected, never leak uid) |

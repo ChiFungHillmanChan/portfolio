@@ -10,6 +10,8 @@ const ALLOWED_ORIGINS = [
 
 const ROUTES = [
   ['GET',    /^\/api\/state$/,                'getState',    []],
+  ['GET',    /^\/api\/me$/,                   'getMe',        []],
+  ['DELETE', /^\/api\/me$/,                   'deleteMe',     []],
   ['POST',   /^\/api\/friends$/,              'createFriend', []],
   ['PATCH',  /^\/api\/friends\/(\d+)$/,       'updateFriend', ['id']],
   ['DELETE', /^\/api\/friends\/(\d+)$/,       'deleteFriend', ['id']],

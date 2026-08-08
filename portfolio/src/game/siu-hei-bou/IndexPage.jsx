@@ -7,7 +7,7 @@ import { Magnifier } from './svgs';
 export default function IndexPage({
   friends, filtered, search, onSearch, pageIdx, linesPerPage,
   onSelect, onAddFriend, addBusy, onLogout, interactive,
-  ownerName, isAdmin, onAdmin,
+  ownerName, isAdmin, onAdmin, onBackMatter,
 }) {
   const [name, setName] = useState('');
   const slice = filtered === null ? null : filtered.slice(pageIdx * linesPerPage, (pageIdx + 1) * linesPerPage);
@@ -72,9 +72,12 @@ export default function IndexPage({
       </form>
 
       <footer className="shb-idx-foot">
+        <button type="button" className="shb-link" onClick={onBackMatter} disabled={!interactive}>
+          管理書本
+        </button>
         {isAdmin && (
           <button type="button" className="shb-link" onClick={onAdmin} disabled={!interactive}>
-            管理
+            用戶一覽
           </button>
         )}
         <button type="button" className="shb-link" onClick={onLogout} disabled={!interactive}>

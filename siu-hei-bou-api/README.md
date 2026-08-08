@@ -25,6 +25,8 @@ D1  siu-hei-bou-db         users / friends / grudges / cards  (schema.sql)
 | Route | Auth | Purpose |
 |---|---|---|
 | `GET /api/state` | Bearer | friends + open cards (also upserts the user row) |
+| `GET /api/me` | Bearer | 書末 profile — `{email, name, created_at, counts:{friends,grudges,cards}}` |
+| `DELETE /api/me` | Bearer | 撕爛本簿 — wipes every row this uid owns (see below) |
 | `POST/PATCH/DELETE /api/friends[/:id]` | Bearer | manage 罪人 |
 | `GET/POST/PATCH/DELETE /api/grudges[/:id]` | Bearer | manage 罪行紀錄 |
 | `POST /api/cards`, `POST /api/cards/:id/settle`, `GET /api/cards` | Bearer | 找數卡 lifecycle |
@@ -48,6 +50,24 @@ D1  siu-hei-bou-db         users / friends / grudges / cards  (schema.sql)
   verification uses Google's public keys, and `SUPERADMIN_EMAIL` is an email
   address, not a credential.
 
+### Account deletion (`DELETE /api/me`)
+
+`deleteMe` wipes `grudges → cards → friends → users` for the caller's uid in one
+`d1.batch()` (= one transaction, FK-safe order — the same order `deleteFriend`
+uses). The uid comes only from the verified token; nothing in the body or path
+can redirect it at another account.
+
+**The Firebase account is deliberately NOT deleted.** That Google account is
+shared across the whole of hillmanchan.com — System Design 教室 (including paid
+lifetime tiers), the poker hand recorder, the casino wallet. Deleting it here
+would destroy entitlements bought elsewhere, so 小氣簿 only removes what 小氣簿
+stores. The 私隱條款 (`portfolio/src/game/siu-hei-bou/legal.js`) states this
+explicitly, and the in-app confirm repeats it — keep all three in sync.
+
+After a successful wipe the client signs out immediately. That ordering matters:
+`GET /api/state` upserts the user row, so a refresh between delete and sign-out
+would resurrect an empty account.
+
 ## Develop / deploy
 
 ```bash
@@ -60,3 +80,11 @@ D1 database: `siu-hei-bou-db` (id `67932535-b39a-4a1f-b7ae-a4fafc9b466d`).
 Schema changes: edit `schema.sql`, apply with
 `npx wrangler d1 execute siu-hei-bou-db --remote --file schema.sql` (fresh DB)
 or an explicit `--command "ALTER TABLE …"` migration.
+
+Index migrations live in `sql/` as dated idempotent files (`CREATE INDEX IF NOT
+EXISTS`), mirrored into `schema.sql` so a fresh DB gets them at create time.
+Apply to the live DB before/with the deploy that needs them:
+
+```bash
+npx wrangler d1 execute siu-hei-bou-db --remote --file=sql/2026-08-09-cards-uid-index.sql
+```
