@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { matchRoute, makeRateLimiter } from '../src/index.mjs';
+import worker, { matchRoute, makeRateLimiter } from '../src/index.mjs';
 
 test('matchRoute maps every API route', () => {
   assert.deepEqual(matchRoute('GET', '/api/state'), { name: 'getState', params: {}, public: false });
@@ -20,6 +20,37 @@ test('matchRoute maps every API route', () => {
   assert.deepEqual(matchRoute('POST', '/public/cards/abc123/ack'), { name: 'publicAck', params: { token: 'abc123' }, public: true });
   assert.equal(matchRoute('GET', '/nope'), null);
   assert.equal(matchRoute('PUT', '/api/friends/7'), null);
+});
+
+// Nothing this API returns may sit in a shared cache. The unauthenticated error
+// paths matter as much as the authenticated ones: Cloudflare's "skip cache when
+// Authorization is present" rule does not cover them, and a stale 404 for a
+// not-yet-deployed route was observed being served from the edge.
+const call = (method, path, headers = {}) => worker.fetch(
+  new Request(`https://api.test${path}`, { method, headers }), {},
+);
+
+test('every response carries Cache-Control: no-store', async () => {
+  const notFound = await call('GET', '/api/nope');
+  assert.equal(notFound.status, 404);
+  assert.equal(notFound.headers.get('cache-control'), 'no-store');
+
+  // 401 path: an empty/malformed token is rejected before any network call
+  const unauth = await call('GET', '/api/me');
+  assert.equal(unauth.status, 401);
+  assert.equal(unauth.headers.get('cache-control'), 'no-store');
+
+  const badToken = await call('DELETE', '/api/me', { authorization: 'Bearer not.a.token' });
+  assert.equal(badToken.status, 401);
+  assert.equal(badToken.headers.get('cache-control'), 'no-store');
+});
+
+test('CORS preflight keeps its max-age and stays uncached-by-content', async () => {
+  const pre = await call('OPTIONS', '/api/me');
+  assert.equal(pre.status, 204);
+  // browser preflight cache is not a shared cache, and carries no body
+  assert.equal(pre.headers.get('Access-Control-Max-Age'), '86400');
+  assert.equal(pre.headers.get('Access-Control-Allow-Headers'), 'content-type,authorization');
 });
 
 test('rate limiter allows N per window then blocks, per IP', () => {

@@ -69,10 +69,18 @@ export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin') || '';
     const cors = corsHeaders(origin);
+    // no-store on EVERY response: /api/* is per-user and authenticated, so none
+    // of it may sit in a shared cache. Cloudflare already skips caching requests
+    // that carry an Authorization header, but the unauthenticated error paths
+    // are not covered by that — a stale 404 for a route that did not exist yet
+    // was served from the edge during a frontend-ahead-of-Worker deploy gap.
     const respond = (status, body) => new Response(JSON.stringify(body), {
-      status, headers: { 'content-type': 'application/json', ...cors },
+      status,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store', ...cors },
     });
 
+    // The preflight keeps Access-Control-Max-Age — that is the browser's own
+    // preflight cache, which is not a shared cache and carries no data.
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
 
     const url = new URL(request.url);
