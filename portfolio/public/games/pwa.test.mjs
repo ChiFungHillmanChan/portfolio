@@ -221,6 +221,15 @@ test('shell: index.html registers /sw.js and maps game subdomains to /pwa/ manif
     .map((f) => f.replace(/\.webmanifest$/, ''));
   assert.ok(manifests.length >= 4, 'expected a /pwa manifest per PWA game');
   assert.deepEqual(mapped.sort(), manifests.sort());
+
+  // The apple-touch-icon href is built in JS ('/games/' + sub + '/icon-192.png')
+  // rather than read from the manifest, so nothing else proves it resolves.
+  assert.match(html, /'\/games\/' \+ sub \+ '\/icon-192\.png'/);
+  for (const sub of mapped) {
+    const icon = join(GAMES_DIR, sub, 'icon-192.png');
+    assert.ok(existsSync(icon), `${sub}: apple-touch-icon /games/${sub}/icon-192.png is missing`);
+    assert.deepEqual(pngSize(icon), { width: 192, height: 192 }, `${sub}: apple-touch-icon must be 192x192`);
+  }
 });
 
 test('shell: subdomain install manifests are valid and icons exist', () => {
@@ -230,9 +239,16 @@ test('shell: subdomain install manifests are valid and icons exist', () => {
     assert.equal(m.scope, '/', `${f}: scope must be /`);
     assert.equal(m.display, 'standalone');
     assert.ok(m.name && m.short_name, `${f}: name/short_name required`);
+    const sizes = m.icons.map((i) => i.sizes);
+    assert.ok(sizes.includes('192x192') && sizes.includes('512x512'), `${f}: need 192 + 512 icons`);
     for (const icon of m.icons) {
       assert.ok(icon.src.startsWith('/'), `${f}: icon src must be root-absolute`);
-      assert.ok(existsSync(join(PUBLIC_DIR, icon.src.slice(1))), `${f}: missing icon ${icon.src}`);
+      const file = join(PUBLIC_DIR, icon.src.slice(1));
+      assert.ok(existsSync(file), `${f}: missing icon ${icon.src}`);
+      if (icon.type === 'image/png') {
+        const [w, h] = icon.sizes.split('x').map(Number);
+        assert.deepEqual(pngSize(file), { width: w, height: h }, `${f}: ${icon.src} is not ${icon.sizes}`);
+      }
     }
   }
 });
