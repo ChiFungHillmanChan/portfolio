@@ -21,7 +21,7 @@ Cantonese-only grudge notebook: log 嬲爆事件 per friend, severity stamps (�
 
 | Piece | Where |
 |---|---|
-| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), HomePage, FriendPage, AddGrudgeSheet, PublicCardPage, SettingsSheet, svgs.jsx, firebase.js, api.js |
+| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), Book.jsx (book shell: cover swings on auth, leaf flips, nav, pen ticker), IndexPage (目錄 + search), FriendChapter (chapter pages), paginate.js + geometry.js (32px ruled-line grid — LINE_PX/H must stay in sync with the CSS block heights), AddGrudgeSheet, PublicCardPage, SettingsSheet, svgs.jsx, firebase.js, api.js. Jest: `npx react-scripts test paginate` |
 | Backend | REPO ROOT `siu-hei-bou-api/` — Cloudflare Worker (`src/index.mjs` router, `auth.mjs` WebCrypto JWT verify, `db.mjs` SQL, `handlers.mjs`, `logic.mjs` pure), tests `npm test` (`node --test`) |
 | Database | Cloudflare D1 `siu-hei-bou-db` (id `67932535-b39a-4a1f-b7ae-a4fafc9b466d`) — tables users/friends/grudges/cards, schema in `siu-hei-bou-api/schema.sql` |
 | API | `https://siu-hei-bou-api.hillmanchan.com` (Workers custom domain) — `/api/*` Bearer Firebase ID token, `/public/cards/:token` no auth (responses field-projected, never leak uid) |
