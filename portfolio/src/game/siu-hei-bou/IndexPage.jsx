@@ -7,7 +7,7 @@ import { Magnifier } from './svgs';
 export default function IndexPage({
   friends, filtered, search, onSearch, pageIdx, linesPerPage,
   onSelect, onAddFriend, addBusy, onLogout, interactive,
-  ownerName, isAdmin, onAdmin, onBackMatter,
+  ownerName, isAdmin, onAdmin, onBackMatter, pendingCount, onPending,
 }) {
   const [name, setName] = useState('');
   const slice = filtered === null ? null : filtered.slice(pageIdx * linesPerPage, (pageIdx + 1) * linesPerPage);
@@ -51,7 +51,8 @@ export default function IndexPage({
         )}
         {(slice || []).map((f) => (
           <button
-            key={f.id} type="button" className="shb-line shb-idx-line"
+            key={f.id} type="button"
+            className={f.pending ? 'shb-line shb-idx-line shb-pending' : 'shb-line shb-idx-line'}
             onClick={() => onSelect(f.id)} disabled={!interactive}
           >
             <span className="shb-idx-swatch" style={{ background: f.colour }} aria-hidden="true" />
@@ -75,6 +76,15 @@ export default function IndexPage({
         <button type="button" className="shb-link" onClick={onBackMatter} disabled={!interactive}>
           管理書本
         </button>
+        {/* 有嘢寄唔出先至見到呢條 link —— 平時本簿唔應該提你有「同步」呢回事。 */}
+        {pendingCount > 0 && (
+          <button
+            type="button" className="shb-link shb-link-pending"
+            onClick={onPending} disabled={!interactive}
+          >
+            未寄出 ({pendingCount})
+          </button>
+        )}
         {isAdmin && (
           <button type="button" className="shb-link" onClick={onAdmin} disabled={!interactive}>
             用戶一覽

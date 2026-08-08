@@ -19,10 +19,31 @@ async function call(method, path, body) {
   return data;
 }
 
+// GET /api/state is the one conditional request in the app: the client keeps the
+// ETag in its IndexedDB mirror and a 304 means "your mirror is still correct".
+// Returns the envelope rather than the body, because 304 has no body and must stay
+// distinguishable from a book with nothing in it.
+async function callState(etag) {
+  const headers = {};
+  if (tokenGetter) headers.authorization = `Bearer ${await tokenGetter()}`;
+  if (etag) headers['if-none-match'] = etag;
+  const res = await fetch(`${API_BASE}/api/state`, { method: 'GET', headers });
+  if (res.status === 304) return { status: 304, etag, data: null };
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new ApiError(res.status, data.error || 'internal');
+  // Null unless the Worker sends Access-Control-Expose-Headers: ETag — in which
+  // case we simply never ask for a 304 again, rather than breaking.
+  return { status: res.status, etag: res.headers.get('etag'), data };
+}
+
 export const api = {
-  state: () => call('GET', '/api/state'),
+  // NOTE: unlike every other method, this returns { status, etag, data } — see above.
+  state: (etag) => callState(etag),
   me: () => call('GET', '/api/me'),
   deleteMe: () => call('DELETE', '/api/me'),
+  // Creates take an optional `client_id` in `v` — the idempotency key sync.js
+  // mints, so replaying a queued write returns the existing row instead of a
+  // duplicate. The body is passed through whole, so nothing here has to know.
   createFriend: (v) => call('POST', '/api/friends', v),
   updateFriend: (id, v) => call('PATCH', `/api/friends/${id}`, v),
   deleteFriend: (id) => call('DELETE', `/api/friends/${id}`),

@@ -76,5 +76,5 @@ test('an out-of-range page clamps instead of rendering blank', () => {
 test('the privacy page discloses the public share link and the admin user list', () => {
   render(<BackMatter pageIdx={1} user={USER} me={ME} interactive onIndex={jest.fn()} />);
   expect(screen.getByText(/唔使登入都入得/)).toBeInTheDocument();
-  expect(screen.getByText(/站長睇唔到你寫嘅罪行內容/)).toBeInTheDocument();
+  expect(screen.getByText(/你寫嘅嬲爆事.*站長一律睇唔到/)).toBeInTheDocument();
 });

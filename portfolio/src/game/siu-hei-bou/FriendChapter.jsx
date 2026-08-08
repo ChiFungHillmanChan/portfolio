@@ -12,11 +12,19 @@ function Gear() {
   );
 }
 
+// 未寄出嘅嘢用鉛筆寫（灰色），寄咗嘅先落墨。本簿自己講返自己嘅狀態，唔使 badge。
+const lineClass = (base, entry) => {
+  let cls = base;
+  if (entry.card_id) cls += ' shb-line-claimed';
+  if (entry.pending) cls += ' shb-pending';
+  return cls;
+};
+
 // One page of a friend's chapter. Page 0 carries the header, stamp card and card
 // box; continuation pages are almost all ruled lines. Entry lines are printed as
 // exact substrings from the pagination engine, one 32px div per ruled line.
 export default function ChapterPage({
-  chapter, pageIdx, geom, pen, interactive, busyCard,
+  chapter, pageIdx, geom, pen, interactive, busyCard, connected,
   onGear, onOpenCard, onShare, onSettle, onDeleteGrudge, onIndex,
 }) {
   const { friend, card, pages, stampH, seal, showBanner, showFullBtn, loaded } = chapter;
@@ -36,7 +44,7 @@ export default function ChapterPage({
     if (line.type === 'meta') {
       if (penning && pen.progress < 0) return <div key={i} className="shb-line" />;
       return (
-        <div key={i} className={line.entry.card_id ? 'shb-line shb-line-meta shb-line-claimed' : 'shb-line shb-line-meta'}>
+        <div key={i} className={lineClass('shb-line shb-line-meta', line.entry)}>
           <span className="shb-line-date">{line.entry.occurred_at}</span>
           <AngryFace level={line.entry.severity} size={22} />
           <span className="shb-line-fill" />
@@ -69,7 +77,7 @@ export default function ChapterPage({
     }
 
     return (
-      <div key={i} className={line.entry.card_id ? 'shb-line shb-line-text shb-line-claimed' : 'shb-line shb-line-text'}>
+      <div key={i} className={lineClass('shb-line shb-line-text', line.entry)}>
         {text}
         {penAt !== null && (
           <span className="shb-pen" style={{ left: penAt }} aria-hidden="true">
@@ -103,8 +111,14 @@ export default function ChapterPage({
 
           {showFullBtn && (
             <div className="shb-fullbtn-row">
-              <button type="button" className="shb-big-btn" onClick={onOpenCard} disabled={busyCard || !interactive}>
-                {busyCard ? '開緊⋯' : `開找數卡（${friend.reward}）`}
+              {/* 開卡要 server 派一條分享 link 同埋一次過收晒啲印，冇網真係做唔到，
+                  所以直接講明，唔好扮撳得。 */}
+              <button
+                type="button" className="shb-big-btn" onClick={onOpenCard}
+                disabled={busyCard || !interactive || !connected}
+              >
+                {!connected && '開卡要有網絡'}
+                {connected && (busyCard ? '開緊⋯' : `開找數卡（${friend.reward}）`)}
               </button>
             </div>
           )}
@@ -117,8 +131,14 @@ export default function ChapterPage({
                   : `張找數卡開咗喇（${card.stamp_total} 印）`}
               </p>
               <div className="shb-open-card-actions">
+                {/* send 俾佢 = copy 條 link，冇網一樣做得到，所以照開。 */}
                 <button type="button" onClick={() => onShare(card)} disabled={!interactive}>send 俾佢</button>
-                <button type="button" onClick={() => onSettle(card)} disabled={!interactive}>找咗數，一筆勾銷</button>
+                <button
+                  type="button" onClick={() => onSettle(card)}
+                  disabled={!interactive || !connected}
+                >
+                  {connected ? '找咗數，一筆勾銷' : '找數要有網絡'}
+                </button>
               </div>
             </div>
           )}

@@ -9,6 +9,7 @@ import AddGrudgeSheet from './AddGrudgeSheet';
 import SettingsSheet from './SettingsSheet';
 import AdminSheet, { clearAdminCache } from './AdminSheet';
 import BackMatter, { BACK_PAGES } from './BackMatter';
+import PendingPage from './PendingPage';
 import LegalSheet from './LegalDoc';
 import { LEGAL_DOCS } from './legal';
 
@@ -23,18 +24,24 @@ const reduceMotion = () =>
 
 // The physical book. Cover and pages are stacked layers in one fixed-size box, so
 // closed and open are exactly the same size; auth state alone swings the cover.
-export default function Book({ user, loginBusy, onLogin, onLogout, state, refresh, toast }) {
+//
+// 呢個 component 淨係識畫。`book` 已經係砌好嘅一本簿（server 嗰份 + 未寄出嗰啲），
+// 而所有寫入都係交返俾 onMutate 排隊 —— Book 唔知道乜嘢叫 sync。
+export default function Book({
+  user, loginBusy, onLogin, onLogout,
+  book, outbox, connected, onMutate, onDiscard, onWipeLocal, onForgetBook, refresh, toast,
+}) {
   const [geom, setGeom] = useState(computeGeom);
   const [nav, setNav] = useState({ section: 'index', page: 0 });
   const [leaf, setLeaf] = useState(null); // {dir:'fwd'|'back', nav, key}
   const [search, setSearch] = useState('');
-  const [grudgeMap, setGrudgeMap] = useState({});
   const [sheet, setSheet] = useState(null); // 'add' | 'settings' | 'admin'
   const [pen, setPen] = useState(null); // {friendId, entryId, progress, total}
   const [busyCard, setBusyCard] = useState(false);
   const [addBusy, setAddBusy] = useState(false);
   const [me, setMe] = useState(null);       // null=未攞 · {failed:true}=攞唔到
   const [deleting, setDeleting] = useState(false);
+  const [logoutWarn, setLogoutWarn] = useState(false); // 仲有嘢未寄出就登出？
   const [legalKey, setLegalKey] = useState(null); // 封面撳條款/私隱
   const leafRef = useRef(null);
   const leafKey = useRef(0);
@@ -48,23 +55,21 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
     return () => window.removeEventListener('resize', onResize);
   }, []);
 
-  const friends = state ? state.friends : null;
-  const openCards = useMemo(() => (state ? state.openCards : []), [state]);
+  const friends = book ? book.friends : null;
+  const cards = useMemo(() => (book ? book.cards : []), [book]);
+  // 找數卡：一個罪人最多一張未找嘅。settled 嗰啲淨係喺設定嗰度嘅「找數紀錄」出現。
+  const openCards = useMemo(() => cards.filter((c) => c.status !== 'settled'), [cards]);
+  const pending = useMemo(() => outbox || [], [outbox]);
 
-  const loadGrudges = useCallback(async (friendId) => {
-    try {
-      const list = await api.grudges(friendId);
-      setGrudgeMap((m) => ({ ...m, [friendId]: list }));
-    } catch {
-      toast('load 唔到，遲啲再試');
-    }
-  }, [toast]);
-
-  useEffect(() => {
-    if (user && nav.section !== 'index' && nav.section !== BACK && grudgeMap[nav.section] === undefined) {
-      loadGrudges(nav.section);
-    }
-  }, [user, nav.section, grudgeMap, loadGrudges]);
+  // 成本簿嘅嬲爆事一次過落嚟（server 嗰份 + 未寄出嗰啲），所以揭到邊章都唔使再攞。
+  const grudgesOf = useMemo(() => {
+    const map = new Map();
+    (book ? book.grudges : []).forEach((g) => {
+      const list = map.get(g.friend_id);
+      if (list) list.push(g); else map.set(g.friend_id, [g]);
+    });
+    return map;
+  }, [book]);
 
   // 個人檔案 只喺你真係揭到書末先攞 — 開簿唔使多一個 request。
   useEffect(() => {
@@ -73,18 +78,35 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
     }
   }, [user, nav.section, me]);
 
+  // 冇網嗰陣攞唔到個人檔案係正常嘅。有返網就當未攞過，唔好成日都掛住個「⋯」。
+  const wasConnected = useRef(connected);
+  useEffect(() => {
+    if (connected && !wasConnected.current) setMe(null);
+    wasConnected.current = connected;
+  }, [connected]);
+
+  // 一個喺冇網嗰陣寫低嘅罪人，寄咗出去之後個 id 會由 client_id 變成 server 派嘅
+  // 號碼。你啱啱睇緊佢嗰章嘅話就要跟住轉章，唔係嗰版會突然變咗白紙。個罪人真係
+  // 冇咗（另一部機刪咗）就退返去目錄。
+  useEffect(() => {
+    if (leaf || !friends || nav.section === 'index' || nav.section === BACK) return;
+    if (friends.some((f) => f.id === nav.section)) return;
+    const adopted = friends.find((f) => f.client_id && f.client_id === nav.section);
+    setNav(adopted ? { section: adopted.id, page: nav.page } : { section: 'index', page: 0 });
+  }, [leaf, friends, nav.section, nav.page]);
+
   const getChapter = useMemo(() => {
     const cache = new Map();
     return (friendId) => {
       if (!cache.has(friendId)) {
         const friend = (friends || []).find((f) => f.id === friendId);
         if (!friend) return null;
-        const card = (openCards || []).find((c) => c.friend_id === friendId) || null;
-        cache.set(friendId, buildChapter(friend, grudgeMap[friendId] ?? null, card, geom));
+        const card = openCards.find((c) => c.friend_id === friendId) || null;
+        cache.set(friendId, buildChapter(friend, grudgesOf.get(friendId) || [], card, geom));
       }
       return cache.get(friendId);
     };
-  }, [friends, openCards, grudgeMap, geom]);
+  }, [friends, openCards, grudgesOf, geom]);
 
   /* ---- page turning ---- */
 
@@ -139,11 +161,14 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
   const isChapter = nav.section !== 'index' && nav.section !== BACK;
   const activeChapter = isChapter ? getChapter(nav.section) : null;
 
+  // 未寄出 排喺書末最尾，所以佢出現或者消失都唔會推走你正喺度睇緊嗰頁。
+  const pendingPage = pending.length ? BACK_PAGES : -1;
+
   let pageCount;
   if (nav.section === 'index') {
     pageCount = Math.max(1, Math.ceil((filtered ? filtered.length : 0) / linesPerPage) || 1);
   } else if (nav.section === BACK) {
-    pageCount = BACK_PAGES;
+    pageCount = BACK_PAGES + (pending.length ? 1 : 0);
   } else {
     pageCount = activeChapter ? activeChapter.pages.length : 1;
   }
@@ -171,11 +196,13 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
 
   /* ---- actions ---- */
 
+  // 加罪人、記一筆、改設定、刪嘢 —— 全部係排隊寫落部機，唔使等網絡。
   const addFriend = async (name) => {
     setAddBusy(true);
     try {
-      await api.createFriend({ name, colour: COLOURS[(friends ? friends.length : 0) % COLOURS.length] });
-      await refresh();
+      await onMutate('createFriend', {
+        payload: { name, colour: COLOURS[(friends ? friends.length : 0) % COLOURS.length] },
+      });
     } catch {
       toast('加唔到，遲啲再試');
     } finally {
@@ -211,51 +238,87 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
     await share(card);
     try {
       await refresh();
-      await loadGrudges(friendId);
     } catch { /* list refresh best-effort */ }
     setBusyCard(false);
   };
 
-  const settleCard = async (card, friendId) => {
+  const settleCard = async (card) => {
     try {
       await api.settleCard(card.id);
       await refresh();
-      await loadGrudges(friendId);
       toast('一筆勾銷！');
     } catch { toast('搞唔掂，遲啲再試'); }
   };
 
-  const deleteGrudge = async (grudge, friendId) => {
+  const deleteGrudge = async (grudge) => {
     try {
-      await api.removeGrudge(grudge.id);
-      await refresh();
-      await loadGrudges(friendId);
+      await onMutate('deleteGrudge', { targetId: grudge.id });
     } catch { toast('刪唔到，遲啲再試'); }
   };
 
-  const onGrudgeSaved = async (friendId, created) => {
+  // 支筆跟住寫嘅係鉛筆稿：排咗隊就即刻上頁，唔使等 server 派 id 落嚟。
+  const onGrudgeSaved = async (friendId, values) => {
     setSheet(null);
-    await Promise.all([refresh(), loadGrudges(friendId)]);
-    if (created && created.id && !reduceMotion()) {
-      setPen({ friendId, entryId: created.id, progress: -1, total: unitLen(created.content || '') });
+    let queued;
+    try {
+      queued = await onMutate('createGrudge', { payload: { friend_id: friendId, ...values } });
+    } catch {
+      toast('記唔到，遲啲再試');
+      return;
+    }
+    const entryId = queued && queued.item ? queued.item.clientId : null;
+    if (entryId && !reduceMotion()) {
+      setPen({ friendId, entryId, progress: -1, total: unitLen(values.content || '') });
     }
   };
 
-  const handleLogout = () => {
-    onLogout();
+  const saveFriend = async (friendId, values) => {
+    await onMutate('updateFriend', { targetId: friendId, payload: values });
+  };
+
+  const deleteFriend = async (friendId) => {
+    await onMutate('deleteFriend', { targetId: friendId });
+  };
+
+  // UI 歸零 —— 幾時真係登出、幾時清部機嗰份，由下面兩個 flow 排次序。
+  const resetBook = () => {
     clearAdminCache();
     setNav({ section: 'index', page: 0 });
     setSearch('');
-    setGrudgeMap({});
     setSheet(null);
     setPen(null);
     setMe(null);          // never let the next account on this tab see this one's profile
     setDeleting(false);
+    setLogoutWarn(false);
   };
 
-  // 撕爛本簿 — wipe the D1 rows first, then sign out. That order matters: if the
-  // wipe fails we have signed nobody out and lost nothing, and once it succeeds
-  // signing out immediately stops /api/state from re-creating the users row.
+  // 合埋本簿 —— 私隱條款（legal.js §二）應承咗兩件事，兩件都要做到：
+  //   一、登出之後，本簿嘅內容唔會再留喺部機（共用電話就係為咗呢個）；
+  //   二、未寄出嗰啲嘢唔會就咁唔見咗，留喺部機等同一個帳戶下次登入再寄。
+  // 所以永遠淨係清個鏡，outbox 一律唔掂；有嘢未寄出就要話你知先，唔好靜雞雞
+  // 登出咗，等啲字困喺一個要重新登入先見返到嘅地方。
+  // 次序係緊要嘅：先真係登出，之後先清個鏡。倒轉嘅話，由清完到登出之間仲有一
+  // 剎那自動同步係行緊嘅，佢隨時再 pull 多次，成本簿即刻返晒嚟。
+  const signOutNow = async () => {
+    resetBook();
+    try {
+      await onLogout();
+    } catch { /* 登出唔到都要收返個 UI，唔好停喺一半 */ }
+    try {
+      await onForgetBook();
+    } catch { /* 清唔到都唔可以卡死喺度 */ }
+  };
+
+  const handleLogout = () => {
+    if (pending.length) { setLogoutWarn(true); return; }
+    signOutNow();
+  };
+
+  // 撕爛本簿 — D1 嗰邊清 → 登出 → 先清部機嗰份。三步嘅次序都係有理由嘅：
+  //   · server 行先：清唔到嘅話冇人登出過，亦都冇嘢蒸發咗，撳多次就得。
+  //   · 跟住登出：唔登出嘅話 /api/state 一 pull 就會再開返個 users row 出嚟。
+  //   · 部機最後：同登出唔同，呢度連未寄出嘅嘢都要清 —— 撕爛咗嘅簿唔應該仲有
+  //     半截喺部機度等有網再寄返上去。
   const deleteEverything = async () => {
     setDeleting(true);
     try {
@@ -266,7 +329,13 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
       return;
     }
     toast('本簿撕爛晒喇，多謝你用過');
-    handleLogout();
+    resetBook();
+    try {
+      await onLogout();          // 撕完唔使再問「有嘢未寄出喎」——已經冇簿好寄
+    } catch { /* 同上 */ }
+    try {
+      await onWipeLocal();       // 鏡同未寄出嘅嘢一次過清，同登出唔同
+    } catch { /* server 已經冇嘢，部機嗰份跟住登出都會冇人再讀 */ }
   };
 
   /* ---- pen writing ---- */
@@ -324,16 +393,26 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
           onAddFriend={addFriend} addBusy={addBusy}
           onLogout={handleLogout} interactive={interactive}
           ownerName={user && user.displayName ? user.displayName : ''}
-          isAdmin={!!user && user.email === SUPERADMIN_EMAIL}
+          isAdmin={!!user && user.email === SUPERADMIN_EMAIL && connected}
           onAdmin={() => setSheet('admin')}
           onBackMatter={() => flipToAuto({ section: BACK, page: 0 })}
+          pendingCount={pending.length}
+          onPending={() => flipToAuto({ section: BACK, page: pendingPage })}
         />
       );
     }
     if (loc.section === BACK) {
+      if (pendingPage >= 0 && loc.page >= pendingPage) {
+        return (
+          <PendingPage
+            items={pending} onDiscard={onDiscard} interactive={interactive}
+            onIndex={() => flipToAuto({ section: 'index', page: 0 })}
+          />
+        );
+      }
       return (
         <BackMatter
-          pageIdx={loc.page} user={user} me={me} interactive={interactive}
+          pageIdx={loc.page} user={user} me={me} interactive={interactive} connected={connected}
           onLogout={handleLogout} onDeleteAll={deleteEverything} deleting={deleting}
           onGoPage={(p) => flipToAuto({ section: BACK, page: p })}
           onIndex={() => flipToAuto({ section: 'index', page: 0 })}
@@ -346,12 +425,12 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
       <ChapterPage
         chapter={chapter} pageIdx={loc.page} geom={geom}
         pen={pen && pen.friendId === loc.section ? pen : null}
-        interactive={interactive} busyCard={busyCard}
+        interactive={interactive} busyCard={busyCard} connected={connected}
         onGear={() => setSheet('settings')}
         onOpenCard={() => openCardNow(loc.section)}
         onShare={(card) => share(card)}
-        onSettle={(card) => settleCard(card, loc.section)}
-        onDeleteGrudge={(g) => deleteGrudge(g, loc.section)}
+        onSettle={(card) => settleCard(card)}
+        onDeleteGrudge={(g) => deleteGrudge(g)}
         onIndex={() => flipToAuto({ section: 'index', page: 0 })}
       />
     );
@@ -401,7 +480,7 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
           <div className="shb-bcover-frontface">
             <CoverFront
               onLogin={onLogin} busy={loginBusy} loading={user === undefined}
-              onLegal={setLegalKey}
+              connected={connected} onLegal={setLegalKey}
             />
           </div>
           <div className="shb-bcover-backface" />
@@ -417,12 +496,33 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
         <AddGrudgeSheet
           friend={activeFriend}
           onClose={() => setSheet(null)}
-          onSaved={(created) => onGrudgeSaved(activeFriend.id, created)}
-          toast={toast}
+          onSaved={(values) => onGrudgeSaved(activeFriend.id, values)}
         />
       )}
       {sheet === 'admin' && (
         <AdminSheet onClose={() => setSheet(null)} />
+      )}
+      {logoutWarn && (
+        <div className="shb-sheet-mask" onClick={() => setLogoutWarn(false)}>
+          <div className="shb-sheet" onClick={(e) => e.stopPropagation()}>
+            <h3>仲有 {pending.length} 樣嘢未寄出</h3>
+            <p className="shb-logout-warn">
+              登出之後，要下次喺呢部機用返同一個帳戶登入，先寄得到。
+              嗰啲嘢會留喺部機，唔會就咁唔見咗；本簿其他內容就會喺呢部機度清走。
+            </p>
+            <p className="shb-logout-warn shb-logout-warn-hint">
+              想而家寄出嘅話，撳「唔登住」，等有網絡佢哋就會自己寄。
+            </p>
+            <div className="shb-sheet-actions">
+              <button type="button" className="shb-link" onClick={() => setLogoutWarn(false)}>
+                唔登住
+              </button>
+              <button type="button" className="shb-big-btn" onClick={signOutNow}>
+                照登出
+              </button>
+            </div>
+          </div>
+        </div>
       )}
       {legalKey && (
         <LegalSheet doc={LEGAL_DOCS[legalKey]} onClose={() => setLegalKey(null)} />
@@ -430,7 +530,10 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
       {sheet === 'settings' && activeFriend && (
         <SettingsSheet
           friend={activeFriend} onClose={() => setSheet(null)}
-          refresh={refresh} toast={toast}
+          cards={cards.filter((c) => c.friend_id === activeFriend.id)}
+          onSave={(values) => saveFriend(activeFriend.id, values)}
+          onDelete={() => deleteFriend(activeFriend.id)}
+          toast={toast}
           onDeleted={() => { setSheet(null); setNav({ section: 'index', page: 0 }); }}
         />
       )}

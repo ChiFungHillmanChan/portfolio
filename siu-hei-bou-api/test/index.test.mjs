@@ -1,6 +1,8 @@
-import { test } from 'node:test';
+import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { matchRoute, makeRateLimiter } from '../src/index.mjs';
+import { makeDb } from '../src/db.mjs';
+import { makeSqliteD1 } from './helpers/d1-sqlite.mjs';
 
 test('matchRoute maps every API route', () => {
   assert.deepEqual(matchRoute('GET', '/api/state'), { name: 'getState', params: {}, public: false });
@@ -50,7 +52,80 @@ test('CORS preflight keeps its max-age and stays uncached-by-content', async () 
   assert.equal(pre.status, 204);
   // browser preflight cache is not a shared cache, and carries no body
   assert.equal(pre.headers.get('Access-Control-Max-Age'), '86400');
-  assert.equal(pre.headers.get('Access-Control-Allow-Headers'), 'content-type,authorization');
+  // if-none-match must be allowed or the conditional GET dies at the preflight,
+  // and ETag must be exposed or JS cross-origin cannot read it back.
+  assert.equal(pre.headers.get('Access-Control-Allow-Headers'), 'content-type,authorization,if-none-match');
+  assert.equal(pre.headers.get('Access-Control-Expose-Headers'), 'ETag');
+});
+
+/* ---- GET /api/state ETag round-trip ----
+   Goes through the real auth path: index.mjs calls verifyFirebaseToken with its
+   own defaults, so the test mints an RS256 token with a throwaway key pair and
+   stubs the JWKS fetch, rather than putting a bypass seam in production code. */
+
+const PROJECT = 'system-design-c84d3';
+const ORIGIN = 'https://siu-hei-bou.hillmanchan.com';
+const enc = (obj) => Buffer.from(JSON.stringify(obj)).toString('base64url');
+
+let token;
+
+before(async () => {
+  const keyPair = await crypto.subtle.generateKey(
+    { name: 'RSASSA-PKCS1-v1_5', modulusLength: 2048, publicExponent: new Uint8Array([1, 0, 1]), hash: 'SHA-256' },
+    true, ['sign', 'verify'],
+  );
+  const jwk = await crypto.subtle.exportKey('jwk', keyPair.publicKey);
+  const jwks = { keys: [{ ...jwk, kid: 'test-kid', alg: 'RS256', use: 'sig' }] };
+  globalThis.fetch = async () => new Response(JSON.stringify(jwks), { headers: { 'content-type': 'application/json' } });
+
+  const nowSec = Math.floor(Date.now() / 1000);
+  const signingInput = `${enc({ alg: 'RS256', kid: 'test-kid', typ: 'JWT' })}.${enc({
+    iss: `https://securetoken.google.com/${PROJECT}`, aud: PROJECT,
+    sub: 'uid-123', email: 'a@b.com', name: '阿明', email_verified: true,
+    iat: nowSec - 10, exp: nowSec + 3600,
+  })}`;
+  const sig = await crypto.subtle.sign('RSASSA-PKCS1-v1_5', keyPair.privateKey, new TextEncoder().encode(signingInput));
+  token = `${signingInput}.${Buffer.from(sig).toString('base64url')}`;
+});
+
+const getState = (env, headers = {}) => worker.fetch(new Request('https://api.test/api/state', {
+  headers: { authorization: `Bearer ${token}`, origin: ORIGIN, ...headers },
+}), env);
+
+test('GET /api/state carries an ETag and answers If-None-Match with a bodyless 304', async () => {
+  const env = { DB: makeSqliteD1() };
+
+  const fresh = await getState(env);
+  assert.equal(fresh.status, 200);
+  const etag = fresh.headers.get('etag');
+  assert.match(etag, /^"[0-9a-f]{64}"$/);
+  assert.equal(fresh.headers.get('cache-control'), 'no-store');
+  assert.deepEqual(Object.keys(await fresh.json()).sort(), ['cards', 'friends', 'grudges', 'openCards']);
+
+  const unchanged = await getState(env, { 'if-none-match': etag });
+  assert.equal(unchanged.status, 304);
+  assert.equal(await unchanged.text(), '');                       // 304 carries no body
+  assert.equal(unchanged.headers.get('etag'), etag);
+  assert.equal(unchanged.headers.get('cache-control'), 'no-store');
+  // without these the browser hides the 304 from JS and the pull silently fails
+  assert.equal(unchanged.headers.get('Access-Control-Allow-Origin'), ORIGIN);
+  assert.equal(unchanged.headers.get('Access-Control-Expose-Headers'), 'ETag');
+
+  // a stale etag is not a 304
+  const stale = await getState(env, { 'if-none-match': '"deadbeef"' });
+  assert.equal(stale.status, 200);
+});
+
+test('the ETag follows the content, not the request', async () => {
+  const env = { DB: makeSqliteD1() };
+  const before1 = (await getState(env)).headers.get('etag');
+
+  await makeDb(env.DB).createFriend('uid-123', { name: '阿明', colour: '#e8a0a0', threshold: 10, reward: '請食飯' });
+
+  const after = await getState(env, { 'if-none-match': before1 });
+  assert.equal(after.status, 200);                                 // book changed → full body
+  assert.notEqual(after.headers.get('etag'), before1);
+  assert.equal((await after.json()).friends.length, 1);
 });
 
 test('rate limiter allows N per window then blocks, per IP', () => {

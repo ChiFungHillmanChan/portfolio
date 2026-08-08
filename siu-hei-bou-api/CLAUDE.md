@@ -26,6 +26,36 @@ Cloudflare Worker + D1 for 小氣簿. Full architecture/endpoint/security detail
   plan is a bill, not just a latency problem. New indexes go in BOTH
   `schema.sql` and a dated idempotent file under `sql/`.
 
+## Offline writes (`client_id`)
+
+The frontend queues mutations in IndexedDB and replays them, so **creates must be
+idempotent** — see `docs/superpowers/specs/2026-08-08-siu-hei-bou-offline-sync-design.md`.
+
+- `friends.client_id` / `grudges.client_id` are client-minted UUIDs, validated
+  for shape in `logic.mjs` and optional (older clients omit them). Dedup is
+  `UNIQUE(uid, client_id)`, so one account's key can never touch another's.
+- `createFriend`/`createGrudge` upsert on that key. Two clauses look redundant
+  and are not: the index is **partial**, so `ON CONFLICT` must repeat
+  `WHERE client_id IS NOT NULL` or SQLite rejects the statement outright; and
+  `DO UPDATE SET client_id = excluded.client_id` is a deliberate no-op whose only
+  job is to make `RETURNING` fire on the retry, since `DO NOTHING` returns no row
+  and the client would never learn its server id. Both are pinned by tests.
+- An UPDATE must never carry `client_id` into its patch — `validateFriend`/
+  `validateGrudge` validate it in partial mode and then drop it.
+- `GET /api/state` returns the whole book (`friends`, `openCards`, `grudges`,
+  `cards`) and is the only etagged route: it is SHA-256'd and answers
+  `If-None-Match` with a bodyless 304. `if-none-match` in
+  `Access-Control-Allow-Headers` and `Access-Control-Expose-Headers: ETag` are
+  both load-bearing — drop either and the conditional GET dies at the preflight
+  or the etag is invisible to JS. `cache-control: no-store` stays on everything;
+  IndexedDB is the cache, not the browser.
+- `friends`/`openCards` in that response are **append-only**. The deployed
+  frontend reads them, and the Worker ships before the frontend does.
+
+`test/helpers/d1-sqlite.mjs` runs the real `db.mjs` SQL against the real
+`schema.sql` via `node:sqlite`, for behaviour that lives inside the SQL itself.
+Reach for it instead of a stub db whenever a stub would only prove the stub.
+
 ## Deploy
 
 ```bash
