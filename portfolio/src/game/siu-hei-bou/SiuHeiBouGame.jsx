@@ -1,9 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { getFirebase } from './firebase';
 import { api, setTokenGetter } from './api';
-import CoverPage from './CoverPage';
-import HomePage from './HomePage';
-import FriendPage from './FriendPage';
+import Book from './Book';
 import PublicCardPage from './PublicCardPage';
 import './siuHeiBouStyles.css';
 
@@ -27,7 +25,6 @@ export default function SiuHeiBouGame() {
   const [state, setState] = useState(() => {
     try { return JSON.parse(localStorage.getItem('shb-state')) || null; } catch { return null; }
   });
-  const [friendId, setFriendId] = useState(null);
   const [toastMsg, setToastMsg] = useState(null);
   const [loginBusy, setLoginBusy] = useState(false);
 
@@ -39,7 +36,7 @@ export default function SiuHeiBouGame() {
       link.href = FONT_HREF;
       document.head.appendChild(link);
     }
-    const onPop = () => { setRoute(parsePath()); setFriendId(null); };
+    const onPop = () => setRoute(parsePath());
     window.addEventListener('popstate', onPop);
     return () => window.removeEventListener('popstate', onPop);
   }, []);
@@ -91,33 +88,18 @@ export default function SiuHeiBouGame() {
     await signOut(auth);
     setState(null);
     localStorage.removeItem('shb-state');
-    setFriendId(null);
   }, []);
-
-  const friend = useMemo(
-    () => (state && friendId ? state.friends.find((f) => f.id === friendId) || null : null),
-    [state, friendId],
-  );
-
-  let content;
-  if (route.page === 'card') {
-    content = <PublicCardPage token={route.token} />;
-  } else if (user === undefined) {
-    content = <div className="shb-loading">開緊本簿⋯</div>;
-  } else if (!user) {
-    content = <CoverPage onLogin={login} busy={loginBusy} />;
-  } else if (friend) {
-    content = (
-      <FriendPage friend={friend} openCards={state ? state.openCards : []}
-        onBack={() => setFriendId(null)} refresh={refresh} toast={toast} />
-    );
-  } else {
-    content = <HomePage state={state} onSelect={setFriendId} refresh={refresh} toast={toast} onLogout={logout} />;
-  }
 
   return (
     <div className="shb-root">
-      {content}
+      {route.page === 'card' ? (
+        <PublicCardPage token={route.token} />
+      ) : (
+        <Book
+          user={user} loginBusy={loginBusy} onLogin={login} onLogout={logout}
+          state={state} refresh={refresh} toast={toast}
+        />
+      )}
       {toastMsg && <div className="shb-toast">{toastMsg}</div>}
     </div>
   );
