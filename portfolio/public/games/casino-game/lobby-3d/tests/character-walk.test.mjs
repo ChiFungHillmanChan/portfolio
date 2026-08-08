@@ -84,7 +84,7 @@ function makeTickApp() {
   return app;
 }
 
-test('walkIn: enters from local -x facing the travel direction, arrives at its post at stride speed, settles yaw, resolves, and releases its frame hook', async () => {
+test('walkIn: default entry 2.4m west, faces the travel direction, arrives at its post at stride speed, settles yaw, resolves, and releases its frame hook', async () => {
   const app = makeTickApp();
   let impl;
   const root = new CTX_THREE.Group();
@@ -97,15 +97,15 @@ test('walkIn: enters from local -x facing the travel direction, arrives at its p
   const postX = impl.group.position.x;
 
   const p = impl.walkIn();
-  assert.ok(Math.abs(impl.group.position.x - (postX - 3.2)) < 1e-6,
-    'walkIn teleports to the entry point 3.2m down the pit lane (local -x)');
+  assert.ok(Math.abs(impl.group.position.x - (postX - 2.4)) < 1e-6,
+    'walkIn teleports to the default entry point 2.4m down the pit lane (world -x, identity parent)');
   assert.ok(Math.abs(impl.group.rotation.y - Math.PI / 2) < 1e-6,
     'the dealer faces +x (the travel direction) while walking');
   assert.equal(app.hookCount(), baseline + 1, 'the walk holds exactly one extra frame hook');
 
   // mid-walk probe: after ~1s at 1.25 m/s the dealer has covered ~1.25m
   for (let i = 0; i < 10; i++) { mockNow += 100; app.tick(0.1); }
-  const covered = impl.group.position.x - (postX - 3.2);
+  const covered = impl.group.position.x - (postX - 2.4);
   assert.ok(covered > 1.0 && covered < 1.5,
     `~1.25m covered after 1s of walking (got ${covered.toFixed(2)}m)`);
 
@@ -121,6 +121,45 @@ test('walkIn: enters from local -x facing the travel direction, arrives at its p
   assert.ok(Math.abs(impl.group.position.x - postX) < 1e-6, 'dealer ends exactly at its post');
   assert.ok(Math.abs(impl.group.rotation.y) < 1e-6, 'dealer ends facing the table again');
   assert.equal(app.hookCount(), baseline, 'the walk frame hook is released — no leak');
+});
+
+test('walkIn on a rotated table: a world-space [0, 2.2] entry starts 2.2m SOUTH of the post in world coords and walks back facing north — never the old through-the-tote local -x path', async () => {
+  const app = makeTickApp();
+  let impl;
+  // roulette layout: table group rotated -π/2, dealer root inside it
+  const tableG = new CTX_THREE.Group();
+  tableG.rotation.y = -Math.PI / 2;
+  const root = new CTX_THREE.Group();
+  tableG.add(root);
+  CTX_CASINO.character.attach(app, root, { seed: 'walk-rotated' }, (i) => { impl = i; });
+
+  mockNow = 0;
+  impl.setIdle(app);
+  tableG.updateMatrixWorld(true);
+  const postW = impl.group.getWorldPosition(new CTX_THREE.Vector3());
+
+  const p = impl.walkIn([0, 2.2]);   // world-space: enter from the aisle (south)
+  tableG.updateMatrixWorld(true);
+  const enterW = impl.group.getWorldPosition(new CTX_THREE.Vector3());
+  assert.ok(Math.abs(enterW.x - postW.x) < 1e-6 && Math.abs(enterW.z - (postW.z + 2.2)) < 1e-6,
+    `entry point is exactly 2.2m south of the post in WORLD space (got dx=${(enterW.x - postW.x).toFixed(3)} dz=${(enterW.z - postW.z).toFixed(3)})`);
+  // facing: the group's world forward (+z local) must point north (world -z)
+  const fwd = new CTX_THREE.Vector3(0, 0, 1)
+    .applyQuaternion(impl.group.getWorldQuaternion(new CTX_THREE.Quaternion()));
+  assert.ok(fwd.z < -0.99, `dealer faces its travel direction, world -z (got fwd.z=${fwd.z.toFixed(3)})`);
+
+  let resolved = false;
+  p.then(() => { resolved = true; });
+  for (let i = 0; i < 200 && !resolved; i++) {
+    mockNow += 50;
+    app.tick(0.05);
+    await Promise.resolve();
+  }
+  assert.ok(resolved, 'rotated walkIn resolves');
+  tableG.updateMatrixWorld(true);
+  const endW = impl.group.getWorldPosition(new CTX_THREE.Vector3());
+  assert.ok(Math.abs(endW.x - postW.x) < 1e-6 && Math.abs(endW.z - postW.z) < 1e-6,
+    'dealer ends exactly at its post (world)');
 });
 
 test('walkIn: a roomGen change mid-walk cancels — snaps to post, resolves, releases the hook', async () => {
