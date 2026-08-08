@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { api, SHARE_BASE } from './api';
 import { AngryFace, StampSeal } from './svgs';
 import AddGrudgeSheet from './AddGrudgeSheet';
+import SettingsSheet from './SettingsSheet';
 
 function BackChevron() {
   return (
@@ -14,6 +15,7 @@ function BackChevron() {
 export default function FriendPage({ friend, openCards, onBack, refresh, toast }) {
   const [grudges, setGrudges] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [busyCard, setBusyCard] = useState(false);
 
   const load = useCallback(async () => {
@@ -74,6 +76,12 @@ export default function FriendPage({ friend, openCards, onBack, refresh, toast }
         <button type="button" className="shb-back" onClick={onBack} aria-label="返去名單"><BackChevron /></button>
         <h2>{friend.name}</h2>
         <span className="shb-friend-count">{friend.stamps}/{friend.threshold} 印</span>
+        <button type="button" className="shb-gear" aria-label="設定" onClick={() => setShowSettings(true)}>
+          <svg width="20" height="20" viewBox="0 0 32 32" aria-hidden="true">
+            <path d="M6 26 L20 6 L26 10 L12 30 L5 31 Z M18 9 L23 13"
+              fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinejoin="round" strokeLinecap="round" />
+          </svg>
+        </button>
       </header>
 
       {nearly && <div className="shb-banner">就快滿喇，{friend.name} 小心啲⋯</div>}
@@ -130,6 +138,11 @@ export default function FriendPage({ friend, openCards, onBack, refresh, toast }
           onSaved={async () => { setShowAdd(false); await refresh(); await load(); }}
           toast={toast}
         />
+      )}
+
+      {showSettings && (
+        <SettingsSheet friend={friend} onClose={() => setShowSettings(false)}
+          refresh={refresh} toast={toast} onDeleted={onBack} />
       )}
     </div>
   );
