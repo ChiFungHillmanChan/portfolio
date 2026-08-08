@@ -80,13 +80,14 @@ export default {
     if (!route.public) {
       const header = request.headers.get('Authorization') || '';
       const token = header.startsWith('Bearer ') ? header.slice(7) : '';
+      let user;
       try {
-        const user = await verifyFirebaseToken(token);
-        ctx.uid = user.uid;
-        if (route.name === 'getState') await ctx.db.upsertUser(user.uid, user.email, user.name);
+        user = await verifyFirebaseToken(token);
       } catch {
         return respond(401, { error: 'unauthorized' });
       }
+      ctx.uid = user.uid;
+      ctx.user = user;
     } else if (route.name === 'publicAck') {
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
       if (!ackAllowed(ip)) return respond(429, { error: 'too-fast' });
@@ -99,6 +100,7 @@ export default {
     const query = Object.fromEntries(url.searchParams);
 
     try {
+      if (route.name === 'getState') await ctx.db.upsertUser(ctx.user.uid, ctx.user.email, ctx.user.name);
       const result = await handlers[route.name](ctx, { params: route.params, body, query });
       return respond(result.status, result.body);
     } catch (e) {
