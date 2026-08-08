@@ -60,7 +60,7 @@ export const handlers = {
     const open = await db.listOpenGrudges(uid, friend.id);
     const stamps = stampSum(open);
     if (!canOpenCard(stamps, friend.threshold)) return err(409, 'threshold-not-met');
-    return ok(await db.openCard(uid, friend, genShareToken(), stamps));
+    return ok(await db.openCard(uid, friend, genShareToken(), stamps, open.map((g) => g.id)));
   },
   settleCard: async ({ db, uid }, { params }) => {
     const row = await db.settleCard(uid, Number(params.id));

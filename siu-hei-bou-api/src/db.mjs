@@ -47,13 +47,15 @@ export function makeDb(d1) {
     deleteGrudge: (uid, id) => d1.prepare(
       `DELETE FROM grudges WHERE id = ?1 AND uid = ?2 AND card_id IS NULL`).bind(id, uid).run(),
 
-    openCard: async (uid, friend, token, stampTotal) => {
+    openCard: async (uid, friend, token, stampTotal, grudgeIds) => {
       // batch = one transaction in D1, so card insert + grudge claim are atomic.
+      const idPh = grudgeIds.map((_, i) => `?${i + 4}`).join(', ');
       await d1.batch([
         d1.prepare(`INSERT INTO cards (share_token, uid, friend_id, stamp_total, reward)
                     VALUES (?1, ?2, ?3, ?4, ?5)`).bind(token, uid, friend.id, stampTotal, friend.reward),
         d1.prepare(`UPDATE grudges SET card_id = (SELECT id FROM cards WHERE share_token = ?1)
-                    WHERE uid = ?2 AND friend_id = ?3 AND card_id IS NULL`).bind(token, uid, friend.id),
+                    WHERE uid = ?2 AND friend_id = ?3 AND card_id IS NULL AND id IN (${idPh})`)
+          .bind(token, uid, friend.id, ...grudgeIds),
       ]);
       return first(d1.prepare(`SELECT * FROM cards WHERE share_token = ?1`).bind(token));
     },

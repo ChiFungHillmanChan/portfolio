@@ -42,21 +42,22 @@ test('updateGrudge refuses claimed grudges', async () => {
 });
 
 test('openCard enforces threshold and claims grudges', async () => {
-  const grudges = [{ severity: 3 }, { severity: 3 }, { severity: 3 }];
+  const grudges = [{ id: 10, severity: 3 }, { id: 11, severity: 3 }, { id: 12, severity: 3 }];
   let opened;
   const db = {
     getFriend: async () => FRIEND,
     listOpenGrudges: async () => grudges,
-    openCard: async (uid, friend, token, total) => { opened = { token, total }; return { id: 20, share_token: token, stamp_total: total, status: 'open' }; },
+    openCard: async (uid, friend, token, total, grudgeIds) => { opened = { token, total, grudgeIds }; return { id: 20, share_token: token, stamp_total: total, status: 'open' }; },
   };
   const notYet = await handlers.openCard({ db, uid: 'u1' }, { body: { friend_id: 3 } });
   assert.equal(notYet.status, 409);
   assert.equal(notYet.body.error, 'threshold-not-met');
-  grudges.push({ severity: 1 });  // now 10 stamps
+  grudges.push({ id: 13, severity: 1 });  // now 10 stamps
   const res = await handlers.openCard({ db, uid: 'u1' }, { body: { friend_id: 3 } });
   assert.equal(res.status, 200);
   assert.match(opened.token, /^[A-Za-z0-9_-]{24}$/);
   assert.equal(opened.total, 10);
+  assert.deepEqual(opened.grudgeIds, [10, 11, 12, 13]);
 });
 
 test('publicCard 404s on bad token and returns card on good token', async () => {
