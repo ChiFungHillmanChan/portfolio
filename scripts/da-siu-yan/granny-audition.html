@@ -1,0 +1,462 @@
+<!--
+  Dev-only tool. Picks the granny voice for the yue-HK Cloud TTS route.
+
+  Chirp3-HD voices accept no style prompt and no SSML, so the character that
+  the Gemini pipeline got from 「把聲又嗲又惡」in its prompt has to come from
+  (a) choosing the right base voice and (b) ffmpeg post-processing. This page
+  auditions both, against the granny currently shipped as the target.
+
+  Generate the material first, then serve from the repo root:
+
+    node scripts/da-siu-yan/gen-granny-audition.mjs
+    python3 -m http.server 8899
+
+  Then open:
+
+    http://localhost:8899/scripts/da-siu-yan/granny-audition.html
+
+  Everything comes from compare/audition.json so the page cannot drift from
+  what was generated. Picks save to localStorage.
+-->
+<title>打小人 — 婆婆聲揀選</title>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<style>
+  :root {
+    --smoke: #14100e;
+    --smoke-2: #1e1815;
+    --paper: #e8dcc4;
+    --paper-edge: #cbbb99;
+    --ink: #241d17;
+    --ink-soft: #6b6252;
+    --vermilion: #c6301e;
+    --vermilion-lt: #e8503c;
+    --gold: #a8802c;
+    --gold-lt: #c89a3c;
+    --ember: #e8792b;
+    --jade: #3f7d5a;
+
+    --serif: "Songti TC", "Noto Serif HK", "Source Han Serif HK", "Songti SC", serif;
+    --sans: "PingFang HK", "PingFang TC", "Noto Sans HK", -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--smoke); }
+  body {
+    margin: 0; padding: 0 1rem 6rem;
+    background: radial-gradient(120% 80% at 50% 0%, #241c17 0%, var(--smoke) 60%);
+    color: var(--paper); font-family: var(--sans); line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+
+  .masthead { padding: 2.5rem 0 0.5rem; }
+  .masthead h1 {
+    font-family: var(--serif);
+    font-size: clamp(1.8rem, 4.6vw, 2.7rem);
+    font-weight: 600; letter-spacing: 0.05em; margin: 0;
+  }
+  .masthead .lede { max-width: 62ch; margin: 0.6rem 0 0; color: #b6a98f; font-size: 0.95rem; }
+  .masthead .lede strong { color: var(--gold-lt); font-weight: 600; }
+
+  .ledger {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 1rem;
+    padding: 0.7rem 0.9rem; margin: 1rem -0.9rem 0;
+    background: rgba(20,16,14,0.93); backdrop-filter: blur(8px);
+    border-bottom: 1px solid #3a3129;
+  }
+  .tally { font-family: var(--mono); font-size: 0.85rem; color: #b6a98f; }
+  .tally b { color: var(--gold-lt); }
+  .spacer { flex: 1 1 auto; }
+  .act {
+    font: inherit; font-size: 0.8rem; padding: 0.32rem 0.7rem;
+    border: 1px solid #3a3129; border-radius: 3px;
+    background: transparent; color: #a2957c; cursor: pointer;
+  }
+  .act:hover { color: var(--paper); border-color: #574a3d; }
+  .act.go { background: var(--vermilion); border-color: var(--vermilion); color: #fff; }
+  .act.go:hover { background: var(--vermilion-lt); }
+
+  h2.step {
+    font-family: var(--serif); font-size: 1.25rem; letter-spacing: 0.05em;
+    margin: 2.2rem 0 0.15rem; color: var(--paper);
+    display: flex; align-items: baseline; gap: 0.6rem;
+  }
+  h2.step .n {
+    font-size: 0.95rem; color: var(--vermilion); font-family: var(--mono);
+    border: 1px solid var(--vermilion); border-radius: 2px; padding: 0 0.35rem;
+  }
+  p.stepnote { margin: 0.2rem 0 0.9rem; font-size: 0.85rem; color: #9a8e78; max-width: 66ch; }
+
+  /* paper card shared look */
+  .card {
+    background:
+      repeating-linear-gradient(90deg, rgba(120,100,70,0.045) 0 1px, transparent 1px 4px),
+      var(--paper);
+    color: var(--ink); border-radius: 2px;
+    box-shadow: 0 1px 0 var(--paper-edge), 0 10px 24px -14px rgba(0,0,0,0.8);
+  }
+
+  .target { padding: 0.9rem 1rem 1rem; }
+  .target .chant {
+    font-family: var(--serif); font-size: clamp(1.1rem, 3vw, 1.4rem);
+    letter-spacing: 0.05em; margin: 0 0 0.6rem;
+  }
+  .target .lbl { font-family: var(--mono); font-size: 0.72rem; color: var(--ink-soft); margin-right: 0.4rem; }
+  .plays { display: flex; flex-wrap: wrap; gap: 0.35rem; align-items: center; }
+
+  .play {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    font: inherit; font-size: 0.78rem; padding: 0.26rem 0.55rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: rgba(255,255,255,0.5); color: var(--ink); cursor: pointer;
+  }
+  .play:hover { border-color: var(--ink-soft); background: #fff; }
+  .play.is-playing { background: var(--ember); border-color: var(--ember); color: #fff; }
+  .play svg { width: 8px; height: 10px; fill: currentColor; display: block; }
+  .play .d { font-family: var(--mono); font-size: 0.7rem; opacity: 0.7; }
+
+  /* voice grid */
+  .grid {
+    display: grid; gap: 0.6rem;
+    grid-template-columns: repeat(auto-fill, minmax(15.5rem, 1fr));
+  }
+  .voice { padding: 0.6rem 0.7rem 0.65rem; position: relative; }
+  .voice.picked { box-shadow: 0 0 0 2px var(--jade), 0 10px 24px -14px rgba(0,0,0,0.8); }
+  .voice h3 {
+    margin: 0 0 0.1rem; font-size: 0.92rem; font-weight: 600;
+    font-family: var(--mono); letter-spacing: -0.01em;
+  }
+  .voice .badges { display: flex; gap: 0.3rem; margin-bottom: 0.45rem; flex-wrap: wrap; }
+  .badge {
+    font-family: var(--mono); font-size: 0.62rem;
+    border: 1px solid var(--paper-edge); border-radius: 2px;
+    padding: 0 0.3rem; color: var(--ink-soft);
+  }
+  .badge.inc { border-color: var(--gold); color: var(--gold); }
+  .pick {
+    margin-top: 0.5rem; width: 100%;
+    font: inherit; font-size: 0.78rem; padding: 0.28rem 0.5rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: transparent; color: var(--ink-soft); cursor: pointer;
+  }
+  .pick:hover { color: var(--ink); border-color: var(--ink-soft); }
+  .pick[aria-pressed="true"] { background: var(--jade); border-color: var(--jade); color: #fff; }
+
+  /* chain rows */
+  .chain { padding: 0.65rem 0.85rem 0.7rem; margin-bottom: 0.6rem; }
+  .chain .top { display: flex; align-items: baseline; gap: 0.6rem; flex-wrap: wrap; }
+  .chain h3 { margin: 0; font-family: var(--serif); font-size: 1.05rem; font-weight: 600; }
+  .chain .key { font-family: var(--mono); font-size: 0.7rem; color: var(--ink-soft); }
+  .chain .desc { margin: 0.15rem 0 0.5rem; font-size: 0.8rem; color: var(--ink-soft); }
+  .chain .assign { display: flex; gap: 0.35rem; margin-left: auto; }
+  .chain .assign button {
+    font: inherit; font-size: 0.75rem; padding: 0.22rem 0.6rem;
+    border: 1px solid var(--paper-edge); border-radius: 3px;
+    background: transparent; color: var(--ink); cursor: pointer;
+    font-family: var(--mono);
+  }
+  .chain .assign button[aria-pressed="true"] { background: var(--vermilion); border-color: var(--vermilion); color: #fff; }
+  .chain code {
+    display: block; margin-top: 0.5rem;
+    font-family: var(--mono); font-size: 0.66rem; line-height: 1.5;
+    color: var(--ink-soft); word-break: break-all;
+    padding-top: 0.4rem; border-top: 1px dashed var(--paper-edge);
+  }
+
+  #report { margin: 2rem 0 0; display: none; }
+  #report h2 { font-family: var(--serif); font-size: 1.1rem; margin: 0 0 0.5rem; color: var(--gold-lt); }
+  #report pre {
+    font-family: var(--mono); font-size: 0.78rem; line-height: 1.6;
+    white-space: pre-wrap; word-break: break-word;
+    padding: 0.9rem 1rem; border: 1px solid #3a3129; border-radius: 2px;
+    background: var(--smoke-2); color: #cfc3a9;
+  }
+  #reportMsg { font-size: 0.8rem; color: var(--ember); min-height: 1.2em; }
+  .fail {
+    margin: 1.5rem 0; padding: 1rem 1.1rem;
+    border: 1px solid var(--vermilion); border-radius: 2px;
+    background: rgba(198,48,30,0.12); color: #f0d9d4; font-size: 0.9rem;
+  }
+  .fail code { font-family: var(--mono); color: var(--ember); }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header class="masthead">
+    <h1>婆婆聲揀選</h1>
+    <p class="lede">
+      Chirp3-HD <strong>唔收風格 prompt,亦唔收 SSML</strong> —— 舊 pipeline 靠
+      「把聲又嗲又惡」呢句 prompt 塑造嘅性格,在 Cloud TTS 呢邊要改由
+      <strong>揀把聲</strong> 加 <strong>ffmpeg 後處理</strong> 做出嚼。
+      呢一頁就係揀呢兩樣。上面第一格係<strong>你現在出貨嘅婆婆</strong>,即係目標。
+    </p>
+  </header>
+
+  <div class="ledger">
+    <span class="tally" id="tally">載入中…</span>
+    <span class="spacer"></span>
+    <button type="button" class="act go" id="reportBtn">出結論</button>
+    <button type="button" class="act" id="resetBtn">清空</button>
+  </div>
+
+  <div id="report">
+    <h2>結論</h2>
+    <p id="reportMsg"></p>
+    <pre id="reportText"></pre>
+  </div>
+
+  <main id="app"></main>
+</div>
+
+<script type="module">
+  const MANIFEST = './compare/audition.json';
+  const BASE = './compare/';
+  const OLD_DIR = '../../portfolio/public/games/da-siu-yan/voice/';
+  const STORAGE_KEY = 'da-siu-yan-granny-audition-v1';
+  const PLAY = '<svg viewBox="0 0 9 11" aria-hidden="true"><path d="M0 0l9 5.5L0 11z"/></svg>';
+
+  const appEl = document.getElementById('app');
+  const tallyEl = document.getElementById('tally');
+  const reportEl = document.getElementById('report');
+  const reportTextEl = document.getElementById('reportText');
+  const reportMsgEl = document.getElementById('reportMsg');
+
+  let picks = load();
+  let man = null;
+  let playingBtn = null;
+  const audios = [];
+
+  function load() {
+    try {
+      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      return { voice: p.voice ?? null, std: p.std ?? null, low: p.low ?? null };
+    } catch { return { voice: null, std: null, low: null }; }
+  }
+  function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(picks)); }
+
+  function mkPlay(label, src, dur, rate = 1) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'play';
+    b.innerHTML = `${PLAY}<span></span>${dur ? `<span class="d">${dur.toFixed(2)}s</span>` : ''}`;
+    b.querySelector('span').textContent = label;
+    const audio = new Audio(src);
+    audio.preload = 'none';
+    audios.push(audio);
+    audio.addEventListener('ended', () => b.classList.remove('is-playing'));
+    audio.addEventListener('pause', () => b.classList.remove('is-playing'));
+    b.addEventListener('click', () => {
+      for (const a of audios) if (a !== audio && !a.paused) a.pause();
+      if (playingBtn && playingBtn !== b) playingBtn.classList.remove('is-playing');
+      playingBtn = b;
+      audio.playbackRate = rate;
+      audio.currentTime = 0;
+      audio.play().then(() => b.classList.add('is-playing')).catch(() => {
+        reportEl.style.display = 'block';
+        reportMsgEl.textContent = `播唔到 ${src} — 要用 http 開呢一頁,同確認已跑 gen-granny-audition.mjs。`;
+      });
+    });
+    return b;
+  }
+
+  function heading(n, title, note) {
+    const h = document.createElement('h2');
+    h.className = 'step';
+    const b = document.createElement('span');
+    b.className = 'n';
+    b.textContent = n;
+    const t = document.createElement('span');
+    t.textContent = title;
+    h.append(b, t);
+    const p = document.createElement('p');
+    p.className = 'stepnote';
+    p.textContent = note;
+    return [h, p];
+  }
+
+  async function init() {
+    try {
+      const res = await fetch(MANIFEST);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      man = await res.json();
+    } catch (err) {
+      const d = document.createElement('div');
+      d.className = 'fail';
+      d.innerHTML = `讀唔到 <code>${MANIFEST}</code>(${err.message})。<br><br>` +
+        '先跑 <code>node scripts/da-siu-yan/gen-granny-audition.mjs</code>,' +
+        '然後由 repo root 用 <code>python3 -m http.server 8899</code> 開(file:// 唔會 work)。';
+      appEl.append(d);
+      return;
+    }
+    render();
+  }
+
+  function render() {
+    appEl.textContent = '';
+
+    // ── target ───────────────────────────────────────────────────────
+    appEl.append(...heading('目標', '你現在出貨嘅婆婆',
+      `同一句 ${man.clipId}。舊版做過 2× 加速,所以順便有慢播 —— 聽性格,唔係聽速度。`));
+    const t = document.createElement('div');
+    t.className = 'card target';
+    const chant = document.createElement('p');
+    chant.className = 'chant';
+    chant.textContent = man.text;
+    const tp = document.createElement('div');
+    tp.className = 'plays';
+    for (const v of ['std', 'low']) {
+      const lbl = document.createElement('span');
+      lbl.className = 'lbl';
+      lbl.textContent = v;
+      tp.append(lbl,
+        mkPlay('播', `${OLD_DIR}${v}/${man.clipId}.mp3`, null, 1),
+        mkPlay('慢', `${OLD_DIR}${v}/${man.clipId}.mp3`, null, 0.5));
+    }
+    t.append(chant, tp);
+    appEl.append(t);
+
+    // ── step 1: base voice ───────────────────────────────────────────
+    appEl.append(...heading('一', '揀把聲',
+      `${man.voices.length} 把 yue-HK 女聲。每把有原聲同「${man.previewChain.label}」兩個版本 —— ` +
+      '有啲聲清嘅時候平平無奇,老化之後就好似婆婆,所以兩個都要聽。'));
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    for (const v of man.voices) {
+      const c = document.createElement('div');
+      c.className = 'card voice';
+      c.dataset.voice = v.name;
+      const h = document.createElement('h3');
+      h.textContent = v.short;
+      const badges = document.createElement('div');
+      badges.className = 'badges';
+      const k = document.createElement('span');
+      k.className = 'badge';
+      k.textContent = v.kind;
+      badges.append(k);
+      if (v.incumbent) {
+        const i = document.createElement('span');
+        i.className = 'badge inc';
+        i.textContent = '現用';
+        badges.append(i);
+      }
+      const plays = document.createElement('div');
+      plays.className = 'plays';
+      plays.append(
+        mkPlay('原聲', BASE + v.raw.file, v.raw.duration),
+        mkPlay(man.previewChain.label, BASE + v.aged.file, v.aged.duration));
+      const pick = document.createElement('button');
+      pick.type = 'button';
+      pick.className = 'pick';
+      pick.textContent = '揀呢把';
+      pick.addEventListener('click', () => {
+        picks.voice = picks.voice === v.name ? null : v.name;
+        save(); sync();
+      });
+      c.append(h, badges, plays, pick);
+      grid.append(c);
+    }
+    appEl.append(grid);
+
+    // ── step 2: processing chain ─────────────────────────────────────
+    appEl.append(...heading('二', '揀後處理',
+      `全部用現用嘅 ${man.incumbent.replace('yue-HK-', '')} 做示範。` +
+      '揀邊個做 std(大聲又惡)、邊個做 low(低沉沙啞) —— 可以係唔同嘅兩個。'));
+    for (const ch of man.chains) {
+      const c = document.createElement('div');
+      c.className = 'card chain';
+      c.dataset.chain = ch.key;
+      const top = document.createElement('div');
+      top.className = 'top';
+      const h = document.createElement('h3');
+      h.textContent = ch.label;
+      const key = document.createElement('span');
+      key.className = 'key';
+      key.textContent = ch.key;
+      const assign = document.createElement('div');
+      assign.className = 'assign';
+      for (const slot of ['std', 'low']) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.dataset.slot = slot;
+        b.textContent = `用做 ${slot}`;
+        b.addEventListener('click', () => {
+          picks[slot] = picks[slot] === ch.key ? null : ch.key;
+          save(); sync();
+        });
+        assign.append(b);
+      }
+      top.append(h, key, assign);
+      const desc = document.createElement('p');
+      desc.className = 'desc';
+      desc.textContent = ch.desc;
+      const plays = document.createElement('div');
+      plays.className = 'plays';
+      plays.append(mkPlay('播', BASE + ch.file, ch.duration));
+      c.append(top, desc, plays);
+      if (ch.filter) {
+        const code = document.createElement('code');
+        code.textContent = ch.filter;
+        c.append(code);
+      }
+      appEl.append(c);
+    }
+
+    sync();
+  }
+
+  function sync() {
+    for (const el of appEl.querySelectorAll('.voice')) {
+      const on = el.dataset.voice === picks.voice;
+      el.classList.toggle('picked', on);
+      el.querySelector('.pick').setAttribute('aria-pressed', String(on));
+    }
+    for (const el of appEl.querySelectorAll('.chain')) {
+      for (const b of el.querySelectorAll('.assign button')) {
+        b.setAttribute('aria-pressed', String(picks[b.dataset.slot] === el.dataset.chain));
+      }
+    }
+    const short = (n) => n ? n.replace('yue-HK-', '') : '未揀';
+    tallyEl.innerHTML = `把聲 <b>${short(picks.voice)}</b> · ` +
+      `std <b>${picks.std ?? '未揀'}</b> · low <b>${picks.low ?? '未揀'}</b>`;
+  }
+
+  document.getElementById('reportBtn').addEventListener('click', async () => {
+    const chain = (k) => man.chains.find((c) => c.key === k);
+    const out = [];
+    out.push('打小人 — 婆婆聲揀選結果');
+    out.push('');
+    out.push(`把聲 : ${picks.voice ?? '未揀'}`);
+    for (const slot of ['std', 'low']) {
+      const c = picks[slot] ? chain(picks[slot]) : null;
+      out.push(`${slot}   : ${c ? `${c.key}(${c.label})` : '未揀'}`);
+      if (c?.filter) out.push(`        ${c.filter}`);
+    }
+    const missing = ['voice', 'std', 'low'].filter((k) => !picks[k]);
+    if (missing.length) {
+      out.push('');
+      out.push(`仲未揀:${missing.join(', ')}`);
+    }
+    const text = out.join('\n');
+    reportEl.style.display = 'block';
+    reportTextEl.textContent = text;
+    reportEl.scrollIntoView({ block: 'start', behavior: 'smooth' });
+    try {
+      await navigator.clipboard.writeText(text);
+      reportMsgEl.textContent = '已複製到剪貼板 — 貼返俾我,我就用呢個組合重生 60 條 clip。';
+    } catch {
+      reportMsgEl.textContent = '剪貼板被擋 — 自己 copy 下面段文字。';
+    }
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    if (!confirm('清空全部揀選?')) return;
+    picks = { voice: null, std: null, low: null };
+    save(); sync();
+    reportEl.style.display = 'none';
+    reportMsgEl.textContent = '';
+  });
+
+  init();
+</script>
