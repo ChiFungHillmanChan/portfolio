@@ -117,3 +117,95 @@
 .shb-add-friend button:disabled { opacity: 0.5; }
 .shb-footer { text-align: center; margin-top: 36px; }
 .shb-link { background: none; border: none; color: var(--shb-ink-dark); opacity: 0.7; font-size: 14px; text-decoration: underline; }
+
+/* ===== 朋友頁 ===== */
+.shb-friend-header {
+  display: flex; align-items: center; gap: 10px; padding: 4px 0 12px;
+  border-bottom: 3px solid var(--tab, var(--shb-accent));
+}
+.shb-back { background: none; border: none; color: var(--shb-ink-dark); padding: 6px; display: flex; }
+.shb-friend-header h2 { margin: 0; font-size: 22px; flex: 1; }
+.shb-friend-count { font-size: 14px; opacity: 0.8; }
+.shb-banner {
+  margin: 12px 0 0; padding: 10px 14px; border-radius: var(--shb-radius);
+  background: #fbe6c9; border: 1.5px dashed #d9a05b; font-size: 14px; text-align: center;
+}
+
+/* ===== 儲印卡 ===== */
+.shb-stampcard {
+  margin: 16px 0; padding: 14px; display: flex; flex-wrap: wrap; gap: 10px;
+  justify-content: center; align-items: center;
+  background: var(--shb-paper); border: 2px solid var(--shb-line); border-radius: var(--shb-radius);
+  box-shadow: 0 3px 0 rgba(90, 50, 30, 0.12);
+}
+.shb-seal { animation: shb-stamp-pop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1); }
+@keyframes shb-stamp-pop { from { transform: scale(1.8) rotate(-14deg); opacity: 0; } }
+.shb-over { font-size: 15px; color: var(--shb-ink); font-weight: 700; }
+
+.shb-big-btn {
+  display: block; width: 100%; border: none; margin: 10px 0;
+  background: var(--shb-ink); color: var(--shb-paper); font-size: 18px;
+  padding: 14px; border-radius: var(--shb-radius); box-shadow: 0 4px 0 var(--shb-cover-deep);
+  animation: shb-wiggle 1.6s ease-in-out infinite;
+}
+.shb-big-btn:disabled { opacity: 0.6; animation: none; }
+
+.shb-open-card {
+  margin: 12px 0; padding: 12px 14px; border-radius: var(--shb-radius);
+  background: #f6e3df; border: 2px solid var(--shb-accent); font-size: 15px;
+}
+.shb-open-card p { margin: 0 0 10px; }
+.shb-open-card-actions { display: flex; gap: 10px; }
+.shb-open-card-actions button {
+  flex: 1; border: none; border-radius: 10px; padding: 10px; font-size: 15px;
+  background: var(--shb-paper); box-shadow: 0 2px 0 rgba(90, 50, 30, 0.2); color: inherit;
+}
+
+/* ===== 罪行紀錄 ===== */
+.shb-entries h3 { font-size: 16px; letter-spacing: 3px; margin: 18px 0 8px; color: var(--shb-ink); }
+.shb-entries ul { list-style: none; margin: 0; padding: 0; }
+.shb-entry {
+  display: grid; grid-template-columns: auto auto 1fr auto; align-items: start; gap: 10px;
+  padding: 10px 4px; border-bottom: 1px dashed var(--shb-line);
+}
+.shb-entry-date { font-size: 12px; opacity: 0.65; padding-top: 5px; white-space: nowrap; }
+.shb-entry-text { margin: 0; font-size: 16px; line-height: 1.6; word-break: break-word; }
+.shb-entry-claimed { opacity: 0.45; }
+.shb-entry-del { background: none; border: none; font-size: 20px; color: var(--shb-ink); opacity: 0.6; padding: 0 6px; }
+
+/* ===== FAB + bottom sheet ===== */
+.shb-fab {
+  position: fixed; bottom: calc(22px + env(safe-area-inset-bottom)); right: calc(50% - min(50vw, 240px) + 18px);
+  border: none; background: var(--shb-ink); color: var(--shb-paper);
+  font-size: 17px; padding: 14px 22px; border-radius: 30px;
+  box-shadow: 0 5px 14px rgba(90, 30, 20, 0.4); z-index: 30;
+}
+.shb-sheet-mask {
+  position: fixed; inset: 0; background: rgba(60, 40, 30, 0.45); z-index: 50;
+  display: flex; align-items: flex-end; justify-content: center;
+}
+.shb-sheet {
+  width: min(100vw, 480px); background: var(--shb-paper);
+  border-radius: 22px 22px 0 0; padding: 20px 18px calc(20px + env(safe-area-inset-bottom));
+  animation: shb-sheet-up 0.25s ease-out;
+}
+@keyframes shb-sheet-up { from { transform: translateY(40%); } }
+.shb-sheet h3 { margin: 0 0 12px; font-size: 18px; color: var(--shb-ink); }
+.shb-sheet textarea {
+  width: 100%; border: none; resize: none; font-family: inherit; font-size: 17px; color: inherit;
+  background: repeating-linear-gradient(transparent 0 29px, var(--shb-line) 29px 30px);
+  line-height: 30px; padding: 0 2px; min-height: 120px;
+}
+.shb-sheet textarea:focus { outline: none; }
+.shb-severity { display: flex; gap: 10px; margin: 14px 0 4px; }
+.shb-sev {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  background: var(--shb-paper-deep); border: 2px solid transparent; border-radius: var(--shb-radius);
+  padding: 10px 4px; font-size: 13px; color: inherit;
+}
+.shb-sev-on { border-color: var(--shb-ink); background: var(--shb-face); }
+.shb-sheet-row { display: flex; justify-content: space-between; align-items: center; margin: 10px 0; font-size: 14px; }
+.shb-sheet-row input[type='date'] { font-family: inherit; border: 1px solid var(--shb-line); border-radius: 8px; padding: 4px 8px; background: transparent; color: inherit; }
+.shb-count { opacity: 0.6; font-size: 13px; }
+.shb-sheet-actions { display: flex; gap: 12px; align-items: center; }
+.shb-sheet-actions .shb-big-btn { flex: 1; margin: 0; animation: none; }
