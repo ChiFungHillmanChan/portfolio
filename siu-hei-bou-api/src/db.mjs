@@ -18,6 +18,26 @@ export function makeDb(d1) {
       `INSERT INTO users (uid, email, display_name) VALUES (?1, ?2, ?3)
        ON CONFLICT(uid) DO UPDATE SET email = ?2, display_name = ?3`).bind(uid, email, name).run(),
 
+    // 個人檔案 — the row plus what "撕爛本簿" would take with it. Counts every
+    // friend, archived or not: the delete is total, so the warning must be too.
+    getMe: async (uid) => ({
+      user: await first(d1.prepare(
+        `SELECT email, display_name, created_at FROM users WHERE uid = ?1`).bind(uid)),
+      counts: await first(d1.prepare(
+        `SELECT (SELECT COUNT(*) FROM friends WHERE uid = ?1) AS friends,
+                (SELECT COUNT(*) FROM grudges WHERE uid = ?1) AS grudges,
+                (SELECT COUNT(*) FROM cards   WHERE uid = ?1) AS cards`).bind(uid)),
+    }),
+
+    // 撕爛本簿 — every row this uid owns, children before parents (same FK-safe
+    // order as deleteFriend). One batch = one D1 transaction, so it is all or nothing.
+    deleteMe: (uid) => d1.batch([
+      d1.prepare(`DELETE FROM grudges WHERE uid = ?1`).bind(uid),
+      d1.prepare(`DELETE FROM cards   WHERE uid = ?1`).bind(uid),
+      d1.prepare(`DELETE FROM friends WHERE uid = ?1`).bind(uid),
+      d1.prepare(`DELETE FROM users   WHERE uid = ?1`).bind(uid),
+    ]),
+
     getState: async (uid) => ({
       friends: await all(d1.prepare(
         `SELECT f.*, COALESCE((SELECT SUM(g.severity) FROM grudges g

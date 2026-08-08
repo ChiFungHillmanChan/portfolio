@@ -30,6 +30,7 @@ CREATE TABLE cards (
   acknowledged_at TEXT,
   settled_at    TEXT
 );
+CREATE INDEX idx_cards_uid_friend ON cards(uid, friend_id);
 
 CREATE TABLE grudges (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,

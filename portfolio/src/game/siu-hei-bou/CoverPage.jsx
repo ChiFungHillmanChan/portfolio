@@ -5,7 +5,7 @@ import { GoogleG, AngryFace } from './svgs';
 // Book.jsx hinges it on the spine and swings it open on login. The back face is
 // plain paper (styled in CSS) — any text there reads as a glitchy flash while
 // the cover sweeps past on desktop.
-export function CoverFront({ onLogin, busy, loading }) {
+export function CoverFront({ onLogin, busy, loading, onLegal }) {
   return (
     <div className="shb-cover-front">
       <div className="shb-cover-band" aria-hidden="true" />
@@ -23,6 +23,12 @@ export function CoverFront({ onLogin, busy, loading }) {
         </button>
       )}
       <p className="shb-cover-note">朋友激嬲你嘅事，記低先，儲夠印就搵佢請返餐。</p>
+      <p className="shb-cover-legal">
+        開簿即表示你同意
+        <button type="button" onClick={() => onLegal('terms')}>條款</button>
+        同
+        <button type="button" onClick={() => onLegal('privacy')}>私隱條款</button>
+      </p>
     </div>
   );
 }
