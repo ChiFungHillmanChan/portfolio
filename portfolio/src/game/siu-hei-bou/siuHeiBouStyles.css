@@ -209,3 +209,29 @@
 .shb-count { opacity: 0.6; font-size: 13px; }
 .shb-sheet-actions { display: flex; gap: 12px; align-items: center; }
 .shb-sheet-actions .shb-big-btn { flex: 1; margin: 0; animation: none; }
+
+/* ===== 找數卡（公開頁）===== */
+.shb-coupon {
+  width: min(92vw, 420px); margin: 6vh auto; padding: 26px 20px 22px; text-align: center;
+  background: var(--shb-paper); border-radius: var(--shb-radius);
+  border: 2px solid var(--shb-ink);
+  outline: 6px solid var(--shb-paper); outline-offset: -10px;
+  box-shadow: 0 14px 30px rgba(90, 50, 30, 0.3);
+}
+.shb-coupon-missing { border-style: dashed; padding-top: 40px; }
+.shb-coupon-tag { letter-spacing: 5px; font-size: 13px; color: var(--shb-ink); margin: 0; }
+.shb-coupon-name { font-size: 30px; margin: 10px 0 2px; }
+.shb-coupon-lede { margin: 0 0 8px; font-size: 15px; opacity: 0.85; }
+.shb-coupon-listtitle { font-size: 15px; letter-spacing: 3px; color: var(--shb-ink); margin: 14px 0 6px; }
+.shb-coupon-list { list-style: none; padding: 0; margin: 0 0 8px; text-align: left; }
+.shb-coupon-list li {
+  display: grid; grid-template-columns: auto auto 1fr; gap: 8px; align-items: start;
+  padding: 7px 2px; border-bottom: 1px dashed var(--shb-line);
+}
+.shb-coupon-list p { margin: 0; font-size: 15px; line-height: 1.55; word-break: break-word; }
+.shb-coupon-demand { font-size: 34px; font-weight: 700; color: var(--shb-ink); margin: 16px 0 8px; animation: shb-wiggle 1.4s ease-in-out infinite; }
+.shb-coupon-status {
+  display: inline-block; margin: 10px 0; padding: 8px 18px; font-size: 16px;
+  color: var(--shb-ink); border: 2px solid var(--shb-ink); border-radius: 8px; transform: rotate(-4deg);
+}
+.shb-coupon-footer { display: block; margin-top: 16px; font-size: 12px; color: var(--shb-ink-dark); opacity: 0.65; }

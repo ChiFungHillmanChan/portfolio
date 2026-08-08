@@ -4,6 +4,7 @@ import { api, setTokenGetter } from './api';
 import CoverPage from './CoverPage';
 import HomePage from './HomePage';
 import FriendPage from './FriendPage';
+import PublicCardPage from './PublicCardPage';
 import './siuHeiBouStyles.css';
 
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap';
@@ -100,7 +101,7 @@ export default function SiuHeiBouGame() {
 
   let content;
   if (route.page === 'card') {
-    content = <p>PUBLIC CARD PAGE — Task 9 replaces this: token {route.token}</p>;
+    content = <PublicCardPage token={route.token} />;
   } else if (user === undefined) {
     content = <div className="shb-loading">開緊本簿⋯</div>;
   } else if (!user) {
