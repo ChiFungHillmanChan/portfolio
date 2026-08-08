@@ -1,4 +1,6 @@
-import { unitLen, wrapText, paginateEntries, findEntryStart, takeUnits } from './paginate';
+import {
+  unitLen, wrapText, paginateEntries, findEntryStart, takeUnits, continuesOverleaf,
+} from './paginate';
 
 const entry = (id, content, extra = {}) =>
   ({ id, content, severity: 1, occurred_at: '2026-08-08', card_id: null, ...extra });
@@ -55,11 +57,19 @@ describe('paginateEntries', () => {
     expect(joined).toBe(text);
   });
 
-  it('flows the next entry immediately after the previous one on the same page', () => {
+  it('separates entries with one blank gap line', () => {
     const pages = paginateEntries([entry(1, '一句'), entry(2, '另一句')], opts);
     expect(pages).toHaveLength(1);
-    expect(pages[0].map((l) => l.type)).toEqual(['meta', 'text', 'meta', 'text']);
-    expect(pages[0][2].entry.id).toBe(2);
+    expect(pages[0].map((l) => l.type)).toEqual(['meta', 'text', 'gap', 'meta', 'text']);
+    expect(pages[0][3].entry.id).toBe(2);
+  });
+
+  it('drops the gap when it would start a fresh page', () => {
+    const tight = { unitsPerLine: 19, firstPageLines: 2, pageLines: 10 };
+    const pages = paginateEntries([entry(1, '一句'), entry(2, '另一句')], tight);
+    // entry 1 exactly fills page 0 — page 1 must open with entry 2's meta, not a blank
+    expect(pages[0].map((l) => l.type)).toEqual(['meta', 'text']);
+    expect(pages[1].map((l) => l.type)).toEqual(['meta', 'text']);
   });
 
   it('uses the larger capacity for continuation pages', () => {
@@ -77,6 +87,22 @@ describe('paginateEntries', () => {
 
   it('returns one empty page for no entries', () => {
     expect(paginateEntries([], opts)).toEqual([[]]);
+  });
+});
+
+describe('continuesOverleaf', () => {
+  const opts = { unitsPerLine: 19, firstPageLines: 4, pageLines: 10 };
+
+  it('is true when the page-ending entry runs onto the next page', () => {
+    const pages = paginateEntries([entry(1, '嬲'.repeat(19 * 6))], opts);
+    expect(continuesOverleaf(pages, 0)).toBe(true);
+    expect(continuesOverleaf(pages, 1)).toBe(false);
+  });
+
+  it('is false when the next page starts a new entry', () => {
+    const tight = { unitsPerLine: 19, firstPageLines: 2, pageLines: 10 };
+    const pages = paginateEntries([entry(1, '一句'), entry(2, '另一句')], tight);
+    expect(continuesOverleaf(pages, 0)).toBe(false);
   });
 });
 

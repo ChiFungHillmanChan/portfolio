@@ -176,6 +176,7 @@
 }
 .shb-corner { background: none; border: none; color: var(--shb-ink-dark); font-size: 13px; opacity: 0.75; padding: 2px 4px; }
 .shb-corner:disabled { opacity: 0.2; cursor: default; }
+.shb-corner-more { color: var(--shb-ink); opacity: 0.95; font-weight: 700; }
 .shb-pageno { font-size: 11px; opacity: 0.55; letter-spacing: 1px; }
 
 .shb-idxtab {

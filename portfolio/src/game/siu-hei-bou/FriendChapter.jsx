@@ -29,6 +29,7 @@ export default function ChapterPage({
   );
 
   const renderLine = (line, i) => {
+    if (line.type === 'gap') return <div key={i} className="shb-line" />;
     const penning = pen && line.entry.id === pen.entryId;
     const progress = pen ? Math.max(0, pen.progress) : 0;
 

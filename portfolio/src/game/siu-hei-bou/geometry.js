@@ -81,6 +81,7 @@ export function entryLineMap(pages, entryId) {
   pages.forEach((page, pageIdx) => {
     page.forEach((line, lineIdx) => {
       if (line.entry.id !== entryId) return;
+      if (line.type === 'gap') return;
       if (line.type === 'meta') {
         out.push({ pageIdx, lineIdx, type: 'meta', start: 0, end: 0 });
       } else {

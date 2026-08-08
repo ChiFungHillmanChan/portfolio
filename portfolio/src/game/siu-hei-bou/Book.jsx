@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, SHARE_BASE } from './api';
-import { unitLen } from './paginate';
+import { unitLen, continuesOverleaf } from './paginate';
 import { computeGeom, buildChapter, entryLineMap, indexLinesPerPage } from './geometry';
 import { CoverFront, CoverInside } from './CoverPage';
 import IndexPage from './IndexPage';
@@ -125,6 +125,7 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
   const hasNext = pageIdx < pageCount - 1
     || (nav.section === 'index' ? !!(friends && friends.length) : friendPos < sectionOrder.length - 1);
   const hasPrev = pageIdx > 0 || nav.section !== 'index';
+  const moreOverleaf = !!activeChapter && continuesOverleaf(activeChapter.pages, pageIdx);
 
   const goNext = () => {
     if (pageIdx < pageCount - 1) flipTo({ section: nav.section, page: pageIdx + 1 }, 'fwd');
@@ -221,6 +222,26 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
 
   /* ---- pen writing ---- */
 
+  // Ticker: advances the nib every 45ms. Keyed on the entry (not the whole pen
+  // object) so the interval survives per-tick re-renders and the whole entry
+  // lands in ≤ ~2.5s regardless of render latency.
+  const penEntryId = pen ? pen.entryId : null;
+  useEffect(() => {
+    if (!penEntryId || leaf) return undefined;
+    const t = setInterval(() => {
+      setPen((p) => {
+        if (!p) return p;
+        const progress = Math.max(0, p.progress);
+        if (progress >= p.total) return p;
+        const step = Math.max(0.5, p.total / 55);
+        return { ...p, progress: Math.min(p.total, progress + step) };
+      });
+    }, 45);
+    return () => clearInterval(t);
+  }, [penEntryId, leaf]);
+
+  // Follower: keeps the book on the page under the nib (flipping forward when
+  // the writing crosses a page boundary) and lifts the pen when done.
   useEffect(() => {
     if (!pen) return undefined;
     const chapter = getChapter(pen.friendId);
@@ -234,17 +255,11 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
       if (!leaf) flipToAuto({ section: pen.friendId, page: active.pageIdx });
       return undefined;
     }
-    if (leaf) return undefined; // let the page settle before the pen moves
-
-    if (pen.progress >= pen.total) {
+    if (pen.progress >= pen.total && !leaf) {
       const t = setTimeout(() => setPen(null), 700);
       return () => clearTimeout(t);
     }
-    const step = Math.max(0.5, pen.total / 55); // whole entry lands in ≤ ~2.5s
-    const t = setInterval(() => {
-      setPen((p) => (p ? { ...p, progress: Math.min(p.total, Math.max(0, p.progress) + step) } : p));
-    }, 45);
-    return () => clearInterval(t);
+    return undefined;
   }, [pen, nav, leaf, getChapter, flipToAuto]);
 
   /* ---- rendering ---- */
@@ -309,8 +324,12 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
             <span className="shb-pageno">
               {nav.section === 'index' ? `目錄 ${pageIdx + 1}/${pageCount}` : `第 ${pageIdx + 1}/${pageCount} 頁`}
             </span>
-            <button type="button" className="shb-corner" onClick={goNext} disabled={!hasNext}>
-              下一頁 ›
+            <button
+              type="button"
+              className={moreOverleaf ? 'shb-corner shb-corner-more' : 'shb-corner'}
+              onClick={goNext} disabled={!hasNext}
+            >
+              {moreOverleaf ? '（下頁仲有）›' : '下一頁 ›'}
             </button>
           </div>
         )}
