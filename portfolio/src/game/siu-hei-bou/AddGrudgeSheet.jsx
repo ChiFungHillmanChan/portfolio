@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AngryFace } from './svgs';
 
 const LABELS = { 1: '小嬲', 2: '中嬲', 3: '勁嬲' };
@@ -10,6 +10,20 @@ export default function AddGrudgeSheet({ friend, onClose, onSaved }) {
   const [severity, setSeverity] = useState(1);
   const [date, setDate] = useState(today);
   const [busy, setBusy] = useState(false);
+  const sheetRef = useRef(null);
+  const textRef = useRef(null);
+
+  // 張 sheet 封咗頂之後就係一個捲軸，而 autoFocus 一彈鍵盤，iOS 就會自己捲個
+  // 捲軸去就住個 caret —— 結果開個 sheet 見到嘅係下半橛，「記一筆」同頭幾行間線
+  // 喺畫面之外。preventScroll 就係叫佢唔好捲；跟手自己撥返去頂，因為鍵盤係 focus
+  // 之後先彈出嚟，個 layout 郁多次。舊機唔識 preventScroll 就照 focus，
+  // 個 sticky 標題（CSS 嗰邊）仍然頂得住。
+  useEffect(() => {
+    const t = textRef.current;
+    if (!t) return;
+    try { t.focus({ preventScroll: true }); } catch { t.focus(); }
+    if (sheetRef.current) sheetRef.current.scrollTop = 0;
+  }, []);
 
   const save = async () => {
     if (!content.trim()) return;
@@ -19,11 +33,12 @@ export default function AddGrudgeSheet({ friend, onClose, onSaved }) {
 
   return (
     <div className="shb-sheet-mask" onClick={onClose}>
-      <div className="shb-sheet" onClick={(e) => e.stopPropagation()}>
+      <div className="shb-sheet" ref={sheetRef} onClick={(e) => e.stopPropagation()}>
         <h3>記一筆：{friend.name}</h3>
         <textarea
+          ref={textRef}
           value={content} onChange={(e) => setContent(e.target.value)}
-          maxLength={500} rows={4} autoFocus placeholder="佢今次做咗啲乜⋯"
+          maxLength={500} rows={4} placeholder="佢今次做咗啲乜⋯"
         />
         <div className="shb-severity">
           {[1, 2, 3].map((lv) => (

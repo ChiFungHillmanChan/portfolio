@@ -347,7 +347,17 @@
   animation: shb-sheet-up 0.25s ease-out;
 }
 @keyframes shb-sheet-up { from { transform: translateY(40%); } }
-.shb-sheet h3 { margin: 0 0 12px; font-size: 18px; color: var(--shb-ink); }
+/* 個標題黐死喺個頂。封咗頂之後張 sheet 就係一個捲軸，而 iOS 一彈鍵盤就會自己
+   捲個捲軸去就住個 caret —— 咁「記一筆：邊個」就會捲上咗去睇唔到。sticky 之後
+   佢點捲都好，你一定知自己而家喺邊個度記緊嘢。
+   （AddGrudgeSheet 嗰邊仲會 focus({preventScroll}) + 撥返個 sheet 去頂，
+   等頭幾行間線都見到；呢行係最後嗰道保險，純 CSS，冇得失效。） */
+.shb-sheet h3 {
+  position: sticky; top: 0; z-index: 1;
+  margin: 0 0 12px; padding: 2px 0 6px;
+  background: var(--shb-paper);
+  font-size: 18px; color: var(--shb-ink);
+}
 .shb-sheet textarea {
   width: 100%; border: none; resize: none; font-family: inherit; font-size: 17px; color: inherit;
   background: repeating-linear-gradient(transparent 0 31px, var(--shb-line) 31px var(--shb-lh));

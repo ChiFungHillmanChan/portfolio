@@ -59,3 +59,25 @@ test('張 sheet 封咗頂又捲得到 —— 唔係鍵盤一彈出嚟就見唔�
   expect(declOf(sheet.body, 'overflow-y')).toEqual(['auto']);
   expect(declOf(sheet.body, 'overscroll-behavior')).toEqual(['contain']);
 });
+
+// 封頂令張 sheet 變成一個捲軸，而 iOS 一彈鍵盤就會自己捲佢去就個 caret ——
+// 即係話「封咗頂」本身唔夠，個標題照樣捲得走。sticky 先係真正頂得住嗰道。
+test('個標題黐死喺 sheet 頂 —— iOS 點捲都好，你都知自己記緊邊個', () => {
+  const [h3] = rulesFor('.shb-sheet h3');
+  expect(h3).toBeDefined();
+  expect(declOf(h3.body, 'position')).toEqual(['sticky']);
+  expect(declOf(h3.body, 'top')).toEqual(['0']);
+  // 冇底色就會見到啲字喺個標題後面捲過。
+  expect(declOf(h3.body, 'background')).toEqual(['var(--shb-paper)']);
+});
+
+// autoFocus 係當初真兇：focus 咗，iOS 就捲個 sheet 去就 caret。要 focus，
+// 但唔准佢捲。呢條 test 係防止有人「順手」改返做 autoFocus。
+test('記一筆唔用 autoFocus，改用 focus({ preventScroll })', () => {
+  const src = read('AddGrudgeSheet.jsx');
+  // 剝走註解先——註解入面正正解釋緊點解唔用 autoFocus，唔應該當佢係違規。
+  const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  expect(code).not.toMatch(/autoFocus/);
+  expect(src).toMatch(/focus\(\{ preventScroll: true \}\)/);
+  expect(src).toMatch(/scrollTop = 0/);
+});
