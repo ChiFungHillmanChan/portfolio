@@ -95,6 +95,31 @@ export const handlers = {
     return ok(await db.listCards(uid, friendId));
   },
 
+  // 書末 ·個人檔案 — who you are here, and what a 撕爛本簿 would cost you.
+  // Falls back to the verified token when the users row is somehow missing, so
+  // the page still renders rather than showing a blank profile.
+  getMe: async ({ db, uid, user }) => {
+    const { user: row, counts } = await db.getMe(uid);
+    return ok({
+      email: (row && row.email) || (user && user.email) || '',
+      name: (row && row.display_name) || (user && user.name) || null,
+      created_at: (row && row.created_at) || null,
+      counts: {
+        friends: (counts && counts.friends) || 0,
+        grudges: (counts && counts.grudges) || 0,
+        cards: (counts && counts.cards) || 0,
+      },
+    });
+  },
+
+  // 撕爛本簿 — wipes every 小氣簿 row for this uid, uid-scoped so it can only ever
+  // reach the caller's own book. The Google account is shared across
+  // hillmanchan.com and is deliberately NOT touched; the client signs out after.
+  deleteMe: async ({ db, uid }) => {
+    await db.deleteMe(uid);
+    return ok({ deleted: true });
+  },
+
   publicCard: async ({ db }, { params }) => {
     const data = await db.getPublicCard(params.token);
     if (!data) return err(404, 'not-found');

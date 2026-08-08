@@ -175,3 +175,52 @@ test('adminUsers search narrows both the page and the total', async () => {
   assert.deepEqual(none.body.users, []);
   assert.equal(none.body.pages, 1);           // never 0 — the UI renders "1 / 1"
 });
+
+/* ---- 書末 ·個人檔案 ---- */
+
+test('getMe returns the profile and the three counts', async () => {
+  const db = {
+    getMe: async (uid) => {
+      assert.equal(uid, 'u1');
+      return {
+        user: { email: 'a@x.com', display_name: '阿明', created_at: '2026-08-08 10:00:00' },
+        counts: { friends: 3, grudges: 12, cards: 2 },
+      };
+    },
+  };
+  const res = await handlers.getMe({ db, uid: 'u1', user: { email: 'a@x.com' } }, {});
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body, {
+    email: 'a@x.com',
+    name: '阿明',
+    created_at: '2026-08-08 10:00:00',
+    counts: { friends: 3, grudges: 12, cards: 2 },
+  });
+});
+
+test('getMe falls back to the verified token when the users row is missing', async () => {
+  const db = { getMe: async () => ({ user: null, counts: null }) };
+  const res = await handlers.getMe(
+    { db, uid: 'u1', user: { email: 'tok@x.com', name: '阿token' } }, {});
+  assert.equal(res.status, 200);
+  assert.equal(res.body.email, 'tok@x.com');
+  assert.equal(res.body.name, '阿token');
+  assert.equal(res.body.created_at, null);
+  assert.deepEqual(res.body.counts, { friends: 0, grudges: 0, cards: 0 });
+});
+
+test('deleteMe wipes only the caller uid', async () => {
+  const wiped = [];
+  const db = { deleteMe: async (uid) => { wiped.push(uid); } };
+  const res = await handlers.deleteMe({ db, uid: 'u1' }, {});
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body, { deleted: true });
+  assert.deepEqual(wiped, ['u1']);   // never a uid from the request body
+});
+
+test('deleteMe ignores any uid the client tries to smuggle in', async () => {
+  let seen = null;
+  const db = { deleteMe: async (uid) => { seen = uid; } };
+  await handlers.deleteMe({ db, uid: 'u1' }, { body: { uid: 'victim' }, params: { uid: 'victim' } });
+  assert.equal(seen, 'u1');
+});

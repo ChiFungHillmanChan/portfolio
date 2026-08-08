@@ -225,7 +225,8 @@
 }
 .shb-idx-add button:disabled { opacity: 0.5; }
 
-.shb-idx-foot { height: 32px; display: flex; align-items: center; justify-content: center; gap: 22px; }
+/* gap fits three links (管理書本 · 用戶一覽 · 合埋本簿) on a 320px-wide phone */
+.shb-idx-foot { height: 32px; display: flex; align-items: center; justify-content: center; gap: 16px; }
 .shb-link { background: none; border: none; color: var(--shb-ink-dark); opacity: 0.7; font-size: 14px; text-decoration: underline; }
 
 /* ===== 罪人章節頁 ===== */
@@ -390,6 +391,86 @@
 }
 .shb-admin-pager .shb-link:disabled { opacity: 0.25; text-decoration: none; }
 .shb-admin-refresh { flex: none; }
+
+/* ===== 書末（個人檔案 · 私隱條款 · 條款及細則）===== */
+.shb-back-header {
+  height: 32px; display: flex; align-items: center;
+  border-bottom: 3px solid var(--shb-accent);
+  font-size: 15px; letter-spacing: 2px;
+}
+
+.shb-me { padding-top: 16px; }
+.shb-me-id { display: flex; align-items: center; gap: 12px; }
+.shb-me-avatar {
+  width: 52px; height: 52px; border-radius: 50%; flex: none; object-fit: cover;
+  border: 2px solid var(--shb-line); background: var(--shb-paper-deep);
+}
+.shb-me-avatar-fallback {
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; color: var(--shb-ink);
+}
+.shb-me-who { min-width: 0; }
+.shb-me-who p { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.shb-me-name { margin: 0; font-size: 18px; font-weight: 700; }
+.shb-me-email { margin: 2px 0 0; font-size: 13px; opacity: 0.7; }
+.shb-me-since { margin: 2px 0 0; font-size: 12px; opacity: 0.6; }
+
+.shb-me-stats {
+  display: flex; gap: 8px; margin: 16px 0 12px; padding: 12px 0;
+  border-top: 1px dashed var(--shb-line); border-bottom: 1px dashed var(--shb-line);
+}
+.shb-me-stat { flex: 1; text-align: center; }
+.shb-me-stat b { display: block; font-size: 22px; color: var(--shb-ink); }
+.shb-me-stat span { font-size: 12px; opacity: 0.7; }
+
+.shb-me-legal-links { margin: 0 0 16px; text-align: center; font-size: 14px; opacity: 0.9; }
+.shb-me-actions { display: flex; flex-direction: column; gap: 10px; }
+.shb-outline-btn, .shb-danger-btn {
+  width: 100%; border-radius: var(--shb-radius); padding: 11px;
+  font-size: 15px; background: transparent;
+}
+.shb-outline-btn { border: 2px solid var(--shb-line); color: inherit; }
+.shb-danger-btn { border: 2px solid #a03030; color: #a03030; }
+.shb-outline-btn:disabled, .shb-danger-btn:disabled { opacity: 0.5; }
+
+.shb-danger-box {
+  border: 2px solid #a03030; border-radius: var(--shb-radius);
+  padding: 12px; background: #f7e6e3;
+}
+.shb-danger-box p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.6; color: #7a2620; }
+.shb-danger-note { opacity: 0.75; font-size: 12.5px !important; }
+.shb-danger-row { display: flex; gap: 10px; margin-top: 12px; }
+.shb-danger-row button { flex: 1; border: none; border-radius: 10px; padding: 10px; font-size: 15px; }
+.shb-danger-row button:disabled { opacity: 0.6; }
+.shb-danger-yes { background: #a03030; color: var(--shb-paper); }
+.shb-danger-no { background: var(--shb-paper); color: inherit; box-shadow: 0 2px 0 rgba(90, 50, 30, 0.2); }
+
+/* 細字 — the fine print scrolls inside the page rather than repaginating onto
+   the ruled grid; endmatter in a real notebook is set small and dense too. */
+.shb-legal-page {
+  /* left clears the 目錄 bookmark (0–22px) with an 8px gutter — at 13px the fine
+     print would otherwise run under the tab; right leaves room for the scrollbar */
+  position: absolute; left: 30px; right: 22px; top: 54px; bottom: 30px;
+  overflow-y: auto; -webkit-overflow-scrolling: touch;
+}
+/* 62vh + the sheet's own chrome (title + 收埋 + padding, ~128px) puts the whole
+   sheet at ~80% of the screen — measured, not guessed. The fine print is long,
+   so it takes as much of the phone as it can without swallowing it whole. */
+.shb-legal-scroll { max-height: 62vh; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.shb-legal { font-size: 13px; line-height: 1.75; }
+.shb-legal-updated { margin: 0 0 10px; font-size: 11px; opacity: 0.6; letter-spacing: 1px; }
+.shb-legal h4 { margin: 14px 0 5px; font-size: 14px; color: var(--shb-ink); letter-spacing: 1px; }
+.shb-legal p { margin: 0 0 7px; }
+.shb-legal-warn {
+  border-left: 3px solid var(--shb-ink); background: rgba(179, 64, 47, 0.07);
+  padding: 6px 9px; color: #7a2620;
+}
+
+.shb-cover-legal { margin: 0; font-size: 12px; color: rgba(255, 240, 230, 0.75); }
+.shb-cover-legal button {
+  background: none; border: none; font-family: inherit; font-size: 12px;
+  color: rgba(255, 240, 230, 0.95); text-decoration: underline; padding: 0 3px;
+}
 
 /* ===== reduced motion ===== */
 @media (prefers-reduced-motion: reduce) {

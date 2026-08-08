@@ -21,6 +21,8 @@ async function call(method, path, body) {
 
 export const api = {
   state: () => call('GET', '/api/state'),
+  me: () => call('GET', '/api/me'),
+  deleteMe: () => call('DELETE', '/api/me'),
   createFriend: (v) => call('POST', '/api/friends', v),
   updateFriend: (id, v) => call('PATCH', `/api/friends/${id}`, v),
   deleteFriend: (id) => call('DELETE', `/api/friends/${id}`),

@@ -8,9 +8,15 @@ import ChapterPage from './FriendChapter';
 import AddGrudgeSheet from './AddGrudgeSheet';
 import SettingsSheet from './SettingsSheet';
 import AdminSheet, { clearAdminCache } from './AdminSheet';
+import BackMatter, { BACK_PAGES } from './BackMatter';
+import LegalSheet from './LegalDoc';
+import { LEGAL_DOCS } from './legal';
 
 const COLOURS = ['#e8a0a0', '#a0c8e8', '#a8d8b0', '#e8d3a0', '#c9aee5', '#f0b8d0'];
 const FLIP_MS = 520;
+
+// 書末 — a section id that can never collide with a friend id (those are integers).
+const BACK = '__back__';
 
 const reduceMotion = () =>
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -23,10 +29,13 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
   const [leaf, setLeaf] = useState(null); // {dir:'fwd'|'back', nav, key}
   const [search, setSearch] = useState('');
   const [grudgeMap, setGrudgeMap] = useState({});
-  const [sheet, setSheet] = useState(null); // 'add' | 'settings'
+  const [sheet, setSheet] = useState(null); // 'add' | 'settings' | 'admin'
   const [pen, setPen] = useState(null); // {friendId, entryId, progress, total}
   const [busyCard, setBusyCard] = useState(false);
   const [addBusy, setAddBusy] = useState(false);
+  const [me, setMe] = useState(null);       // null=未攞 · {failed:true}=攞唔到
+  const [deleting, setDeleting] = useState(false);
+  const [legalKey, setLegalKey] = useState(null); // 封面撳條款/私隱
   const leafRef = useRef(null);
   const leafKey = useRef(0);
   const flipTimer = useRef();
@@ -52,10 +61,17 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
   }, [toast]);
 
   useEffect(() => {
-    if (user && nav.section !== 'index' && grudgeMap[nav.section] === undefined) {
+    if (user && nav.section !== 'index' && nav.section !== BACK && grudgeMap[nav.section] === undefined) {
       loadGrudges(nav.section);
     }
   }, [user, nav.section, grudgeMap, loadGrudges]);
+
+  // 個人檔案 只喺你真係揭到書末先攞 — 開簿唔使多一個 request。
+  useEffect(() => {
+    if (user && nav.section === BACK && me === null) {
+      api.me().then(setMe).catch(() => setMe({ failed: true }));
+    }
+  }, [user, nav.section, me]);
 
   const getChapter = useMemo(() => {
     const cache = new Map();
@@ -96,7 +112,11 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
     flipTimer.current = setTimeout(endFlip, FLIP_MS + 150);
   }, [nav, endFlip]);
 
-  const sectionOrder = useMemo(() => ['index', ...(friends || []).map((f) => f.id)], [friends]);
+  // 目錄 → 每個罪人 → 書末. Reading order, and the order the corners walk.
+  const sectionOrder = useMemo(
+    () => ['index', ...(friends || []).map((f) => f.id), BACK],
+    [friends],
+  );
 
   const flipToAuto = useCallback((target) => {
     let dir;
@@ -116,23 +136,32 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
   }, [friends, search]);
 
   const linesPerPage = indexLinesPerPage(geom);
-  const activeChapter = nav.section !== 'index' ? getChapter(nav.section) : null;
-  const pageCount = nav.section === 'index'
-    ? Math.max(1, Math.ceil((filtered ? filtered.length : 0) / linesPerPage) || 1)
-    : (activeChapter ? activeChapter.pages.length : 1);
-  const pageIdx = Math.min(nav.page, pageCount - 1);
-  const friendPos = nav.section === 'index' ? -1 : sectionOrder.indexOf(nav.section);
+  const isChapter = nav.section !== 'index' && nav.section !== BACK;
+  const activeChapter = isChapter ? getChapter(nav.section) : null;
 
+  let pageCount;
+  if (nav.section === 'index') {
+    pageCount = Math.max(1, Math.ceil((filtered ? filtered.length : 0) / linesPerPage) || 1);
+  } else if (nav.section === BACK) {
+    pageCount = BACK_PAGES;
+  } else {
+    pageCount = activeChapter ? activeChapter.pages.length : 1;
+  }
+  const pageIdx = Math.min(nav.page, pageCount - 1);
+
+  // One position in the reading order drives both corners, so every section —
+  // 目錄, chapters, 書末 — turns the same way. (A book with no friends yet still
+  // flips 目錄 → 書末; the old friends-only check dead-ended it.)
+  const sectionPos = sectionOrder.indexOf(nav.section);
   const hasNext = pageIdx < pageCount - 1
-    || (nav.section === 'index' ? !!(friends && friends.length) : friendPos < sectionOrder.length - 1);
+    || (sectionPos >= 0 && sectionPos < sectionOrder.length - 1);
   const hasPrev = pageIdx > 0 || nav.section !== 'index';
   const moreOverleaf = !!activeChapter && continuesOverleaf(activeChapter.pages, pageIdx);
 
   const goNext = () => {
     if (pageIdx < pageCount - 1) flipTo({ section: nav.section, page: pageIdx + 1 }, 'fwd');
-    else if (nav.section === 'index' && friends && friends.length) flipTo({ section: friends[0].id, page: 0 }, 'fwd');
-    else if (friendPos > 0 && friendPos < sectionOrder.length - 1) {
-      flipTo({ section: sectionOrder[friendPos + 1], page: 0 }, 'fwd');
+    else if (sectionPos >= 0 && sectionPos < sectionOrder.length - 1) {
+      flipTo({ section: sectionOrder[sectionPos + 1], page: 0 }, 'fwd');
     }
   };
   const goPrev = () => {
@@ -220,6 +249,24 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
     setGrudgeMap({});
     setSheet(null);
     setPen(null);
+    setMe(null);          // never let the next account on this tab see this one's profile
+    setDeleting(false);
+  };
+
+  // 撕爛本簿 — wipe the D1 rows first, then sign out. That order matters: if the
+  // wipe fails we have signed nobody out and lost nothing, and once it succeeds
+  // signing out immediately stops /api/state from re-creating the users row.
+  const deleteEverything = async () => {
+    setDeleting(true);
+    try {
+      await api.deleteMe();
+    } catch {
+      toast('撕唔爛喎，遲啲再試');
+      setDeleting(false);
+      return;
+    }
+    toast('本簿撕爛晒喇，多謝你用過');
+    handleLogout();
   };
 
   /* ---- pen writing ---- */
@@ -279,6 +326,17 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
           ownerName={user && user.displayName ? user.displayName : ''}
           isAdmin={!!user && user.email === SUPERADMIN_EMAIL}
           onAdmin={() => setSheet('admin')}
+          onBackMatter={() => flipToAuto({ section: BACK, page: 0 })}
+        />
+      );
+    }
+    if (loc.section === BACK) {
+      return (
+        <BackMatter
+          pageIdx={loc.page} user={user} me={me} interactive={interactive}
+          onLogout={handleLogout} onDeleteAll={deleteEverything} deleting={deleting}
+          onGoPage={(p) => flipToAuto({ section: BACK, page: p })}
+          onIndex={() => flipToAuto({ section: 'index', page: 0 })}
         />
       );
     }
@@ -341,7 +399,10 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
 
         <div className={open ? 'shb-bcover shb-bcover-open' : 'shb-bcover'} aria-hidden={open}>
           <div className="shb-bcover-frontface">
-            <CoverFront onLogin={onLogin} busy={loginBusy} loading={user === undefined} />
+            <CoverFront
+              onLogin={onLogin} busy={loginBusy} loading={user === undefined}
+              onLegal={setLegalKey}
+            />
           </div>
           <div className="shb-bcover-backface" />
 
@@ -362,6 +423,9 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
       )}
       {sheet === 'admin' && (
         <AdminSheet onClose={() => setSheet(null)} />
+      )}
+      {legalKey && (
+        <LegalSheet doc={LEGAL_DOCS[legalKey]} onClose={() => setLegalKey(null)} />
       )}
       {sheet === 'settings' && activeFriend && (
         <SettingsSheet

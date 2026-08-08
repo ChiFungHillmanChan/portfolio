@@ -14,6 +14,8 @@ test('matchRoute maps every API route', () => {
   assert.deepEqual(matchRoute('POST', '/api/cards'), { name: 'openCard', params: {}, public: false });
   assert.deepEqual(matchRoute('POST', '/api/cards/2/settle'), { name: 'settleCard', params: { id: '2' }, public: false });
   assert.deepEqual(matchRoute('GET', '/api/cards'), { name: 'listCards', params: {}, public: false });
+  assert.deepEqual(matchRoute('GET', '/api/me'), { name: 'getMe', params: {}, public: false });
+  assert.deepEqual(matchRoute('DELETE', '/api/me'), { name: 'deleteMe', params: {}, public: false });
   assert.deepEqual(matchRoute('GET', '/public/cards/abc123'), { name: 'publicCard', params: { token: 'abc123' }, public: true });
   assert.deepEqual(matchRoute('POST', '/public/cards/abc123/ack'), { name: 'publicAck', params: { token: 'abc123' }, public: true });
   assert.equal(matchRoute('GET', '/nope'), null);
