@@ -6,9 +6,30 @@
 portfolio/
 ├── src/game/casino-game/calculator/    # Casino games (vanilla JS)
 ├── src/game/system-design/             # System Design 教室 (React SPA)
+├── src/game/siu-hei-bou/               # 小氣簿 grudge notebook (React, Cantonese)
 ├── public/games/casino-game/           # Casino production build
 └── build/games/casino-game/            # Alternative build
 ```
+
+## 小氣簿 (Siu Hei Bou)
+
+**Location:** `src/game/siu-hei-bou/` (React components in the main portfolio CRA build — hostname-routed via `App.js`, same pattern as card-drawer)
+**Live:** `siu-hei-bou.hillmanchan.com` (Cloudflare grey-cloud CNAME → CloudFront `E2SYHEFLV89R32` alias) · dev route `hillmanchan.com/siu-hei-bou`
+**Stack:** React 18 (CRA) + Firebase Google auth (shared project `system-design-c84d3`, lazy dynamic import) + Cloudflare Worker + D1
+
+Cantonese-only grudge notebook: log 嬲爆事件 per friend, severity stamps (小嬲/中嬲/勁嬲 = 1/2/3 印), full card (per-friend threshold, default 10) opens a 找數卡 with a public share link (`/card/<token>`, no login) demanding 請食飯; friend can 認數, owner settles.
+
+| Piece | Where |
+|---|---|
+| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), HomePage, FriendPage, AddGrudgeSheet, PublicCardPage, SettingsSheet, svgs.jsx, firebase.js, api.js |
+| Backend | REPO ROOT `siu-hei-bou-api/` — Cloudflare Worker (`src/index.mjs` router, `auth.mjs` WebCrypto JWT verify, `db.mjs` SQL, `handlers.mjs`, `logic.mjs` pure), tests `npm test` (`node --test`) |
+| Database | Cloudflare D1 `siu-hei-bou-db` (id `67932535-b39a-4a1f-b7ae-a4fafc9b466d`) — tables users/friends/grudges/cards, schema in `siu-hei-bou-api/schema.sql` |
+| API | `https://siu-hei-bou-api.hillmanchan.com` (Workers custom domain) — `/api/*` Bearer Firebase ID token, `/public/cards/:token` no auth (responses field-projected, never leak uid) |
+| Deploy backend | `cd siu-hei-bou-api && npx wrangler deploy` (account hillmanchan709@gmail.com) |
+| Deploy frontend | normal portfolio push-to-main → S3 + CloudFront |
+| Spec / plan | `docs/superpowers/specs/2026-08-08-siu-hei-bou-design.md`, `docs/superpowers/plans/2026-08-08-siu-hei-bou.md` |
+
+Rules: ALL copy Cantonese; NO emoji (hand-drawn inline SVG only); CSS scoped `.shb-*`; Firebase only via lazy `getFirebase()` (keeps it out of the main bundle and App.test's jsdom); the portfolio CSP (`public/index.html`) must keep `https://siu-hei-bou-api.hillmanchan.com` in `connect-src`.
 
 ## System Design 教室
 

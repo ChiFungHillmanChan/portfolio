@@ -20,6 +20,7 @@ import Connect4Game from './game/connect4/Connect4Game';
 import MathMemoryGame from './game/math-memory/MathMemoryGame';
 import CardDrawerGame from './game/card-drawer/CardDrawerGame';
 import DaSiuYanGame from './game/da-siu-yan/DaSiuYanGame';
+import SiuHeiBouGame from './game/siu-hei-bou/SiuHeiBouGame';
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
@@ -31,6 +32,7 @@ const GAME_SUBDOMAIN_COMPONENTS = {
   'math-memory': MathMemoryGame,
   'card-drawer': CardDrawerGame,
   'da-siu-yan': DaSiuYanGame,
+  'siu-hei-bou': SiuHeiBouGame,
 };
 
 const getGameComponentFromHostname = () => {
@@ -73,6 +75,7 @@ function App() {
         <Route path="/connect4" element={<Connect4Game />} />
         <Route path="/card-drawer" element={<CardDrawerGame />} />
         <Route path="/da-siu-yan" element={<DaSiuYanGame />} />
+        <Route path="/siu-hei-bou/*" element={<SiuHeiBouGame />} />
 
         {/* Your existing routes with Layout */}
         <Route element={<Layout />}>

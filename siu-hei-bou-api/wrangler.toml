@@ -1,0 +1,12 @@
+name = "siu-hei-bou-api"
+main = "src/index.mjs"
+compatibility_date = "2026-07-01"
+
+routes = [
+  { pattern = "siu-hei-bou-api.hillmanchan.com", custom_domain = true }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "siu-hei-bou-db"
+database_id = "67932535-b39a-4a1f-b7ae-a4fafc9b466d"
