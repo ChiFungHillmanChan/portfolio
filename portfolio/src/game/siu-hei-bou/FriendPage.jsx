@@ -32,26 +32,34 @@ export default function FriendPage({ friend, openCards, onBack, refresh, toast }
   const share = useCallback(async (c) => {
     const url = `${SHARE_BASE}/card/${c.share_token}`;
     const text = `【小氣簿】你喺我本簿度已經儲滿 ${c.stamp_total} 個嬲爆印！睇下你做過啲乜 → ${url} 依家${c.reward}，一筆勾銷。`;
-    if (navigator.share) {
-      try { await navigator.share({ text }); } catch { /* user cancelled the share sheet */ }
-    } else {
-      await navigator.clipboard.writeText(text);
-      toast('已經 copy 咗，貼去 WhatsApp send 俾佢啦');
+    try {
+      if (navigator.share) {
+        await navigator.share({ text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        toast('已經 copy 咗，貼去 WhatsApp send 俾佢啦');
+      }
+    } catch (err) {
+      if (!err || err.name !== 'AbortError') toast('分享唔到，撳「send 俾佢」再試多次');
     }
   }, [toast]);
 
   const openCardNow = async () => {
     setBusyCard(true);
+    let card;
     try {
-      const c = await api.openCard(friend.id);
-      await refresh();
-      await load();
-      await share(c);
+      card = await api.openCard(friend.id);
     } catch (e) {
       toast(e.code === 'threshold-not-met' ? '未儲夠印住' : '開唔到卡，遲啲再試');
-    } finally {
       setBusyCard(false);
+      return;
     }
+    await share(card);
+    try {
+      await refresh();
+      await load();
+    } catch { /* list refresh best-effort; open-card box appears on next load */ }
+    setBusyCard(false);
   };
 
   const settle = async (c) => {
