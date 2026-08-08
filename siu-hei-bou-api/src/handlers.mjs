@@ -3,6 +3,13 @@ import { stampSum, canOpenCard, validateFriend, validateGrudge, genShareToken } 
 const ok = (body) => ({ status: 200, body });
 const err = (status, error) => ({ status, body: { error } });
 
+const publicCardView = (card) => ({
+  status: card.status,
+  stamp_total: card.stamp_total,
+  reward: card.reward,
+  created_at: card.created_at,
+});
+
 export const handlers = {
   getState: async ({ db, uid }) => ok(await db.getState(uid)),
 
@@ -74,10 +81,11 @@ export const handlers = {
 
   publicCard: async ({ db }, { params }) => {
     const data = await db.getPublicCard(params.token);
-    return data ? ok(data) : err(404, 'not-found');
+    if (!data) return err(404, 'not-found');
+    return ok({ card: publicCardView(data.card), friendName: data.friendName, grudges: data.grudges });
   },
   publicAck: async ({ db }, { params }) => {
     const row = await db.ackCardByToken(params.token);
-    return row ? ok(row) : err(404, 'not-found');
+    return row ? ok(publicCardView(row)) : err(404, 'not-found');
   },
 };

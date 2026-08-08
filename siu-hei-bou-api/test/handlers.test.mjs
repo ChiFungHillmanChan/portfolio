@@ -61,17 +61,36 @@ test('openCard enforces threshold and claims grudges', async () => {
 });
 
 test('publicCard 404s on bad token and returns card on good token', async () => {
-  const db = { getPublicCard: async (t) => (t === 'good' ? { card: { status: 'open' }, friendName: '阿明', grudges: [] } : null) };
+  const stubCard = { uid: 'u1', id: 20, friend_id: 3, share_token: 'tok', status: 'open', stamp_total: 10, reward: '請食飯', created_at: '2026-08-08' };
+  const db = { getPublicCard: async (t) => (t === 'good' ? { card: stubCard, friendName: '阿明', grudges: [] } : null) };
   assert.equal((await handlers.publicCard({ db }, { params: { token: 'bad' } })).status, 404);
-  assert.equal((await handlers.publicCard({ db }, { params: { token: 'good' } })).status, 200);
+  const res = await handlers.publicCard({ db }, { params: { token: 'good' } });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.card.status, 'open');
+  assert.equal(res.body.card.stamp_total, 10);
+  assert.equal(res.body.card.reward, '請食飯');
+  assert.equal(res.body.card.created_at, '2026-08-08');
+  assert.equal('uid' in res.body.card, false);
+  assert.equal('id' in res.body.card, false);
+  assert.equal('friend_id' in res.body.card, false);
+  assert.equal('share_token' in res.body.card, false);
 });
 
 test('publicAck is one-way and idempotent', async () => {
   let calls = 0;
-  const db = { ackCardByToken: async () => { calls += 1; return { status: 'acknowledged' }; } };
+  const stubCard = { uid: 'u1', id: 20, friend_id: 3, share_token: 'tok', status: 'acknowledged', stamp_total: 10, reward: '請食飯', created_at: '2026-08-08' };
+  const db = { ackCardByToken: async () => { calls += 1; return stubCard; } };
   const res = await handlers.publicAck({ db }, { params: { token: 'good' } });
   assert.equal(res.status, 200);
   assert.equal(calls, 1);
+  assert.equal(res.body.status, 'acknowledged');
+  assert.equal(res.body.stamp_total, 10);
+  assert.equal(res.body.reward, '請食飯');
+  assert.equal(res.body.created_at, '2026-08-08');
+  assert.equal('uid' in res.body, false);
+  assert.equal('id' in res.body, false);
+  assert.equal('friend_id' in res.body, false);
+  assert.equal('share_token' in res.body, false);
   const missing = await handlers.publicAck({ db: { ackCardByToken: async () => null } }, { params: { token: 'x' } });
   assert.equal(missing.status, 404);
 });
