@@ -42,7 +42,9 @@ data. That promise is made in three places — `legal.js`, the in-app confirm in
 Tests: `npx react-scripts test --testPathPattern siu-hei-bou` (paginate,
 BackMatter, Book.nav — the last covers 書末 ordering + the delete flow).
 
-**Superadmin:** `GET /api/admin/users` on the Worker returns `{total, users:[{name,email,created_at}]}` — gated server-side on the *verified* token email matching the `SUPERADMIN_EMAIL` wrangler var (hillmanchan709@gmail.com) plus `email_verified`. The 管理 link on the 目錄 footer (AdminSheet.jsx) is a cosmetic client gate only; the Worker is the enforcement point. There is NO write path to superadmin — it lives solely in the Worker env, never in the database or client.
+**Superadmin:** `GET /api/admin/users?page=&q=` on the Worker returns `{total, q, page, pages, pageSize, users:[…]}` — gated server-side on the *verified* token email matching the `SUPERADMIN_EMAIL` wrangler var (hillmanchan709@gmail.com) plus `email_verified`. The 用戶一覽 link on the 目錄 footer (AdminSheet.jsx) is a cosmetic client gate only; the Worker is the enforcement point. There is NO write path to superadmin — it lives solely in the Worker env, never in the database or client.
+
+AdminSheet shows 20 users a page (上一頁/下一頁 + debounced 搵用戶 box, both paged in SQL) and memoises each `q|page` response in a **module-level** cache for 5 min, so reopening the sheet or flipping back costs no D1 read. That cache outlives the component — `Book.handleLogout` must keep calling `clearAdminCache()` or the next account signing in on the same tab could be served the previous admin's list. Tests: `npx react-scripts test AdminSheet`.
 
 | Piece | Where |
 |---|---|

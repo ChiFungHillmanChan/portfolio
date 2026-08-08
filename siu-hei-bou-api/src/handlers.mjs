@@ -3,6 +3,22 @@ import { stampSum, canOpenCard, validateFriend, validateGrudge, genShareToken } 
 const ok = (body) => ({ status: 200, body });
 const err = (status, error) => ({ status, body: { error } });
 
+export const ADMIN_PAGE_SIZE = 20;
+const ADMIN_MAX_PAGE_SIZE = 100;   // hard ceiling: ?page_size=999999 is not a way to dump the table
+const ADMIN_MAX_QUERY = 60;
+
+// Query params are attacker-controlled strings; clamp them into a bounded page.
+function adminUserQuery(query = {}) {
+  const rawSize = Math.floor(Number(query.page_size));
+  const rawPage = Math.floor(Number(query.page));
+  return {
+    q: typeof query.q === 'string' ? query.q.trim().slice(0, ADMIN_MAX_QUERY) : '',
+    page: Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1,
+    pageSize: Number.isFinite(rawSize) && rawSize > 0
+      ? Math.min(rawSize, ADMIN_MAX_PAGE_SIZE) : ADMIN_PAGE_SIZE,
+  };
+}
+
 const publicCardView = (card) => ({
   status: card.status,
   stamp_total: card.stamp_total,
@@ -116,13 +132,19 @@ export const handlers = {
 
   // Superadmin only: how many people use the app, and who. Gate is the verified
   // token email against env SUPERADMIN_EMAIL — no client-side flag is trusted.
-  adminUsers: async ({ db, user, superadminEmail }) => {
+  // Paged (20/page) + searchable: the sheet asks for one page at a time, so the
+  // query stays a bounded LIMIT/OFFSET no matter how big the table gets.
+  adminUsers: async ({ db, user, superadminEmail }, { query } = {}) => {
     if (!superadminEmail || !user || user.email !== superadminEmail || !user.emailVerified) {
       return err(403, 'forbidden');
     }
-    const users = await db.adminListUsers();
+    const { q, page, pageSize } = adminUserQuery(query);
+    const total = await db.adminCountUsers(q);
+    const pages = Math.max(1, Math.ceil(total / pageSize));
+    const safePage = Math.min(page, pages);           // asking past the end lands on the last page
+    const users = await db.adminListUsers(pageSize, (safePage - 1) * pageSize, q);
     return ok({
-      total: users.length,
+      total, q, pages, pageSize, page: safePage,
       users: users.map((u) => ({ name: u.display_name || null, email: u.email, created_at: u.created_at })),
     });
   },

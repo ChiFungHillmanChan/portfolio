@@ -4,6 +4,7 @@ CREATE TABLE users (
   display_name TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE INDEX idx_users_created ON users(created_at DESC, uid);  -- admin pagination
 
 CREATE TABLE friends (
   id         INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -43,3 +44,7 @@ CREATE TABLE grudges (
   created_at  TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX idx_grudges_uid_friend ON grudges(uid, friend_id);
+-- getState sums unclaimed stamps by friend_id alone, which cannot use the
+-- uid-leading index above; partial index keeps that hot path off a full scan.
+CREATE INDEX idx_grudges_open ON grudges(friend_id) WHERE card_id IS NULL;
+CREATE INDEX idx_grudges_card ON grudges(card_id);  -- public card page

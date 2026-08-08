@@ -10,13 +10,33 @@ export function makeDb(d1) {
     return first(d1.prepare(sql).bind(id, uid, ...keys.map((k) => patch[k])));
   }
 
-  return {
-    adminListUsers: () => all(d1.prepare(
-      `SELECT display_name, email, created_at FROM users ORDER BY created_at`)),
+  // LIKE would treat a user-typed % or _ as a wildcard; escape them so the
+  // search box matches literally.
+  const likeArg = (q) => `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+  const userMatch = (p) => `(email LIKE ${p} ESCAPE '\\' OR display_name LIKE ${p} ESCAPE '\\')`;
 
+  return {
+    // Admin list is paged so one superadmin visit never pulls the whole table.
+    // ORDER BY created_at DESC, uid — the uid tiebreak keeps OFFSET paging
+    // stable when several rows share a created_at second.
+    adminCountUsers: async (q) => {
+      const row = await first(q
+        ? d1.prepare(`SELECT COUNT(*) AS n FROM users WHERE ${userMatch('?1')}`).bind(likeArg(q))
+        : d1.prepare(`SELECT COUNT(*) AS n FROM users`));
+      return row ? row.n : 0;
+    },
+    adminListUsers: (limit, offset, q) => all(q
+      ? d1.prepare(`SELECT display_name, email, created_at FROM users WHERE ${userMatch('?3')}
+                    ORDER BY created_at DESC, uid LIMIT ?1 OFFSET ?2`).bind(limit, offset, likeArg(q))
+      : d1.prepare(`SELECT display_name, email, created_at FROM users
+                    ORDER BY created_at DESC, uid LIMIT ?1 OFFSET ?2`).bind(limit, offset)),
+
+    // Runs on every /api/state. The WHERE on DO UPDATE makes the common case
+    // (nothing changed since last visit) write zero rows — D1 bills rows written.
     upsertUser: (uid, email, name) => d1.prepare(
       `INSERT INTO users (uid, email, display_name) VALUES (?1, ?2, ?3)
-       ON CONFLICT(uid) DO UPDATE SET email = ?2, display_name = ?3`).bind(uid, email, name).run(),
+       ON CONFLICT(uid) DO UPDATE SET email = ?2, display_name = ?3
+       WHERE users.email IS NOT ?2 OR users.display_name IS NOT ?3`).bind(uid, email, name).run(),
 
     // 個人檔案 — the row plus what "撕爛本簿" would take with it. Counts every
     // friend, archived or not: the delete is total, so the warning must be too.

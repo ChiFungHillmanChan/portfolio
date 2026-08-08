@@ -95,8 +95,14 @@ test('publicAck is one-way and idempotent', async () => {
   assert.equal(missing.status, 404);
 });
 
+const adminDb = (rows) => ({
+  adminCountUsers: async (q) => rows.filter((r) => !q || r.email.includes(q) || (r.display_name || '').includes(q)).length,
+  adminListUsers: async (limit, offset, q) =>
+    rows.filter((r) => !q || r.email.includes(q) || (r.display_name || '').includes(q)).slice(offset, offset + limit),
+});
+
 test('adminUsers rejects everyone except the verified superadmin', async () => {
-  const db = { adminListUsers: async () => [{ display_name: 'A', email: 'a@x.com', created_at: '2026-08-08' }] };
+  const db = adminDb([{ display_name: 'A', email: 'a@x.com', created_at: '2026-08-08' }]);
   const superadminEmail = 'boss@x.com';
 
   const stranger = await handlers.adminUsers(
@@ -119,10 +125,55 @@ test('adminUsers rejects everyone except the verified superadmin', async () => {
 });
 
 test('adminUsers falls back to email when display_name is empty', async () => {
-  const db = { adminListUsers: async () => [{ display_name: '', email: 'b@x.com', created_at: '2026-08-08' }] };
+  const db = adminDb([{ display_name: '', email: 'b@x.com', created_at: '2026-08-08' }]);
   const res = await handlers.adminUsers(
     { db, superadminEmail: 'boss@x.com', user: { email: 'boss@x.com', emailVerified: true } }, {});
   assert.equal(res.body.users[0].name, null);
+});
+
+const BOSS = { superadminEmail: 'boss@x.com', user: { email: 'boss@x.com', emailVerified: true } };
+const manyUsers = Array.from({ length: 45 }, (_, i) => (
+  { display_name: `U${i}`, email: `u${i}@x.com`, created_at: '2026-08-08' }));
+
+test('adminUsers pages 20 at a time and reports the full total', async () => {
+  const db = adminDb(manyUsers);
+  const p1 = await handlers.adminUsers({ db, ...BOSS }, { query: {} });
+  assert.deepEqual(
+    { total: p1.body.total, page: p1.body.page, pages: p1.body.pages, pageSize: p1.body.pageSize, n: p1.body.users.length },
+    { total: 45, page: 1, pages: 3, pageSize: 20, n: 20 });
+  assert.equal(p1.body.users[0].email, 'u0@x.com');
+
+  const p3 = await handlers.adminUsers({ db, ...BOSS }, { query: { page: '3' } });
+  assert.equal(p3.body.users.length, 5);
+  assert.equal(p3.body.users[0].email, 'u40@x.com');
+});
+
+test('adminUsers clamps hostile paging params', async () => {
+  const db = adminDb(manyUsers);
+  const past = await handlers.adminUsers({ db, ...BOSS }, { query: { page: '999' } });
+  assert.equal(past.body.page, 3);            // lands on the last page, not empty
+  assert.equal(past.body.users.length, 5);
+
+  const huge = await handlers.adminUsers({ db, ...BOSS }, { query: { page_size: '999999' } });
+  assert.equal(huge.body.pageSize, 100);      // ceiling, not a table dump
+
+  for (const bad of [{ page: '0' }, { page: '-4' }, { page: 'abc' }, { page_size: '0' }, { page_size: 'x' }]) {
+    const res = await handlers.adminUsers({ db, ...BOSS }, { query: bad });
+    assert.equal(res.body.page >= 1 && res.body.pageSize >= 1, true, JSON.stringify(bad));
+  }
+});
+
+test('adminUsers search narrows both the page and the total', async () => {
+  const db = adminDb(manyUsers);
+  const res = await handlers.adminUsers({ db, ...BOSS }, { query: { q: '  U4  ' } });
+  assert.equal(res.body.q, 'U4');             // trimmed before it reaches SQL
+  assert.equal(res.body.total, 6);            // U4, U40..U44
+  assert.equal(res.body.pages, 1);
+
+  const none = await handlers.adminUsers({ db, ...BOSS }, { query: { q: 'nobody' } });
+  assert.equal(none.body.total, 0);
+  assert.deepEqual(none.body.users, []);
+  assert.equal(none.body.pages, 1);           // never 0 — the UI renders "1 / 1"
 });
 
 /* ---- 書末 ·個人檔案 ---- */

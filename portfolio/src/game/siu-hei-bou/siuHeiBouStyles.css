@@ -380,9 +380,17 @@
 .shb-danger { color: #a03030; }
 
 /* ===== 管理 sheet ===== */
+.shb-admin-search { margin-bottom: 10px; }
 .shb-admin-total { margin: 4px 0 10px; font-size: 16px; font-weight: 700; color: var(--shb-ink); }
-.shb-admin-list { max-height: 40vh; overflow-y: auto; }
+.shb-admin-busy { font-size: 13px; font-weight: 400; opacity: 0.6; }
+.shb-admin-list { min-height: 34vh; max-height: 40vh; overflow-y: auto; }
 .shb-admin-date { opacity: 0.6; }
+.shb-admin-pager {
+  display: flex; align-items: center; justify-content: space-between;
+  margin: 8px 0 14px; font-size: 13px; color: var(--shb-ink-dark);
+}
+.shb-admin-pager .shb-link:disabled { opacity: 0.25; text-decoration: none; }
+.shb-admin-refresh { flex: none; }
 
 /* ===== 書末（個人檔案 · 私隱條款 · 條款及細則）===== */
 .shb-back-header {

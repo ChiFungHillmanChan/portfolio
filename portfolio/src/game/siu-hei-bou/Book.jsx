@@ -7,7 +7,7 @@ import IndexPage from './IndexPage';
 import ChapterPage from './FriendChapter';
 import AddGrudgeSheet from './AddGrudgeSheet';
 import SettingsSheet from './SettingsSheet';
-import AdminSheet from './AdminSheet';
+import AdminSheet, { clearAdminCache } from './AdminSheet';
 import BackMatter, { BACK_PAGES } from './BackMatter';
 import LegalSheet from './LegalDoc';
 import { LEGAL_DOCS } from './legal';
@@ -243,6 +243,7 @@ export default function Book({ user, loginBusy, onLogin, onLogout, state, refres
 
   const handleLogout = () => {
     onLogout();
+    clearAdminCache();
     setNav({ section: 'index', page: 0 });
     setSearch('');
     setGrudgeMap({});
