@@ -1,0 +1,65 @@
+/* ===== 小氣簿 — base tokens & shell ===== */
+.shb-root {
+  --shb-paper: #f7f0e3;
+  --shb-paper-deep: #efe5d2;
+  --shb-line: #d8c9b8;
+  --shb-ink: #b3402f;
+  --shb-ink-dark: #5a4632;
+  --shb-face: #ffe3e0;
+  --shb-cover: #b04a3a;
+  --shb-cover-deep: #8e3a2d;
+  --shb-accent: #e8a0a0;
+  --shb-radius: 14px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--shb-paper-deep);
+  color: var(--shb-ink-dark);
+  font-family: 'LXGW WenKai TC', 'PingFang HK', 'Microsoft JhengHei', serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.shb-root * { box-sizing: border-box; }
+.shb-root button { font-family: inherit; cursor: pointer; }
+
+.shb-loading { margin: 40vh auto; font-size: 18px; }
+
+.shb-toast {
+  position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); left: 50%;
+  transform: translateX(-50%);
+  background: var(--shb-ink-dark); color: var(--shb-paper);
+  padding: 10px 18px; border-radius: 20px; font-size: 15px; z-index: 60;
+  animation: shb-pop-in 0.18s ease-out;
+}
+@keyframes shb-pop-in { from { transform: translateX(-50%) scale(0.8); opacity: 0; } }
+
+/* ===== 封面 ===== */
+.shb-cover {
+  width: min(92vw, 400px); margin: 8vh auto 0; padding: 48px 24px 64px;
+  background: linear-gradient(160deg, var(--shb-cover), var(--shb-cover-deep));
+  border-radius: 10px 22px 22px 10px;
+  box-shadow: inset 6px 0 0 rgba(0,0,0,0.18), 0 14px 30px rgba(90, 50, 30, 0.35);
+  position: relative; text-align: center;
+}
+.shb-cover-band {
+  position: absolute; top: 0; bottom: 0; right: 26px; width: 14px;
+  background: #6f4a3d; opacity: 0.85; border-radius: 4px;
+}
+.shb-cover-plate {
+  background: var(--shb-paper); border-radius: 8px;
+  width: min(70%, 230px); margin: 0 auto; padding: 22px 12px 18px;
+  box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+}
+.shb-cover-face { margin-bottom: 6px; }
+.shb-cover-title { font-size: 44px; font-weight: 700; letter-spacing: 10px; margin: 0; color: var(--shb-ink); }
+.shb-cover-sub { font-size: 14px; letter-spacing: 4px; margin: 8px 0 0; }
+.shb-google-btn {
+  margin-top: 40px; display: inline-flex; align-items: center; gap: 10px;
+  background: var(--shb-paper); border: none; border-radius: 24px;
+  padding: 12px 26px; font-size: 17px; color: var(--shb-ink-dark);
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+}
+.shb-google-btn:active { transform: translateY(2px); box-shadow: 0 2px 0 rgba(0,0,0,0.2); }
+.shb-google-btn:disabled { opacity: 0.7; }
+.shb-cover-note { color: rgba(255, 240, 230, 0.85); font-size: 13px; margin-top: 18px; letter-spacing: 1px; }
