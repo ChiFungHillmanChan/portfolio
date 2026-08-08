@@ -37,8 +37,8 @@ test('accepts a valid token', async () => {
 });
 
 test('rejects expired token', async () => {
-  const token = await makeToken({ exp: Math.floor(Date.now() / 1000) - 10 });
-  await assert.rejects(() => verifyFirebaseToken(token, opts()), AuthError);
+  const token = await makeToken({ exp: Math.floor(Date.now() / 1000) - 400 });
+  await assert.rejects(async () => verifyFirebaseToken(token, opts()), AuthError);
 });
 
 test('rejects wrong audience / issuer / missing sub', async () => {
@@ -60,4 +60,11 @@ test('rejects unknown kid, alg none, and garbage', async () => {
   const noneToken = `${enc({ alg: 'none', kid: 'test-kid' })}.${enc({ iss: `https://securetoken.google.com/${PROJECT}`, aud: PROJECT, sub: 'x', iat: nowSec, exp: nowSec + 100 })}.`;
   await assert.rejects(async () => verifyFirebaseToken(noneToken, opts()), AuthError);
   await assert.rejects(async () => verifyFirebaseToken('not-a-jwt', opts()), AuthError);
+});
+
+test('rejects garbage signature segment', async () => {
+  const token = await makeToken();
+  const [h, p] = token.split('.');
+  const garbageSig = `${h}.${p}.!!!not-base64url!!!`;
+  await assert.rejects(async () => verifyFirebaseToken(garbageSig, opts()), AuthError);
 });
