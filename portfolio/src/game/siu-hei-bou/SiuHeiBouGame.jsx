@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { getFirebase } from './firebase';
 import { api, setTokenGetter } from './api';
 import CoverPage from './CoverPage';
+import HomePage from './HomePage';
 import './siuHeiBouStyles.css';
 
 const FONT_HREF = 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@400;700&display=swap';
@@ -106,7 +107,7 @@ export default function SiuHeiBouGame() {
   } else if (friend) {
     content = <p>FRIEND PAGE — Task 8 replaces this: {friend.name}</p>;
   } else {
-    content = <p>HOME PAGE — Task 7 replaces this</p>;
+    content = <HomePage state={state} onSelect={setFriendId} refresh={refresh} toast={toast} onLogout={logout} />;
   }
 
   return (
