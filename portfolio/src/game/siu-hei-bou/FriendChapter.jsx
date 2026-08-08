@@ -65,6 +65,10 @@ export default function ChapterPage({
       if (range) {
         if (progress <= range.start && pen.progress < pen.total) {
           text = '';
+          // 落紙嗰下：一個字都未寫，但支筆要見到 —— 停喺第一行行頭。冇呢句，
+          // 支筆就會喺第一個字寫完之後先憑空出現，成個「落筆」嘅動作冇咗。
+          const firstText = penRanges.find((r) => r.type === 'text');
+          if (pen.progress < 0 && range === firstText) penAt = 0;
         } else if (progress < range.end) {
           text = takeUnits(line.text, progress - range.start);
           penAt = unitLen(text) * geom.charPx;

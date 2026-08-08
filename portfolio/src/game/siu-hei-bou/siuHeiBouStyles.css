@@ -310,14 +310,20 @@
 }
 
 /* ===== 支筆 ===== */
+/* 支筆。兩樣嘢令佢似寫字：
+   · left 有 transition —— 個字係一個一個咁浮出嚟嘅，如果支筆跟住跳格，就會一嘟
+     一嘟。滑過去（略長過一格嘅時間）就變成連續咁行，中間唔會斷。
+   · wobble 慢咗、細咗（0.22s→0.52s，3deg→1.6deg）。快而大幅嘅擺動睇落係震，
+     唔係手寫；慢而細先似手腕嘅力度。 */
 .shb-pen {
   position: absolute; bottom: -6px; margin-left: -5px;
   pointer-events: none; z-index: 4; display: inline-flex;
-  animation: shb-pen-wobble 0.22s ease-in-out infinite alternate;
+  transition: left 0.11s linear;
+  animation: shb-pen-wobble 0.52s ease-in-out infinite alternate;
 }
 @keyframes shb-pen-wobble {
-  from { transform: rotate(-3deg); }
-  to { transform: rotate(2.5deg) translateY(-1px); }
+  from { transform: rotate(-1.6deg); }
+  to { transform: rotate(1.4deg) translateY(-0.5px); }
 }
 
 /* ===== FAB + bottom sheet ===== */

@@ -22,6 +22,18 @@ const BACK = '__back__';
 const reduceMotion = () =>
   window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+// 支筆行幾快 —— 一筆嬲爆事要行幾多格先寫完（每格 PEN_TICK_MS）。
+// 舊版係「幾長都 55 格走完」，即係一筆長嘅嬲爆事每格要彈兩三個字出嚟，睇落似
+// loading bar 多過似有人喺度寫字。而家格數跟住字數行：
+//   · 最少 30 格（~1.4 秒）—— 短短一句都唔會一眨眼就完。
+//   · 140 格以下每格行少過一個字，即係真係一個字一個字咁浮出嚟。
+//   · 封頂 140 格（~6.3 秒）。過咗就要加速，一格行多過一個字 —— 呢個係取捨：
+//     唔加速嘅話，寫足 500 字要 22 秒，冇人會望完。
+// total 係「格」數：CJK 一個字 = 1 格、半形 = 0.5 格，同 geometry.js 一樣。
+// 兩個門檻都由 pen.test.js 釘住。
+export const PEN_TICK_MS = 45;
+export const penSteps = (total) => Math.min(140, Math.max(30, Math.round(total * 1.8)));
+
 // The physical book. Cover and pages are stacked layers in one fixed-size box, so
 // closed and open are exactly the same size; auth state alone swings the cover.
 //
@@ -268,7 +280,9 @@ export default function Book({
     }
     const entryId = queued && queued.item ? queued.item.clientId : null;
     if (entryId && !reduceMotion()) {
-      setPen({ friendId, entryId, progress: -1, total: unitLen(values.content || '') });
+      // 負數 = 落紙嗰下（支筆停喺行頭，日期同嬲爆面都未出）。-1 得一格（45ms），
+      // 眨吓眼就冇；-3 大約 250ms，啱啱好夠睇到支筆停一停先開始寫。
+      setPen({ friendId, entryId, progress: -3, total: unitLen(values.content || '') });
     }
   };
 
@@ -341,20 +355,20 @@ export default function Book({
   /* ---- pen writing ---- */
 
   // Ticker: advances the nib every 45ms. Keyed on the entry (not the whole pen
-  // object) so the interval survives per-tick re-renders and the whole entry
-  // lands in ≤ ~2.5s regardless of render latency.
+  // object) so the interval survives per-tick re-renders.
   const penEntryId = pen ? pen.entryId : null;
   useEffect(() => {
     if (!penEntryId || leaf) return undefined;
     const t = setInterval(() => {
       setPen((p) => {
         if (!p) return p;
-        const progress = Math.max(0, p.progress);
-        if (progress >= p.total) return p;
-        const step = Math.max(0.5, p.total / 55);
-        return { ...p, progress: Math.min(p.total, progress + step) };
+        // 由負數行返上嚟（唔好夾硬當佢係 0）—— 嗰段負數就係支筆落紙嗰下：支筆
+        // 已經喺行頭度，但一個字都未寫。冇咗呢一下，支筆會喺半個字度憑空出現。
+        if (p.progress >= p.total) return p;
+        const step = p.total / penSteps(p.total);
+        return { ...p, progress: Math.min(p.total, p.progress + step) };
       });
-    }, 45);
+    }, PEN_TICK_MS);
     return () => clearInterval(t);
   }, [penEntryId, leaf]);
 
