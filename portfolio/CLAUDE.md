@@ -35,12 +35,91 @@ bookmark tab (0–22px) that would otherwise clip it.
 
 **撕爛本簿:** `DELETE /api/me` wipes every D1 row for the uid, then the client
 signs out (that order matters — `/api/state` upserts the user row, so refreshing
-in between resurrects an empty account). The shared Google account is
-deliberately **not** deleted; it carries paid System Design tiers and poker/casino
-data. That promise is made in three places — `legal.js`, the in-app confirm in
-`BackMatter.jsx`, and `siu-hei-bou-api/README.md` — keep them in sync.
-Tests: `npx react-scripts test --testPathPattern siu-hei-bou` (paginate,
-BackMatter, Book.nav — the last covers 書末 ordering + the delete flow).
+in between resurrects an empty account), then the local mirror + outbox go
+(`clearBook`). The shared Google account is deliberately **not** deleted; it
+carries paid System Design tiers and poker/casino data. That promise is made in
+three places — `legal.js`, the in-app confirm in `BackMatter.jsx`, and
+`siu-hei-bou-api/README.md` — keep them in sync.
+Tests: `npx react-scripts test --testPathPattern siu-hei-bou` (13 suites / 159
+tests as of 2026-08-09).
+
+## 小氣簿 — offline (2026-08-09)
+
+The whole book reads and writes with no network; writes queue in IndexedDB and
+push on reconnect. Two phones on the **same** Google account converge. Design:
+`docs/superpowers/specs/2026-08-08-siu-hei-bou-offline-sync-design.md`.
+
+**Shape.** Server is the only source of truth. The device holds a **mirror**
+(disposable — replaced wholesale by the server, never merged into) and an
+**outbox** (an ordered log; the only precious local data). What renders is a
+pure projection of the two:
+
+```
+IndexedDB "shb":  mirror (keyPath uid) · outbox (keyPath seq, autoIncrement) · meta
+projectBook(mirror, outbox) -> { friends, grudges, cards }     // pure
+```
+
+`Book.jsx` consumes only that and renders `pending: true` as pencil — **it never
+learns what sync is**. `localStorage['shb-state']` is gone (un-namespaced, 5MB
+cap, synchronous parse during page-flip animations).
+
+| File | Job |
+|---|---|
+| `idb.js` | plumbing only, zero logic |
+| `outbox.js` | pure: `classify` / `coalesce` / `poison` / `backoffMs` |
+| `project.js` | pure: `projectBook` |
+| `sync.js` | impure orchestration: flush + pull + `applyToMirror` |
+| `PendingPage.jsx` | 未寄出 (last 書末 page, only when the outbox is non-empty) |
+
+**Traps — every one of these was a real bug, do not undo them:**
+
+- **`classify` splits 404 by op.** On update/delete it means "already done"; on
+  createGrudge it means "the parent 罪人 is gone". Same status, opposite verdicts.
+- **No gap between outbox and mirror.** `flush` writes the server's row into the
+  mirror (`applyToMirror`) at the moment it drops the outbox item — `notify()`
+  only fires after the loop, so no render ever sees the window where the entry is
+  in neither. Without it the entry blinks out and the pen dies. It also bumps
+  `friend.stamps`, or the stamp card dips until the next pull.
+- **`applyToMirror` honours `mirrorEpoch`** exactly like `pull` does, and
+  synthesises a mirror with **`pulledAt: null`** when none exists (writing in the
+  first seconds is normal). `pulledAt` is load-bearing: flush's parent-gone check
+  requires a mirror the *server* filled, or a self-made one gets read as "the 罪人
+  was deleted" and buries good writes into 未寄出.
+- **The pen tracks `client_id`, not just `id`** (`isPenEntry`). A row changes
+  identity mid-animation: client UUID while queued, server integer once synced.
+- **`penSeen` distinguishes "not yet" from "gone".** The pen arms *before* the
+  entry reaches the page (otherwise the sentence flashes whole for one frame), so
+  the follower must not read a missing entry as deleted on that first render.
+- **登出 ≠ 撕爛本簿.** Logout clears the mirror and **keeps** the uid-tagged
+  outbox (wiping it destroys work written offline); 撕爛本簿 clears both. Safe
+  only because `runFlush` refuses items whose uid ≠ the current token. Promised in
+  `legal.js` §二 — that file's header says its text must match the code.
+- **Auto-sync tears down on uid change, not just unmount**, and a pull in flight
+  at logout is discarded. Both otherwise resurrect the book on a signed-out phone.
+- **`shb-last-uid`** (localStorage) only says "you were signed in when you last
+  closed the book", so the book opens straight from IndexedDB instead of waiting
+  for Firebase's dynamic import. It is not a token and grants nothing; no request
+  goes out until auth is verified (`startAutoSync` keys on the *verified* uid).
+- **`navigator.onLine` is a hint** — it reports `true` on a captive portal. What
+  the UI shows comes from whether the last real attempt succeeded.
+
+**Mobile UI rules learned the hard way:** every text input is **≥16px** or iOS
+Safari force-zooms on focus and pushes the submit button off-screen (fixed in CSS,
+never via viewport meta — `public/index.html` is shared by every game). Bottom
+sheets are capped `88dvh` with internal scroll (`dvh`, not `vh`) and their `h3` is
+`position: sticky`, or the keyboard pushes the title out of view. Both pinned in
+`siuHeiBouStyles.test.js`.
+
+**Test layering (deliberate).** The pen is a `setInterval`; asserting mid-animation
+while the whole suite runs is a race that goes red at random. So: `penUi.test.js`
+drives `Book` directly (controlled component — one render answers it, no timers,
+no IDB), `sync.test.js` covers the outbox→mirror handover, `pen.test.js` covers
+`isPenEntry` + the pacing curve. Do not "improve" these into one end-to-end test.
+
+**Deploy order: Worker first.** Merging auto-deploys the frontend in ~1 min; the
+Worker and the D1 migration are manual. Worker changes were additive so the old
+frontend kept working during the gap. `wrangler d1 execute --remote` can report
+nothing and silently not apply — **always verify with `PRAGMA table_info`**.
 
 **Superadmin:** `GET /api/admin/users?page=&q=` on the Worker returns `{total, q, page, pages, pageSize, users:[…]}` — gated server-side on the *verified* token email matching the `SUPERADMIN_EMAIL` wrangler var (hillmanchan709@gmail.com) plus `email_verified`. The 用戶一覽 link on the 目錄 footer (AdminSheet.jsx) is a cosmetic client gate only; the Worker is the enforcement point. There is NO write path to superadmin — it lives solely in the Worker env, never in the database or client.
 
@@ -48,15 +127,16 @@ AdminSheet shows 20 users a page (上一頁/下一頁 + debounced 搵用戶 box,
 
 | Piece | Where |
 |---|---|
-| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (root + path routing), Book.jsx (book shell: cover swings on auth, leaf flips, nav, pen ticker), IndexPage (目錄 + search), FriendChapter (chapter pages), BackMatter.jsx + legal.js + LegalDoc.jsx (書末: 個人檔案/私隱/條款), paginate.js + geometry.js (32px ruled-line grid — LINE_PX/H must stay in sync with the CSS block heights), AddGrudgeSheet, PublicCardPage, SettingsSheet (per-friend, not app settings), svgs.jsx, firebase.js, api.js. Jest: `npx react-scripts test --testPathPattern siu-hei-bou` |
+| Frontend | `src/game/siu-hei-bou/` — SiuHeiBouGame.jsx (routing + owns sync, passes Book a projected book), Book.jsx (book shell: cover swings on auth, leaf flips, nav, pen ticker), IndexPage (目錄 + search), FriendChapter (chapter pages), BackMatter.jsx + legal.js + LegalDoc.jsx (書末: 個人檔案/私隱/條款), PendingPage.jsx (未寄出), paginate.js + geometry.js (32px ruled-line grid — LINE_PX/H must stay in sync with the CSS block heights), idb/outbox/project/sync.js (offline engine), AddGrudgeSheet, PublicCardPage, SettingsSheet (per-friend, not app settings), svgs.jsx, firebase.js, api.js. Jest: `npx react-scripts test --testPathPattern siu-hei-bou` |
 | Backend | REPO ROOT `siu-hei-bou-api/` — Cloudflare Worker (`src/index.mjs` router, `auth.mjs` WebCrypto JWT verify, `db.mjs` SQL, `handlers.mjs`, `logic.mjs` pure), tests `npm test` (`node --test`) |
 | Database | Cloudflare D1 `siu-hei-bou-db` (id `67932535-b39a-4a1f-b7ae-a4fafc9b466d`) — tables users/friends/grudges/cards, schema in `siu-hei-bou-api/schema.sql` |
 | API | `https://siu-hei-bou-api.hillmanchan.com` (Workers custom domain) — `/api/*` Bearer Firebase ID token, `/public/cards/:token` no auth (responses field-projected, never leak uid) |
 | Deploy backend | `cd siu-hei-bou-api && npx wrangler deploy` (account hillmanchan709@gmail.com) |
 | Deploy frontend | normal portfolio push-to-main → S3 + CloudFront |
-| Spec / plan | `docs/superpowers/specs/2026-08-08-siu-hei-bou-design.md`, `docs/superpowers/plans/2026-08-08-siu-hei-bou.md` |
+| Offline | IndexedDB `shb` (mirror + outbox + meta) — see §小氣簿 — offline above |
+| Spec / plan | `docs/superpowers/specs/2026-08-08-siu-hei-bou-design.md`, `docs/superpowers/plans/2026-08-08-siu-hei-bou.md`, `docs/superpowers/specs/2026-08-08-siu-hei-bou-offline-sync-design.md` |
 
-Rules: ALL copy Cantonese; NO emoji (hand-drawn inline SVG only); CSS scoped `.shb-*`; Firebase only via lazy `getFirebase()` (keeps it out of the main bundle and App.test's jsdom); the portfolio CSP (`public/index.html`) must keep `https://siu-hei-bou-api.hillmanchan.com` in `connect-src`.
+Rules: ALL copy Cantonese; NO emoji (hand-drawn inline SVG only); CSS scoped `.shb-*`; text inputs ≥16px (iOS zoom); Firebase only via lazy `getFirebase()` (keeps it out of the main bundle and App.test's jsdom); the portfolio CSP (`public/index.html`) must keep `https://siu-hei-bou-api.hillmanchan.com` in `connect-src`; the shell SW (`public/sw.js`) caches the LXGW WenKai TC font via an explicit two-host allowlist — never invert its cross-origin early-return, or it starts caching the API's per-user JSON.
 
 ## System Design 教室
 
