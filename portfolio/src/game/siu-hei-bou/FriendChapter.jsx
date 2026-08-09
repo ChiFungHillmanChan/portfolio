@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import { AngryFace, StampSeal, PenNib } from './svgs';
 import { takeUnits, unitLen } from './paginate';
-import { entryLineMap } from './geometry';
+import { entryLineMap, isPenEntry } from './geometry';
 
 function Gear() {
   return (
@@ -38,7 +38,7 @@ export default function ChapterPage({
 
   const renderLine = (line, i) => {
     if (line.type === 'gap') return <div key={i} className="shb-line" />;
-    const penning = pen && line.entry.id === pen.entryId;
+    const penning = pen && isPenEntry(line.entry, pen.entryId);
     const progress = pen ? Math.max(0, pen.progress) : 0;
 
     if (line.type === 'meta') {

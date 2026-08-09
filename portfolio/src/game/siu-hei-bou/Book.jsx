@@ -40,7 +40,7 @@ export const penSteps = (total) => Math.min(140, Math.max(30, Math.round(total *
 // 呢個 component 淨係識畫。`book` 已經係砌好嘅一本簿（server 嗰份 + 未寄出嗰啲），
 // 而所有寫入都係交返俾 onMutate 排隊 —— Book 唔知道乜嘢叫 sync。
 export default function Book({
-  user, loginBusy, onLogin, onLogout,
+  user, signedIn, loginBusy, onLogin, onLogout,
   book, outbox, connected, onMutate, onDiscard, onWipeLocal, onForgetBook, refresh, toast,
 }) {
   const [geom, setGeom] = useState(computeGeom);
@@ -271,18 +271,18 @@ export default function Book({
   // 支筆跟住寫嘅係鉛筆稿：排咗隊就即刻上頁，唔使等 server 派 id 落嚟。
   const onGrudgeSaved = async (friendId, values) => {
     setSheet(null);
-    let queued;
+    // 架好支筆先，之後嗰筆嘢先至上頁 —— 掉轉嘅話成句嘢會閃足一 frame 先縮返做
+    // 「未寫」。負數 = 落紙嗰下（支筆停喺行頭，日期同嬲爆面都未出）：-1 得一格
+    // （45ms）眨吓眼就冇，-3 大約 250ms，啱啱好夠睇到支筆停一停先開始寫。
+    const armPen = (queued) => {
+      const entryId = queued && queued.item ? queued.item.clientId : null;
+      if (!entryId || reduceMotion()) return;
+      setPen({ friendId, entryId, progress: -3, total: unitLen(values.content || '') });
+    };
     try {
-      queued = await onMutate('createGrudge', { payload: { friend_id: friendId, ...values } });
+      await onMutate('createGrudge', { payload: { friend_id: friendId, ...values } }, armPen);
     } catch {
       toast('記唔到，遲啲再試');
-      return;
-    }
-    const entryId = queued && queued.item ? queued.item.clientId : null;
-    if (entryId && !reduceMotion()) {
-      // 負數 = 落紙嗰下（支筆停喺行頭，日期同嬲爆面都未出）。-1 得一格（45ms），
-      // 眨吓眼就冇；-3 大約 250ms，啱啱好夠睇到支筆停一停先開始寫。
-      setPen({ friendId, entryId, progress: -3, total: unitLen(values.content || '') });
     }
   };
 
@@ -450,7 +450,9 @@ export default function Book({
     );
   };
 
-  const open = !!user;
+  // signedIn 唔等於 user：Firebase 未答之前，「上次係登住嘅」就已經夠開本簿。
+  // 本簿嘅內容嚟自 IndexedDB，一登出就清咗，所以呢個時候揭到嘅一定係你自己嗰份。
+  const open = signedIn === undefined ? !!user : signedIn;
   const activeFriend = nav.section !== 'index' && friends
     ? friends.find((f) => f.id === nav.section) || null : null;
 
@@ -493,7 +495,7 @@ export default function Book({
         <div className={open ? 'shb-bcover shb-bcover-open' : 'shb-bcover'} aria-hidden={open}>
           <div className="shb-bcover-frontface">
             <CoverFront
-              onLogin={onLogin} busy={loginBusy} loading={user === undefined}
+              onLogin={onLogin} busy={loginBusy} loading={user === undefined && !open}
               connected={connected} onLegal={setLegalKey}
             />
           </div>

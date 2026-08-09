@@ -14,6 +14,24 @@ const FONT_HREF = 'https://fonts.googleapis.com/css2?family=LXGW+WenKai+TC:wght@
 
 const EMPTY = { book: null, outbox: [] };
 
+// 上次係邊個開緊本簿。Firebase 本身已經記得你、亦都會自動登入返 —— 但佢要行完
+// 一個 dynamic import 再叫醒 onAuthStateChanged 先答到你，喺手機上面就係每次開
+// 都要對住合埋咗嘅封面等一等。呢個 key 淨係答一句「上次合埋本簿嗰陣係登住嘅」，
+// 等本簿即刻由 IndexedDB 嗰份揭返開，Firebase 喺後面慢慢確認。
+//
+// 唔係 token、唔係憑證，攞唔到任何嘢：真正嘅資料喺 IndexedDB，而嗰度嘅嘢一登出
+// 就清咗（clearMirror）。所以有呢個 key 嘅時候，本簿一定係得返你自己嗰份。
+const LAST_UID = 'shb-last-uid';
+const readLastUid = () => {
+  try { return localStorage.getItem(LAST_UID) || null; } catch { return null; }
+};
+const writeLastUid = (v) => {
+  try {
+    if (v) localStorage.setItem(LAST_UID, v);
+    else localStorage.removeItem(LAST_UID);
+  } catch { /* private mode */ }
+};
+
 function getBase() {
   return window.location.pathname.startsWith('/siu-hei-bou') ? '/siu-hei-bou' : '';
 }
@@ -37,8 +55,13 @@ export default function SiuHeiBouGame() {
   const [toastMsg, setToastMsg] = useState(null);
   const [loginBusy, setLoginBusy] = useState(false);
   const readSeq = useRef(0);
+  const [lastUid] = useState(readLastUid);   // 開簿嗰一刻讀一次就夠，之後跟 user 行
 
-  const uid = user ? user.uid : null;
+  // 未知（Firebase 仲未答）就當返上次嗰個 —— 本簿即刻揭得開。答咗就以佢為準。
+  const uid = user ? user.uid : (user === undefined ? lastUid : null);
+  // 真係核實咗嘅先好去同 server 講嘢：冇 token 去 pull 淨係換到個 401。
+  const authedUid = user ? user.uid : null;
+  const signedIn = user ? true : (user === undefined ? !!lastUid : false);
 
   useEffect(() => {
     document.title = '小氣簿';
@@ -62,6 +85,9 @@ export default function SiuHeiBouGame() {
     getFirebase().then(({ auth, onAuthStateChanged }) => {
       unsub = onAuthStateChanged(auth, (u) => {
         setUser(u);
+        // 記住／唔記得「上次係登住嘅」。登出行到呢度會派 null 落嚟，所以下次開簿
+        // 見到嘅係合埋咗嘅封面，唔會扮住揭開先。
+        writeLastUid(u ? u.uid : null);
         if (u) setTokenGetter(() => u.getIdToken());
       });
     });
@@ -92,13 +118,21 @@ export default function SiuHeiBouGame() {
     setStatus(getSyncStatus());
   }, [uid]);
 
+  // 本地嗰份：Firebase 未答都照揭得開。
   useEffect(() => {
     if (!uid) { setSnapshot(EMPTY); return undefined; }
     const off = subscribe(reload);
-    const stop = startAutoSync(uid);   // 開簿、返到前台、有返網 都會試寄
     reload();
-    return () => { off(); stop(); };
+    return () => off();
   }, [uid, reload]);
+
+  // 同 server 講嘢嗰份：一定要核實咗先。auto-sync 係跟住 authedUid 拆嘅，唔係淨係
+  // unmount 先拆 —— 登出之後個 online listener 同 retry timer 仲喺度嘅話，一有網
+  // 就會再 pull 一次，本簿就會喺一部已經登咗出嘅機度返晒嚟。
+  useEffect(() => {
+    if (!authedUid) return undefined;
+    return startAutoSync(authedUid);   // 開簿、返到前台、有返網 都會試寄
+  }, [authedUid]);
 
   useEffect(() => {
     const update = () => setOnlineHint(navigator.onLine !== false);
@@ -119,9 +153,12 @@ export default function SiuHeiBouGame() {
   // 「講得通」—— 'discarded' 嗰次個 request 係行完成個來回嘅，只不過答案冇用。
   const connected = onlineHint && (status.at === 0 || status.pulled !== null);
 
-  const mutate = useCallback(async (op, opts) => {
+  // onQueued 喺 reload 之前嗌 —— 支筆要喺嗰筆嘢上頁之前就架好。掉轉嘅話，成句
+  // 嘢會先足本render 一 frame，然後先縮返做「未寫」，睇落係閃咗一閃。
+  const mutate = useCallback(async (op, opts, onQueued) => {
     if (!uid) return null;
     const res = await enqueueMutation(uid, op, opts);
+    if (onQueued) onQueued(res);
     await reload();                 // 即刻上頁（鉛筆），寄唔寄得出係第二件事
     sync(uid).catch(() => {});
     return res;
@@ -161,6 +198,9 @@ export default function SiuHeiBouGame() {
   }, [toast]);
 
   const logout = useCallback(async () => {
+    // 即刻唔記得，唔使等 onAuthStateChanged 派返 null 落嚟：合埋咗嘅封面唔應該
+    // 因為 Firebase 慢半拍就扮多半秒揭開。
+    writeLastUid(null);
     const { auth, signOut } = await getFirebase();
     await signOut(auth);
     setSnapshot(EMPTY);
@@ -176,7 +216,7 @@ export default function SiuHeiBouGame() {
         <PublicCardPage token={route.token} />
       ) : (
         <Book
-          user={user} loginBusy={loginBusy} onLogin={login} onLogout={logout}
+          user={user} signedIn={signedIn} loginBusy={loginBusy} onLogin={login} onLogout={logout}
           {...bookProps}
           onMutate={mutate} onDiscard={discardPending}
           onWipeLocal={wipeLocal} onForgetBook={forgetBook}

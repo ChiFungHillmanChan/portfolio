@@ -73,6 +73,17 @@ export function buildChapter(friend, grudges, card, geom) {
   return { friend, card, pages, stampH, seal, showBanner, showFullBtn, full, loaded: !!entries };
 }
 
+// 支筆寫緊嗰筆嘢會喺寫嘅途中換身份：排隊嗰陣個 id 係 client id，一寄得成功、
+// pull 返嚟就變成 server 派嘅 id。淨係認 id 嘅話，寄成功嗰刻支筆就搵唔返自己
+// 寫緊邊行，動畫當場死 —— 有網嘅時候個來回快過寫完，所以成句嘢會啪一聲彈晒
+// 出嚟。client_id 就係跨得過呢個轉身嘅嗰條線（同令重試唔會寫兩次嗰條一樣）。
+// 兩邊都冇 client_id 唔算夾到：null == undefined 會扮到係同一筆。
+export function isPenEntry(entry, entryId) {
+  if (!entry) return false;
+  if (entry.id === entryId) return true;
+  return entry.client_id != null && entry.client_id === entryId;
+}
+
 // Where each line of one entry sits, with its cumulative unit range — the pen
 // animation walks progress through these ranges.
 export function entryLineMap(pages, entryId) {
@@ -80,7 +91,7 @@ export function entryLineMap(pages, entryId) {
   let acc = 0;
   pages.forEach((page, pageIdx) => {
     page.forEach((line, lineIdx) => {
-      if (line.entry.id !== entryId) return;
+      if (!isPenEntry(line.entry, entryId)) return;
       if (line.type === 'gap') return;
       if (line.type === 'meta') {
         out.push({ pageIdx, lineIdx, type: 'meta', start: 0, end: 0 });

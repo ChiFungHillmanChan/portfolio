@@ -41,6 +41,7 @@ const friend = (id, name, extra = {}) => ({
 
 beforeEach(async () => {
   await clearBook('u1');
+  localStorage.clear();   // shb-last-uid 會喺 test 之間漏過去，逐個 test 自己擺
   window.matchMedia = () => ({ matches: true, addListener() {}, removeListener() {} });
   getFirebase.mockResolvedValue({
     auth: {},
@@ -200,4 +201,67 @@ test('冇網嗰陣封面唔會扮到撳得，因為登入真係要打得通 Goog
   expect(await screen.findByText('冇網住 ·要開簿一次先')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: /用 Google 開簿/ })).not.toBeInTheDocument();
   onLine.mockRestore();
+});
+
+/* ---- 自動登入返：Firebase 記得你，但佢答得慢 ---- */
+
+// Firebase 本身已經會自動登入，問題係佢要行完一個 dynamic import 先答到你。
+// 嗰段時間 user === undefined，本簿就一直合埋，用家每次開都以為要重新登入。
+test('上次係登住嘅話，Firebase 未答之前本簿就已經揭得開', async () => {
+  localStorage.setItem('shb-last-uid', 'u1');
+  getFirebase.mockReturnValue(new Promise(() => {}));   // 永遠唔答，扮住仲 load 緊
+
+  render(<SiuHeiBouGame />);
+
+  // 揭開咗：見到目錄嘅「加罪人」，而唔係封面嗰個登入掣
+  expect(await screen.findByPlaceholderText('邊個激嬲你？寫低個名⋯')).toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /用 Google 開簿/ })).not.toBeInTheDocument();
+});
+
+// 揭得開唔等於信得過。核實之前一個 request 都唔應該出街 —— 冇 token 去 pull
+// 淨係換到個 401，仲要嘥個來回。
+test('但核實之前唔會同 server 講嘢', async () => {
+  localStorage.setItem('shb-last-uid', 'u1');
+  getFirebase.mockReturnValue(new Promise(() => {}));
+
+  render(<SiuHeiBouGame />);
+  await screen.findByPlaceholderText('邊個激嬲你？寫低個名⋯');
+
+  expect(api.state).not.toHaveBeenCalled();
+});
+
+test('Firebase 答返「冇登入」就即刻合返埋 —— 唔會因為個 key 就一直扮住揭開', async () => {
+  localStorage.setItem('shb-last-uid', 'u1');
+  getFirebase.mockResolvedValue({
+    auth: {},
+    provider: {},
+    onAuthStateChanged: (auth, cb) => { cb(null); return () => {}; },
+    signInWithPopup: jest.fn(),
+    signOut: jest.fn(),
+  });
+
+  render(<SiuHeiBouGame />);
+
+  expect(await screen.findByRole('button', { name: /用 Google 開簿/ })).toBeInTheDocument();
+  expect(localStorage.getItem('shb-last-uid')).toBeNull();
+});
+
+test('登出之後個 key 就冇咗 —— 下次開簿見到嘅係合埋咗嘅封面', async () => {
+  const signOut = jest.fn().mockResolvedValue(undefined);
+  let authCb;
+  getFirebase.mockResolvedValue({
+    auth: {},
+    provider: {},
+    onAuthStateChanged: (auth, cb) => { authCb = cb; cb(USER); return () => {}; },
+    signInWithPopup: jest.fn(),
+    signOut,
+  });
+
+  render(<SiuHeiBouGame />);
+  await screen.findByText('阿明');
+  expect(localStorage.getItem('shb-last-uid')).toBe('u1');   // 登住嗰陣記低咗
+
+  await act(async () => { authCb(null); });
+
+  expect(localStorage.getItem('shb-last-uid')).toBeNull();
 });

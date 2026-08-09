@@ -4,6 +4,37 @@
 // 舊版係 step = max(0.5, total / 55)，即係「幾長都 55 格走完」。一筆 100 格嘅
 // 嬲爆事每格要彈 1.8 個字出嚟，眼見嘅唔係人手寫字，係一嚿嚿字跳出嚟。
 import { PEN_TICK_MS, penSteps } from './Book';
+import { entryLineMap } from './geometry';
+
+// 支筆跟住嘅係「邊一筆嬲爆事」，而嗰筆嘢喺寫緊嘅時候會換身份：排隊嗰陣個 id 係
+// client id（'abc'），寄咗上去再 pull 返嚟就變成 server 派嘅 id（123）。
+// 兩者之間唯一連得埋嘅就係 client_id —— 就係令重試唔會寫兩次嗰個。
+// 淨係認 entry.id 嘅話，一寄得成功支筆就即刻搵唔到自己寫緊邊行，動畫當場死。
+// 有網嘅時候個來回快過寫完，所以症狀係「成句嘢啪一聲彈晒出嚟，冇寫字效果」。
+const pagesFor = (entry) => [[
+  { type: 'meta', entry },
+  { type: 'text', text: '佢遲到一個鐘', entry },
+]];
+
+test('寄咗上去、個 id 由 client id 換成 server id 之後，支筆仲跟得到嗰一筆', () => {
+  const pending = { id: 'abc', client_id: 'abc' };
+  const synced = { id: 123, client_id: 'abc' };
+
+  expect(entryLineMap(pagesFor(pending), 'abc')).toHaveLength(2);
+  expect(entryLineMap(pagesFor(synced), 'abc')).toHaveLength(2);
+});
+
+test('唔會撈錯第二筆 —— 冇 client_id 或者對唔上就唔算', () => {
+  expect(entryLineMap(pagesFor({ id: 456, client_id: 'xyz' }), 'abc')).toHaveLength(0);
+  expect(entryLineMap(pagesFor({ id: 456, client_id: null }), 'abc')).toHaveLength(0);
+  expect(entryLineMap(pagesFor({ id: 456 }), 'abc')).toHaveLength(0);
+});
+
+// null == undefined 喺鬆散比較下係 true，所以「兩邊都冇 client_id」唔可以當夾到。
+test('兩筆都冇 client_id 都唔會夾埋一齊', () => {
+  expect(entryLineMap(pagesFor({ id: 7, client_id: null }), null)).toHaveLength(0);
+  expect(entryLineMap(pagesFor({ id: 7 }), undefined)).toHaveLength(0);
+});
 
 const stepFor = (total) => total / penSteps(total);
 const secondsFor = (total) => (penSteps(total) * PEN_TICK_MS) / 1000;
