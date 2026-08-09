@@ -171,6 +171,53 @@ const errorOf = (e) => (e instanceof ApiError
   ? { status: e.status, code: e.code }
   : { status: 0, code: 'network' });
 
+// friend.stamps 係 server 數嘅（未入卡嘅印總和）。個鏡收咗一筆新嬲爆事之後，
+// 個印卡要一齊郁 —— 唔係嘅話「寄成功」嗰刻啲印會跌返轉頭，等到 pull 先彈返上去。
+const bumpStamps = (friends, friendId, delta) => (!delta ? friends : friends.map((f) => (
+  f.id === friendId ? { ...f, stamps: Math.max(0, (f.stamps || 0) + delta) } : f
+)));
+
+// 將 server 覆返嗰行寫入個鏡，等 outbox 清走嗰單之後本簿仲係連續。個鏡本身係
+// 用完即棄嘅（下次 pull 會全份蓋過），所以呢度算漏咗啲乜都唔會累積 —— 但唔做，
+// 用家就會見到自己啱啱寫低嘅嘢閃一閃。
+async function applyToMirror(uid, item, row) {
+  // 同 pull 一樣要守住合埋本簿：呢度都係寫個鏡，一登出就唔准再寫返落去，
+  // 唔係嘅話私隱條款 §二（登出＝部機唔留返本簿）就變咗空話。
+  const epoch = mirrorEpoch;
+  // 未 pull 過都要寫得入 —— 開簿頭一兩秒就寫低一筆係好正常嘅事，而嗰陣個鏡仲未
+  // 落到嚟。冇呢個 fallback，outbox 嗰單清咗之後就冇嘢頂上，嗰筆嘢會消失到下次
+  // pull 為止。pulledAt 留 null：呢份唔係 server 講過嘅嘢，flush 嗰邊靠佢分得出。
+  const mirror = (await getMirror(uid))
+    || { uid, etag: null, pulledAt: null, friends: [], grudges: [], cards: [] };
+  const isFriend = item.op.endsWith('Friend');
+  const key = isFriend ? 'friends' : 'grudges';
+  const list = [...(mirror[key] || [])];
+  const idx = list.findIndex((r) => (item.clientId != null && r.client_id === item.clientId)
+    || (item.targetId != null && r.id === item.targetId));
+  let friends = mirror.friends || [];
+
+  if (item.op.startsWith('delete')) {
+    if (idx < 0) return;
+    const [gone] = list.splice(idx, 1);
+    if (!isFriend && gone && gone.card_id == null) {
+      friends = bumpStamps(friends, gone.friend_id, -gone.severity);
+    }
+  } else if (row && row.id != null) {
+    const prev = idx >= 0 ? list[idx] : null;
+    if (idx >= 0) list[idx] = { ...prev, ...row }; else list.push(row);
+    if (!isFriend) {
+      const before = prev && prev.card_id == null ? prev.severity : 0;
+      const after = row.card_id == null ? row.severity : 0;
+      friends = bumpStamps(friends, row.friend_id, after - before);
+    }
+  } else {
+    return;   // 冇 row 覆返（404 當已經做咗）—— 唔猜，等 pull 講
+  }
+  if (epoch !== mirrorEpoch) return;                 // 期間合埋咗本簿
+  await putMirror({ ...mirror, friends, [key]: list });
+  if (epoch !== mirrorEpoch) await idbClearMirror(uid);   // 寫緊嗰陣先合埋
+}
+
 async function runFlush(uid) {
   const result = { sent: 0, dead: 0, paused: false, blocked: false, retryAt: null, error: null };
   // Items belonging to another account can only exist if this device signed in as
@@ -226,7 +273,10 @@ async function runFlush(uid) {
       // freshly pulled book rather than destroying the write. Only a mirror that HAS
       // been pulled and still does not know this client_id proves the 罪人 was
       // deleted on another device.
-      if (!mirror) {
+      // `!mirror.pulledAt` 係指 applyToMirror 自己砌出嚟嗰份（未 pull 過）。嗰份
+      // 淨係裝住本機啱啱寄成功嘅嘢，唔代表 server 講過乜，所以佢「唔識」一個 id
+      // 證明唔到個罪人俾人刪咗。
+      if (!mirror || !mirror.pulledAt) {
         await blockOn({ status: 0, code: 'unresolved' });
         break;
       }
@@ -256,7 +306,13 @@ async function runFlush(uid) {
       row = null;                                      // 'done' — already applied elsewhere
     }
 
+    // 次序係要緊嘅：outbox 嗰單一清走，本簿就淨係靠個鏡先見到嗰筆嘢 —— 但個鏡
+    // 要等 pull 返嚟先有。中間嗰段時間兩邊都冇，本簿會見到嗰筆嘢閃一閃唔見咗，
+    // 支筆亦都會即刻收工（entryLineMap 搵唔到嗰行，follower 就 setPen(null)）。
+    // 所以趁 notify() 未出（喺 loop 之後先出），即刻將 server 覆返嗰行寫入個鏡：
+    // 由頭到尾冇一格 render 見過個窿。
     await removeOutboxItem(item.seq);
+    await applyToMirror(uid, item, row);
     result.sent += 1;
     if (item.clientId && row && row.id != null) {
       idMap.set(item.clientId, row.id);

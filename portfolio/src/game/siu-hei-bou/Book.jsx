@@ -58,6 +58,7 @@ export default function Book({
   const leafRef = useRef(null);
   const leafKey = useRef(0);
   const flipTimer = useRef();
+  const penSeen = useRef(false);   // 支筆有冇真係搵到過嗰行（分開「仲未到」同「冇咗」）
 
   useEffect(() => { leafRef.current = leaf; }, [leaf]);
 
@@ -277,6 +278,7 @@ export default function Book({
     const armPen = (queued) => {
       const entryId = queued && queued.item ? queued.item.clientId : null;
       if (!entryId || reduceMotion()) return;
+      penSeen.current = false;
       setPen({ friendId, entryId, progress: -3, total: unitLen(values.content || '') });
     };
     try {
@@ -378,8 +380,19 @@ export default function Book({
     if (!pen) return undefined;
     const chapter = getChapter(pen.friendId);
     if (!chapter || !chapter.loaded) return undefined;
+    // 「搵唔到嗰行」有兩個意思，唔可以撈埋一齊：
+    //   · 「仲未到」—— 支筆係喺嗰筆嘢上頁之前就架好嘅（唔係嘅話成句嘢會閃足一
+    //     格先縮返做未寫），所以緊接嗰一格 render 本簿仲未有佢。當佢係「冇咗」
+    //     就會即刻收筆，用家見到嘅就係成句嘢啪一聲彈晒出嚟。
+    //   · 「真係冇咗」—— 見過之後先唔見（另一部機刪咗個罪人，或者寄唔出）。
+    // 所以要見過一次先算數；由頭到尾都見唔到嘅話，就靠寫完嗰下兜返個底，
+    // 唔會有支筆永遠掛喺度。
     const lines = entryLineMap(chapter.pages, pen.entryId);
-    if (!lines.length) { setPen(null); return undefined; }
+    if (!lines.length) {
+      if (penSeen.current || pen.progress >= pen.total) setPen(null);
+      return undefined;
+    }
+    penSeen.current = true;
 
     const progress = Math.max(0, pen.progress);
     const active = lines.find((l) => l.type === 'text' && progress < l.end) || lines[lines.length - 1];
@@ -446,6 +459,7 @@ export default function Book({
         onSettle={(card) => settleCard(card)}
         onDeleteGrudge={(g) => deleteGrudge(g)}
         onIndex={() => flipToAuto({ section: 'index', page: 0 })}
+        onAdd={() => setSheet('add')}
       />
     );
   };

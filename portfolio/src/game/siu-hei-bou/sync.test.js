@@ -376,3 +376,72 @@ test('the projection of what sync stored is what the book renders', async () => 
   expect(book.grudges[0]).toMatchObject({ content: 'offline 寫嘅', pending: true });
   expect(book.friends[0].stamps).toBe(3);
 });
+
+/* ---- 交接：outbox 交俾個鏡嗰一刻唔可以有窿 ---- */
+
+// 寄成功之後，outbox 嗰單即刻清走 —— 但個鏡要等 pull 返嚟先有嗰行。中間嗰段時間
+// 兩邊都冇佢，projectBook 就砌少咗一筆，本簿見到啱啱寫低嘅嘢閃一閃唔見咗，支筆
+// 亦都即刻收工（entryLineMap 搵唔到行）。用家見到嘅就係「成句嘢啪一聲彈晒出嚟，
+// 冇寫字效果」。所以 flush 一收到 server 覆返嗰行，就即刻寫入個鏡。
+describe('寄成功之後，個鏡即刻頂上（唔使等 pull）', () => {
+  const GRUDGE = { content: '爽約', severity: 2, occurred_at: '2026-08-08' };
+
+  test('新寫嘅一筆：outbox 清咗，但個鏡已經有返佢，client_id 都留住', async () => {
+    api.state.mockResolvedValue({
+      status: 200, etag: '"e1"',
+      data: { friends: [{ id: 7, name: '阿明', stamps: 0 }], grudges: [], cards: [] },
+    });
+    await pull(UID);   // 有個鏡先，同真實情況一樣
+
+    const { item } = await enqueueMutation(UID, 'createGrudge', { payload: { friend_id: 7, ...GRUDGE } });
+    api.addGrudge.mockImplementation(async (body) => ({ ...body, id: 900, card_id: null }));
+
+    await flush(UID);
+
+    const { mirror, outbox } = await readState(UID);
+    expect(outbox).toHaveLength(0);
+    expect(mirror.grudges).toHaveLength(1);
+    expect(mirror.grudges[0].id).toBe(900);
+    expect(mirror.grudges[0].client_id).toBe(item.clientId);
+    // 印卡跟住郁，唔係嘅話啲印會喺呢一刻跌返轉頭，等到 pull 先彈返上去
+    expect(mirror.friends[0].stamps).toBe(2);
+
+    // 最緊要嗰句：任何一刻砌出嚟嘅簿都見到嗰筆嘢，冇一格窿
+    expect(projectBook(mirror, outbox).grudges).toHaveLength(1);
+  });
+
+  test('未 pull 過都頂得住 —— 開簿頭一兩秒就寫低一筆係常事', async () => {
+    const { item } = await enqueueMutation(UID, 'createGrudge', { payload: { friend_id: 7, ...GRUDGE } });
+    api.addGrudge.mockImplementation(async (body) => ({ ...body, id: 901, card_id: null }));
+
+    await flush(UID);
+
+    const { mirror, outbox } = await readState(UID);
+    expect(outbox).toHaveLength(0);
+    expect(mirror.grudges[0].client_id).toBe(item.clientId);
+    // 呢份鏡係自己砌出嚟嘅，唔係 server 講過嘅 —— pulledAt 要留 null，
+    // 唔係嘅話 flush 會當佢係「pull 過都唔識呢個 id」，誤判個罪人俾人刪咗。
+    expect(mirror.pulledAt).toBeNull();
+  });
+
+  test('刪走一筆：個鏡即刻少咗佢，印卡一齊減', async () => {
+    api.state.mockResolvedValue({
+      status: 200, etag: '"e1"',
+      data: {
+        friends: [{ id: 7, name: '阿明', stamps: 2 }],
+        grudges: [{ id: 900, friend_id: 7, severity: 2, card_id: null, content: '爽約' }],
+        cards: [],
+      },
+    });
+    await pull(UID);
+
+    await enqueueMutation(UID, 'deleteGrudge', { targetId: 900 });
+    api.removeGrudge.mockResolvedValue({ deleted: true });
+
+    await flush(UID);
+
+    const { mirror } = await readState(UID);
+    expect(mirror.grudges).toHaveLength(0);
+    expect(mirror.friends[0].stamps).toBe(0);
+  });
+});

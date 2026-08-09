@@ -25,7 +25,7 @@ const lineClass = (base, entry) => {
 // exact substrings from the pagination engine, one 32px div per ruled line.
 export default function ChapterPage({
   chapter, pageIdx, geom, pen, interactive, busyCard, connected,
-  onGear, onOpenCard, onShare, onSettle, onDeleteGrudge, onIndex,
+  onGear, onOpenCard, onShare, onSettle, onDeleteGrudge, onIndex, onAdd,
 }) {
   const { friend, card, pages, stampH, seal, showBanner, showFullBtn, loaded } = chapter;
   const actualIdx = Math.min(pageIdx, pages.length - 1);
@@ -157,8 +157,17 @@ export default function ChapterPage({
 
       <div className="shb-ch-lines shb-ruled">
         {!loaded && <div className="shb-line shb-line-dim">揭緊頁⋯</div>}
+        {/* 空白嗰章：嗰句嘢本身就撳得。一本得個空行嘅簿，最順手嘅動作就係撳落
+            行度開始寫 —— 唔應該逼人望到落底先搵到支筆。有咗紀錄之後就唔再需要，
+            嗰陣落面支「記一筆」已經係熟路。 */}
         {loaded && pages.length === 1 && page.length === 0 && (
-          <div className="shb-line shb-line-dim">未有紀錄，快啲記低第一筆</div>
+          interactive && onAdd ? (
+            <button type="button" className="shb-line shb-line-dim shb-line-empty" onClick={onAdd}>
+              未有紀錄，撳一下記低第一筆
+            </button>
+          ) : (
+            <div className="shb-line shb-line-dim">未有紀錄，快啲記低第一筆</div>
+          )
         )}
         {page.map(renderLine)}
       </div>
