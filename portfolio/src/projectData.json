@@ -191,6 +191,45 @@
         ]
     },
     {
+        "id": 21,
+        "title": "小氣簿 Siu Hei Bou",
+        "shortDescription": "一本會揭頁嘅網上小氣簿:朋友激嬲你就記低一筆,細字寫喺格仔線上面,儲夠嬲爆印就開張找數卡 send 俾佢認數,請返餐飯一筆勾銷。",
+        "fullDescription": "小氣簿 is a Cantonese grudge notebook rendered as a physical book. Logging in swings the red cover open on its spine; each friend gets their own chapter found through a searchable 目錄 with dotted leaders and stamp counts. Entries are written onto ruled 32px lines by a CJK-aware pagination engine — text wraps at eighteen full-width characters per line, flows mid-sentence onto the next page like real handwriting, and a fountain-pen nib animates each new entry character by character. Grudges carry severity stamps (小嬲/中嬲/勁嬲 = 1–3 印); filling a friend's stamp card opens a 找數卡 with a public share link they can acknowledge without logging in, and settling it crosses the claimed entries out. The React front end talks to a Cloudflare Worker that verifies Firebase ID tokens in-runtime via WebCrypto/JWKS and keeps every query uid-scoped in D1. Live at siu-hei-bou.hillmanchan.com.",
+        "image": "siu_hei_bou.png",
+        "url": "https://siu-hei-bou.hillmanchan.com",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/siu-hei-bou",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "React",
+            "Cloudflare Workers",
+            "Cloudflare D1",
+            "Firebase Auth",
+            "WebCrypto"
+        ]
+    },
+    {
+        "id": 9,
+        "title": "3D Casino Game & Practice",
+        "shortDescription": "A walkable 3D casino floor — sit down at Roulette, Blackjack, Baccarat and Ultimate Texas Hold'em tables, plus practice trainers for counting and payouts.",
+        "fullDescription": "A browser-based casino you can actually walk through. A Three.js floor renders the vestibule, reception, cashier and every game pit in real time — you move around in first person, walk up to a table and sit down. The floor covers Roulette (European and American), Blackjack, Baccarat and multiplayer Ultimate Texas Hold'em, all played against a shared server-authoritative chip wallet, so your balance follows you between games and devices. Alongside it sits a free practice mode: a dealer payout trainer with four difficulty tiers and full call-bet support (Tiers, Voisins, Orphelins), Hi-Lo and true-count Blackjack trainers, Baccarat road maps with EV tools, a GGPoker hand-history recorder that plots bb/100 and EV curves, and a complete house-edge reference. The project spans real-time 3D rendering and rigged character animation, probability and EV mathematics, and a Firebase + AWS Lambda backend that keeps every wallet, table and payout decision on the server.",
+        "image": "casino_3d.jpg",
+        "url": "https://casino-game.hillmanchan.com",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/casino-game",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "Three.js",
+            "WebGL",
+            "JavaScript",
+            "Firebase",
+            "AWS Lambda",
+            "Probability Math"
+        ]
+    },
+    {
         "id": 18,
         "title": "Card Drawer",
         "shortDescription": "A pass-and-play card dealer and poker-hand scorepad for 2–10 players, with hand-drawn SVG cards, optional jokers, and automatic poker hand ranking.",
@@ -230,25 +269,6 @@
         ]
     },
     {
-        "id": 21,
-        "title": "小氣簿 Siu Hei Bou",
-        "shortDescription": "一本會揭頁嘅網上小氣簿:朋友激嬲你就記低一筆,細字寫喺格仔線上面,儲夠嬲爆印就開張找數卡 send 俾佢認數,請返餐飯一筆勾銷。",
-        "fullDescription": "小氣簿 is a Cantonese grudge notebook rendered as a physical book. Logging in swings the red cover open on its spine; each friend gets their own chapter found through a searchable 目錄 with dotted leaders and stamp counts. Entries are written onto ruled 32px lines by a CJK-aware pagination engine — text wraps at eighteen full-width characters per line, flows mid-sentence onto the next page like real handwriting, and a fountain-pen nib animates each new entry character by character. Grudges carry severity stamps (小嬲/中嬲/勁嬲 = 1–3 印); filling a friend's stamp card opens a 找數卡 with a public share link they can acknowledge without logging in, and settling it crosses the claimed entries out. The React front end talks to a Cloudflare Worker that verifies Firebase ID tokens in-runtime via WebCrypto/JWKS and keeps every query uid-scoped in D1. Live at siu-hei-bou.hillmanchan.com.",
-        "image": "siu_hei_bou.png",
-        "url": "https://siu-hei-bou.hillmanchan.com",
-        "category": "game",
-        "sourceCode": "no-source-code",
-        "demoUrl": "/siu-hei-bou",
-        "liveDemo": "no-demo",
-        "technologies": [
-            "React",
-            "Cloudflare Workers",
-            "Cloudflare D1",
-            "Firebase Auth",
-            "WebCrypto"
-        ]
-    },
-    {
         "id": 6,
         "title": "Never Have I Ever Card Game",
         "shortDescription": "A multilingual interactive “Never Have I Ever” card game built in React, featuring dynamic prompts, custom question input, and language selection.",
@@ -283,6 +303,29 @@
             "i18next",
             "Gemini API",
             "TypeScript"
+        ]
+    },
+    {
+        "id": 22,
+        "title": "打小人・鵝頸橋 — Mobile App",
+        "shortDescription": "iOS 版打小人:寫低個小人名,揀打手同場景,三十秒開壇——阿婆一路唸口簧,你一路用拖鞋摑張小人紙,燒完自動有片睇,儲落電話定 send 俾朋友都得。",
+        "fullDescription": "The iOS edition of 打小人 brings the Canal Road villain-hitting ritual onto the phone — no trip to 鵝頸橋 and no queue. Write the villain's name onto the yellow effigy paper, pick a hitter and a scene, and the thirty-second ritual opens: an AI-generated Cantonese granny chants line by line while you spank the paper with a slipper, the slipper angle tracking your finger and fast hits building combo streaks. The paper takes visible damage as you go — shoe prints, creases, torn edges — and burns itself away when the time is up. Every round is recorded automatically so you can watch it back, save it to the camera roll, or send it to a friend; an endless mode drops the timer for open-ended stress relief, and a card album collects each hitter and scene with its own look, gestures and voice. Nothing leaves the device — the name, any uploaded photo and the recorded clip all stay in local storage with no server upload. Built as a Capacitor shell around the same dependency-free vanilla JavaScript canvas engine as the web version, free on the App Store for iOS 15 and later.",
+        "image": "da_siu_yan.png",
+        "url": "https://apps.apple.com/hk/app/%E6%89%93%E5%B0%8F%E4%BA%BA-%E9%B5%9D%E9%A0%B8%E6%A9%8B/id6796738771?l=en-GB",
+        "category": "mobile",
+        "sourceCode": "no-source-code",
+        "demoUrl": "no-demo-url",
+        "liveDemo": "no-demo",
+        "iosUrl": "https://apps.apple.com/hk/app/%E6%89%93%E5%B0%8F%E4%BA%BA-%E9%B5%9D%E9%A0%B8%E6%A9%8B/id6796738771?l=en-GB",
+        "androidUrl": "not-available",
+        "technologies": [
+            "iOS",
+            "Capacitor",
+            "JavaScript",
+            "Canvas",
+            "Web Audio",
+            "MediaRecorder",
+            "Gemini TTS"
         ]
     },
     {
@@ -332,26 +375,6 @@
             "Tailwind CSS",
             "Framer Motion",
             "JWT Auth"
-        ]
-    },
-    {
-        "id": 9,
-        "title": "3D Casino Game & Practice",
-        "shortDescription": "A walkable 3D casino floor — sit down at Roulette, Blackjack, Baccarat and Ultimate Texas Hold'em tables, plus practice trainers for counting and payouts.",
-        "fullDescription": "A browser-based casino you can actually walk through. A Three.js floor renders the vestibule, reception, cashier and every game pit in real time — you move around in first person, walk up to a table and sit down. The floor covers Roulette (European and American), Blackjack, Baccarat and multiplayer Ultimate Texas Hold'em, all played against a shared server-authoritative chip wallet, so your balance follows you between games and devices. Alongside it sits a free practice mode: a dealer payout trainer with four difficulty tiers and full call-bet support (Tiers, Voisins, Orphelins), Hi-Lo and true-count Blackjack trainers, Baccarat road maps with EV tools, a GGPoker hand-history recorder that plots bb/100 and EV curves, and a complete house-edge reference. The project spans real-time 3D rendering and rigged character animation, probability and EV mathematics, and a Firebase + AWS Lambda backend that keeps every wallet, table and payout decision on the server.",
-        "image": "casino_3d.jpg",
-        "url": "https://casino-game.hillmanchan.com",
-        "category": "game",
-        "sourceCode": "no-source-code",
-        "demoUrl": "/casino-game",
-        "liveDemo": "no-demo",
-        "technologies": [
-            "Three.js",
-            "WebGL",
-            "JavaScript",
-            "Firebase",
-            "AWS Lambda",
-            "Probability Math"
         ]
     },
     {
