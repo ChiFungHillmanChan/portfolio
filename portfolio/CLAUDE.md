@@ -7,8 +7,71 @@ portfolio/
 ├── src/game/casino-game/calculator/    # Casino games (vanilla JS)
 ├── src/game/system-design/             # System Design 教室 (React SPA)
 ├── src/game/siu-hei-bou/               # 小氣簿 grudge notebook (React, Cantonese)
+├── src/data/socialLinks.js             # ⚠️ ALL profile/contact URLs — see below
 ├── public/games/casino-game/           # Casino production build
 └── build/games/casino-game/            # Alternative build
+```
+
+## Contact & Social Links — single source of truth
+
+**Every profile URL and the contact email live in `portfolio/src/data/socialLinks.js`. Nothing else.**
+
+```js
+import socialLinks from '../data/socialLinks';   // from src/components/
+import socialLinks from './data/socialLinks';    // from src/
+
+<a href={socialLinks.linkedin}>          // NOT href="https://..."
+<a href={`mailto:${socialLinks.email}`}>
+```
+
+| Key | Value |
+|-----|-------|
+| `linkedin` | `https://www.linkedin.com/in/hillmanchan0709` |
+| `github` | `https://github.com/ChiFungHillmanChan` |
+| `instagram` | `https://www.instagram.com/hillmanchan709_/` |
+| `email` | `hillmanchan709@gmail.com` |
+
+### Why this rule exists
+
+These URLs were previously pasted inline in 7 places across `Layout.js` and
+`Contact.js`. Nothing tied the copies together, so `/contact` silently drifted:
+its LinkedIn icon pointed at `linkedin.com/in/hillmanchan` and its GitHub icon
+at `github.com/hillmanchan` — **both belonging to a different person**. The
+header and footer were correct the whole time, which is exactly why nobody
+caught it. It took an email from a stranger (2026-08-31) to surface it.
+
+The handle is `ChiFungHillmanChan` / `hillmanchan0709` / `hillmanchan709_`.
+Plain `hillmanchan` is **someone else** on both GitHub and LinkedIn — never
+guess or shorten a handle.
+
+### When adding any link to a profile, repo, or inbox
+
+1. Add the key to `socialLinks.js`; never hard-code the URL at the call site.
+2. No call site may hard-code a profile URL. This must return `data/socialLinks.js`
+   and nothing else:
+
+```bash
+grep -rnE "(linkedin\.com/in/|instagram\.com/|github\.com/(ChiFung|chifung|hillman))" \
+  portfolio/src --include="*.js" | grep -v "/game/"
+```
+
+3. After building, grep the bundle to confirm what actually ships. Expect exactly
+   the three profile URLs above — anything else is a drifted copy:
+
+```bash
+grep -ohE "https://(www\.)?(linkedin\.com/in/|instagram\.com/|github\.com/)[A-Za-z0-9_.-]+/?" \
+  portfolio/build/static/js/main.*.js | sort -u
+```
+
+### Not in this repo
+
+The GitHub repo's **website field** (About panel, top-right of the repo page) is
+a GitHub setting, not code — it will never show up in a grep. It once pointed at
+an unrelated Vercel deployment. Check it with:
+
+```bash
+gh repo view ChiFungHillmanChan/portfolio --json homepageUrl
+gh repo edit ChiFungHillmanChan/portfolio --homepage "https://github.com/chifunghillmanchan"
 ```
 
 ## 小氣簿 (Siu Hei Bou)
