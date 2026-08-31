@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FaEnvelope, FaLinkedin, FaGithub } from 'react-icons/fa';
+import socialLinks from '../data/socialLinks';
 import emailjs from '@emailjs/browser';
 import { motion } from 'framer-motion';
 
@@ -112,17 +113,17 @@ const Contact = () => {
             >
               <FaEnvelope className="text-gray-600 dark:text-gray-400 text-xl" />
               <a 
-                href="mailto:hillmanchan709@gmail.com" 
+                href={`mailto:${socialLinks.email}`} 
                 className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm md:text-base break-all"
               >
-                hillmanchan709@gmail.com
+                {socialLinks.email}
               </a>
             </motion.div>
 
             {/* Social Links */}
             <div className="flex items-center space-x-6 pt-4">
               <motion.a 
-                href="https://www.linkedin.com/in/hillmanchan" 
+                href={socialLinks.linkedin} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.1 }}
@@ -131,7 +132,7 @@ const Contact = () => {
                 <FaLinkedin size={28} />
               </motion.a>
               <motion.a 
-                href="https://github.com/hillmanchan" 
+                href={socialLinks.github} 
                 target="_blank" 
                 rel="noopener noreferrer"
                 whileHover={{ scale: 1.1 }}

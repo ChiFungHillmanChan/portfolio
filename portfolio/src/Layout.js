@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FaGithub, FaInstagram, FaLinkedin, FaLightbulb, FaMoon, FaBars, FaTimes } from 'react-icons/fa';
+import socialLinks from './data/socialLinks';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -103,7 +104,7 @@ const Layout = () => {
                             </li>
                             <li>
                                 <a 
-                                    href="https://github.com/chifunghillmanchan" 
+                                    href={socialLinks.github} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="hover:opacity-80 transition-opacity"
@@ -113,7 +114,7 @@ const Layout = () => {
                             </li>
                             <li>
                                 <a 
-                                    href="https://www.instagram.com/hillmanchan709_/" 
+                                    href={socialLinks.instagram} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="hover:opacity-80 transition-opacity"
@@ -123,7 +124,7 @@ const Layout = () => {
                             </li>
                             <li>
                                 <a 
-                                    href="https://www.linkedin.com/in/chi-fung-hillman-chan-2845a5201" 
+                                    href={socialLinks.linkedin} 
                                     target="_blank" 
                                     rel="noopener noreferrer"
                                     className="hover:opacity-80 transition-opacity"
@@ -199,7 +200,7 @@ const Layout = () => {
                                             <li className="pt-4">
                                                 <div className="flex space-x-4">
                                                     <a 
-                                                        href="https://github.com/chifunghillmanchan"
+                                                        href={socialLinks.github}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="hover:opacity-80 transition-opacity"
@@ -207,7 +208,7 @@ const Layout = () => {
                                                         <FaGithub size={24} className="dark:text-white" />
                                                     </a>
                                                     <a 
-                                                        href="https://www.instagram.com/hillmanchan709_/"
+                                                        href={socialLinks.instagram}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="hover:opacity-80 transition-opacity"
@@ -215,7 +216,7 @@ const Layout = () => {
                                                         <FaInstagram size={24} className="dark:text-white" />
                                                     </a>
                                                     <a 
-                                                        href="https://www.linkedin.com/in/chi-fung-hillman-chan-2845a5201"
+                                                        href={socialLinks.linkedin}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         className="hover:opacity-80 transition-opacity"
@@ -312,13 +313,13 @@ const Layout = () => {
                             <div className="text-center md:text-left">
                                 <h4 className="text-xl font-bold mb-4">Connect</h4>
                                 <div className="flex justify-center md:justify-start space-x-4">
-                                    <a href="https://github.com/chifunghillmanchan" className="hover:text-blue-400 transition-colors">
+                                    <a href={socialLinks.github} className="hover:text-blue-400 transition-colors">
                                         <FaGithub size={24} />
                                     </a>
-                                    <a href="https://www.instagram.com/hillmanchan709_/" className="hover:text-blue-400 transition-colors">
+                                    <a href={socialLinks.instagram} className="hover:text-blue-400 transition-colors">
                                         <FaInstagram size={24} />
                                     </a>
-                                    <a href="https://www.linkedin.com/in/chi-fung-hillman-chan-2845a5201" className="hover:text-blue-400 transition-colors">
+                                    <a href={socialLinks.linkedin} className="hover:text-blue-400 transition-colors">
                                         <FaLinkedin size={24} />
                                     </a>
                                 </div>
