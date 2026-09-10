@@ -49,6 +49,7 @@
     const app = C.app, L = bac.L;
     const toW = (p) => group.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
     const rig = bac.dealerRig;
+    const roomGen = app.roomGen;
     let running = false, wantRun = false, t = 0;
     let shoe = C.baccaratRoads.buildShoe(Math.random), si = 0;
     let cutIndex = C.baccaratRoads.pickCutIndex(Math.random);
@@ -61,6 +62,8 @@
     const tweenPos = (obj, [x, y, z], ms, ease = 'inOutCubic') =>
       new Promise((res) => C.tween.to(obj.position, { x, y, z }, ms, ease, res));
     const disposeMesh = (m) => {
+      m.userData.cancelCardDeal?.();
+      m.userData.cancelCardSlide?.();
       m.traverse((o) => {
         o.geometry?.dispose();
         const mats = Array.isArray(o.material) ? o.material : [o.material];
@@ -69,133 +72,73 @@
       m.parent && m.parent.remove(m);
     };
 
-    // Deal a card FROM the dealer's actual hand at the IK path's `release`
-    // waypoint, instead of flying it from the static shoe point while the
-    // hand is elsewhere. `rigToLocal` lets the rig's aim ref differ slightly
-    // from the card's own landing spot (a couple of the ritual sites aim the
-    // hand at table height while the card itself settles a few mm above the
-    // felt) — defaults to `toLocal` for the common case where they're the
-    // same point.
-    //
-    // Fallback (mandatory, not optional): playPath's promise always
-    // resolves — even when the path is superseded/cancelled mid-flight —
-    // but a superseded path NEVER fires its remaining waypoint events. If
-    // `release` doesn't fire before `rig.play` resolves, the card would
-    // otherwise never leave the shoe. `fired` tracks whether the callback
-    // ran; if not, deal from the static from/to exactly like the
-    // procedural-rig branch below.
-    //
-    // Second fallback layer: when the procedural rig is still active (GLB
-    // failed to load), `play` silently ignores `on` altogether — so that
-    // whole branch is skipped in favour of the original fire-and-forget
-    // rig.play + dealCardTo pairing.
-    const dealVia = (mesh, fromLocal, toLocal, opts = {}, rigToLocal = toLocal) => {
-      const from = toW(fromLocal), to = toW(toLocal), rigTo = toW(rigToLocal);
-      if (C.character.ready === 'ready') {
-        return new Promise((resolve) => {
-          let fired = false;
-          const playDone = rig.play(app, 'dealCard', {
-            refs: { shoe: from, target: rigTo },
-            on: { release: (h) => {
-              fired = true;
-              resolve(C.cards.dealCardTo(app, mesh, [h.x, h.y, h.z], to, opts));
-            } },
-          });
-          playDone.then(() => {
-            if (!fired) resolve(C.cards.dealCardTo(app, mesh, from, to, opts));
-          });
-        });
-      }
-      rig.play(app, 'dealCard', { refs: { shoe: from, target: rigTo } });
-      return C.cards.dealCardTo(app, mesh, from, to, opts);
-    };
+    const dealVia = (mesh, fromLocal, toLocal, opts = {}, rigToLocal = toLocal) =>
+      C.cards.dealCardWithDealer(app, rig, mesh,
+        toW(fromLocal === L.shoePos ? L.shoeMouth : fromLocal), toW(toLocal),
+        { ...opts, rigTarget: toW(rigToLocal) });
 
     async function runRound() {
+      const gen = app.roomGen;
+      const alive = () => app.roomGen === gen;
       const round = C.baccaratRoads.playRound(draw);
       const dealt = [];
       // ghost bets: 2 random seats, biased to the round for a lively board
       const kinds = ['player', 'banker', round.outcome === 'T' ? 'tie' : 'banker'];
       const betStacks = [];
-      for (let k = 0; k < 2; k++) {
-        const seat = Math.floor(Math.random() * 6);
-        const kind = kinds[Math.floor(Math.random() * kinds.length)];
-        const [bx, bz] = L.seatSpot(seat, kind);
-        const stk = C.chips.makeChipStack([100, 500][k % 2], 3 + (seat % 3));
-        stk.position.set(bx, bac.feltY + 0.005, bz);
-        group.add(stk);
-        betStacks.push({ stk, kind });
-      }
-      // deal P1 B1 P2 B2 face-down, alternating (cards pre-decided by playRound)
-      const seq = [
-        [L.playerSlots[0], round.playerCards[0]], [L.bankerSlots[0], round.bankerCards[0]],
-        [L.playerSlots[1], round.playerCards[1]], [L.bankerSlots[1], round.bankerCards[1]],
-      ];
-      for (const [slot, cardDef] of seq) {
-        const mesh = C.cards.makeCard(cardDef);
-        mesh.rotation.set(-Math.PI / 2, 0, 0);
-        mesh.rotateY(Math.PI);                    // face-down
-        dealt.push(mesh);
-        // eslint-disable-next-line no-await-in-loop
-        await dealVia(mesh, L.shoePos, slot, { ms: 430 });
-        // eslint-disable-next-line no-await-in-loop
-        await wait(140);
-      }
-      // flip player then banker
-      await C.cards.flipFlatCard(app, dealt[0], 320);
-      await C.cards.flipFlatCard(app, dealt[2], 320);
-      await C.cards.flipFlatCard(app, dealt[1], 320);
-      await C.cards.flipFlatCard(app, dealt[3], 320);
-      // third cards (sideways slot index 2), face-up
-      const thirds = [[round.playerCards[2], L.playerSlots[2]], [round.bankerCards[2], L.bankerSlots[2]]];
-      for (const [cardDef, slot] of thirds) {
-        if (!cardDef) continue;
-        const mesh = C.cards.makeCard(cardDef);
-        mesh.rotation.set(-Math.PI / 2, 0, Math.PI / 2);
-        dealt.push(mesh);
-        // eslint-disable-next-line no-await-in-loop
-        await dealVia(mesh, L.shoePos, slot, { ms: 430 });
-        // eslint-disable-next-line no-await-in-loop
-        await wait(200);
-      }
-      // announce + settle ghost bets
-      const line = round.outcome === 'T'
-        ? `和 TIE  ${round.playerTotal} : ${round.bankerTotal}`
-        : round.outcome === 'P'
-          ? `閒 PLAYER wins ${round.playerTotal} over ${round.bankerTotal}`
-          : `庄 BANKER wins ${round.bankerTotal} over ${round.playerTotal}`;
-      rig.say(app, line, { ms: 2400 });
-      const wins = { P: 'player', B: 'banker', T: 'tie' }[round.outcome];
-      const payStacks = [];   // reaped at cleanup — kept OUT of betStacks so the
-                              // settle loop below never treats a payout as a bet
-      for (const { stk, kind } of betStacks) {
-        const won = kind === wins;
-        rig.play(app, won ? 'payChips' : 'sweepChips', {
-          refs: { rack: toW(L.rackPos), target: toW([stk.position.x, bac.feltY, stk.position.z]) },
-        });
-        if (won) {
-          const pay = C.chips.makeChipStack(100, 3);
-          pay.position.set(stk.position.x + 0.1, stk.position.y, stk.position.z);
-          group.add(pay);
-          payStacks.push(pay);
-        } else {
-          // eslint-disable-next-line no-await-in-loop
-          await new Promise((res) =>
-            C.tween.to(stk.position, { x: L.rackPos[0], z: L.rackPos[2] }, 420, 'inOutCubic', res));
+      const payStacks = [];
+      try {
+        for (let k = 0; k < 2; k++) {
+          const seat = Math.floor(Math.random() * 6);
+          const kind = kinds[Math.floor(Math.random() * kinds.length)];
+          const [bx, bz] = L.seatSpot(seat, kind);
+          const stk = C.chips.makeChipStack([100, 500][k % 2], 3 + (seat % 3));
+          stk.position.set(bx, bac.feltY + 0.005, bz);
+          group.add(stk);
+          betStacks.push({ stk, kind });
         }
-        // eslint-disable-next-line no-await-in-loop
-        await wait(260);
+        // The sequence is shared with the layout: P1 B1 P2 B2, followed by
+        // player/banker third cards only when the rules require them.
+        const plan = L.dealSequence(round);
+        for (const step of plan) {
+          const mesh = C.cards.makeCard(step.card);
+          dealt.push(mesh);
+          await C.baccaratMotion.deal(app, group, mesh, step);
+          if (!alive()) return;
+        }
+        await C.baccaratMotion.rest(app, rig);
+        if (!alive()) return;
+        // announce + settle ghost bets
+        const line = round.outcome === 'T'
+          ? `和 TIE  ${round.playerTotal} : ${round.bankerTotal}`
+          : round.outcome === 'P'
+            ? `閒 PLAYER wins ${round.playerTotal} over ${round.bankerTotal}`
+            : `庄 BANKER wins ${round.bankerTotal} over ${round.playerTotal}`;
+        rig.say(app, line, { ms: 2400 });
+        const wins = { P: 'player', B: 'banker', T: 'tie' }[round.outcome];
+        for (const { stk, kind } of betStacks) {
+          if (!alive()) return;
+          // Banker/player wagers push on a tie; they are not losing wagers.
+          if (round.outcome === 'T' && kind !== 'tie') continue;
+          const won = kind === wins;
+          const stake = stk.userData.value * stk.userData.count;
+          const factor = kind === 'banker' ? 0.95 : kind === 'tie' ? 8 : 1;
+          const pay = await C.baccaratMotion.settle(app, group, stk, won, stake * factor);
+          if (pay) payStacks.push(pay);
+          if (!alive()) return;
+          await wait(180);
+        }
+        if (!alive()) return;
+        bac.pushRound(round);
+        await wait(2000);
+        // clear: cards to the discard tray, chips away
+        if (!alive()) return;
+        await C.baccaratMotion.collect(app, group, dealt);
+      } finally {
+        dealt.forEach(disposeMesh);
+        betStacks.forEach(({ stk }) => disposeMesh(stk));
+        payStacks.forEach(disposeMesh);
       }
-      bac.pushRound(round);
-      await wait(2000);
-      // clear: cards to the discard tray, chips away
-      const disc = toW(L.discardPos);
-      await Promise.all(dealt.map((mesh, i) => new Promise((res) => {
-        C.tween.to(mesh.position, { x: disc[0], y: disc[1] + 0.05 + i * 0.002, z: disc[2] }, 360, 'inOutCubic', res);
-      })));
-      dealt.forEach(disposeMesh);
-      betStacks.forEach(({ stk }) => disposeMesh(stk));
-      payStacks.forEach(disposeMesh);
-      await wait(1200);
+      if (alive()) await wait(1200);
     }
 
     // Shuffle ritual (~80s): yellow cut card out → board splash → all cards
@@ -453,7 +396,7 @@
 
     async function loop() {
       running = true;
-      while (wantRun) {
+      while (wantRun && app.roomGen === roomGen) {
         const act = si >= cutIndex ? runShuffle : runRound;
         // eslint-disable-next-line no-await-in-loop
         await act().catch((err) => {
@@ -467,6 +410,7 @@
     }
 
     const hook = (dt) => {
+      if (app.roomGen !== roomGen) { wantRun = false; app.offFrame(hook); return; }
       t += dt;
       if (t < CHECK_EVERY) return;
       t = 0;

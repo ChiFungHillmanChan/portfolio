@@ -173,20 +173,20 @@
   }
 
   // ---------- stool ----------
-  function makeStool() {
+  function makeStool({ seatHeight = 0.52 } = {}) {
     const group = new THREE.Group();
-    const seatH = 0.05;
-    const seatMat = new THREE.MeshStandardMaterial({ color: '#5a1f1a', roughness: 0.6, metalness: 0.05 });
-    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, seatH, 24), seatMat);
-    seat.position.y = 0.75 - seatH / 2; // top surface at 0.75
+    const seatH = 0.075;
+    const seatMat = new THREE.MeshStandardMaterial({ color: '#4d2928', roughness: 0.83, metalness: 0 });
+    const seat = new THREE.Mesh(new THREE.CylinderGeometry(0.215, 0.23, seatH, 32), seatMat);
+    seat.position.y = seatHeight - seatH / 2;
     seat.castShadow = true; seat.receiveShadow = true;
     group.add(seat);
 
     // Each leg is built to its own exact top/foot points (rather than a fixed
     // geometry rotated by a guessed angle), so it always spans exactly from
     // the seat underside down to the floor with no gap or overshoot.
-    const legMat = woodMaterial();
-    const topY = 0.7, topR = 0.15, footR = 0.19; // topY == seat underside (0.75 - seatH)
+    const legMat = steelMaterial();
+    const topY = seatHeight - seatH, topR = 0.15, footR = 0.19;
     for (let i = 0; i < 4; i++) {
       const angle = Math.PI / 4 + i * Math.PI / 2;
       const cos = Math.cos(angle), sin = Math.sin(angle);
@@ -202,6 +202,11 @@
       leg.castShadow = true; leg.receiveShadow = true;
       group.add(leg);
     }
+    const seam = new THREE.Mesh(new THREE.TorusGeometry(0.218, 0.003, 6, 32),
+      new THREE.MeshStandardMaterial({ color: '#84625a', roughness: 0.9 }));
+    seam.rotation.x = Math.PI / 2; seam.position.y = seatHeight - 0.015; group.add(seam);
+    const rest = new THREE.Mesh(new THREE.TorusGeometry(0.175, 0.009, 6, 24), legMat);
+    rest.rotation.x = Math.PI / 2; rest.position.y = seatHeight * 0.31; group.add(rest);
     return group;
   }
 
@@ -241,13 +246,15 @@
         if (impl.joints?.['wrist' + side]) return impl.joints['wrist' + side].getWorldPosition(v);
         return null;
       },
+      handContactWorld: (side) => impl.handContactWorld?.(side) ?? facade.handWorld(side),
+      walkTo: (a, target, options) => impl.walkTo?.(a, target, options) ?? Promise.resolve(),
       // The actual hand bone object (not just its world position) — Task 9
       // parents props (e.g. the roulette dolly) to it between an IK path's
       // grab/release events so they physically ride in the dealer's hand.
       // Procedural rig has no bone hierarchy for this, so it returns null;
       // callers gate on C.character.ready === 'ready' before using it, same
       // as every other GLB-only capability in this facade.
-      handBone: (side) => impl.bones?.['hand' + side] ?? null,
+      handBone: (side) => impl.bones?.['hand' + side] ?? impl.joints?.['wrist' + side] ?? null,
     };
     if (app && !app.REDUCED) {
       C.character?.attach(app, root, opts, (charImpl) => {

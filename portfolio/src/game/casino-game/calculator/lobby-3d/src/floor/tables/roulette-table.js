@@ -3,12 +3,10 @@
   C.floor = C.floor || {};
   C.floor.tables = C.floor.tables || {};
 
-  // Static roulette table: rail box + printed felt layout (racetrack, grid,
-  // dozens/columns) + recessed wheel bowl + tote board (ported from the v1
-  // room, spin logic removed — the 3D hub never plays). Group origin = rail
-  // center at floor level; +Z faces the players' long side.
+  // European roulette table. Group origin is the rail centre at floor
+  // level; +Z faces the players. The embedded game owns all outcomes.
   const RAIL_H = 0.82, FELT_Y = 0.84, STEP = (Math.PI * 2) / 37;
-  const EU_WHEEL = [0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10, 5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26];
+  const EU_WHEEL = C.roulettePhysics.EU_WHEEL;
   const RED = new Set([1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]);
   const GOLD = 'rgba(240,216,120,.6)', GOLD_SOFT = 'rgba(240,216,120,.4)';
 
@@ -123,6 +121,13 @@
     ROW_GAP: 8, DOZEN_H: 52, EVEN_H: 52,
     TRACK_Y: 16, TRACK_H: 160,  // racetrack band
   };
+  FELT.numberCenter = (n) => {
+    const cellW = (FELT.RX - FELT.COL_W - FELT.LX - FELT.ZERO_W) / 12;
+    const px = n === 0 ? FELT.LX + FELT.ZERO_W / 2
+      : FELT.LX + FELT.ZERO_W + (Math.floor((n - 1) / 3) + 0.5) * cellW;
+    const py = FELT.GY + (n === 0 ? 1.5 : 2.5 - ((n - 1) % 3)) * FELT.ROW_H;
+    return [(px / FELT.W - 0.5) * FELT.FW, (py / FELT.H - 0.5) * FELT.FD];
+  };
   C.floor.ROULETTE_FELT = FELT;
 
   // Built once and shared — all four floor tables print the same layout.
@@ -217,168 +222,156 @@
     return feltTexture;
   }
 
-  // Wheel number ring — the canvas-arc angle convention lands at the same
-  // group-local angle as the separators after RingGeometry UV + rotation.x=-π/2
-  // (verified empirically in v1).
+  // Labels share the physical pocket angle; the narrow band sits outside
+  // the recessed pockets, so the resting ball never covers the numeral.
+  let numberTexture = null;
   function makeNumberRingTexture() {
-    const W = 1024, cx = 512, cy = 512;
-    return C.assets.canvasTexture(W, W, (ctx) => {
-      ctx.fillStyle = '#111'; ctx.fillRect(0, 0, W, W);
+    if (numberTexture) return numberTexture;
+    numberTexture = C.assets.canvasTexture(1024, 1024, (ctx) => {
+      ctx.fillStyle = '#111'; ctx.fillRect(0, 0, 1024, 1024);
       for (let i = 0; i < 37; i++) {
-        const n = EU_WHEEL[i];
-        const a0 = i * STEP - STEP / 2, a1 = i * STEP + STEP / 2;
         ctx.beginPath();
-        ctx.moveTo(cx, cy);
-        ctx.arc(cx, cy, 500, a0, a1);
+        ctx.moveTo(512, 512);
+        ctx.arc(512, 512, 512, i * STEP - STEP / 2, i * STEP + STEP / 2);
         ctx.closePath();
-        ctx.fillStyle = numFill(n);
-        ctx.fill();
-        ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 2;
-        ctx.stroke();
-
+        ctx.fillStyle = numFill(EU_WHEEL[i]); ctx.fill();
+        ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 1.5; ctx.stroke();
         ctx.save();
-        ctx.translate(cx, cy);
-        ctx.rotate(i * STEP);
-        ctx.translate(410, 0);
+        ctx.translate(512, 512); ctx.rotate(i * STEP); ctx.translate(472, 0);
         ctx.rotate(Math.PI / 2);
-        ctx.fillStyle = '#fff';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = 'bold 44px Georgia, serif';
-        ctx.fillText(String(n), 0, 0);
+        ctx.fillStyle = '#fff'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.font = 'bold 34px Georgia, serif'; ctx.fillText(String(EU_WHEEL[i]), 0, 0);
         ctx.restore();
       }
     });
+    return numberTexture;
   }
 
-  // Wheel assembly. `mount` is the non-rotating group at the bowl's location;
-  // `rotor` is its spinning child. During flight the ball is a direct child
-  // of the mount so its cos/sin path stays fixed while the rotor turns
-  // underneath (same rig as the v1 room). Returns { spinTo }.
   function buildWheel(mount) {
+    const P = C.roulettePhysics;
+    const W = P.GEOMETRY;
     const gold = C.assets.goldMaterial();
-    const darkWood = new THREE.MeshStandardMaterial({ color: '#241408', roughness: 0.55, metalness: 0.1 });
+    const wood = C.assets.woodMaterial('#341b0e');
+    const dark = new THREE.MeshStandardMaterial({ color: '#171a16', roughness: 0.48, metalness: 0.2 });
     const rotor = new THREE.Group();
-
-    const base = new THREE.Mesh(new THREE.ConeGeometry(0.55, 0.16, 64), darkWood);
-    base.rotation.x = Math.PI;   // wide flat face up
-    base.position.y = 0.08;
-    base.castShadow = true; base.receiveShadow = true;
-    rotor.add(base);
-
-    const RING_Y = 0.161;
-    const hubCone = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.10, 0.06, 24), gold);
-    hubCone.position.y = RING_Y + 0.03;
-    hubCone.castShadow = true;
-    rotor.add(hubCone);
-    const hubFinial = new THREE.Mesh(new THREE.SphereGeometry(0.03, 16, 12), gold);
-    hubFinial.position.y = RING_Y + 0.09;
-    hubFinial.castShadow = true;
-    rotor.add(hubFinial);
-
-    const ringMat = new THREE.MeshStandardMaterial({ map: makeNumberRingTexture(), roughness: 0.4, metalness: 0.1 });
-    const ring = new THREE.Mesh(new THREE.RingGeometry(0.30, 0.52, 148), ringMat);
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = RING_Y;
-    ring.receiveShadow = true;
-    rotor.add(ring);
-
-    const SEP_RADIUS = 0.44, SEP_H = 0.014;
-    const sepGeo = new THREE.BoxGeometry(0.10, SEP_H, 0.008);
-    for (let i = 0; i < 37; i++) {
-      // pivot.rotation.y = -angle keeps position + radial orientation in sync
-      const angle = (i + 0.5) * STEP;
-      const pivot = new THREE.Group();
-      pivot.rotation.y = -angle;
-      const box = new THREE.Mesh(sepGeo, gold);
-      box.position.set(SEP_RADIUS, RING_Y + SEP_H / 2, 0);
-      box.castShadow = true;
-      pivot.add(box);
-      rotor.add(pivot);
-    }
-
-    // Bowl surround (static — does NOT spin): raised outer rim rolling over
-    // into an inward-sloping ball apron, so the wheel sits recessed inside
-    // and the running ball stays contained. Profile points are
-    // (radius, height) bottom → over the lip → down to the number ring.
-    const rimProfile = [
-      [0.70, -0.02], [0.72, 0.05], [0.72, 0.185], [0.685, 0.235],
-      [0.615, 0.225], [0.55, 0.175],
-    ].map(([x, y]) => new THREE.Vector2(x, y));
-    const rimMat = C.assets.woodMaterial('#241408');
-    rimMat.side = THREE.DoubleSide;
-    const rim = new THREE.Mesh(new THREE.LatheGeometry(rimProfile, 64), rimMat);
-    rim.castShadow = true; rim.receiveShadow = true;
-    mount.add(rim);
-    const lip = new THREE.Mesh(new THREE.TorusGeometry(0.70, 0.014, 10, 64), gold);
-    lip.rotation.x = -Math.PI / 2;
-    lip.position.y = 0.238;
-    mount.add(lip);
-
-    // ball parked in a pocket (on TOP of the ring plane — it used to sit
-    // inside the base cone, i.e. invisible) + drop marker on the static rim
-    // at world angle 0, where spinTo lands the ball
-    const R_REST = 0.36, R_FLIGHT = 0.56;
-    const ball = new THREE.Mesh(
-      new THREE.SphereGeometry(0.018, 16, 12),
-      new THREE.MeshStandardMaterial({ color: '#fdfdf5', roughness: 0.25, metalness: 0.05 }),
-    );
-    ball.castShadow = true;
-    ball.position.set(R_REST, RING_Y + 0.016, 0);
-    rotor.add(ball);
-    const marker = new THREE.Mesh(new THREE.ConeGeometry(0.018, 0.05, 8), gold);
-    marker.rotation.x = Math.PI;
-    marker.position.set(0.655, 0.285, 0);
-    mount.add(marker);
-
+    rotor.name = 'roulette-rotor';
     mount.add(rotor);
-
-    // Land the ball on `pocket` (0-36). Wheel spins forward 4-7 turns while
-    // the ball counter-rotates 6-10 turns around the apron, easing inward
-    // over the last 28% and parking at world angle 0 — so the rotor must
-    // stop at rotation.y ≡ +idx*STEP (three.js puts local angle a at world
-    // angle a - rotation.y; sign verified empirically in the v1 room).
-    // Sign care: rotor.rotation.y INCREASING makes every pocket's world
-    // angle DECREASE (a - θ above), so the ball's own world angle must
-    // INCREASE (+b1) to actually run against the wheel on screen — a
-    // negative b1 sent both spinning the same way (user-reported).
+    const lathe = (points, material, parent) => {
+      const mesh = new THREE.Mesh(new THREE.LatheGeometry(points.map(([r, y]) => new THREE.Vector2(r, y)), 96), material);
+      mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh);
+      return mesh;
+    };
+    const rimRing = (radius, tube, y, material, parent) => {
+      const mesh = new THREE.Mesh(new THREE.TorusGeometry(radius, tube, 8, 96), material);
+      mesh.rotation.x = -Math.PI / 2; mesh.position.y = y;
+      mesh.castShadow = true; parent.add(mesh);
+      return mesh;
+    };
+    // A stationary bowl, inward-sloping apron and raised outer ball track.
+    lathe([[0.735, -0.025], [0.745, 0.055], [0.743, 0.207], [0.729, 0.253],
+      [0.708, 0.263], [0.691, 0.251], [0.680, W.trackFloor],
+      [W.apronOuter, W.trackFloor], [W.apronInner, W.numberFloor]], wood, mount);
+    rimRing(0.721, 0.008, 0.260, gold, mount);
+    rimRing(0.682, 0.004, W.trackFloor + 0.004, gold, mount);
+    rimRing(W.apronInner + 0.003, 0.003, W.numberFloor + 0.003, gold, mount);
+    const track = new THREE.Mesh(new THREE.RingGeometry(W.apronOuter, 0.680, 96),
+      new THREE.MeshStandardMaterial({ color: '#252720', roughness: 0.4, metalness: 0.12 }));
+    track.rotation.x = -Math.PI / 2; track.position.y = W.trackFloor + 0.0003;
+    track.receiveShadow = true; mount.add(track);
+    for (let i = 0; i < W.deflectorCount; i++) {
+      const angle = i * Math.PI * 2 / W.deflectorCount;
+      const pivot = new THREE.Group(); pivot.rotation.y = -angle;
+      const diamond = new THREE.Mesh(new THREE.OctahedronGeometry(0.025), gold);
+      diamond.scale.set(i % 2 ? 0.66 : 1.15, 0.34, i % 2 ? 1.15 : 0.66);
+      diamond.position.set(W.deflectorRadius, P.surfaceHeight(W.deflectorRadius) + 0.005, 0);
+      diamond.castShadow = true; pivot.add(diamond); mount.add(pivot);
+    }
+    // The rotor has a raised central cone, 37 recessed pocket floors and
+    // actual brass walls. The top of each wall meets the number band.
+    lathe([[W.numberOuter, W.pocketFloor], [W.pocketInner, W.pocketFloor],
+      [W.pocketInner, 0.151], [0.28, 0.160], [0.10, 0.230], [0.02, 0.237]], wood, rotor);
+    const ringMat = new THREE.MeshStandardMaterial({ map: makeNumberRingTexture(), roughness: 0.52, metalness: 0.08 });
+    const numbers = new THREE.Mesh(new THREE.RingGeometry(W.numberInner, W.numberOuter, 148), ringMat);
+    numbers.rotation.x = -Math.PI / 2; numbers.position.y = W.numberFloor;
+    numbers.receiveShadow = true; rotor.add(numbers);
+    const floorMats = {
+      green: new THREE.MeshStandardMaterial({ color: '#0b6138', roughness: 0.58 }),
+      red: new THREE.MeshStandardMaterial({ color: '#961b25', roughness: 0.58 }),
+      black: dark,
+    };
+    const sepGeo = new THREE.BoxGeometry(W.pocketOuter - W.pocketInner, W.separatorHeight, 0.004);
+    for (let i = 0; i < 37; i++) {
+      const n = EU_WHEEL[i];
+      const floor = new THREE.Mesh(new THREE.RingGeometry(W.pocketInner, W.pocketOuter, 4, 1,
+        -(i + 0.5) * STEP, STEP), floorMats[n === 0 ? 'green' : RED.has(n) ? 'red' : 'black']);
+      floor.userData.roulettePocket = n;
+      floor.rotation.x = -Math.PI / 2; floor.position.y = W.pocketFloor + 0.0003;
+      floor.receiveShadow = true; rotor.add(floor);
+      const pivot = new THREE.Group(); pivot.rotation.y = -(i + 0.5) * STEP;
+      const wall = new THREE.Mesh(sepGeo, gold);
+      wall.userData.rouletteDivider = i;
+      wall.position.set((W.pocketInner + W.pocketOuter) / 2, W.pocketFloor + W.separatorHeight / 2, 0);
+      wall.castShadow = true; wall.receiveShadow = true; pivot.add(wall); rotor.add(pivot);
+    }
+    rimRing(W.pocketInner, 0.003, W.pocketFloor + W.separatorHeight, gold, rotor);
+    rimRing(W.pocketOuter, 0.002, W.numberFloor, gold, rotor);
+    lathe([[0.075, 0.227], [0.075, 0.248], [0.040, 0.267], [0.026, 0.305], [0.017, 0.313]], gold, rotor);
+    const spindle = new THREE.Mesh(new THREE.SphereGeometry(0.022, 16, 12), gold);
+    spindle.position.y = 0.314; spindle.castShadow = true; rotor.add(spindle);
+    for (let i = 0; i < 4; i++) {
+      const handle = new THREE.Mesh(new THREE.CylinderGeometry(0.009, 0.009, 0.130, 10), gold);
+      handle.rotation.z = Math.PI / 2;
+      const pivot = new THREE.Group(); pivot.rotation.y = i * Math.PI / 2;
+      handle.position.set(0.079, 0.282, 0); pivot.add(handle); rotor.add(pivot);
+    }
+    const ball = new THREE.Mesh(new THREE.SphereGeometry(W.ballRadius, 20, 14),
+      new THREE.MeshStandardMaterial({ color: '#fffbed', roughness: 0.21, metalness: 0.02 }));
+    ball.name = 'roulette-ball'; ball.castShadow = true;
+    ball.position.set(W.pocketRadius, W.pocketFloor + W.ballRadius, 0);
+    mount.add(ball);
+    const LAUNCH_ANGLE = -Math.PI / 3;
+    const launch = new THREE.Vector3(Math.cos(LAUNCH_ANGLE) * W.trackRadius,
+      W.trackFloor + W.ballRadius, Math.sin(LAUNCH_ANGLE) * W.trackRadius);
+    let activeHook = null;
+    const cancel = () => { activeHook?.cancel(); activeHook = null; };
+    const prepareLaunch = () => new Promise((resolve) => {
+      cancel();
+      const from = ball.position.clone();
+      const start = performance.now();
+      const duration = C.app.REDUCED ? 280 : 680;
+      const hook = () => {
+        const t = Math.min(1, (performance.now() - start) / duration);
+        const ease = t * t * (3 - 2 * t);
+        ball.position.lerpVectors(from, launch, ease);
+        ball.position.y += Math.sin(t * Math.PI) * 0.11;
+        if (t === 1) { C.app.offFrame(hook); activeHook = null; resolve(); }
+      };
+      hook.cancel = () => { C.app.offFrame(hook); resolve(); };
+      activeHook = hook; C.app.onFrame(hook);
+    });
     function spinTo(pocket) {
+      cancel();
+      const spin = P.createSpin({ pocket, wheelAngle: rotor.rotation.y,
+        launchAngle: LAUNCH_ANGLE, seed: crypto.getRandomValues(new Uint32Array(1))[0] });
       return new Promise((resolve) => {
-        const idx = EU_WHEEL.indexOf(pocket);
-        if (idx < 0) return resolve();
-        const wheelTurns = 4 + (crypto.getRandomValues(new Uint32Array(1))[0] % 4);   // 4–7
-        const ballTurns = 6 + (crypto.getRandomValues(new Uint32Array(1))[0] % 5);    // 6–10
-        const ms = C.app.REDUCED ? 2200 : 4200 + Math.random() * 1600;
-        const w0 = rotor.rotation.y % (Math.PI * 2);
-        const w1 = w0 + wheelTurns * Math.PI * 2 + ((idx * STEP - w0) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2);
-        const b1 = ballTurns * Math.PI * 2;   // counter-rotation (see sign note above), ends at world angle 0
-        const t0 = performance.now();
-        const ease = C.tween.easings.outQuart;
-        rotor.remove(ball);
-        mount.add(ball);
+        const start = performance.now();
+        let resolved = false;
+        const finish = () => { if (!resolved) { resolved = true; resolve(); } };
         const hook = () => {
-          const t = Math.min(1, (performance.now() - t0) / ms);
-          const e = ease(t);
-          rotor.rotation.y = w0 + (w1 - w0) * e;
-          const ba = b1 * e;
-          const drop = Math.max(0, (t - 0.72) / 0.28);              // radius eases in over last 28%
-          const r = R_FLIGHT + (R_REST - R_FLIGHT) * drop * drop;
-          ball.position.set(Math.cos(ba) * r, 0.21 - 0.033 * drop, Math.sin(ba) * r);
-          if (t === 1) {
-            C.app.offFrame(hook);
-            // lock the ball into the winning pocket: reparent into the rotor
-            // at the pocket's LOCAL angle so it rides the wheel afterwards
-            mount.remove(ball);
-            rotor.add(ball);
-            ball.position.set(Math.cos(idx * STEP) * R_REST, RING_Y + 0.016, Math.sin(idx * STEP) * R_REST);
-            resolve();
-          }
+          const time = (performance.now() - start) / 1000;
+          const state = spin.sample(time);
+          rotor.rotation.y = state.wheelAngle;
+          ball.position.set(state.x, state.y, state.z);
+          ball.rotation.z = -state.ballAngle * state.radius / W.ballRadius;
+          if (time >= spin.duration) finish();
+          // Keep the seated ball on the moving rotor after the result call.
+          if (state.wheelVelocity < 0.015) { C.app.offFrame(hook); activeHook = null; }
         };
-        hook.cancel = () => { C.app.offFrame(hook); resolve(); };
-        C.app.onFrame(hook);
+        hook.cancel = () => { C.app.offFrame(hook); finish(); };
+        activeHook = hook; C.app.onFrame(hook);
       });
     }
-
-    return { spinTo };
+    return { spinTo, prepareLaunch, cancel, launch, durationMs: 7600 };
   }
 
   // ---------- tote board (history / statistics display) ----------
@@ -607,18 +600,25 @@
     // Bet-chip layer: ghost bets live here so the first live setBets()
     // replaces them, and every live bet lands/clears through this group.
     const betLayer = new THREE.Group();
+    betLayer.name = 'roulette-bets';
+    let actionGeneration = 0;
     g.add(betLayer);
     const c1 = C.chips.makeChipStack(500, 6);
-    c1.position.set(0.35, 0.86, 0.05);
+    c1.position.set(0.35, FELT_Y + 0.02 + C.chips.CHIP_H / 2, 0.05);
     betLayer.add(c1);
     const c2 = C.chips.makeChipStack(100, 4);
-    c2.position.set(0.05, 0.86, 0.52);
+    c2.position.set(0.05, FELT_Y + 0.02 + C.chips.CHIP_H / 2, 0.52);
     betLayer.add(c2);
 
-    const DENOMS = [5000, 1000, 500, 100, 50, 25, 10, 5, 1];
-    const chipsFor = (amount) => {
-      const denom = DENOMS.find((d) => d <= amount) || 1;
-      return { denom, count: Math.max(1, Math.min(10, Math.round(amount / denom))) };
+    const chipBundle = (amount) => {
+      const bundle = new THREE.Group();
+      C.layouts.chipBreakdown(amount).forEach((value, i) => {
+        const chip = C.chips.makeChip(value);
+        chip.position.set(Math.floor(i / 12) * 0.058, (i % 12) * C.chips.CHIP_H, 0);
+        bundle.add(chip);
+      });
+      bundle.userData.amount = amount;
+      return bundle;
     };
 
     // dealer chip bank on the plain apron between the wheel and the layout
@@ -629,18 +629,18 @@
     g.add(rack);
     [100, 500, 1000, 5000].forEach((v, i) => {
       const stk = C.chips.makeChipStack(v, 8);
-      stk.position.set(-1.44, FELT_Y + 0.055, -0.24 + i * 0.16);
+      stk.position.set(-1.44, FELT_Y + 0.055 + C.chips.CHIP_H / 2, -0.24 + i * 0.16);
       g.add(stk);
     });
 
-    let dealerRig = null;
+    let dealerRig = null, dealer = null;
     if (opts.withDealer) {
       // walk-in enters from the aisle end of the dealer's own corridor
       // (world +Z = south): the table sits perpendicular to the aisle, so a
       // pit-lane (±X) entry would cross the neighbouring table, and the old
       // local -x path spawned him at the wheel end INSIDE the tote board.
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [0, 2.2] });
-      dealer.position.set(0.2, 0, -1.15);
+      dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [0, 2.2] });
+      dealer.position.set(-1.88, 0, -0.94);
       g.add(dealer);
       dealer.userData.idle(C.app);
       dealerRig = dealer.userData.rig;
@@ -651,7 +651,7 @@
     // angled toward the aisle + players — in frame behind the felt while
     // betting, and beside the bowl (not blocking it) during the spin shot.
     const board = makeToteBoard(opts);
-    board.position.set(-1.75, 0, -1.25);
+    board.position.set(-2.72, 0, -1.13);
     board.rotation.y = Math.PI / 2 - 0.15;
     g.add(board);
 
@@ -676,21 +676,23 @@
     // game's bets as chip stacks on the printed felt.
     g.userData.setBoardStats = (stats) => board.userData.setStats(stats);
     g.userData.setBets = (spots) => {
+      actionGeneration++;
       betLayer.children.slice().forEach((stack) => {
+        stack.userData.chipSlide?.cancel();
         stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
         betLayer.remove(stack);
       });
       (spots || []).forEach(({ x, z, amount }) => {
-        const { denom, count } = chipsFor(amount);
-        const stk = C.chips.makeChipStack(denom, count);
-        stk.position.set(x, 0.86, z);
+        const stk = chipBundle(amount);
+        stk.position.set(x, FELT_Y + 0.02 + C.chips.CHIP_H / 2, z);
         betLayer.add(stk);
       });
     };
 
     // ---- dealer choreography rig (visual only; roulette-live.js drives it) ----
-    const RACK_LOCAL = [-1.44, FELT_Y + 0.12, 0];
-    const RIM_LOCAL = [-1.72, 1.02, 0];
+    const CHIP_Y = FELT_Y + 0.02 + C.chips.CHIP_H / 2;
+    const RACK_LOCAL = [-1.44, CHIP_Y, -0.47];
+    const RIM_LOCAL = [wheelMount.position.x + wheel.launch.x, wheelMount.position.y + wheel.launch.y, wheel.launch.z];
     const toW = (p) => g.localToWorld(new THREE.Vector3(p[0], p[1], p[2])).toArray();
     // Third arg is an options bag (ms / on) forwarded straight through to
     // dealerRig.play — Task 9 needs `on: { release/contact }` threaded here
@@ -698,9 +700,19 @@
     // forwarded `ms`, silently dropping any `on` a caller passed.
     const rigPlay = (name, refs, opts = {}) =>
       dealerRig ? dealerRig.play(C.app, name, { refs, ...opts }) : Promise.resolve();
+    const DEALER_HOME = [-1.88, 0, -0.94];
+    let dealerFoot = DEALER_HOME.slice();
+    const walkDealer = async (destination, ms) => {
+      if (!dealerRig?.walkTo || C.character.ready !== 'ready') return false;
+      const distance = Math.hypot(destination[0] - dealerFoot[0], destination[2] - dealerFoot[2]);
+      await dealerRig.walkTo(C.app, toW(destination), { ms: ms || Math.max(350, distance / 0.9 * 1000) });
+      dealerFoot = destination.slice();
+      return true;
+    };
 
     // dolly: gold cylinder marker, parked (hidden) at the rack
     const dolly = new THREE.Group();
+    dolly.name = 'roulette-dolly';
     const dBase = new THREE.Mesh(new THREE.CylinderGeometry(0.028, 0.034, 0.05, 12), A.goldMaterial());
     dBase.position.y = 0.025;
     const dStem = new THREE.Mesh(new THREE.CylinderGeometry(0.011, 0.011, 0.05, 8), A.goldMaterial());
@@ -722,21 +734,16 @@
     });
 
     g.userData.placeDolly = async (n) => {
-      const [x, z] = C.layouts.rouletteSpotPos('n' + n);
+      const [x, z] = FELT.numberCenter(n);
       dolly.visible = true;
-      // NOTE: `dealer` (the const from the `if (opts.withDealer)` block
-      // above) is block-scoped and NOT visible here — `dealerRig` (the
-      // facade itself, hoisted to this function's scope) is the equivalent
-      // handle and is what every other call site in this file already uses.
       if (dealerRig && C.character.ready === 'ready') {
-        let released = false;
         await dealerRig.play(C.app, 'placeDolly', {
           refs: { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) },
           on: {
             // Object3D.attach() preserves world transform on its own — no
             // need to snapshot the dolly's world position first.
             grab: () => { dealerRig.handBone?.('R')?.attach(dolly); },
-            release: () => { released = true; g.attach(dolly); dolly.position.set(x, FELT_Y + 0.02, z); },
+            release: () => { g.attach(dolly); dolly.position.set(x, FELT_Y + 0.02, z); },
           },
         });
         // Safety net: playPath's promise always resolves (supersession
@@ -756,89 +763,109 @@
       dolly.visible = false;
     };
 
-    // Fly a chip-stack group along a small arc, then run onDone. Landing
-    // ends with a brief settle wobble (scale pulse 1 -> 1.06 -> 1, 120ms
-    // total) so a stack reads as settling under its own weight rather than
-    // just stopping dead — skipped in REDUCED along with the rest of the arc.
-    const flyStack = (stack, to, ms, onDone) => {
-      if (C.app.REDUCED) { stack.position.set(to[0], to[1], to[2]); onDone && onDone(); return; }
-      C.tween.to(stack.position, { y: stack.position.y + 0.16 }, ms * 0.3, 'outCubic', () => {
-        C.tween.to(stack.position, { x: to[0], z: to[2] }, ms * 0.45, 'inOutCubic', () => {
-          C.tween.to(stack.position, { y: to[1] }, ms * 0.25, 'outCubic', () => {
-            C.tween.to(stack.scale, { x: 1.06, y: 1.06, z: 1.06 }, 60, 'outCubic', () => {
-              C.tween.to(stack.scale, { x: 1, y: 1, z: 1 }, 60, 'inOutCubic', onDone);
-            });
-          });
-        });
-      });
-    };
     const disposeStack = (stack) => {
+      stack.userData.chipSlide?.cancel();
       stack.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
-      stack.parent && stack.parent.remove(stack);
+      stack.parent?.remove(stack);
     };
     const stackNear = (x, z) => betLayer.children.find(
       (s) => Math.hypot(s.position.x - x, s.position.z - z) < 0.02);
+    const moveStack = (stack, to, ms) => C.chips.slideStack(C.app, stack, to, { ms });
+    const performAt = async (gesture, refs, event, action, ms = 780) => {
+      let operation = null;
+      const begin = () => { if (!operation) operation = action(); };
+      const motion = rigPlay(gesture, refs, { ms, on: { [event]: begin } });
+      if (!dealerRig) begin();
+      await motion;
+      // Superseded paths resolve without their remaining contact events.
+      begin();
+      await operation;
+    };
+
+    // A real croupier rake keeps losing chips visibly connected to the
+    // dealer's action, including spots beyond fingertip reach. The shaft
+    // is rigid; its rear passes through the grip as the head draws back.
+    const rake = new THREE.Group();
+    rake.name = 'roulette-rake';
+    const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.008, 0.009, 1.45, 10), A.woodMaterial('#51331e'));
+    shaft.rotation.x = Math.PI / 2; shaft.position.z = -0.725;
+    const crossbar = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.024, 0.025), A.goldMaterial());
+    crossbar.position.y = 0.01;
+    rake.add(shaft, crossbar);
+    [-0.075, 0.075].forEach((x) => {
+      const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.013, 0.021, 0.055), A.goldMaterial());
+      tooth.position.set(x, 0.012, -0.017); rake.add(tooth);
+    });
+    rake.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+    rake.visible = false; g.add(rake);
+    let activeRakeStop = null;
+    const trackRake = (stack) => {
+      activeRakeStop?.();
+      const hook = () => {
+        const hand = dealerRig?.handContactWorld?.('R');
+        const grip = hand ? g.worldToLocal(hand.clone ? hand.clone() : new THREE.Vector3(...hand))
+          : new THREE.Vector3(dealer?.position.x ?? -1.88, 1.08, -0.57);
+        const tip = stack.position.clone();
+        const away = tip.clone().sub(grip); away.y = 0; away.normalize();
+        rake.position.copy(tip).addScaledVector(away, 0.04);
+        rake.position.y = FELT_Y + 0.022;
+        const direction = rake.position.clone().sub(grip).normalize();
+        rake.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+      };
+      rake.visible = true; hook(); C.app.onFrame(hook);
+      const stop = () => { C.app.offFrame(hook); rake.visible = false; if (activeRakeStop === stop) activeRakeStop = null; };
+      activeRakeStop = stop;
+      return stop;
+    };
 
     g.userData.settleBets = async ({ losingSpots = [], winningSpots = [] }) => {
-      // sweep losing stacks into the rack, dealer raking alongside — each
-      // sweep is a deferred thunk so the setTimeout stagger only starts once
-      // the rake actually touches the felt (the `contact` waypoint), not at
-      // call time. Fallback: playPath's promise always resolves even when
-      // superseded/cancelled, but a cancelled path never fires `contact` —
-      // if that happens (or the procedural rig, which ignores `on`
-      // entirely), start the sweep immediately so losing chips are never
-      // stranded on the felt.
-      if (losingSpots.length) {
-        const first = losingSpots[0];
-        const sweeps = losingSpots.map(({ x, z }, i) => () => new Promise((res) => {
-          const stack = stackNear(x, z);
-          if (!stack) return res();
-          setTimeout(() => flyStack(stack, RACK_LOCAL, 420, () => { disposeStack(stack); res(); }),
-            C.app.REDUCED ? 0 : i * 90);
-        }));
-        let sweepsDone = null;
-        const startSweeps = () => { sweepsDone = Promise.all(sweeps.map((fn) => fn())); };
-        if (C.character.ready === 'ready') {
-          let fired = false;
-          await rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) },
-            { on: { contact: () => { fired = true; startSweeps(); } } });
-          if (!fired) startSweeps();
-        } else {
-          rigPlay('sweepChips', { target: toW([first.x, FELT_Y, first.z]), rack: toW(RACK_LOCAL) });
-          startSweeps();
-        }
-        await sweepsDone;
+      const roomGen = C.app.roomGen;
+      const generation = actionGeneration;
+      const active = () => C.app.roomGen === roomGen && actionGeneration === generation;
+      // Clear losers first, one controlled rake stroke at a time. Winning
+      // stakes and the winning-number marker remain untouched during this.
+      for (const { x, z } of losingSpots) {
+        if (!active()) return;
+        const stack = stackNear(x, z);
+        if (!stack) continue;
+        // Approach along the dealer corridor, keeping feet off the table.
+        // The shorter rake reaches across its width without a stretched arm.
+        const approachX = Math.max(-1.4, Math.min(1.2, x - 0.1));
+        const approached = await walkDealer([approachX, 0, -0.99]);
+        if (!active()) return;
+        const collection = approached ? [approachX + 0.12, CHIP_Y, -0.55] : RACK_LOCAL;
+        const stopRake = trackRake(stack);
+        try {
+          await performAt('sweepChips', { target: toW([x, CHIP_Y, z]), rack: toW(collection) }, 'contact',
+            () => active() ? moveStack(stack, collection, 560) : Promise.resolve(false), 1020);
+          if (active() && approached) {
+            const ms = Math.max(650, Math.abs(approachX - DEALER_HOME[0]) / 0.9 * 1000);
+            await Promise.all([walkDealer(DEALER_HOME, ms), moveStack(stack, RACK_LOCAL, ms)]);
+          }
+        } finally { stopRake(); }
+        if (!active()) return;
+        disposeStack(stack);
       }
-      // pay each winning spot from the rack
-      for (let i = 0; i < winningSpots.length; i++) {
-        const { x, z, amount, factor } = winningSpots[i];
-        rigPlay('payChips', { rack: toW(RACK_LOCAL), target: toW([x, FELT_Y, z]) });
-        const chips = C.layouts.chipBreakdown(amount * factor);
-        const pay = new THREE.Group();
-        chips.forEach((v, k) => {
-          const chip = C.chips.makeChip(v);
-          chip.position.y = k * C.chips.CHIP_H;
-          pay.add(chip);
-        });
-        pay.position.set(...RACK_LOCAL);
-        betLayer.add(pay);
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise((res) => flyStack(pay, [x + 0.09, 0.86, z], 460, res));
+      // Pay net winnings beside the original stake; the embedded game still
+      // performs the actual settlement and wallet update after this display.
+      for (const { x, z, amount, factor } of winningSpots) {
+        if (!active()) return;
+        const pay = chipBundle(amount * factor);
+        pay.position.set(...RACK_LOCAL); betLayer.add(pay);
+        await performAt('payChips', { rack: toW(RACK_LOCAL), target: toW([x, CHIP_Y, z]) }, 'grab',
+          () => active() ? moveStack(pay, [x + 0.065, CHIP_Y, z], 610) : Promise.resolve(false), 1040);
       }
     };
 
     g.userData.buyIn = async () => {
-      rigPlay('tapRack', { rack: toW(RACK_LOCAL) });
-      const stk = C.chips.makeChipStack(100, 6);
-      stk.position.set(...RACK_LOCAL);
-      g.add(stk);
-      await new Promise((res) => flyStack(stk, [0.35, FELT_Y + 0.02, 1.05], 600, res));
-      await new Promise((res) => setTimeout(res, C.app.REDUCED ? 100 : 900));
-      if (!C.app.REDUCED) {
-        await new Promise((res) => C.tween.to(stk.scale, { x: 0.01, y: 0.01, z: 0.01 }, 200, 'outCubic', res));
-      }
-      stk.traverse((o) => { if (o.isMesh) C.chips.disposeChip(o); });
-      g.remove(stk);
+      const generation = actionGeneration;
+      const stack = C.chips.makeChipStack(100, 6);
+      stack.position.set(...RACK_LOCAL); betLayer.add(stack);
+      await performAt('payChips', { rack: toW(RACK_LOCAL), target: toW([0.35, CHIP_Y, 0.66]) }, 'grab',
+        () => actionGeneration === generation ? moveStack(stack, [0.35, CHIP_Y, 0.66], 720) : Promise.resolve(false), 1180);
+      // Leave the buy-in on the player's rail apron until real bets replace
+      // it, instead of shrinking physical chips away after a short timeout.
+      stack.userData.buyIn = true;
     };
 
     // wrap spinTo: the dealer reaches to the rim, flicks, wheel spins — the
@@ -848,16 +875,30 @@
     // and a spinFollow cancelled mid-flight (e.g. a room switch), so the
     // wheel can never hang waiting for an event that will never fire.
     const rawSpinTo = wheel.spinTo;
+    let spinGeneration = 0;
+    g.userData.spinDurationMs = wheel.durationMs;
+    g.userData.cancelSpin = () => {
+      spinGeneration++; actionGeneration++; wheel.cancel(); activeRakeStop?.();
+      dealerRig?.stop?.('body'); dealerRig?.stop?.('arms');
+      if (dolly.parent !== g) g.attach(dolly);
+      dolly.visible = false;
+    };
     g.userData.spinTo = async (pocket) => {
-      await rigPlay('spinReach', { rim: toW(RIM_LOCAL) });
+      const generation = ++spinGeneration, roomGen = C.app.roomGen;
+      const active = () => generation === spinGeneration && roomGen === C.app.roomGen;
+      await walkDealer(DEALER_HOME);
+      if (!active()) return;
+      await Promise.all([rigPlay('spinReach', { rim: toW(RIM_LOCAL) }, { ms: 680 }), wheel.prepareLaunch()]);
+      if (!active()) return;
       if (C.character.ready === 'ready') {
         let kicked = null;
         const kick = new Promise((res) => { kicked = res; });
         rigPlay('spinFollow', { rim: toW(RIM_LOCAL) }, { on: { release: () => kicked() } });
         await Promise.race([kick, new Promise((r) => setTimeout(r, 400))]);
       } else {
-        rigPlay('spinFollow', {});
+        rigPlay('spinFollow', { rim: toW(RIM_LOCAL) });
       }
+      if (!active()) return;
       return rawSpinTo(pocket);
     };
 

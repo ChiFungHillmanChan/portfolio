@@ -162,7 +162,7 @@ function vecClose(actual, expectedArr, label) {
     + `expected ~[${expectedArr.map((v) => v.toFixed(4))}] (dist ${d.toFixed(4)}m, eps ${EPS}m)`);
 }
 
-test('dealCard: hand bone reaches the shoe ref (+offset) at the grab waypoint, the target ref (+offset) at release, fires both events, and resolves at completion', async () => {
+test('dealCard: palm reaches the shoe at grab and the pitch point at release, fires both events, and resolves at completion', async () => {
   const app = makeTickApp();
   const impl = buildDealer('ik-dealcard', app);
   const { shoe, target } = reachRefs(impl);
@@ -193,13 +193,13 @@ test('dealCard: hand bone reaches the shoe ref (+offset) at the grab waypoint, t
   const relWp = path.hands.R.find((w) => w.event === 'release');
   mockNow = (grabWp.at + 0.0005) * path.dur;
   app.tick(1 / 60);
-  handPos.copy(impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3()));
+  handPos.copy(impl.handContactWorld('R'));
   vecClose(handPos, [shoe[0] + grabWp.offset[0], shoe[1] + grabWp.offset[1], shoe[2] + grabWp.offset[2]], 'grab waypoint');
   assert.ok(events.grab, 'grab event must have fired via wp.at<=t catch-up semantics');
 
   mockNow = (relWp.at + 0.0005) * path.dur;
   app.tick(1 / 60);
-  handPos.copy(impl.bones.handR.getWorldPosition(new CTX_THREE.Vector3()));
+  handPos.copy(impl.handContactWorld('R'));
   vecClose(handPos, [target[0] + relWp.offset[0], target[1] + relWp.offset[1], target[2] + relWp.offset[2]], 'release waypoint');
   assert.ok(events.release, 'release event must have fired via wp.at<=t catch-up semantics');
 
@@ -523,11 +523,9 @@ test('Task 8: facade.handWorld(side) reads bones.hand* once the GLB char is atta
   const expectedProcR = procFacade.joints.wristR.getWorldPosition(new CTX_THREE.Vector3());
   assert.ok(handWorldProcR.distanceTo(expectedProcR) < 1e-6,
     'procedural handWorld(\'R\') must equal joints.wristR\'s world position exactly');
-  // Task 9: procedural rig has no bone hierarchy -> handBone must return
-  // null (never throw), so placeDolly's ready-check-gated fallback branch
-  // stays reachable.
-  assert.strictEqual(procFacade.handBone('R'), null,
-    'procedural branch: handBone must return null (no GLB bones to hand out)');
+  // The rebuilt fallback has a real wrist transform for attaching props.
+  assert.strictEqual(procFacade.handBone('R'), procFacade.joints.wristR,
+    'procedural branch: props must attach to the fallback wrist joint');
 
   CTX_CASINO.app = undefined;   // don't leak state into any test that runs after this one
 });
@@ -577,5 +575,165 @@ test('Fix 2 — a dealer rotated π (baccarat/uth pit orientation): a waypoint X
     vecClose(handPos, [target[0] - 0.05, target[1], target[2]], 'π-rotated X-offset waypoint');
   } finally {
     delete CTX_CASINO.handPaths.PATHS.__testXOffsetPi;
+  }
+});
+
+test('a forward reach keeps both elbows on their anatomical side of the torso', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-outward-elbows', app);
+  for (const side of ['L', 'R']) {
+    const shoulder = impl.bones['upperArm' + side].getWorldPosition(new CTX_THREE.Vector3());
+    const target = shoulder.clone().add(new CTX_THREE.Vector3(0, -0.20, 0.27));
+    CTX_CASINO.handPaths.PATHS.__elbowSide = { dur: 400, hands: { [side]: [{ at: 1, pos: target.toArray() }] } };
+    mockNow = 0;
+    const p = impl.play(app, '__elbowSide');
+    mockNow = 400;
+    app.tick(1 / 60);
+    await p;
+    const elbow = impl.bones['foreArm' + side].getWorldPosition(new CTX_THREE.Vector3());
+    const sign = side === 'L' ? 1 : -1;
+    assert.ok(sign * (elbow.x - shoulder.x) > 0.015,
+      `${side} elbow must bend outward: shoulder=${shoulder.x}, elbow=${elbow.x}`);
+    await impl.play(app, 'armsRest');
+    app.tick(1 / 60);
+  }
+  delete CTX_CASINO.handPaths.PATHS.__elbowSide;
+});
+
+test('grab/release events identify the active hand and its real palm attachment point', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-contact-frame', app);
+  const { shoe, target } = reachRefs(impl);
+  let meta;
+  mockNow = 0;
+  const p = impl.play(app, 'dealCard', { refs: { shoe, target }, on: { grab: (_wrist, value) => { meta = value; } } });
+  const path = CTX_CASINO.handPaths.PATHS.dealCard;
+  mockNow = path.dur * path.hands.R.find(w => w.event === 'grab').at + 0.01;
+  app.tick(1 / 60);
+  assert.ok(meta && meta.side, 'card attachment needs the actual hand selected by the shoe position');
+  assert.ok(meta.contactWorld && meta.contactWorld.isVector3);
+  const contact = impl.handContactWorld(meta.side);
+  assert.ok(contact.distanceTo(meta.contactWorld) < 1e-8);
+  const wrist = impl.bones['hand' + meta.side].getWorldPosition(new CTX_THREE.Vector3());
+  assert.ok(contact.distanceTo(wrist) > 0.04 && contact.distanceTo(wrist) < 0.14,
+    'card contact belongs below the palm, ahead of the wrist cuff');
+  mockNow = path.dur;
+  app.tick(1 / 60);
+  await p;
+});
+
+test('a card-dealing hand keeps the palm and index finger nearly parallel to the felt', async () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-flat-fingers', app);
+  const refs = reachRefs(impl);
+  const bindQ = impl.bones.handR.getWorldQuaternion(new CTX_THREE.Quaternion());
+  mockNow = 0;
+  const p = impl.play(app, 'dealCard', { refs });
+  const path = CTX_CASINO.handPaths.PATHS.dealCard;
+  mockNow = path.dur * path.hands.R.find(w => w.event === 'release').at;
+  app.tick(1 / 60);
+  const palm = new CTX_THREE.Vector3(0, -1, 0).applyQuaternion(
+    impl.bones.handR.getWorldQuaternion(new CTX_THREE.Quaternion()).multiply(bindQ.invert()));
+  assert.ok(palm.y < -0.97, `palm normal must face the felt, y=${palm.y}`);
+  const tip = impl.group.getObjectByName('index_04_leaf_r').getWorldPosition(new CTX_THREE.Vector3());
+  const base = impl.group.getObjectByName('index_01_r').getWorldPosition(new CTX_THREE.Vector3());
+  const direction = tip.sub(base).normalize();
+  assert.ok(Math.abs(direction.y) < 0.28, `index must extend across a card, not curl vertically into it: y=${direction.y}`);
+  mockNow = path.dur; app.tick(1 / 60); await p;
+});
+
+test('idle dealer hands rest forward above the console instead of hanging into the wood', () => {
+  const app = makeTickApp();
+  const impl = buildDealer('ik-neutral-hands', app);
+  impl.setIdle(app);
+  app.tick(1 / 60);
+  for (const side of ['L', 'R']) {
+    const p = impl.group.worldToLocal(impl.bones['hand' + side].getWorldPosition(new CTX_THREE.Vector3()));
+    assert.ok(p.y > 1.0 && p.y < 1.17, `${side} hand must rest at working height: ${p.y}`);
+    assert.ok(p.z > 0.16 && p.z < 0.35, `${side} hand must rest in front of the torso: ${p.z}`);
+  }
+});
+
+test('real blackjack and baccarat shoe mouths can be reached with the palm at pickup', async () => {
+  for (const [name, postZ, shoe] of [
+    ['blackjack', -0.18, [0.506, 0.858, 0.166]],
+    ['baccarat', -0.83, [0.488, 0.848, -0.451]],
+  ]) {
+    const app = makeTickApp();
+    const root = new CTX_THREE.Group(); root.position.z = postZ;
+    let impl;
+    CTX_CASINO.character.attach(app, root, { seed: 'dealer-reach' }, i => { impl = i; });
+    impl.setIdle(app); app.tick(1 / 60);
+    mockNow = 0;
+    const p = impl.play(app, 'dealCard', { refs: { shoe, target: [0, 0.83, 0.8] } });
+    mockNow = CTX_CASINO.handPaths.PATHS.dealCard.dur * 0.30;
+    app.tick(1 / 60);
+    const contact = impl.handContactWorld('L');
+    const gap = contact.distanceTo(new CTX_THREE.Vector3(...shoe));
+    assert.ok(gap < 0.007, `${name} shoe is ${gap.toFixed(3)}m from palm: ${contact.toArray()}`);
+    mockNow = CTX_CASINO.handPaths.PATHS.dealCard.dur; app.tick(1 / 60); await p;
+  }
+});
+
+test('baccarat service deals keep both palms clear of the bank and continue without a neutral-pose snap', async () => {
+  const path = CTX_CASINO.handPaths.PATHS.baccaratDeal;
+  const refs = { shoe: [0.488473606, 0.848, -0.451508642],
+    rack: [0, 0.945, -0.29], target: [-0.12, 0.925, -0.28] };
+  // The shortest and tallest dealers exercise both ends of the actual
+  // reach envelope. A second consecutive deal reproduces the old jump
+  // from a held shoe-side palm back to neutral at the action boundary.
+  for (const seed of ['audit-size-5', 'dealer-reach', 'audit-size-0']) {
+    const app = makeTickApp();
+    const root = new CTX_THREE.Group(); root.position.z = -0.74;
+    let impl;
+    CTX_CASINO.character.attach(app, root, { seed }, value => { impl = value; });
+    mockNow = 0; impl.setIdle(app); app.tick(1 / 60);
+    const readPalms = () => Object.fromEntries(['L', 'R'].map(side => [side, impl.handContactWorld(side)]));
+    let previous = readPalms(), time = 0;
+    for (let deal = 0; deal < 2; deal++) {
+      const events = [];
+      const done = impl.play(app, 'baccaratDeal', { refs, on: Object.fromEntries(
+        ['grab', 'contact', 'release'].map(name => [name, (_w, meta) => events.push({ name, ...meta })]),
+      ) });
+      app.tick(0);
+      const start = readPalms();
+      for (const side of ['L', 'R']) assert.ok(start[side].distanceTo(previous[side]) < 0.008,
+        `${seed}/${deal}/${side}: the new action must begin at the preceding palm pose`);
+      previous = start;
+      for (let elapsed = 5; elapsed <= path.dur; elapsed += 5) {
+        mockNow = time + elapsed; app.tick(0.005);
+        const palms = readPalms();
+        for (const side of ['L', 'R']) {
+          const palm = palms[side];
+          assert.ok(palm.distanceTo(previous[side]) / 0.005 < 4.5,
+            `${seed}/${side}: service motion must not whip or teleport between frames`);
+          const overBank = Math.abs(palm.x) < 0.38 && palm.z > -0.67 && palm.z < -0.37;
+          assert.ok(!overBank || palm.y >= 0.92,
+            `${seed}/${side}: palm must clear the bank, actual=${palm.toArray()}`);
+        }
+        previous = palms;
+      }
+      await done;
+      assert.deepEqual(events.map(event => [event.name, event.side]),
+        [['grab', 'L'], ['contact', 'R'], ['release', 'R']]);
+      assert.ok(events[0].contactWorld.distanceTo(new CTX_THREE.Vector3(...refs.shoe)) < 0.02);
+      assert.ok(events[1].contactWorld.distanceTo(new CTX_THREE.Vector3(-0.045, 0.945, -0.29)) < 0.025);
+      assert.ok(events[2].contactWorld.z > -0.35, 'release stays ahead of the chip bank for every dealer size');
+      time += path.dur;
+    }
+    const rest = impl.play(app, 'baccaratRest');
+    const restDuration = CTX_CASINO.handPaths.PATHS.baccaratRest.dur;
+    for (let elapsed = 5; elapsed <= restDuration; elapsed += 5) {
+      mockNow = time + elapsed; app.tick(0.005);
+      const palms = readPalms();
+      for (const side of ['L', 'R']) assert.ok(palms[side].distanceTo(previous[side]) < 0.0225,
+        `${seed}/${side}: returning to rest remains continuous`);
+      previous = palms;
+    }
+    await rest;
+    app.tick(0);
+    const after = readPalms();
+    for (const side of ['L', 'R']) assert.ok(after[side].distanceTo(previous[side]) < 0.008,
+      `${seed}/${side}: completing rest must not snap the wrist/palm attachment frame`);
   }
 });

@@ -5,10 +5,22 @@
 // the engine (globalThis.CASINO) for cards, chips and camera. European deal:
 // player, dealer up-card, player — no hole card; dealer draws after actions.
 import {
-  makeShoe, handValue, isBlackjack, dealerPlay, canSplit,
+  makeShoe, handValue, isBlackjack, canSplit,
   settleMain, perfectPairReturn, twentyOnePlus3Return, validateBets, chipRack, defaultChip,
 } from './blackjack-rules.js';
 import { getTable, formatChips } from '../js/wallet/table-config.js';
+
+// European shoe procedure: occupied seats in dealer order, up-card, then
+// the second pass through the same seats. Dealer completes only after play.
+export function planInitialDeal(occupiedSeats) {
+  // Seat 5 is on +X (the dealer's left); indices decrease clockwise.
+  const seats = [...occupiedSeats].sort((a, b) => b - a);
+  return [
+    ...seats.map((seat) => ({ seat, card: 0, faceDown: false })),
+    { seat: null, card: 0, faceDown: false },
+    ...seats.map((seat) => ({ seat, card: 1, faceDown: false })),
+  ];
+}
 
 // ---------- pure layout planners (node-tested) ----------
 // Player cards stack TOWARD the dealer (radius shrinks per card) with the
@@ -19,8 +31,8 @@ export function planPlayerCard(seat, { hand = 0, hands = 1, card = 0, sideways =
   const a = seat.angle;
   const x = Math.cos(a) * radius - Math.sin(a) * tangent;
   const z = Math.sin(a) * radius + Math.cos(a) * tangent;
-  const spin = Math.PI / 2 - a + (card % 2 ? -0.06 : 0.05) + (sideways ? Math.PI / 2 : 0);
-  return { pos: [x, seat.feltY + 0.012 + card * 0.003, z], spin };
+  const spin = Math.PI / 2 - a + (sideways ? Math.PI / 2 : 0);
+  return { pos: [x, seat.feltY + 0.003 + card * 0.0015, z], spin };
 }
 
 // Dealer cards run HORIZONTALLY: the two painted boxes, then fanDx per card.
@@ -170,7 +182,7 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     'table-max': `Table max ${cfg.maxTotalBet.toLocaleString()} total`,
     balance: 'Not enough chips',
     insufficient: 'Not enough chips',
-    'insufficient-chips': 'Not enough chips — buy in at the cashier',
+    'insufficient-chips': 'Not enough chips — use Buy chips beside your wallet',
     'too-fast': 'One moment — dealing too fast',
     'network-error': 'Connection problem — try again',
     'round-in-progress': 'Previous hand still closing — one moment',
@@ -267,6 +279,8 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
   const markers = [];      // split-hand highlight decals
 
   function disposeMesh(m) {
+    m.userData.cancelCardDeal?.();
+    m.userData.cancelCardSlide?.();
     m.traverse((o) => {
       o.geometry?.dispose();
       const mats = Array.isArray(o.material) ? o.material : [o.material];
@@ -349,27 +363,10 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
     dealt.push(mesh);
     return mesh;
   }
-  const dealTo = (mesh, plan, opts = {}) => {
-    const from = toWorld(bj.shoeLocal), to = toWorld(plan.pos);
-    const fly = (fromPos) => C.cards.dealCardTo(C.app, mesh, fromPos, to, { ms: 420, sound: true, ...opts });
-    // GLB dealer: the card leaves the HAND on the pitch's release event —
-    // same mandatory-fallback idiom as baccarat-show.js's dealVia (a
-    // superseded path never fires its remaining events, and the procedural
-    // rig ignores `on` entirely, so both fallbacks stay reachable).
-    if (C.character?.ready === 'ready' && bj.dealerRig) {
-      return new Promise((resolve) => {
-        let fired = false;
-        const playDone = bj.dealerRig.play(C.app, 'dealCard', {
-          refs: { shoe: from, target: to },
-          on: { release: (h) => { fired = true; resolve(fly([h.x, h.y, h.z])); } },
-        });
-        playDone.then(() => { if (!fired) resolve(fly(from)); });
-      });
-    }
-    // procedural rig: arm mimes while the card flies straight from the shoe
-    bj.dealerRig?.play(C.app, 'dealCard', { refs: { shoe: from, target: to } });
-    return fly(from);
-  };
+  const dealTo = (mesh, plan, opts = {}) => C.cards.dealCardWithDealer(
+    C.app, bj.dealerRig, mesh, toWorld(bj.shoeLocal), toWorld(plan.pos),
+    { ms: 360, sound: true, ...opts },
+  );
 
   function actionBar() {
     let el = document.getElementById('bjActions');
@@ -442,13 +439,13 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
       return card;
     };
 
-    // European deal: player, dealer up-card, player.
-    await dealPlayer(hands[0], 0, 1);
-    if (closed) return;
-    await dealDealer();
-    if (closed) return;
-    await dealPlayer(hands[0], 0, 1);
-    if (closed) return;
+    // One card per occupied seat on each pass; this session owns one seat.
+    // Preserve the configured European no-hole-card rules and payout math.
+    for (const step of planInitialDeal([seatIdx])) {
+      if (step.seat === null) await dealDealer();
+      else await dealPlayer(hands[0], 0, 1);
+      if (closed) return;
+    }
 
     // Side bets resolve off the initial deal, paid/taken immediately.
     let sideRet = 0;
@@ -476,7 +473,12 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
 
   async function playHands(hands, dealPlayer, roundBets, sideRet, dealerCards, dealDealer) {
     for (let hi = 0; hi < hands.length; hi++) {
-      // eslint-disable-next-line no-await-in-loop
+      // Complete the first split hand before dealing the next hand's second
+      // card, so a player cannot act with advance knowledge of that draw.
+      if (hands[hi].cards.length === 1) {
+        await dealPlayer(hands[hi], hi, hands.length);
+        if (closed) return;
+      }
       await playOneHand(hands, hi, dealPlayer, roundBets, dealerCards);
       if (closed) return;
     }
@@ -572,10 +574,9 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
         placed.main.forEach((v) => stacks.add('main2', v));     // second hand's equal bet
         await wait(380);
         if (closed) return done();
-        // each split hand draws its second card before play continues
+        // Deal and play this hand first; playHands supplies the next hand's
+        // second card only after this hand stands or busts.
         await dealPlayer(hand, 0, 2);
-        if (closed) return done();
-        await dealPlayer(hands[1], 1, 2);
         acting = false;
         if (closed) return done();
         render();
@@ -629,15 +630,20 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
 
     // Chip choreography: dealer pays from the tray / collects into it,
     // with a matching arm gesture (visual only — never awaited before pay).
-    const jobs = hands.map((h, i) => {
-      const spotId = i === 0 ? 'main' : 'main2';
-      const ret = rets[i];
-      const outcome = ret === 0 ? 'lose' : ret === h.stake ? 'push' : 'win';
-      const spotW = toWorld(bj.spotLocal(seatIdx, spotId));
-      if (outcome === 'lose') bj.dealerRig?.play(C.app, 'sweepChips', { refs: { target: spotW, rack: toWorld(bj.trayLocal) } });
-      else if (outcome === 'win') bj.dealerRig?.play(C.app, 'payChips', { refs: { rack: toWorld(bj.trayLocal), target: spotW } });
-      return stacks.settle(spotId, outcome, Math.max(0, ret - h.stake));
-    });
+    const payHands = async () => {
+      for (let i = 0; i < hands.length; i++) {
+        if (closed) return;
+        const h = hands[i], ret = rets[i];
+        const spotId = i === 0 ? 'main' : 'main2';
+        const outcome = ret === 0 ? 'lose' : ret === h.stake ? 'push' : 'win';
+        const spotW = toWorld(bj.spotLocal(seatIdx, spotId));
+        const action = outcome === 'lose' ? 'sweepChips' : outcome === 'win' ? 'payChips' : null;
+        const gesture = action && bj.dealerRig?.play(C.app, action,
+          { refs: { target: spotW, rack: toWorld(bj.trayLocal) } });
+        await Promise.all([gesture, stacks.settle(spotId, outcome, Math.max(0, ret - h.stake))]);
+      }
+    };
+    const settlement = payHands();
     // dealCard v2 chains end hovering at the shoe (no rest key). sweep/pay
     // finish at rest themselves; an all-push round plays neither, so drop
     // the arm explicitly or the dealer holds the shoe hover forever.
@@ -649,11 +655,16 @@ export function openBlackjackLive({ table, walletClient, onClosed }) {
       : gross > 0 ? `Returned ${gross.toLocaleString()} chips` : 'No return';
     C.sound?.play(title === 'BLACKJACK!' || title === 'YOU WIN' ? 'win' : title === 'PUSH' ? 'push' : 'lose');
     await C.app.banner(title, sub, 2600);
-    await Promise.all(jobs).catch(() => {});
+    await settlement.catch(() => {});
     if (closed) return;
 
     await wait(300);
     document.getElementById('bjActions')?.remove();
+    const discard = toWorld(bj.discardLocal);
+    await Promise.all(dealt.map((mesh, index) => C.cards.dealCardTo(C.app, mesh,
+      mesh.position.toArray(), [discard[0], discard[1] + 0.027 + index * 0.0015, discard[2]],
+      { ms: 440, spin: false })));
+    if (closed) return;
     clearTableMeshes();
     await C.app.glideTo(poses.seated.pos, poses.seated.look, 800);
     if (closed) return;

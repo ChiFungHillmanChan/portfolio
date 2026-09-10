@@ -122,8 +122,8 @@
         if (!C.app.IS_MOBILE) {
           const tz = rotated ? row.z - 0.4 : row.z;
           const sp = new THREE.SpotLight(0xffdcaa, 1.5, 9, 0.6, 0.5, 1.1);
-          sp.position.set(x, 4.6, tz);
-          sp.target.position.set(x, 0.82, tz);
+          sp.position.set(x, 4.2, tz + row.dir * 0.9);
+          sp.target.position.set(x, 1.05, tz);
           sp.castShadow = false;
           s.add(sp, sp.target);
         }

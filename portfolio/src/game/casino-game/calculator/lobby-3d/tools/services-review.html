@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Casino — Cashier and Bar</title>
+  <style>
+    * { box-sizing: border-box; } body { margin: 0; background: #101619; color: #eee8da; font: 14px system-ui, sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    header { position: fixed; top: 24px; left: 28px; pointer-events: none; max-width: 330px; }
+    h1 { margin: 8px 0; font: 32px Georgia, serif; font-weight: normal; }
+    p { color: #b9c1b9; line-height: 1.5; } #error { color: #ffb4a5; }
+    nav { position: fixed; bottom: 20px; left: 20px; right: 20px; display: flex; flex-wrap: wrap; gap: 8px; padding: 14px; border: 1px solid #394642; border-radius: 14px; background: #17211fed; }
+    button, select { color: #e8ebdf; background: #263330; border: 1px solid #52635b; border-radius: 7px; padding: 10px 14px; font: inherit; cursor: pointer; }
+    button[aria-pressed="true"], #run { color: #1b251e; background: #ddc392; border-color: #ddc392; }
+    button:disabled, select:disabled { opacity: .5; cursor: wait; } button:focus-visible, select:focus-visible { outline: 3px solid #e7c477; outline-offset: 2px; }
+    .gap { flex: 1; } [hidden] { display: none !important; }
+    @media (max-width: 700px) { header { top: 12px; left: 16px; max-width: 260px; } h1 { font-size: 25px; } nav { padding: 8px; left: 8px; right: 8px; bottom: 8px; gap: 5px; } button, select { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <canvas id="stage" aria-label="Casino service station"></canvas>
+  <header><h1 id="title">Cashier</h1><p>Drag to orbit. Scroll to zoom. Watch the casino’s actual service animations.</p><p id="status" role="status">Loading staff…</p><p id="error" role="alert"></p></header>
+  <nav aria-label="Service review controls">
+    <button data-station="cashier" aria-pressed="true" disabled>Cashier</button><button data-station="bar" aria-pressed="false" disabled>Bar</button>
+    <span class="gap"></span><button data-view="overview">Overview</button><button data-view="counter">Counter view</button><button data-view="interior">Inside view</button>
+    <select id="choice" aria-label="Service demonstration" disabled></select><button id="run" disabled>Run demonstration</button>
+  </nav>
+  <script src="../vendor/three-0.149.0.min.js"></script><script src="../vendor/three-addons-0.149.js"></script>
+  <script src="../src/engine/tween.js"></script><script src="../src/engine/assets.js"></script><script src="../src/engine/cards.js"></script><script src="../src/engine/chips3d.js"></script><script src="../src/engine/rig.js"></script><script src="../src/engine/character.js"></script>
+  <script src="../src/logic/layouts.js"></script><script src="../src/logic/gestures.js"></script><script src="../src/logic/ik.js"></script><script src="../src/logic/hand-paths.js"></script><script src="../src/engine/service-motion.js"></script>
+  <script src="../src/floor/bar.js"></script><script src="../src/floor/cashier.js"></script><script src="./services-review.js"></script>
+</body>
+</html>

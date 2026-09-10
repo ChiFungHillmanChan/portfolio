@@ -479,3 +479,23 @@ test('playMocap resets a shared cached AnimationAction\'s timeScale on a later u
     AnimationMixer.prototype.clipAction = realClipAction;
   }
 });
+
+test('dealer clothing has sculpted jacket geometry and real lapels, collar points and cuffs', () => {
+  const mesh = findBodyMesh(implA.group);
+  const template = findBodyMesh(capturedTemplate);
+  const p = mesh.geometry.attributes.position;
+  const source = template.geometry.attributes.position;
+  let changed = 0;
+  for (let i = 0; i < p.count; i++) {
+    if (Math.abs(p.getX(i) - source.getX(i)) + Math.abs(p.getZ(i) - source.getZ(i)) > 0.005) changed++;
+  }
+  assert.ok(changed > 250, 'jacket must change the superhero silhouette, not just repaint it');
+  for (const name of ['LapelL', 'LapelR', 'CollarL', 'CollarR', 'ShirtCuffL', 'ShirtCuffR']) {
+    const detail = implA.group.getObjectByName(name);
+    assert.ok(detail?.isMesh, `${name} must be a real shaped clothing surface`);
+    let parent = detail.parent;
+    while (parent && !parent.isBone) parent = parent.parent;
+    assert.ok(parent?.isBone, `${name} must follow its animated body bone`);
+  }
+  assert.equal(capturedTemplate.getObjectByName('LapelL'), undefined, 'template is never dressed in place');
+});

@@ -171,6 +171,10 @@
   // tools/build-dealer-assets.mjs, collapsed to the five tint groups.
   function tintGroupAt(x, y, z, L) {
     const ax = Math.abs(x);
+    // The source's trapezius extends above collarY. Keep only the actual
+    // neck/head bare; the old height-only mask exposed a skin wedge from
+    // the throat all the way onto one shoulder during the idle pose.
+    if (y > L.collarY && y < 1.63 && ax > 0.062 && ax < 0.25) return 'SUIT';
     if (y > L.collarY || ax > L.wristX) return 'SKIN';
     if (y < L.ankleY) return 'SHOES';
     if (ax > L.cuffX && y > 1.30) return 'WHITE';        // shirt cuffs
@@ -200,6 +204,102 @@
       colors[i * 3] = g[0]; colors[i * 3 + 1] = g[1]; colors[i * 3 + 2] = g[2];
     }
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
+
+  // The source is an athletic body. Re-cut the clothed surface into a
+  // smooth jacket and tapered sleeves; painted lapels alone leave exposed
+  // pectorals and biceps visible through the "suit". Skin, facial features,
+  // UVs and the original skeleton stay intact.
+  function tailorSilhouette(mesh) {
+    const { position: p, skinIndex: indices, skinWeight: weights } = mesh.geometry.attributes;
+    if (!indices || !weights) return;
+    const names = mesh.skeleton.bones.map(b => b.name);
+    for (let i = 0; i < p.count; i++) {
+      let bone = '', weight = -1;
+      for (let k = 0; k < 4; k++) {
+        const w = weights.array[i * 4 + k];
+        if (w > weight) { weight = w; bone = names[indices.array[i * 4 + k]]; }
+      }
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      if (/^(spine_|pelvis)/.test(bone) && y > 0.94 && y < 1.49) {
+        const height = Math.max(0, Math.min(1, (y - 0.96) / 0.46));
+        const width = 0.158 + 0.052 * height;
+        const depth = 0.108 + 0.023 * height;
+        const angle = Math.atan2((z + 0.022) / 0.13, x / 0.205);
+        const blend = Math.min(1, (y - 0.94) / 0.04, (1.49 - y) / 0.065) * 0.90;
+        p.setX(i, x + (Math.cos(angle) * width - x) * blend);
+        p.setZ(i, z + (Math.sin(angle) * depth - 0.022 - z) * blend);
+      } else if (/^(upperarm|lowerarm)_/.test(bone)) {
+        const along = Math.max(0, Math.min(1, (Math.abs(x) - 0.23) / 0.46));
+        const radius = 0.061 - 0.029 * along;
+        const dy = y - 1.4555, dz = z + 0.069;
+        const length = Math.hypot(dy, dz);
+        if (length > 0.001) {
+          const blend = Math.min(0.85, Math.max(0, (Math.abs(x) - 0.21) / 0.065));
+          p.setY(i, y + (1.4555 + dy / length * radius - y) * blend);
+          p.setZ(i, z + (-0.069 + dz / length * radius * 0.92 - z) * blend);
+        }
+      }
+    }
+    p.needsUpdate = true;
+    mesh.geometry.computeVertexNormals();
+    mesh.geometry.computeBoundingBox();
+    mesh.geometry.computeBoundingSphere();
+  }
+
+  function attachTailoring(group, bones) {
+    group.updateMatrixWorld(true);
+    const satin = new THREE.MeshStandardMaterial({ color: '#171c25', roughness: 0.36, metalness: 0.16, side: THREE.DoubleSide });
+    const shirt = new THREE.MeshStandardMaterial({ color: '#eee9df', roughness: 0.80, side: THREE.DoubleSide });
+    const gold = C.assets.goldMaterial();
+    const panel = (name, bone, points, material) => {
+      const positions = points.flatMap(p => bone.worldToLocal(new THREE.Vector3(...p)).toArray());
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+      const triangles = [];
+      for (let i = 1; i < points.length - 1; i++) triangles.push(0, i, i + 1);
+      geometry.setIndex(triangles);
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(geometry, material);
+      mesh.name = name; mesh.castShadow = true; mesh.receiveShadow = true;
+      bone.add(mesh);
+      return mesh;
+    };
+    for (const [side, sign] of [['L', 1], ['R', -1]]) {
+      const mirror = points => points.map(([x, y, z]) => [x * sign, y, z]);
+      panel('Lapel' + side, bones.chest, mirror([
+        [0.057, 1.515, 0.067], [0.127, 1.455, 0.100], [0.090, 1.401, 0.117],
+        [0.104, 1.375, 0.116], [0.014, 1.195, 0.124], [0.044, 1.405, 0.121],
+      ]), satin);
+      panel('Collar' + side, bones.neck, mirror([
+        [0.006, 1.552, 0.061], [0.039, 1.550, 0.046],
+        [0.047, 1.512, 0.079], [0.023, 1.504, 0.095],
+      ]), shirt);
+      const hand = bones['hand' + side], fore = bones['foreArm' + side];
+      const position = hand.getWorldPosition(new THREE.Vector3());
+      const direction = position.clone().sub(fore.getWorldPosition(new THREE.Vector3())).normalize();
+      const cuff = new THREE.Mesh(new THREE.CylinderGeometry(0.034, 0.037, 0.045, 16), shirt);
+      cuff.name = 'ShirtCuff' + side;
+      cuff.position.copy(position).addScaledVector(direction, -0.022);
+      cuff.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+      cuff.castShadow = true;
+      group.add(cuff); hand.attach(cuff);
+      const link = new THREE.Mesh(new THREE.SphereGeometry(0.006, 8, 6), gold);
+      link.name = 'Cufflink' + side;
+      link.scale.set(1, 0.5, 1);
+      link.position.copy(position).addScaledVector(direction, -0.024).add(new THREE.Vector3(0, -0.036, 0));
+      group.add(link); hand.attach(link);
+    }
+    // A welt pocket and small pin give the dark jacket readable tailoring
+    // at the normal table camera distance.
+    panel('BreastPocket', bones.chest, [[0.092, 1.377, 0.111], [0.174, 1.374, 0.084],
+      [0.174, 1.362, 0.084], [0.092, 1.365, 0.111]], satin);
+    panel('PocketSquare', bones.chest, [[0.102, 1.377, 0.113], [0.119, 1.397, 0.109],
+      [0.132, 1.380, 0.103], [0.148, 1.391, 0.098], [0.160, 1.375, 0.092]], shirt);
+    const button = new THREE.Mesh(new THREE.SphereGeometry(0.008, 10, 8), gold);
+    button.name = 'JacketButton'; button.scale.set(1, 1, 0.4);
+    button.position.copy(bones.spine.worldToLocal(new THREE.Vector3(0.013, 1.153, 0.116)));
+    bones.spine.add(button);
   }
 
   // Small gold bow tie riding the neck_01 BONE — an Object3D child of a
@@ -282,7 +382,7 @@
     // world position; Object3D.attach() reparents one to the Head bone
     // keeping that placement, so it rides head animation rigidly (same trick
     // as the bow tie, minus the manual matrix math).
-    const styles = [null, 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buns', 'Hair_Long'];
+    const styles = ['Hair_SimpleParted', 'Hair_Buzzed', 'Hair_SimpleParted', 'Hair_Buns'];
     const hairPick = styles[(h >>> 9) % styles.length];
     const wantBeard = ((h >>> 13) % 10) < 3;
 
@@ -301,8 +401,10 @@
       if (o.isSkinnedMesh && o.geometry.attributes.position) {
         o.geometry = o.geometry.clone();
         bakeTintColors(o.geometry, L, skinTint, suitTint);
+        tailorSilhouette(o);
         o.material.vertexColors = true;
         o.material.color.set('#ffffff');
+        o.material.roughness = 0.78;
       }
     });
 
@@ -322,8 +424,9 @@
       else node.parent?.remove(node);
     }
 
-    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
+    attachTailoring(group, bones);
     const bowTie = attachBowTie(group, bones.neck);
+    group.scale.setScalar(0.96 + ((h >>> 9) % 9) * 0.01);   // 0.96–1.04
     return { group, bones, mixer: new THREE.AnimationMixer(group), hash: h, bowTie };
   }
 
@@ -333,6 +436,18 @@
     const tokens = { arms: 0, head: 0, body: 0, mouth: 0 };
     let idleHook = null;
     let idleAction = null;
+    let mocapArmsToken = null, walking = false;
+
+    // The source has very short forearms and oversized hands. Restore
+    // adult arm proportions through the skeleton so skinning, cuffs and
+    // finger joints all remain attached, including during mocap playback.
+    const proportionScales = [];
+    for (const side of ['L', 'R']) {
+      for (const [bone, factor] of [[bones['upperArm' + side], 1.13], [bones['hand' + side], 0.78]]) {
+        bone.scale.multiplyScalar(factor);
+        proportionScales.push({ bone, scale: bone.scale.clone() });
+      }
+    }
 
     // ---- IK bone aiming (Task 7) ----
     // For each arm bone captured at build time: restDir = direction from the
@@ -362,10 +477,14 @@
       _m1.makeBasis(bindFingers, bindPalm, _v1.crossVectors(bindFingers, bindPalm));
       armChains[side] = {
         upper, fore, hand, upperLen, foreLen,
+        upperRestQ: upper.quaternion.clone(), foreRestQ: fore.quaternion.clone(),
         restDirUpper: fore.position.clone().normalize(),   // child dir in upper's local space
         restDirFore: hand.position.clone().normalize(),
         handBindWorldQ: hand.getWorldQuaternion(new THREE.Quaternion()),
         handBindBasisInvQ: new THREE.Quaternion().setFromRotationMatrix(_m1).invert(),
+        contactLocal: bindFingers.clone().multiplyScalar(0.086)
+          .addScaledVector(bindPalm, 0.012)
+          .applyQuaternion(hand.getWorldQuaternion(new THREE.Quaternion()).invert()),
       };
     }
     // bind-pose spine rotation — the torso-lean layer restores this before
@@ -385,7 +504,9 @@
     // product's sign).
     const fingerCurl = [];
     {
-      const CURL = { index: [0.30, 0.45, 0.35], middle: [0.32, 0.48, 0.38], ring: [0.34, 0.50, 0.40], pinky: [0.36, 0.52, 0.42], thumb: [0.10, 0.18, 0.15] };
+      const CURL = { index: [0.12, 0.18, 0.10], middle: [0.14, 0.19, 0.12], ring: [0.16, 0.22, 0.14], pinky: [0.18, 0.24, 0.16], thumb: [0.14, 0.16, 0.10] };
+      const CARD = { index: [0.025, 0.055, 0.025], middle: [0.03, 0.06, 0.025], ring: [0.13, 0.22, 0.12], pinky: [0.17, 0.26, 0.15], thumb: [0.18, 0.13, 0.08] };
+      const SERVICE = { index: [0.24, 0.45, 0.25], middle: [0.30, 0.50, 0.28], ring: [0.34, 0.58, 0.30], pinky: [0.38, 0.62, 0.32], thumb: [0.40, 0.34, 0.16] };
       const DOWN = new THREE.Vector3(0, -1, 0);
       group.updateMatrixWorld(true);
       group.traverse((b) => {
@@ -401,20 +522,26 @@
         // rotation expressed in the bone's own frame, applied after its
         // bind-local orientation: qL' = qLbind ⊗ (qWbind⁻¹ ΔW qWbind)
         const axisL = axisW.applyQuaternion(invQ).normalize();
-        const angle = CURL[m[1]][Number(m[2]) - 1];
-        const q = b.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(axisL, angle));
-        fingerCurl.push({ bone: b, q });
+        const joint = Number(m[2]) - 1;
+        const pose = angle => b.quaternion.clone().multiply(new THREE.Quaternion().setFromAxisAngle(axisL, angle));
+        fingerCurl.push({ bone: b, side: b.name.endsWith('_l') ? 'L' : 'R',
+          relaxed: pose(CURL[m[1]][joint]), card: pose(CARD[m[1]][joint]), service: pose(SERVICE[m[1]][joint]),
+          open: pose(m[1] === 'thumb' ? 0.10 : 0.025) });
       });
     }
     function applyFingerCurl() {
-      for (const f of fingerCurl) f.bone.quaternion.copy(f.q);
+      for (const f of fingerCurl) {
+        const working = activePath?.hands.some(h => h.side === f.side);
+        const pose = working ? activePath.path.grip || 'open' : 'relaxed';
+        f.bone.quaternion.copy(f[pose] || f.relaxed);
+      }
     }
 
     // Rotate `bone` so that `restDir` (local) points at world direction `dirW`.
-    function aimBone(bone, restDir, dirW, weight) {
+    function aimBone(bone, restDir, restQ, dirW, weight) {
       bone.parent.getWorldQuaternion(_q1);
       _v1.copy(dirW).applyQuaternion(_q2.copy(_q1).invert());   // desired dir, parent-local
-      _q2.setFromUnitVectors(restDir, _v1.normalize());
+      _q2.setFromUnitVectors(_v4.copy(restDir).applyQuaternion(restQ), _v1.normalize()).multiply(restQ);
       if (weight >= 1) bone.quaternion.copy(_q2);
       else bone.quaternion.slerp(_q2, weight);
     }
@@ -427,19 +554,26 @@
     function applyArmIK(side, targetW, weight) {
       const ch = armChains[side];
       if (!ch || weight <= 0) return;
+      // Mocap includes bone translations as well as rotations. Its arm
+      // lengths differ slightly from the model's T-pose, so solving with
+      // cached bind lengths misses the card by several centimetres.
+      ch.upperLen = ch.fore.position.length() * ch.upper.getWorldScale(_v1).x;
+      ch.foreLen = ch.hand.position.length() * ch.fore.getWorldScale(_v1).x;
       ch.upper.getWorldPosition(_v3);
       const s = [_v3.x, _v3.y, _v3.z];
       group.getWorldQuaternion(_q1);
-      _v2.set(side === 'L' ? -0.6 : 0.6, -1, 0.15).applyQuaternion(_q1);
+      // This GLB's anatomical left is +X. Reversing the signs bends both
+      // elbows inward through the ribcage when the hands reach forward.
+      _v2.set(side === 'L' ? 0.48 : -0.48, -1, -0.10).applyQuaternion(_q1);
       const r = C.ik.solveTwoBone({
         shoulder: s, target: [targetW.x, targetW.y, targetW.z],
         upperLen: ch.upperLen, foreLen: ch.foreLen, pole: [_v2.x, _v2.y, _v2.z],
       });
-      aimBone(ch.upper, ch.restDirUpper,
+      aimBone(ch.upper, ch.restDirUpper, ch.upperRestQ,
         _v1.set(r.elbow[0] - s[0], r.elbow[1] - s[1], r.elbow[2] - s[2]), weight);
       ch.upper.updateWorldMatrix(true, false);
       ch.fore.getWorldPosition(_v3);
-      aimBone(ch.fore, ch.restDirFore,
+      aimBone(ch.fore, ch.restDirFore, ch.foreRestQ,
         _v1.set(r.hand[0] - _v3.x, r.hand[1] - _v3.y, r.hand[2] - _v3.z), weight);
     }
 
@@ -460,6 +594,13 @@
       const fingers = ch.hand.getWorldPosition(_v4).sub(ch.fore.getWorldPosition(_v1));
       if (fingers.lengthSq() < 1e-8) return;
       fingers.normalize();
+      // Contact actions use a level palm. Finger articulation supplies the
+      // small card pinch; aiming the whole hand down with the forearm puts
+      // the card across the knuckles instead of under the fingertips.
+      const horizontal = Math.hypot(fingers.x, fingers.z);
+      if (horizontal > 1e-4) {
+        fingers.set(fingers.x / horizontal, 0, fingers.z / horizontal);
+      }
       const palm = _v1.set(0, -1, 0);
       if (Math.abs(fingers.dot(palm)) > 0.96) {
         // forearm near-vertical: "down" is degenerate — face the palm the
@@ -476,6 +617,35 @@
       else ch.hand.quaternion.slerp(localQ, weight);
     }
 
+    function handContactWorld(side = 'R') {
+      const ch = armChains[side];
+      if (!ch) return null;
+      ch.hand.updateWorldMatrix(true, false);
+      return ch.hand.localToWorld(ch.contactLocal.clone());
+    }
+
+    function applyPalmIK(side, contact, weight) {
+      const ch = armChains[side];
+      const wristTarget = contact.clone();
+      // Invert the grip transform instead of placing the wrist at the
+      // card. Re-solving also updates the forearm-dependent hand yaw.
+      for (let i = 0; i < 3; i++) {
+        applyArmIK(side, clampToReach(side, wristTarget, 0.985), weight);
+        applyHandOrient(side, weight);
+        const delta = contact.clone().sub(handContactWorld(side));
+        wristTarget.copy(ch.hand.getWorldPosition(new THREE.Vector3())).add(delta);
+      }
+    }
+
+    function applyNeutralArms() {
+      if (!idleAction || mocapArmsToken !== null || walking) return;
+      for (const side of ['L', 'R']) {
+        const target = group.localToWorld(new THREE.Vector3(side === 'L' ? 0.21 : -0.21, 1.075, 0.245));
+        applyArmIK(side, target, 1);
+        applyHandOrient(side, 1);
+      }
+    }
+
     // ---- IK path runner (single-hand for Task 7; Task 8 extends to
     // two-hand cycles — the per-hand data model already supports it) ----
     // rotQ: the character root group's WORLD quaternion, resolved ONCE per
@@ -489,9 +659,7 @@
     // they must NOT be rotated again — only the offset rotates.
     function resolveWaypointPos(wp, refs, side, rotQ) {
       if (wp.rest) {
-        const ch = armChains[side];
-        ch.upper.getWorldPosition(_v1);
-        return _v1.add(_v2.set(0, -(ch.upperLen + ch.foreLen) * 0.82, 0.10).applyQuaternion(rotQ)).clone();
+        return group.localToWorld(new THREE.Vector3(side === 'L' ? 0.21 : -0.21, 1.075, 0.245));
       }
       const base = wp.pos ? _v1.set(...wp.pos) : _v1.set(...refs[wp.ref]);
       if (wp.offset) base.add(_v2.set(...wp.offset).applyQuaternion(rotQ));
@@ -505,15 +673,13 @@
     // and the whole gesture collapses into the frozen chest-height wobble
     // that was v1's core complaint. Applied to every resolved waypoint, so
     // near targets pass through untouched and only far ones pull in.
-    const REACH_FRACTION = 0.85;
-    function clampToReach(side, posV) {
+    const REACH_FRACTION = 0.96;
+    function clampToReach(side, posV, fraction = REACH_FRACTION) {
       const ch = armChains[side];
       if (!ch) return posV;
       ch.upper.getWorldPosition(_v3);
-      const maxD = (ch.upperLen + ch.foreLen) * REACH_FRACTION;
-      const d = posV.distanceTo(_v3);
-      if (d <= maxD) return posV;
-      return posV.sub(_v3).multiplyScalar(maxD / d).add(_v3);
+      const maxD = (ch.upperLen + ch.foreLen) * fraction;
+      return posV.fromArray(C.ik.clampTableReach(_v3.toArray(), posV.toArray(), maxD));
     }
 
     // Table setups sometimes omit a ref that was already supplied by an
@@ -532,6 +698,7 @@
     const RAMP = 120;
     let activePath = null;   // { token, gen, path, hands, on, dur, holdAtEnd, t0, holding,
                               //   resolved, released, resolveOnce, finish } | null
+    let appliedPathLean = { yaw: 0, fwd: 0, side: 0 };
 
     function playPath(name, { refs: callRefs = {}, ms, on = {} } = {}) {
       const path = C.handPaths.PATHS[name];
@@ -580,11 +747,15 @@
       const hands = Object.entries(handsDef).map(([side, wps]) => ({
         side,
         chain: armChains[side],
-        start: null,               // filled on first frame (current hand pos)
+        // Baccarat service actions continue from the actual preceding
+        // pose, before the next frame's neutral layer rewrites the arms.
+        start: path.continuous ? (path.anchor === 'palm' ? handContactWorld(side)
+          : armChains[side]?.hand.getWorldPosition(new THREE.Vector3())) : null,
         wps: wps.map((w) => ({
           at: w.at, ease: C.tween.easings[w.ease || 'inOutCubic'],
           arc: w.arc || 0, event: w.event || null, fired: false,
-          pos: clampToReach(side, resolveWaypointPos(w, refs, side, _q1)),
+          rest: !!w.rest,
+          pos: resolveWaypointPos(w, refs, side, _q1),
         })),
       })).filter((h) => h.chain);
       if (!hands.length) return Promise.resolve();
@@ -618,6 +789,7 @@
         if (activePath) activePath.finish();
         const entry = {
           token, gen, path, hands, on, dur, holdAtEnd, t0: performance.now(),
+          startLean: { ...appliedPathLean },
           holding: false, resolved: false, released: false,
           // Resolves the caller's promise exactly once. Split out from
           // finish() so a holdAtEnd entry can resolve its await at logical
@@ -649,11 +821,11 @@
     // task-7-report.md for why the brief's rampOut sketch was dropped).
     function applyArmPath() {
       const ap = activePath;
-      if (!ap) return;
+      if (!ap) { appliedPathLean = { yaw: 0, fwd: 0, side: 0 }; return; }
       if (tokens.arms !== ap.token || app.roomGen !== ap.gen) { ap.finish(); return; }
       const now = performance.now();
       const t = Math.min(1, (now - ap.t0) / ap.dur);
-      const w = Math.min(1, (now - ap.t0) / RAMP)
+      const w = ap.path.continuous ? 1 : Math.min(1, (now - ap.t0) / RAMP)
         * (ap.path.cycle || ap.holdAtEnd ? 1 : Math.min(1, ((1 - t) * ap.dur) / RAMP + 0.001));
       // pass 1: resolve each hand's current path position. Split from the
       // IK pass because the torso lean below moves the SHOULDERS — it must
@@ -661,7 +833,16 @@
       // same frame (lean-after-IK left the hand short of its target by the
       // lean amount, caught by the character-ik waypoint-accuracy tests).
       for (const h of ap.hands) {
-        if (!h.start) { h.chain.hand.getWorldPosition(_v3); h.start = _v3.clone(); }
+        // The neutral pose was solved immediately before this layer. Use
+        // its true palm contact as a rest endpoint, rather than treating a
+        // wrist target as a palm target (which adds an 8cm terminal snap).
+        if (ap.path.continuous) {
+          const neutral = ap.path.anchor === 'palm' ? handContactWorld(h.side)
+            : h.chain.hand.getWorldPosition(new THREE.Vector3());
+          for (const wp of h.wps) if (wp.rest) wp.pos.copy(neutral);
+        }
+        if (!h.start) h.start = ap.path.anchor === 'palm' ? handContactWorld(h.side)
+          : h.chain.hand.getWorldPosition(new THREE.Vector3());
         // find current segment
         let prevAt = 0, prevPos = h.start, cur = h.wps[h.wps.length - 1];
         for (const wp of h.wps) {
@@ -684,17 +865,34 @@
         // no running idle action -> nothing rewrote the spine this frame, so
         // restore rest first or the += below compounds frame over frame
         if (spineRestQ && (!idleAction || !idleAction.isRunning())) bones.spine.quaternion.copy(spineRestQ);
-        const local = group.worldToLocal(_v2.copy(ap.hands[0]._pathPos));
-        const yaw = Math.max(-0.18, Math.min(0.18, Math.atan2(local.x, Math.abs(local.z) + 1e-3) * 0.35));
-        const fwd = Math.max(0, Math.min(0.20, (local.z - 0.30) * 0.35));
-        bones.spine.rotation.y += yaw * w;
-        bones.spine.rotation.x += fwd * w;
+        _v2.copy(ap.hands[0]._pathPos);
+        if (ap.path.continuous && ap.hands.length > 1) {
+          for (let i = 1; i < ap.hands.length; i++) _v2.add(ap.hands[i]._pathPos);
+          _v2.divideScalar(ap.hands.length);
+        }
+        const local = group.worldToLocal(_v2);
+        const yaw = Math.max(-0.16, Math.min(0.16, Math.atan2(local.x, Math.abs(local.z) + 1e-3) * 0.22));
+        const fwd = Math.max(0, Math.min(0.32, (local.z - 0.10) * 0.9));
+        const sideLean = Math.max(-0.13, Math.min(0.13, local.x * 0.32));
+        // Returning baccarat hands end in the same neutral torso pose as
+        // the next action. Other games keep their established lean profile.
+        const returning = ap.path.continuous && ap.hands.every(h => h.wps[h.wps.length - 1].rest);
+        const leanWeight = w * (returning ? Math.min(1, (1 - t) * 3) : 1);
+        const blend = ap.path.continuous ? Math.min(1, (now - ap.t0) / 200) : 1;
+        const lerpLean = (key, value) => ap.startLean[key] + (value * leanWeight - ap.startLean[key]) * blend;
+        appliedPathLean = { yaw: lerpLean('yaw', yaw), fwd: lerpLean('fwd', fwd), side: lerpLean('side', sideLean) };
+        bones.spine.rotation.y += appliedPathLean.yaw;
+        bones.spine.rotation.x += appliedPathLean.fwd;
+        bones.spine.rotation.z -= appliedPathLean.side;
         bones.spine.updateWorldMatrix(true, false);
       }
       // pass 2: IK solve + events against the leaned torso
       for (const h of ap.hands) {
-        applyArmIK(h.side, h._pathPos, w);
-        applyHandOrient(h.side, w);
+        if (ap.path.anchor === 'palm') applyPalmIK(h.side, h._pathPos, w);
+        else {
+          applyArmIK(h.side, clampToReach(h.side, h._pathPos.clone()), w);
+          applyHandOrient(h.side, w);
+        }
         // Finding 2 (task-7 review): firing used to be tied to the CURRENT
         // segment's eased tail (`cur.event && st>=0.995`) — for a fast
         // segment (e.g. tapRack's first waypoint) that's a sub-millisecond
@@ -716,7 +914,7 @@
           if (wp.event && !wp.fired && wp.at <= t) {
             wp.fired = true;
             h.chain.hand.getWorldPosition(_v2);
-            ap.on[wp.event]?.(_v2.clone());
+            ap.on[wp.event]?.(_v2.clone(), { side: h.side, contactWorld: handContactWorld(h.side) });
           }
         }
       }
@@ -802,8 +1000,10 @@
         wasFar = far;
         group.traverse((o) => { if (o.isMesh || o.isSkinnedMesh) o.castShadow = !far; });
       }
+      for (const { bone, scale } of proportionScales) bone.scale.copy(scale);
       applyLook();          // look-at layer, below
       applyHeadGesture();    // procedural nod/headShake layer, below
+      applyNeutralArms();    // service posture; working arms layer over it
       applyArmPath();        // IK arm layer, above — also must run post-mixer
       applyFingerCurl();     // relaxed-hand layer, above — absolute SET, post-mixer
     }
@@ -898,7 +1098,10 @@
       if (app.REDUCED) return Promise.resolve();
       const walkClip = findClip('Walk_Formal_Loop');
       if (!walkClip || !idleAction) return Promise.resolve();
+      travelFinish?.();
+      group.updateWorldMatrix(true, true);
       const token = ++tokens.body;
+      walking = true;
       const gen = app.roomGen;
       const SPEED = 1.25;             // m/s — matches the formal stride's cadence
       const [wdx, wdz] = Array.isArray(enterWorld) ? enterWorld : [-2.4, 0];
@@ -922,8 +1125,11 @@
       idleAction.crossFadeTo(walkAction, 0.2, false);
       return new Promise((resolve) => {
         let last = performance.now();
-        let arrived = false;
+        let arrived = false, finished = false;
         const finish = () => {
+          if (finished) return;
+          finished = true;
+          walking = false;
           app.offFrame(hook);
           group.position.x = targetX;
           group.position.z = targetZ;
@@ -932,6 +1138,7 @@
           idleAction.reset(); idleAction.play();
           walkAction.crossFadeTo(idleAction, 0.25, false);
           release();
+          if (travelFinish === finish) travelFinish = null;
           resolve();
         };
         const hook = () => {
@@ -963,7 +1170,53 @@
           }
         };
         hook.cancel = finish;
+        travelFinish = finish;
         app.onFrame(hook);
+      });
+    }
+
+    let travelFinish = null;
+    function walkTo(_app, worldTarget, { ms } = {}) {
+      travelFinish?.();
+      activePath?.finish();
+      group.updateWorldMatrix(true, true);
+      const destination = new THREE.Vector3(...worldTarget);
+      if (group.parent) group.parent.worldToLocal(destination);
+      const start = group.position.clone(), facing = group.quaternion.clone();
+      const distance = start.distanceTo(destination);
+      if (app.REDUCED || distance < 0.005) { group.position.copy(destination); return Promise.resolve(); }
+      const token = ++tokens.body, gen = app.roomGen;
+      const duration = ms || Math.max(350, distance / 0.9 * 1000);
+      const action = mixer.clipAction(findClip('Walk_Formal_Loop'));
+      walking = true;
+      action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
+      idleAction?.crossFadeTo(action, 0.16, false);
+      const release = acquireDrive();
+      const travelYaw = Math.atan2(destination.x - start.x, destination.z - start.z);
+      const travelQ = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), travelYaw);
+      const t0 = performance.now();
+      return new Promise(resolve => {
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true; walking = false;
+          app.offFrame(hook);
+          group.quaternion.copy(facing);
+          if (idleAction) { idleAction.reset().play(); action.crossFadeTo(idleAction, 0.16, false); }
+          else action.stop();
+          if (travelFinish === finish) travelFinish = null;
+          release(); resolve();
+        };
+        const hook = () => {
+          if (app.roomGen !== gen || tokens.body !== token) { finish(); return; }
+          const t = Math.min(1, (performance.now() - t0) / duration);
+          group.position.lerpVectors(start, destination, t);
+          if (t < 0.16) group.quaternion.slerpQuaternions(facing, travelQ, t / 0.16);
+          else if (t > 0.82) group.quaternion.slerpQuaternions(travelQ, facing, (t - 0.82) / 0.18);
+          else group.quaternion.copy(travelQ);
+          if (t >= 1) finish();
+        };
+        hook.cancel = finish; travelFinish = finish; app.onFrame(hook);
       });
     }
 
@@ -996,6 +1249,7 @@
       const clip = findClip(entry.clip);
       if (!clip) return Promise.resolve();
       const token = ++tokens[entry.track];
+      mocapArmsToken = token;
       const gen = app.roomGen;
       const action = mixer.clipAction(clip);
       action.reset();
@@ -1008,6 +1262,7 @@
       const release = acquireDrive();
       return new Promise((resolve) => {
         const done = () => {
+          if (mocapArmsToken === token) mocapArmsToken = null;
           mixer.removeEventListener('finished', onFin);
           app.offFrame(watch);
           if (idleAction) { idleAction.reset(); idleAction.play(); action.crossFadeTo(idleAction, 0.25, false); }
@@ -1050,12 +1305,14 @@
       });
     }
     function dispose() {
+      travelFinish?.();
+      activePath?.finish();
       idleHook?.cancel(); idleHook = null;
       mixer.stopAllAction();
       group.parent?.remove(group);
     }
 
-    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, walkIn, dispose };
+    return { group, bones, mixer, tokens, play, stop, say, lookAt, setIdle, walkIn, walkTo, handContactWorld, dispose };
   }
 
   function attach(app, root, opts, onReady) {

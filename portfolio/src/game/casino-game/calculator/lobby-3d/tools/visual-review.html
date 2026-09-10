@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Casino — Table Review</title>
+  <style>
+    * { box-sizing: border-box; } body { margin: 0; background: #101619; color: #eee8da; font: 14px system-ui, sans-serif; }
+    canvas { display: block; width: 100vw; height: 100vh; touch-action: none; }
+    header { position: fixed; top: 24px; left: 28px; pointer-events: none; }
+    header small { color: #d7b77a; letter-spacing: .2em; } h1 { margin: 8px 0; font: 32px Georgia, serif; font-weight: normal; }
+    header p { color: #a3b3b4; max-width: 400px; line-height: 1.5; }
+    nav { position: fixed; bottom: 20px; left: 20px; right: 20px; display: flex; flex-wrap: wrap; gap: 8px; padding: 14px; border: 1px solid #394642; border-radius: 14px; background: #17211fed; }
+    button, select { color: #e8ebdf; background: #263330; border: 1px solid #52635b; border-radius: 7px; padding: 10px 14px; font: inherit; cursor: pointer; }
+    button[aria-pressed="true"], #run { color: #1b251e; background: #ddc392; border-color: #ddc392; }
+    button:disabled { opacity: .5; cursor: wait; } button:focus-visible, select:focus-visible { outline: 3px solid #e7c477; outline-offset: 2px; }
+    .gap { flex: 1; } #status { color: #cbd5c7; } #error { color: #ffb4a5; }
+    @media (max-width: 700px) { header { top: 12px; left: 16px; } h1 { font-size: 25px; } header p { max-width: 260px; } nav { padding: 8px; left: 8px; right: 8px; bottom: 8px; gap: 5px; } button, select { padding: 8px; } }
+  </style>
+</head>
+<body>
+  <canvas id="stage" aria-label="3D casino table"></canvas>
+  <header><small>GRAND CASINO / MODEL REVIEW</small><h1 id="title">Blackjack</h1>
+    <p>Drag to orbit. Scroll to zoom. These are the game’s actual models and movements, with fixed demonstration cards and no wallet.</p>
+    <p id="status" role="status">Loading dealer…</p><p id="error" role="alert"></p>
+  </header>
+  <nav aria-label="Model review controls">
+    <button data-game="blackjack" aria-pressed="true">Blackjack</button><button data-game="baccarat" aria-pressed="false">Baccarat</button><button data-game="roulette" aria-pressed="false">Roulette</button>
+    <span class="gap"></span><button id="overview">Table view</button><button id="dealer">Dealer view</button><button id="hands" hidden>Hand view</button><button id="overhead">Overhead</button><button id="wheel" hidden>Wheel view</button>
+    <select id="result" aria-label="Roulette result" hidden></select><select id="speed" aria-label="Baccarat playback speed" hidden><option value="1">Normal speed</option><option value="2.5">Slow motion</option></select><button id="run">Deal demonstration</button><button id="collect" hidden disabled>Collect cards</button>
+  </nav>
+  <script src="../vendor/three-0.149.0.min.js"></script><script src="../vendor/three-addons-0.149.js"></script>
+  <script src="../src/engine/tween.js"></script><script src="../src/engine/assets.js"></script><script src="../src/engine/cards.js"></script><script src="../src/engine/chips3d.js"></script>
+  <script src="../src/engine/rig.js"></script><script src="../src/engine/character.js"></script>
+  <script src="../src/logic/layouts.js"></script><script src="../src/logic/gestures.js"></script><script src="../src/logic/ik.js"></script><script src="../src/logic/hand-paths.js"></script>
+  <script src="../src/logic/roulette-physics.js"></script><script src="../src/logic/roulette-cover.js"></script><script src="../src/logic/baccarat-roads.js"></script>
+  <script src="../src/floor/tables/roulette-table.js"></script><script src="../src/floor/tables/blackjack-table.js"></script><script src="../src/floor/tables/baccarat-table.js"></script>
+  <script src="../src/floor/baccarat-motion.js"></script>
+  <script src="./visual-review.js"></script>
+</body>
+</html>

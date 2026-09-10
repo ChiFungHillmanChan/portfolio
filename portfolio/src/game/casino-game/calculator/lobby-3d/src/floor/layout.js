@@ -27,9 +27,9 @@
       floor:     { pos: [-11.5, 1.6, 0],    look: [4, 1.3, 0] },
       practice:  { pos: [-24.2, 1.6, -3.0], look: [-25.8, 1.3, -4.9] },
       // cashier: recessed cage at the east wall, dead-ahead down the aisle.
-      cashier:   { pos: [13.9, 1.6, 0],     look: [16.8, 1.35, 0] },
+      cashier:   { pos: [13.9, 1.74, 0],    look: [16.8, 1.23, 0], eyeY: 1.74 },
       // bar: NW lounge on the north wall by the gate — first thing on your left.
-      bar:       { pos: [-11.9, 1.6, -7.3], look: [-11.9, 1.35, -10.2] },
+      bar:       { pos: [-11.9, 1.82, -7.3], look: [-11.9, 1.25, -10.2], eyeY: 1.82 },
       roulette:  { pos: [-3.75, 1.6, -2.8], look: [-3.75, 1.0, -6.5] },
       blackjack: { pos: [10, 1.6, -2.8],    look: [10, 1.0, -6.5] },
       baccarat:  { pos: [-6.5, 1.6, 2.8],   look: [-6.5, 1.0, 6.5] },

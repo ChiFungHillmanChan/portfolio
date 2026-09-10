@@ -19,8 +19,10 @@
     s.fog = new THREE.Fog(0x05060a, 26, 70);
 
     // ---- base light rig: dark ambient floor, warm pools come per-section ----
-    s.add(new THREE.HemisphereLight(0x323a52, 0x101014, 0.85));
-    s.add(new THREE.AmbientLight(0x222634, 0.5));
+    // Neutral fill preserves skin and card colour beneath the warm table
+    // lamps. Dark blue ambient previously hid faces and turned suits black.
+    s.add(new THREE.HemisphereLight(0xcbd9ee, 0x30251e, 0.48));
+    s.add(new THREE.AmbientLight(0xffffff, 0.12));
 
     // ---- floor slabs: carpet fields either side of a polished marble aisle ----
     const mkSlab = (w, d, x, z, mat) => {

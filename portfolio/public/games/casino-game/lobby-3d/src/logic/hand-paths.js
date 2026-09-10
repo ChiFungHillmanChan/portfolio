@@ -10,6 +10,36 @@
   const EASINGS = ['inOutCubic', 'outCubic', 'outQuart', 'outBack'];
 
   const PATHS = {
+    // Baccarat uses a shoe-side draw, two-hand transfer above the open
+    // service strip, and a short right-hand slide. The dealer never tries
+    // to reach the player/banker display boxes across the chip bank.
+    baccaratDeal: { dur: 2000, continuous: true, grip: 'card', anchor: 'palm', hands: {
+      L: [
+        { at: 0.12, ref: 'shoe', offset: [0, 0.12, -0.025] },
+        { at: 0.22, ref: 'shoe', event: 'grab' },
+        { at: 0.34, ref: 'shoe', offset: [-0.035, 0.055, 0.14] },
+        { at: 0.52, ref: 'rack', offset: [0.045, 0, 0] },
+        { at: 0.64, ref: 'rack', offset: [0.045, 0, 0] },
+        { at: 0.90, ref: 'shoe', offset: [0, 0.12, -0.025] },
+        { at: 1, ref: 'shoe', offset: [0, 0.12, -0.025] },
+      ],
+      R: [
+        { at: 0.40, ref: 'rack', offset: [-0.045, 0.035, -0.025] },
+        { at: 0.54, ref: 'rack', offset: [-0.045, 0, 0], event: 'contact' },
+        { at: 0.68, ref: 'rack', offset: [-0.045, 0, 0] },
+        { at: 0.84, ref: 'target', event: 'release' },
+        { at: 1, rest: true },
+      ],
+    } },
+    baccaratRest: { dur: 650, continuous: true, anchor: 'palm', hands: {
+      L: [{ at: 1, rest: true }], R: [{ at: 1, rest: true }],
+    } },
+    baccaratCollect: { dur: 1400, continuous: true, grip: 'card', anchor: 'palm', hands: { R: [
+      { at: 0.16, ref: 'shoe', offset: [0, 0.055, -0.02] },
+      { at: 0.30, ref: 'shoe', event: 'grab' },
+      { at: 0.68, ref: 'target', event: 'release' },
+      { at: 1, rest: true },
+    ] } },
     // draw from the shoe, PITCH toward the seat, hover back over the shoe —
     // deliberately NO rest key: consecutive deals chain into one continuous
     // pitching rhythm (washCards' chaining idiom), and between rounds the
@@ -21,9 +51,9 @@
     // mirrorBySide: engine swaps this to the LEFT arm when the shoe ref
     // sits on the dealer's left (group-local +x) — a right-handed draw from
     // a left-side shoe crosses the chest and reads broken.
-    dealCard: { dur: 420, mirrorBySide: 'shoe', hands: { R: [
-      { at: 0.30, ref: 'shoe', offset: [0, 0.03, 0], ease: 'outCubic', event: 'grab' },
-      { at: 0.74, ref: 'target', offset: [0, 0.05, 0], arc: 0.08, event: 'release' },
+    dealCard: { dur: 520, grip: 'card', anchor: 'palm', mirrorBySide: 'shoe', hands: { R: [
+      { at: 0.30, ref: 'shoe', offset: [0, 0, 0], ease: 'outCubic', event: 'grab' },
+      { at: 0.74, ref: 'target', offset: [0, 0.035, 0], arc: 0.025, event: 'release' },
       { at: 1.00, ref: 'shoe', offset: [0, 0.07, 0.03] },
     ] } },
     // rake losing chips: touch the stack, drag to the rack

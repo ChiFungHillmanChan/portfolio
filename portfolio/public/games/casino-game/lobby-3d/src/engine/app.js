@@ -20,6 +20,11 @@
   const P = { x: -25.5, z: 0, yaw: Math.PI / 2, pitch: 0, eyeY: null };   // eyeY: glideTo height override (null = standing EYE)
   const SPEED = 3.2, GLIDE = 5.0, RADIUS = 0.35;
   const keys = Object.create(null);
+  const MOVE_KEYS = new Set(['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']);
+  let shiftHeld = false;
+  const clearKeys = () => { for (const code in keys) keys[code] = false; shiftHeld = false; };
+  const editing = target => target instanceof HTMLElement &&
+    (target.isContentEditable || target.closest('input, textarea, select, [contenteditable]:not([contenteditable="false"])'));
   let ui = null;
   let glide = null;      // tap-to-move target {x, z, onDone}
   let flyHook = null;    // exact-pose camera tween (stage.goTo)
@@ -150,12 +155,19 @@
       });
       canvas.addEventListener('pointercancel', () => { look = null; });
       addEventListener('keydown', (e) => {
-        if (e.target instanceof HTMLElement &&
-            ['INPUT', 'BUTTON', 'A', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return;
+        if (editing(e.target) || editing(document.activeElement)) { clearKeys(); return; }
+        if (C.app.inputLocked || e.defaultPrevented || e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') { shiftHeld = true; return; }
+        if (!MOVE_KEYS.has(e.code)) return;
+        // Read the actual modifier too: Shift may have been pressed while
+        // a text field held focus, before a navigation button was clicked.
+        shiftHeld = e.shiftKey;
         keys[e.code] = true;
+        if (e.code.startsWith('Arrow')) e.preventDefault();
       });
-      addEventListener('keyup', (e) => { keys[e.code] = false; });
-      addEventListener('blur', () => { for (const k in keys) keys[k] = false; });
+      addEventListener('keyup', (e) => { keys[e.code] = false; shiftHeld = e.shiftKey; });
+      addEventListener('focusin', (e) => { if (editing(e.target)) clearKeys(); });
+      addEventListener('blur', clearKeys);
 
       // ----- frame loop -----
       let last = performance.now(), proxTimer = 0, nearId, zoneId, stepAccum = 0;
@@ -167,11 +179,11 @@
         const s = locked ? 0 : (keys.KeyD || keys.ArrowRight ? 1 : 0) - (keys.KeyA || keys.ArrowLeft ? 1 : 0);
         if (f || s) {
           glide = null; cancelFly();
-          // sprint: hold E or Shift while moving
-          const speed = SPEED * (keys.KeyE || keys.ShiftLeft || keys.ShiftRight ? 1.8 : 1);
+          const speed = SPEED * (shiftHeld ? 1.8 : 1);
           const len = Math.hypot(f, s) || 1;
-          const dx = (Math.sin(P.yaw) * f + Math.cos(P.yaw) * s) / len;
-          const dz = (Math.cos(P.yaw) * f - Math.sin(P.yaw) * s) / len;
+          // Camera right is forward × up: at yaw 0 (+Z), right is -X.
+          const dx = (Math.sin(P.yaw) * f - Math.cos(P.yaw) * s) / len;
+          const dz = (Math.cos(P.yaw) * f + Math.sin(P.yaw) * s) / len;
           if (tryMove(P.x + dx * speed * dt, P.z + dz * speed * dt)) stepAccum += dt;
         } else if (glide) {
           const dx = glide.x - P.x, dz = glide.z - P.z, d = Math.hypot(dx, dz);
@@ -302,7 +314,7 @@
     },
     goToAnchor(a) {
       if (!C.app.canFlyTo(a.approach.pos)) return Promise.resolve();
-      return C.app.glideTo(a.approach.pos, a.approach.look);
+      return C.app.glideTo(a.approach.pos, a.approach.look, 1100, { eyeY: a.approach.eyeY });
     },
 
     spawn() {

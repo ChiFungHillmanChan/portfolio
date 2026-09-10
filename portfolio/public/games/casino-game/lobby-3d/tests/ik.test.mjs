@@ -46,3 +46,19 @@ test('target inside min reach clamps outward', () => {
   assert.equal(r.clamped, true);
   assert.ok(r.hand.every(Number.isFinite));
 });
+
+test('table reach clamp preserves a reachable table height for a distant pitch', () => {
+  assert.equal(typeof globalThis.CASINO.ik.clampTableReach, 'function');
+  const p = globalThis.CASINO.ik.clampTableReach([0, 1.4, 0], [0.7, 1.06, 1.2], 0.50);
+  assert.ok(Math.abs(p[1] - 1.06) < 1e-8, 'a distant seat must not lift the dealing hand above the felt');
+  assert.ok(dist([0, 1.4, 0], p) <= 0.50 + 1e-8, 'wrist remains in reach');
+  assert.ok(p[2] > 0.2, 'wrist still extends toward the seat');
+});
+
+test('table reach clamp handles targets below arm reach without NaNs or locked vertical arms', () => {
+  assert.equal(typeof globalThis.CASINO.ik.clampTableReach, 'function');
+  const p = globalThis.CASINO.ik.clampTableReach([0, 1.4, 0], [0, 0.1, 0.8], 0.50);
+  assert.ok(p.every(Number.isFinite));
+  assert.ok(dist([0, 1.4, 0], p) <= 0.50 + 1e-8);
+  assert.ok(p[2] > 0.15, 'leaves forward room for a bent working arm');
+});

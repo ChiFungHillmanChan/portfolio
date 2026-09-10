@@ -7,7 +7,7 @@ import { buildFloorModel } from './floor-model.js';
 import { initialReception, receptionReduce, canPassTurnstile } from './reception-model.js';
 import { formatChips } from '../js/wallet/table-config.js';
 import * as UI from './ui.js';
-import { openRouletteLive, closeRouletteLive, rouletteLiveActive, rouletteSpinning } from './roulette-live.js';
+import { openRouletteLive, closeRouletteLive, rouletteLiveActive, rouletteSpinning, refreshRouletteWallet } from './roulette-live.js';
 import { openBlackjackLive, closeBlackjackLive, blackjackLiveActive, blackjackRoundInFlight } from './blackjack-live.js';
 
 const model = buildFloorModel();
@@ -229,7 +229,7 @@ function showProximityCard(anchor) {
   // The check-in card never gets replaced by proximity cards, and a live
   // roulette session owns the screen — the camera glides it past anchors.
   if (rouletteLiveActive() || blackjackLiveActive()) return;
-  if (cards.kind() === 'checkin' || cards.kind() === 'unavailable') return;
+  if (['checkin', 'unavailable', 'buyin'].includes(cards.kind())) return;
   if (!anchor) {
     if (['sitdown', 'closed', 'cashier', 'practice', 'bar'].includes(cards.kind())) cards.hide();
     return;
@@ -265,6 +265,7 @@ function showProximityCard(anchor) {
     cards.show('cashier', UI.cashierCard({
       walletClient: walletClient(),
       onReset: (rerender) => resetWallet(rerender),
+      onExchange: (kind, amount) => stage.cashierExchange ? stage.cashierExchange(kind, amount) : false,
     }));
   } else if (anchor.kind === 'practice') {
     cards.show('practice', UI.practiceCard());
@@ -274,9 +275,9 @@ function showProximityCard(anchor) {
       tip,
       onPractice: () => { cards.hide('bar'); stage.goTo('practice'); },
       onDismiss: () => cards.hide('bar'),
+      onOrder: (drink) => stage.barOrder ? stage.barOrder(drink) : false,
     }));
-    // bartender speaks the same tip the card shows
-    if (stage && stage.barSay) stage.barSay(`${tip.game ? tip.game + ' tip — ' : ''}${tip.tip}`);
+    if (stage && stage.barSay) stage.barSay('Welcome. What can I make for you?');
   }
 }
 
@@ -363,6 +364,13 @@ function start() {
       if (state.phase === 'out') dispatch({ type: 'OPEN_CHECKIN' });
     },
     onReset: () => resetWallet(null),
+    onBuyChips: () => {
+      if (!signedInView() || !walletClient() || cards.kind() === 'buyin') return;
+      cards.show('buyin', UI.buyInCard({ walletClient: walletClient(), onClose: () => cards.hide('buyin'), onPurchased: refreshRouletteWallet }), {
+        focus: true,
+        onClose: () => { if (signedInView()) showProximityCard(lastNear); },
+      });
+    },
   });
   account = UI.mountAccount(document.getElementById('accountHost'), { onSignOut: signOut });
   cards = UI.createCardRoot(document.getElementById('card-root'));

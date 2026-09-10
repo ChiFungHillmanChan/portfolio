@@ -6,7 +6,7 @@
   // Blackjack arc table. v2 upgrade over the v1 room: the felt is a PRINTED
   // layout (arc lettering + insurance band + seat circles) instead of plain
   // green. Group origin = table center at floor level; +Z = player arc side.
-  const TABLE_R = 1.6, RAIL_H = 0.8, FELT_Y = 0.83;
+  const TABLE_R = 1.6, APRON_H = 0.18, FELT_Y = 0.83;
   // Geometry lives in C.layouts.blackjack.seat — but layouts.js loads first
   // in SRC_ORDER, so read it lazily inside the builder, not at module scope.
   const seatSpin = (a) => Math.PI / 2 - a;
@@ -14,7 +14,7 @@
   // Half-disc UV mapping (CircleGeometry): canvas px = (512 + cos(a)·R·320,
   // 512 + sin(a)·R·320) for a world point at polar (a, R) on the felt —
   // the playable half lives in the canvas' LOWER half.
-  const PX = 320, CX = 512, CY = 512;
+  const CX = 512, CY = 512;
 
   function arcText(ctx, text, r, a0, a1, font, fill) {
     ctx.font = font;
@@ -41,6 +41,11 @@
         ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.025})`;
         ctx.fillRect(Math.random() * 1024, 512 + Math.random() * 512, 1, 1);
       }
+
+      // House procedure is European (no hole card), with S17 retained.
+      ctx.fillStyle = 'rgba(240,216,120,0.6)';
+      ctx.font = '18px Georgia, serif'; ctx.textAlign = 'center';
+      ctx.fillText('DEALER STANDS ON ALL 17', CX, CY + 176);
 
       // insurance band (closest to the dealer)
       ctx.strokeStyle = 'rgba(240,216,120,0.55)';
@@ -74,20 +79,37 @@
     const MAIN_R = S.mainR, SIDE_R = S.sideR, SIDE_DX = S.sideDx, CARDS_R = S.cardsR;
     const g = new THREE.Group();
 
-    // half-cylinder skirt (bulges +Z for thetaStart=0 — v1 verified)
+    // CylinderGeometry starts on +Z and sweeps toward +X. Rotate its half
+    // cylinder so the straight dealer edge and +Z felt semicircle coincide.
     const skirt = new THREE.Mesh(
-      new THREE.CylinderGeometry(TABLE_R, TABLE_R, RAIL_H, 32, 1, false, 0, Math.PI),
+      new THREE.CylinderGeometry(TABLE_R, TABLE_R, APRON_H, 32, 1, false, 0, Math.PI),
       A.woodMaterial('#241408'),
     );
-    skirt.position.y = RAIL_H / 2;
+    skirt.rotation.y = -Math.PI / 2;
+    skirt.position.y = FELT_Y - APRON_H / 2;
     skirt.castShadow = true; skirt.receiveShadow = true;
     g.add(skirt);
     // flat back panel closing the half cylinder
-    const back = new THREE.Mesh(new THREE.BoxGeometry(TABLE_R * 2, RAIL_H, 0.06),
+    const back = new THREE.Mesh(new THREE.BoxGeometry(TABLE_R * 2, APRON_H, 0.06),
       A.woodMaterial('#241408'));
-    back.position.set(0, RAIL_H / 2, -0.03);
+    back.position.set(0, FELT_Y - APRON_H / 2, -0.03);
     back.castShadow = true; back.receiveShadow = true;
     g.add(back);
+
+    // A shallow apron over inset pedestals leaves the rail clear for knees
+    // and feet, instead of filling the whole half-disc down to the floor.
+    for (const side of [-1, 1]) {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.23, FELT_Y - APRON_H, 20),
+        A.woodMaterial('#241408'));
+      post.name = 'blackjack-pedestal';
+      post.position.set(side * 0.55, (FELT_Y - APRON_H) / 2, 0.59);
+      post.castShadow = true; post.receiveShadow = true; g.add(post);
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.29, 0.31, 0.045, 20),
+        A.woodMaterial('#241408'));
+      foot.name = 'blackjack-pedestal-foot';
+      foot.position.set(side * 0.55, 0.0225, 0.59);
+      foot.castShadow = true; foot.receiveShadow = true; g.add(foot);
+    }
 
     // felt half-disc with the printed layout (thetaStart=π + rot.x=-π/2
     // lands the arc on +Z face-up — v1 verified)
@@ -126,6 +148,11 @@
     for (let i = 0; i < SEAT_COUNT; i++) {
       const a = seatAngle(i);
       const spin = seatSpin(a);
+      const [cardX, cardZ] = seatPoint(a, CARDS_R);
+      const handZone = C.cards.makeCardBoxDecal();
+      handZone.rotation.set(-Math.PI / 2, 0, spin);
+      handZone.position.set(cardX, FELT_Y + 0.002, cardZ);
+      g.add(handZone);
       [
         { radius: MAIN_R, tangent: 0,        r: 0.095, label: 'MAIN' },
         { radius: SIDE_R, tangent: -SIDE_DX, r: 0.055, label: 'PP' },
@@ -139,54 +166,30 @@
       });
     }
 
-    // card shoe
-    const shoeGroup = new THREE.Group();
-    const shoeBody = new THREE.Mesh(
-      new THREE.BoxGeometry(0.32, 0.16, 0.22),
-      new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.4, metalness: 0.3 }),
-    );
-    shoeBody.rotation.x = -0.35;
-    shoeBody.castShadow = true;
-    shoeGroup.add(shoeBody);
-    const shoeTrim = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.02, 0.24), A.goldMaterial());
-    shoeTrim.rotation.x = -0.35;
-    // flush against the tilted body's top face (0.08 up along the tilted normal)
-    shoeTrim.position.set(0, 0.08 * Math.cos(0.35), -0.08 * Math.sin(0.35));
-    shoeGroup.add(shoeTrim);
+    const shoeGroup = C.cards.makeShoe();
     shoeGroup.position.set(...L.shoePos);
-    // face the shoe LEFT (toward the dealer's dealing hand at table center,
-    // slightly angled to the arc) so both dealer and players see its mouth
-    shoeGroup.rotation.y = -Math.PI / 2 + 0.32;
+    shoeGroup.rotation.y = L.shoeYaw;
     g.add(shoeGroup);
+    const discard = C.cards.makeDiscardTray();
+    discard.position.set(...L.discardPos);
+    g.add(discard);
 
-    // dealer chip station: a rimmed rack on its own console shelf BETWEEN the
-    // dealer and the table's flat edge — chips never sit on the playing felt
+    // Low chip rack inset at the dealer edge, leaving the card row clear.
     const station = new THREE.Group();
-    const PED_TOP = FELT_Y + 0.03;   // rack surface clears the table's back rim
-    const pedestal = new THREE.Mesh(new THREE.BoxGeometry(0.8, PED_TOP, 0.26),
-      A.woodMaterial('#241408'));
-    pedestal.position.y = PED_TOP / 2;
-    pedestal.castShadow = true; pedestal.receiveShadow = true;
-    station.add(pedestal);
-    const trayMat = new THREE.MeshStandardMaterial({ color: '#2a2018', roughness: 0.5, metalness: 0.3 });
-    const trayBase = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.02, 0.24), trayMat);
-    trayBase.position.y = PED_TOP + 0.01;
-    station.add(trayBase);
-    [-1, 1].forEach((s) => {
-      const lip = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.035, 0.02), trayMat);
-      lip.position.set(0, PED_TOP + 0.028, s * 0.11);
-      station.add(lip);
-      const side = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.035, 0.24), trayMat);
-      side.position.set(s * 0.37, PED_TOP + 0.028, 0);
-      station.add(side);
+    const trayMat = new THREE.MeshStandardMaterial({ color: '#201a14', roughness: 0.5, metalness: 0.3 });
+    const trayBase = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.018, 0.19), trayMat);
+    trayBase.position.y = 0.009; trayBase.receiveShadow = true; station.add(trayBase);
+    for (const side of [-1, 1]) {
+      const lip = new THREE.Mesh(new THREE.BoxGeometry(0.76, 0.024, 0.008), trayMat);
+      lip.position.set(0, 0.023, side * 0.095); station.add(lip);
+    }
+    [25, 100, 100, 500, 500, 1000, 1000, 5000].forEach((value, i) => {
+      const stack = C.chips.makeChipStack(value, 8);
+      stack.position.set(-0.315 + i * 0.09, 0.020, 0); station.add(stack);
+      const divider = new THREE.Mesh(new THREE.BoxGeometry(0.006, 0.025, 0.19), trayMat);
+      divider.position.set(-0.36 + i * 0.09, 0.026, 0); station.add(divider);
     });
-    [100, 500, 1000, 5000].forEach((v, i) => {
-      const stk = C.chips.makeChipStack(v, 8);
-      stk.position.set(-0.27 + i * 0.18, PED_TOP + 0.024, 0);
-      station.add(stk);
-    });
-    station.position.set(0, 0, -0.19);
-    g.add(station);
+    station.position.set(...L.rackPos); g.add(station);
 
     // stools — every seat is open for a real player; no demo props on the
     // felt (cards/chips only appear from actual live play)
@@ -202,7 +205,7 @@
       // west pit-lane entry, short enough to stay clear of the neighbouring
       // table's dealer (row spacing 3.9m — the old 3.2m walked through him)
       const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [-2.4, 0] });
-      dealer.position.set(0, 0, -0.55);
+      dealer.position.set(0, 0, -0.18);
       g.add(dealer);
       dealer.userData.idle(C.app);
       dealerRig = dealer.userData.rig;
@@ -226,8 +229,8 @@
     // (convert with group.localToWorld). main2 = the split hand's bet stack.
     g.userData.bj = {
       seat: S, feltY: FELT_Y, seatAngle, seatPoint,
-      dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoePos,
-      trayLocal: [0, FELT_Y + 0.054, -0.19],
+      dealerSlots: L.dealerSlots, fanDx: L.fanDx, shoeLocal: L.shoeMouth, discardLocal: L.discardPos,
+      trayLocal: [L.rackPos[0], FELT_Y + 0.020, L.rackPos[2]],
       freeSeats: [0, 1, 2, 3, 4, 5],
       get dealerRig() { return g.userData.dealerRig; },
       spotLocal(i, id) {

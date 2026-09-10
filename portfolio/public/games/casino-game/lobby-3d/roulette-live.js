@@ -21,6 +21,14 @@ export function closeRouletteLive() {
   active?.close();
 }
 
+// The iframe has its own wallet client. A purchase in the lobby must ask it
+// to reread the shared server wallet without reopening the table.
+export function refreshRouletteWallet() {
+  if (!active) return false;
+  active.refreshWallet();
+  return true;
+}
+
 export function openRouletteLive({ table }) {
   if (active) return active;
   const C = globalThis.CASINO;
@@ -69,6 +77,12 @@ export function openRouletteLive({ table }) {
   let lastBets = null;
   let spinning = false;
   let closed = false;
+  let walletRefreshPending = false;
+  const refreshWallet = () => {
+    if (closed) return;
+    walletRefreshPending = true;
+    postToGame({ type: 'wallet-refresh' });
+  };
 
   // REAL tote-board records: fresh (empty) on every session, fed by this
   // table's live spins AND the embedded game's Skip-100 simulations, with
@@ -89,7 +103,7 @@ export function openRouletteLive({ table }) {
     wrap.classList.add('rl-hidden');
     await C.app.glideTo(poses.wheel.pos, poses.wheel.look, 1000, { eyeY: poses.wheel.eyeY });
     if (closed) return;
-    const spinSound = C.sound?.ballSpin(5000);   // spinTo runs ~4.2–5.8s; stop() syncs the end
+    const spinSound = C.sound?.ballSpin(rig.userData.spinDurationMs || 7600);
     await rig.userData.spinTo(result);
     spinSound?.stop();
     if (closed) return;
@@ -129,10 +143,15 @@ export function openRouletteLive({ table }) {
 
   let lastBetTotal = 0;
   const onMsg = (ev) => {
-    if (ev.origin !== window.location.origin) return;
+    if (ev.origin !== window.location.origin || ev.source !== iframe.contentWindow) return;
     const d = ev.data;
     if (!d || d.source !== 'cg-roulette') return;
-    if (d.type === 'bets') {
+    if (d.type === 'wallet-refresh-ready') {
+      // A purchase may complete while the iframe's module imports load.
+      if (walletRefreshPending) postToGame({ type: 'wallet-refresh' });
+    } else if (d.type === 'wallet-refreshed') {
+      walletRefreshPending = false;
+    } else if (d.type === 'bets') {
       lastBets = d.bets;
       rig.userData.setBets(betSpots(d.bets, G));
       if (typeof d.total === 'number') {
@@ -148,6 +167,7 @@ export function openRouletteLive({ table }) {
   function close() {
     if (closed) return;
     closed = true;
+    rig.userData.cancelSpin?.();
     window.removeEventListener('message', onMsg);
     wrap.remove();
     rig.userData.setBets([]);
@@ -163,6 +183,6 @@ export function openRouletteLive({ table }) {
   C.app.glideTo(poses.betting.pos, poses.betting.look, 1100)
     .then(() => { if (!closed) rig.userData.buyIn(); });
 
-  active = { close, tableId: table.id, spinning: () => spinning };
+  active = { close, tableId: table.id, spinning: () => spinning, refreshWallet };
   return active;
 }

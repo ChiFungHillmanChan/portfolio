@@ -4,7 +4,8 @@ await import('../src/logic/hand-paths.js');
 const HP = globalThis.CASINO.handPaths;
 
 const IK_ACTIONS = ['dealCard', 'sweepChips', 'payChips', 'spinReach', 'spinFollow',
-  'placeDolly', 'tapRack', 'washCards', 'shuffleRiffle'];
+  'placeDolly', 'tapRack', 'washCards', 'shuffleRiffle',
+  'baccaratDeal', 'baccaratRest', 'baccaratCollect'];
 
 test('every IK action has a valid path', () => {
   for (const name of IK_ACTIONS) {
@@ -42,4 +43,19 @@ test('wash and riffle are two-hand cycles', () => {
     assert.equal(p.cycle, true, name);
     assert.ok(p.hands.L && p.hands.R, `${name} needs both hands`);
   }
+});
+
+test('baccarat hands draw, transfer, reveal, and release in a deliberate sequence', () => {
+  const p = HP.PATHS.baccaratDeal;
+  const grab = p.hands.L.find(w => w.event === 'grab');
+  const transfer = p.hands.R.find(w => w.event === 'contact');
+  const release = p.hands.R.find(w => w.event === 'release');
+  const transferHold = p.hands.R.find(w => w.at > transfer.at);
+  assert.equal(p.continuous, true);
+  assert.ok(grab.at < transfer.at && transfer.at < release.at);
+  assert.ok((transferHold.at - transfer.at) * p.dur >= 250,
+    'a card needs time to turn over while held by the receiving hand');
+  assert.ok((1 - release.at) * p.dur >= 300, 'return must not whip back to neutral');
+  assert.ok(p.hands.L.find(w => w.ref === 'rack').offset[0] > 0);
+  assert.ok(transfer.offset[0] < 0, 'hands meet opposite edges of the card');
 });

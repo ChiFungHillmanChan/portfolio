@@ -33,7 +33,10 @@
   }
 
   function playRound(draw) {
-    const p = [draw(), draw()], b = [draw(), draw()];
+    // Allocate in the same physical order the dealer removes cards from the
+    // shoe: player, banker, player, banker. Third-card rules follow below.
+    const p = [draw()], b = [draw()];
+    p.push(draw()); b.push(draw());
     let natural = false;
     if (total(p) >= 8 || total(b) >= 8) {
       natural = true;

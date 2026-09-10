@@ -13,6 +13,19 @@
     a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
   const norm = (a) => { const l = len(a); return l < 1e-9 ? [0, 0, 0] : mul(a, 1 / l); };
 
+  // A card is pitched across a horizontal table. A radial clamp raises a
+  // distant target toward the shoulder, turning a deal into a chest-height
+  // gesture. Keep its height and shorten only the horizontal reach instead.
+  function clampTableReach(shoulder, target, reach) {
+    const delta = sub(target, shoulder);
+    if (len(delta) <= reach) return [...target];
+    const dy = Math.max(-reach * 0.90, Math.min(reach * 0.90, delta[1]));
+    const horizontal = Math.hypot(delta[0], delta[2]);
+    const radius = Math.sqrt(Math.max(0, reach * reach - dy * dy));
+    const scale = horizontal > 1e-9 ? Math.min(1, radius / horizontal) : 0;
+    return [shoulder[0] + delta[0] * scale, shoulder[1] + dy, shoulder[2] + delta[2] * scale];
+  }
+
   function solveTwoBone({ shoulder, target, upperLen, foreLen, pole }) {
     const toT = sub(target, shoulder);
     let d = len(toT);
@@ -34,5 +47,5 @@
     return { elbow, hand, clamped };
   }
 
-  C.ik = { solveTwoBone };
+  C.ik = { solveTwoBone, clampTableReach };
 })();

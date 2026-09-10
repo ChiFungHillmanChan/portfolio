@@ -185,3 +185,26 @@ test('walkIn: a roomGen change mid-walk cancels — snaps to post, resolves, rel
   // (idle's gen guard) — zero hooks left, not baseline
   assert.equal(app.hookCount(), 0, 'cancelled walk (and the stale idle) release their frame hooks');
 });
+
+test('walkTo crosses a rotated parent in world coordinates and returns to the original station', async () => {
+  const app = makeTickApp();
+  const table = new CTX_THREE.Group(); table.rotation.y = Math.PI / 2; table.position.set(3, 0, -2);
+  const root = new CTX_THREE.Group(); root.position.set(-1.88, 0, -0.94); table.add(root);
+  let impl;
+  CTX_CASINO.character.attach(app, root, { seed: 'walk-to-rake' }, i => { impl = i; });
+  impl.setIdle(app);
+  const start = impl.group.getWorldPosition(new CTX_THREE.Vector3());
+  const target = start.clone().add(new CTX_THREE.Vector3(0.8, 0, 0.2));
+  const baseline = app.hookCount();
+  assert.equal(typeof impl.walkTo, 'function');
+  for (const destination of [target, start]) {
+    mockNow = 0;
+    const p = impl.walkTo(app, destination.toArray(), { ms: 800 });
+    for (let i = 0; i < 25; i++) { mockNow += 50; app.tick(0.05); }
+    await p;
+    const actual = impl.group.getWorldPosition(new CTX_THREE.Vector3());
+    assert.ok(actual.distanceTo(destination) < 1e-6, 'arrival must use world coordinates once');
+    assert.ok(Math.abs(impl.group.rotation.y) < 1e-6, 'dealer returns to its table-facing orientation');
+    assert.equal(app.hookCount(), baseline, 'walk releases its driver and watch hook');
+  }
+});

@@ -3,19 +3,74 @@ import assert from 'node:assert/strict';
 await import('../src/logic/layouts.js');
 const L = globalThis.CASINO.layouts;
 
+test('card shoes expose an inward mouth above the felt and away from the rack', () => {
+  for (const table of [L.blackjack, L.baccarat]) {
+    assert.ok(Array.isArray(table.shoeMouth), 'actual mouth drives the dealer and card');
+    const [x, y, z] = table.shoeMouth;
+    assert.ok(x < table.shoePos[0], 'shoe opens toward the dealer');
+    assert.ok(y > table.feltY && y - table.feltY < 0.045, 'mouth just above felt');
+    assert.ok(Math.hypot(x - table.rackPos[0], z - table.rackPos[2]) > 0.4);
+  }
+});
+
+test('baccarat deal plan alternates the first four cards and draws player third before banker', () => {
+  assert.equal(typeof L.baccarat.dealSequence, 'function');
+  const round = { playerCards: ['P1', 'P2', 'P3'], bankerCards: ['B1', 'B2', 'B3'] };
+  const plan = L.baccarat.dealSequence(round);
+  assert.deepEqual(plan.map((p) => p.card), ['P1', 'B1', 'P2', 'B2', 'P3', 'B3']);
+  assert.deepEqual(plan.map((p) => p.sideways), [false, false, false, false, true, true]);
+  assert.deepEqual(plan.map((p) => p.faceDown), [true, true, true, true, false, false]);
+  assert.equal(L.baccarat.dealSequence({ playerCards: ['P1', 'P2'], bankerCards: ['B1', 'B2'] }).length, 4);
+});
+
+test('all baccarat card corners fit their printed hand zone without covering its title', () => {
+  const bac = L.baccarat;
+  assert.ok(bac.cardAreas, 'felt areas and card slots share one layout');
+  for (const hand of ['player', 'banker']) {
+    const area = bac.cardAreas[hand];
+    bac[hand + 'Slots'].forEach(([x, y, z], i) => {
+      const hw = (i === 2 ? L.CARD_H : L.CARD_W) / 2;
+      const hz = (i === 2 ? L.CARD_W : L.CARD_H) / 2;
+      assert.ok(x - hw > area.x0 && x + hw < area.x1, hand + ' horizontal containment');
+      assert.ok(z - hz > area.titleZ + 0.025 && z + hz < area.z1, hand + ' clear title');
+      assert.ok(y - bac.feltY < 0.006, 'card rests directly on felt');
+    });
+  }
+});
+
 test('card dimensions are poker-ratio and ~1.55x the old size', () => {
   assert.equal(L.CARD_W, 0.14);
   assert.equal(L.CARD_H, 0.196);
   assert.ok(Math.abs(L.CARD_W / L.CARD_H - 0.714) < 0.01);
 });
 
-test('chipBreakdown is greedy, rounds remainders up to one 100, caps at 20 chips', () => {
+test('chipBreakdown preserves fractional and side-bet payout amounts exactly in cents', () => {
   assert.deepEqual(L.chipBreakdown(1600), [1000, 500, 100]);
   assert.deepEqual(L.chipBreakdown(100), [100]);
-  assert.deepEqual(L.chipBreakdown(750), [500, 100, 100, 100]);   // 50 remainder -> one extra 100
-  assert.deepEqual(L.chipBreakdown(475), [100, 100, 100, 100, 100]); // banker 0.95 on 500
-  assert.deepEqual(L.chipBreakdown(0), []);
-  assert.ok(L.chipBreakdown(1e9).length <= 20);
+  for (const amount of [475, 750, 175, 37.5, 0.01, 12.34, 999.99]) {
+    const chips = L.chipBreakdown(amount);
+    assert.equal(chips.reduce((sum, chip) => sum + Math.round(chip * 100), 0), Math.round(amount * 100),
+      `${amount} must not visually overpay or lose its remainder`);
+    assert.ok(chips.every((chip) => Number.isFinite(chip) && chip > 0));
+    assert.ok(chips.length <= 20);
+  }
+  assert.deepEqual(L.chipBreakdown(175), [100, 50, 25]);
+  assert.deepEqual(L.chipBreakdown(37.5), [25, 10, 1, 1, 0.5]);
+});
+
+test('chipBreakdown preserves large payouts with one counted remainder at the object cap', () => {
+  const chips = L.chipBreakdown(1e9);
+  assert.ok(chips.length <= 20);
+  assert.equal(chips.reduce((sum, chip) => sum + chip, 0), 1e9);
+  assert.ok(chips.at(-1) > 5000, 'large remainder is a counted plaque, not discarded');
+});
+
+test('chipBreakdown rejects invalid/nonpositive amounts and handles decimal arithmetic noise', () => {
+  for (const amount of [0, -1, NaN, Infinity, -Infinity, null, undefined, '475', {}, 1e100]) {
+    assert.deepEqual(L.chipBreakdown(amount), [], String(amount));
+  }
+  const chips = L.chipBreakdown(0.1 + 0.2);
+  assert.equal(chips.reduce((sum, chip) => sum + Math.round(chip * 100), 0), 30);
 });
 
 test('blackjack slots + spots sit on the half-disc table (radius 1.6, +Z side)', () => {

@@ -15,7 +15,7 @@ function el(html) {
 }
 
 // ---------- wallet pill (signed-out: Sign in · signed-in: live balance) ----------
-export function mountWalletPill(host, { walletClient, onSignInClick, onReset }) {
+export function mountWalletPill(host, { walletClient, onSignInClick, onReset, onBuyChips }) {
   let mode = 'signin';
   let unsub = null, timer = null;
 
@@ -40,11 +40,13 @@ export function mountWalletPill(host, { walletClient, onSignInClick, onReset }) 
       <div class="wallet-pill" data-state="${h.state}">
         ${CHIP_DOT}<span class="pill-balance">${h.balanceText}</span>
         ${h.cashText !== null ? `<span class="pill-cash">${CASH_SVG} ${h.cashText}</span>` : ''}
+        ${onBuyChips ? '<button type="button" class="pill-buy">Buy chips</button>' : ''}
         ${h.showReset ? `<button type="button" class="pill-reset">${h.resetLabel}</button>` : ''}
         ${h.cooldownText ? `<span class="pill-cooldown">Reset in ${h.cooldownText}</span>` : ''}
       </div>`);
     const btn = pill.querySelector('.pill-reset');
     if (btn) btn.addEventListener('click', onReset);
+    pill.querySelector('.pill-buy')?.addEventListener('click', onBuyChips);
     host.appendChild(pill);
   };
 
@@ -131,6 +133,7 @@ export function createCardRoot(root) {
     teardown();
     root.innerHTML = '';
     root.appendChild(node);
+    root.dataset.kind = kind;
     current = {
       kind,
       dismissable,
@@ -138,12 +141,13 @@ export function createCardRoot(root) {
         if (current && current.kind === kind) {
           teardown();
           root.innerHTML = '';
+          delete root.dataset.kind;
           current = null;
           onClose && onClose();
         }
       },
     };
-    if (focus) node.querySelector('button, a')?.focus();
+    if (focus) node.querySelector('input, select, button, a')?.focus();
     return current.close;
   }
 
@@ -273,19 +277,71 @@ export function closedTableCard({ gameName, notice, onOk }) {
   return card;
 }
 
-export function cashierCard({ walletClient, onReset }) {
+export function buyInCard({ walletClient, onClose, onPurchased }) {
   const card = el(`
-    <div class="floor-card" role="dialog" aria-label="Cashier">
+    <div class="floor-card service-card" role="dialog" aria-label="Buy chips">
+      <h3>BUY CHIPS</h3>
+      <p class="sub">Add chips here and keep your place at the table.</p>
+      <p class="row">Chips: <strong class="buyin-chips"></strong> · Wallet: <strong class="buyin-cash"></strong></p>
+      <div class="exchange-row">
+        <input class="exchange-amt buyin-amount" type="number" inputmode="numeric" min="1" step="1" value="1000" aria-label="Chips to buy">
+        <button type="button" class="btn-primary buyin-confirm">Add chips</button>
+      </div>
+      <p class="service-status" role="status">Exchange wallet money for chips at 1:1.</p>
+      <div class="actions"><button type="button" class="btn-dim buyin-close">Done</button></div>
+      <p class="muted">Visit the cashier to exchange chips back into money.</p>
+    </div>`);
+  const input = card.querySelector('.buyin-amount'), confirm = card.querySelector('.buyin-confirm');
+  const status = card.querySelector('[role="status"]');
+  let active = true, busy = false;
+  const render = () => {
+    card.querySelector('.buyin-chips').textContent = formatChips(walletClient.getBalance());
+    card.querySelector('.buyin-cash').textContent = formatChips(walletClient.getCash());
+  };
+  confirm.addEventListener('click', async () => {
+    if (!active || busy) return;
+    const amount = Number(input.value);
+    if (!Number.isInteger(amount) || amount <= 0) {
+      status.textContent = 'Enter a positive whole number of chips.';
+      return;
+    }
+    busy = true; confirm.disabled = input.disabled = true;
+    status.textContent = 'Adding your chips…';
+    try {
+      await walletClient.buyIn(amount);
+      // Embedded tables may keep their own wallet view. Refresh it even
+      // if this card closed, without turning a committed purchase into an error.
+      try { await onPurchased?.(); } catch { /* wallet purchase already committed */ }
+      if (active) { render(); status.textContent = `${formatChips(amount)} chips added. You’re ready to play.`; }
+    } catch (error) {
+      if (active) status.textContent = error?.code === 'insufficient-cash' ? 'Not enough in your wallet.'
+        : error?.code === 'bad-amount' ? 'Enter a valid amount.' : 'Could not add chips. Please try again.';
+    } finally {
+      busy = false;
+      if (active) confirm.disabled = input.disabled = false;
+    }
+  });
+  card.querySelector('.buyin-close').addEventListener('click', onClose);
+  render();
+  const unsub = walletClient.subscribe(() => { if (active) render(); });
+  card.addEventListener('card:teardown', () => { active = false; unsub(); });
+  return card;
+}
+
+export function cashierCard({ walletClient, onReset, onExchange }) {
+  const card = el(`
+    <div class="floor-card service-card" role="dialog" aria-label="Cashier">
       <h3>CASHIER</h3>
       <p class="row">Chips: <strong class="cash-balance">—</strong> · Wallet: <strong class="cash-wallet">—</strong></p>
       <p class="hint cash-bust" hidden>You're out of money. Claim a free reset to keep playing.</p>
       <div class="exchange-row">
-        <input class="exchange-amt cash-amt" type="number" inputmode="numeric" min="0" step="50" aria-label="Amount">
+        <input class="exchange-amt cash-amt" type="number" inputmode="numeric" min="1" step="50" value="1000" aria-label="Amount">
         <button type="button" class="btn-primary cash-buy">Buy chips</button>
         <button type="button" class="btn-dim cash-out">Cash out</button>
         <button type="button" class="btn-dim cash-out-all">Cash out all</button>
       </div>
       <p class="hint cash-err" hidden></p>
+      <p class="service-status cash-status" role="status">Your teller is ready.</p>
       <div class="actions">
         <button type="button" class="btn-primary cash-reset" hidden></button>
         <span class="sub cash-cooldown" hidden></span>
@@ -293,6 +349,8 @@ export function cashierCard({ walletClient, onReset }) {
       <p class="muted">Chips play at the tables — your wallet stays safe in the cage.</p>
     </div>`);
   const errEl = card.querySelector('.cash-err');
+  const status = card.querySelector('.cash-status');
+  let exchanging = false, active = true;
   const render = () => {
     const h = formatHud(
       {
@@ -319,18 +377,38 @@ export function cashierCard({ walletClient, onReset }) {
     'bad-amount': 'Enter a valid amount.',
     'network-error': 'Connection problem — try again.',
   };
-  const exchange = (btnSel, run) => {
+  const exchange = (btnSel, kind, all = false) => {
     const btn = card.querySelector(btnSel);
-    btn.addEventListener('click', () => {
-      errEl.hidden = true;
-      btn.disabled = true;
-      run()
-        .then(() => { btn.disabled = false; render(); })
-        .catch((err) => {
-          btn.disabled = false;
+    btn.addEventListener('click', async () => {
+      if (exchanging || !active) return;
+      exchanging = true; errEl.hidden = true;
+      card.querySelectorAll('.exchange-row button').forEach(button => { button.disabled = true; });
+      try {
+        const value = all ? walletClient.getBalance() : amount();
+        status.textContent = 'Processing your exchange…';
+        if (kind === 'buyIn') await walletClient.buyIn(value);
+        else await walletClient.cashOut(all ? 'all' : value);
+        if (!active) return;
+        render(); card.classList.add('is-serving');
+        status.textContent = kind === 'buyIn' ? 'Counting notes and preparing your chips…' : 'Counting chips and preparing your cash…';
+        // A visual error cannot turn a committed wallet transaction into a
+        // failed exchange or encourage a duplicate financial operation.
+        let presented = false;
+        try { presented = !!onExchange && await onExchange(kind, value) !== false; } catch { /* wallet already committed */ }
+        if (active) status.textContent = presented ? 'Exchange complete. Your payout is at the window.' : 'Exchange complete. Your wallet balance is updated.';
+      } catch (err) {
+        if (active) {
           errEl.hidden = false;
           errEl.textContent = ERR_COPY[err && err.code] || 'Something went wrong — try again.';
-        });
+          status.textContent = 'Your teller is ready.';
+        }
+      } finally {
+        exchanging = false;
+        if (active) {
+          card.classList.remove('is-serving');
+          card.querySelectorAll('.exchange-row button').forEach(button => { button.disabled = false; });
+        }
+      }
     });
   };
   const amount = () => {
@@ -340,14 +418,14 @@ export function cashierCard({ walletClient, onReset }) {
     }
     return v;
   };
-  exchange('.cash-buy', () => Promise.resolve().then(() => walletClient.buyIn(amount())));
-  exchange('.cash-out', () => Promise.resolve().then(() => walletClient.cashOut(amount())));
-  exchange('.cash-out-all', () => walletClient.cashOut('all'));
+  exchange('.cash-buy', 'buyIn');
+  exchange('.cash-out', 'cashOut');
+  exchange('.cash-out-all', 'cashOut', true);
   card.querySelector('.cash-reset').addEventListener('click', () => onReset(render));
   render();
   const unsub = walletClient.subscribe(render);
   const timer = setInterval(render, 30000);
-  card.addEventListener('card:teardown', () => { unsub(); clearInterval(timer); });
+  card.addEventListener('card:teardown', () => { active = false; unsub(); clearInterval(timer); });
   return card;
 }
 
@@ -384,19 +462,42 @@ export function nextBarTip() {
   return BAR_TIPS[i];
 }
 
-export function barCard({ tip, onPractice, onDismiss }) {
+export function barCard({ tip, onPractice, onDismiss, onOrder }) {
   const t = tip || BAR_TIPS[0];
   const card = el(`
-    <div class="floor-card" role="dialog" aria-label="The bar — dealer's tip">
+    <div class="floor-card service-card" role="dialog" aria-label="Casino bar">
       <h3>THE BAR</h3>
-      <p class="sub">One on the house — here's a tip from the dealer.</p>
-      <p class="row bar-tip">${t.game ? `<strong>${t.game}:</strong> ` : ''}${t.tip}</p>
+      <p class="sub">Choose a drink and watch the bartender make it.</p>
+      <div class="exchange-row">
+        <select class="exchange-amt bar-drink" aria-label="Drink"><option value="old-fashioned">Old Fashioned</option><option value="martini">Martini</option><option value="highball">Whisky Highball</option></select>
+        <button type="button" class="btn-primary" data-act="order">Make my drink</button>
+      </div>
+      <p class="service-status bar-status" role="status">Complimentary · no chips charged.</p>
+      <p class="muted bar-tip service-extra">${t.game ? `<strong>${t.game}:</strong> ` : ''}${t.tip}</p>
       <div class="actions">
         <button type="button" class="btn-primary" data-act="practice">Try it in Practice</button>
         <button type="button" class="btn-dim" data-act="cheers">Cheers</button>
       </div>
-      <p class="muted">Free tips, free practice — no chips required.</p>
     </div>`);
+  let busy = false, active = true;
+  const order = card.querySelector('[data-act="order"]');
+  const drink = card.querySelector('.bar-drink');
+  const status = card.querySelector('.bar-status');
+  order.addEventListener('click', async () => {
+    if (busy || !active) return;
+    busy = true; order.disabled = drink.disabled = true; card.classList.add('is-serving');
+    status.textContent = 'Your bartender is preparing ' + drink.selectedOptions[0].textContent + '…';
+    try {
+      const served = await onOrder?.(drink.value);
+      if (active) status.textContent = served === false ? 'The bartender is finishing another drink. Please try again.' : 'Your drink is served. Cheers!';
+    } catch {
+      if (active) status.textContent = 'The bartender could not finish that drink. Please try again.';
+    } finally {
+      busy = false;
+      if (active) { order.disabled = drink.disabled = false; card.classList.remove('is-serving'); }
+    }
+  });
+  card.addEventListener('card:teardown', () => { active = false; });
   card.querySelector('[data-act="practice"]').addEventListener('click', onPractice);
   card.querySelector('[data-act="cheers"]').addEventListener('click', onDismiss);
   return card;

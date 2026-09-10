@@ -1,8 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planPlayerCard, planDealerCard, settleTitle } from '../blackjack-live.js';
+import * as live from '../blackjack-live.js';
+const { planPlayerCard, planDealerCard, settleTitle } = live;
 
 const seat = { angle: Math.PI / 2, cardsR: 1.02, stackDr: 0.062, splitDx: 0.14, feltY: 0.83 };
+
+test('European deal goes clockwise from dealer left, up-card, then the same seat order', () => {
+  assert.equal(typeof live.planInitialDeal, 'function');
+  assert.deepEqual(live.planInitialDeal([4, 1, 3]).map((step) => [step.seat, step.card, step.faceDown]), [
+    [4, 0, false], [3, 0, false], [1, 0, false], [null, 0, false],
+    [4, 1, false], [3, 1, false], [1, 1, false],
+  ]);
+});
+
+test('initial card lands flat at its painted seat bearing without a random orientation offset', () => {
+  const p = planPlayerCard(seat);
+  assert.equal(p.spin, 0);
+  assert.ok(p.pos[1] - seat.feltY <= 0.004, 'thin card touches the felt');
+});
 
 test('planPlayerCard: hits stack TOWARD the dealer, newest on top', () => {
   const c0 = planPlayerCard(seat, { card: 0 });

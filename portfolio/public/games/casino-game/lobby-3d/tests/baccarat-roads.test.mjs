@@ -41,6 +41,22 @@ test('bankerDraws implements the full third-card table', () => {
   for (let p3 = 0; p3 <= 9; p3++) assert.equal(R.bankerDraws(7, p3), false);
 });
 
+test('playRound consumes the physical shoe P1 B1 P2 B2 then player and banker third cards', () => {
+  // P=4+A=5 draws 2 ->7; B=3+A=4 draws 4 against player third 2 ->8.
+  const shoe = [
+    { r: 4, s: 0 }, { r: 3, s: 1 }, { r: 14, s: 2 }, { r: 14, s: 3 },
+    { r: 2, s: 0 }, { r: 4, s: 1 },
+  ];
+  let draws = 0;
+  const round = R.playRound(() => shoe[draws++]);
+  assert.deepEqual(round.playerCards, [shoe[0], shoe[2], shoe[4]]);
+  assert.deepEqual(round.bankerCards, [shoe[1], shoe[3], shoe[5]]);
+  assert.equal(draws, 6);
+  assert.equal(round.playerTotal, 7);
+  assert.equal(round.bankerTotal, 8);
+  assert.equal(round.outcome, 'B');
+});
+
 test('simulateShoe deals legal rounds from an 8-deck shoe', () => {
   const rounds = R.simulateShoe(mulberry32(42));
   assert.ok(rounds.length >= 55 && rounds.length <= 95, `round count ${rounds.length}`);
@@ -201,8 +217,8 @@ test('predictNext matches actually appending the round', () => {
 test('playRound + buildShoe are exported for the ambient show', () => {
   assert.equal(typeof R.playRound, 'function');
   assert.equal(typeof R.buildShoe, 'function');
-  // stacked deck: P= 9+K (natural 9), B= 4+4 (8) -> player natural win, no draws
-  const cards = [{ r: 9, s: 0 }, { r: 13, s: 1 }, { r: 4, s: 2 }, { r: 4, s: 3 }];
+  // Shoe order P1 B1 P2 B2: P=9+K, B=4+4; natural ends after four cards.
+  const cards = [{ r: 9, s: 0 }, { r: 4, s: 2 }, { r: 13, s: 1 }, { r: 4, s: 3 }];
   let i = 0;
   const round = R.playRound(() => cards[i++]);
   assert.equal(round.outcome, 'P');
@@ -210,6 +226,7 @@ test('playRound + buildShoe are exported for the ambient show', () => {
   assert.equal(round.bankerTotal, 8);
   assert.equal(round.natural, true);
   assert.equal(round.playerCards.length, 2);
+  assert.equal(i, 4, 'a natural must not consume a fifth card');
   assert.equal(R.buildShoe(() => 0.5).length, 8 * 52);
 });
 

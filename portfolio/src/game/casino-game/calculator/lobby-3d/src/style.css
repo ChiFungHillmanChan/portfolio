@@ -36,7 +36,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 .wallet-pill[data-state="bust"] { border-color: #ff5d6c; color: #ff9ba5; }
 .wallet-pill .chip-dot { width: 14px; height: 14px; border-radius: 50%; flex: none;
   background: #d7b45c; border: 3px dashed #0a0a0a; }
-.wallet-pill .pill-reset { margin-left: .3rem; min-height: 32px; padding: .1rem .6rem;
+.wallet-pill .pill-reset, .wallet-pill .pill-buy { margin-left: .3rem; min-height: 32px; padding: .1rem .6rem;
   font: inherit; font-size: .8rem; color: #16130a; background: linear-gradient(#f0cd6b, #c69a2e);
   border: 0; border-radius: 999px; cursor: pointer; }
 .wallet-pill .pill-cash { margin-left: .35rem; padding-left: .45rem; font-size: .85rem;
@@ -65,6 +65,7 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 /* DOM cards (check-in / sit-down / cashier / practice) */
 #card-root { position: fixed; inset-inline: 0; bottom: calc(64px + max(.6rem, env(safe-area-inset-bottom)));
   z-index: 25; display: flex; justify-content: center; pointer-events: none; padding: 0 .75rem; }
+#card-root[data-kind="buyin"] { z-index: 35; top: 76px; bottom: auto; justify-content: flex-start; }
 .floor-card { pointer-events: auto; width: min(420px, 100%);
   background: linear-gradient(180deg, rgba(16,19,28,.97), rgba(9,11,17,.97));
   border: 1px solid #4a5068; border-top: 2px solid #d7b45c; border-radius: 14px;
@@ -82,6 +83,11 @@ html, body { height: 100%; overflow: hidden; background: #05060a;
 .floor-card .exchange-amt { width: 8.5rem; min-height: 40px; padding: .3rem .6rem; font: inherit;
   color: #e6e4dc; background: rgba(255,255,255,.06); border: 1px solid #3a4053; border-radius: 8px; }
 .floor-card .exchange-amt:focus { outline: none; border-color: #ffd27f; }
+.floor-card.service-card { margin-right: auto; width: min(360px, 100%); }
+.floor-card .service-status { margin-top: .65rem; color: #d6dfc4; font-size: .88rem; line-height: 1.4; }
+.floor-card .bar-drink { width: 100%; }
+.floor-card.is-serving .exchange-row, .floor-card.is-serving .service-extra { display: none; }
+@media (max-width: 600px) { .floor-card.service-card { margin-right: 0; width: 100%; } }
 .floor-card .linkline { margin-top: .6rem; font-size: .85rem; }
 .floor-card .linkline a { color: #9aa0b4; text-decoration: underline; }
 .floor-card .linkline a:hover { color: #ffd27f; }

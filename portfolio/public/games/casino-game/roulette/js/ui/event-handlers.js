@@ -43,6 +43,10 @@ const WALLET_ERR_MSG = {
 // response is applied). This flag closes that gap synchronously.
 let betCommitInFlight = false;
 
+function isRouletteWalletBusy() {
+    return betCommitInFlight || isSpinning();
+}
+
 /**
  * Initialize all event handlers
  */
@@ -395,7 +399,7 @@ function initGameControlHandlers() {
  * Handle spin button click
  */
 async function handleSpinClick() {
-    if (isSpinning() || betCommitInFlight) return;
+    if (isSpinning() || betCommitInFlight || window.rouletteWalletRefreshing) return;
 
     // The wallet gate (mounted on document.body) covers the whole page until
     // sign-in + balance are ready, so this should be unreachable while null —
@@ -928,7 +932,7 @@ function updateButtonStates() {
 
     if (spinBtn) {
         // Allow spinning without bets (for statistics/practice)
-        spinBtn.disabled = phase !== GAME_PHASES.BETTING;
+        spinBtn.disabled = phase !== GAME_PHASES.BETTING || betCommitInFlight || !!window.rouletteWalletRefreshing;
         spinBtn.classList.toggle('spinning', phase === GAME_PHASES.SPINNING);
     }
 

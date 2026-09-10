@@ -29,7 +29,7 @@
       // signed-out clicks on floor-side signs open the ID check instead of
       // flying through the closed turnstile (canFlyTo notifies the UI)
       if (!C.app.canFlyTo(pose.pos)) return Promise.resolve();
-      return C.app.glideTo(pose.pos, pose.look, 1200);
+      return C.app.glideTo(pose.pos, pose.look, 1200, { eyeY: pose.eyeY });
     }
     const a = C.world.anchorById(id);
     return a ? C.app.goToAnchor(a) : Promise.resolve();

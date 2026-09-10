@@ -12,11 +12,21 @@ import bootstrap from "../../../js/wallet/wallet-bootstrap.js";
 import { mapRouletteBets, findMinViolation } from "./bet-map.js";
 import { getTable } from "../../../js/wallet/table-config.js";
 import { stakeFromUrl, mountStakePicker } from "../../../js/wallet/stake-picker.js";
+import { mountLobbyWalletRefresh } from "./lobby-wallet-refresh.js";
 
 window.rouletteWallet = null;
 window.rouletteTable = null;
 
 const stake = stakeFromUrl("roulette", location.search);
+
+if (stake && document.documentElement.classList.contains('embed-3d')) {
+  mountLobbyWalletRefresh({
+    view: window,
+    walletClient: bootstrap.walletClient,
+    isBusy: () => window.isRouletteWalletBusy?.() || false,
+    onStateChange: () => window.updateButtonStates?.(),
+  });
+}
 
 if (!stake) {
   // No (valid) tier picked yet — show the picker, don't boot the wallet.

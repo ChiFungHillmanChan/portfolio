@@ -6,18 +6,23 @@
   // from these two numbers so they cannot drift apart.
   const CARD_W = 0.14, CARD_H = 0.196;
 
-  // Greedy payout breakdown for 3D chip pushes. Amounts that aren't
-  // representable (e.g. 750 blackjack natural, 475 banker win) round the
-  // remainder UP to one visual 100 chip — display only, wallet math is
-  // untouched. Capped at 20 chips so a jackpot can't spawn a mesh flood.
-  const DENOMS = [5000, 1000, 500, 100];
+  // Work in cents so chip labels exactly account for the payout. Reserve
+  // the twentieth object for the full remaining value: makeChip renders
+  // a nonstandard denomination as a counted plaque instead of losing money
+  // to the mesh cap. Wallet settlement remains the caller's responsibility.
+  const DENOM_CENTS = [500000, 100000, 50000, 10000, 5000, 2500, 1000, 500, 100, 50, 1];
   function chipBreakdown(amount) {
+    if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) return [];
+    let left = Math.round(amount * 100);
+    if (!Number.isSafeInteger(left)) return [];
     const out = [];
-    let left = amount;
-    for (const d of DENOMS) {
-      while (left >= d && out.length < 20) { out.push(d); left -= d; }
+    for (const cents of DENOM_CENTS) {
+      while (left >= cents) {
+        if (out.length === 19) { out.push(left / 100); return out; }
+        out.push(cents / 100);
+        left -= cents;
+      }
     }
-    if (left > 0 && out.length < 20) out.push(100);
     return out;
   }
 
@@ -27,13 +32,15 @@
   // cards and shoe at negative z — off the table. Everything here (cards,
   // shoe, chip endpoints) sits fully on the felt, i.e. footprint z >= 0.
   const blackjack = {
-    feltY: 0.83, cardY: 0.86,
-    shoePos: [1.05, 0.83, 0.18],
+    feltY: 0.83, cardY: 0.833,
+    shoePos: [0.72, 0.83, 0.145], shoeYaw: -Math.PI / 2 + 0.10,
+    rackPos: [0, 0.83, 0.12],
+    discardPos: [-0.72, 0.83, 0.145],
     chipSource: [1.0, 0.85, 1.05],          // near table edge at the player's right
     dealerChipPos: [0, 0.85, 0.10],
     playerSlots: [[0.27, 0.86, 0.50], [0.44, 0.86, 0.50]],
-    dealerSlots: [[-0.085, 0.86, 0.16], [0.085, 0.86, 0.16]],
-    fanDx: 0.17,                             // 3rd+ card continues right of slot[1]
+    dealerSlots: [[-0.30, 0.833, 0.39], [-0.14, 0.833, 0.39]],
+    fanDx: 0.12,                             // 3rd+ card continues right of slot[1]
     spots: {
       main:               { pos: [0.36, 0.845, 0.78], r: 0.11,  label: 'MAIN' },
       perfectPair:        { pos: [0.10, 0.845, 0.88], r: 0.075, label: 'PP' },
@@ -60,17 +67,29 @@
   // arcs on the +z side. Angles: 90° = player edge; x = cos(a)*f*rx,
   // z = sin(a)*f*rz — shared by seatSpot() and the painted felt texture.
   const baccarat = {
-    feltY: 0.82, cardY: 0.85,
+    feltY: 0.82, cardY: 0.823,
     feltRx: 1.692, feltRz: 0.799,
     rackPos: [0, 0.82, -0.52],
-    shoePos: [0.62, 0.82, -0.48],
-    discardPos: [-0.62, 0.82, -0.48],
+    shoePos: [0.70, 0.82, -0.49], shoeYaw: -Math.PI / 2 + 0.18,
+    discardPos: [-0.78, 0.82, -0.49],
     chipSource: [1.05, 0.84, 0.35],
     dealerChipPos: [0, 0.84, -0.32],
     // two upright slots + the third card laid SIDEWAYS outboard of them
     // (slot index 2), as dealt in real baccarat.
-    playerSlots: [[-0.45, 0.85, -0.14], [-0.28, 0.85, -0.14], [-0.66, 0.85, -0.14]],
-    bankerSlots: [[0.28, 0.85, -0.14], [0.45, 0.85, -0.14], [0.66, 0.85, -0.14]],
+    playerSlots: [[-0.45, 0.823, -0.14], [-0.28, 0.823, -0.14], [-0.66, 0.823, -0.14]],
+    bankerSlots: [[0.28, 0.823, -0.14], [0.45, 0.823, -0.14], [0.66, 0.823, -0.14]],
+    cardAreas: {
+      player: { x0: -0.79, x1: -0.17, z0: -0.34, z1: 0.02, titleZ: -0.285 },
+      banker: { x0: 0.17, x1: 0.79, z0: -0.34, z1: 0.02, titleZ: -0.285 },
+    },
+    dealSequence(round) {
+      const step = (hand, index) => ({
+        hand, index, card: round[hand + 'Cards'][index],
+        pos: this[hand + 'Slots'][index], sideways: index === 2, faceDown: index < 2,
+      });
+      return [step('player', 0), step('banker', 0), step('player', 1), step('banker', 1),
+        step('player', 2), step('banker', 2)].filter((item) => item.card != null);
+    },
     spots: {},   // per-seat boxes are printed on the felt instead
     seatAngles: [27.5, 52.5, 77.5, 102.5, 127.5, 152.5],   // seat 1..6
     betFracs: { tie: 0.46, banker: 0.66, player: 0.81 },
@@ -81,6 +100,16 @@
     },
     poseDeal: { pos: [0, 1.32, 0.82], look: [0, 0.85, -0.15] },
   };
+
+  // Shoe model opens along its local +Z. The mouth, the visible leading
+  // card and dealer grab all derive from this same transform.
+  for (const table of [blackjack, baccarat]) {
+    table.shoeMouth = [
+      table.shoePos[0] + Math.sin(table.shoeYaw) * 0.215,
+      table.feltY + 0.028,
+      table.shoePos[2] + Math.cos(table.shoeYaw) * 0.215,
+    ];
+  }
 
   // ---------- uth (ellipse felt rx 1.504 / rz 0.846, FELT_Y 0.82)
   const uth = {

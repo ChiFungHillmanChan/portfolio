@@ -3,12 +3,83 @@
   C.floor = C.floor || {};
   C.floor.tables = C.floor.tables || {};
 
-  // Baccarat ellipse table (ported from the v1 room, demo round stripped).
+  // Six-position baccarat table with an open dealer bay.
   // Group origin = table center at floor level; +Z = seats/aisle side.
-  const RAIL_H = 0.8, FELT_Y = 0.82;
+  const FELT_Y = 0.82;
   const RAIL_RX = 1.8, RAIL_RZ = 0.85, FELT_FRAC = 0.94;
   const FELT_RX = RAIL_RX * FELT_FRAC, FELT_RZ = RAIL_RZ * FELT_FRAC;
   const SEAT_RX = 2.15, SEAT_RZ = 1.3;
+  const DEALER_EDGE_Z = -0.57, APRON_EDGE_Z = -0.50, NOTCH_HALF = 0.38, NOTCH_JOIN = 0.48;
+
+  // The dealer bay is cut through every tabletop layer. Shape coordinates
+  // are (x, -z), ready for rotation onto the horizontal table plane.
+  function tableContour(rx, rz, dealerEdgeZ = DEALER_EDGE_Z) {
+    const start = -Math.acos(NOTCH_JOIN / rx), end = Math.PI - start;
+    const points = [];
+    for (let i = 0; i <= 96; i++) {
+      const angle = start + (end - start) * i / 96;
+      points.push(new THREE.Vector2(rx * Math.cos(angle), -rz * Math.sin(angle)));
+    }
+    const rear = -rz * Math.sqrt(1 - (NOTCH_JOIN / rx) ** 2);
+    const corner = (a, b, c, d) => {
+      for (let i = 1; i <= 8; i++) {
+        const t = i / 8, u = 1 - t;
+        points.push(new THREE.Vector2(
+          u ** 3 * a[0] + 3 * u * u * t * b[0] + 3 * u * t * t * c[0] + t ** 3 * d[0],
+          -(u ** 3 * a[1] + 3 * u * u * t * b[1] + 3 * u * t * t * c[1] + t ** 3 * d[1]),
+        ));
+      }
+    };
+    corner([-NOTCH_JOIN, rear], [-0.45, rear + 0.02], [-0.46, dealerEdgeZ], [-NOTCH_HALF, dealerEdgeZ]);
+    points.push(new THREE.Vector2(NOTCH_HALF, -dealerEdgeZ));
+    corner([NOTCH_HALF, dealerEdgeZ], [0.46, dealerEdgeZ], [0.45, rear + 0.02], [NOTCH_JOIN, rear]);
+    return points;
+  }
+
+  function surfaceShape(points) {
+    const shape = new THREE.Shape(points);
+    shape.closePath();
+    return shape;
+  }
+
+  function contourPath(points, y) {
+    const path = new THREE.CurvePath();
+    points.forEach((point, i) => {
+      const next = points[(i + 1) % points.length];
+      path.add(new THREE.LineCurve3(new THREE.Vector3(point.x, y, -point.y), new THREE.Vector3(next.x, y, -next.y)));
+    });
+    return path;
+  }
+
+  // An upholstered ring, rather than a scaled ellipse laid over the felt.
+  // Its width and crown taper to zero where both contours meet the dealer
+  // bay, preserving the measured hip clearance across the entire cutout.
+  function paddedRailGeometry(inner, outer) {
+    const vertices = [], indices = [], divisions = 8;
+    for (let i = 0; i < inner.length; i++) {
+      const width = inner[i].distanceTo(outer[i]);
+      for (let j = 0; j <= divisions; j++) {
+        const t = j / divisions;
+        vertices.push(
+          THREE.MathUtils.lerp(inner[i].x, outer[i].x, t),
+          FELT_Y + 0.002 + Math.sin(t * Math.PI) * 0.024 * Math.min(1, width / 0.045),
+          -THREE.MathUtils.lerp(inner[i].y, outer[i].y, t),
+        );
+      }
+    }
+    for (let i = 0; i < inner.length; i++) {
+      for (let j = 0; j < divisions; j++) {
+        const a = i * (divisions + 1) + j;
+        const b = ((i + 1) % inner.length) * (divisions + 1) + j;
+        indices.push(a, b, a + 1, b, b + 1, a + 1);
+      }
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+    geometry.setIndex(indices);
+    geometry.computeVertexNormals();
+    return geometry;
+  }
 
   const CJK = "'PingFang TC','Microsoft JhengHei','Noto Sans TC',sans-serif";
 
@@ -29,30 +100,38 @@
 
     feltTexture = C.assets.canvasTexture(W, H, (ctx) => {
       const R = C.assets.roundRect;
-      ctx.fillStyle = '#0b5d3b';
+      const PLAYER = '#eee1b8', BANKER = '#e99c91', TIE = '#b0ceb9';
+      ctx.fillStyle = '#074532';
       ctx.fillRect(0, 0, W, H);
+      // A low-contrast woven nap remains quiet under chips and card faces.
+      ctx.fillStyle = 'rgba(225,240,220,.025)';
+      for (let y = 0; y < H; y += 4) ctx.fillRect(0, y, W, 1);
+      ctx.fillStyle = 'rgba(0,15,8,.025)';
+      for (let x = 0; x < W; x += 4) ctx.fillRect(x, 0, 1, H);
 
-      // gold border ring
-      ctx.strokeStyle = 'rgba(240,216,120,.7)'; ctx.lineWidth = 8;
-      ctx.beginPath(); ctx.ellipse(cx, cy, W / 2 - 14, H / 2 - 14, 0, 0, Math.PI * 2); ctx.stroke();
+      // One restrained perimeter rule replaces the heavy double border.
+      ctx.strokeStyle = 'rgba(230,214,171,.55)'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(cx, cy, W / 2 - 22, H / 2 - 22, 0, 0, Math.PI * 2); ctx.stroke();
 
-      // dealer strip: outline where the physical chip rack sits
-      ctx.strokeStyle = 'rgba(240,216,120,.5)'; ctx.lineWidth = 4;
-      R(ctx, px(-0.42), py(-0.66), px(0.42) - px(-0.42), py(-0.38) - py(-0.66), 14); ctx.stroke();
-
-      // card-dealing area: 閒 PLAYER (left, yellow) | 庄 BANKER (right, red)
-      const cardBox = (x0, x1, color, label) => {
-        ctx.strokeStyle = color; ctx.lineWidth = 5;
-        R(ctx, px(x0), py(-0.30), px(x1) - px(x0), py(0.02) - py(-0.30), 16); ctx.stroke();
+      // Card receiving areas are the same world-space rectangles used by
+      // the deal layout. No individual dashed card guides compete with a hand.
+      const cardBox = ({ x0, x1, z0, z1, titleZ }, color, label) => {
+        ctx.fillStyle = 'rgba(235,230,205,.025)';
+        R(ctx, px(x0), py(z0), px(x1) - px(x0), py(z1) - py(z0), 12); ctx.fill();
+        ctx.strokeStyle = color; ctx.lineWidth = 2;
+        ctx.stroke();
         ctx.fillStyle = color;
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.font = `bold 34px ${CJK}`;
-        ctx.fillText(label, (px(x0) + px(x1)) / 2, py(-0.25));
+        ctx.font = `600 31px ${CJK}`;
+        ctx.fillText(label, (px(x0) + px(x1)) / 2, py(titleZ));
       };
-      cardBox(-0.78, -0.16, '#f0d878', '閒 PLAYER');
-      cardBox(0.16, 0.78, '#e05555', '庄 BANKER');
-      ctx.strokeStyle = 'rgba(240,216,120,.8)'; ctx.lineWidth = 4;
-      ctx.beginPath(); ctx.moveTo(cx, py(-0.30)); ctx.lineTo(cx, py(0.02)); ctx.stroke();
+      cardBox(L.cardAreas.player, PLAYER, '閒 PLAYER');
+      cardBox(L.cardAreas.banker, BANKER, '莊 BANKER');
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#c7bc94'; ctx.font = '30px Georgia, serif';
+      ctx.fillText('BACCARAT', cx, py(0.10));
+      ctx.fillStyle = 'rgba(220,220,194,.8)'; ctx.font = '17px Georgia, serif';
+      ctx.fillText('BANKER WINS PAY 19 TO 20', cx, py(0.18));
 
       // rotated text helper: upright for a viewer at that seat
       const arcText = (text, f, deg, font, fill) => {
@@ -71,56 +150,35 @@
         ctx.closePath();
       };
 
-      // commission boxes 1..6 (dealer tracks 5% commission per seat)
-      L.seatAngles.forEach((deg, i) => {
-        const [bx, by] = pt(0.30, deg);
-        ctx.save(); ctx.translate(bx, by); ctx.rotate(((deg - 90) * Math.PI) / 180);
-        ctx.strokeStyle = 'rgba(255,255,255,.75)'; ctx.lineWidth = 3;
-        R(ctx, -30, -24, 60, 48, 8); ctx.stroke();
-        ctx.fillStyle = 'rgba(255,255,255,.85)';
-        ctx.font = 'bold 30px Georgia, serif';
-        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-        ctx.fillText(String(i + 1), 0, 0);
-        ctx.restore();
-      });
-
-      // radial sector dividers
-      ctx.strokeStyle = 'rgba(255,255,255,.5)'; ctx.lineWidth = 3;
-      for (let i = 0; i <= 6; i++) {
+      // Short dividers separate each seat without carving up the entire felt.
+      ctx.strokeStyle = 'rgba(225,215,177,.26)'; ctx.lineWidth = 2;
+      for (let i = 1; i < L.seatAngles.length; i++) {
         const deg = 15 + i * 25;
-        const [x0, y0] = pt(0.40, deg), [x1, y1] = pt(0.90, deg);
+        const [x0, y0] = pt(0.58, deg), [x1, y1] = pt(0.91, deg);
         ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
       }
 
-      // per-seat betting arcs: TIE(+pairs) inner, BANKER middle, PLAYER outer
+      // Only the three supported wagers are printed. Their centres stay
+      // registered to seatSpot(), so bets land inside the corresponding band.
       L.seatAngles.forEach((deg, i) => {
-        // TIE box (wide, with the odds stacked inside it)
-        ctx.strokeStyle = '#59d98e'; ctx.lineWidth = 4;
-        bandPath(0.41, 0.505, deg - 8, deg + 8); ctx.stroke();
-        arcText('和 TIE', 0.478, deg, `bold 20px ${CJK}`, '#59d98e');
-        arcText('8:1', 0.432, deg, 'bold 15px Georgia, serif', 'rgba(89,217,142,.9)');
-        // pair circles side by side BELOW the tie box, well inside the
-        // sector — flanking the box angularly made neighbouring sectors'
-        // circles overlap each other and the dividers on the ellipse sides.
-        [['庄對', '#e05555', -4.5], ['閒對', '#f0d878', 4.5]].forEach(([t, col, da]) => {
-          const [ox, oy] = pt(0.55, deg + da);
-          ctx.strokeStyle = col; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.arc(ox, oy, 17, 0, Math.PI * 2); ctx.stroke();
-          ctx.fillStyle = col;
-          ctx.font = `bold 13px ${CJK}`;
-          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-          ctx.fillText(t, ox, oy);
-        });
-        // BANKER arc
-        ctx.strokeStyle = '#e05555'; ctx.lineWidth = 4;
-        bandPath(0.60, 0.72, deg - 11, deg + 11); ctx.stroke();
-        arcText('庄 BANKER', 0.66, deg, `bold 30px ${CJK}`, '#e05555');
-        // PLAYER arc
-        ctx.strokeStyle = '#f0d878'; ctx.lineWidth = 4;
-        bandPath(0.75, 0.87, deg - 11, deg + 11); ctx.stroke();
-        arcText('閒 PLAYER', 0.81, deg, `bold 30px ${CJK}`, '#f0d878');
-        // seat number at the rim
-        arcText(String(i + 1), 0.93, deg, 'bold 44px Georgia, serif', 'rgba(255,255,255,.9)');
+        ctx.strokeStyle = TIE; ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(180,207,184,.04)';
+        bandPath(0.405, 0.525, deg - 8.5, deg + 8.5); ctx.fill(); ctx.stroke();
+        arcText('和 TIE', 0.453, deg, `600 23px ${CJK}`, TIE);
+        arcText('8 TO 1', 0.498, deg, '15px Georgia, serif', TIE);
+
+        ctx.strokeStyle = BANKER; ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(175,66,63,.08)';
+        bandPath(0.575, 0.735, deg - 11, deg + 11); ctx.fill(); ctx.stroke();
+        arcText('莊 BANKER', 0.635, deg, `600 28px ${CJK}`, BANKER);
+        arcText('19 TO 20', 0.699, deg, '15px Georgia, serif', BANKER);
+
+        ctx.strokeStyle = PLAYER; ctx.lineWidth = 2;
+        ctx.fillStyle = 'rgba(235,222,177,.045)';
+        bandPath(0.765, 0.9, deg - 11, deg + 11); ctx.fill(); ctx.stroke();
+        arcText('閒 PLAYER', 0.81, deg, `600 28px ${CJK}`, PLAYER);
+        arcText('1 TO 1', 0.869, deg, '15px Georgia, serif', PLAYER);
+        arcText(String(i + 1), 0.943, deg, '27px Georgia, serif', 'rgba(231,223,198,.8)');
       });
     });
     return feltTexture;
@@ -130,14 +188,14 @@
   function makeChipRack() {
     const g = new THREE.Group();
     const tray = new THREE.Mesh(
-      new THREE.BoxGeometry(0.72, 0.045, 0.26),
+      new THREE.BoxGeometry(0.72, 0.045, 0.16),
       new THREE.MeshStandardMaterial({ color: '#1a120b', roughness: 0.45, metalness: 0.25 }),
     );
     tray.position.y = 0.0225;
     tray.castShadow = true; tray.receiveShadow = true;
     g.add(tray);
     for (let i = 0; i <= 8; i++) {
-      const div = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.052, 0.26), C.assets.goldMaterial());
+      const div = new THREE.Mesh(new THREE.BoxGeometry(0.008, 0.052, 0.16), C.assets.goldMaterial());
       div.position.set(-0.36 + i * 0.09, 0.028, 0);
       g.add(div);
     }
@@ -146,26 +204,6 @@
       stack.position.set(-0.315 + i * 0.09, 0.048, 0);
       g.add(stack);
     });
-    return g;
-  }
-
-  // discard holder: shallow tray with a few face-down cards
-  function makeDiscardTray() {
-    const g = new THREE.Group();
-    const tray = new THREE.Mesh(
-      new THREE.BoxGeometry(0.24, 0.03, 0.3),
-      new THREE.MeshStandardMaterial({ color: '#14100c', roughness: 0.5, metalness: 0.2 }),
-    );
-    tray.position.y = 0.015;
-    tray.castShadow = true;
-    g.add(tray);
-    for (let i = 0; i < 3; i++) {
-      const card = C.cards.makeCard(null);
-      card.rotation.x = -Math.PI / 2;
-      card.rotation.z = (Math.random() - 0.5) * 0.3;
-      card.position.set(0, 0.033 + i * 0.002, 0);
-      g.add(card);
-    }
     return g;
   }
 
@@ -456,58 +494,83 @@
     const L = C.layouts.baccarat;
     const g = new THREE.Group();
 
-    // elliptical rail: unit cylinder scaled (v1 technique)
-    const rail = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, RAIL_H, 56), A.woodMaterial('#3a2214'));
-    rail.scale.set(RAIL_RX, 1, RAIL_RZ);
-    rail.position.y = RAIL_H / 2;
-    rail.castShadow = true; rail.receiveShadow = true;
-    g.add(rail);
+    // A shallow wooden apron on two pedestals leaves knee/toe space below
+    // the dealer cutout instead of filling the ellipse down to the floor.
+    const outerContour = tableContour(RAIL_RX, RAIL_RZ);
+    const apronContour = tableContour(RAIL_RX, RAIL_RZ, APRON_EDGE_Z);
+    const apron = new THREE.Mesh(new THREE.ExtrudeGeometry(surfaceShape(apronContour), {
+      depth: 0.166, bevelEnabled: false, steps: 1,
+    }), A.woodMaterial('#2c201a'));
+    apron.name = 'baccarat-apron';
+    apron.rotation.x = -Math.PI / 2; apron.position.y = 0.64;
+    apron.castShadow = true; apron.receiveShadow = true; g.add(apron);
+    // The deeper knee recess leaves a short supported overhang at the
+    // dealer edge. Its top plate clears the largest dealer's hip envelope.
+    const topPlate = new THREE.Mesh(new THREE.ExtrudeGeometry(surfaceShape(outerContour), {
+      depth: 0.014, bevelEnabled: false, steps: 1,
+    }), A.woodMaterial('#2c201a'));
+    topPlate.name = 'baccarat-top-plate';
+    topPlate.rotation.x = -Math.PI / 2; topPlate.position.y = 0.806;
+    topPlate.castShadow = true; topPlate.receiveShadow = true; g.add(topPlate);
+    const brass = new THREE.MeshStandardMaterial({ color: '#9d8254', roughness: 0.46, metalness: 0.72 });
+    const apronTrim = new THREE.Mesh(new THREE.TubeGeometry(contourPath(apronContour, 0.675), 192, 0.003, 6, true), brass);
+    apronTrim.name = 'baccarat-apron-trim'; g.add(apronTrim);
+    [-0.75, 0.75].forEach((x) => {
+      const support = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.27, 0.60, 32), A.woodMaterial('#2a180f'));
+      support.position.set(x, 0.34, 0.12);
+      support.castShadow = true; support.receiveShadow = true; g.add(support);
+      const foot = new THREE.Mesh(new THREE.CylinderGeometry(0.30, 0.32, 0.045, 32), A.woodMaterial('#24160e'));
+      foot.position.set(x, 0.0225, 0.12);
+      foot.castShadow = true; foot.receiveShadow = true; g.add(foot);
+    });
 
-    // felt ellipse (unit circle scaled; UVs stay the unit-circle mapping)
+    // Explicit ellipse-based UVs preserve every printed bet/card position.
+    // ShapeGeometry's default bounding-box UVs would shift the whole layout
+    // when the dealer notch changes the polygon's rear extent.
+    const innerContour = tableContour(FELT_RX, FELT_RZ);
+    const feltGeometry = new THREE.ShapeGeometry(surfaceShape(innerContour));
+    const positions = feltGeometry.attributes.position, uv = feltGeometry.attributes.uv;
+    for (let i = 0; i < positions.count; i++) {
+      uv.setXY(i, 0.5 + positions.getX(i) / (2 * FELT_RX), 0.5 + positions.getY(i) / (2 * FELT_RZ));
+    }
     const felt = new THREE.Mesh(
-      new THREE.CircleGeometry(1, 64),
-      new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: 0.9 }),
+      feltGeometry,
+      new THREE.MeshStandardMaterial({ map: makeFeltTexture(), roughness: 1, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }),
     );
+    felt.name = 'baccarat-felt';
     felt.rotation.x = -Math.PI / 2;
-    felt.scale.set(FELT_RX, FELT_RZ, 1);
     felt.position.y = FELT_Y;
     felt.receiveShadow = true;
     g.add(felt);
+
+    const leather = new THREE.MeshStandardMaterial({ color: '#241b19', roughness: 0.82 });
+    const armRail = new THREE.Mesh(paddedRailGeometry(innerContour, outerContour), leather);
+    armRail.name = 'baccarat-arm-rail'; armRail.castShadow = true; armRail.receiveShadow = true; g.add(armRail);
+
+    // Piping finishes the outer seam and the dealer cutout. At the bay its
+    // 15 mm radius stays behind the dealer's measured torso envelope.
+    const edge = new THREE.Mesh(new THREE.TubeGeometry(contourPath(outerContour, FELT_Y + 0.004), 192, 0.015, 8, true), leather);
+    edge.name = 'baccarat-edge'; edge.castShadow = true; edge.receiveShadow = true; g.add(edge);
+    const seamContour = innerContour.map((point, i) => point.clone().lerp(outerContour[i], 0.18));
+    const seam = new THREE.Mesh(new THREE.TubeGeometry(contourPath(seamContour, FELT_Y + 0.016), 192, 0.0008, 4, true),
+      new THREE.MeshStandardMaterial({ color: '#8a7761', roughness: 1 }));
+    seam.name = 'baccarat-rail-seam'; g.add(seam);
 
     // fresh shoe: the board starts empty (新靴 NEW SHOE) and only fills with
     // rounds the ambient show actually deals in front of the player
     const rounds = [];
 
-    // card-dealing area: printed boxes only — cards appear when the show deals
-    [L.playerSlots, L.bankerSlots].forEach((slots) => {
-      slots.forEach((slot, idx) => {
-        const box = C.cards.makeCardBoxDecal({ sideways: idx === 2 });
-        box.position.set(slot[0], FELT_Y + 0.004, slot[2]);
-        g.add(box);
-      });
-    });
-
-    // shoe
-    const shoeGroup = new THREE.Group();
-    const shoeBody = new THREE.Mesh(
-      new THREE.BoxGeometry(0.32, 0.16, 0.22),
-      new THREE.MeshStandardMaterial({ color: '#111', roughness: 0.4, metalness: 0.3 }),
-    );
-    shoeBody.rotation.x = -0.35;
-    shoeBody.castShadow = true;
-    shoeGroup.add(shoeBody);
-    const shoeTrim = new THREE.Mesh(new THREE.BoxGeometry(0.34, 0.02, 0.24), A.goldMaterial());
-    shoeTrim.rotation.x = -0.35;
-    shoeTrim.position.y = 0.09;
-    shoeGroup.add(shoeTrim);
-    shoeGroup.position.set(L.shoePos[0], FELT_Y, L.shoePos[2]);
+    const shoeGroup = C.cards.makeShoe();
+    shoeGroup.position.set(...L.shoePos);
+    shoeGroup.rotation.y = L.shoeYaw;
     g.add(shoeGroup);
 
     // dealer strip props
     const rack = makeChipRack();
+    rack.name = 'baccarat-chip-rack';
     rack.position.set(L.rackPos[0], FELT_Y, L.rackPos[2]);
     g.add(rack);
-    const discard = makeDiscardTray();
+    const discard = C.cards.makeDiscardTray();
     discard.position.set(L.discardPos[0], FELT_Y, L.discardPos[2]);
     g.add(discard);
 
@@ -522,10 +585,11 @@
 
     let dealerRig = null;
     if (opts.withDealer) {
-      // east pit-lane entry (matches the old local -x direction on this
-      // rotated south row), kept short of the 4.4m neighbour spacing
-      const dealer = A.makeDealer({ seed: opts.dealerSeed, walkIn: [2.6, 0] });
-      dealer.position.set(0, 0, -1.25);
+      // Baccarat rounds begin while the player is still approaching. Keep
+      // the dealer at the post so a proximity-triggered entrance cannot
+      // relocate the body in the middle of a shoe pickup or card release.
+      const dealer = A.makeDealer({ seed: opts.dealerSeed });
+      dealer.position.set(0, 0, -0.74);
       g.add(dealer);
       dealer.userData.idle(C.app);
       dealerRig = dealer.userData.rig;
