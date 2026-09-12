@@ -26,12 +26,12 @@ Visit the live website: [Hillman Chan Portfolio](http://hillmanchan.com/)
 - **About Me** - Personal section that shares my background and interests
 - **Interactive UI** - Dynamic and engaging user interface elements
 - **SEO Friendly** - Optimized for search engines
-- **Subdomain-routed games** - Ten playable apps served from one React build,
+- **Subdomain-routed games** - Eleven playable apps served from one React build,
   each on its own subdomain (see below)
 
 ## Games and Interactive Demos
 
-Ten standalone apps live in `portfolio/src/game/`. They share one React build:
+Eleven standalone apps live in `portfolio/src/game/`. They share one React build:
 `App.js` maps a hostname to a game component, so each is reachable both at
 `<slug>.hillmanchan.com` and at `hillmanchan.com/<slug>` in development.
 
@@ -42,6 +42,7 @@ Ten standalone apps live in `portfolio/src/game/`. They share one React build:
 | **Prompt Hunter** | Multilingual AI game — players write creative prompts and use character abilities to defeat monsters | `prompt-hunter` |
 | **System Design** | Interactive learning platform covering 28 topics, from load balancers and caches to payment systems and AI agent security, with inline SVG architecture diagrams | `system-design` |
 | **Card Drawer** | Pass-and-play card dealer and poker scorepad for 2–10 players, hand-drawn SVG cards, optional jokers, automatic hand ranking | `card-drawer` |
+| **Rubik’s Cube Practice** | Full CFOP chapters, 119 cases, 95 alternative algorithms, six-face color entry, a shortest Cross solver and move-by-move case practice. The custom domain is deployed independently through Cloudflare Workers Static Assets | `rubiks-cube-practice` |
 | **打小人 Da Siu Yan** | Online 打小人 ritual — enter a name or upload a photo, then hit the paper effigy with a slipper while the incantation plays. Records the one-minute ritual as a 9:16 video to save or share | `da-siu-yan` |
 | **小氣簿 Siu Hei Bou** | Cantonese grudge notebook rendered as a real book — log what friends did to annoy you, collect 嬲爆印, and once the card is full send them a public 找數卡 demanding dinner. Works fully offline: the book reads and writes with no signal, entries appear in pencil until they sync. Cloudflare Worker + D1 backend | `siu-hei-bou` |
 | **Never Have I Ever** | Multilingual party card game with dynamic prompts, custom questions and language selection | `card-game` |

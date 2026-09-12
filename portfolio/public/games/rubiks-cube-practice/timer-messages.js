@@ -1,0 +1,15 @@
+export const timerMessages = {
+  'Two-hand timer': '雙手計時器',
+  'No saved times': '不儲存時間紀錄',
+  'Elapsed time': '已用時間',
+  'Hold both pads to get ready': '同時按住兩邊，準備開始',
+  'Hold both pads until green. Release to start. Touch both to stop.': '同時按住兩邊，直至綠燈亮起。放手開始計時；再次同時觸碰兩邊即可停止。',
+  'Left hand': '左手',
+  'Right hand': '右手',
+  'Hold both again to reset and start another solve.': '再次按住兩邊即可重設，放手開始下一次練習。',
+  'Desktop: hold A + L, then release to start.': '電腦：同時按住 A 及 L 鍵，放開即可開始。',
+  'Solving… touch both pads to stop': '計時中⋯同時觸碰兩邊即可停止',
+  'Ready — release to start': '準備就緒，放手即可開始',
+  'Keep holding both pads…': '請繼續按住兩邊⋯',
+  'Stopped at {time}': '已停止：{time}',
+};

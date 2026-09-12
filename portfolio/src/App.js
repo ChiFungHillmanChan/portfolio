@@ -21,6 +21,7 @@ import MathMemoryGame from './game/math-memory/MathMemoryGame';
 import CardDrawerGame from './game/card-drawer/CardDrawerGame';
 import DaSiuYanGame from './game/da-siu-yan/DaSiuYanGame';
 import SiuHeiBouGame from './game/siu-hei-bou/SiuHeiBouGame';
+import RubiksCubePractice from './game/rubiks-cube-practice/RubiksCubePractice';
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
@@ -33,6 +34,7 @@ const GAME_SUBDOMAIN_COMPONENTS = {
   'card-drawer': CardDrawerGame,
   'da-siu-yan': DaSiuYanGame,
   'siu-hei-bou': SiuHeiBouGame,
+  'rubiks-cube-practice': RubiksCubePractice,
 };
 
 const getGameComponentFromHostname = () => {
@@ -76,6 +78,7 @@ function App() {
         <Route path="/card-drawer" element={<CardDrawerGame />} />
         <Route path="/da-siu-yan" element={<DaSiuYanGame />} />
         <Route path="/siu-hei-bou/*" element={<SiuHeiBouGame />} />
+        <Route path="/rubiks-cube-practice" element={<RubiksCubePractice />} />
 
         {/* Your existing routes with Layout */}
         <Route element={<Layout />}>

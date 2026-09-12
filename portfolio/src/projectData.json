@@ -171,6 +171,26 @@
         ]
     },
     {
+        "id": 23,
+        "title": "Rubik’s Cube Practice",
+        "shortDescription": "An interactive Rubik’s Cube trainer with 119 CFOP cases, animated move-by-move playback, and guided lessons in English and Traditional Chinese.",
+        "fullDescription": "Rubik’s Cube Practice is a browser-based learning and practice game for the CFOP method: Cross, First Two Layers, Orientation of the Last Layer, and Permutation of the Last Layer. Guided chapters explain each stage, while a searchable library brings together 41 F2L, 57 OLL, and 21 PLL cases. An interactive cube animates each algorithm with adjustable playback speed, forward and backward stepping, and front and back views so learners can follow every turn. Players can enter their own sticker colours, practise individual cases, and mark algorithms as learned, with progress saved on their device. The interface supports English and Traditional Chinese and runs directly in the browser.",
+        "image": "rubiks_cube_practice.jpg",
+        "url": "https://rubiks-cube-practice.hillmanchan.com/",
+        "category": "game",
+        "sourceCode": "no-source-code",
+        "demoUrl": "/rubiks-cube-practice",
+        "liveDemo": "no-demo",
+        "technologies": [
+            "JavaScript",
+            "HTML5",
+            "CSS",
+            "SVG",
+            "Web Workers",
+            "i18n"
+        ]
+    },
+    {
         "id": 14,
         "title": "Connect 4 — You vs Machine",
         "shortDescription": "An unbeatable Connect 4 implementation. Bitboard negamax with α-β pruning, transposition tables, and an opening book derived from the solved-game literature — guaranteed win when the machine moves first.",

@@ -1,0 +1,14 @@
+{
+  "name": "rubiks-cube-practice",
+  "account_id": "7d2747f6cc21c13e70c7650314efbccc",
+  "compatibility_date": "2026-09-12",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "rubiks-cube-practice.hillmanchan.com", "custom_domain": true }
+  ],
+  "assets": {
+    "directory": "../../../portfolio/public/games/rubiks-cube-practice",
+    "not_found_handling": "none"
+  }
+}

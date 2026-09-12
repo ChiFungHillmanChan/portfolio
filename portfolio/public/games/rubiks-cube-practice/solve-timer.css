@@ -1,0 +1,42 @@
+.solve-timer { max-width: 800px; margin: 0 auto; padding: 25px clamp(18px, 4vw, 42px) 28px; }
+.solve-timer-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.solve-timer-heading h1 { font-size: 16px; color: #52647e; letter-spacing: -.3px; }
+.solve-timer-heading > span { font-size: 11px; color: #8995a7; text-align: right; }
+.solve-timer-readout { display: flex; flex-direction: column; align-items: center; padding: 32px 0 22px; }
+.solve-timer-light { width: 10px; height: 10px; border-radius: 50%; background: #a7b1c2; box-shadow: 0 0 0 5px #f0f3f8; margin-bottom: 17px; }
+.solve-timer-readout output { display: block; max-width: 100%; color: #293c5b; font-size: clamp(40px, 8vw, 80px); font-weight: 600; line-height: 1.1; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
+.solve-timer-readout > p { min-height: 1.5em; font-size: 13px; color: #71829b; line-height: 1.5; text-align: center; margin-top: 15px; }
+.solve-timer-instructions { max-width: 520px; margin: 0 auto; font-size: 13px; line-height: 1.8; text-align: center; color: #738299; }
+.solve-timer-pads { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(18px, 6vw, 72px); margin: 25px 0 18px; }
+.solve-timer-pad { min-height: 132px; padding: 16px 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #607da8; background: #f1f5fc; border: 2px solid #dce6f5; border-radius: 16px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.solve-timer-pad > span { font-size: 14px; font-weight: 650; }
+.solve-timer-pad kbd { border: 1px solid #d1dcec; border-radius: 4px; min-width: 22px; padding: 1px 4px; font: 11px 'DM Sans', sans-serif; background: #fff9; color: inherit; }
+.solve-timer-pad[aria-pressed="true"] { border-color: #9cb6e4; background: #e4edff; color: #3159a9; }
+.solve-timer[data-phase="holding"] .solve-timer-light { background: #dfad34; box-shadow: 0 0 0 5px #fff6df; }
+.solve-timer[data-phase="ready"] .solve-timer-light { background: #22a67a; box-shadow: 0 0 0 5px #e6f7ef; }
+.solve-timer[data-phase="ready"] .solve-timer-pad { background: #e4f6ec; border-color: #4aaf87; color: #24785c; }
+.solve-timer[data-phase="ready"] .solve-timer-readout output, .solve-timer[data-phase="ready"] [data-timer-status] { color: #23855e; }
+.solve-timer[data-phase="running"] .solve-timer-light { background: #5275e6; box-shadow: 0 0 0 5px #edf2ff; }
+.solve-timer[data-phase="stopped"] .solve-timer-light { background: #e87969; box-shadow: 0 0 0 5px #fff0ed; }
+.solve-timer-restart, .solve-timer-keyboard { text-align: center; color: #8592a6; font-size: 12px; line-height: 1.7; }
+.solve-timer-keyboard { font-size: 11px; margin-top: 7px; color: #98a3b4; }
+@media (max-width: 480px) {
+  .solve-timer { padding: 19px 15px 22px; }
+  .solve-timer-heading { align-items: flex-start; }
+  .solve-timer-heading h1 { font-size: 14px; }
+  .solve-timer-heading > span { font-size: 10px; }
+  .solve-timer-readout { padding: 29px 0 21px; }
+  .solve-timer-readout output { font-size: clamp(36px, 11vw, 54px); letter-spacing: -1px; }
+  .solve-timer-instructions { font-size: 12px; }
+  .solve-timer-pads { gap: 20px; margin-top: 20px; }
+  .solve-timer-pad { min-height: 115px; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .solve-timer { padding-top: 16px; padding-bottom: 16px; }
+  .solve-timer-readout { padding: 18px 0 12px; }
+  .solve-timer-readout output { font-size: 44px; }
+  .solve-timer-light { margin-bottom: 12px; }
+  .solve-timer-readout > p { margin-top: 9px; }
+  .solve-timer-pads { margin: 15px 0 10px; }
+  .solve-timer-pad { min-height: 84px; flex-direction: row; gap: 10px; }
+}
