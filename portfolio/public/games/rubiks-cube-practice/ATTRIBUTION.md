@@ -23,6 +23,14 @@ The above copyright notice and this permission notice shall be included in all c
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+## Full-cube solver
+
+The “I just want to solve it / 我唔想學呀” mode uses [cubejs 1.3.2](https://github.com/ldez/cubejs), an implementation of [Herbert Kociemba’s two-phase algorithm](https://kociemba.org/math/imptwophase.htm). It computes a short full-cube solution rather than a sequence of CFOP lessons; it does not promise the shortest possible solution.
+
+The two solver source files are self-hosted with their [MIT license](./vendor/cubejs/LICENSE). Copyright 2013–2017 Petri Lehtinen and 2018 Ludovic Fernandez. The pinned release, package integrity, original file hashes, and minimal module-worker compatibility change are documented in the [vendor provenance](./vendor/cubejs/README.md).
+
+Sticker validation and replay verification use this app’s independent cube engine. Input, photos, lookup tables, and solving stay on the user’s device.
+
 ## Teaching references
 
 - J Perm CFOP overview: https://jperm.net/3x3/cfop

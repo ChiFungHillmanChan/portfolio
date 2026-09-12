@@ -34,3 +34,8 @@
   .topbar-right { gap: 6px; }
   .topbar #language-select { max-width: 116px; }
 }
+
+@media (max-width: 380px) {
+  .topbar .notation-link { min-width: 44px; min-height: 44px; }
+  .topbar .notation-link > span { display: none; }
+}

@@ -9,6 +9,9 @@ import { createCubeRenderer } from './cube-renderer.js';
 import { createPlayback, SPEEDS } from './playback.js';
 import { createSolveTimer, timerView, mountSolveTimer } from './solve-timer.js';
 import { mobileNavTrigger, createMobileNav } from './mobile-nav.js';
+import { typedCubeInput, fullSolutionPanel } from './full-solve-view.js';
+import { parseCubeText } from './full-solve-input.js';
+import { createFullSolver } from './full-solver-client.js';
 
 initializeLocale();
 let stages = getLocale() === 'zh-HK' ? chineseStages : englishStages;
@@ -35,6 +38,7 @@ const icon = (name, size = 20) => {
     pause: '<path d="M8 5v14M16 5v14"/>',
     timer: '<circle cx="12" cy="14" r="8"/><path d="M9 2h6m-3 4V2m0 7v5l3 2m4-10 2 2"/>',
     camera: '<path d="M3 7h4l2-3h6l2 3h4v13H3Z"/><circle cx="12" cy="13" r="4"/>',
+    coffee: '<path d="M4 8h14v6a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4Z"/><path d="M18 10h2a2 2 0 0 1 0 4h-2M7 2v3m4-3v3m4-3v3"/>',
   };
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[name] || paths.arrow}</svg>`;
 };
@@ -49,12 +53,26 @@ const state = {
   view: 'front', caseLimit: 12,
   query: '', group: 'all', filter: 'all', error: '', notice: '', busy: false,
   photoFaces: [], referenceColors: {}, photoScope: null,
+  cubeText: '', solverStatus: 'ready',
   learned: new Set(Array.isArray(saved.learned) ? saved.learned : []),
   completed: new Set(Array.isArray(saved.completed) ? saved.completed : []),
 };
 let cases = [], crossWorker, renderer, renderInProgress = false, sequenceCube, sequenceAlgorithm;
 let sequenceEnd = state.cube;
 let photoCapture = null, photoRequest = 0;
+let fullSolveRequest = 0, practiceWorkspace = null, fullWorkspace = null, restoredStep = null;
+const workspaceKeys = ['stage', 'practiceStage', 'source', 'selected', 'cube', 'scheme', 'paint', 'slot', 'result', 'step', 'hide', 'view', 'photoFaces', 'referenceColors', 'photoScope', 'cubeText', 'error', 'notice'];
+const saveWorkspace = () => Object.fromEntries(workspaceKeys.map(key => [key, state[key]]));
+function restoreWorkspace(workspace) {
+  Object.assign(state, workspace);
+  restoredStep = state.step;
+}
+const fullSolver = createFullSolver({ onStatus: status => {
+  state.solverStatus = status;
+  const message = document.querySelector('.solver-status');
+  if (message && state.busy) message.textContent = t(status === 'initializing'
+    ? 'Preparing the solver for the first solve… This can take a few seconds.' : 'Searching for a solution…');
+} });
 const solveTimer = createSolveTimer();
 let timerMount = null, mobileNav = null;
 const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -72,8 +90,11 @@ const playback = createPlayback({
 playback.setSpeed(state.speed);
 reducedMotion.addEventListener('change', (event) => playback.setReducedMotion(event.matches));
 document.addEventListener('visibilitychange', () => { if (document.hidden) playback.pause(); });
-window.addEventListener('pagehide', () => { playback.pause(); timerMount?.destroy(); timerMount = null; solveTimer.cancel(); mobileNav?.close(); });
-window.addEventListener('pageshow', () => { if (state.mode === 'timer' && !timerMount) timerMount = mountSolveTimer(document.querySelector('.solve-timer'), solveTimer); });
+window.addEventListener('pagehide', () => { cancelWork(); timerMount?.destroy(); timerMount = null; solveTimer.cancel(); mobileNav?.close(); });
+window.addEventListener('pageshow', () => {
+  if (state.mode === 'timer' && !timerMount) timerMount = mountSolveTimer(document.querySelector('.solve-timer'), solveTimer);
+  if (state.mode === 'solve') render();
+});
 const previewObserver = new IntersectionObserver((entries) => {
   const preview = document.querySelector('#cube-practice');
   if (entries.some((entry) => entry.target === preview && !entry.isIntersecting)) playback.pause();
@@ -88,6 +109,8 @@ function persist() {
 }
 function cancelWork() {
   playback.pause();
+  fullSolveRequest += 1;
+  fullSolver.cancel();
   crossWorker?.terminate();
   crossWorker = null;
   state.busy = false;
@@ -143,6 +166,7 @@ function sidebar() {
     <a class="brand" href="./index.html">${logo()}<span>${t('rubik’s cube')}<span>${t('practice')}</span></span></a>
     <div class="rail-label">${t('Your CFOP companion')}</div>
     <nav class="mode-nav" aria-label="${t('Learning mode')}">
+      <button data-action="mode" data-value="solve" aria-label="${t('I just want to solve it')}" class="full-solve-nav ${state.mode === 'solve' ? 'active' : ''}" ${state.mode === 'solve' ? 'aria-current="page"' : ''}>${icon('check')}<span>${t('I just want to solve it')}</span></button>
       <button data-action="mode" data-value="practice" aria-label="${t('Practice mode')}" class="${state.mode === 'practice' ? 'active' : ''}" ${state.mode === 'practice' ? 'aria-current="page"' : ''}>${icon('practice')}${t('Practice mode')}</button>
       <button data-action="mode" data-value="algorithms" aria-label="${t('Algorithms')}" class="${state.mode === 'algorithms' ? 'active' : ''}" ${state.mode === 'algorithms' ? 'aria-current="page"' : ''}>${icon('search')}${t('Algorithms')}</button>
       <button data-action="mode" data-value="read" aria-label="${t('Read mode')}" class="${state.mode === 'read' ? 'active' : ''}" ${state.mode === 'read' ? 'aria-current="page"' : ''}>${icon('book')}${t('Read mode')}</button>
@@ -155,7 +179,7 @@ function sidebar() {
   </aside>`;
 }
 function header() {
-  return `<header class="topbar">${mobileNavTrigger()}<div class="breadcrumb">${t('Your workspace')} <span>/</span> <strong>${t({ read: 'Read', practice: 'Practice', algorithms: 'Algorithms', timer: 'Timer' }[state.mode])}</strong></div><div class="topbar-right"><label class="language-picker" for="language-select"><span>Language / 語言</span><select id="language-select" aria-label="Language / 語言"><option value="en" lang="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option><option value="zh-HK" lang="zh-Hant-HK" ${getLocale() === 'zh-HK' ? 'selected' : ''}>繁體中文</option></select></label><span class="local-label">${icon('check', 15)}${t('All 119 CFOP cases')}</span><button class="text-button" data-action="chapter" data-value="N">${t('Move notation')} ${icon('book', 17)}</button></div></header>`;
+  return `<header class="topbar">${mobileNavTrigger()}<div class="breadcrumb">${t('Your workspace')} <span>/</span> <strong>${t({ read: 'Read', practice: 'Practice', algorithms: 'Algorithms', timer: 'Timer', solve: 'I just want to solve it' }[state.mode])}</strong></div><div class="topbar-right"><label class="language-picker" for="language-select"><span>Language / 語言</span><select id="language-select" aria-label="Language / 語言"><option value="en" lang="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option><option value="zh-HK" lang="zh-Hant-HK" ${getLocale() === 'zh-HK' ? 'selected' : ''}>繁體中文</option></select></label><button class="text-button notation-link" data-action="chapter" data-value="N" aria-label="${t('Move notation')}"><span>${t('Move notation')}</span> ${icon('book', 17)}</button><a class="coffee-button" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="${t('Buy me a coffee')}" title="${t('Buy me a coffee')}">${icon('coffee', 20)}<span>${t('Buy me a coffee')}</span></a></div></header>`;
 }
 function stageTabs() {
   return `<nav class="stage-tabs" aria-label="${t('Practice stage')}">${Object.entries(stages).map(([key, stage]) => `<button data-action="stage" data-value="${key}" class="${state.stage === key ? 'active' : ''}" style="--stage-color:${stage.color}" aria-pressed="${state.stage === key}"><span class="stage-letter">${key}</span><span>${stage.short}<small>${key === 'C' ? t('Start here') : key === 'F' ? t('Pair & insert') : key === 'O' ? t('Face the top') : t('Finish the solve')}</small></span>${state.stage === key ? '<span class="stage-active-dot"></span>' : ''}</button>`).join('')}</nav>`;
@@ -183,8 +207,9 @@ function colorEditor() {
   const lastLayer = isLastLayerStage(state.stage);
   const faces = inputFaces(state.stage);
   return `<div class="editor-intro"><h2>${t('Match your cube')}</h2>
-    ${lastLayer ? `<span class="input-scope">${t('Top layer only')}</span><p>${t('For OLL and PLL, enter the top face and the top row of each side. The lower two layers must already be solved.')}</p><p class="scope-detail">${t('The darkened rows are not required and are treated as solved. No bottom face is needed.')}${state.stage === 'P' ? ` ${t('For PLL, the top face must already be one color.')}` : ''}</p>` : `<p>${t('Enter all six faces for Cross and F2L.')}</p>`}
+    ${lastLayer ? `<span class="input-scope">${t('Top layer only')}</span><p>${t('For OLL and PLL, enter the top face and the top row of each side. The lower two layers must already be solved.')}</p><p class="scope-detail">${t('The darkened rows are not required and are treated as solved. No bottom face is needed.')}${state.stage === 'P' ? ` ${t('For PLL, the top face must already be one color.')}` : ''}</p>` : `<p>${t(state.mode === 'solve' ? 'Enter all six faces to solve the whole cube.' : 'Enter all six faces for Cross and F2L.')}</p>`}
     <p>${t('Select a color, then paint the stickers. Tap a center to set a different color scheme.')}</p>${lastLayer ? `<p class="scope-detail">${t('Set your centers before taking photos. A dimmed center can still be tapped to change the color scheme.')}</p>` : ''}</div>
+    ${state.mode === 'solve' ? typedCubeInput(state.cubeText, state.scheme) : ''}
     <section class="photo-entry"><div><button class="primary" data-action="capture">${icon('camera', 19)}${t('Take photos')}</button><span class="photo-progress">${t('{count}/{total} faces added from photos', { count: state.photoFaces.filter((face) => faces.includes(face)).length, total: faces.length })}</span></div><p>${t(lastLayer ? 'Five faces: top, front, right, back and left. No bottom photo.' : 'Six faces: top, front, right, back, left and bottom.')}</p><p>${t('Take one photo of each face, or choose existing photos/screenshots. Review the colors before adding them.')}</p><small>${t('Photos stay on your device. Only the reviewed colors are kept for this practice session.')}</small></section>
     <div class="palette" aria-label="${t('Paint color')}">${engine.FACE_ORDER.map((face) => `<button data-action="color" data-value="${face}" style="--swatch:${colors[state.scheme[face]]}" class="${state.paint === face ? 'active' : ''}" aria-pressed="${state.paint === face}"><i></i><span>${t(state.scheme[face])}</span></button>`).join('')}</div>
     ${cubeNet(state.cube, state.scheme, true, { stage: state.stage, photoFaces: state.photoFaces })}
@@ -195,9 +220,9 @@ function cubePanel() {
   const display = currentDisplay();
   const isEditor = state.source === 'mine' && !state.result;
   return `<section id="cube-practice" class="cube-panel panel ${isEditor ? 'cube-editor' : 'cube-preview'}">
-    <div class="panel-heading"><span class="section-label">${state.source === 'mine' ? t('Your cube') : t('Case preview')}</span><div class="segmented"><button data-action="source" data-value="library" class="${state.source === 'library' ? 'active' : ''}">${t('Case library')}</button><button data-action="source" data-value="mine" class="${isEditor ? 'active' : ''}">${state.result && state.source === 'mine' ? t('Edit colors') : t('Enter colors')}</button></div></div>
-    ${isEditor ? colorEditor() : `<div class="cube-stage"><div class="cube-stage-top"><span class="case-label">${c ? escape(c.name) : t('Cross practice')} <span>${c ? escape(caseTitle(c)) : t('Your next moves')}</span></span><button class="text-button view-toggle" data-action="view" aria-label="${t(state.view === 'front' ? 'Show back view' : 'Show front view')}">${state.view === 'front' ? t('Back view') : t('Front view')}</button></div><canvas class="turn-canvas" width="320" height="300" role="img" aria-label="${t('Animated Rubik’s cube showing top, front and right faces')}">${t('Your browser needs canvas support to show the turning cube.')}</canvas><div class="view-caption">${state.view === 'front' ? t('Viewing top, front and right') : t('Viewing top, back and left · keep your original grip')}</div></div><p class="holding-hint">${holdingText(display)}</p>${state.result ? playbackControls() : ''}`}
-    <div class="cube-actions"><button class="secondary" data-action="${isEditor ? 'analyze' : state.source === 'mine' ? 'edit-cube' : 'random'}" ${state.busy ? 'disabled' : ''}>${icon(isEditor ? 'search' : state.source === 'mine' ? 'reset' : 'shuffle', 17)}${isEditor ? (state.busy ? t('Finding your solution…') : t('Find my algorithm')) : state.source === 'mine' ? t('Edit my cube') : (state.stage === 'C' ? t('New scramble') : t('Another case'))}</button>${state.source === 'library' ? `<button class="text-button" data-action="turn-u">${t('Add a U turn')}</button>` : `<span class="editor-note">${isEditor ? t(isLastLayerStage(state.stage) ? 'Top face + four side rows' : 'Six faces · 54 stickers') : t('Follow the same grip on your cube')}</span>`}</div>
+    <div class="panel-heading"><span class="section-label">${state.source === 'mine' ? t('Your cube') : t('Case preview')}</span>${state.mode === 'solve' ? `<span class="full-solve-size">3 × 3</span>` : `<div class="segmented"><button data-action="source" data-value="library" class="${state.source === 'library' ? 'active' : ''}">${t('Case library')}</button><button data-action="source" data-value="mine" class="${isEditor ? 'active' : ''}">${state.result && state.source === 'mine' ? t('Edit colors') : t('Enter colors')}</button></div>`}</div>
+    ${isEditor ? colorEditor() : `<div class="cube-stage"><div class="cube-stage-top"><span class="case-label">${c ? escape(c.name) : t(state.mode === 'solve' ? 'Full cube solution' : 'Cross practice')} <span>${c ? escape(caseTitle(c)) : t('Your next moves')}</span></span><button class="text-button view-toggle" data-action="view" aria-label="${t(state.view === 'front' ? 'Show back view' : 'Show front view')}">${state.view === 'front' ? t('Back view') : t('Front view')}</button></div><canvas class="turn-canvas" width="320" height="300" role="img" aria-label="${t('Animated Rubik’s cube showing top, front and right faces')}">${t('Your browser needs canvas support to show the turning cube.')}</canvas><div class="view-caption">${state.view === 'front' ? t('Viewing top, front and right') : t('Viewing top, back and left · keep your original grip')}</div></div><p class="holding-hint">${holdingText(display)}</p>${state.result ? playbackControls() : ''}`}
+    <div class="cube-actions"><button class="secondary" data-action="${isEditor ? 'analyze' : state.source === 'mine' ? 'edit-cube' : 'random'}" ${state.busy ? 'disabled' : ''}>${icon(isEditor ? 'search' : state.source === 'mine' ? 'reset' : 'shuffle', 17)}${isEditor ? (state.busy ? t('Finding your solution…') : t(state.mode === 'solve' ? 'Solve my cube' : 'Find my algorithm')) : state.source === 'mine' ? t('Edit my cube') : (state.stage === 'C' ? t('New scramble') : t('Another case'))}</button>${state.source === 'library' ? `<button class="text-button" data-action="turn-u">${t('Add a U turn')}</button>` : `<span class="editor-note">${isEditor ? t(isLastLayerStage(state.stage) ? 'Top face + four side rows' : 'Six faces · 54 stickers') : t('Follow the same grip on your cube')}</span>`}</div>
     ${isEditor ? `<details class="input-guide"><summary>${t('How to hold each face while entering colors')}</summary><p>${t(isLastLayerStage(state.stage) ? 'For the top face, put the {back} side at the top of the grid. For all four side faces, keep the {top} center above the face and view it straight on. Do not mirror the back face.' : 'View every face directly from outside. For Front, Right, Back and Left, keep the {top} center above the face. For Top, the {back} side is at the top of the grid. For Bottom, the {front} side is at the top of the grid. Do not mirror the back face.', { top: t(state.scheme.U), back: t(state.scheme.B), front: t(state.scheme.F) })}</p><p>${t('For a different scheme, choose a palette color and tap a center. This swaps the two center colors throughout the diagram. Set centers before painting individual stickers.')}</p></details>` : ''}
   </section>`;
 }
@@ -227,6 +252,13 @@ function practiceView() {
   <div class="practice-grid">${cubePanel()}${algorithmPanel()}</div>
   ${state.source === 'library' || state.result ? `<details class="all-faces panel"><summary>${t('Inspect all six faces')} ${icon('chevron', 16)}</summary>${cubeNet(currentDisplay(), state.scheme)}</details>` : ''}
   `;
+}
+function fullSolveView() {
+  return `<div class="full-solve-page"><div class="page-title"><div><h1>${t('I just want to solve it')}</h1><p>${t('Enter your cube. Get the moves. Follow the animation.')}</p></div></div>
+    ${state.error ? `<div class="alert error" role="alert"><strong>${t('Check your cube')}</strong><p>${escape(localizeError(state.error))}</p></div>` : ''}
+    ${state.notice ? `<div class="alert notice" role="status">${escape(t(state.notice))}</div>` : ''}
+    <div class="practice-grid">${cubePanel()}${fullSolutionPanel({ result: state.result, busy: state.busy, status: state.solverStatus })}</div>
+    ${state.result ? `<details class="all-faces panel"><summary>${t('Inspect all six faces')} ${icon('chevron', 16)}</summary>${cubeNet(currentDisplay(), state.scheme)}</details>` : ''}</div>`;
 }
 function algorithmsView() {
   return `<div class="page-title"><div><h1>${t('Algorithms')}</h1><p>${t('Choose a case, then practise its moves.')}</p></div><button class="secondary" data-action="mode" data-value="practice">${icon('back', 17)}${t('Back to practice')}</button></div>${stageTabs()}<div class="algorithm-browser">${libraryView()}${state.stage === 'C' ? `<button class="primary" data-action="practice-chapter">${t('Calculate cross')} ${icon('arrow', 17)}</button>` : ''}</div>`;
@@ -320,7 +352,11 @@ function render() {
     playback.setSequence(state.cube, algorithm);
     sequenceEnd = engine.applyAlgorithm(state.cube, algorithm);
   }
-  app.innerHTML = `${sidebar()}<div class="main-shell">${header()}<main id="main-content">${state.mode === 'practice' ? practiceView() : state.mode === 'algorithms' ? algorithmsView() : state.mode === 'timer' ? timerView() : readView()}<footer class="page-footer"><span>${t('Rubik’s cube practice')}</span><span>${t('One case at a time.')}</span></footer></main></div><div id="toast" class="toast" role="status"></div>`;
+  if (restoredStep !== null) { playback.seek(restoredStep); restoredStep = null; }
+  app.classList.toggle('timer-screen', state.mode === 'timer');
+  app.innerHTML = state.mode === 'timer'
+    ? `<main id="main-content" class="timer-main">${timerView()}</main>`
+    : `${sidebar()}<div class="main-shell">${header()}<main id="main-content">${state.mode === 'solve' ? fullSolveView() : state.mode === 'practice' ? practiceView() : state.mode === 'algorithms' ? algorithmsView() : readView()}<footer class="page-footer"><span>${t('Rubik’s cube practice')}</span><span>${t('One case at a time.')}</span></footer></main></div><div id="toast" class="toast" role="status"></div>`;
   renderInProgress = false;
   mobileNav = createMobileNav(app);
   if (state.mode === 'timer') timerMount = mountSolveTimer(document.querySelector('.solve-timer'), solveTimer);
@@ -343,10 +379,12 @@ function focusHeading() {
 }
 function toast(text) {
   const element = document.querySelector('#toast');
+  if (!element) return;
   element.textContent = text; element.classList.add('visible');
   setTimeout(() => element.classList.remove('visible'), 2400);
 }
 async function analyze() {
+  if (state.mode === 'solve') { await solveWholeCube(); return; }
   cancelWork(); state.error = ''; state.notice = ''; state.result = null; state.selected = null; state.step = 0;
   if (state.source === 'mine') state.cube = prepareInputCube(state.cube, state.stage);
   const validity = engine.validateCube(state.cube);
@@ -375,9 +413,33 @@ async function analyze() {
   } catch (error) { state.error = error.message; }
   render();
 }
+async function solveWholeCube() {
+  cancelWork();
+  const request = fullSolveRequest;
+  state.error = ''; state.notice = ''; state.result = null; state.selected = null; state.step = 0;
+  const validity = engine.validateCube(state.cube);
+  if (!validity.valid) { state.error = validity.error; render(); return; }
+  if (engine.isSolved(state.cube)) {
+    state.result = { algorithm: '', moves: 0, solved: true };
+    render(); focusPractice(); return;
+  }
+  state.busy = true; state.solverStatus = 'initializing'; render();
+  try {
+    const result = await fullSolver.solve([...state.cube]);
+    if (request !== fullSolveRequest || state.mode !== 'solve') return;
+    if (!engine.isSolved(engine.applyAlgorithm(state.cube, result.algorithm))) throw new Error('The solution could not be verified. Please try again.');
+    state.result = result;
+  } catch (error) {
+    if (request !== fullSolveRequest || error.name === 'AbortError') return;
+    state.error = error.message;
+  }
+  if (request === fullSolveRequest) { state.busy = false; render(); if (state.result) focusPractice(); }
+}
 async function captureFace(face, continueSequence = false) {
   if (state.source !== 'mine' || state.result || !inputFaces(state.stage).includes(face)) return;
+  const wasBusy = state.busy;
   cancelWork();
+  if (wasBusy) render();
   const request = photoRequest;
   const stage = state.stage;
   toast(t('Opening photo input…'));
@@ -413,12 +475,24 @@ app.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
   if (!button) return;
   const { action, value, id, index } = button.dataset;
+  if (state.mode === 'solve' && ((action === 'mode' && value !== 'solve') || action === 'chapter')) {
+    cancelWork(); fullWorkspace = saveWorkspace(); restoreWorkspace(practiceWorkspace);
+  }
   if (action === 'capture') await captureFace(inputFaces(state.stage).find((face) => !state.photoFaces.includes(face)) || 'U', true);
   if (action === 'capture-face') await captureFace(button.dataset.face);
   if (action === 'mode') {
+    const previousMode = state.mode;
     cancelWork(); state.mode = value;
-    if (value === 'practice' && state.practiceStage !== state.stage) setStage(state.stage);
-    else render();
+    if (value === 'solve' && previousMode !== 'solve') {
+      practiceWorkspace = saveWorkspace();
+      restoreWorkspace(fullWorkspace || { stage: 'C', source: 'mine', selected: null, cube: engine.solvedCube(), scheme: { ...defaultScheme }, paint: 'U', slot: 'FR', result: null, step: 0, hide: false, view: 'front', photoFaces: [], referenceColors: {}, photoScope: 'full', cubeText: '', error: '', notice: '' });
+      fullSolver.warmup().catch(() => { /* A solve request reports initialization failures with a retry. */ });
+    }
+    if (value === 'practice' && state.practiceStage !== state.stage) {
+      state.stage = state.practiceStage;
+      state.query = ''; state.group = 'all'; state.filter = 'all'; state.caseLimit = 12;
+    }
+    render();
     window.scrollTo({ top: 0 });
   }
   if (action === 'chapter-algorithms') {
@@ -442,6 +516,17 @@ app.addEventListener('click', async (event) => {
     state.result = null; state.step = 0; state.error = ''; render();
   }
   if (action === 'reset-cube') { cancelWork(); state.cube = engine.solvedCube(); state.photoFaces = []; state.referenceColors = {}; state.result = null; state.selected = null; state.error = ''; state.step = 0; render(); }
+  if (action === 'import-cube-text') {
+    cancelWork(); state.error = ''; state.notice = '';
+    try {
+      const cube = parseCubeText(state.cubeText, state.scheme);
+      state.cube = cube; state.result = null; state.selected = null; state.step = 0;
+      state.photoFaces = []; state.referenceColors = {};
+      state.notice = 'Colors imported. Check the six faces, then solve your cube.';
+    } catch (error) { state.error = error.message; }
+    render();
+  }
+  if (action === 'cancel-solve') { cancelWork(); state.notice = 'Calculation cancelled. Your colors are still here.'; render(); }
   if (action === 'random') { if (state.stage === 'C') { setStage('C'); const moves = ['U', 'D', 'R', 'L', 'F', 'B']; state.cube = engine.applyAlgorithm(engine.solvedCube(), Array.from({ length: 20 }, () => moves[Math.floor(Math.random() * 6)] + ['', "'", '2'][Math.floor(Math.random() * 3)]).join(' ')); render(); } else { const pool = filteredCases(); if (pool.length) { loadCase(pool[Math.floor(Math.random() * pool.length)]); render(); } else toast(t('Clear your filters to practise another case.')); } }
   if (action === 'analyze') { await analyze(); if (state.result) focusPractice(); }
   if (action === 'turn-u') { cancelWork(); state.cube = engine.applyAlgorithm(state.cube, 'U'); await analyze(); }
@@ -498,6 +583,7 @@ app.addEventListener('click', async (event) => {
 });
 app.addEventListener('toggle', (event) => { if (event.target.matches('.all-faces') && event.target.open) updateInspection(); }, true);
 app.addEventListener('input', (event) => {
+  if (event.target.id === 'cube-text') state.cubeText = event.target.value;
   if (event.target.id === 'case-search') { state.query = event.target.value; state.caseLimit = 12; document.querySelector('#library-cards').innerHTML = libraryCards(); }
 });
 app.addEventListener('change', (event) => {

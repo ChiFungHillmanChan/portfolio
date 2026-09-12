@@ -1,0 +1,30 @@
+.mode-nav .full-solve-nav { height: auto; min-height: 47px; padding-top: 11px; padding-bottom: 11px; line-height: 1.4; }
+.full-solve-nav span { min-width: 0; }
+.full-solve-page .page-title p { max-width: 680px; line-height: 1.7; }
+.full-solve-page .cube-editor .panel-heading { justify-content: space-between; }
+.full-solve-page .cube-actions { flex-wrap: wrap; }
+.full-solve-page .cube-actions > button:first-child { background: var(--blue); border-color: var(--blue); color: white; }
+.full-solve-size { color: var(--muted); font-size: 13px; }
+.full-solution-panel .result-empty { padding-top: 32px; }
+.solve-instructions { text-align: left; padding-left: 22px; line-height: 1.65; color: var(--ink); font-size: 14px; margin: 24px 0; }
+.solve-instructions li + li { margin-top: 13px; }
+.full-solution-panel .solver-status { margin-top: 22px; min-height: 42px; }
+.full-solve-guidance { padding: 0 27px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+.full-solve-about { margin: 24px 27px; border-top: 1px solid var(--line); padding-top: 20px; color: var(--muted); font-size: 12px; line-height: 1.8; }
+.full-solve-about summary { cursor: pointer; color: var(--ink); font-size: 13px; }
+.full-solve-about p { margin: 12px 0; }
+.typed-cube-input { margin: 22px 0; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: #f8faff; font-size: 13px; color: var(--muted); line-height: 1.7; }
+.typed-cube-input summary { color: var(--blue); font-weight: 600; cursor: pointer; }
+.typed-cube-input p { margin: 12px 0; }
+.typed-face-order { display: flex; flex-wrap: wrap; list-style: none; padding: 0; gap: 8px 18px; }
+.typed-face-order strong { color: var(--ink); margin-right: 3px; }
+.typed-cube-input label { display: block; color: var(--ink); margin-bottom: 6px; }
+.typed-cube-input textarea { display: block; box-sizing: border-box; width: 100%; min-height: 150px; resize: vertical; border: 1px solid #bdc9dd; border-radius: 6px; background: white; color: var(--ink); padding: 12px; font: 15px/1.6 monospace; letter-spacing: 2px; }
+.typed-cube-input textarea:focus-visible { outline: 3px solid #7892f7; outline-offset: 3px; }
+.typed-cube-input textarea::placeholder { color: #8b95a7; opacity: .7; }
+@media (max-width: 700px) {
+  .full-solve-page .page-title { align-items: flex-start; }
+  .full-solve-page .page-title h1 { max-width: 100%; }
+  .full-solve-guidance { padding: 0 20px; }
+  .full-solve-about { margin: 20px; }
+}

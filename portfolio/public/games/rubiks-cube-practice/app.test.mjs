@@ -8,9 +8,9 @@ import { colors, defaultScheme } from './cube-view.js';
 const cases = JSON.parse(await readFile(new URL('./cases.json', import.meta.url), 'utf8'));
 let importId = 0;
 
-// Only browser scheduling, layout observation, network and canvas drawing are
+// Only browser scheduling, layout observation, workers, network and canvas drawing are
 // substituted. The actual app, DOM events, engine and playback controller run.
-async function browser(t, { language, practice } = {}) {
+async function browser(t, { language, practice, clipboard, Worker } = {}) {
   const dom = new JSDOM('<div id="app"></div>', { url: 'https://rubiks-cube-practice.hillmanchan.com/' });
   const { window } = dom;
   const { document } = window;
@@ -50,9 +50,14 @@ async function browser(t, { language, practice } = {}) {
   });
   install('window', window);
   install('document', document);
+  if (clipboard) {
+    Object.defineProperty(window.navigator, 'clipboard', { configurable: true, value: clipboard });
+    install('navigator', window.navigator);
+  }
   install('localStorage', window.localStorage);
   install('IntersectionObserver', IntersectionObserver);
   install('ResizeObserver', ResizeObserver);
+  if (Worker) install('Worker', Worker);
   install('performance', { now: () => time });
   install('requestAnimationFrame', (callback) => { frames.set(++frameId, callback); return frameId; });
   install('cancelAnimationFrame', (id) => frames.delete(id));
@@ -292,6 +297,60 @@ test('reading, algorithms and practice have separate content with direct chapter
   assert.equal(h.find('.chapter-content'), null);
 });
 
+for (const language of ['en', 'zh-HK']) {
+  test(`${language}: the timer opens alone with a back button and portrait rotation guidance`, async (t) => {
+    const h = await browser(t, { language });
+    await h.click('[data-action="mode"][data-value="timer"]');
+    assert.ok(h.find('#app').classList.contains('timer-screen'));
+    const main = h.find('main');
+    assert.equal(h.document.querySelectorAll('main').length, 1);
+    assert.ok(main.contains(h.find('.solve-timer')), 'The dedicated main contains the working timer');
+    assert.equal(h.find('.sidebar'), null, 'Timer use does not mount the chapter sidebar');
+    assert.equal(h.find('.topbar'), null, 'Timer use does not mount the workspace header');
+    assert.equal(h.find('footer'), null, 'Timer use does not mount the workspace footer');
+    assert.equal(h.find('.mobile-nav-trigger'), null);
+    assert.equal(h.find('.turn-canvas'), null);
+    assert.equal(h.find('#library-cards'), null);
+    assert.equal(h.document.querySelectorAll('[data-timer-pad]').length, 2);
+    const back = h.find('main [data-action="mode"][data-value="practice"]');
+    assert.ok(back, 'A direct route back to practice is available without opening navigation');
+    assert.equal(h.document.querySelectorAll('[data-action="mode"][data-value="practice"]').length, 1);
+    assert.match(back.textContent, language === 'en' ? /Back to practice/ : /返回練習/);
+    const rotationHint = h.find('.timer-rotate-hint');
+    assert.ok(rotationHint, 'Portrait users receive a rotate-phone reminder');
+    assert.match(rotationHint.textContent, language === 'en' ? /rotate|landscape/i : /橫向|橫放|旋轉/);
+    assert.equal(h.find('[data-timer-time]').textContent, '0.00');
+    await h.click('main [data-action="mode"][data-value="practice"]');
+    assert.equal(h.find('#app').classList.contains('timer-screen'), false, 'Back removes the fullscreen layout');
+    assert.ok(h.find('.turn-canvas'));
+    assert.equal(h.find('.solve-timer'), null);
+    assert.ok(h.find('.sidebar'));
+  });
+}
+
+test('a deferred clipboard completion cannot crash the dedicated timer screen', async (t) => {
+  let finishCopy;
+  let copiedAlgorithm;
+  const h = await browser(t, { clipboard: {
+    writeText(algorithm) {
+      copiedAlgorithm = algorithm;
+      return new Promise((resolve) => { finishCopy = resolve; });
+    },
+  } });
+  await h.click('[data-action="copy"]');
+  assert.equal(typeof finishCopy, 'function', 'The copy request is pending');
+  assert.ok(copiedAlgorithm.length > 0);
+  await h.click('[data-action="mode"][data-value="timer"]');
+  assert.equal(h.find('#toast'), null);
+  finishCopy();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.ok(h.find('.solve-timer'));
+  assert.equal(h.find('[data-timer-time]').textContent, '0.00');
+  await h.click('main [data-action="mode"][data-value="practice"]');
+  assert.ok(h.find('.move-list'));
+  assert.ok(h.find('.turn-canvas'));
+});
+
 test('mode navigation retains the selected case and entered colors', async (t) => {
   const h = await browser(t);
   await h.click('[data-action="source"][data-value="library"]');
@@ -312,17 +371,67 @@ test('mode navigation retains the selected case and entered colors', async (t) =
   }
 
   await h.click('[data-action="source"][data-value="mine"]');
+  await h.click('[data-action="stage"][data-value="F"]');
   await h.click('[data-action="reset-cube"]');
   await paintSticker(h, 0, 'R');
   await paintSticker(h, 19, 'B');
+  await paintSticker(h, 24, 'D');
+  await paintSticker(h, 27, 'L');
   const enteredColors = () => [...h.document.querySelectorAll('.cube-editor .sticker')].map((sticker) => sticker.style.getPropertyValue('--sticker'));
   const entered = enteredColors();
   for (const mode of ['algorithms', 'read', 'timer', 'algorithms']) {
     await h.click(`[data-action="mode"][data-value="${mode}"]`);
     await h.click('[data-action="mode"][data-value="practice"]');
     assert.ok(h.find('[data-action="source"][data-value="mine"].active'), `${mode} retains manual entry`);
+    assert.equal(h.document.querySelectorAll('.cube-editor .sticker').length, 54, `${mode} retains full-cube input`);
     assert.deepEqual(enteredColors(), entered, `${mode} preserves every entered sticker`);
     assert.equal(h.find('.alert.error'), null);
+  }
+});
+
+test('browsing other algorithm stages preserves the current case, move and full-cube entry', async (t) => {
+  const h = await browser(t);
+  await h.click('[data-action="mode"][data-value="algorithms"]');
+  const selected = cases.find((item) => item.id === h.find('.case-card').dataset.id);
+  assert.notEqual(selected.id, 'oll-27', 'Use a non-default case so unintended resets are visible');
+  await h.click(`.case-card[data-id="${selected.id}"]`);
+  h.speed(1);
+  await h.click('[data-action="step"]');
+  h.advance(1000);
+  const moves = h.find('.move-list').textContent;
+  const moveStatus = h.find('.live-move').textContent;
+
+  for (const stage of ['P', 'F', 'C']) {
+    await h.click('[data-action="mode"][data-value="algorithms"]');
+    await h.click(`[data-action="stage"][data-value="${stage}"]`);
+    assert.ok(h.find(`.stage-tabs [data-value="${stage}"].active`));
+    await h.click('main [data-action="mode"][data-value="practice"]');
+    assert.ok(h.find('.stage-tabs [data-value="O"].active'), 'Back to practice returns to the current solve stage');
+    assert.equal(h.find('.case-badge').textContent, selected.name);
+    assert.equal(h.find('.move-list').textContent, moves);
+    assert.equal(h.find('.live-move').textContent, moveStatus);
+  }
+  await h.click('[data-action="chapter"][data-value="P"]');
+  await h.click('[data-action="mode"][data-value="practice"]');
+  assert.equal(h.find('.case-badge').textContent, selected.name, 'Reading a different chapter also preserves the current case');
+  assert.equal(h.find('.live-move').textContent, moveStatus);
+
+  await h.click('[data-action="source"][data-value="mine"]');
+  await h.click('[data-action="stage"][data-value="F"]');
+  await h.click('[data-action="reset-cube"]');
+  await paintSticker(h, 2, 'L');
+  await paintSticker(h, 24, 'B');
+  await paintSticker(h, 27, 'R');
+  const enteredColors = () => [...h.document.querySelectorAll('.cube-editor .sticker')].map((sticker) => sticker.style.getPropertyValue('--sticker'));
+  const entered = enteredColors();
+  for (const stage of ['O', 'P', 'C']) {
+    await h.click('[data-action="mode"][data-value="algorithms"]');
+    await h.click(`[data-action="stage"][data-value="${stage}"]`);
+    await h.click('main [data-action="mode"][data-value="practice"]');
+    assert.ok(h.find('.stage-tabs [data-value="F"].active'));
+    assert.ok(h.find('[data-action="source"][data-value="mine"].active'));
+    assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 6);
+    assert.deepEqual(enteredColors(), entered, `Browsing ${stage} leaves all 54 entered colors intact`);
   }
 });
 
@@ -457,7 +566,7 @@ test('stage switches retain entered top stickers and reconstruct omitted layers 
   assert.equal(editorColor(h, 'D', 0), colors.white);
 });
 
-test('chapter buttons, mobile chapter selection and next-chapter navigation apply the same input scope', async (t) => {
+test('all chapter browsing routes preserve full input until a last-layer practice stage is explicitly selected', async (t) => {
   const h = await browser(t);
   await h.click('[data-action="source"][data-value="mine"]');
   for (const route of ['chapter-button', 'chapter-select', 'next-chapter']) {
@@ -475,11 +584,15 @@ test('chapter buttons, mobile chapter selection and next-chapter navigation appl
     }
     await h.click('[data-action="mode"][data-value="practice"]');
     assert.ok(h.find('[data-action="source"][data-value="mine"].active'), route);
-    assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 5, route);
+    assert.ok(h.find('.stage-tabs [data-value="F"].active'), route);
+    assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 6, route);
     assert.equal(editorColor(h, 'U', 2), colors.red, `${route} retains entered top colors`);
-    assert.equal(editorColor(h, 'F', 6), colors.green, `${route} reconstructs the ignored lower layers`);
-    await h.click('[data-action="chapter"][data-value="F"]');
-    await h.click('[data-action="mode"][data-value="practice"]');
+    assert.equal(editorColor(h, 'F', 6), colors.blue, `${route} leaves entered lower layers untouched`);
+    await h.click('[data-action="stage"][data-value="O"]');
+    assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 5, route);
+    assert.equal(editorColor(h, 'U', 2), colors.red);
+    assert.equal(editorColor(h, 'F', 6), colors.green, `${route} applies the solved-lower-layer assumption only after selecting O practice`);
+    await h.click('[data-action="stage"][data-value="F"]');
     assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 6, route);
     assert.equal(editorColor(h, 'U', 2), colors.red, `${route} retains colors when returning to the full editor`);
   }
@@ -534,4 +647,194 @@ test('entering only top-layer stickers finds OLL and PLL algorithms without a bo
     assert.equal(h.find('[data-action="play"]').disabled, false);
     if (id === 'oll-27') await h.click('[data-action="edit-cube"]');
   }
+});
+
+test('full solve has all six faces and preserves the separate practice workspace', async (t) => {
+  const h = await browser(t);
+  const caseName = h.find('.case-badge').textContent;
+  await h.click('[data-action="mode"][data-value="solve"]');
+  assert.match(h.find('h1').textContent, /I just want to solve it/);
+  assert.equal(h.find('.stage-tabs'), null);
+  assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 6);
+  await paintSticker(h, 27, 'R');
+  await h.click('[data-action="mode"][data-value="practice"]');
+  assert.equal(h.find('.case-badge').textContent, caseName);
+  await h.click('[data-action="mode"][data-value="solve"]');
+  assert.equal(editorColor(h, 'D', 0), colors.red);
+  h.language('zh-HK');
+  assert.equal(h.find('h1').textContent, '我唔想學呀');
+  assert.equal(editorColor(h, 'D', 0), colors.red);
+});
+
+test('typed full cube import validates before replacing stickers and solves an already solved cube', async (t) => {
+  const h = await browser(t);
+  await h.click('[data-action="mode"][data-value="solve"]');
+  const input = h.find('#cube-text');
+  input.value = 'YYYYYYYYY RRRRRRRRR GGGGGGGGG WWWWWWWWW OOOOOOOOO BBBBBBBBB';
+  input.dispatchEvent(new h.window.Event('input', { bubbles: true }));
+  await h.click('[data-action="import-cube-text"]');
+  assert.equal(h.find('.alert.error'), null);
+  assert.equal(editorColor(h, 'D', 0), colors.white);
+  h.find('#cube-text').value = 'invalid';
+  h.find('#cube-text').dispatchEvent(new h.window.Event('input', { bubbles: true }));
+  await h.click('[data-action="import-cube-text"]');
+  assert.ok(h.find('.alert.error'));
+  assert.equal(editorColor(h, 'D', 0), colors.white);
+  await h.click('[data-action="analyze"]');
+  assert.equal(h.find('.alert.error'), null);
+  assert.match(h.find('.algorithm-panel').textContent, /Already solved/);
+  assert.ok(h.find('.turn-canvas'));
+  assert.equal(h.find('[data-action="play"]').disabled, true);
+  assert.equal(h.find('[data-action="apply"]'), null);
+});
+
+test('full solve rejects impossible painted input and keeps the editor available', async (t) => {
+  const h = await browser(t);
+  await h.click('[data-action="mode"][data-value="solve"]');
+  await paintSticker(h, 27, 'R');
+  await h.click('[data-action="analyze"]');
+  assert.match(h.find('.alert.error').textContent, /9 stickers/);
+  assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 6);
+  assert.equal(h.find('.turn-canvas'), null);
+});
+
+// Control only the browser worker boundary; the app still validates the returned
+// algorithm and runs the real playback controller against the imported stickers.
+function solverBoundary() {
+  const workers = [];
+  class Worker {
+    constructor() { this.messages = []; workers.push(this); }
+    postMessage(message) { this.messages.push(message); }
+    terminate() {}
+    emit(data) { this.onmessage?.({ data }); }
+    reply() {
+      const request = this.messages.findLast(message => message.type === 'solve');
+      this.emit({ type: 'result', id: request.id, result: { algorithm: "U'", moves: 1, solved: false } });
+    }
+  }
+  return { Worker, latest: () => workers.at(-1) };
+}
+
+const settleBrowser = () => new Promise(resolve => setImmediate(resolve));
+
+async function importFullSolveFixture(h) {
+  await h.click('[data-action="mode"][data-value="solve"]');
+  const input = h.find('#cube-text');
+  // A solved cube after one U turn, in U R F D L B face order.
+  input.value = 'UUUUUUUUUBBBRRRRRRRRRFFFFFFDDDDDDDDDFFFLLLLLLLLLBBBBBB';
+  input.dispatchEvent(new h.window.Event('input', { bubbles: true }));
+  await h.click('[data-action="import-cube-text"]');
+  assert.equal(h.find('.alert.error'), null);
+}
+
+async function startFullSolve(h, boundary) {
+  await h.click('[data-action="analyze"]');
+  assert.equal(h.find('[data-action="analyze"]').disabled, true);
+  assert.equal(h.find('.full-solution-panel').getAttribute('aria-busy'), 'true');
+  const worker = boundary.latest();
+  worker.emit({ type: 'ready' });
+  await settleBrowser();
+  return worker;
+}
+
+test('an asynchronous full solution animates the imported cube and retains playback across modes', async (t) => {
+  const boundary = solverBoundary();
+  const h = await browser(t, boundary);
+  await h.click('[data-action="jump"][data-index="2"]');
+  await importFullSolveFixture(h);
+  const worker = await startFullSolve(h, boundary);
+  worker.reply();
+  await settleBrowser();
+  assert.equal(h.find('.alert.error'), null);
+  assert.equal(h.find('.full-solution-panel').getAttribute('aria-busy'), 'false');
+  assert.equal(h.find('.move-token').textContent, 'U′');
+  assert.equal(h.find('[data-action="play"]').disabled, false);
+  assert.equal(h.find('[data-action="step"]').disabled, false);
+
+  const inspection = h.find('.all-faces');
+  inspection.open = true;
+  inspection.dispatchEvent(new h.window.Event('toggle'));
+  h.speed(1);
+  await h.click('[data-action="step"]');
+  h.advance(1000);
+  assert.match(h.find('.live-move').textContent, /Sequence complete/);
+  assert.equal(h.find('[data-action="step"]').disabled, true);
+  assert.equal(h.find('[data-action="step-back"]').disabled, false);
+  [...h.document.querySelectorAll('.all-faces .sticker')].forEach((sticker, index) => {
+    assert.equal(sticker.style.getPropertyValue('--sticker'), colors[defaultScheme[FACE_ORDER[Math.floor(index / 9)]]], `Completed solution sticker ${index}`);
+  });
+
+  await h.click('[data-action="mode"][data-value="practice"]');
+  assert.match(h.find('.live-move').textContent, /Move 2 of 7 complete/);
+  await h.click('[data-action="mode"][data-value="solve"]');
+  assert.match(h.find('.live-move').textContent, /Sequence complete/);
+  assert.equal(h.find('[data-action="step"]').disabled, true);
+});
+
+test('leaving during a full solve ignores late results and permits a new calculation', async (t) => {
+  const boundary = solverBoundary();
+  const h = await browser(t, boundary);
+  const practiceCase = h.find('.case-badge').textContent;
+  await importFullSolveFixture(h);
+  const oldWorker = await startFullSolve(h, boundary);
+  await h.click('[data-action="mode"][data-value="practice"]');
+  oldWorker.reply();
+  await settleBrowser();
+  assert.equal(h.find('.case-badge').textContent, practiceCase);
+  assert.equal(h.find('.full-solution-panel'), null);
+
+  await h.click('[data-action="mode"][data-value="solve"]');
+  assert.equal(h.document.querySelectorAll('.cube-editor .net-face').length, 6);
+  assert.equal(h.find('[data-action="analyze"]').disabled, false);
+  assert.equal(h.find('.move-token'), null);
+  assert.equal(editorColor(h, 'R', 0), colors.blue);
+  const worker = await startFullSolve(h, boundary);
+  worker.reply();
+  await settleBrowser();
+  assert.equal(h.find('.move-token').textContent, 'U′');
+  assert.equal(h.find('[data-action="play"]').disabled, false);
+});
+
+test('restoring the page during a full solve clears busy controls and permits retry', async (t) => {
+  const boundary = solverBoundary();
+  const h = await browser(t, boundary);
+  await importFullSolveFixture(h);
+  const oldWorker = await startFullSolve(h, boundary);
+  h.window.dispatchEvent(new h.window.Event('pagehide'));
+  h.window.dispatchEvent(new h.window.Event('pageshow'));
+  oldWorker.reply();
+  await settleBrowser();
+  assert.equal(h.find('.full-solution-panel').getAttribute('aria-busy'), 'false');
+  assert.equal(h.find('[data-action="analyze"]').disabled, false);
+  assert.equal(h.find('[data-action="cancel-solve"]'), null);
+  assert.equal(h.find('.move-token'), null);
+  assert.equal(editorColor(h, 'R', 0), colors.blue);
+
+  const worker = await startFullSolve(h, boundary);
+  worker.reply();
+  await settleBrowser();
+  assert.equal(h.find('.alert.error'), null);
+  assert.equal(h.find('.move-token').textContent, 'U′');
+  assert.equal(h.find('[data-action="play"]').disabled, false);
+});
+
+test('closing photo input during a full solve restores an enabled solve button', async (t) => {
+  await import('./photo-capture.js');
+  const boundary = solverBoundary();
+  const h = await browser(t, boundary);
+  await importFullSolveFixture(h);
+  await startFullSolve(h, boundary);
+  await h.click('[data-action="capture"]');
+  await settleBrowser();
+  assert.ok(h.find('.photo-dialog[open]'));
+  await h.click('.photo-close');
+  assert.equal(h.find('.photo-dialog'), null);
+  assert.equal(h.find('[data-action="analyze"]').disabled, false);
+  assert.equal(h.find('.full-solution-panel').getAttribute('aria-busy'), 'false');
+  assert.equal(h.find('[data-action="cancel-solve"]'), null);
+  assert.equal(editorColor(h, 'R', 0), colors.blue);
+  const worker = await startFullSolve(h, boundary);
+  worker.reply();
+  await settleBrowser();
+  assert.equal(h.find('[data-action="play"]').disabled, false);
 });

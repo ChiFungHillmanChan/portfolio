@@ -1,4 +1,6 @@
 export const timerMessages = {
+  'Rotate your phone to landscape': '請將手機轉為橫向',
+  'Place your phone horizontally to use both hand pads comfortably.': '將手機橫放，即可舒適地使用左右兩個感應區。',
   'Two-hand timer': '雙手計時器',
   'No saved times': '不儲存時間紀錄',
   'Elapsed time': '已用時間',

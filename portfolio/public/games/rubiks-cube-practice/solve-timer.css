@@ -1,42 +1,71 @@
-.solve-timer { max-width: 800px; margin: 0 auto; padding: 25px clamp(18px, 4vw, 42px) 28px; }
-.solve-timer-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
-.solve-timer-heading h1 { font-size: 16px; color: #52647e; letter-spacing: -.3px; }
-.solve-timer-heading > span { font-size: 11px; color: #8995a7; text-align: right; }
-.solve-timer-readout { display: flex; flex-direction: column; align-items: center; padding: 32px 0 22px; }
-.solve-timer-light { width: 10px; height: 10px; border-radius: 50%; background: #a7b1c2; box-shadow: 0 0 0 5px #f0f3f8; margin-bottom: 17px; }
-.solve-timer-readout output { display: block; max-width: 100%; color: #293c5b; font-size: clamp(40px, 8vw, 80px); font-weight: 600; line-height: 1.1; letter-spacing: -2px; font-variant-numeric: tabular-nums; }
-.solve-timer-readout > p { min-height: 1.5em; font-size: 13px; color: #71829b; line-height: 1.5; text-align: center; margin-top: 15px; }
-.solve-timer-instructions { max-width: 520px; margin: 0 auto; font-size: 13px; line-height: 1.8; text-align: center; color: #738299; }
-.solve-timer-pads { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: clamp(18px, 6vw, 72px); margin: 25px 0 18px; }
-.solve-timer-pad { min-height: 132px; padding: 16px 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 8px; color: #607da8; background: #f1f5fc; border: 2px solid #dce6f5; border-radius: 16px; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.solve-timer-pad > span { font-size: 14px; font-weight: 650; }
-.solve-timer-pad kbd { border: 1px solid #d1dcec; border-radius: 4px; min-width: 22px; padding: 1px 4px; font: 11px 'DM Sans', sans-serif; background: #fff9; color: inherit; }
-.solve-timer-pad[aria-pressed="true"] { border-color: #9cb6e4; background: #e4edff; color: #3159a9; }
-.solve-timer[data-phase="holding"] .solve-timer-light { background: #dfad34; box-shadow: 0 0 0 5px #fff6df; }
-.solve-timer[data-phase="ready"] .solve-timer-light { background: #22a67a; box-shadow: 0 0 0 5px #e6f7ef; }
-.solve-timer[data-phase="ready"] .solve-timer-pad { background: #e4f6ec; border-color: #4aaf87; color: #24785c; }
-.solve-timer[data-phase="ready"] .solve-timer-readout output, .solve-timer[data-phase="ready"] [data-timer-status] { color: #23855e; }
-.solve-timer[data-phase="running"] .solve-timer-light { background: #5275e6; box-shadow: 0 0 0 5px #edf2ff; }
-.solve-timer[data-phase="stopped"] .solve-timer-light { background: #e87969; box-shadow: 0 0 0 5px #fff0ed; }
-.solve-timer-restart, .solve-timer-keyboard { text-align: center; color: #8592a6; font-size: 12px; line-height: 1.7; }
-.solve-timer-keyboard { font-size: 11px; margin-top: 7px; color: #98a3b4; }
-@media (max-width: 480px) {
-  .solve-timer { padding: 19px 15px 22px; }
-  .solve-timer-heading { align-items: flex-start; }
-  .solve-timer-heading h1 { font-size: 14px; }
-  .solve-timer-heading > span { font-size: 10px; }
-  .solve-timer-readout { padding: 29px 0 21px; }
-  .solve-timer-readout output { font-size: clamp(36px, 11vw, 54px); letter-spacing: -1px; }
+/* The timer owns the viewport; the ordinary workspace returns with Back. */
+.timer-screen { background: #fff; }
+.timer-main { max-width: none; margin: 0; padding: 0; }
+.solve-timer { min-height: 100vh; min-height: 100dvh; width: 100%; display: grid; grid-template-rows: auto 1fr auto; align-items: center; padding: max(12px, env(safe-area-inset-top)) max(22px, env(safe-area-inset-right)) max(18px, env(safe-area-inset-bottom)) max(22px, env(safe-area-inset-left)); background: #fff; }
+.solve-timer-toolbar { align-self: start; display: flex; align-items: center; }
+.timer-back { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 10px 12px; border: 1px solid #e3e8ee; border-radius: 8px; color: #526276; background: #fff; font-size: 14px; font-weight: 600; }
+.timer-back > span { font-size: 21px; line-height: 1; }
+.timer-rotate-hint { display: none; }
+.timer-device { width: min(1180px, 100%); margin: 26px auto; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr) minmax(0, 1fr); gap: 10px; align-items: stretch; padding: 12px; border: 5px solid #263640; border-bottom-width: 11px; border-radius: 60px 60px 48px 48px; background: #334651; box-shadow: 0 5px 0 #182a36, 0 22px 35px -24px #172c4980; }
+.solve-timer-readout { grid-column: 2; grid-row: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; min-height: clamp(180px, 31vh, 320px); padding: clamp(14px, 2.2vw, 30px) clamp(9px, 1.5vw, 23px); border: 3px solid #25333c; border-radius: 24px 24px 16px 16px; background: linear-gradient(155deg, #b7bec1, #879497); box-shadow: inset 0 2px 0 #e2e6e780; }
+.solve-timer-light { width: 12px; height: 12px; flex-shrink: 0; border-radius: 50%; background: #596461; border: 2px solid #445052; box-shadow: 0 0 0 3px #dae0d84d; margin-bottom: 18px; }
+.timer-lcd { width: 100%; min-width: 0; container-type: inline-size; padding: 14px 6px; border: 4px solid #35443e; border-radius: 8px; background: #b8c7a5; box-shadow: inset 0 3px 7px #29352533, 0 1px 0 #e2e8df; }
+.solve-timer-readout output { display: block; text-align: right; max-width: 100%; font: 600 clamp(17px, 16cqw, 80px)/1.2 'SFMono-Regular', Consolas, 'Liberation Mono', monospace; letter-spacing: -1px; color: #223728; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.solve-timer-readout > p { min-height: 3em; display: flex; align-items: center; justify-content: center; margin-top: 17px; text-align: center; font-size: clamp(11px, 1.2vw, 15px); font-weight: 600; line-height: 1.5; color: #253d45; }
+.solve-timer-pads { display: contents; }
+.solve-timer-pad { grid-row: 1; min-width: 0; min-height: 180px; padding: 20px 10px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; border: 3px solid #0780af; color: #073b56; background-color: #28b6e5; background-image: repeating-linear-gradient(45deg, #0271b124 0 9px, transparent 9px 18px), repeating-linear-gradient(-45deg, #ffffff1a 0 9px, transparent 9px 18px); box-shadow: inset 0 2px 0 #b1effb80, inset 0 -6px 0 #057ba840; touch-action: none; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.solve-timer-pad:first-child { grid-column: 1; border-radius: 42px 15px 20px 35px; }
+.solve-timer-pad:last-child { grid-column: 3; border-radius: 15px 42px 35px 20px; }
+.timer-hand { display: grid; place-items: center; width: clamp(62px, 8vw, 104px); height: clamp(62px, 8vw, 104px); border-radius: 50%; background: #f6db35; color: #183b40; box-shadow: 0 3px 0 #d5b917; }
+.timer-hand svg { width: 58%; height: 58%; }
+.solve-timer-pad > span:not(.timer-hand) { font-size: clamp(13px, 1.6vw, 19px); font-weight: 700; }
+.solve-timer-pad kbd { border: 1px solid #0b719566; border-radius: 5px; min-width: 25px; padding: 2px 6px; font: 12px 'DM Sans', sans-serif; background: #e0f8ff99; color: #145270; }
+.solve-timer-pad[aria-pressed="true"] { border-color: #f4da30; box-shadow: inset 0 0 0 3px #f4da30, inset 0 0 30px #04729b66; }
+.solve-timer[data-phase="holding"] .solve-timer-light { background: #ffca37; box-shadow: 0 0 0 3px #efb81530; }
+.solve-timer[data-phase="ready"] .solve-timer-light { background: #64ff78; box-shadow: 0 0 0 3px #80ff9259, 0 0 14px #63ff76; }
+.solve-timer[data-phase="ready"] .solve-timer-pad { border-color: #77e88f; box-shadow: inset 0 0 0 3px #77e88f; }
+.solve-timer[data-phase="ready"] .timer-lcd { background: #caf0b9; }
+.solve-timer[data-phase="running"] .solve-timer-light { background: #b0e5ff; }
+.solve-timer[data-phase="stopped"] .solve-timer-light { background: #ff786b; }
+.timer-help { align-self: end; text-align: center; padding: 0 10px 4px; }
+.solve-timer-instructions { font-size: 14px; line-height: 1.65; color: #41566c; }
+.solve-timer-restart, .solve-timer-keyboard { font-size: 12px; line-height: 1.6; color: #7a8998; margin-top: 5px; }
+@media (orientation: portrait) and (max-width: 900px) {
+  .solve-timer { grid-template-rows: auto auto 1fr auto; padding-left: max(12px, env(safe-area-inset-left)); padding-right: max(12px, env(safe-area-inset-right)); }
+  .timer-rotate-hint { display: flex; align-items: center; justify-content: center; gap: 12px; width: min(440px, 100%); margin: 28px auto 0; padding: 18px 14px; border: 1px solid #dce5f7; border-radius: 12px; background: #f2f6ff; color: #345b9c; }
+  .timer-rotate-hint svg { flex-shrink: 0; }
+  .timer-rotate-hint strong { display: block; font-size: 15px; line-height: 1.5; }
+  .timer-rotate-hint p { font-size: 12px; line-height: 1.7; margin-top: 5px; color: #637c9e; }
+  .timer-device { padding: 6px; gap: 4px; border-width: 3px; border-bottom-width: 7px; border-radius: 30px 30px 24px 24px; }
+  .solve-timer-readout { padding: 12px 5px; border-width: 2px; border-radius: 13px; min-height: 170px; }
+  .timer-lcd { padding: 10px 3px; border-width: 2px; }
+  .solve-timer-readout output { font-size: clamp(12px, 16cqw, 70px); letter-spacing: -.5px; }
+  .solve-timer-readout > p { font-size: 10px; margin-top: 12px; }
+  .solve-timer-light { width: 9px; height: 9px; margin-bottom: 12px; }
+  .solve-timer-pad { min-height: 170px; border-width: 2px; padding: 12px 5px; gap: 11px; }
+  .solve-timer-pad:first-child { border-radius: 22px 8px 12px 20px; }
+  .solve-timer-pad:last-child { border-radius: 8px 22px 20px 12px; }
+  .timer-hand { width: clamp(44px, 12vw, 85px); height: clamp(44px, 12vw, 85px); }
+  .solve-timer-pad > span:not(.timer-hand) { font-size: 12px; }
   .solve-timer-instructions { font-size: 12px; }
-  .solve-timer-pads { gap: 20px; margin-top: 20px; }
-  .solve-timer-pad { min-height: 115px; }
+  .solve-timer-restart, .solve-timer-keyboard { font-size: 11px; }
 }
 @media (max-height: 500px) and (orientation: landscape) {
-  .solve-timer { padding-top: 16px; padding-bottom: 16px; }
-  .solve-timer-readout { padding: 18px 0 12px; }
-  .solve-timer-readout output { font-size: 44px; }
-  .solve-timer-light { margin-bottom: 12px; }
-  .solve-timer-readout > p { margin-top: 9px; }
-  .solve-timer-pads { margin: 15px 0 10px; }
-  .solve-timer-pad { min-height: 84px; flex-direction: row; gap: 10px; }
+  .solve-timer { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(9px, env(safe-area-inset-bottom)); }
+  .timer-back { min-height: 44px; font-size: 12px; padding: 8px 10px; }
+  .timer-device { width: min(960px, 100%); margin: 12px auto; padding: 7px; border-width: 4px; border-bottom-width: 8px; gap: 7px; border-radius: 35px 35px 28px 28px; }
+  .solve-timer-readout { min-height: 140px; padding: 10px 14px; border-width: 2px; border-radius: 16px; }
+  .timer-lcd { padding: 6px; border-width: 3px; }
+  .solve-timer-light { width: 9px; height: 9px; margin-bottom: 10px; }
+  .solve-timer-readout > p { font-size: 11px; min-height: 1.5em; margin-top: 9px; }
+  .solve-timer-pad { min-height: 140px; padding: 10px; gap: 6px; }
+  .solve-timer-pad:first-child { border-radius: 23px 10px 15px 22px; }
+  .solve-timer-pad:last-child { border-radius: 10px 23px 22px 15px; }
+  .timer-hand { width: 58px; height: 58px; }
+  .solve-timer-pad > span:not(.timer-hand) { font-size: 12px; }
+  .solve-timer-pad kbd { font-size: 10px; padding: 1px 4px; }
+  .solve-timer-instructions { font-size: 12px; }
+  .solve-timer-restart, .solve-timer-keyboard { display: inline; font-size: 10px; }
+  .solve-timer-keyboard::before { content: ' · '; }
 }
+@media (pointer: coarse) { .solve-timer-pad kbd, .solve-timer-keyboard { display: none; } }

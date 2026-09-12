@@ -106,13 +106,14 @@ export function createSolveTimer({
 const handIcon = '<svg width="30" height="30" viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M9 17V9a2 2 0 0 1 4 0V6a2 2 0 0 1 4 0v1a2 2 0 0 1 4 0v3a2 2 0 0 1 4 0v11a8 8 0 0 1-8 8h-1a8 8 0 0 1-6-3L4 18a2 2 0 0 1 3-3l3 3M13 7v9m4-9v9m4-6v6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 export function timerView() {
-  return `<section class="panel solve-timer" data-phase="idle" aria-label="${t('Two-hand timer')}">
-    <div class="solve-timer-heading"><h1>${t('Two-hand timer')}</h1><span>${t('No saved times')}</span></div>
-    <div class="solve-timer-readout"><span class="solve-timer-light" aria-hidden="true"></span><output data-timer-time role="timer" aria-live="off" aria-label="${t('Elapsed time')}">0.00</output><p data-timer-status role="status" aria-live="polite">${t('Hold both pads to get ready')}</p></div>
-    <p class="solve-timer-instructions" id="solve-timer-instructions">${t('Hold both pads until green. Release to start. Touch both to stop.')}</p>
-    <div class="solve-timer-pads">${[['left', 'Left hand', 'A'], ['right', 'Right hand', 'L']].map(([side, label, key]) => `<button type="button" class="solve-timer-pad" data-timer-pad="${side}" aria-pressed="false" aria-describedby="solve-timer-instructions">${handIcon}<span>${t(label)}</span><kbd>${key}</kbd></button>`).join('')}</div>
-    <p class="solve-timer-restart">${t('Hold both again to reset and start another solve.')}</p>
-    <p class="solve-timer-keyboard">${t('Desktop: hold A + L, then release to start.')}</p>
+  return `<section class="solve-timer" data-phase="idle" aria-label="${t('Two-hand timer')}">
+    <header class="solve-timer-toolbar"><button type="button" class="timer-back" data-action="mode" data-value="practice"><span aria-hidden="true">←</span>${t('Back to practice')}</button><h1 class="sr-only">${t('Two-hand timer')}</h1></header>
+    <div class="timer-rotate-hint" role="note"><svg width="42" height="42" viewBox="0 0 48 48" fill="none" aria-hidden="true"><rect x="16" y="9" width="16" height="29" rx="3" stroke="currentColor" stroke-width="2" transform="rotate(-25 24 24)"/><path d="M8 21A17 17 0 0 1 36 10m0-6v7h-7M40 27A17 17 0 0 1 12 38m0 6v-7h7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><div><strong>${t('Rotate your phone to landscape')}</strong><p>${t('Place your phone horizontally to use both hand pads comfortably.')}</p></div></div>
+    <div class="timer-device">
+      <div class="solve-timer-readout"><span class="solve-timer-light" aria-hidden="true"></span><div class="timer-lcd"><output data-timer-time role="timer" aria-live="off" aria-label="${t('Elapsed time')}">0.00</output></div><p data-timer-status role="status" aria-live="polite">${t('Hold both pads to get ready')}</p></div>
+      <div class="solve-timer-pads">${[['left', 'Left hand', 'A'], ['right', 'Right hand', 'L']].map(([side, label, key]) => `<button type="button" class="solve-timer-pad" data-timer-pad="${side}" aria-pressed="false" aria-describedby="solve-timer-instructions"><span class="timer-hand" aria-hidden="true">${handIcon}</span><span>${t(label)}</span><kbd>${key}</kbd></button>`).join('')}</div>
+    </div>
+    <div class="timer-help"><p class="solve-timer-instructions" id="solve-timer-instructions">${t('Hold both pads until green. Release to start. Touch both to stop.')}</p><p class="solve-timer-restart">${t('Hold both again to reset and start another solve.')}</p><p class="solve-timer-keyboard">${t('Desktop: hold A + L, then release to start.')}</p></div>
   </section>`;
 }
 

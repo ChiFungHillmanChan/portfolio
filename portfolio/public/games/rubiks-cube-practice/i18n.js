@@ -3,6 +3,7 @@ import { inputMessages } from './input-messages.js';
 import { captureMessages } from './capture-messages.js';
 import { uxMessages } from './ux-messages.js';
 import { timerMessages } from './timer-messages.js';
+import { fullSolveMessages } from './full-solve-messages.js';
 
 export const LANGUAGE_KEY = 'rubiks-practice-language';
 export const LOCALES = ['en', 'zh-HK'];
@@ -80,7 +81,7 @@ export function setLocale(value) {
 }
 
 export function t(key, values = {}) {
-  const text = locale === 'zh-HK' ? (messages[key] ?? sharedMessages[key] ?? inputMessages[key] ?? captureMessages[key] ?? uxMessages[key] ?? timerMessages[key] ?? key) : key;
+  const text = locale === 'zh-HK' ? (messages[key] ?? sharedMessages[key] ?? inputMessages[key] ?? captureMessages[key] ?? uxMessages[key] ?? timerMessages[key] ?? fullSolveMessages[key] ?? key) : key;
   return String(text).replace(/\{(\w+)\}/g, (token, name) => values[name] === undefined ? token : String(values[name]));
 }
 

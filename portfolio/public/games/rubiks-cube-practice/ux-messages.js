@@ -9,4 +9,5 @@ export const uxMessages = {
   'Navigation menu': '導覽選單',
   'Close navigation': '關閉導覽選單',
   'Menu': '選單',
+  'Buy me a coffee': '請我飲杯咖啡',
 };

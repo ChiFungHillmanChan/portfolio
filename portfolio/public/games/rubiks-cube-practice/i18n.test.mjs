@@ -11,10 +11,12 @@ import { inputMessages } from './input-messages.js';
 import { captureMessages } from './capture-messages.js';
 import { uxMessages } from './ux-messages.js';
 import { timerMessages } from './timer-messages.js';
+import { fullSolveMessages } from './full-solve-messages.js';
 import * as english from './chapters.js';
 import * as chinese from './chapters-zh-HK.js';
 import { FACE_ORDER, parseAlgorithm, solvedCube } from './cube-engine.js';
 import { colors, cubeNet, cubeSvg, defaultScheme, faceNames, stickerLabel, topSvg } from './cube-view.js';
+import { parseCubeText } from './full-solve-input.js';
 
 const cases = JSON.parse(await readFile(new URL('./cases.json', import.meta.url), 'utf8'));
 const engineSource = await readFile(new URL('./cube-engine.js', import.meta.url), 'utf8');
@@ -141,7 +143,7 @@ test('chapter translations retain complete move sequences and standard CFOP nota
 });
 
 test('all translated messages retain their interpolation placeholders', () => {
-  for (const [name, dictionary] of Object.entries({ messages, sharedMessages, inputMessages, captureMessages, uxMessages, timerMessages })) {
+  for (const [name, dictionary] of Object.entries({ messages, sharedMessages, inputMessages, captureMessages, uxMessages, timerMessages, fullSolveMessages })) {
     for (const [key, value] of Object.entries(dictionary)) {
       assert.equal(typeof value, 'string', `${name}: ${key}`);
       assert.ok(value.trim().length, `${name}: ${key} must not be empty`);
@@ -158,6 +160,34 @@ test('translation interpolation preserves values and falls back without losing u
   setLocale('en');
   assert.equal(t('{face} center: {color}', { face: 'Top', color: 'yellow' }), 'Top center: yellow');
 });
+
+test('whole-cube navigation uses the requested Cantonese title and switches back to English', () => {
+  setLocale('zh-HK');
+  assert.equal(t('I just want to solve it'), '我唔想學呀');
+  assert.equal(t('Solve my cube'), '幫我還原魔方');
+  setLocale('en');
+  assert.equal(t('I just want to solve it'), 'I just want to solve it');
+});
+
+for (const [name, input, scheme] of [
+  ['incomplete input', ''],
+  ['move notation', "R U R' U'"],
+  ['mixed sticker alphabets', 'UYYYYYYYY RRRRRRRRR GGGGGGGGG WWWWWWWWW OOOOOOOOO BBBBBBBBB'],
+  ['missing colors', 'R'.repeat(27) + 'B'.repeat(27)],
+  ['wrong centers', 'WWWWWWWWW RRRRRRRRR GGGGGGGGG YYYYYYYYY OOOOOOOOO BBBBBBBBB'],
+  ['invalid color scheme', 'YYYYYYYYY RRRRRRRRR GGGGGGGGG WWWWWWWWW OOOOOOOOO BBBBBBBBB', {}],
+]) {
+  test(`whole-cube import explains ${name} in the selected language`, () => {
+    let message;
+    try { parseCubeText(input, scheme); } catch (error) { message = error.message; }
+    assert.ok(message, 'The invalid import must produce an error.');
+    setLocale('zh-HK');
+    assert.match(localizeError(message), /\p{Script=Han}/u);
+    assert.notEqual(localizeError(message), message);
+    setLocale('en');
+    assert.equal(localizeError(message), message);
+  });
+}
 
 test('every case group has a Chinese label while technical case names remain searchable unchanged', () => {
   setLocale('zh-HK');
