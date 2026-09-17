@@ -10,12 +10,14 @@ let importId = 0;
 
 // Only browser scheduling, layout observation, workers, network and canvas drawing are
 // substituted. The actual app, DOM events, engine and playback controller run.
-async function browser(t, { language, practice, clipboard, Worker } = {}) {
+async function browser(t, { language, practice, exam, navigation, clipboard, Worker, date } = {}) {
   const dom = new JSDOM('<div id="app"></div>', { url: 'https://rubiks-cube-practice.hillmanchan.com/' });
   const { window } = dom;
   const { document } = window;
   if (language) window.localStorage.setItem('rubiks-practice-language', language);
   if (practice) window.localStorage.setItem('rubiks-practice-v1', JSON.stringify(practice));
+  if (exam) window.localStorage.setItem('rubiks-daily-exam-v1', JSON.stringify(exam));
+  if (navigation) window.localStorage.setItem('rubiks-navigation-v1', JSON.stringify(navigation));
   let time = 0;
   let hidden = false;
   let paintCount = 0;
@@ -40,7 +42,8 @@ async function browser(t, { language, practice, clipboard, Worker } = {}) {
   const media = new window.EventTarget();
   media.matches = false;
   window.matchMedia = () => media;
-  window.scrollTo = () => {};
+  const scrolls = [];
+  window.scrollTo = options => { scrolls.push(options); Object.defineProperty(window, 'scrollY', { configurable: true, value: options.top || 0 }); };
   window.Element.prototype.scrollIntoView = () => {};
   Object.defineProperty(document, 'hidden', { configurable: true, get: () => hidden });
   window.HTMLCanvasElement.prototype.getContext = () => ({
@@ -55,6 +58,10 @@ async function browser(t, { language, practice, clipboard, Worker } = {}) {
     install('navigator', window.navigator);
   }
   install('localStorage', window.localStorage);
+  let calendarDate = date;
+  if (date) install('Date', class extends Date {
+    constructor(...args) { super(...(args.length ? args : [calendarDate])); }
+  });
   install('IntersectionObserver', IntersectionObserver);
   install('ResizeObserver', ResizeObserver);
   if (Worker) install('Worker', Worker);
@@ -75,7 +82,8 @@ async function browser(t, { language, practice, clipboard, Worker } = {}) {
   });
   await import(`${new URL('./app.js', import.meta.url).href}?integration=${++importId}`);
   return {
-    window, document, frames, intersections,
+    window, document, frames, intersections, scrolls,
+    setDate(value) { calendarDate = value; },
     get paints() { return paintCount; },
     find(selector) { return document.querySelector(selector); },
     async click(selector) {
@@ -187,6 +195,7 @@ test('offscreen previews pause while stale observations from a replaced case are
   const observer = h.intersections[0];
   const oldPreview = h.find('#cube-practice');
   await h.click('[data-action="stage"][data-value="F"]');
+  await h.click('.case-card[data-id="f2l-1"]');
   const currentPreview = h.find('#cube-practice');
   assert.notEqual(currentPreview, oldPreview);
   await h.click('[data-action="play"]');
@@ -452,7 +461,8 @@ test('chapter and case progress restore after reloading and timer navigation add
     await h.click('[data-action="mode"][data-value="timer"]');
     h.advance(12000);
     await h.click('[data-action="mode"][data-value="practice"]');
-    assert.deepEqual({ ...h.window.localStorage }, stored, 'The timer does not add timing records or overwrite learning progress');
+    const withoutNavigation = storage => Object.fromEntries(Object.entries(storage).filter(([key]) => key !== 'rubiks-navigation-v1'));
+    assert.deepEqual(withoutNavigation({ ...h.window.localStorage }), withoutNavigation(stored), 'The timer does not add timing records or overwrite learning progress');
   });
 
   await t.test('a fresh page restores progress and checkmarks', async (context) => {
@@ -837,4 +847,331 @@ test('closing photo input during a full solve restores an enabled solve button',
   worker.reply();
   await settleBrowser();
   assert.equal(h.find('[data-action="play"]').disabled, false);
+});
+
+test('memorised cases are permanently checked and excluded from random practice', async (t) => {
+  const unknown = cases.find(c => c.id === 'oll-1');
+  const h = await browser(t, { practice: { learned: cases.filter(c => c.stage === 'O' && c.id !== unknown.id).map(c => c.id) } });
+  assert.equal(h.find('[data-action="learned"]').disabled, true);
+  await h.click('[data-action="learned"]');
+  assert.ok(JSON.parse(h.window.localStorage.getItem('rubiks-practice-v1')).learned.includes('oll-27'));
+  await h.click('[data-action="random"]');
+  assert.equal(h.find('.case-badge').textContent, unknown.name);
+  await h.click('[data-action="learned"]');
+  assert.equal(h.find('[data-action="learned"]').disabled, true);
+  await h.click('[data-action="random"]');
+  assert.match(h.find('#toast').textContent, /memorised/i);
+});
+
+test('algorithm library has direct memorisation controls and a stage completion tick', async (t) => {
+  const h = await browser(t, { practice: { learned: cases.filter(c => c.stage === 'O' && c.id !== 'oll-1').map(c => c.id) } });
+  await h.click('[data-action="mode"][data-value="algorithms"]');
+  await h.click('[data-action="learned"][data-id="oll-1"]');
+  assert.equal(h.find('[data-action="learned"][data-id="oll-1"]').disabled, true);
+  assert.match(h.find('.mastery-summary').textContent, /57.*57|57\/57/);
+  assert.ok(h.find('.stage-tabs [data-value="O"] .stage-complete'));
+});
+
+test('daily exam hides answers, saves a question across navigation, and locks confirmed mastery', async (t) => {
+  const h = await browser(t, { practice: { learned: cases.filter(c => c.id !== 'oll-1').map(c => c.id) } });
+  const previous = h.find('.move-list').textContent;
+  await h.click('[data-action="mode"][data-value="exam"]');
+  assert.ok(h.find('#exam-count'));
+  await h.click('[data-action="exam-start"]');
+  assert.ok(h.find('.exam-scramble'));
+  assert.equal(h.find('.move-list'), null, 'Solution moves must not appear before reveal');
+  assert.equal(h.find('[data-action="play"]'), null, 'Playback cannot give away the answer');
+  const scramble = h.find('.exam-scramble').textContent;
+  await h.click('[data-action="mode"][data-value="practice"]');
+  assert.equal(h.find('.move-list').textContent, previous, 'Exam has an independent cube workspace');
+  await h.click('[data-action="mode"][data-value="exam"]');
+  assert.equal(h.find('.exam-scramble').textContent, scramble);
+  await h.click('[data-action="exam-reveal"]');
+  assert.equal(h.find('.move-list').textContent.replaceAll('′', "'"), cases.find(c => c.id === 'oll-1').algorithm.replaceAll(' ', ''));
+  await h.click('[data-action="exam-answer"][data-value="learned"]');
+  assert.ok(JSON.parse(h.window.localStorage.getItem('rubiks-practice-v1')).learned.includes('oll-1'));
+  assert.match(h.find('.exam-finished').textContent, /complete|memorised/i);
+  assert.equal(h.find('[data-action="exam-start"]').disabled, true);
+  const savedExam = JSON.parse(h.window.localStorage.getItem('rubiks-daily-exam-v1'));
+  assert.equal(Object.values(savedExam.days)[0].answers[0].outcome, 'learned');
+});
+
+test('daily exam preferences, unfinished attempts, and historical results survive reload', async (t) => {
+  const today = new Date();
+  const date = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+  const h = await browser(t, { exam: { stages: ['P'], count: 5, days: {
+    '2020-01-01': { queue: [], answers: [{ id: 'pll-t', stage: 'P', outcome: 'again' }] },
+    [date]: { queue: [{ id: 'pll-t', stage: 'P', caseId: 'pll-t' }], answers: [] },
+  } } });
+  await h.click('[data-action="mode"][data-value="exam"]');
+  assert.equal(h.find('#exam-count').value, '5');
+  assert.equal(h.find('[data-exam-stage="P"]').checked, true);
+  assert.equal(h.find('[data-exam-stage="F"]').checked, false);
+  assert.ok(h.find('.exam-scramble'), 'Saved unfinished question resumes automatically');
+  await h.click('[data-action="exam-answer"][data-value="again"]');
+  assert.equal(JSON.parse(h.window.localStorage.getItem('rubiks-practice-v1'))?.learned?.includes('pll-t') || false, false);
+  assert.match(h.find('.exam-history').textContent, /2020-01-01/);
+  const input = h.find('#exam-date');
+  input.value = '2020-01-01';
+  input.dispatchEvent(new h.window.Event('change', { bubbles: true }));
+  assert.equal(h.find('[data-action="exam-start"]'), null, 'Past days are read-only history');
+  assert.match(h.find('.exam-daily-summary').textContent, /1/);
+});
+
+test('all cube side controls and keyboard orbit preserve the displayed algorithm and move', async (t) => {
+  const h = await browser(t);
+  const canvas = h.find('.turn-canvas');
+  const moves = h.find('.move-list').textContent;
+  for (const side of ['right', 'back', 'left', 'top', 'bottom', 'front']) {
+    await h.click(`[data-action="cube-view"][data-value="${side}"]`);
+    assert.equal(h.find(`[data-action="cube-view"][data-value="${side}"]`).getAttribute('aria-pressed'), 'true');
+    assert.equal(h.find('.turn-canvas'), canvas);
+    assert.equal(h.find('.move-list').textContent, moves);
+  }
+  canvas.dispatchEvent(new h.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true, cancelable: true }));
+  assert.equal(h.find('[data-action="cube-view"][aria-pressed="true"]'), null);
+  assert.equal(h.find('.move-list').textContent, moves);
+  canvas.dispatchEvent(new h.window.KeyboardEvent('keydown', { key: 'Home', bubbles: true, cancelable: true }));
+  assert.equal(h.find('[data-action="cube-view"][data-value="front"]').getAttribute('aria-pressed'), 'true');
+});
+
+test('resuming an exam skips cases memorised elsewhere and preserves Chinese labels', async (t) => {
+  const now = new Date();
+  const date = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  const h = await browser(t, { language: 'zh-HK', practice: { learned: ['pll-t'] }, exam: { stages: ['P'], count: 5, days: {
+    [date]: { queue: [{ id: 'pll-t', stage: 'P' }, { id: 'pll-ua', stage: 'P' }], answers: [] },
+  } } });
+  await h.click('[data-action="mode"][data-value="exam"]');
+  assert.match(h.find('h1').textContent, /每日測驗/);
+  assert.equal(JSON.parse(h.window.localStorage.getItem('rubiks-daily-exam-v1')).days[date].queue[0].id, 'pll-ua');
+  assert.match(h.find('.exam-assessment').textContent, /鎖定/);
+});
+
+test('cross exam waits for its worker, supports retry, and ignores answers after navigation', async (t) => {
+  const boundary = solverBoundary();
+  const h = await browser(t, { Worker: boundary.Worker, exam: { stages: ['C'], count: 5, days: {} } });
+  await h.click('[data-action="mode"][data-value="exam"]');
+  await h.click('[data-action="exam-start"]');
+  await h.click('[data-action="exam-reveal"]');
+  assert.equal(h.find('[data-action="exam-reveal"]').disabled, true);
+  const worker = boundary.latest();
+  assert.equal(worker.messages[0].length, 54);
+  worker.onerror();
+  assert.ok(h.find('.alert.error'));
+  assert.equal(h.find('[data-action="exam-reveal"]').disabled, false);
+  await h.click('[data-action="exam-reveal"]');
+  const nextWorker = boundary.latest();
+  nextWorker.emit({ result: { algorithm: 'R' } });
+  assert.ok(h.find('.move-list'));
+  await h.click('[data-action="exam-answer"][data-value="solved"]');
+  assert.match(h.find('.exam-results').textContent, /Solved this cross/);
+  await h.click('[data-action="exam-reveal"]');
+  const stale = boundary.latest();
+  await h.click('[data-action="mode"][data-value="practice"]');
+  const moves = h.find('.move-list').textContent;
+  stale.emit({ result: { algorithm: 'F2' } });
+  assert.equal(h.find('.move-list').textContent, moves);
+});
+
+test('returning to an interrupted cross exam restores a working reveal button', async (t) => {
+  const boundary = solverBoundary();
+  const h = await browser(t, { Worker: boundary.Worker, exam: { stages: ['C'], count: 5, days: {} } });
+  await h.click('[data-action="mode"][data-value="exam"]');
+  await h.click('[data-action="exam-start"]');
+  await h.click('[data-action="exam-reveal"]');
+  h.window.dispatchEvent(new h.window.Event('pagehide'));
+  h.window.dispatchEvent(new h.window.Event('pageshow'));
+  assert.equal(h.find('[data-action="exam-reveal"]').disabled, false);
+  assert.ok(h.find('.exam-scramble'));
+});
+
+for (const action of ['exam-start', 'exam-reveal', 'exam-answer']) {
+  test(`midnight makes yesterday’s exam read-only before ${action}`, async (t) => {
+    const h = await browser(t, { date: '2026-09-17T23:59:00' });
+    await h.click('[data-action="mode"][data-value="exam"]');
+    await h.click('[data-action="exam-start"]');
+    const saved = h.window.localStorage.getItem('rubiks-daily-exam-v1');
+    h.setDate('2026-09-18T00:01:00');
+    await h.click(`[data-action="${action}"]`);
+    assert.equal(h.find('.exam-scramble'), null, 'Yesterday is history, not an active exam');
+    assert.equal(h.find('[data-action="exam-answer"]'), null);
+    assert.equal(h.find('#exam-date').value, '2026-09-17');
+    assert.equal(h.window.localStorage.getItem('rubiks-daily-exam-v1'), saved, 'No yesterday answer or today record is invented');
+    await h.click('[data-action="exam-date"][data-value="2026-09-18"]');
+    assert.ok(h.find('[data-action="exam-start"]'));
+    assert.equal(h.find('.exam-scramble'), null);
+  });
+}
+
+test('a language rerender after midnight hides yesterday’s revealed question', async (t) => {
+  const h = await browser(t, { date: '2026-09-17T23:59:00' });
+  await h.click('[data-action="mode"][data-value="exam"]');
+  await h.click('[data-action="exam-start"]');
+  await h.click('[data-action="exam-reveal"]');
+  h.setDate('2026-09-18T00:01:00');
+  h.language('zh-HK');
+  assert.equal(h.find('.exam-scramble'), null);
+  assert.equal(h.find('.move-list'), null);
+  assert.ok(h.find('[data-action="exam-date"][data-value="2026-09-18"]'));
+});
+
+for (const storageKey of ['rubiks-practice-v1', 'rubiks-daily-exam-v1']) {
+  test(`a failed ${storageKey} save leaves a visible warning across modes and languages`, async (t) => {
+    const h = await browser(t);
+    const setItem = h.window.Storage.prototype.setItem;
+    t.mock.method(h.window.Storage.prototype, 'setItem', function (key, value) {
+      if (key === storageKey) throw new Error('Storage unavailable');
+      return setItem.call(this, key, value);
+    });
+    if (storageKey === 'rubiks-practice-v1') await h.click('[data-action="learned"]');
+    else {
+      await h.click('[data-action="mode"][data-value="exam"]');
+      await h.click('[data-action="exam-start"]');
+    }
+    assert.match(h.find('.storage-warning')?.textContent || '', /Progress could not be saved on this device/);
+    await h.click('[data-action="mode"][data-value="practice"]');
+    assert.match(h.find('.storage-warning').textContent, /Progress could not be saved/);
+    await h.click('[data-action="mode"][data-value="exam"]');
+    assert.match(h.find('.storage-warning').textContent, /Progress could not be saved/);
+    h.language('zh-HK');
+    assert.match(h.find('.storage-warning').textContent, /[\u3400-\u9fff]/);
+  });
+}
+
+test('an exam preference save failure appears immediately without another navigation', async (t) => {
+  const h = await browser(t);
+  await h.click('[data-action="mode"][data-value="exam"]');
+  t.mock.method(h.window.Storage.prototype, 'setItem', () => { throw new Error('Storage unavailable'); });
+  const count = h.find('#exam-count');
+  count.value = '5';
+  count.dispatchEvent(new h.window.Event('change', { bubbles: true }));
+  assert.match(h.find('.storage-warning')?.textContent || '', /Progress could not be saved/);
+});
+
+test('choosing daily exam stages retains focus on the changed checkbox', async (t) => {
+  const h = await browser(t);
+  await h.click('[data-action="mode"][data-value="exam"]');
+  const checkbox = h.find('[data-exam-stage="F"]');
+  checkbox.focus();
+  checkbox.click();
+  assert.equal(h.find('[data-exam-stage="F"]').checked, false);
+  assert.equal(h.document.activeElement, h.find('[data-exam-stage="F"]'));
+});
+
+test('rerendering a top, bottom or freely rotated view keeps its neutral grip caption', async (t) => {
+  const h = await browser(t);
+  for (const side of ['top', 'bottom', null]) {
+    if (side) await h.click(`[data-action="cube-view"][data-value="${side}"]`);
+    else h.find('.turn-canvas').dispatchEvent(new h.window.KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+    h.language('en');
+    assert.equal(h.find('.view-caption').textContent, 'Viewing only — keep your original grip.');
+  }
+});
+
+test('stage tabs in a library practice case return to that formula library instead of loading a default', async (t) => {
+  const h = await browser(t);
+  for (const stage of ['P', 'O', 'F', 'F']) {
+    const oldCase = h.find('.case-badge')?.textContent;
+    await h.click(`[data-action="stage"][data-value="${stage}"]`);
+    assert.ok(h.find('.mode-nav [data-value="algorithms"].active'));
+    assert.ok(h.find(`.stage-tabs [data-value="${stage}"].active`));
+    assert.equal(h.find('.turn-canvas'), null);
+    assert.equal(h.find('.move-list'), null);
+    const record = cases.filter(c => c.stage === stage).at(-1);
+    await h.click(`.case-card[data-id="${record.id}"]`);
+    assert.equal(h.find('.case-badge').textContent, record.name);
+    assert.ok(oldCase, 'Started from a specific practice formula');
+  }
+  await h.click('[data-action="stage"][data-value="C"]');
+  assert.ok(h.find('.mode-nav [data-value="algorithms"].active'));
+  assert.ok(h.find('.cross-tip'));
+});
+
+test('every formula is visible in its pattern chapter without load-more controls', async (t) => {
+  const h = await browser(t, { language: 'zh-HK' });
+  await h.click('[data-action="mode"][data-value="algorithms"]');
+  for (const stage of ['F', 'O', 'P']) {
+    await h.click(`[data-action="stage"][data-value="${stage}"]`);
+    const expected = cases.filter(c => c.stage === stage);
+    assert.equal(h.document.querySelectorAll('.case-card').length, expected.length);
+    assert.equal(h.find('[data-action="load-cases"]'), null);
+    const sections = [...h.document.querySelectorAll('.library-group')];
+    assert.equal(sections.length, new Set(expected.map(c => c.group)).size);
+    assert.equal(h.find('#library-cards details'), null, 'All groups remain expanded');
+    for (const section of sections) {
+      assert.match(section.querySelector('h3').textContent, /[\u3400-\u9fff]/);
+      assert.deepEqual([...section.querySelectorAll('.case-card')].map(c => c.dataset.id), expected.filter(c => c.group === section.dataset.group).map(c => c.id));
+    }
+    const jump = h.find('[data-action="library-group"]');
+    const targetId = jump.dataset.value;
+    jump.click();
+    assert.equal(h.document.activeElement.id, targetId);
+  }
+});
+
+test('refresh restores the exact nondefault formula variation and its playback position', async (t) => {
+  let navigation, expectedMoves, expectedName;
+  await t.test('select a variation and save the page', async context => {
+    const h = await browser(context);
+    await h.click('[data-action="mode"][data-value="algorithms"]');
+    await h.click('[data-action="stage"][data-value="P"]');
+    const record = cases.find(c => c.stage === 'P' && c.alternatives?.length);
+    await h.click(`.case-card[data-id="${record.id}"]`);
+    await h.click('[data-action="mode"][data-value="algorithms"]');
+    await h.click(`[data-action="alternative"][data-id="${record.id}"][data-index="0"]`);
+    h.speed(1);
+    await h.click('[data-action="jump"][data-index="2"]');
+    assert.match(h.find('.live-move').textContent, /Move 2 of/);
+    expectedName = record.name; expectedMoves = h.find('.move-list').textContent;
+    h.window.dispatchEvent(new h.window.Event('pagehide'));
+    navigation = JSON.parse(h.window.localStorage.getItem('rubiks-navigation-v1'));
+    assert.equal(navigation.caseId, record.id);
+    assert.equal(navigation.algorithm, record.alternatives[0]);
+  });
+  await t.test('reload returns to the same formula', async context => {
+    const h = await browser(context, { navigation });
+    assert.equal(h.find('.case-badge').textContent, expectedName);
+    assert.equal(h.find('.move-list').textContent, expectedMoves);
+    assert.match(h.find('.live-move').textContent, /Move 2 of/);
+  });
+});
+
+test('refresh restores a filtered formula chapter and library scroll position', async (t) => {
+  let navigation;
+  await t.test('remember the chapter filter', async context => {
+    const h = await browser(context);
+    await h.click('[data-action="mode"][data-value="algorithms"]');
+    await h.click('[data-action="stage"][data-value="O"]');
+    const group = h.find('#group'); group.value = 'Corners Oriented';
+    group.dispatchEvent(new h.window.Event('change', { bubbles: true }));
+    const search = h.find('#case-search'); search.value = '57';
+    search.dispatchEvent(new h.window.Event('input', { bubbles: true }));
+    h.window.scrollTo({ top: 640 });
+    h.window.dispatchEvent(new h.window.Event('pagehide'));
+    navigation = JSON.parse(h.window.localStorage.getItem('rubiks-navigation-v1'));
+    assert.equal(navigation.group, 'Corners Oriented');
+  });
+  await t.test('restore chapter and scroll', async context => {
+    const h = await browser(context, { navigation });
+    assert.ok(h.find('.mode-nav [data-value="algorithms"].active'));
+    assert.equal(h.find('#group').value, 'Corners Oriented');
+    assert.equal(h.find('#case-search').value, '57');
+    assert.deepEqual([...h.document.querySelectorAll('.case-card')].map(c => c.dataset.id), ['oll-57']);
+    assert.equal(h.scrolls.at(-1).top, 640);
+  });
+});
+
+test('leaving for Daily Exam saves the latest formula position without replacing it with an exam case', async (t) => {
+  const h = await browser(t);
+  await h.click('[data-action="jump"][data-index="2"]');
+  await h.click('[data-action="cube-view"][data-value="bottom"]');
+  h.window.scrollTo({ top: 480 });
+  await h.click('[data-action="mode"][data-value="exam"]');
+  await h.click('[data-action="exam-start"]');
+  h.window.dispatchEvent(new h.window.Event('pagehide'));
+  const navigation = JSON.parse(h.window.localStorage.getItem('rubiks-navigation-v1'));
+  assert.equal(navigation.caseId, 'oll-27');
+  assert.equal(navigation.step, 2);
+  assert.equal(navigation.view, 'bottom');
+  assert.equal(navigation.scrollY, 480);
 });

@@ -1,0 +1,104 @@
+/* Camera controls and progress extend the existing practice workspace. */
+.cube-view-controls { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 5px; width: 100%; margin-top: 10px; }
+.cube-view-controls button { min-width: 0; min-height: 44px; padding: 7px 3px; border: 1px solid var(--line); border-radius: 6px; background: white; color: #526783; font-size: 12px; font-weight: 600; overflow-wrap: anywhere; }
+.cube-view-controls button[aria-pressed="true"] { border-color: #93a9f3; background: var(--blue-wash); color: var(--blue); }
+.orbit-hint { max-width: 43ch; margin: 10px 4px 2px; text-align: center; color: #65758c; font-size: 12px; line-height: 1.7; }
+.turn-canvas:focus-visible { outline: 3px solid #7892f7; outline-offset: -3px; border-radius: 8px; }
+.cube-stage .view-toggle { min-height: 44px; }
+.cube-stage .view-caption { max-width: 100%; padding: 0 4px; line-height: 1.6; }
+
+.case-entry { display: flex; flex-direction: column; min-width: 0; }
+.case-entry .case-card { width: 100%; flex: 1; border-bottom-left-radius: 0; border-bottom-right-radius: 0; }
+.memorise-button { min-height: 44px; min-width: 0; white-space: normal; text-align: center; line-height: 1.5; font-size: 12px; }
+.case-entry .memorise-button { width: 100%; border-top: 0; border-radius: 0 0 9px 9px; padding: 10px 8px; }
+.memorise-button.is-learned:disabled { opacity: 1; color: #216c51; background: #edf9f3; border-color: #d2eade; }
+.algorithm-panel .panel-heading:has(.memorise-button) { flex-wrap: wrap; padding: 10px 0; }
+.algorithm-panel .panel-heading .memorise-button { margin-left: auto; }
+.mastery-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; margin: 20px 0; padding: 17px 18px; border: 1px solid var(--line); border-radius: 9px; background: white; }
+.mastery-summary > strong { display: inline-flex; align-items: center; gap: 7px; color: #425773; font-size: 14px; }
+.mastery-summary > span { margin-left: auto; color: #216c51; font-size: 14px; font-weight: 700; }
+.mastery-summary > p { flex-basis: 100%; color: #65758c; font-size: 12px; line-height: 1.75; }
+.mastery-summary .secondary { min-height: 44px; white-space: normal; }
+.stage-complete { display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0; width: 21px; height: 21px; border-radius: 50%; color: #216c51; background: #e6f6ef; font-size: 13px; font-weight: 700; }
+.stage-tabs .stage-complete { position: absolute; right: 6px; top: 6px; width: 18px; height: 18px; }
+.stage-tabs .stage-complete svg { width: 13px; height: 13px; }
+
+.daily-exam { min-width: 0; }
+.daily-exam .page-title > div { min-width: 0; }
+.daily-exam .page-title p { line-height: 1.7; }
+.daily-exam .primary, .daily-exam .secondary { min-height: 44px; white-space: normal; line-height: 1.5; }
+.exam-date-label { display: flex; flex-direction: column; gap: 7px; flex-shrink: 0; color: #65758c; font-size: 12px; }
+.exam-date-label input { min-height: 44px; max-width: 100%; min-width: 0; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px; background: white; color: var(--ink); font-size: 16px; }
+.exam-settings { padding: 20px; }
+.exam-settings fieldset { min-width: 0; margin: 0; padding: 0; border: 0; }
+.exam-settings legend { margin-bottom: 15px; padding: 0; color: #425773; font-size: 15px; font-weight: 650; line-height: 1.6; }
+.exam-stage-options { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.exam-stage-options > label { position: relative; display: grid; grid-template-columns: 18px 34px minmax(0, 1fr); align-items: center; gap: 9px; min-height: 80px; padding: 12px 10px; border: 1px solid var(--line); border-radius: 8px; background: #fafbfe; cursor: pointer; }
+.exam-stage-options > label.chosen { border-color: #93a9f3; background: #f5f7ff; }
+.exam-stage-options input { width: 18px; height: 18px; margin: 0; accent-color: var(--blue); }
+.exam-stage-options .stage-letter { width: 34px; height: 34px; }
+.exam-stage-options .chosen .stage-letter { background: var(--stage-color); color: white; }
+.exam-stage-options strong { display: block; color: #425773; font-size: 14px; }
+.exam-stage-options small { display: block; margin-top: 5px; color: #65758c; font-size: 11px; line-height: 1.55; overflow-wrap: anywhere; }
+.exam-stage-options .stage-complete { position: absolute; right: 4px; top: 4px; width: 16px; height: 16px; font-size: 11px; }
+.exam-settings-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 18px; margin-top: 18px; }
+.exam-settings-footer > label { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #526783; font-size: 13px; }
+.exam-settings-footer select { min-height: 44px; font-size: 16px; color: var(--ink); }
+.exam-note { margin-top: 14px; color: #65758c; font-size: 12px; line-height: 1.75; }
+.exam-note + .exam-note { margin-top: 7px; }
+.exam-daily-summary { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 18px; margin: 22px 0; color: #65758c; font-size: 13px; line-height: 1.7; }
+.exam-daily-summary > strong { color: #425773; }
+.exam-question-title { margin: 25px 0 14px; font-size: 22px; }
+.exam-question-title:focus-visible, .exam-finished:focus-visible { outline: 3px solid #7892f7; outline-offset: 4px; }
+.exam-setup { margin-bottom: 20px; padding: 20px; }
+.exam-setup h3, .exam-assessment h3 { font-size: 17px; line-height: 1.5; }
+.exam-setup ol { margin: 12px 0 16px; padding-left: 22px; color: #526783; font-size: 13px; line-height: 1.8; }
+.exam-setup li + li { margin-top: 7px; }
+.exam-scramble { display: block; max-width: 100%; padding: 15px 17px; border: 1px solid #dfe6f5; border-radius: 7px; background: #f5f7ff; color: #344d7b; font-size: 20px; font-weight: 600; line-height: 1.9; word-spacing: .2em; white-space: normal; overflow-wrap: anywhere; }
+.exam-goal { margin-top: 15px; color: #526783; font-size: 13px; line-height: 1.8; }
+.exam-goal strong { color: var(--ink); margin-right: 6px; }
+.exam-answer-column { display: grid; gap: 18px; min-width: 0; }
+.exam-recall, .exam-assessment, .exam-finished, .exam-results { min-width: 0; padding: 23px; }
+.exam-recall h2, .exam-finished h2, .exam-results h2 { font-size: 21px; line-height: 1.5; }
+.exam-recall > p, .exam-assessment > p, .exam-finished > p { margin: 12px 0 18px; color: #65758c; font-size: 13px; line-height: 1.8; }
+.exam-assessment > div { display: flex; flex-direction: column; gap: 10px; }
+.exam-results { margin-top: 24px; }
+.exam-results ul { margin: 15px 0 0; padding: 0; list-style: none; }
+.exam-results li { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px 16px; padding: 13px 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.6; }
+.exam-results li > span { color: #526783; }
+.exam-results li > strong { font-size: 12px; font-weight: 600; color: #65758c; }
+.exam-results li > strong.is-learned { padding: 2px 7px; border-radius: 4px; color: #216c51; }
+.exam-history { margin-top: 30px; }
+.exam-history h2 { font-size: 20px; line-height: 1.5; }
+.exam-history > p { margin-top: 7px; color: #65758c; font-size: 12px; }
+.exam-history > div { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.exam-history button { display: flex; flex-direction: column; align-items: flex-start; justify-content: center; gap: 7px; min-width: 0; min-height: 70px; padding: 13px 16px; border: 1px solid var(--line); border-radius: 8px; background: white; text-align: left; }
+.exam-history button.active { border-color: #93a9f3; background: #f5f7ff; }
+.exam-history button strong { color: #425773; font-size: 13px; }
+.exam-history button span, .exam-history > div > p { color: #65758c; font-size: 12px; line-height: 1.7; }
+.exam-history > div > p { grid-column: 1 / -1; }
+
+@media (max-width: 1100px) {
+  .exam-stage-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 700px), (max-width: 980px) and (max-height: 520px) {
+  .cube-view-controls { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px; }
+  .orbit-hint { font-size: 11px; }
+  .case-entry .memorise-button { font-size: 11px; gap: 5px; padding: 9px 6px; }
+  .mastery-summary { padding: 15px; }
+  .mastery-summary > strong { font-size: 13px; }
+  .mastery-summary .secondary { width: 100%; }
+  .exam-date-label { margin-top: 17px; max-width: 220px; }
+  .exam-settings, .exam-setup, .exam-recall, .exam-assessment, .exam-finished, .exam-results { padding: 17px; }
+  .exam-stage-options { gap: 8px; }
+  .exam-stage-options > label { grid-template-columns: 18px 28px minmax(0, 1fr); gap: 6px; padding: 12px 8px; }
+  .exam-stage-options .stage-letter { width: 28px; height: 30px; font-size: 17px; }
+  .exam-stage-options strong { font-size: 13px; }
+  .exam-stage-options small { font-size: 11px; }
+  .exam-settings-footer > label { justify-content: space-between; width: 100%; }
+  .exam-settings-footer > button { width: 100%; }
+  .exam-daily-summary { display: grid; gap: 5px; margin: 19px 0; }
+  .exam-question-title { font-size: 20px; }
+  .exam-scramble { padding: 12px; font-size: 18px; }
+  .exam-history > div { grid-template-columns: minmax(0, 1fr); }
+}

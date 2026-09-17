@@ -100,6 +100,17 @@ test('front and back projections show the intended face arrangement and fit turn
   }
 });
 
+test('camera angles can inspect a face head-on without changing its cube coordinates', () => {
+  const view = { yaw: 0, pitch: 0 };
+  assert.deepEqual(projectPoint([1, 0, 0], view), [212, 144]);
+  assert.deepEqual(projectPoint([0, 1, 0], view), [160, 92]);
+  assert.deepEqual(projectPoint([0, 0, 1], view), [160, 144]);
+  assert.ok(Math.abs(projectPoint([0, 1, 0], 'top')[1] - 144) < 1e-10);
+  assert.ok(projectPoint([0, 0, 1], 'bottom')[1] < 144);
+  assert.ok(projectPoint([0, 0, 1], 'left')[0] > 160);
+  assert.ok(projectPoint([1, 0, 0], 'right')[0] < 160);
+});
+
 // Node has no Canvas2D or ResizeObserver. Record the renderer's graphics/resource
 // boundary while exercising the complete production draw and lifecycle logic.
 function canvasRecorder() {
@@ -116,6 +127,27 @@ function canvasRecorder() {
     get height() { return height; }, set height(value) { height = value; allocations += 1; },
     getContext() { return context; }, getBoundingClientRect() { return { width: 320, height: 300 }; } };
 }
+
+test('camera movement reveals the chosen faces while preserving the current turn pose', () => {
+  const canvas = canvasRecorder();
+  const renderer = createCubeRenderer(canvas);
+  const cube = solvedCube();
+  const before = [...cube];
+  renderer.draw(cube, undefined, null, 0, { yaw: 0, pitch: 0 });
+  assert.equal(canvas.fills.filter(color => color === '#35b78a').length, 9);
+  assert.ok(!canvas.fills.includes('#ffd643'));
+  assert.ok(!canvas.fills.includes('#ee5c5b'));
+  renderer.draw(cube, undefined, null, 0, 'bottom');
+  assert.equal(canvas.fills.filter(color => color === '#ffffff').length, 9);
+  renderer.draw(cube, undefined, 'R', 0.5, 'left');
+  const turned = [...canvas.fills];
+  renderer.draw(cube, undefined, 'R', 0.5, 'right');
+  assert.notDeepEqual(canvas.fills, turned);
+  renderer.draw(cube, undefined, 'R', 0.5, 'left');
+  assert.deepEqual(canvas.fills, turned);
+  assert.deepEqual(cube, before);
+  renderer.destroy();
+});
 
 test('mobile rendering caps its pixel buffer and does not allocate new buffers or schedule animation per draw', () => {
   const oldRatio = globalThis.devicePixelRatio;

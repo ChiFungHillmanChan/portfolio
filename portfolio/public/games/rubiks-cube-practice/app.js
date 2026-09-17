@@ -6,6 +6,10 @@ import { t, getLocale, initializeLocale, setLocale, localizeError } from './i18n
 import { colors, defaultScheme, faceNames, stickerLabel, cubeSvg, topSvg, cubeNet } from './cube-view.js?v=20260912-photo';
 import { isLastLayerStage, inputFaces, editableIndices, prepareInputCube, applyFaceColors } from './input-model.js';
 import { createCubeRenderer } from './cube-renderer.js';
+import { createCubeOrbit } from './cube-orbit.js';
+import { createExamQuestions, localDateKey } from './daily-exam.js';
+import { dailyExamView } from './daily-exam-view.js';
+import { renderLibraryGroups } from './library-groups.js';
 import { createPlayback, SPEEDS } from './playback.js';
 import { createSolveTimer, timerView, mountSolveTimer } from './solve-timer.js';
 import { mobileNavTrigger, createMobileNav } from './mobile-nav.js';
@@ -50,18 +54,35 @@ const state = {
   mode: 'practice', stage: 'O', practiceStage: 'O', chapter: 'O', source: 'library', selected: null,
   cube: engine.solvedCube(), scheme: { ...defaultScheme }, paint: 'U', slot: 'FR',
   result: null, step: 0, playing: false, hide: false, speed: SPEEDS.includes(saved.speed) ? saved.speed : 0.5,
-  view: 'front', caseLimit: 12,
-  query: '', group: 'all', filter: 'all', error: '', notice: '', busy: false,
+  view: 'front',
+  query: '', group: 'all', filter: 'all', error: '', notice: '', busy: false, storageWarning: false,
   photoFaces: [], referenceColors: {}, photoScope: null,
   cubeText: '', solverStatus: 'ready',
   learned: new Set(Array.isArray(saved.learned) ? saved.learned : []),
   completed: new Set(Array.isArray(saved.completed) ? saved.completed : []),
 };
-let cases = [], crossWorker, renderer, renderInProgress = false, sequenceCube, sequenceAlgorithm;
+let cases = [], crossWorker, renderer, cubeOrbit, renderInProgress = false, sequenceCube, sequenceAlgorithm;
 let sequenceEnd = state.cube;
 let photoCapture = null, photoRequest = 0;
 let fullSolveRequest = 0, practiceWorkspace = null, fullWorkspace = null, restoredStep = null;
 const workspaceKeys = ['stage', 'practiceStage', 'source', 'selected', 'cube', 'scheme', 'paint', 'slot', 'result', 'step', 'hide', 'view', 'photoFaces', 'referenceColors', 'photoScope', 'cubeText', 'error', 'notice'];
+let examWorkspace = null, examDate = localDateKey(), examQuestion = null, examRevealed = false;
+function readExam() {
+  try {
+    const value = JSON.parse(localStorage.getItem('rubiks-daily-exam-v1'));
+    if (value && typeof value === 'object') return {
+      stages: Array.isArray(value.stages) ? [...new Set(value.stages.filter(stage => ['C', 'F', 'O', 'P'].includes(stage)))] : ['F', 'O', 'P'],
+      count: [5, 10, 20].includes(value.count) ? value.count : 10,
+      days: value.days && typeof value.days === 'object' && !Array.isArray(value.days) ? value.days : {},
+    };
+  } catch { /* Start a new daily record when storage is unavailable. */ }
+  return { stages: ['F', 'O', 'P'], count: 10, days: {} };
+}
+const exam = readExam();
+function persistExam() {
+  try { localStorage.setItem('rubiks-daily-exam-v1', JSON.stringify(exam)); } catch { showStorageWarning(); }
+}
+const examDay = () => exam.days[examDate] || { queue: [], answers: [] };
 const saveWorkspace = () => Object.fromEntries(workspaceKeys.map(key => [key, state[key]]));
 function restoreWorkspace(workspace) {
   Object.assign(state, workspace);
@@ -89,11 +110,11 @@ const playback = createPlayback({
 });
 playback.setSpeed(state.speed);
 reducedMotion.addEventListener('change', (event) => playback.setReducedMotion(event.matches));
-document.addEventListener('visibilitychange', () => { if (document.hidden) playback.pause(); });
-window.addEventListener('pagehide', () => { cancelWork(); timerMount?.destroy(); timerMount = null; solveTimer.cancel(); mobileNav?.close(); });
+document.addEventListener('visibilitychange', () => { if (document.hidden) { playback.pause(); persistNavigation(); } });
+window.addEventListener('pagehide', () => { persistNavigation(); cancelWork(); timerMount?.destroy(); timerMount = null; solveTimer.cancel(); mobileNav?.close(); });
 window.addEventListener('pageshow', () => {
   if (state.mode === 'timer' && !timerMount) timerMount = mountSolveTimer(document.querySelector('.solve-timer'), solveTimer);
-  if (state.mode === 'solve') render();
+  if (state.mode === 'solve' || state.mode === 'exam') render();
 });
 const previewObserver = new IntersectionObserver((entries) => {
   const preview = document.querySelector('#cube-practice');
@@ -105,7 +126,47 @@ const getCaseState = (c) => {
   return caseStates.get(c.algorithm);
 };
 function persist() {
-  try { localStorage.setItem('rubiks-practice-v1', JSON.stringify({ learned: [...state.learned], completed: [...state.completed], speed: state.speed })); } catch { /* Practice remains usable with storage disabled. */ }
+  try { localStorage.setItem('rubiks-practice-v1', JSON.stringify({ learned: [...state.learned], completed: [...state.completed], speed: state.speed })); } catch { showStorageWarning(); }
+}
+let navigationReady = false;
+function persistNavigation() {
+  if (!navigationReady || !['practice', 'algorithms'].includes(state.mode)) return;
+  if (state.mode === 'practice' && (state.source !== 'library' || !state.selected)) return;
+  const record = state.source === 'library' ? state.selected : null;
+  const navigation = { mode: state.mode, stage: state.stage, chapter: state.chapter,
+    caseId: record?.id || null, algorithm: record?.algorithm || null,
+    query: state.query, group: state.group, filter: state.filter,
+    step: state.result?.algorithm === record?.algorithm ? state.step : 0,
+    hide: state.hide, view: state.view, scrollY: window.scrollY || 0 };
+  try { localStorage.setItem('rubiks-navigation-v1', JSON.stringify(navigation)); } catch { showStorageWarning(); }
+}
+function restoreNavigation() {
+  let navigation;
+  try { navigation = JSON.parse(localStorage.getItem('rubiks-navigation-v1')); } catch { return null; }
+  if (!navigation || !['practice', 'algorithms'].includes(navigation.mode) || !Object.hasOwn(stages, navigation.stage)) return null;
+  const record = cases.find(c => c.id === navigation.caseId);
+  if (record) {
+    const algorithm = [record.algorithm, ...(record.alternatives || [])].includes(navigation.algorithm) ? navigation.algorithm : record.algorithm;
+    loadCase({ ...record, algorithm });
+    restoredStep = Math.min(tokens(algorithm).length, Math.max(0, Number.isInteger(navigation.step) ? navigation.step : 0));
+    state.hide = navigation.hide === true;
+    if (['front', 'back', 'left', 'right', 'top', 'bottom'].includes(navigation.view)
+      || (Number.isFinite(navigation.view?.yaw) && Number.isFinite(navigation.view?.pitch))) state.view = navigation.view;
+  }
+  state.mode = navigation.mode === 'practice' && !record ? 'algorithms' : navigation.mode;
+  state.stage = state.mode === 'practice' ? record.stage : navigation.stage;
+  state.chapter = Object.hasOwn(chapters, navigation.chapter) ? navigation.chapter : state.stage;
+  state.query = typeof navigation.query === 'string' ? navigation.query : '';
+  state.group = cases.some(c => c.stage === state.stage && c.group === navigation.group) ? navigation.group : 'all';
+  state.filter = ['all', 'learning', 'two-look'].includes(navigation.filter) ? navigation.filter : 'all';
+  return { scrollY: Number.isFinite(navigation.scrollY) ? Math.max(0, navigation.scrollY) : 0 };
+}
+function storageWarning() {
+  return state.storageWarning ? `<div class="alert notice storage-warning" role="alert">${t('Progress could not be saved on this device. Keep this page open to continue.')}</div>` : '';
+}
+function showStorageWarning() {
+  state.storageWarning = true;
+  if (!document.querySelector('.storage-warning')) document.querySelector('#main-content')?.insertAdjacentHTML('afterbegin', storageWarning());
 }
 function cancelWork() {
   playback.pause();
@@ -139,7 +200,6 @@ function setStage(stage) {
   state.stage = stage;
   state.chapter = stage;
   state.query = ''; state.group = 'all'; state.filter = 'all';
-  state.caseLimit = 12;
   if (state.mode !== 'practice') { render(); return; }
   state.practiceStage = stage;
   state.photoFaces = state.photoFaces.filter((face) => inputFaces(stage).includes(face));
@@ -170,6 +230,7 @@ function sidebar() {
       <button data-action="mode" data-value="practice" aria-label="${t('Practice mode')}" class="${state.mode === 'practice' ? 'active' : ''}" ${state.mode === 'practice' ? 'aria-current="page"' : ''}>${icon('practice')}${t('Practice mode')}</button>
       <button data-action="mode" data-value="algorithms" aria-label="${t('Algorithms')}" class="${state.mode === 'algorithms' ? 'active' : ''}" ${state.mode === 'algorithms' ? 'aria-current="page"' : ''}>${icon('search')}${t('Algorithms')}</button>
       <button data-action="mode" data-value="read" aria-label="${t('Read mode')}" class="${state.mode === 'read' ? 'active' : ''}" ${state.mode === 'read' ? 'aria-current="page"' : ''}>${icon('book')}${t('Read mode')}</button>
+      <button data-action="mode" data-value="exam" aria-label="${t('Daily Exam')}" class="${state.mode === 'exam' ? 'active' : ''}" ${state.mode === 'exam' ? 'aria-current="page"' : ''}>${icon('check')}${t('Daily Exam')}</button>
       <button data-action="mode" data-value="timer" aria-label="${t('Timer')}" class="${state.mode === 'timer' ? 'active' : ''}" ${state.mode === 'timer' ? 'aria-current="page"' : ''}>${icon('timer')}${t('Timer')}</button>
     </nav>
     <div class="rail-label chapters-label">${t('The learning path')}</div>
@@ -179,10 +240,36 @@ function sidebar() {
   </aside>`;
 }
 function header() {
-  return `<header class="topbar">${mobileNavTrigger()}<div class="breadcrumb">${t('Your workspace')} <span>/</span> <strong>${t({ read: 'Read', practice: 'Practice', algorithms: 'Algorithms', timer: 'Timer', solve: 'I just want to solve it' }[state.mode])}</strong></div><div class="topbar-right"><label class="language-picker" for="language-select"><span>Language / 語言</span><select id="language-select" aria-label="Language / 語言"><option value="en" lang="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option><option value="zh-HK" lang="zh-Hant-HK" ${getLocale() === 'zh-HK' ? 'selected' : ''}>繁體中文</option></select></label><button class="text-button notation-link" data-action="chapter" data-value="N" aria-label="${t('Move notation')}"><span>${t('Move notation')}</span> ${icon('book', 17)}</button><a class="coffee-button" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="${t('Buy me a coffee')}" title="${t('Buy me a coffee')}">${icon('coffee', 20)}<span>${t('Buy me a coffee')}</span></a></div></header>`;
+  return `<header class="topbar">${mobileNavTrigger()}<div class="breadcrumb">${t('Your workspace')} <span>/</span> <strong>${t({ read: 'Read', practice: 'Practice', algorithms: 'Algorithms', timer: 'Timer', exam: 'Daily Exam', solve: 'I just want to solve it' }[state.mode])}</strong></div><div class="topbar-right"><label class="language-picker" for="language-select"><span>Language / 語言</span><select id="language-select" aria-label="Language / 語言"><option value="en" lang="en" ${getLocale() === 'en' ? 'selected' : ''}>English</option><option value="zh-HK" lang="zh-Hant-HK" ${getLocale() === 'zh-HK' ? 'selected' : ''}>繁體中文</option></select></label><button class="text-button notation-link" data-action="chapter" data-value="N" aria-label="${t('Move notation')}"><span>${t('Move notation')}</span> ${icon('book', 17)}</button><a class="coffee-button" href="https://buymeacoffee.com/hillmanchan709" target="_blank" rel="noopener noreferrer" aria-label="${t('Buy me a coffee')}" title="${t('Buy me a coffee')}">${icon('coffee', 20)}<span>${t('Buy me a coffee')}</span></a></div></header>`;
 }
 function stageTabs() {
-  return `<nav class="stage-tabs" aria-label="${t('Practice stage')}">${Object.entries(stages).map(([key, stage]) => `<button data-action="stage" data-value="${key}" class="${state.stage === key ? 'active' : ''}" style="--stage-color:${stage.color}" aria-pressed="${state.stage === key}"><span class="stage-letter">${key}</span><span>${stage.short}<small>${key === 'C' ? t('Start here') : key === 'F' ? t('Pair & insert') : key === 'O' ? t('Face the top') : t('Finish the solve')}</small></span>${state.stage === key ? '<span class="stage-active-dot"></span>' : ''}</button>`).join('')}</nav>`;
+  return `<nav class="stage-tabs" aria-label="${t('Practice stage')}">${Object.entries(stages).map(([key, stage]) => `<button data-action="stage" data-value="${key}" class="${state.stage === key ? 'active' : ''}" style="--stage-color:${stage.color}" aria-pressed="${state.stage === key}"><span class="stage-letter">${key}</span><span>${stage.short}<small>${key === 'C' ? t('Start here') : key === 'F' ? t('Pair & insert') : key === 'O' ? t('Face the top') : t('Finish the solve')}</small></span>${stageMastered(key) ? `<span class="stage-complete" aria-label="${t('All cases memorised')}">${icon('check', 16)}</span>` : state.stage === key ? '<span class="stage-active-dot"></span>' : ''}</button>`).join('')}</nav>`;
+}
+function stageMastered(stage) {
+  const pool = cases.filter(c => c.stage === stage);
+  return pool.length > 0 && pool.every(c => state.learned.has(c.id));
+}
+function learnedButton(c) {
+  const learned = state.learned.has(c.id);
+  return `<button class="secondary memorise-button ${learned ? 'is-learned' : ''}" data-action="learned" data-id="${escape(c.id)}" ${learned ? 'disabled' : ''} aria-label="${t(learned ? '{case} memorised and locked' : 'Confirm {case} memorised', { case: escape(c.name) })}">${icon('check', 16)}${t(learned ? 'Memorised · locked' : 'I have memorised this')}</button>`;
+}
+function viewControls() {
+  return `<div class="cube-view-controls" role="group" aria-label="${t('Inspect cube sides')}">${['front', 'right', 'back', 'left', 'top', 'bottom'].map(view => `<button data-action="cube-view" data-value="${view}" aria-pressed="${state.view === view}">${t({front: 'Front', right: 'Right', back: 'Back', left: 'Left', top: 'Top', bottom: 'Bottom'}[view])}</button>`).join('')}</div><p class="orbit-hint" id="orbit-help">${t('Drag the cube to look around. Arrow keys rotate; Home resets the view.')} ${t('Viewing only — keep your original grip.')}</p>`;
+}
+function viewCaption() {
+  return t(state.view === 'front' ? 'Viewing top, front and right' : state.view === 'back' ? 'Viewing top, back and left · keep your original grip' : 'Viewing only — keep your original grip.');
+}
+function setCubeView(view) {
+  state.view = view;
+  document.querySelectorAll('[data-action="cube-view"]').forEach(button => button.setAttribute('aria-pressed', button.dataset.value === view));
+  const toggle = document.querySelector('[data-action="view"]');
+  if (toggle) {
+    toggle.textContent = t(view === 'front' ? 'Back view' : 'Front view');
+    toggle.setAttribute('aria-label', t(view === 'front' ? 'Show back view' : 'Show front view'));
+  }
+  const caption = document.querySelector('.view-caption');
+  if (caption) caption.textContent = viewCaption();
+  drawPausedFrame();
 }
 function currentDisplay() {
   return state.result ? playback.snapshot().cube : state.cube;
@@ -219,10 +306,11 @@ function cubePanel() {
   const c = state.result?.case || state.selected;
   const display = currentDisplay();
   const isEditor = state.source === 'mine' && !state.result;
+  const isExam = state.mode === 'exam';
   return `<section id="cube-practice" class="cube-panel panel ${isEditor ? 'cube-editor' : 'cube-preview'}">
-    <div class="panel-heading"><span class="section-label">${state.source === 'mine' ? t('Your cube') : t('Case preview')}</span>${state.mode === 'solve' ? `<span class="full-solve-size">3 × 3</span>` : `<div class="segmented"><button data-action="source" data-value="library" class="${state.source === 'library' ? 'active' : ''}">${t('Case library')}</button><button data-action="source" data-value="mine" class="${isEditor ? 'active' : ''}">${state.result && state.source === 'mine' ? t('Edit colors') : t('Enter colors')}</button></div>`}</div>
-    ${isEditor ? colorEditor() : `<div class="cube-stage"><div class="cube-stage-top"><span class="case-label">${c ? escape(c.name) : t(state.mode === 'solve' ? 'Full cube solution' : 'Cross practice')} <span>${c ? escape(caseTitle(c)) : t('Your next moves')}</span></span><button class="text-button view-toggle" data-action="view" aria-label="${t(state.view === 'front' ? 'Show back view' : 'Show front view')}">${state.view === 'front' ? t('Back view') : t('Front view')}</button></div><canvas class="turn-canvas" width="320" height="300" role="img" aria-label="${t('Animated Rubik’s cube showing top, front and right faces')}">${t('Your browser needs canvas support to show the turning cube.')}</canvas><div class="view-caption">${state.view === 'front' ? t('Viewing top, front and right') : t('Viewing top, back and left · keep your original grip')}</div></div><p class="holding-hint">${holdingText(display)}</p>${state.result ? playbackControls() : ''}`}
-    <div class="cube-actions"><button class="secondary" data-action="${isEditor ? 'analyze' : state.source === 'mine' ? 'edit-cube' : 'random'}" ${state.busy ? 'disabled' : ''}>${icon(isEditor ? 'search' : state.source === 'mine' ? 'reset' : 'shuffle', 17)}${isEditor ? (state.busy ? t('Finding your solution…') : t(state.mode === 'solve' ? 'Solve my cube' : 'Find my algorithm')) : state.source === 'mine' ? t('Edit my cube') : (state.stage === 'C' ? t('New scramble') : t('Another case'))}</button>${state.source === 'library' ? `<button class="text-button" data-action="turn-u">${t('Add a U turn')}</button>` : `<span class="editor-note">${isEditor ? t(isLastLayerStage(state.stage) ? 'Top face + four side rows' : 'Six faces · 54 stickers') : t('Follow the same grip on your cube')}</span>`}</div>
+    <div class="panel-heading"><span class="section-label">${state.source === 'mine' ? t('Your cube') : t('Case preview')}</span>${isExam ? `<span class="case-badge">${state.stage}</span>` : state.mode === 'solve' ? `<span class="full-solve-size">3 × 3</span>` : `<div class="segmented"><button data-action="source" data-value="library" class="${state.source === 'library' ? 'active' : ''}">${t('Case library')}</button><button data-action="source" data-value="mine" class="${isEditor ? 'active' : ''}">${state.result && state.source === 'mine' ? t('Edit colors') : t('Enter colors')}</button></div>`}</div>
+    ${isEditor ? colorEditor() : `<div class="cube-stage"><div class="cube-stage-top"><span class="case-label">${isExam && !examRevealed ? t('Recognise the case') : c ? escape(c.name) : t(state.mode === 'solve' ? 'Full cube solution' : 'Cross practice')} <span>${c ? escape(caseTitle(c)) : t('Your next moves')}</span></span><button class="text-button view-toggle" data-action="view" aria-label="${t(state.view === 'front' ? 'Show back view' : 'Show front view')}">${state.view === 'front' ? t('Back view') : t('Front view')}</button></div><canvas class="turn-canvas" width="320" height="300" role="img" tabindex="0" aria-describedby="orbit-help" aria-label="${t('Animated Rubik’s cube showing top, front and right faces')}">${t('Your browser needs canvas support to show the turning cube.')}</canvas><div class="view-caption">${viewCaption()}</div>${viewControls()}</div><p class="holding-hint">${holdingText(display)}</p>${state.result && (!isExam || examRevealed) ? playbackControls() : ''}`}
+    ${isExam ? '' : `<div class="cube-actions"><button class="secondary" data-action="${isEditor ? 'analyze' : state.source === 'mine' ? 'edit-cube' : 'random'}" ${state.busy ? 'disabled' : ''}>${icon(isEditor ? 'search' : state.source === 'mine' ? 'reset' : 'shuffle', 17)}${isEditor ? (state.busy ? t('Finding your solution…') : t(state.mode === 'solve' ? 'Solve my cube' : 'Find my algorithm')) : state.source === 'mine' ? t('Edit my cube') : (state.stage === 'C' ? t('New scramble') : t('Another case'))}</button>${state.source === 'library' ? `<button class="text-button" data-action="turn-u">${t('Add a U turn')}</button>` : `<span class="editor-note">${isEditor ? t(isLastLayerStage(state.stage) ? 'Top face + four side rows' : 'Six faces · 54 stickers') : t('Follow the same grip on your cube')}</span>`}</div>`}
     ${isEditor ? `<details class="input-guide"><summary>${t('How to hold each face while entering colors')}</summary><p>${t(isLastLayerStage(state.stage) ? 'For the top face, put the {back} side at the top of the grid. For all four side faces, keep the {top} center above the face and view it straight on. Do not mirror the back face.' : 'View every face directly from outside. For Front, Right, Back and Left, keep the {top} center above the face. For Top, the {back} side is at the top of the grid. For Bottom, the {front} side is at the top of the grid. Do not mirror the back face.', { top: t(state.scheme.U), back: t(state.scheme.B), front: t(state.scheme.F) })}</p><p>${t('For a different scheme, choose a palette color and tap a center. This swaps the two center colors throughout the diagram. Set centers before painting individual stickers.')}</p></details>` : ''}
   </section>`;
 }
@@ -230,13 +318,13 @@ function algorithmPanel() {
   const result = state.result;
   const c = result?.case;
   const moves = tokens(result?.algorithm);
-  return `<section class="algorithm-panel panel"><div class="panel-heading"><span class="section-label">${t('Your next moves')}</span>${c ? `<button class="icon-button ${state.learned.has(c.id) ? 'is-learned' : ''}" data-action="learned" data-id="${escape(c.id)}" aria-label="${state.learned.has(c.id) ? t('Mark as learning') : t('Mark case learned')}" title="${t('Mark learned')}">${icon('check')}</button>` : ''}</div>
+  return `<section class="algorithm-panel panel"><div class="panel-heading"><span class="section-label">${t('Your next moves')}</span>${c && state.mode !== 'exam' ? learnedButton(c) : ''}</div>
     ${!result ? `<div class="result-empty"><span class="empty-symbol">${state.stage}</span><h2>${state.stage === 'C' ? t('Plan your cross') : t('Find your case')}</h2><p>${state.stage === 'C' ? t('Calculate a shortest solution for the four bottom edges of this cube.') : t(isLastLayerStage(state.stage) ? 'Enter the top layer, then find the algorithm. The darkened lower layers are assumed solved.' : 'Enter all six faces, then find the algorithm for this stage. The tool checks the earlier stages first.')}</p>${state.stage === 'C' ? `<button class="primary" data-action="analyze" ${state.busy ? 'disabled' : ''}>${state.busy ? t('Planning your cross…') : t('Calculate cross')} ${icon('arrow', 17)}</button>` : ''}</div>` : `<div class="algorithm-title"><span class="case-badge">${c ? escape(c.name) : state.stage === 'C' ? t('Cross solution') : t('Stage complete')}</span><h2>${c ? escape(caseTitle(c)) : moves.length ? t('A path to your cross') : state.stage === 'F' && !engine.isF2LSolved(state.cube) ? t('This pair is solved') : t('Ready for the next step')}</h2><p>${t(moves.length === 1 ? '{count} move' : '{count} moves', { count: moves.length })}${t(c ? ' · Recommended algorithm' : ' · Follow in this order')}</p></div>
     <div class="algorithm-toolbar"><span class="algorithm-position">${state.step === 0 ? t('Ready when you are') : state.step === moves.length ? t('Sequence complete') : t('Move {step} of {total}', { step: state.step, total: moves.length })}</span><button class="text-button" data-action="hide">${icon('eye', 16)} ${state.hide ? t('Reveal') : t('Hide')}</button></div>
     <div class="move-list ${state.hide ? 'hidden-alg' : ''}" aria-label="${t('Solution moves')}">${state.hide ? `<p>${t('Recognise it first.')}<br>${t('Reveal when you’re ready.')}</p>` : moves.length ? moves.map((move, i) => `<button class="move-token ${i < state.step ? 'played' : ''} ${i === state.step - 1 ? 'current' : ''}" data-action="jump" data-index="${i + 1}" aria-label="${t('Show cube after move {step}: {move}', { step: i + 1, move: escape(move) })}">${pretty(move)}</button>`).join('') : state.stage === 'F' && !engine.isF2LSolved(state.cube) ? `<p>${t('This pair is solved. Choose another target slot.')}</p>` : `<p>${t('No moves needed for this stage.')}</p>`}</div>
     ${result.setup || result.auf || result.extraction || result.slotRotation || result.regrip ? `<div class="alignment-note">${result.setup || result.extraction || result.slotRotation ? `<p><strong>${t('Preparation')}</strong> ${escape(pretty([result.slotRotation, result.extraction, result.setup].filter(Boolean).join(' ')))}</p>` : ''}${result.regrip ? `<p><strong>${t('Regrip')}</strong> ${escape(pretty(result.regrip))}</p>` : ''}${result.slotReturn ? `<p><strong>${t('Return to your grip')}</strong> ${escape(pretty(result.slotReturn))}</p>` : ''}${result.auf ? `<p><strong>${t('Final alignment')}</strong> ${escape(pretty(result.auf))}</p>` : ''}<small>${t('Already included in the sequence above.')}</small></div>` : ''}
-    <div class="algorithm-footer"><button class="text-button" data-action="copy">${icon('copy', 16)}${t('Copy algorithm')}</button><button class="text-button" data-action="apply">${t('Use result')} ${icon('arrow', 16)}</button></div>
-    ${engine.isSolved(sequenceEnd) ? `<details class="setup-details"><summary>${t('Set up this case on a solved cube')}</summary><p>${t('Start with {holding}. Execute these moves in order. Centers may rotate; finish holding the colors shown in the preview.', { holding: holdingText(sequenceEnd).replace('Hold ', '') })}</p><code>${escape(pretty(engine.invertAlgorithm(result.algorithm))) || t('Already solved')}</code></details>` : ''}`}
+    ${state.mode === 'exam' ? '' : `<div class="algorithm-footer"><button class="text-button" data-action="copy">${icon('copy', 16)}${t('Copy algorithm')}</button><button class="text-button" data-action="apply">${t('Use result')} ${icon('arrow', 16)}</button></div>`}
+    ${state.mode !== 'exam' && engine.isSolved(sequenceEnd) ? `<details class="setup-details"><summary>${t('Set up this case on a solved cube')}</summary><p>${t('Start with {holding}. Execute these moves in order. Centers may rotate; finish holding the colors shown in the preview.', { holding: holdingText(sequenceEnd).replace('Hold ', '') })}</p><code>${escape(pretty(engine.invertAlgorithm(result.algorithm))) || t('Already solved')}</code></details>` : ''}`}
   </section>`;
 }
 function explainMove(move = '') {
@@ -252,6 +340,86 @@ function practiceView() {
   <div class="practice-grid">${cubePanel()}${algorithmPanel()}</div>
   ${state.source === 'library' || state.result ? `<details class="all-faces panel"><summary>${t('Inspect all six faces')} ${icon('chevron', 16)}</summary>${cubeNet(currentDisplay(), state.scheme)}</details>` : ''}
   `;
+}
+function openExamQuestion() {
+  cancelWork(); examQuestion = null; examRevealed = false;
+  state.result = null; state.selected = null; state.error = ''; state.hide = false;
+  state.step = 0; state.view = 'front'; state.source = 'library';
+  state.scheme = { ...defaultScheme }; state.cube = engine.solvedCube();
+  if (examDate !== localDateKey()) return;
+  const day = examDay();
+  if (!Array.isArray(day.queue)) day.queue = [];
+  if (!Array.isArray(day.answers)) day.answers = [];
+  while (day.queue.length) {
+    const savedQuestion = day.queue[0];
+    if (savedQuestion.stage === 'C' && typeof savedQuestion.scramble === 'string') {
+      try {
+        examQuestion = { ...savedQuestion, caseId: null, startCube: engine.solvedCube(), cube: engine.applyAlgorithm(engine.solvedCube(), savedQuestion.scramble), solution: null };
+      } catch { day.queue.shift(); continue; }
+    } else {
+      const record = cases.find(c => c.id === (savedQuestion.caseId || savedQuestion.id) && !state.learned.has(c.id));
+      if (!record) { day.queue.shift(); continue; }
+      examQuestion = createExamQuestions([record], state.learned, [record.stage], 1)[0];
+    }
+    state.cube = examQuestion.cube; state.stage = examQuestion.stage;
+    break;
+  }
+  if (exam.days[examDate]) persistExam();
+}
+function isCurrentExamDay() {
+  if (examDate === localDateKey()) return true;
+  openExamQuestion(); render();
+  return false;
+}
+function startExam() {
+  if (!isCurrentExamDay()) return;
+  const questions = createExamQuestions(cases, state.learned, exam.stages, exam.count);
+  const day = examDay();
+  exam.days[examDate] = { queue: questions.map(({ id, stage, caseId, scramble }) => ({ id, stage, caseId, scramble })), answers: day.answers };
+  persistExam(); openExamQuestion(); render();
+  document.querySelector('.exam-question-title')?.focus({ preventScroll: true });
+}
+function revealExam() {
+  if (!isCurrentExamDay() || !examQuestion) return;
+  const question = examQuestion;
+  if (question.stage !== 'C') {
+    state.result = { case: cases.find(c => c.id === question.caseId), algorithm: question.solution };
+    examRevealed = true; render(); return;
+  }
+  cancelWork(); state.busy = true; state.error = ''; render();
+  const worker = new Worker(new URL('./cross-worker.js', import.meta.url), { type: 'module' });
+  crossWorker = worker;
+  const finish = (error, result) => {
+    if (crossWorker !== worker || state.mode !== 'exam' || examQuestion !== question) return;
+    if (!isCurrentExamDay()) return;
+    worker.terminate(); crossWorker = null; state.busy = false;
+    if (error) state.error = error;
+    else { state.result = typeof result === 'string' ? { algorithm: result } : result; examRevealed = true; }
+    render();
+  };
+  worker.onmessage = ({ data }) => finish(data.error, data.result);
+  worker.onerror = () => finish('Could not calculate the cross. Please try again.');
+  worker.postMessage(question.cube);
+}
+function answerExam(outcome) {
+  if (!isCurrentExamDay() || !examQuestion || !['again', 'learned', 'solved'].includes(outcome)) return;
+  const question = examQuestion;
+  const day = examDay();
+  const result = outcome === 'learned' && question.stage === 'C' ? 'solved' : outcome;
+  day.answers.push({ id: question.id, stage: question.stage, outcome: result });
+  day.queue.shift();
+  if (result === 'learned' && question.caseId) { state.learned.add(question.caseId); persist(); }
+  persistExam(); openExamQuestion(); render();
+  document.querySelector('.exam-question-title, .exam-finished')?.focus({ preventScroll: true });
+}
+function examView() {
+  const today = localDateKey();
+  const question = examDate === today ? examQuestion : null;
+  return dailyExamView({ exam, date: examDate, today, day: examDay(), cases, learned: state.learned, stages,
+    question, revealed: Boolean(question && examRevealed), busy: state.busy, error: state.error,
+    preview: question ? cubePanel() : '', solution: question && examRevealed ? algorithmPanel() : '',
+    holding: question ? holdingText(question.startCube) : '',
+  });
 }
 function fullSolveView() {
   return `<div class="full-solve-page"><div class="page-title"><div><h1>${t('I just want to solve it')}</h1><p>${t('Enter your cube. Get the moves. Follow the animation.')}</p></div></div>
@@ -275,13 +443,18 @@ function filteredCases() {
 }
 function libraryCards() {
   const list = filteredCases();
-  return `<div class="library-count">${t(list.length === 1 ? '{count} case' : '{count} cases', { count: list.length })}${state.filter === 'two-look' ? t(' · Follow the chapter for the order of the two looks') : ''}</div><div class="case-grid">${list.slice(0, state.caseLimit).map((c) => `<button class="case-card ${state.selected?.id === c.id && state.mode === 'practice' ? 'selected' : ''}" data-action="case" data-id="${escape(c.id)}">${c.stage === 'F' ? cubeSvg(getCaseState(c), state.scheme, { small: true }) : topSvg(getCaseState(c), state.scheme, c.stage === 'O')}<span><strong>${escape(c.name)}${state.learned.has(c.id) ? `<i class="learned-check">${icon('check', 14)}</i>` : ''}</strong><small>${escape(t(c.group))}</small><code>${escape(pretty(c.algorithm))}</code></span>${icon('chevron', 15)}</button>`).join('')}</div>${list.length > state.caseLimit ? `<button class="secondary load-cases" data-action="load-cases">${t('Show {count} more cases', { count: Math.min(12, list.length - state.caseLimit) })} <span>${t('{shown} of {total} shown', { shown: state.caseLimit, total: list.length })}</span></button>` : ''}${!list.length ? `<div class="no-cases"><h3>${t('No cases match yet')}</h3><p>${t('Try another name or clear the filters.')}</p><button class="secondary" data-action="clear-filters">${t('Clear filters')}</button></div>` : ''}`;
+  return `<div class="library-count">${t(list.length === 1 ? '{count} case' : '{count} cases', { count: list.length })}${state.filter === 'two-look' ? t(' · Follow the chapter for the order of the two looks') : ''}</div>${renderLibraryGroups(list, { stage: state.stage, renderCase: c => `<div class="case-entry"><button class="case-card ${state.selected?.id === c.id ? 'selected' : ''}" data-action="case" data-id="${escape(c.id)}">${c.stage === 'F' ? cubeSvg(getCaseState(c), state.scheme, { small: true }) : topSvg(getCaseState(c), state.scheme, c.stage === 'O')}<span><strong>${escape(c.name)}${state.learned.has(c.id) ? `<i class="learned-check">${icon('check', 14)}</i>` : ''}</strong><small>${escape(t(c.group))}</small><code>${escape(pretty(c.algorithm))}</code></span>${icon('chevron', 15)}</button>${learnedButton(c)}</div>` })}${!list.length ? `<div class="no-cases"><h3>${t('No cases match yet')}</h3><p>${t('Try another name or clear the filters.')}</p><button class="secondary" data-action="clear-filters">${t('Clear filters')}</button></div>` : ''}`;
+}
+function masterySummary() {
+  const pool = cases.filter(c => c.stage === state.stage);
+  const count = pool.filter(c => state.learned.has(c.id)).length;
+  return `<div class="mastery-summary"><strong>${count === pool.length ? `${icon('check', 18)} ${t('All cases memorised')}` : t('Your memorisation progress')}</strong><span>${count}/${pool.length}</span><p>${t('Confirm only when you know it. Memorised cases are locked and never appear in random practice or exams again.')}</p><button class="secondary" data-action="exam-stage">${icon('shuffle', 16)}${t('Test the cases I do not know')}</button></div>`;
 }
 function libraryView() {
   if (state.stage === 'C') return `<div class="cross-tip"><strong>${t('Cross is a plan, not a case to memorise.')}</strong><p>${t('Compare the calculated route with your own, then practise planning it before the first turn.')}</p></div>`;
   const groups = [...new Set(cases.filter((c) => c.stage === state.stage).map((c) => c.group))];
   const selected = state.result?.case || state.selected;
-  return `<section class="library-section ${state.mode === 'algorithms' ? 'read-library' : ''}"><div class="library-title"><div><h2>${t('{stage} case library', { stage: state.stage === 'F' ? 'F2L' : state.stage === 'O' ? 'OLL' : 'PLL' })} <span>${cases.filter((c) => c.stage === state.stage).length}</span></h2><p>${state.stage === 'O' ? t('{color} is the target color. Grey stickers can be any other color.', { color: t(state.scheme.U[0].toUpperCase() + state.scheme.U.slice(1)) }) : t('Choose a case to see its exact holding angle and follow the algorithm.')}</p></div></div><div class="library-filters"><label class="search-input">${icon('search', 18)}<input id="case-search" placeholder="${t('Search cases or patterns…')}" value="${escape(state.query)}" aria-label="${t('Search algorithm cases')}"></label><label><span class="sr-only">${t('Case group')}</span><select id="group"><option value="all">${t('All patterns')}</option>${groups.map((g) => `<option value="${escape(g)}" ${g === state.group ? 'selected' : ''}>${escape(t(g))}</option>`).join('')}</select></label><label><span class="sr-only">${t('Learning filter')}</span><select id="filter"><option value="all" ${state.filter === 'all' ? 'selected' : ''}>${t('All cases')}</option><option value="learning" ${state.filter === 'learning' ? 'selected' : ''}>${t('Still learning')}</option>${state.stage !== 'F' ? `<option value="two-look" ${state.filter === 'two-look' ? 'selected' : ''}>${t('Two-look essentials')}</option>` : ''}</select></label></div><div id="library-cards">${libraryCards()}</div>${selected?.stage === state.stage && selected?.alternatives?.length ? `<details class="alternatives panel"><summary>${t('Alternative algorithms for {case}', { case: escape(selected.name) })}</summary><p>${t('Each variation loads its own correct starting orientation. Try the one that feels natural in your hands.')}</p>${selected.alternatives.map((alg, i) => `<div><code>${escape(pretty(alg))}</code><button class="text-button" data-action="alternative" data-id="${escape(selected.id)}" data-index="${i}">${t('Practise variation')} ${icon('arrow', 15)}</button></div>`).join('')}</details>` : ''}<p class="library-source">${t('Recommended sequences, not a universal speed ranking. Case data:')} <a href="https://github.com/lukejacksonn/cube" target="_blank" rel="noreferrer">Luke Jackson</a> (MIT)${t('; OLL/PLL checked against')} <a href="https://jperm.net/algs/${state.stage === 'P' ? 'pll' : 'oll'}" target="_blank" rel="noreferrer">J Perm</a>. <a href="./ATTRIBUTION.md">${t('Sources & attribution')}</a></p></section>`;
+  return `<section class="library-section ${state.mode === 'algorithms' ? 'read-library' : ''}"><div class="library-title"><div><h2>${t('{stage} case library', { stage: state.stage === 'F' ? 'F2L' : state.stage === 'O' ? 'OLL' : 'PLL' })} <span>${cases.filter((c) => c.stage === state.stage).length}</span></h2><p>${state.stage === 'O' ? t('{color} is the target color. Grey stickers can be any other color.', { color: t(state.scheme.U[0].toUpperCase() + state.scheme.U.slice(1)) }) : t('Choose a case to see its exact holding angle and follow the algorithm.')}</p></div></div>${masterySummary()}<div class="library-filters"><label class="search-input">${icon('search', 18)}<input id="case-search" placeholder="${t('Search cases or patterns…')}" value="${escape(state.query)}" aria-label="${t('Search algorithm cases')}"></label><label><span class="sr-only">${t('Case group')}</span><select id="group"><option value="all">${t('All patterns')}</option>${groups.map((g) => `<option value="${escape(g)}" ${g === state.group ? 'selected' : ''}>${escape(t(g))}</option>`).join('')}</select></label><label><span class="sr-only">${t('Learning filter')}</span><select id="filter"><option value="all" ${state.filter === 'all' ? 'selected' : ''}>${t('All cases')}</option><option value="learning" ${state.filter === 'learning' ? 'selected' : ''}>${t('Still learning')}</option>${state.stage !== 'F' ? `<option value="two-look" ${state.filter === 'two-look' ? 'selected' : ''}>${t('Two-look essentials')}</option>` : ''}</select></label></div><div id="library-cards">${libraryCards()}</div>${selected?.stage === state.stage && selected?.alternatives?.length ? `<details class="alternatives panel"><summary>${t('Alternative algorithms for {case}', { case: escape(selected.name) })}</summary><p>${t('Each variation loads its own correct starting orientation. Try the one that feels natural in your hands.')}</p>${selected.alternatives.map((alg, i) => `<div><code>${escape(pretty(alg))}</code><button class="text-button" data-action="alternative" data-id="${escape(selected.id)}" data-index="${i}">${t('Practise variation')} ${icon('arrow', 15)}</button></div>`).join('')}</details>` : ''}<p class="library-source">${t('Recommended sequences, not a universal speed ranking. Case data:')} <a href="https://github.com/lukejacksonn/cube" target="_blank" rel="noreferrer">Luke Jackson</a> (MIT)${t('; OLL/PLL checked against')} <a href="https://jperm.net/algs/${state.stage === 'P' ? 'pll' : 'oll'}" target="_blank" rel="noreferrer">J Perm</a>. <a href="./ATTRIBUTION.md">${t('Sources & attribution')}</a></p></section>`;
 }
 function updatePlaybackUI(snapshot = playback.snapshot()) {
   const { step, total, activeIndex, move, playing, animating } = snapshot;
@@ -342,6 +515,7 @@ function render() {
   }
   renderInProgress = true;
   playback.pause();
+  cubeOrbit?.destroy(); cubeOrbit = null;
   renderer?.destroy();
   renderer = null;
   previewObserver.disconnect();
@@ -355,20 +529,22 @@ function render() {
   if (restoredStep !== null) { playback.seek(restoredStep); restoredStep = null; }
   app.classList.toggle('timer-screen', state.mode === 'timer');
   app.innerHTML = state.mode === 'timer'
-    ? `<main id="main-content" class="timer-main">${timerView()}</main>`
-    : `${sidebar()}<div class="main-shell">${header()}<main id="main-content">${state.mode === 'solve' ? fullSolveView() : state.mode === 'practice' ? practiceView() : state.mode === 'algorithms' ? algorithmsView() : readView()}<footer class="page-footer"><span>${t('Rubik’s cube practice')}</span><span>${t('One case at a time.')}</span></footer></main></div><div id="toast" class="toast" role="status"></div>`;
+    ? `<main id="main-content" class="timer-main">${storageWarning()}${timerView()}</main>`
+    : `${sidebar()}<div class="main-shell">${header()}<main id="main-content">${storageWarning()}${state.mode === 'exam' ? examView() : state.mode === 'solve' ? fullSolveView() : state.mode === 'practice' ? practiceView() : state.mode === 'algorithms' ? algorithmsView() : readView()}<footer class="page-footer"><span>${t('Rubik’s cube practice')}</span><span>${t('One case at a time.')}</span></footer></main></div><div id="toast" class="toast" role="status"></div>`;
   renderInProgress = false;
   mobileNav = createMobileNav(app);
   if (state.mode === 'timer') timerMount = mountSolveTimer(document.querySelector('.solve-timer'), solveTimer);
   const canvas = document.querySelector('.turn-canvas');
   if (canvas) {
     renderer = createCubeRenderer(canvas);
+    cubeOrbit = createCubeOrbit(canvas, { getView: () => state.view, onChange: setCubeView });
     drawPausedFrame();
     previewObserver.observe(document.querySelector('#cube-practice'));
   }
   const slot = document.querySelector('#slot');
   if (slot) slot.value = state.slot;
   updatePlaybackUI();
+  persistNavigation();
 }
 function focusPractice() {
   document.querySelector('#cube-practice')?.scrollIntoView({ block: 'start', behavior: reducedMotion.matches ? 'auto' : 'smooth' });
@@ -473,8 +649,12 @@ async function captureFace(face, continueSequence = false) {
 }
 app.addEventListener('click', async (event) => {
   const button = event.target.closest('[data-action]');
-  if (!button) return;
+  if (!button || button.disabled) return;
   const { action, value, id, index } = button.dataset;
+  if (['mode', 'chapter', 'exam-stage', 'chapter-algorithms', 'practice-chapter', 'next-chapter'].includes(action)) persistNavigation();
+  if (state.mode === 'exam' && ((action === 'mode' && value !== 'exam') || action === 'chapter')) {
+    cancelWork(); restoreWorkspace(examWorkspace);
+  }
   if (state.mode === 'solve' && ((action === 'mode' && value !== 'solve') || action === 'chapter')) {
     cancelWork(); fullWorkspace = saveWorkspace(); restoreWorkspace(practiceWorkspace);
   }
@@ -483,6 +663,9 @@ app.addEventListener('click', async (event) => {
   if (action === 'mode') {
     const previousMode = state.mode;
     cancelWork(); state.mode = value;
+    if (value === 'exam' && previousMode !== 'exam') {
+      examWorkspace = saveWorkspace(); examDate = localDateKey(); openExamQuestion();
+    }
     if (value === 'solve' && previousMode !== 'solve') {
       practiceWorkspace = saveWorkspace();
       restoreWorkspace(fullWorkspace || { stage: 'C', source: 'mine', selected: null, cube: engine.solvedCube(), scheme: { ...defaultScheme }, paint: 'U', slot: 'FR', result: null, step: 0, hide: false, view: 'front', photoFaces: [], referenceColors: {}, photoScope: 'full', cubeText: '', error: '', notice: '' });
@@ -490,7 +673,7 @@ app.addEventListener('click', async (event) => {
     }
     if (value === 'practice' && state.practiceStage !== state.stage) {
       state.stage = state.practiceStage;
-      state.query = ''; state.group = 'all'; state.filter = 'all'; state.caseLimit = 12;
+      state.query = ''; state.group = 'all'; state.filter = 'all';
     }
     render();
     window.scrollTo({ top: 0 });
@@ -500,7 +683,24 @@ app.addEventListener('click', async (event) => {
     window.scrollTo({ top: 0 });
   }
   if (action === 'chapter') { cancelWork(); state.mode = 'read'; state.chapter = value; if (value !== 'N') state.stage = value; state.query = ''; state.group = 'all'; state.filter = 'all'; render(); window.scrollTo({ top: 0 }); }
-  if (action === 'stage') setStage(value);
+  if (action === 'stage') {
+    const fromCase = state.mode === 'practice' && state.source === 'library';
+    if (fromCase) state.mode = 'algorithms';
+    setStage(value);
+    if (state.mode === 'algorithms') {
+      const selected = fromCase && state.selected?.stage === value ? document.querySelector('.case-card.selected') : null;
+      if (selected) selected.scrollIntoView({ block: 'center' });
+      else window.scrollTo({ top: 0 });
+      persistNavigation();
+    }
+  }
+  if (action === 'library-group') {
+    const heading = document.getElementById(value);
+    if (heading?.closest('.library-group')) {
+      heading.scrollIntoView({ block: 'start' }); heading.focus({ preventScroll: true });
+      persistNavigation();
+    }
+  }
   if (action === 'case') { loadCase(cases.find((c) => c.id === id)); state.mode = 'practice'; render(); focusPractice(); }
   if (action === 'alternative') { const c = cases.find((c) => c.id === id); loadCase({ ...c, algorithm: c.alternatives[Number(index)] }); state.mode = 'practice'; render(); focusPractice(); }
   if (action === 'source') {
@@ -527,7 +727,7 @@ app.addEventListener('click', async (event) => {
     render();
   }
   if (action === 'cancel-solve') { cancelWork(); state.notice = 'Calculation cancelled. Your colors are still here.'; render(); }
-  if (action === 'random') { if (state.stage === 'C') { setStage('C'); const moves = ['U', 'D', 'R', 'L', 'F', 'B']; state.cube = engine.applyAlgorithm(engine.solvedCube(), Array.from({ length: 20 }, () => moves[Math.floor(Math.random() * 6)] + ['', "'", '2'][Math.floor(Math.random() * 3)]).join(' ')); render(); } else { const pool = filteredCases(); if (pool.length) { loadCase(pool[Math.floor(Math.random() * pool.length)]); render(); } else toast(t('Clear your filters to practise another case.')); } }
+  if (action === 'random') { if (state.stage === 'C') { setStage('C'); const moves = ['U', 'D', 'R', 'L', 'F', 'B']; state.cube = engine.applyAlgorithm(engine.solvedCube(), Array.from({ length: 20 }, () => moves[Math.floor(Math.random() * 6)] + ['', "'", '2'][Math.floor(Math.random() * 3)]).join(' ')); render(); } else { const pool = filteredCases().filter(c => !state.learned.has(c.id)); if (pool.length) { loadCase(pool[Math.floor(Math.random() * pool.length)]); render(); } else toast(t(stageMastered(state.stage) ? 'All cases in this stage are memorised and locked.' : 'Clear your filters to practise another case.')); } }
   if (action === 'analyze') { await analyze(); if (state.result) focusPractice(); }
   if (action === 'turn-u') { cancelWork(); state.cube = engine.applyAlgorithm(state.cube, 'U'); await analyze(); }
   if (action === 'hide') {
@@ -538,30 +738,28 @@ app.addEventListener('click', async (event) => {
     button.innerHTML = `${icon('eye', 16)} ${state.hide ? t('Reveal') : t('Hide')}`;
     updatePlaybackUI();
   }
-  if (action === 'view') {
-    state.view = state.view === 'front' ? 'back' : 'front';
-    button.textContent = state.view === 'front' ? t('Back view') : t('Front view');
-    button.setAttribute('aria-label', t(state.view === 'front' ? 'Show back view' : 'Show front view'));
-    document.querySelector('.view-caption').textContent = state.view === 'front' ? t('Viewing top, front and right') : t('Viewing top, back and left · keep your original grip');
-    drawPausedFrame();
-  }
+  if (action === 'view') setCubeView(state.view === 'front' ? 'back' : 'front');
+  if (action === 'cube-view') setCubeView(value);
   if (action === 'edit-cube') { cancelWork(); state.result = null; state.selected = null; render(); }
-  if (action === 'load-cases') { state.caseLimit += 12; document.querySelector('#library-cards').innerHTML = libraryCards(); }
   if (action === 'restart') playback.seek(0);
   if (action === 'step-back') playback.previous();
   if (action === 'step') playback.next();
   if (action === 'jump') playback.seek(Number(index));
   if (action === 'play') { const snapshot = playback.snapshot(); if (snapshot.playing || snapshot.animating) playback.pause(); else playback.play(); }
   if (action === 'copy') { try { await navigator.clipboard.writeText(state.result.algorithm); toast(t('Algorithm copied')); } catch { toast(t('Select the move text and copy it manually.')); } }
-  if (action === 'learned') {
-    if (state.learned.has(id)) state.learned.delete(id); else state.learned.add(id);
-    persist();
-    button.classList.toggle('is-learned', state.learned.has(id));
-    button.setAttribute('aria-label', state.learned.has(id) ? t('Mark as learning') : t('Mark case learned'));
-    document.querySelector('.progress-box p').textContent = t('{count} of 119 cases marked learned', { count: state.learned.size });
-    const library = document.querySelector('#library-cards');
-    if (library) library.innerHTML = libraryCards();
+  if (action === 'learned' && cases.some(c => c.id === id)) {
+    state.learned.add(id);
+    persist(); render();
+    document.querySelector(`[data-action="learned"][data-id="${id}"]`)?.focus({ preventScroll: true });
   }
+  if (action === 'exam-stage') {
+    cancelWork(); examWorkspace = saveWorkspace(); exam.stages = [state.stage];
+    examDate = localDateKey(); state.mode = 'exam'; persistExam(); openExamQuestion(); render(); focusHeading();
+  }
+  if (action === 'exam-start') startExam();
+  if (action === 'exam-reveal') revealExam();
+  if (action === 'exam-answer') answerExam(value);
+  if (action === 'exam-date') { cancelWork(); examDate = value; openExamQuestion(); render(); }
   if (action === 'complete') { if (state.completed.has(state.chapter)) state.completed.delete(state.chapter); else state.completed.add(state.chapter); persist(); render(); }
   if (action === 'apply') {
     cancelWork(); const next = engine.applyAlgorithm(state.cube, state.result.algorithm);
@@ -577,16 +775,27 @@ app.addEventListener('click', async (event) => {
   }
   if (action === 'practice-chapter') { state.mode = 'practice'; state.source = 'library'; setStage(state.chapter === 'N' ? 'O' : state.chapter); window.scrollTo({ top: 0 }); }
   if (action === 'next-chapter') { const keys = Object.keys(chapters), next = keys[keys.indexOf(state.chapter) + 1]; if (next) { state.chapter = next; state.stage = next; state.query = ''; state.group = 'all'; state.filter = 'all'; render(); } else { state.mode = 'practice'; state.source = 'library'; setStage('P'); } window.scrollTo({ top: 0 }); }
-  if (action === 'clear-filters') { state.caseLimit = 12; state.query = ''; state.group = 'all'; state.filter = 'all'; render(); }
+  if (action === 'clear-filters') { state.query = ''; state.group = 'all'; state.filter = 'all'; render(); }
   if (['mode', 'chapter', 'chapter-algorithms', 'practice-chapter', 'next-chapter', 'case', 'alternative'].includes(action)) focusHeading();
   if (action === 'stage') document.querySelector(`[data-action="stage"][data-value="${value}"]`)?.focus({ preventScroll: true });
 });
 app.addEventListener('toggle', (event) => { if (event.target.matches('.all-faces') && event.target.open) updateInspection(); }, true);
 app.addEventListener('input', (event) => {
   if (event.target.id === 'cube-text') state.cubeText = event.target.value;
-  if (event.target.id === 'case-search') { state.query = event.target.value; state.caseLimit = 12; document.querySelector('#library-cards').innerHTML = libraryCards(); }
+  if (event.target.id === 'case-search') { state.query = event.target.value; document.querySelector('#library-cards').innerHTML = libraryCards(); persistNavigation(); }
 });
 app.addEventListener('change', (event) => {
+  if (event.target.dataset.examStage) {
+    const stage = event.target.dataset.examStage;
+    exam.stages = [...document.querySelectorAll('[data-exam-stage]:checked')].map(input => input.dataset.examStage);
+    persistExam(); render();
+    document.querySelector(`[data-exam-stage="${stage}"]`)?.focus({ preventScroll: true });
+  }
+  if (event.target.id === 'exam-count') { exam.count = Number(event.target.value); persistExam(); }
+  if (event.target.id === 'exam-date' && /^\d{4}-\d{2}-\d{2}$/.test(event.target.value) && event.target.value <= localDateKey()) {
+    cancelWork(); examDate = event.target.value; openExamQuestion(); render();
+  }
+
   if (event.target.id === 'language-select') {
     setLocale(event.target.value);
     stages = getLocale() === 'zh-HK' ? chineseStages : englishStages;
@@ -597,14 +806,18 @@ app.addEventListener('change', (event) => {
   if (event.target.id === 'chapter-select') { cancelWork(); state.chapter = event.target.value; if (state.chapter !== 'N') state.stage = state.chapter; state.query = ''; state.group = 'all'; state.filter = 'all'; render(); }
   if (event.target.id === 'speed') { state.speed = Number(event.target.value); playback.setSpeed(state.speed); persist(); }
   if (event.target.id === 'slot') { cancelWork(); state.slot = event.target.value; state.result = null; state.error = ''; render(); }
-  if (['group', 'filter'].includes(event.target.id)) { state[event.target.id] = event.target.value; state.caseLimit = 12; document.querySelector('#library-cards').innerHTML = libraryCards(); }
+  if (['group', 'filter'].includes(event.target.id)) { state[event.target.id] = event.target.value; document.querySelector('#library-cards').innerHTML = libraryCards(); persistNavigation(); }
 });
 try {
   const response = await fetch(new URL('./cases.json', import.meta.url));
   if (!response.ok) throw new Error('The algorithm library could not be loaded.');
   cases = await response.json();
   loadCase(cases.find((c) => c.id === 'oll-27'));
+  const navigation = restoreNavigation();
   render();
+  navigationReady = true;
+  if (navigation) window.scrollTo({ top: navigation.scrollY, behavior: 'instant' });
+  persistNavigation();
 } catch (error) {
   app.innerHTML = `<div class="loading"><h1>${t('Let’s try that again')}</h1><p>${escape(localizeError(error.message))}</p><a href="./index.html">${t('Reload the practice space')}</a></div>`;
 }

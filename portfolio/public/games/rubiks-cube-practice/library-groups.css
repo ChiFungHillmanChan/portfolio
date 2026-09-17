@@ -1,0 +1,18 @@
+/* All formula chapters stay open; the index provides direct access to each pattern. */
+.library-group .case-card { content-visibility: visible; contain-intrinsic-size: none; }
+.library-group-nav { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 26px; padding: 15px; border: 1px solid var(--line); border-radius: 9px; background: var(--white); }
+.library-group-nav button { display: inline-flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; max-width: 100%; padding: 9px 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--bg); color: #526783; font-size: 12px; line-height: 1.5; text-align: left; }
+.library-group-nav button:hover, .library-group-nav button:focus-visible { color: var(--blue); border-color: #93a9f3; background: var(--blue-wash); }
+.library-group-nav-count { flex-shrink: 0; min-width: 20px; padding: 1px 5px; border-radius: 4px; background: var(--white); color: #718096; font-size: 11px; text-align: center; }
+.library-group + .library-group { margin-top: 30px; }
+.library-group-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 12px; margin-bottom: 13px; border-bottom: 1px solid var(--line); }
+.library-group-heading h3 { color: #425773; font-size: 18px; line-height: 1.5; scroll-margin-top: 20px; }
+.library-group-heading h3:focus-visible { outline: 3px solid #7892f7; outline-offset: 4px; border-radius: 3px; }
+.library-group-count { flex-shrink: 0; color: var(--muted); font-size: 12px; }
+
+@media (max-width: 700px), (max-width: 980px) and (max-height: 520px) {
+  .library-group-nav { gap: 6px; padding: 10px; margin-bottom: 23px; }
+  .library-group-nav button { flex: 1 1 auto; padding: 8px 10px; font-size: 12px; }
+  .library-group + .library-group { margin-top: 26px; }
+  .library-group-heading h3 { font-size: 17px; scroll-margin-top: 80px; }
+}

@@ -1,5 +1,6 @@
 import { parseAlgorithm } from './cube-engine.js';
 import { colors, defaultScheme } from './cube-view.js';
+import { resolveCubeView } from './cube-orbit.js';
 
 // Coordinates and turn directions follow cube-engine.js: +x right, +y up, +z front.
 // A frame rotates actual cubies, including the dark faces exposed between layers.
@@ -12,10 +13,6 @@ const MOVE_SPECS = {
   d: [1, -1, 1, true], l: [0, -1, 1, true], b: [2, -1, 1, true],
 };
 const NORMALS = [[0, 1, 0], [1, 0, 0], [0, 0, 1], [0, -1, 0], [-1, 0, 0], [0, 0, -1]];
-const UNIT = Math.SQRT1_2;
-const CAMERA_Y = 0.56;
-const CAMERA_VERTICAL = Math.sqrt(1 - CAMERA_Y * CAMERA_Y);
-const CAMERA_XZ = Math.sqrt((1 - CAMERA_Y * CAMERA_Y) / 2);
 const SCALE = 52;
 const moveCache = new Map();
 
@@ -112,16 +109,23 @@ export function buildCubeFrame(cube, move = null, progress = 0, buffer = createF
   return buffer;
 }
 
-export function projectPoint(point, view = 'front', output = [0, 0]) {
-  const side = view === 'back' ? -1 : 1;
-  output[0] = 160 + SCALE * UNIT * side * (point[0] - point[2]);
-  output[1] = 144 + SCALE * (CAMERA_Y * UNIT * side * (point[0] + point[2]) - CAMERA_VERTICAL * point[1]);
+function cameraBasis(view) {
+  const { yaw, pitch } = resolveCubeView(view);
+  return { sinYaw: Math.sin(yaw), cosYaw: Math.cos(yaw), sinPitch: Math.sin(pitch), cosPitch: Math.cos(pitch) };
+}
+
+function projectWithCamera(point, camera, output) {
+  output[0] = 160 + SCALE * (camera.cosYaw * point[0] - camera.sinYaw * point[2]);
+  output[1] = 144 + SCALE * (camera.sinPitch * (camera.sinYaw * point[0] + camera.cosYaw * point[2]) - camera.cosPitch * point[1]);
   return output;
 }
 
-function depth(point, view) {
-  const side = view === 'back' ? -1 : 1;
-  return CAMERA_XZ * side * (point[0] + point[2]) + CAMERA_Y * point[1];
+export function projectPoint(point, view = 'front', output = [0, 0]) {
+  return projectWithCamera(point, cameraBasis(view), output);
+}
+
+function depth(point, camera) {
+  return camera.cosPitch * (camera.sinYaw * point[0] + camera.cosYaw * point[2]) + camera.sinPitch * point[1];
 }
 
 function roundedPolygon(context, points, rounding) {
@@ -150,6 +154,7 @@ export function createCubeRenderer(canvas) {
   function paint() {
     if (destroyed || !context || !lastDraw) return;
     const [cube, scheme, move, progress, view] = lastDraw;
+    const camera = cameraBasis(view);
     context.setTransform(canvas.width / 320, 0, 0, canvas.height / 300, 0, 0);
     context.clearRect(0, 0, 320, 300);
     context.fillStyle = 'rgba(35, 49, 75, 0.075)';
@@ -160,9 +165,9 @@ export function createCubeRenderer(canvas) {
     buildCubeFrame(cube, move, progress, frame);
     visible.length = 0;
     for (const face of frame) {
-      if (depth(face.normal, view) <= 0.001) continue;
-      face.depth = depth(face.center, view);
-      for (let vertex = 0; vertex < 4; vertex += 1) projectPoint(face.vertices[vertex], view, face.points[vertex]);
+      if (depth(face.normal, camera) <= 0.001) continue;
+      face.depth = depth(face.center, camera);
+      for (let vertex = 0; vertex < 4; vertex += 1) projectWithCamera(face.vertices[vertex], camera, face.points[vertex]);
       visible.push(face);
     }
     visible.sort((a, b) => a.depth - b.depth);
