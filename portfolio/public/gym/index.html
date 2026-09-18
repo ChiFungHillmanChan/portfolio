@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#20271f">
+  <meta name="description" content="HillmanChan Gym：廣東話動作指南、英文器材名、離線訓練日曆，同你每一下嘅紀錄。">
+  <title>GYM — HillmanChan 訓練手記</title>
+  <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icons/icon-192.png">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">跳去內容</a>
+  <header class="site-header">
+    <a class="brand" href="#today" aria-label="HillmanChan Gym 主頁"><span class="brand-mark">H<span>c.</span></span><span>HILLMANCHAN<span class="brand-sub">GYM / 訓練手記</span></span></a>
+    <div class="header-right"><span class="connection" id="offline-status" role="status"><i></i>準備離線內容…</span><button class="text-button" id="motion-toggle" aria-pressed="true">Ⅱ 暫停示範</button><button class="text-button" id="settings-button" aria-label="備份與設定">設定 <span aria-hidden="true">↗</span></button></div>
+  </header>
+  <nav class="main-nav" aria-label="主要導覽">
+    <a href="#today" data-view="today"><span>01</span> 今日訓練 <small>TRAIN</small></a>
+    <a href="#calendar" data-view="calendar"><span>02</span> 訓練日曆 <small>JOURNAL</small></a>
+    <a href="#library" data-view="library"><span>03</span> 動作指南 <small>MOVEMENTS</small></a>
+    <a href="#guide" data-view="guide"><span>04</span> 英國 Gym 用語 <small>GYM ENGLISH</small></a>
+  </nav>
+  <main id="main" tabindex="-1"><p class="loading">準備你嘅訓練手記…</p></main>
+  <footer class="site-footer"><span>HILLMANCHAN <b>GYM.</b></span><span>每一下，都算數。<small>BUILT FOR YOUR NEXT REP.</small></span><a href="https://hillmanchan.com" target="_blank" rel="noopener">hillmanchan.com ↗</a></footer>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  <div id="storage-error" class="storage-error" role="alert" hidden></div>
+  <dialog id="exercise-dialog" aria-labelledby="exercise-title"></dialog>
+  <dialog id="settings-dialog" aria-labelledby="settings-title"></dialog>
+  <noscript><p>請開啟 JavaScript，先可以睇動作同儲存訓練紀錄。</p></noscript>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

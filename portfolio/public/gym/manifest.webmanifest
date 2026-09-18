@@ -1,0 +1,16 @@
+{
+  "id": "./",
+  "name": "HillmanChan Gym 訓練手記",
+  "short_name": "HC Gym",
+  "description": "廣東話動作指南，同你每一下嘅離線訓練紀錄。",
+  "lang": "zh-HK",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f5f5ef",
+  "theme_color": "#20271f",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}

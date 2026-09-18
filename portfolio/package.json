@@ -24,6 +24,7 @@
   "scripts": {
     "start": "react-scripts start",
     "dev": "npm run start",
+    "prebuild": "node ../scripts/prepare-gym.mjs",
     "build": "react-scripts build",
     "//": "=== Set these env vars once per shell or in your CI ===",
     "//1": "export S3_BUCKET=<the EXACT bucket your CloudFront origin uses>",

@@ -1,0 +1,11 @@
+{
+  "name": "hillmanchan-gym",
+  "main": "worker.mjs",
+  "account_id": "7d2747f6cc21c13e70c7650314efbccc",
+  "compatibility_date": "2026-09-18",
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [
+    { "pattern": "gym.hillmanchan.com", "custom_domain": true }
+  ]
+}

@@ -1,0 +1,1517 @@
+{
+  "updated": "2026-09-19",
+  "offlineAssets": true,
+  "reviewScope": "Visual key-frame and movement-identity review, not medical advice or professional coaching certification. Some clips show labelled equipment variations. Original schematics explain routes and are not anatomical simulations.",
+  "noEndorsement": "No endorsement by any creator, wger, Pexels, ACE, ACSM, the U.S. Marine Corps or the U.S. Department of Defense is implied.",
+  "assets": [
+    {
+      "key": "cablerow",
+      "author": "Goulart",
+      "title": "cablerow exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/512/fff4c294-93f0-4926-b3a2-bf59ad4afaa5.MOV",
+      "page": "https://wger.de/en/exercise/512/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–8.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 1,
+        "uuid": "fff4c294-93f0-4926-b3a2-bf59ad4afaa5",
+        "exercise": 512,
+        "exercise_uuid": "00fcf603-b0d0-48d2-9b5e-c7f0d510d46c",
+        "video": "https://wger.de/media/exercise-video/512/fff4c294-93f0-4926-b3a2-bf59ad4afaa5.MOV",
+        "is_main": false,
+        "size": 34332925,
+        "duration": "10.49",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "cablerow"
+      },
+      "files": [
+        "media/cablerow.mp4",
+        "media/cablerow.gif",
+        "media/cablerow.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 8.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/cablerow.mp4",
+          "bytes": 273164,
+          "sha256": "ba7653361385fc56f867c026155b728aa216f5793667f53d6ecc094429d056cd"
+        },
+        {
+          "path": "media/cablerow.gif",
+          "bytes": 1646406,
+          "sha256": "d68fa7a0086423cfc67db48178b431e1164f8f73efbf38278749f57cdf28aabf",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/cablerow.jpg",
+          "bytes": 37357,
+          "sha256": "e60e17c314719517e7b39da7da987277dbd6eb4915f56e138f19051f942aa64f"
+        }
+      ]
+    },
+    {
+      "key": "rdl",
+      "author": "Goulart",
+      "title": "rdl exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/507/6b6054b5-9236-4a63-8392-6ea7a9010ca6.MOV",
+      "page": "https://wger.de/en/exercise/507/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Selected the side-view dumbbell RDL footage instead of the front view. Resized, silenced and transcoded. Selected 0.5–7.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 3,
+        "uuid": "6b6054b5-9236-4a63-8392-6ea7a9010ca6",
+        "exercise": 507,
+        "exercise_uuid": "2e7ffff9-e603-4b28-98c8-31d1a6ce8cd9",
+        "video": "https://wger.de/media/exercise-video/507/6b6054b5-9236-4a63-8392-6ea7a9010ca6.MOV",
+        "is_main": false,
+        "size": 52134396,
+        "duration": "17.69",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ]
+      },
+      "files": [
+        "media/rdl.mp4",
+        "media/rdl.gif",
+        "media/rdl.jpg"
+      ],
+      "finalTrim": {
+        "input": "original source",
+        "start": 0.5,
+        "end": 7.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/rdl.mp4",
+          "bytes": 197965,
+          "sha256": "80d13d59f44cf67e08b8570a958ae81ac1646ec887e350325e8d963a8a545a3d"
+        },
+        {
+          "path": "media/rdl.gif",
+          "bytes": 1171360,
+          "sha256": "0f67fe42ec05804dcab66100221d0d267cd2121d7f1222c0e383ba7562e7de34",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/rdl.jpg",
+          "bytes": 39555,
+          "sha256": "2edc95432436b493bb5a93b43539ea7a0458cda0752a66d58ab04757cee559f9"
+        }
+      ]
+    },
+    {
+      "key": "lateral",
+      "author": "Goulart",
+      "title": "lateral exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/348/de69928a-8a35-4096-821c-1f46de5e0e03.MOV",
+      "page": "https://wger.de/en/exercise/348/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–7 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 6,
+        "uuid": "de69928a-8a35-4096-821c-1f46de5e0e03",
+        "exercise": 348,
+        "exercise_uuid": "63375f5b-2d81-471c-bea4-fc3d207e96cb",
+        "video": "https://wger.de/media/exercise-video/348/de69928a-8a35-4096-821c-1f46de5e0e03.MOV",
+        "is_main": false,
+        "size": 43874331,
+        "duration": "18.26",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "lateral"
+      },
+      "files": [
+        "media/lateral.mp4",
+        "media/lateral.gif",
+        "media/lateral.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 7
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/lateral.mp4",
+          "bytes": 404443,
+          "sha256": "8a2ebfc0f1adbbb8e414c4dcdef5403161efa804921e6731083602b603f7cd14"
+        },
+        {
+          "path": "media/lateral.gif",
+          "bytes": 1913317,
+          "sha256": "dfb662ca7c14d1ae15de68b03549d24b9d86054e54218114f3d04d06d1e79817",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/lateral.jpg",
+          "bytes": 47251,
+          "sha256": "707575b90f77b07c2885aa86291631f0d10961bf077c966a3adbf14b9613d64a"
+        }
+      ]
+    },
+    {
+      "key": "reardelt",
+      "author": "Goulart",
+      "title": "reardelt exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/82/28b53647-27e7-47cf-8852-2ee666c8b628.MOV",
+      "page": "https://wger.de/en/exercise/82/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames.",
+      "metadata": {
+        "id": 7,
+        "uuid": "28b53647-27e7-47cf-8852-2ee666c8b628",
+        "exercise": 82,
+        "exercise_uuid": "6f79b381-98a4-40d5-8a45-3bb0558be6fe",
+        "video": "https://wger.de/media/exercise-video/82/28b53647-27e7-47cf-8852-2ee666c8b628.MOV",
+        "is_main": false,
+        "size": 13386307,
+        "duration": "7.60",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "reardelt"
+      },
+      "files": [
+        "media/reardelt.mp4",
+        "media/reardelt.gif",
+        "media/reardelt.jpg"
+      ],
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/reardelt.mp4",
+          "bytes": 338888,
+          "sha256": "aac802429212cd57c168ed7f86d8905ac150cc8dd18ba64868628fb16d2cfbd0"
+        },
+        {
+          "path": "media/reardelt.gif",
+          "bytes": 1831634,
+          "sha256": "5e4986fe9e1561fd8054b4a648a265fc1839038071c3ae4331f79b50ad09a48b",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/reardelt.jpg",
+          "bytes": 44085,
+          "sha256": "7b9dd3bd733a64d59fa356db95ea468e5ebbfac2db92b948b2c87e8a5a71258f"
+        }
+      ],
+      "variantNote": "Seated bent-over variation; the text also explains standing setup."
+    },
+    {
+      "key": "machinepress",
+      "author": "Goulart",
+      "title": "machinepress exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/543/dbfd396b-1aab-4a64-a50b-2c31ff0a2cf7.MOV",
+      "page": "https://wger.de/en/exercise/543/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–8 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 11,
+        "uuid": "dbfd396b-1aab-4a64-a50b-2c31ff0a2cf7",
+        "exercise": 543,
+        "exercise_uuid": "5912d7ed-6a0e-4b4c-b30a-fc9f3f890fc1",
+        "video": "https://wger.de/media/exercise-video/543/dbfd396b-1aab-4a64-a50b-2c31ff0a2cf7.MOV",
+        "is_main": false,
+        "size": 23511495,
+        "duration": "12.27",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "machinepress"
+      },
+      "files": [
+        "media/machinepress.mp4",
+        "media/machinepress.gif",
+        "media/machinepress.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 8
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/machinepress.mp4",
+          "bytes": 303953,
+          "sha256": "8cdb1aaa4cd26b2ad4309c3b92bb6d4de8aa9e9b4b499441b2974994efc3cdfc"
+        },
+        {
+          "path": "media/machinepress.gif",
+          "bytes": 1462727,
+          "sha256": "5616cf901d85163d8258cbf2a3dd6a02cfcd1fe472add6150c3c0da3755d6894",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/machinepress.jpg",
+          "bytes": 29967,
+          "sha256": "551a7e2a9d68edfd0cfadbb1d6081dc48a2bc735566c3305f550dc89be2a5f9c"
+        }
+      ]
+    },
+    {
+      "key": "ohp",
+      "author": "Goulart",
+      "title": "ohp exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/567/64f33c19-1d96-4b7c-af17-6c6a4941c614.MOV",
+      "page": "https://wger.de/en/exercise/567/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–8 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 12,
+        "uuid": "64f33c19-1d96-4b7c-af17-6c6a4941c614",
+        "exercise": 567,
+        "exercise_uuid": "87affa4b-395b-437c-9581-2bd20ea5aa7c",
+        "video": "https://wger.de/media/exercise-video/567/64f33c19-1d96-4b7c-af17-6c6a4941c614.MOV",
+        "is_main": false,
+        "size": 62860017,
+        "duration": "23.13",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "ohp"
+      },
+      "files": [
+        "media/ohp.mp4",
+        "media/ohp.gif",
+        "media/ohp.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 8
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/ohp.mp4",
+          "bytes": 410773,
+          "sha256": "e35c40ce572af3e757eb0f9f206756f17f99dafcf8a19ed2b287ac9ea0b2bd6d"
+        },
+        {
+          "path": "media/ohp.gif",
+          "bytes": 1980622,
+          "sha256": "7d719996ba03ff6040e94bf2380d60431b1567a23dc91ba7faa484c8bcb53602",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/ohp.jpg",
+          "bytes": 44003,
+          "sha256": "2140f2537bab4ea0b7a7257ce95d2f81052c73818c5b64d1c1875229078338f1"
+        }
+      ]
+    },
+    {
+      "key": "calf",
+      "author": "Goulart",
+      "title": "calf exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/622/461171e5-2b16-407d-bf27-27aeef43f105.MOV",
+      "page": "https://wger.de/en/exercise/622/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–7.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 15,
+        "uuid": "461171e5-2b16-407d-bf27-27aeef43f105",
+        "exercise": 622,
+        "exercise_uuid": "7ce443b6-eb84-4f65-b05f-461c1cc8bcc0",
+        "video": "https://wger.de/media/exercise-video/622/461171e5-2b16-407d-bf27-27aeef43f105.MOV",
+        "is_main": false,
+        "size": 27311167,
+        "duration": "16.43",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "calf"
+      },
+      "files": [
+        "media/calf.mp4",
+        "media/calf.gif",
+        "media/calf.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 7.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/calf.mp4",
+          "bytes": 270757,
+          "sha256": "d044e275b937984b2b37b82ab814b9b7bdc9e682903029cfa12773b0452050d1"
+        },
+        {
+          "path": "media/calf.gif",
+          "bytes": 1572961,
+          "sha256": "b63b7d46046562f6184e6b0168f189cce7384ab86c6c3fc9f028efa85770a709",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/calf.jpg",
+          "bytes": 32262,
+          "sha256": "2c3606e24d4ec80dd66365d97744f3598ad8eeef8762296910d61ad26fc14bf6"
+        }
+      ],
+      "variantNote": "Standing machine variation; camera concentrates on ankle movement."
+    },
+    {
+      "key": "bench",
+      "author": "FitnessScape",
+      "title": "Bench press - exercise demonstration video.webm",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/d/df/Bench_press_-_exercise_demonstration_video.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Bench_press_-_exercise_demonstration_video.webm",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "changes": "Replaced the earlier handheld clip with fixed-camera Commons footage showing the bar, bench and safety rack. Resized, silenced and transcoded. Selected 0–7.1 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "files": [
+        "media/bench.mp4",
+        "media/bench.gif",
+        "media/bench.jpg"
+      ],
+      "finalTrim": {
+        "input": "original source",
+        "start": 0,
+        "end": 7.1
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/bench.mp4",
+          "bytes": 105734,
+          "sha256": "93e60c58465c695dc6ccbe633e881b46148f2c73ca89a6232237e7e8c47d596d"
+        },
+        {
+          "path": "media/bench.gif",
+          "bytes": 409398,
+          "sha256": "a1e6394cfc00de1a9094973831887a01badf07d3ff60029b12bdf1c0340ad09f",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/bench.jpg",
+          "bytes": 25551,
+          "sha256": "13a1d915242944fd475df2e94dfc52b51f4ecab758e6458e9de82504188a083e"
+        }
+      ]
+    },
+    {
+      "key": "incline",
+      "author": "Capt. Matthew Holfinger / U.S. Marine Corps Training and Education Command",
+      "title": "Dumbbell Incline Bench Press",
+      "source": "https://d34w7g4gy10iej.cloudfront.net/video/1811/DOD_106174446/DOD_106174446-1024x576-1769k.mp4",
+      "page": "https://www.dvidshub.net/video/636927/dumbbell-incline-bench-press",
+      "license": "Public domain — U.S. government work",
+      "licenseUrl": "https://www.dvidshub.net/about/copyright",
+      "changes": "Selected 10–13 seconds of original source, after title overlay. Cropped the original two-camera composite to its lower 3/4 view (512x280 at x256,y296), retaining whole demonstrator, bench and weights. Silenced, resized and converted to H.264 MP4; GIF samples 3 seconds of actual frames at 10fps,320px. JPEG poster extracted.",
+      "files": [
+        "media/incline.mp4",
+        "media/incline.gif",
+        "media/incline.jpg"
+      ],
+      "finalTrim": {
+        "input": "original source",
+        "start": 10,
+        "end": 13
+      },
+      "variantNote": "Dumbbell incline press, fixed 3/4 camera with full body, bench and both dumbbells visible. No U.S. government endorsement implied.",
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/incline.mp4",
+          "bytes": 48319,
+          "sha256": "f3753996e8f597b90d1dcb94056831b1b3e86747a93aa48a0e9b1e7e65e3c71d"
+        },
+        {
+          "path": "media/incline.gif",
+          "bytes": 136963,
+          "sha256": "85b97363c90c76a747492c1c3c205d505c6fc788f0d2161517f17a47c4b4652b",
+          "frames": 30,
+          "width": 320,
+          "height": 175
+        },
+        {
+          "path": "media/incline.jpg",
+          "bytes": 20464,
+          "sha256": "898158cf0a32ecfd7cdb665254a0723b105a966d751deb9b276b2bf2126abd31"
+        }
+      ]
+    },
+    {
+      "key": "legcurl",
+      "author": "Goulart",
+      "title": "legcurl exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/365/becaf013-5044-40d0-bae9-7ed60c973737.MOV",
+      "page": "https://wger.de/en/exercise/365/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–8 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 35,
+        "uuid": "becaf013-5044-40d0-bae9-7ed60c973737",
+        "exercise": 365,
+        "exercise_uuid": "3bc8b411-a28d-4e1c-a6d1-769e18fe9881",
+        "video": "https://wger.de/media/exercise-video/365/becaf013-5044-40d0-bae9-7ed60c973737.MOV",
+        "is_main": false,
+        "size": 31825446,
+        "duration": "15.06",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "legcurl"
+      },
+      "files": [
+        "media/legcurl.mp4",
+        "media/legcurl.gif",
+        "media/legcurl.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 8
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/legcurl.mp4",
+          "bytes": 354569,
+          "sha256": "317421f3b653d6450294bca2fc1628d0864ef814ab118f22cc87dfa4eef3bd3f"
+        },
+        {
+          "path": "media/legcurl.gif",
+          "bytes": 1558420,
+          "sha256": "6be22d2ca6a4bd8df320cfd90d9a1effc98b6abc9efe6c1338a05aab1b2086f9",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/legcurl.jpg",
+          "bytes": 41082,
+          "sha256": "43f6801ea882213cc37179f2a82a6e2373e8cd73d42d5769f0094103e85f9dbc"
+        }
+      ]
+    },
+    {
+      "key": "legpress",
+      "author": "Goulart",
+      "title": "legpress exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/371/6aae16b4-01b9-4eb4-935c-3250f84d2c59.MOV",
+      "page": "https://wger.de/en/exercise/371/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–8 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 44,
+        "uuid": "6aae16b4-01b9-4eb4-935c-3250f84d2c59",
+        "exercise": 371,
+        "exercise_uuid": "66a42396-c207-44da-bc75-758a89d32404",
+        "video": "https://wger.de/media/exercise-video/371/6aae16b4-01b9-4eb4-935c-3250f84d2c59.MOV",
+        "is_main": false,
+        "size": 57665329,
+        "duration": "34.69",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "legpress"
+      },
+      "files": [
+        "media/legpress.mp4",
+        "media/legpress.gif",
+        "media/legpress.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 8
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/legpress.mp4",
+          "bytes": 366558,
+          "sha256": "35a252c379b634b8b4f7036079a430445bf604382e350b63bcf4cae1c76804d1"
+        },
+        {
+          "path": "media/legpress.gif",
+          "bytes": 1690089,
+          "sha256": "f509c6402958ea708a670c537829057d58b58f7f62b953dd0e497949cc815b79",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/legpress.jpg",
+          "bytes": 46063,
+          "sha256": "6d30a487e4f9029a40eb5985bc96343388cd42dac636a87469c759af46f8ac7d"
+        }
+      ]
+    },
+    {
+      "key": "curl",
+      "author": "Goulart",
+      "title": "curl exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/92/8bfb917c-3d0d-49b9-8073-5d7e01c1b894.MOV",
+      "page": "https://wger.de/en/exercise/92/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–7.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 48,
+        "uuid": "8bfb917c-3d0d-49b9-8073-5d7e01c1b894",
+        "exercise": 92,
+        "exercise_uuid": "1ae6a28d-10e7-4ecf-af4f-905f8193e2c6",
+        "video": "https://wger.de/media/exercise-video/92/8bfb917c-3d0d-49b9-8073-5d7e01c1b894.MOV",
+        "is_main": false,
+        "size": 31753930,
+        "duration": "10.94",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "curl"
+      },
+      "files": [
+        "media/curl.mp4",
+        "media/curl.gif",
+        "media/curl.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 7.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/curl.mp4",
+          "bytes": 204548,
+          "sha256": "bc63784aa3798c298d048a8127c4aefcb38924879087abae56df789092717187"
+        },
+        {
+          "path": "media/curl.gif",
+          "bytes": 1170159,
+          "sha256": "81c6c590b0a95f5f6ba04b63944e0fecdc7b5b79c89f924fe65206ca602f8cd9",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/curl.jpg",
+          "bytes": 34762,
+          "sha256": "11c2e58e2ad4a9a6ff557c4d6234cc6bb50087021310bc75c0ef161bb71475f4"
+        }
+      ]
+    },
+    {
+      "key": "hammer",
+      "author": "Goulart",
+      "title": "hammer exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/272/df069052-2173-4f24-855f-a0eebe729f24.MOV",
+      "page": "https://wger.de/en/exercise/272/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Selected 0–7.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "metadata": {
+        "id": 51,
+        "uuid": "df069052-2173-4f24-855f-a0eebe729f24",
+        "exercise": 272,
+        "exercise_uuid": "c0d9fe98-f4fe-49f3-8037-05e1984e7d2d",
+        "video": "https://wger.de/media/exercise-video/272/df069052-2173-4f24-855f-a0eebe729f24.MOV",
+        "is_main": false,
+        "size": 30154182,
+        "duration": "10.37",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "hammer"
+      },
+      "files": [
+        "media/hammer.mp4",
+        "media/hammer.gif",
+        "media/hammer.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 7.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/hammer.mp4",
+          "bytes": 207380,
+          "sha256": "da064f5e368070745247c2624ce7dea014a9f9656bd28ccc8f96cbcd0b2e6472"
+        },
+        {
+          "path": "media/hammer.gif",
+          "bytes": 1134940,
+          "sha256": "7c83ec3f5027b179b4f4f551e3c4642f0a2cd9bf29ebe2492e7289d92ea25623",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/hammer.jpg",
+          "bytes": 35154,
+          "sha256": "829e80fd824d48da810ddd56f6bd3ea1e74b03e7989344ca5fc3bcc89397944f"
+        }
+      ]
+    },
+    {
+      "key": "overhead",
+      "author": "Goulart",
+      "title": "overhead exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/211/85f6eb25-a76c-409e-9af9-497794ac0dfb.MOV",
+      "page": "https://wger.de/en/exercise/211/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Selected 11–19.5 seconds of original source, excluding the close-up angle with clipped dumbbells. Transcoded silently to H.264 MP4; GIF uses up to 7 seconds of actual frames at 10 fps, at most 320px. JPEG poster extracted from a visible exercise phase.",
+      "metadata": {
+        "id": 57,
+        "uuid": "85f6eb25-a76c-409e-9af9-497794ac0dfb",
+        "exercise": 211,
+        "exercise_uuid": "d8bddb58-91b0-4d7b-8ec1-cd742584b607",
+        "video": "https://wger.de/media/exercise-video/211/85f6eb25-a76c-409e-9af9-497794ac0dfb.MOV",
+        "is_main": false,
+        "size": 11837332,
+        "duration": "32.02",
+        "width": 1920,
+        "height": 1080,
+        "codec": "h264",
+        "codec_long": "H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "overhead"
+      },
+      "files": [
+        "media/overhead.mp4",
+        "media/overhead.gif",
+        "media/overhead.jpg"
+      ],
+      "finalTrim": {
+        "input": "original source",
+        "start": 11,
+        "end": 19.5
+      },
+      "variantNote": "Seated two-handed dumbbell overhead extension, viewed from behind.",
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/overhead.mp4",
+          "bytes": 507540,
+          "sha256": "7e0554585baf0bd5f97cb7097c59db9ed87233f3199deba479fa2351379c5e72"
+        },
+        {
+          "path": "media/overhead.gif",
+          "bytes": 1995431,
+          "sha256": "efaef64f7f92221b2d3e740a3a0b92140924cec4888b1548b19fc7b879c9db1f",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/overhead.jpg",
+          "bytes": 47736,
+          "sha256": "8f4b92e8cc3aedc76d5df583e34707fe3f7d2af7c63d00638c2797adf743186c"
+        }
+      ]
+    },
+    {
+      "key": "facepull",
+      "author": "Goulart",
+      "title": "facepull exercise demonstration",
+      "source": "https://wger.de/media/exercise-video/222/eea93fcc-6a3c-4783-8f70-0234c791a001.MOV",
+      "page": "https://wger.de/en/exercise/222/view/",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames.",
+      "metadata": {
+        "id": 79,
+        "uuid": "eea93fcc-6a3c-4783-8f70-0234c791a001",
+        "exercise": 222,
+        "exercise_uuid": "d7a418d4-d0cb-4f85-8a7c-1e9d97152cbd",
+        "video": "https://wger.de/media/exercise-video/222/eea93fcc-6a3c-4783-8f70-0234c791a001.MOV",
+        "is_main": false,
+        "size": 20624981,
+        "duration": "8.57",
+        "width": 1920,
+        "height": 1080,
+        "codec": "hevc",
+        "codec_long": "H.265 / HEVC (High Efficiency Video Coding)",
+        "license": 2,
+        "license_title": "",
+        "license_object_url": "",
+        "license_author": "Goulart",
+        "license_author_url": "",
+        "license_derivative_source_url": "",
+        "author_history": [
+          "Goulart"
+        ],
+        "key": "facepull"
+      },
+      "files": [
+        "media/facepull.mp4",
+        "media/facepull.gif",
+        "media/facepull.jpg"
+      ],
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/facepull.mp4",
+          "bytes": 406682,
+          "sha256": "90c7afb8f6ab9a47c09eb9637918aca9f53323c158df9379cc6eb90e891295aa"
+        },
+        {
+          "path": "media/facepull.gif",
+          "bytes": 2046726,
+          "sha256": "8f313b8f3015d2f53e1a714413d91d254c8865b7c742f0430ca8c4b74f6f1876",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/facepull.jpg",
+          "bytes": 49061,
+          "sha256": "f02a650926137e1efd884cde139f2903f3b2302e630dd7fbfdec2a974a3fefca"
+        }
+      ]
+    },
+    {
+      "key": "bbrow",
+      "author": "FitnessScape",
+      "title": "Bent-over row - exercise demonstration video.webm",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Bent-over_row_-_exercise_demonstration_video.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Bent-over_row_-_exercise_demonstration_video.webm",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames.",
+      "files": [
+        "media/bbrow.mp4",
+        "media/bbrow.gif",
+        "media/bbrow.jpg"
+      ],
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/bbrow.mp4",
+          "bytes": 82073,
+          "sha256": "f87ee0d621e7fd19279bc5254016f46d552c19a45a662a01b6d64bac5e425605"
+        },
+        {
+          "path": "media/bbrow.gif",
+          "bytes": 365901,
+          "sha256": "336561f8748db0ca10d50f8d8b2f5ab5212a3929bd1560b4bb5efb0b6f0e9a5d",
+          "frames": 51,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/bbrow.jpg",
+          "bytes": 22226,
+          "sha256": "fa778599986dbcc5bc07dadc3a5606afa38b165df8c875913251788ff2921ca7"
+        }
+      ]
+    },
+    {
+      "key": "knee",
+      "author": "FitnessScape",
+      "title": "Hanging crunches - exercise demonstration video.webm",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/5/5e/Hanging_crunches_-_exercise_demonstration_video.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Hanging_crunches_-_exercise_demonstration_video.webm",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames.",
+      "files": [
+        "media/knee.mp4",
+        "media/knee.gif",
+        "media/knee.jpg"
+      ],
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/knee.mp4",
+          "bytes": 78867,
+          "sha256": "c4760542e81a48fd0ad3c3694d2f0c423aa945a4d677c8f36d97fbaae98fc85a"
+        },
+        {
+          "path": "media/knee.gif",
+          "bytes": 292491,
+          "sha256": "6f818d9101312d4734c90dcd1fc65e1da81ca5bbbfc6519f35a83bcb724082c0",
+          "frames": 58,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/knee.jpg",
+          "bytes": 18843,
+          "sha256": "cea8c188bc69056a4ecccbbb67ffead463f83a673afa974dd1060e402fdd7a33"
+        }
+      ]
+    },
+    {
+      "key": "squat",
+      "author": "FitnessScape",
+      "title": "Squat - exercise demonstration video.webm",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/5/5c/Squat_-_exercise_demonstration_video.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Squat_-_exercise_demonstration_video.webm",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames.",
+      "files": [
+        "media/squat.mp4",
+        "media/squat.gif",
+        "media/squat.jpg"
+      ],
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/squat.mp4",
+          "bytes": 155164,
+          "sha256": "a2a3b5f6e6049d13cad5e42cfe0ecd1f78253052857f160316a3dd4fe8718539"
+        },
+        {
+          "path": "media/squat.gif",
+          "bytes": 707096,
+          "sha256": "c54141045d5e42ced67619affc8009e80e23a47184944c3212ee53e651f8e167",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/squat.jpg",
+          "bytes": 19904,
+          "sha256": "fd529543abdae3d8ceaef6891b6923d52c5e8a8c4b59f3f4699a14955f8ab11f"
+        }
+      ]
+    },
+    {
+      "key": "goblet",
+      "author": "Taco Fleur",
+      "title": "Kettlebell Goblet Squat.webm",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/c/c3/Kettlebell_Goblet_Squat.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Kettlebell_Goblet_Squat.webm",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Excerpt 3–17 seconds; cropped around demonstrator, retaining full body. Selected 5–12 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "files": [
+        "media/goblet.mp4",
+        "media/goblet.gif",
+        "media/goblet.jpg"
+      ],
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 5,
+        "end": 12
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/goblet.mp4",
+          "bytes": 225124,
+          "sha256": "b200ebe607fc3ba139c738cd6d57bee8b601ed9a81ef12bafafc57a3a3e2eb10"
+        },
+        {
+          "path": "media/goblet.gif",
+          "bytes": 730970,
+          "sha256": "1846a9864cf0824329baad077c9b7e4b2a3091fbfa6f1c5b8731d32b8a044684",
+          "frames": 70,
+          "width": 320,
+          "height": 320
+        },
+        {
+          "path": "media/goblet.jpg",
+          "bytes": 35716,
+          "sha256": "b3966aa2bd4a176b926828fc19a1a3e574e00c81c745ccca5b4a2546dd0ae329"
+        }
+      ],
+      "variantNote": "Kettlebell goblet variation. The text also explains a dumbbell grip."
+    },
+    {
+      "key": "pushup",
+      "author": "Wensceslao",
+      "title": "Pushups.gif",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/8/8f/Pushups.gif",
+      "page": "https://commons.wikimedia.org/wiki/File:Pushups.gif",
+      "license": "CC BY-SA 4.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames.",
+      "files": [
+        "media/pushup.mp4",
+        "media/pushup.gif",
+        "media/pushup.jpg"
+      ],
+      "kind": "source-animation",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/pushup.mp4",
+          "bytes": 51292,
+          "sha256": "27e1534fb15f5dd04889f9bc226cb7c4a17664f212bd4e6c2b7a5a9005cbde04"
+        },
+        {
+          "path": "media/pushup.gif",
+          "bytes": 182872,
+          "sha256": "6508396cb14a8571739dddf5a5d4c49c33ead23ac8284c63cfa5d7a45e0d01df",
+          "frames": 21,
+          "width": 320,
+          "height": 240
+        },
+        {
+          "path": "media/pushup.jpg",
+          "bytes": 11884,
+          "sha256": "97e3cd9d931b14660b8a03e663576903146e303cd8ad3b63720a3cbe281ced8f"
+        }
+      ],
+      "variantNote": "Continuous drawn animation by Wensceslao, not live-action footage."
+    },
+    {
+      "key": "pulldown",
+      "author": "Andrew Kwong",
+      "title": "Common Lat Pulldown Mistakes.webm",
+      "source": "https://upload.wikimedia.org/wikipedia/commons/0/03/Common_Lat_Pulldown_Mistakes.webm",
+      "page": "https://commons.wikimedia.org/wiki/File:Common_Lat_Pulldown_Mistakes.webm",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "changes": "Transcoded to silent H.264 MP4 and GIF; downscaled; JPEG poster extracted. No synthesized frames. Excerpt 6.7–10.9 seconds only: correct demonstration, green muscle overlays.",
+      "files": [
+        "media/pulldown.mp4",
+        "media/pulldown.gif",
+        "media/pulldown.jpg"
+      ],
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/pulldown.mp4",
+          "bytes": 445201,
+          "sha256": "3c4d7f35495220b4bb21b3ef02c729627e6aa7ff1abfd59be9caf444a7a64a1d"
+        },
+        {
+          "path": "media/pulldown.gif",
+          "bytes": 1159320,
+          "sha256": "feda2c93f5c6a9b310c9f10b06b9ab6e70cdf672bff140a7cc19f427d64d8caf",
+          "frames": 42,
+          "width": 180,
+          "height": 320
+        },
+        {
+          "path": "media/pulldown.jpg",
+          "bytes": 76367,
+          "sha256": "18260eba9a715f577a6dbc58b1639d3405fbec5880775e63f1e0e2d5212af94c"
+        }
+      ],
+      "variantNote": "Only the final correct segment with green muscle overlays is used; preceding error demonstrations are excluded."
+    },
+    {
+      "key": "bss",
+      "title": "bss exercise demonstration",
+      "author": "Capt. Matthew Holfinger / U.S. Marine Corps Training and Education Command",
+      "source": "https://d34w7g4gy10iej.cloudfront.net/video/1709/DOD_104808550/DOD_104808550-1024x576-1769k.mp4",
+      "page": "https://www.dvidshub.net/video/548428/barbell-bulgarian-split-squat",
+      "license": "Public domain (U.S. government work)",
+      "licenseUrl": "https://www.dvidshub.net/about/copyright",
+      "changes": "Excerpt 18–31 seconds; resized and transcoded to silent H.264 MP4; GIF uses first 7 seconds at 10 fps; poster extracted. No synthesized frames. Selected 0–9.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "files": [
+        "media/bss.mp4",
+        "media/bss.gif",
+        "media/bss.jpg"
+      ],
+      "caption": "Barbell variation; start with bodyweight or light dumbbells.",
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 9.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/bss.mp4",
+          "bytes": 89551,
+          "sha256": "b7a3e53c297c61050057a1bf489ce51c9aa6d8eca12f0525d246340995a1ed4c"
+        },
+        {
+          "path": "media/bss.gif",
+          "bytes": 225409,
+          "sha256": "49fe8105b8a4f3c5e54f0637545676038bee188abd36b7a80adc712c649dc1d6",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/bss.jpg",
+          "bytes": 35175,
+          "sha256": "3aae82a81b46a12ab59ab3aad7fc8dc60bedb851f2f70398b70a5019231372da"
+        }
+      ],
+      "variantNote": "Rear foot elevated on a box, barbell variation. New learners are advised to use bodyweight with support first."
+    },
+    {
+      "key": "pushdown",
+      "title": "pushdown exercise demonstration",
+      "author": "Tima Miroshnichenko / Pexels",
+      "source": "https://videos.pexels.com/video-files/5319432/5319432-uhd_2560_1440_25fps.mp4",
+      "page": "https://www.pexels.com/video/a-man-working-out-inside-the-gym-5319432/",
+      "license": "Pexels License",
+      "licenseUrl": "https://www.pexels.com/license/",
+      "changes": "Excerpt 1–12 seconds; resized and transcoded to silent H.264 MP4; GIF uses first 7 seconds at 10 fps; poster extracted. No synthesized frames. Selected 0–7.5 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "files": [
+        "media/pushdown.mp4",
+        "media/pushdown.gif",
+        "media/pushdown.jpg"
+      ],
+      "caption": "Straight-bar variation of the cable triceps pushdown.",
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 0,
+        "end": 7.5
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/pushdown.mp4",
+          "bytes": 199141,
+          "sha256": "49e7c3fde6278a287ca89159b54112ed73e6ffcf094cf8bfbb49a0503b96e666"
+        },
+        {
+          "path": "media/pushdown.gif",
+          "bytes": 2096871,
+          "sha256": "8db8cc3e74124151b91cf5955575fd24513d1c6ad5d0cc9be962d3089ded76c3",
+          "frames": 70,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/pushdown.jpg",
+          "bytes": 17610,
+          "sha256": "0acdbf0b099b2ce91bd89b930cdd76bba4d9149917d5dd8240d9d36277445ff2"
+        }
+      ],
+      "variantNote": "Straight-bar cable pushdown. The rope variation is described in text; this is not labelled a rope demonstration."
+    },
+    {
+      "key": "plank",
+      "title": "plank exercise demonstration",
+      "author": "Cpl. Caden Phillips / U.S. Marine Corps",
+      "source": "https://d34w7g4gy10iej.cloudfront.net/video/2301/DOD_109412801/DOD_109412801.mp4",
+      "page": "https://www.dvidshub.net/video/871026/plank-instructional-video",
+      "license": "Public domain (U.S. government work)",
+      "licenseUrl": "https://www.dvidshub.net/about/copyright",
+      "changes": "Excerpt 45.5–53.5 seconds; resized and transcoded to silent H.264 MP4; GIF uses first 7 seconds at 10 fps; poster extracted. No synthesized frames. Selected 3.6–7.9 seconds from this input clip to remove setup, camera movement or finishing transitions; GIF samples first 7 seconds at 10 fps (up to 320 px), poster extracted from a visible exercise frame.",
+      "files": [
+        "media/plank.mp4",
+        "media/plank.gif",
+        "media/plank.jpg"
+      ],
+      "caption": "Forearm plank isometric hold, side view.",
+      "finalTrim": {
+        "input": "previous excerpt",
+        "start": 3.6,
+        "end": 7.9
+      },
+      "kind": "filmed-demonstration",
+      "checkedOn": "2026-09-19",
+      "review": "Source identity, stated licence, depicted movement and selected key frames checked. This is not a certified trainer assessment of individual technique.",
+      "fileMetadata": [
+        {
+          "path": "media/plank.mp4",
+          "bytes": 57657,
+          "sha256": "7a42a341d4c2ec90ebcbb7a3dd3925df52ff6dabdaa6854ad9c18ecbafcb3924"
+        },
+        {
+          "path": "media/plank.gif",
+          "bytes": 146122,
+          "sha256": "f71f4935612fb10a816b4b8c9ffa910ecc614a9706d078f9bbf821b542e72e1d",
+          "frames": 43,
+          "width": 320,
+          "height": 180
+        },
+        {
+          "path": "media/plank.jpg",
+          "bytes": 36515,
+          "sha256": "b32ff7ddf5f876b3b6635185cf3b4412ea1f217c3487a8398d00012f5b88507a"
+        }
+      ],
+      "variantNote": "Forearm isometric plank hold. A still body is the correct action; small natural movement/breathing remains."
+    },
+    {
+      "key": "stair",
+      "title": "Stair Climber",
+      "page": "media/stair-diagram.gif",
+      "author": "Original diagram for Hillman Gym",
+      "license": "Original project asset",
+      "licenseUrl": null,
+      "kind": "original-articulated-schematic",
+      "files": [
+        "media/stair-diagram.gif",
+        "media/stair-diagram.jpg"
+      ],
+      "changes": "Original 60-frame articulated route schematic created for this project. No photographic frames or AI-generated human footage. Side view with moving treads and alternating feet; stance feet move exactly with a tread; swing feet lift clear.",
+      "checkedOn": "2026-09-19",
+      "review": "Three movement phases visually compared with written instructions; animation geometry and true frame variation checked. Illustrative routes, not biomechanical simulation.",
+      "sourceScript": "scripts/gym-diagrams.py",
+      "fileMetadata": [
+        {
+          "path": "media/stair-diagram.gif",
+          "bytes": 1854197,
+          "sha256": "f418ebbd28048bd2d1d186f25df75c79ba93313c1c44bbb61e98d3f1672f9c3d",
+          "frames": 60,
+          "width": 800,
+          "height": 640
+        },
+        {
+          "path": "media/stair-diagram.jpg",
+          "bytes": 46163,
+          "sha256": "0c69660703a48da383b959605b21858d3cb733243d12560ed48e36804f4ca889"
+        }
+      ]
+    },
+    {
+      "key": "cablefly",
+      "title": "Standing Cable Fly",
+      "page": "media/cablefly-diagram.gif",
+      "author": "Original diagram for Hillman Gym",
+      "license": "Original project asset",
+      "licenseUrl": null,
+      "kind": "original-articulated-schematic",
+      "files": [
+        "media/cablefly-diagram.gif",
+        "media/cablefly-diagram.jpg"
+      ],
+      "changes": "Original 60-frame articulated route schematic created for this project. No photographic frames or AI-generated human footage. Overhead projection with constant 150-degree elbow angle and shoulder rotation; static inset shows chest-height pulleys and split stance.",
+      "checkedOn": "2026-09-19",
+      "review": "Three movement phases visually compared with written instructions; animation geometry and true frame variation checked. Illustrative routes, not biomechanical simulation.",
+      "sourceScript": "scripts/gym-diagrams.py",
+      "fileMetadata": [
+        {
+          "path": "media/cablefly-diagram.gif",
+          "bytes": 2219822,
+          "sha256": "0cfae734aad2dd038517031ed75538a82c7e2b4f5d11d846822ea1d07dd58771",
+          "frames": 60,
+          "width": 800,
+          "height": 640
+        },
+        {
+          "path": "media/cablefly-diagram.jpg",
+          "bytes": 53449,
+          "sha256": "b0785cd6bb60f68d5a6a889ae955f126568d59174042f5fd50f8e87882ed676b"
+        }
+      ]
+    },
+    {
+      "key": "smith",
+      "title": "Smith Machine Bench Press",
+      "page": "media/smith-diagram.gif",
+      "author": "Original diagram for Hillman Gym",
+      "license": "Original project asset",
+      "licenseUrl": null,
+      "kind": "original-articulated-schematic",
+      "files": [
+        "media/smith-diagram.gif",
+        "media/smith-diagram.jpg"
+      ],
+      "changes": "Original 60-frame articulated route schematic created for this project. No photographic frames or AI-generated human footage. Oblique 3D flat-bench projection; fixed-length articulated arms follow a bar constrained to vertical rails; feet, head and hips stay supported.",
+      "checkedOn": "2026-09-19",
+      "review": "Three movement phases visually compared with written instructions; animation geometry and true frame variation checked. Illustrative routes, not biomechanical simulation.",
+      "sourceScript": "scripts/gym-diagrams.py",
+      "fileMetadata": [
+        {
+          "path": "media/smith-diagram.gif",
+          "bytes": 2093785,
+          "sha256": "5afad82effdd4a630e7c2bc21458abd01117f65ded5aaf0960bc96fd3278148b",
+          "frames": 60,
+          "width": 800,
+          "height": 640
+        },
+        {
+          "path": "media/smith-diagram.jpg",
+          "bytes": 52434,
+          "sha256": "2ce1935a0d22525bcd16ba64194cc58cca0893109e108a39b022258e06625916"
+        }
+      ]
+    },
+    {
+      "key": "pecdeck",
+      "title": "Pec Deck",
+      "page": "media/pecdeck-diagram.gif",
+      "author": "Original diagram for Hillman Gym",
+      "license": "Original project asset",
+      "licenseUrl": null,
+      "kind": "original-articulated-schematic",
+      "files": [
+        "media/pecdeck-diagram.gif",
+        "media/pecdeck-diagram.jpg"
+      ],
+      "changes": "Original 60-frame articulated route schematic created for this project. No photographic frames or AI-generated human footage. Overhead projection of elbow-pad machine, with upright forearms seen as circles; front inset explains elbow height, seat and forearm position.",
+      "checkedOn": "2026-09-19",
+      "review": "Three movement phases visually compared with written instructions; animation geometry and true frame variation checked. Illustrative routes, not biomechanical simulation.",
+      "sourceScript": "scripts/gym-diagrams.py",
+      "fileMetadata": [
+        {
+          "path": "media/pecdeck-diagram.gif",
+          "bytes": 2369050,
+          "sha256": "5488037f4d3a2fab3cc58b5b3554c38e0eb44c5f068d86cd55daa4669af4a230",
+          "frames": 60,
+          "width": 800,
+          "height": 640
+        },
+        {
+          "path": "media/pecdeck-diagram.jpg",
+          "bytes": 53222,
+          "sha256": "4289d6a86e68d3ede325c1651f867258bea8f3b199de7232b4496be8131c366b"
+        }
+      ]
+    },
+    {
+      "key": "tuck",
+      "title": "Legs-up Crunch / Knee Reach",
+      "page": "media/tuck-diagram.gif",
+      "author": "Original diagram for Hillman Gym",
+      "license": "Original project asset",
+      "licenseUrl": null,
+      "kind": "original-articulated-schematic",
+      "files": [
+        "media/tuck-diagram.gif",
+        "media/tuck-diagram.jpg"
+      ],
+      "changes": "Original 60-frame articulated route schematic created for this project. No photographic frames or AI-generated human footage. Side projection with fixed hips, knees and horizontal shins; only the upper trunk curls and hands reach toward the knees.",
+      "checkedOn": "2026-09-19",
+      "review": "Three movement phases visually compared with written instructions; animation geometry and true frame variation checked. Illustrative routes, not biomechanical simulation.",
+      "sourceScript": "scripts/gym-diagrams.py",
+      "fileMetadata": [
+        {
+          "path": "media/tuck-diagram.gif",
+          "bytes": 1627585,
+          "sha256": "f02f478214028047be77bacd6a57f6e5b7a79b75fa845147e2e6bd9f1bc39870",
+          "frames": 60,
+          "width": 800,
+          "height": 640
+        },
+        {
+          "path": "media/tuck-diagram.jpg",
+          "bytes": 45092,
+          "sha256": "98621a2e65b1057d720f4d3be33e361b106ac42ddd22660af61aa42880697d5a"
+        }
+      ]
+    }
+  ],
+  "instructionReferences": [
+    {
+      "title": "ACE — Resistance Training: Beginner Home and Gym-based Workouts",
+      "url": "https://www.acefitness.org/resources/everyone/blog/8650/resistance-training-workouts-for-beginners/",
+      "use": "Beginner whole-body training 2–3 nonconsecutive days per week."
+    },
+    {
+      "title": "ACSM — 2026 Resistance Training Guidelines",
+      "url": "https://acsm.org/resistance-training-guidelines-update-2026/",
+      "use": "Consistency, individual progression; advanced techniques and failure are optional."
+    },
+    {
+      "title": "ACE Exercise Library",
+      "url": "https://www.acefitness.org/resources/everyone/exercise-library/",
+      "use": "Cross-checks of setup, controlled range and movement descriptions. Exact exercise references are linked in data.mjs where available."
+    },
+    {
+      "title": "wger source library and licensing",
+      "url": "https://github.com/wger-project/wger",
+      "use": "Individual media records retain author and licence metadata; downloaded on 2026-09-18."
+    }
+  ],
+  "programmeCorrections": [
+    "Default foundation schedule is Monday, Wednesday, Friday, with at least a rest day between full-body sessions. Two sessions are also acceptable when recovery requires it.",
+    "No automatic mandatory switch to a split after one or two weeks. Existing splits are optional adaptations of the provided notes.",
+    "Sets reduced to conservative starting amounts; beginners do not require drop sets or failure.",
+    "Corrected blanket claims about knees never passing toes, machines always being safer, isolation of lower abs and face pulls fixing posture."
+  ]
+}

@@ -82,6 +82,24 @@ enforces manifest/precache integrity — it is **not** part of CI, so run it by 
 
 ## Getting Started
 
+### HillmanChan Gym
+
+[Gym 訓練手記](https://gym.hillmanchan.com) is a standalone Cantonese/English
+training journal in `portfolio/public/gym/`. It includes exercise demonstrations,
+date-based sets/weights/completion/notes, local JSON backups, and offline media.
+Records stay in the current browser; they do not sync to an account.
+
+`npm run build` prepares its versioned offline asset list before the normal CRA
+build. Deploy only Gym with `bash scripts/deploy-gym.sh`; this uploads the `gym/`
+prefix to the existing AWS S3 bucket and deploys its dedicated Cloudflare Worker.
+See `infrastructure/cloudflare/gym/README.md` for routing and verification.
+
+Run its checks with:
+
+```bash
+node --test scripts/tests/gym-*.test.mjs infrastructure/cloudflare/gym/worker.test.mjs
+```
+
 ### Prerequisites
 
 - Node.js (v14.0.0 or later)
