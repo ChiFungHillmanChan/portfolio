@@ -93,3 +93,21 @@ Published on 2026-09-18 at 23:29 UTC (2026-09-19 in London) to
 The first request during custom-domain propagation returned 403; subsequent
 checks all passed without a configuration change. The shared CloudFront
 distribution and other applications' Workers, routes and DNS were not modified.
+
+## English and mobile release — 2026-09-19
+
+Published at 11:23 UTC using `scripts/deploy-gym.sh`. All 55 preflight tests passed.
+
+- Cloudflare Worker version: `2d2a1864-09d1-4b10-97b4-91ef8e2c6f15`.
+- Offline version: `9b548e637f10255559ef`, with 99 cache assets. Every listed asset
+  returned 200 with an asset MIME type from the live custom domain.
+- Live HTML, `app.mjs`, `i18n.mjs`, `data.en.mjs`, `locale.mjs`, `styles.css`,
+  `sw.js`, `precache.js`, `manifest.en.webmanifest` and `media-credits.en.md`
+  were byte-identical to the local release and returned `no-cache`.
+- JavaScript modules returned `application/javascript`; the English manifest
+  returned `application/manifest+json`; English credits returned `text/markdown`.
+- The S3 `gym/` prefix contained 101 objects totalling 44,992,015 bytes, matching
+  all local asset paths and sizes.
+
+See [the release validation notes](../../../docs/gym/2026-09-19/i18n-mobile.md)
+for language switching, mobile viewport and offline browser checks.

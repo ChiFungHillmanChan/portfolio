@@ -438,7 +438,7 @@ export const EXERCISES = [
     "id": "facepull",
     "zh": "面拉",
     "en": "Face Pull",
-    "muscle": "膊頭後側、上背（改善寒背姿勢）",
+    "muscle": "膊頭後側、上背",
     "equipment": "高位繩索機／繩索手柄",
     "sets": 2,
     "reps": "12–15",

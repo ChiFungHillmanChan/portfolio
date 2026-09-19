@@ -20,7 +20,7 @@ esac
 command -v aws >/dev/null
 command -v wrangler >/dev/null
 node "$ROOT_DIR/scripts/prepare-gym.mjs"
-for file in index.html app.mjs data.mjs store.mjs styles.css sw.js manifest.webmanifest; do
+for file in index.html app.mjs data.mjs data.en.mjs i18n.mjs locale.mjs store.mjs styles.css sw.js manifest.webmanifest manifest.en.webmanifest; do
   if [ ! -s "$SOURCE_DIR/$file" ]; then
     echo "Missing required gym asset: $file" >&2
     exit 1
@@ -28,7 +28,7 @@ for file in index.html app.mjs data.mjs store.mjs styles.css sw.js manifest.webm
 done
 
 node --test "$ROOT_DIR/infrastructure/cloudflare/gym/worker.test.mjs"
-node --test "$ROOT_DIR/scripts/tests/gym-store.test.mjs" "$ROOT_DIR/scripts/tests/gym-offline.test.mjs" "$ROOT_DIR/scripts/tests/gym-content.test.mjs"
+node --test "$ROOT_DIR"/scripts/tests/gym-*.test.mjs
 aws sts get-caller-identity --query Account --output text --region eu-west-2
 
 # Scope every upload to gym/. Never sync/delete the shared bucket root.
@@ -41,7 +41,7 @@ aws s3 cp "$SOURCE_DIR/" "$DESTINATION" --recursive \
   --exclude '*' --include '*.mjs' --include '*.js' --exclude '*.test.*' \
   --content-type 'application/javascript; charset=utf-8' \
   --cache-control 'no-cache' "${AWS_OPTIONS[@]}"
-aws s3 cp "$SOURCE_DIR/manifest.webmanifest" "${DESTINATION}manifest.webmanifest" \
+aws s3 cp "$SOURCE_DIR/" "$DESTINATION" --recursive --exclude '*' --include '*.webmanifest' \
   --content-type 'application/manifest+json; charset=utf-8' \
   --cache-control 'no-cache' "${AWS_OPTIONS[@]}"
 aws s3 cp "$SOURCE_DIR/index.html" "${DESTINATION}index.html" \

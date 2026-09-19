@@ -12,3 +12,203 @@
 .demo-controls>span{flex:1}.demo-controls button{flex-shrink:0}
 input[aria-invalid=true]{border:2px solid var(--danger)!important}
 @media(max-width:720px){#motion-toggle{font-size:10px}.header-right{gap:11px}.brand{letter-spacing:.6px}}
+
+/* Keep translated labels and native language controls readable at every width. */
+.site-header{gap:24px}
+.header-right{flex-wrap:wrap;justify-content:flex-end;gap:16px}
+#language-select{min-height:44px;max-width:160px;font-size:16px;padding:8px 10px}
+.main-nav a .nav-label{font:inherit;opacity:1;letter-spacing:normal}
+html[lang="en-GB"] .main-nav small,html[lang="en-GB"] .daily-notes .panel-title small{display:none}
+.workspace>* , .calendar-layout>* , .guide-grid>* , .library-grid>*{min-width:0}
+.dialog-header>div{min-width:0}
+.dialog-header h2{overflow-wrap:break-word}
+
+/* Native form text stays at 16px on touch screens, including iPad landscape. */
+@media(pointer:coarse),(max-width:980px){
+  input,select,textarea,
+  .day-selector input,.log-table input[type=number],.workout-controls select,
+  .daily-notes textarea,.settings-section input,.settings-section select{font-size:16px}
+}
+
+/* Phone training layout: thumb-sized controls, compact navigation, full-width forms. */
+@media(max-width:720px){
+  :root{--phone-gutter:16px}
+  body{font-size:16px;-webkit-text-size-adjust:100%}
+  button{min-width:44px;min-height:44px}
+  input,select,textarea{line-height:1.4}
+  label{font-size:14px}
+
+  .site-header{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px 8px;padding:16px var(--phone-gutter);padding-top:max(16px,env(safe-area-inset-top));min-height:0}
+  .brand{grid-column:1/5;grid-row:1;min-width:0;font-size:11px;letter-spacing:.65px;gap:10px}
+  .brand-mark{flex-shrink:0;width:42px;height:42px}
+  .brand-sub{font-size:9px;letter-spacing:.55px}
+  .header-right{display:contents}
+  .connection{grid-column:5/7;grid-row:1;justify-self:end;max-width:100%;font-size:11px;line-height:1.45;gap:6px}
+  .connection i{flex-shrink:0;width:7px;height:7px}
+  #language-select{grid-column:1/3;grid-row:2;width:100%;max-width:none;min-width:0;padding:8px;font-size:16px}
+  #motion-toggle{grid-column:3/5;grid-row:2}
+  #settings-button{grid-column:5/7;grid-row:2}
+  #motion-toggle,#settings-button{align-self:stretch;margin:0;padding:8px 4px;border:1px solid var(--line);font-size:12px;line-height:1.3;white-space:normal}
+  #settings-button span{margin-left:4px}
+
+  .main-nav{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding:0 8px;overflow:visible;position:sticky;top:0}
+  .main-nav a,.main-nav a:last-child{min-width:0;min-height:50px;justify-content:center;gap:0;padding:11px 4px 9px;font-size:14px;line-height:1.3;text-align:center;white-space:normal}
+  .main-nav a>span:not(.nav-label),.main-nav small{display:none}
+  .main-nav a .nav-label,.main-nav a:last-child .nav-label{font-size:inherit;font-weight:inherit;opacity:1}
+  .main-nav a:last-child:after{content:none}
+
+  main{padding:24px var(--phone-gutter) 44px}
+  .hero{padding-bottom:24px;margin-bottom:24px}
+  .hero h1{font-size:clamp(30px,8vw,38px);line-height:1.25;letter-spacing:-.8px;overflow-wrap:break-word}
+  .hero p{max-width:35ch;font-size:14px;line-height:1.65}
+  .hero-art{display:none}
+  .hero .eyebrow{font-size:10px;letter-spacing:1.1px}
+  .eyebrow:before{flex-shrink:0}
+  .section-heading{flex-wrap:wrap;align-items:flex-start;gap:12px;margin-bottom:18px}
+  .section-heading h2{font-size:22px}
+  .section-heading p{font-size:13px;line-height:1.5}
+  .day-selector{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;gap:8px;width:100%}
+  .day-selector input{width:100%;max-width:none;min-height:44px;margin:0;padding:9px 10px;font-size:16px}
+  .icon-button,.day-selector .icon-button,.month-control button,.wide-calendar .month-control button,.dialog-header .close{width:44px;height:44px;min-width:44px;min-height:44px}
+
+  .workout-banner{padding:20px 16px;align-items:flex-start}
+  .workout-banner>div:first-child{min-width:0}
+  .workout-banner h3{font-size:23px;line-height:1.3;overflow-wrap:break-word}
+  .workout-banner p{font-size:13px;line-height:1.55}
+  .workout-banner .count{flex-shrink:0;font-size:32px}
+  .count small{max-width:8ch;font-size:10px;line-height:1.35}
+  .workout-controls{gap:14px;margin-bottom:20px}
+  .workout-controls label{font-size:13px;line-height:1.4}
+  .workout-controls select{min-height:48px;font-size:16px;padding:10px}
+  .warmup-note{font-size:14px;line-height:1.7;margin:20px 0}
+
+  .exercise-top,.calendar-layout .exercise-top{position:relative;grid-template-columns:104px minmax(0,1fr);gap:12px;padding:16px 14px;align-items:center}
+  .exercise-number{position:absolute;left:20px;top:22px;z-index:1;min-width:22px;padding:2px 5px;border-radius:4px;background:var(--paper);color:var(--olive);font-size:12px;line-height:1.3;pointer-events:none}
+  .exercise-thumb,.calendar-layout .exercise-thumb{width:104px;height:100px;align-self:start}
+  .exercise-thumb .play{width:24px;height:24px;font-size:10px}
+  .exercise-top h3,.calendar-layout .exercise-top h3{font-size:17px;line-height:1.35;overflow-wrap:break-word}
+  .exercise-en,.calendar-layout .exercise-en{font-size:13px;line-height:1.5;overflow-wrap:break-word}
+  .prescription{font-size:12px;line-height:1.55}
+  .log-table{table-layout:fixed}
+  .log-table th{padding:10px 6px 6px;font-size:11px;line-height:1.35;letter-spacing:0;overflow-wrap:break-word}
+  .log-table td{padding:4px 6px 8px;width:32%}
+  .log-table th:first-child,.log-table td:first-child{width:12%;padding-left:6px;padding-right:2px;font-size:12px}
+  .log-table th:last-child,.log-table td:last-child{width:22%;padding-right:6px;padding-left:2px}
+  .log-table input[type=number],.calendar-layout .log-table input[type=number]{width:100%;max-width:none;height:46px;font-size:16px;padding:8px 4px}
+  /* The visible check remains compact inside a full 44px native input target. */
+  .log-table input[type=checkbox]{appearance:none;-webkit-appearance:none;display:inline-grid;place-content:center;vertical-align:middle;width:44px;height:44px;margin:0;padding:0;border:0;background:transparent}
+  .log-table input[type=checkbox]:before{content:'';grid-area:1/1;width:25px;height:25px;border:1.5px solid #89957b;border-radius:5px;background:var(--white)}
+  .log-table input[type=checkbox]:checked:before{background:var(--olive);border-color:var(--olive)}
+  .log-table input[type=checkbox]:checked:after{content:'✓';grid-area:1/1;place-self:center;color:white;font-size:20px;font-weight:700;line-height:1}
+  .exercise-actions{align-items:center;gap:12px;padding:0 12px 8px}
+  .exercise-actions .previous{min-width:0;font-size:12px;line-height:1.5;overflow-wrap:break-word}
+  .exercise-actions button{flex-shrink:0;max-width:45%;padding:10px 6px;font-size:13px;line-height:1.4}
+  .primary-button,.secondary-button{min-height:48px;font-size:15px;line-height:1.4;padding:12px 16px;white-space:normal}
+  .finish-row{gap:10px}
+  .finish-row .primary-button{flex-basis:100%}
+  .finish-row small{font-size:12px}
+
+  .panel{padding:20px 16px}
+  .panel-title{gap:12px;align-items:center}
+  .panel-title h3{font-size:17px}
+  .panel-title small{font-size:10px}
+  .calendar-panel{padding:20px 12px}
+  .calendar-grid{gap:0}
+  .calendar-day{min-width:0;width:100%;min-height:46px;aspect-ratio:auto;font-size:14px}
+  .weekday,.wide-calendar .weekday{font-size:12px;padding-bottom:10px}
+  .month-name,.wide-calendar .month-name{font-size:18px;line-height:1.4}
+  .month-control{flex-shrink:0;gap:4px}
+  .wide-calendar .calendar-day{min-height:62px;font-size:18px;border-radius:5px}
+  .wide-calendar .calendar-day .dot{bottom:10px}
+  .legend{gap:12px;font-size:12px;line-height:1.5}
+  .calendar-foot{flex-wrap:wrap;align-items:center;gap:8px;font-size:13px}
+  .calendar-foot .text-button{font-size:13px;padding:8px 0}
+  .daily-notes label{font-size:14px;line-height:1.5}
+  .daily-notes input{min-height:48px;font-size:16px}
+  .daily-notes textarea{min-height:150px;font-size:16px;line-height:1.7}
+  .status-buttons{gap:6px}
+  .status-buttons button{min-width:0;min-height:46px;font-size:13px;line-height:1.35;padding:9px 5px}
+  .notes-hint,.save-state{font-size:12px;line-height:1.6}
+  .tip-panel p{font-size:14px;line-height:1.8}
+  .tip-panel a{display:inline-flex;align-items:center;min-height:44px;font-size:13px}
+
+  .page-intro h1{font-size:clamp(29px,7vw,34px);line-height:1.25;overflow-wrap:break-word}
+  .page-intro p{font-size:15px;line-height:1.65}
+  .toolbar{gap:14px}
+  .search{min-width:0;width:100%;min-height:48px;font-size:16px;padding:12px}
+  .filters{gap:8px}
+  .filter{min-height:44px;padding:10px 14px;font-size:13px;line-height:1.4}
+  .library-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .movement-tile .tile-image{height:auto;aspect-ratio:4/3;min-height:190px;padding:28px 14px 34px}
+  .tile-info{padding:18px 16px}
+  .tile-info h3{font-size:19px;line-height:1.35;overflow-wrap:break-word}
+  .tile-info .exercise-en{font-size:13px}
+  .tile-meta{font-size:12px;line-height:1.55;margin-top:12px}
+  .tile-image .tile-no{font-size:10px;left:14px;top:10px}
+  .tile-image .play-label{font-size:11px;padding:5px 10px;bottom:10px;right:10px}
+
+  .guide-section{padding:22px 16px}
+  .guide-section h2{font-size:22px;line-height:1.35}
+  .guide-section>p{font-size:15px;line-height:1.7}
+  .phrase .phrase-en{font-size:17px;line-height:1.55}
+  .phrase .phrase-zh{font-size:14px;line-height:1.7}
+  .glossary-row{grid-template-columns:minmax(0,.85fr) minmax(0,1fr);gap:14px;font-size:14px;line-height:1.6;overflow-wrap:break-word}
+  .glossary-row span{font-size:14px}
+  .glossary-row small{font-size:12px;line-height:1.6}
+  .instruction-list{font-size:15px;line-height:1.8}
+  .week-summary{gap:8px}
+  .week-summary span{font-size:12px;line-height:1.4}
+
+  dialog{inset:0;width:100%;max-width:none;height:100vh;height:100dvh;max-height:100vh;max-height:100dvh;margin:0;border:0;border-radius:0;overflow:hidden}
+  dialog[open]{display:flex;flex-direction:column}
+  body:has(dialog[open]){overflow:hidden;overscroll-behavior:none}
+  .dialog-header{flex-shrink:0;gap:12px;padding:16px;padding-top:max(16px,env(safe-area-inset-top));padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+  .dialog-header h2{font-size:23px;line-height:1.3}
+  .dialog-header .eyebrow{font-size:10px;margin-bottom:8px}
+  .dialog-header .close{font-size:27px}
+  .dialog-body{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:20px 16px 28px;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));padding-bottom:calc(28px + env(safe-area-inset-bottom))}
+  .demo-media{min-height:0;border-radius:6px}
+  .demo-media img,.demo-media video{display:block;width:100%;height:auto;max-height:54vh;max-height:54dvh;object-fit:contain}
+  .demo-controls{flex-wrap:wrap;align-items:flex-start;gap:12px;font-size:13px;line-height:1.65}
+  .demo-controls>span{flex-basis:180px}
+  .demo-controls button{min-height:44px;font-size:14px;padding:10px 13px}
+  .demo-meta{gap:8px}
+  .demo-meta span{max-width:100%;font-size:12px;line-height:1.5;padding:8px 10px;overflow-wrap:break-word}
+  .instructions-grid{gap:18px}
+  .instructions-grid h3{font-size:17px;line-height:1.4}
+  .instructions-grid ol,.instructions-grid ul{font-size:16px;line-height:1.8;padding-left:23px}
+  .instructions-grid li{margin-bottom:12px}
+  .demo-tip{font-size:14px;line-height:1.75}
+  .source-note{font-size:12px;line-height:1.7}
+  .source-note a{display:inline-block;min-height:44px;padding:10px 0;vertical-align:middle}
+  .settings-section h3{font-size:18px}
+  .settings-section p{font-size:15px;line-height:1.7}
+  .settings-section input,.settings-section select{min-height:48px;font-size:16px}
+  .settings-section .button-row>*{flex:1 1 180px}
+  .settings-section>.primary-button{width:100%}
+  .inline-status{font-size:13px;line-height:1.6}
+  .toast{bottom:calc(16px + env(safe-area-inset-bottom));font-size:14px;line-height:1.5;padding:12px 16px}
+  .storage-error{padding:14px 16px;padding-bottom:calc(14px + env(safe-area-inset-bottom));font-size:14px;line-height:1.5}
+  .site-footer{padding:24px var(--phone-gutter);padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  .site-footer a{display:inline-flex;align-items:center;min-height:44px;font-size:12px}
+  .loading{padding:60px 16px}
+}
+
+@media(max-width:560px){
+  .library-grid{grid-template-columns:minmax(0,1fr)}
+  .movement-tile .tile-image{min-height:220px}
+  .workout-controls,.calendar-layout .workout-controls{grid-template-columns:minmax(0,1fr)}
+}
+
+@media(max-width:374px){
+  .exercise-top,.calendar-layout .exercise-top{grid-template-columns:88px minmax(0,1fr);gap:10px;padding:14px 12px}
+  .exercise-thumb,.calendar-layout .exercise-thumb{width:88px;height:92px}
+  .exercise-number{left:18px;top:20px}
+  .exercise-top h3,.calendar-layout .exercise-top h3{font-size:16px}
+  /* Seven 44px day targets need 308px: let this one panel reach the screen edges. */
+  .calendar-panel{width:calc(100% + var(--phone-gutter) * 2);margin-left:calc(-1 * var(--phone-gutter));margin-right:calc(-1 * var(--phone-gutter));padding-left:6px;padding-right:6px;border-left:0;border-right:0;border-radius:0}
+  .calendar-panel .panel-title,.calendar-panel .legend,.calendar-panel .calendar-foot{margin-left:10px;margin-right:10px}
+  .workout-banner{gap:10px;padding:18px 14px}
+  .workout-banner h3{font-size:21px}
+  .glossary-row{grid-template-columns:minmax(0,1fr);gap:5px}
+}

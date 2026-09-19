@@ -2,7 +2,7 @@
 <html lang="zh-HK">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="theme-color" content="#20271f">
   <meta name="description" content="HillmanChan Gym：廣東話動作指南、英文器材名、離線訓練日曆，同你每一下嘅紀錄。">
   <title>GYM — HillmanChan 訓練手記</title>
@@ -12,24 +12,24 @@
   <link rel="stylesheet" href="./styles.css">
 </head>
 <body>
-  <a class="skip" href="#main">跳去內容</a>
+  <a class="skip" href="#main" data-i18n="skip">跳去內容</a>
   <header class="site-header">
-    <a class="brand" href="#today" aria-label="HillmanChan Gym 主頁"><span class="brand-mark">H<span>c.</span></span><span>HILLMANCHAN<span class="brand-sub">GYM / 訓練手記</span></span></a>
-    <div class="header-right"><span class="connection" id="offline-status" role="status"><i></i>準備離線內容…</span><button class="text-button" id="motion-toggle" aria-pressed="true">Ⅱ 暫停示範</button><button class="text-button" id="settings-button" aria-label="備份與設定">設定 <span aria-hidden="true">↗</span></button></div>
+    <a class="brand" href="#today" aria-label="HillmanChan Gym 主頁" data-i18n-label="home"><span class="brand-mark">H<span>c.</span></span><span>HILLMANCHAN<span class="brand-sub" data-i18n="brand">GYM / 訓練手記</span></span></a>
+    <div class="header-right"><span class="connection" id="offline-status" role="status"><i></i>準備離線內容…</span><select id="language-select" aria-label="語言 / Language"><option value="zh-HK" lang="zh-HK">廣東話</option><option value="en-GB" lang="en-GB">English</option></select><button class="text-button" id="motion-toggle" aria-pressed="true">Ⅱ 暫停示範</button><button class="text-button" id="settings-button" aria-label="備份與設定" data-i18n-label="settingsLabel"><span data-i18n="settings">設定</span> <span aria-hidden="true">↗</span></button></div>
   </header>
-  <nav class="main-nav" aria-label="主要導覽">
-    <a href="#today" data-view="today"><span>01</span> 今日訓練 <small>TRAIN</small></a>
-    <a href="#calendar" data-view="calendar"><span>02</span> 訓練日曆 <small>JOURNAL</small></a>
-    <a href="#library" data-view="library"><span>03</span> 動作指南 <small>MOVEMENTS</small></a>
-    <a href="#guide" data-view="guide"><span>04</span> 英國 Gym 用語 <small>GYM ENGLISH</small></a>
+  <nav class="main-nav" aria-label="主要導覽" data-i18n-label="navigation">
+    <a href="#today" data-view="today"><span>01</span><span class="nav-label" data-i18n="navToday">今日訓練</span><small>TRAIN</small></a>
+    <a href="#calendar" data-view="calendar"><span>02</span><span class="nav-label" data-i18n="navCalendar">訓練日曆</span><small>JOURNAL</small></a>
+    <a href="#library" data-view="library"><span>03</span><span class="nav-label" data-i18n="navLibrary">動作指南</span><small>MOVEMENTS</small></a>
+    <a href="#guide" data-view="guide"><span>04</span><span class="nav-label" data-i18n="navGuide">Gym 用語</span><small>GYM ENGLISH</small></a>
   </nav>
   <main id="main" tabindex="-1"><p class="loading">準備你嘅訓練手記…</p></main>
-  <footer class="site-footer"><span>HILLMANCHAN <b>GYM.</b></span><span>每一下，都算數。<small>BUILT FOR YOUR NEXT REP.</small></span><a href="https://hillmanchan.com" target="_blank" rel="noopener">hillmanchan.com ↗</a></footer>
+  <footer class="site-footer"><span>HILLMANCHAN <b>GYM.</b></span><span><span data-i18n="footer">每一下，都算數。</span><small>BUILT FOR YOUR NEXT REP.</small></span><a href="https://hillmanchan.com" target="_blank" rel="noopener">hillmanchan.com ↗</a></footer>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <div id="storage-error" class="storage-error" role="alert" hidden></div>
   <dialog id="exercise-dialog" aria-labelledby="exercise-title"></dialog>
   <dialog id="settings-dialog" aria-labelledby="settings-title"></dialog>
-  <noscript><p>請開啟 JavaScript，先可以睇動作同儲存訓練紀錄。</p></noscript>
+  <noscript><p>請開啟 JavaScript，先可以睇動作同儲存訓練紀錄。 / Enable JavaScript to view exercises and save your workouts.</p></noscript>
   <script type="module" src="./app.mjs"></script>
 </body>
 </html>
