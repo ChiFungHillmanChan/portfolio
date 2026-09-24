@@ -3,6 +3,7 @@ import { FaGithub, FaInstagram, FaLinkedin, FaLightbulb, FaMoon, FaBars, FaTimes
 import socialLinks from './data/socialLinks';
 import { Link, useLocation, Outlet } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import Seo from './components/Seo';
 
 const Layout = () => {
     const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -42,6 +43,7 @@ const Layout = () => {
 
     return (
         <div className={`min-h-screen font-['Montserrat', 'sans-serif'] ${isDarkMode ? 'dark' : ''}`}>
+            <Seo />
             <div className="bg-khaki dark:bg-gray-800 dark:text-white transition-colors duration-300">
                 
                 {/* Navigation/Header */}
@@ -277,7 +279,7 @@ const Layout = () => {
                             <div className="text-center md:text-left">
                                 <h4 className="text-xl font-bold mb-4">About Me</h4>
                                 <p className="text-gray-300">
-                                A dedicated developer focused on building reliable and effective web applications and software programs.
+                                Junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients.
                                 </p>
                             </div>
                             <div className="text-center md:text-left">

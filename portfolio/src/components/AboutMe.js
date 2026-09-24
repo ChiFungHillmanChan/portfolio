@@ -142,8 +142,14 @@ const AboutMe = () => {
       {/* Hero Section */}
       <motion.section className="mb-16" variants={sectionVariants}>
         <motion.h1 className="text-4xl md:text-5xl font-bold mb-6 dark:text-white" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}>
-          About Me
+          About Hillman Chan
         </motion.h1>
+        <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
+          I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background spans professional engineering teams, freelance software development, and building JARVIS AI.
+        </p>
+        <p className="mt-4 text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl">
+          Alongside software engineering, my experience in tutoring and customer-facing work has strengthened how I communicate and collaborate with people from different backgrounds.
+        </p>
       </motion.section>
       
       {/* Education Section */}

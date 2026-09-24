@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import projectData from '../projectData.json';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
+import ProjectDetailsLink from './ProjectDetailsLink';
 
 const categories = [
   { value: 'all', label: 'All' },
@@ -22,11 +23,10 @@ const Projects = () => {
     return categories.some(({ value }) => value === requested) ? requested : 'all';
   });
   const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
-  const navigate = useNavigate();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-20">
-      <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center dark:text-white">My Projects</h2>
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center dark:text-white">My Projects</h1>
       <div className="mb-8 flex justify-center px-2 sm:px-4">
         <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-1.5 sm:px-3 md:px-4 py-1.5 sm:py-2 flex flex-nowrap gap-1 sm:gap-2 justify-center max-w-full overflow-x-auto">
           {categories.map(({ value, label }) => (
@@ -68,29 +68,7 @@ const Projects = () => {
                 </p>
               </div>
               <div className="mt-auto">
-                <button
-                  onClick={() => project.category !== 'none' && navigate(`/project/${project.id}`)}
-                  disabled={project.category === 'none'}
-                  className={`w-full px-4 py-2 rounded-md flex items-center justify-center gap-2 
-                    ${project.category === 'none' 
-                    ? 'bg-gray-700 cursor-not-allowed text-gray-200'
-                    : 'bg-gray-800 text-white hover:bg-gray-600 transition-colors duration-300'}`}
-                >
-                  <span>View Details</span>
-                  <svg 
-                    className="w-4 h-4" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      strokeWidth={2} 
-                      d="M9 5l7 7-7 7" 
-                    />
-                  </svg>
-                </button>
+                <ProjectDetailsLink project={project} />
               </div>
             </div>
           </motion.div>

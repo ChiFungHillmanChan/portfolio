@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import projectData from './projectData.json';
 import profilePic from "./assets/profile_pic.jpg";
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import ProjectDetailsLink from './components/ProjectDetailsLink';
 
 //update
 
@@ -30,16 +31,6 @@ const MainContent = () => {
 
     const [activeCategory, setActiveCategory] = useState('all');
     const filteredProjects = activeCategory === 'all' ? projectData : projectData.filter(project => project.category === activeCategory);
-    const navigate = useNavigate();
-
-    const [timeOfDay, setTimeOfDay] = useState('');
-    useEffect(() => {
-        const currentHour = new Date().getHours();
-        if (currentHour < 12) setTimeOfDay('Good morning');
-        else if (currentHour < 18) setTimeOfDay('Good afternoon');
-        else setTimeOfDay('Good evening');
-    }, []);
-
     const skills = [
         { name: 'Python', icon: SiPython, color: '#3776AB' },
         { name: 'JavaScript', icon: SiJavascript, color: '#F7DF1E' },
@@ -54,7 +45,7 @@ const MainContent = () => {
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {/* Personalized Greeting Section */}
+            {/* Introduction Section */}
             <section className="py-12 md:py-20">
                 <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
                     <motion.div 
@@ -66,7 +57,7 @@ const MainContent = () => {
                         <div className="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-black-500 shadow-lg">
                             <img
                                 src={profilePic}
-                                alt="Profile"
+                                alt="Hillman Chan, junior software engineer"
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -79,14 +70,17 @@ const MainContent = () => {
                         className="w-full md:w-2/3 text-center md:text-left"
                     >
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 md:mb-6 dark:text-white">
-                            {timeOfDay}, I'm Hillman Chan
+                            Hillman Chan — Junior Software Engineer
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 md:mb-6">
-                            AI Software Engineer
+                            AI & Full-Stack Development
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                            AI software engineer and remote founder of Jarvis AI — selected for the AWS Idea Launcher × HKSTP Co-Ideation Programme. I ship AI + full-stack projects and keep building to see what’s next.
+                            I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background includes professional engineering roles, freelance software development, and building products as the founder of JARVIS AI.
                         </p>
+                        <Link to="/about" onClick={() => window.scrollTo(0, 0)} className="inline-block mt-4 font-medium text-gray-800 dark:text-gray-200 underline underline-offset-4 hover:text-blue-500">
+                            Explore my professional experience
+                        </Link>
                     </motion.div>
                 </div>
             </section>
@@ -135,7 +129,7 @@ const MainContent = () => {
 
             {/* Project Display Section */}
             <section className="py-12">
-                <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Top 3 Delighted Projects</h2>
+                <h2 className="text-2xl md:text-3xl font-bold mb-6 md:mb-8 text-center">Featured Software Projects</h2>
                 <div className="mb-8 flex justify-center px-2 sm:px-4">
                     <div className="bg-gray-200 dark:bg-gray-700 rounded-full px-1.5 sm:px-3 md:px-4 py-1.5 sm:py-2 flex flex-nowrap gap-1 sm:gap-2 justify-center max-w-full overflow-x-auto">
                     {categories.map(({ value, label }) => (
@@ -177,29 +171,7 @@ const MainContent = () => {
                                     </p>
                                 </div>
                                 <div className="mt-auto">
-                                    <button
-                                        onClick={() => project.category !== 'none' && navigate(`/project/${project.id}`)}
-                                        disabled={project.category === 'none'}
-                                        className={`w-full px-4 py-2 rounded-md flex items-center justify-center gap-2 
-                                            ${project.category === 'none' 
-                                            ? 'bg-gray-700 cursor-not-allowed text-gray-200'
-                                            : 'bg-gray-800 text-white hover:bg-gray-600 transition-colors duration-300'}`}
-                                    >
-                                        <span>View Details</span>
-                                        <svg 
-                                            className="w-4 h-4" 
-                                            fill="none" 
-                                            stroke="currentColor" 
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path 
-                                                strokeLinecap="round" 
-                                                strokeLinejoin="round" 
-                                                strokeWidth={2} 
-                                                d="M9 5l7 7-7 7" 
-                                            />
-                                        </svg>
-                                    </button>
+                                    <ProjectDetailsLink project={project} />
                                 </div>
                             </div>
                         </motion.div>
@@ -208,11 +180,9 @@ const MainContent = () => {
 
                 {filteredProjects.length > 3 && (
                     <div className="mt-8 md:mt-10 flex justify-center">
-                        <button
-                            onClick={() => {
-                                navigate(`/projects?category=${activeCategory}`);
-                                window.scrollTo(0, 0);
-                            }}
+                        <Link
+                            to={`/projects?category=${activeCategory}`}
+                            onClick={() => window.scrollTo(0, 0)}
                             className="w-full sm:w-auto px-6 py-3 rounded-full border-2 border-gray-800 text-gray-800 font-medium
                                        flex items-center justify-center gap-2 transition-colors duration-300
                                        hover:bg-gray-800 hover:text-white
@@ -232,7 +202,7 @@ const MainContent = () => {
                                     d="M9 5l7 7-7 7"
                                 />
                             </svg>
-                        </button>
+                        </Link>
                     </div>
                 )}
             </section>
