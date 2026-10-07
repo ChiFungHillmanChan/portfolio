@@ -37,15 +37,15 @@ const AboutMe = () => {
 
   const experience = [
     {
-      title: "AWS Startup Launcher Program: Jarvis",
-      company: "JARVIS AI",
+      title: "CEO and Founder",
+      company: "JARVIS AI Limited",
       location: "Hong Kong",
       start_date: "January 2026",
       end_date: "Present",
       description: [
-        "Selected for the AWS Idea Launcher × HKSTP Co-Ideation Programme (Cohort AWS26-04) after a panel interview with AWS Startup Programs and the Hong Kong Science and Technology Park.",
-        "Received conditional approval from HKSTP for the 1-year Ideation pre-incubation programme (programme start: June 2026), validating JARVIS AI's product direction and market fit.",
-        "Admitted to AWS Activate to access cloud credits, technical mentorship, and go-to-market support for the JARVIS AI platform.",
+        "Selected for the AWS Startup Launcher × HKSTP Co-Ideation Programme (Cohort AWS26-04) after a panel interview with AWS Startup Programs and the Hong Kong Science and Technology Park.",
+        "Received conditional approval from HKSTP for the 1-year Ideation pre-incubation programme (programme start: June 2026), validating JARVIS AI's product direction and market fit, with funding of up to HK$100,000.",
+        "Admitted to AWS Activate to access an additional US$25,000 in cloud credits, technical mentorship, and go-to-market support for the JARVIS AI platform.",
         "Leading product, engineering, and business development end-to-end — from defining the problem and shipping the first release at jarvis-automation.com to navigating government innovation programmes."
       ],
       skills: ["Entrepreneurship", "AI Product", "Startup Strategy", "AWS", "Go-to-Market"]

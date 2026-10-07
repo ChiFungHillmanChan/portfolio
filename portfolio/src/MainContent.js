@@ -76,7 +76,7 @@ const MainContent = () => {
                             AI & Full-Stack Development
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                            I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background includes professional engineering roles, freelance software development, and building products as the founder of JARVIS AI.
+                            I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background includes professional engineering roles, freelance software development, and building products as the CEO and Founder of JARVIS AI Limited.
                         </p>
                         <Link to="/about" onClick={() => window.scrollTo(0, 0)} className="inline-block mt-4 font-medium text-gray-800 dark:text-gray-200 underline underline-offset-4 hover:text-blue-500">
                             Explore my professional experience
