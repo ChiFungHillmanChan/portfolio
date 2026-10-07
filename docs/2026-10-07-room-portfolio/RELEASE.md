@@ -30,7 +30,7 @@ Browser acceptance helpers are `scripts/verify-room-screens.cjs`, `scripts/verif
 
 The existing `Deploy Portfolio to S3` GitHub workflow publishes pushes to `main`. The verified target is bucket `hillmanportfolio1` in `eu-west-2`, behind CloudFront `E2SYHEFLV89R32` for `hillmanchan.com`. Existing SPA routing handles `/room` and other React routes; DNS and origin configuration are unchanged.
 
-The workflow preserves shared bucket assets, explicitly sets JavaScript MIME types for native `.mjs` modules, revalidates mutable room files, uploads the portfolio shell last, then invalidates CloudFront and waits for completion. Hashed CRA assets retain immutable caching. A workflow-dispatch run alone remains build-only.
+The workflow preserves shared bucket assets, explicitly sets JavaScript MIME types for native `.mjs` modules, uploads the portfolio shell last, then invalidates CloudFront and waits for completion. The session-cache follow-up uses versioned room assets with `no-store`; hashed CRA assets retain immutable caching. A workflow-dispatch run alone remains build-only. See `SESSION-CACHE-AND-ICONS.md` for the follow-up behavior and verification.
 
 ## Release verification
 

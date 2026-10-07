@@ -137,6 +137,7 @@ test('speakers load the official player only on Play and remove it on stop, hidd
   const fallback = document.querySelector('a[href="https://www.youtube.com/watch?v=TIy3n2b7V9k"]');
   assert.ok(fallback, 'the official watch link is always available');
   assert.equal(fallback.target, '_blank');
+  assert.equal(fallback.querySelector('svg')?.getAttribute('aria-hidden'), 'true', 'the external-link arrow is decorative SVG, not an emoji glyph');
   play.click();
   const frame = document.querySelector('iframe'), url = new URL(frame.src);
   assert.equal(url.origin, 'https://www.youtube-nocookie.com');

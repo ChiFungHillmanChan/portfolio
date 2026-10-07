@@ -4,11 +4,19 @@ import path from 'node:path';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const source = path.join(root, 'room-reference/viewer');
-const destination = path.join(root, 'portfolio/public/room-viewer');
-await mkdir(destination, { recursive: true });
+// Bump this tracked revision when publishing changed room assets. The whole
+// relative-import tree gets a fresh URL, independent of an intermediary cache.
+const { version } = JSON.parse(await readFile(path.join(root, 'portfolio/src/room/roomAssetRevision.json')));
+if (typeof version !== 'string' || !/^[1-9]\d*$/.test(version)) throw new Error('Room asset version must be a positive integer string.');
+const legacyDestination = path.join(root, 'portfolio/public/room-viewer');
+const destination = path.join(legacyDestination, `v${version}`);
+const destinations = [legacyDestination, destination];
+await Promise.all(destinations.map(directory => mkdir(directory, { recursive: true })));
 for (const item of await readdir(source, { withFileTypes: true })) {
   if (item.name === 'vendor' || (/\.(?:js|mjs|css|html)$/.test(item.name) && !/test\.|hillman-character|life-motion|room-life|quilt-motion/.test(item.name))) {
-    await cp(path.join(source, item.name), path.join(destination, item.name), { recursive: true });
+    // Always copy individual source files, never a delivery directory containing
+    // another revision. Legacy URLs remain available for older open clients.
+    await Promise.all(destinations.map(directory => cp(path.join(source, item.name), path.join(directory, item.name), { recursive: true })));
   }
 }
 // The CV is private; remove any stale public copy from earlier preparation.
@@ -80,7 +88,7 @@ json = Buffer.concat([json, Buffer.alloc((4 - json.length % 4) % 4, 0x20)]);
 const header = Buffer.alloc(20); header.write('glTF');header.writeUInt32LE(2,4);header.writeUInt32LE(28 + json.length + bin.length,8);header.writeUInt32LE(json.length,12);header.writeUInt32LE(0x4e4f534a,16);
 const binHeader = Buffer.alloc(8);binHeader.writeUInt32LE(bin.length);binHeader.writeUInt32LE(0x004e4942,4);
 const output = Buffer.concat([header,json,binHeader,bin]);
-await writeFile(path.join(destination,'room.glb'),output);
-const report = { originalBytes: original.length, deliveryBytes: output.length, replacedHiddenMeshes: replaced, reductionPercent: Math.round((1-output.length/original.length)*1000)/10 };
-await writeFile(path.join(destination,'delivery-report.json'),JSON.stringify(report,null,2)+'\n');
+await Promise.all(destinations.map(directory => writeFile(path.join(directory,'room.glb'),output)));
+const report = { version, assetPath: `/room-viewer/v${version}/`, originalBytes: original.length, deliveryBytes: output.length, replacedHiddenMeshes: replaced, reductionPercent: Math.round((1-output.length/original.length)*1000)/10 };
+await Promise.all(destinations.map(directory => writeFile(path.join(directory,'delivery-report.json'),JSON.stringify(report,null,2)+'\n')));
 console.log('Prepared room assets:', report);

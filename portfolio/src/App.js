@@ -1,7 +1,7 @@
 import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom';
 import BugSpark from '@bugspark/widget';
-import RoomPortfolio from './room/RoomPortfolio';
+import RoomSession from './room/RoomSession';
 const AboutMe = lazy(() => import('./components/AboutMe'));
 const Layout = lazy(() => import('./Layout'));
 const MainContent = lazy(() => import('./MainContent'));
@@ -74,8 +74,8 @@ function App() {
 function PortfolioRouter() {
   const [router] = useState(() => createBrowserRouter(
     createRoutesFromElements(
-      <>
-        <Route path="/room" element={<RoomPortfolio />} />
+      <Route element={<RoomSession />}>
+        <Route path="/room" element={null} />
         {/* Standalone experience routes */}
         <Route path="/chat-box" element={<ChatBotGame />} />
         <Route path="/prompt-hunter" element={<PromptHunterGame />} />
@@ -104,7 +104,7 @@ function PortfolioRouter() {
           <Route path="/my-offer/coaching" element={<CoachingPage />} />
           <Route path="/my-offer/services" element={<ServicesPage />} />
         </Route>
-      </>
+      </Route>
     )
   ));
 

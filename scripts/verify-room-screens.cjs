@@ -16,18 +16,27 @@ async function verifyPortfolioRoundTrip(page, width) {
   await page.getByRole('heading', { name: 'Welcome to my house', exact: true }).waitFor();
   assert.equal(await page.getByRole('link', { name: /Standard portfolio/ }).getAttribute('href'), '/');
   await page.getByRole('button', { name: 'Enter my room', exact: true }).click({ timeout: 60000 });
+  const frame = page.frames().find(item => item.url().includes('/room-viewer/'));
+  await frame.waitForFunction(() => window.roomViewer && !roomViewer.inputPaused && !roomViewer.scheduler.pending);
+  await page.evaluate(() => { window.__roomRoundTripFrame = document.querySelector('.room-scene-frame'); });
+  await frame.evaluate(() => { window.__roomRoundTripMarker = 'prepared-room'; });
   const exit = page.getByRole('link', { name: 'Back to portfolio', exact: true });
   await exit.waitFor();
   assert.equal(await exit.getAttribute('href'), '/');
   await exit.click();
   await entrance.waitFor();
   assert.equal(new URL(page.url()).pathname, '/', 'return link opens the standard homepage');
-  assert.equal(await page.getByTitle('Explore Hillman’s interactive room').count(), 0, 'leaving the room unmounts its viewer');
+  assert.equal(await page.getByTitle('Explore Hillman’s interactive room').count(), 1, 'leaving the room retains its prepared viewer');
+  assert(await page.getByTitle('Explore Hillman’s interactive room').isHidden(), 'the retained room is hidden on the homepage');
+  await frame.waitForFunction(() => roomViewer.inputPaused && !roomViewer.scheduler.pending);
   if (width < 768) await page.getByRole('button', { name: 'Toggle menu' }).click();
   await page.getByRole('link', { name: '3D room', exact: true }).click();
-  await page.getByRole('heading', { name: 'Welcome to my house', exact: true }).waitFor();
+  await page.getByRole('link', { name: 'Back to portfolio', exact: true }).waitFor();
   assert.equal(new URL(page.url()).pathname, '/room', 'standard navigation reopens the room route');
-  return { standardHome: '/', room: '/room', heroEntry: true, enteredExit: true, navigationReentry: true };
+  assert.equal(await page.getByRole('heading', { name: 'Welcome to my house', exact: true }).count(), 0, 'a prepared room reopens without another welcome');
+  assert(await page.evaluate(() => document.querySelector('.room-scene-frame') === window.__roomRoundTripFrame), 'same iframe survives the roundtrip');
+  assert.equal(await frame.evaluate(() => window.__roomRoundTripMarker), 'prepared-room', 'same viewer document survives the roundtrip');
+  return { standardHome: '/', room: '/room', heroEntry: true, enteredExit: true, navigationReentry: true, sameFrameReused: true };
 }
 
 async function clickProjectedObject(page, frame, action, touch) {
@@ -145,8 +154,6 @@ async function clickComputer(page, frame, action, touch) {
         assert(!body.subarray(0, 5).equals(Buffer.from('%PDF-')), 'CV URL does not expose PDF bytes');
         result.cvPrivacy = { status: response.status(), contentType: response.headers()['content-type'], pdfBytesExposed: false };
       }
-      await page.getByRole('button', { name: 'Enter my room' }).waitFor({ timeout: 60000 });
-      await page.getByRole('button', { name: 'Enter my room' }).click();
       const frame = page.frames().find(f => f.url().includes('/room-viewer/'));
       await frame.waitForFunction(() => window.roomViewer && !roomViewer.inputPaused && !roomViewer.scheduler.pending);
       assert.equal(await frame.getByRole('button', { name: /Back to room/ }).isVisible(), false, 'general room overview does not show a return control');

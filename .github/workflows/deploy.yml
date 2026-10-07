@@ -70,10 +70,12 @@ jobs:
           aws s3 sync portfolio/build/ s3://$S3_BUCKET/ --exclude "static/*" --exclude "index.html" --exclude "games/*" --exclude "room-viewer/*" --exclude "sw.js" --cache-control "public,max-age=60"
 
           # Native ES modules must have a JavaScript MIME type, including .mjs.
-          # Room URLs are stable, so revalidate their contents and invalidate below.
-          aws s3 sync portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --exclude "*.js" --exclude "*.mjs" --exclude "*.glb" --cache-control "no-cache, must-revalidate"
-          aws s3 cp portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --recursive --exclude "*" --include "*.js" --include "*.mjs" --content-type "application/javascript" --cache-control "no-cache, must-revalidate"
-          aws s3 cp portfolio/build/room-viewer/room.glb s3://$S3_BUCKET/room-viewer/room.glb --content-type "model/gltf-binary" --cache-control "no-cache, must-revalidate"
+          # Versioned URLs bypass old CDN entries. Reuse is in the current iframe's
+          # memory only; no room assets or models should persist across visits.
+          # Copy rather than sync so unchanged objects also receive no-store metadata.
+          aws s3 cp portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --recursive --exclude "*.js" --exclude "*.mjs" --exclude "*.glb" --cache-control "no-store"
+          aws s3 cp portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --recursive --exclude "*" --include "*.js" --include "*.mjs" --content-type "application/javascript" --cache-control "no-store"
+          aws s3 cp portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --recursive --exclude "*" --include "*.glb" --content-type "model/gltf-binary" --cache-control "no-store"
 
           aws s3 cp portfolio/build/sw.js s3://$S3_BUCKET/sw.js --content-type "application/javascript" --cache-control "no-cache, no-store, must-revalidate"
           
@@ -85,4 +87,3 @@ jobs:
         run: |
           INVALIDATION_ID=$(aws cloudfront create-invalidation --distribution-id E2SYHEFLV89R32 --paths "/*" --query 'Invalidation.Id' --output text)
           aws cloudfront wait invalidation-completed --distribution-id E2SYHEFLV89R32 --id "$INVALIDATION_ID"
-

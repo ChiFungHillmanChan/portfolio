@@ -1,4 +1,5 @@
 import React, { useEffect, useRef } from 'react';
+import RoomIcon from './RoomIcon';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, iframe, [tabindex="0"]';
 
@@ -15,7 +16,7 @@ export default function RoomDialog({ title, children, onClose, game, variant, re
     return () => {
       document.body.style.overflow = overflow;
       // Wait until the background's inert attribute has been removed.
-      Promise.resolve().then(() => { if (previousFocus?.isConnected) previousFocus.focus(); });
+      Promise.resolve().then(() => { if (previousFocus?.isConnected && !previousFocus.closest('[hidden], [inert]')) previousFocus.focus(); });
     };
   }, [returnFocus]);
 
@@ -55,7 +56,7 @@ export function IsolatedGame({ game, onClose }) {
     } catch { /* The persistent return bar is available for independent apps. */ }
   };
   return <div className="room-game-view">
-    <p className="room-game-bar">Your room is waiting. <a href={game.route} target="_blank" rel="noreferrer">Open standalone ↗</a></p>
+    <p className="room-game-bar">Your room is waiting. <a href={game.route} target="_blank" rel="noreferrer">Open standalone <RoomIcon /></a></p>
     <iframe ref={frame} src={game.src} title={game.title} onLoad={connectKeyboard} allow="fullscreen" />
   </div>;
 }

@@ -40,7 +40,8 @@ let yaw = 0, pitch = 0, pointerStart = null, gestureMoved = false, lastPinch = 0
 let selectionOutline, loadFinished = false, toastTimer, previousFit = 0;
 let renderLimits, viewport, renderSize, resizeFrame, life;
 let scheduler, furniture, props, resizeObserver, savedCamera, inputPaused = false, hostPaused = false;
-let warmOn = true, blindOpen = false, disposed = false;
+let warmOn = true, blindOpen = false, disposed = false, contextFailed = false, loadingManager;
+const preparationFrames = new Map();
 let cameraTransition = null, focusedAction = null, activeScreen = null, roomCamera = null, afterFocusRender = null;
 const entries = new Map(), actionObjects = new Map();
 const metrics = { frames: 0, frameTimes: [], loadedAt: 0, startedAt: performance.now() };
@@ -146,40 +147,72 @@ function init() {
     if (metrics.frameTimes.length > 240) metrics.frameTimes.shift();
     return moving;
   } });
-  document.addEventListener('visibilitychange', () => {
-    scheduler.setPaused(document.hidden || hostPaused);
-    if (document.hidden) props?.suspendAudio?.();
-  });
+  document.addEventListener('visibilitychange', onVisibilityChange);
   window.addEventListener('message', receiveCommand);
   window.addEventListener('pagehide', dispose, { once: true });
   invalidate();
-  canvas.addEventListener('webglcontextlost', (event) => {event.preventDefault(); showError('The browser lost its graphics connection. Close other graphics-heavy tabs and choose Try again.');});
+  canvas.addEventListener('webglcontextlost', onContextLost);
   loadModel();
+}
+
+function onVisibilityChange() {
+  if (disposed || contextFailed) return;
+  scheduler?.setPaused(document.hidden || hostPaused);
+  if (document.hidden) props?.suspendAudio?.();
+}
+
+function stopPreparation() {
+  loadingManager?.abort(); loadingManager = null;
+  for (const [id, resolve] of preparationFrames) { cancelAnimationFrame(id); resolve(false); }
+  preparationFrames.clear();
+}
+
+function preparationFrame() {
+  return new Promise(resolve => {
+    if (disposed || contextFailed) { resolve(false); return; }
+    const id = requestAnimationFrame(() => {
+      preparationFrames.delete(id); resolve(!disposed && !contextFailed);
+    });
+    preparationFrames.set(id, resolve);
+  });
+}
+
+function onContextLost(event) {
+  event.preventDefault();
+  if (disposed || contextFailed) return;
+  contextFailed = true; loadFinished = false; hostPaused = true;
+  setInputPaused(true); scheduler?.setPaused(true); props?.suspendAudio?.();
+  stopPreparation();
+  showError('The browser lost its graphics connection. Close other graphics-heavy tabs and choose Try again.');
 }
 
 async function loadModel() {
   try {
     reportProgress('Downloading the room and its textures');
-    const gltf = await new GLTFLoader().loadAsync('./room.glb', (progress) => {
-      if (progress.total) reportProgress(`Downloading room · ${Math.round(progress.loaded / progress.total * 100)}%`, progress.loaded / progress.total);
+    loadingManager = new THREE.LoadingManager();
+    const gltf = await new GLTFLoader(loadingManager).loadAsync('./room.glb', (progress) => {
+      if (!disposed && !contextFailed && progress.total) reportProgress(`Downloading room · ${Math.round(progress.loaded / progress.total * 100)}%`, progress.loaded / progress.total);
     });
-    if (disposed) return;
-    reportProgress('Preparing furniture, lighting and interactions');
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    loadingManager = null;
+    if (disposed || contextFailed) { disposeObjectResources([gltf.scene]); return; }
+    // Own the decoded model before yielding so pagehide can release it even
+    // while it is still detached from the rendered scene.
     model = gltf.scene;
+    reportProgress('Preparing furniture, lighting and interactions');
+    if (!await preparationFrame()) return;
     applyLayout(model, ROOM_CONFIG);
     tidyRoom(model);
     closeEntranceDoor(model);
     refineWindow(model, ROOM_CONFIG);
     refineDesk(model, ROOM_CONFIG);
     refineComputers(model, ROOM_CONFIG);
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    if (!await preparationFrame()) return;
     addStorage(model, ROOM_CONFIG);
     addChair(model, ROOM_CONFIG);
     reportProgress('Making the bed and arranging the room');
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    if (!await preparationFrame()) return;
     addBed(model, ROOM_CONFIG);
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    if (!await preparationFrame()) return;
     refineWardrobe(model, ROOM_CONFIG);
     furniture = createFurnitureInteractions(model, { invalidate, onAction: openAction, reducedMotion });
     props = createPropInteractions(model, { invalidate, onAction: openAction, toast, reducedMotion, onModalChange: setInputPaused, onLightingChange: state => { warmOn = state.warmOn; blindOpen = state.blindOpen; setLighting(); } });
@@ -189,9 +222,10 @@ async function loadModel() {
       for (const object of entry.objects) actionObjects.set(object, entry);
     }
     buildActionMenu();
-    await new Promise(resolve => requestAnimationFrame(resolve));
+    if (!await preparationFrame()) return;
     if (ROOM_FEATURES.characterRoutine) {
       const { createRoomLife } = await import('./room-life.js');
+      if (disposed || contextFailed) return;
       life = createRoomLife(model, { reducedMotion, onPoseChange: () => { renderer.shadowMap.needsUpdate = true; }, onChange: ({ phase, paused }) => {
         $('life-phase').textContent = phase;
         $('life-toggle').textContent = paused ? '▶' : 'Ⅱ';
@@ -232,18 +266,19 @@ async function loadModel() {
     let textureCount = 0;
     for (const texture of textures) {
       renderer.initTexture(texture);
-      if (++textureCount % 4 === 0) await new Promise(resolve => requestAnimationFrame(resolve));
+      if (++textureCount % 4 === 0 && !await preparationFrame()) return;
     }
     reportProgress('Compiling materials and preparing the first view');
     await renderer.compileAsync(scene, camera);
+    if (disposed || contextFailed) return;
     renderer.render(scene, camera);
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    if (disposed) return;
+    if (!await preparationFrame()) return;
     loadFinished = true; metrics.loadedAt = performance.now(); $('loading').hidden = true; updateFocusControl(); invalidate();
     send('ready');
     // Small inspection API for local verification; no data leaves this page.
     window.roomViewer = { entries, activate: activateEntry, focus: focusAction, returnToRoom, get focus(){return {action:focusedAction,screen:activeScreen?.action || null,transitioning:Boolean(cameraTransition)};}, get screenRect(){return activeScreen ? projectScreenRect(activeScreen.frame, camera) : null;}, metrics, get scheduler(){return scheduler;}, get furniture(){return furniture;}, get props(){return props;}, get inputPaused(){return inputPaused;}, get life(){return life;}, get view(){return view;}, get model(){return model;}, get camera(){return camera;}, get renderer(){return renderer;}, get shells(){return shells;}, get cutaway(){return cutaway;}, get evening(){return evening;}, get layout(){return {...roomLayout};}, get viewport(){return {...viewport};}, get renderSize(){return {...renderSize};}, setLayout, setView, resetView };
   } catch(error) {
+    if (disposed || contextFailed) return;
     console.error('Room model load failed:',error);
     showError('The room could not finish loading. Check your connection and try again, or use the standard portfolio.');
   }
@@ -588,6 +623,7 @@ function openAction(action) {
   }, true);
 }
 function receiveCommand(event) {
+  if (disposed || contextFailed) return;
   if (event.origin !== location.origin || event.source !== parent || !embedded) return;
   const data = event.data;
   if (!data || data.source !== 'hillman-portfolio' || data.type !== 'command') return;
@@ -621,22 +657,34 @@ function buildActionMenu() {
     list.append(button);
   }
 }
-function dispose() {
-  if (disposed) return; disposed = true;
-  scheduler?.dispose(); cancelAnimationFrame(resizeFrame); clearTimeout(toastTimer);
-  resizeObserver?.disconnect(); controls?.dispose();
-  window.removeEventListener('message', receiveCommand); window.removeEventListener('resize', scheduleResize);
-  window.visualViewport?.removeEventListener('resize', scheduleResize);
+function disposeObjectResources(roots, detach) {
   const geometries = new Set(), materials = new Set(), textures = new Set();
-  const collect = () => scene?.traverse(object => {
+  const collect = () => roots.forEach(root => root?.traverse(object => {
     if (object.geometry) geometries.add(object.geometry);
     for (const material of (Array.isArray(object.material) ? object.material : [object.material])) if (material) materials.add(material);
-  });
+  }));
   // Capture batches before articulated groups detach, then any restored originals.
-  collect(); furniture?.dispose(); props?.dispose(); collect();
+  collect(); detach?.(); collect();
   for (const material of materials) { for (const value of Object.values(material)) if (value?.isTexture) textures.add(value); material.dispose(); }
   geometries.forEach(g => g.dispose()); textures.forEach(t => t.dispose());
+}
+
+function dispose() {
+  if (disposed) return; disposed = true; loadFinished = false;
+  stopPreparation();
+  scheduler?.dispose(); cancelAnimationFrame(resizeFrame); clearTimeout(toastTimer);
+  resizeObserver?.disconnect(); controls?.dispose();
+  document.removeEventListener('visibilitychange', onVisibilityChange);
+  canvas.removeEventListener('webglcontextlost', onContextLost);
+  window.removeEventListener('message', receiveCommand); window.removeEventListener('resize', scheduleResize);
+  window.visualViewport?.removeEventListener('resize', scheduleResize);
+  disposeObjectResources([scene, model], () => { furniture?.dispose(); props?.dispose(); });
   sun?.shadow.dispose(); environment?.dispose(); renderer?.dispose();
+  entries.clear(); actionObjects.clear(); pointers.clear(); shells.length = 0; originalLights.length = 0;
+  scene?.clear(); window.roomViewer = undefined;
+  scene = model = renderer = environment = camera = controls = furniture = props = life = selectionOutline = undefined;
+  hemisphere = sun = warmLight = daylight = ground = fill = undefined;
+  cameraTransition = activeScreen = savedCamera = roomCamera = afterFocusRender = null;
 }
 
 function bindUI() {
@@ -713,11 +761,13 @@ function bindUI() {
 }
 
 function scheduleResize() {
+  if (disposed || contextFailed) return;
   cancelAnimationFrame(resizeFrame);
   resizeFrame = requestAnimationFrame(resize);
 }
 
 function watchPixelRatio() {
+  if (disposed || contextFailed) return;
   matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', () => {
     scheduleResize(); watchPixelRatio();
   }, { once: true });
@@ -728,8 +778,9 @@ function overviewDistance() {
 }
 
 function resize() {
-  if(!renderer)return;
+  if(!renderer || disposed || contextFailed)return;
   const rect = $('viewer').getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
   const width = Math.max(1, rect.width), height = Math.max(1, rect.height);
   const style = getComputedStyle($('viewer'));
   const inset = name => parseFloat(style.getPropertyValue?.(name)) || 0;

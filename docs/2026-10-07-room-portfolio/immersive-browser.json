@@ -1,6 +1,6 @@
 {
   "baseURL": "http://127.0.0.1:4176",
-  "time": "2026-10-07T22:16:20.488Z",
+  "time": "2026-10-07T22:42:21.304Z",
   "conditions": "Headless local Chrome; phone/tablet sizes are emulated",
   "viewports": [
     {
@@ -13,7 +13,8 @@
         "room": "/room",
         "heroEntry": true,
         "enteredExit": true,
-        "navigationReentry": true
+        "navigationReentry": true,
+        "sameFrameReused": true
       },
       "computers": [
         {
@@ -112,7 +113,8 @@
         "room": "/room",
         "heroEntry": true,
         "enteredExit": true,
-        "navigationReentry": true
+        "navigationReentry": true,
+        "sameFrameReused": true
       },
       "computers": [
         {
@@ -159,7 +161,8 @@
         "room": "/room",
         "heroEntry": true,
         "enteredExit": true,
-        "navigationReentry": true
+        "navigationReentry": true,
+        "sameFrameReused": true
       },
       "computers": [
         {
@@ -258,7 +261,8 @@
         "room": "/room",
         "heroEntry": true,
         "enteredExit": true,
-        "navigationReentry": true
+        "navigationReentry": true,
+        "sameFrameReused": true
       },
       "computers": [
         {

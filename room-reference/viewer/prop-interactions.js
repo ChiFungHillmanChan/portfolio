@@ -451,7 +451,11 @@ export function createPropInteractions(model, {
     const playerHost = document.createElement('div'); playerHost.style.marginTop = '16px'; content.append(playerHost);
     paragraph(content, 'Use the player controls to pause, mute, or change the volume.');
     const fallback = document.createElement('a'); fallback.href = 'https://www.youtube.com/watch?v=TIy3n2b7V9k';
-    fallback.target = '_blank'; fallback.rel = 'noopener noreferrer'; fallback.textContent = 'Open the official video on YouTube ↗';
+    fallback.target = '_blank'; fallback.rel = 'noopener noreferrer'; fallback.textContent = 'Open the official video on YouTube ';
+    const arrow = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    for (const [name, value] of Object.entries({ class: 'room-icon', viewBox: '0 0 24 24', width: '1em', height: '1em', fill: 'none', stroke: 'currentColor', 'stroke-width': '1.8', 'stroke-linecap': 'round', 'stroke-linejoin': 'round', 'aria-hidden': 'true', focusable: 'false' })) arrow.setAttribute(name, value);
+    const arrowPath = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    arrowPath.setAttribute('d', 'M7 17 17 7M7 7h10v10'); arrow.append(arrowPath); fallback.append(arrow);
     fallback.style.cssText = 'display:inline-block;padding:10px 0;color:#244c48;text-underline-offset:3px;'; content.append(fallback);
     sound = createRoomSong(playerHost, status, active => { play.textContent = active ? 'Stop music' : 'Play Sk8er Boi'; });
     play.focus();

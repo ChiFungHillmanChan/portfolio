@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import RoomIcon from './RoomIcon';
 
 const FOCUSABLE = 'a[href], button:not([disabled]), input:not([disabled]), select, textarea, [tabindex="0"]';
 
@@ -16,7 +17,7 @@ export default function ComputerScreen({ action, rect, webcam, onWebcam, title, 
     return () => {
       document.body.style.overflow = overflow;
       Promise.resolve().then(() => {
-        if (returnFocus?.isConnected && !returnFocus.closest('[inert]')) returnFocus.focus();
+        if (returnFocus?.isConnected && !returnFocus.closest('[hidden], [inert]')) returnFocus.focus();
       });
     };
   }, [returnFocus]);
@@ -43,7 +44,7 @@ export default function ComputerScreen({ action, rect, webcam, onWebcam, title, 
     role="dialog" aria-modal="true" aria-labelledby="room-screen-title" aria-describedby="room-screen-instructions"
     onKeyDown={handleKeyDown}
   >
-    <button type="button" className="room-computer-back" onClick={onBackToRoom}><span aria-hidden="true">← </span>Back to room</button>
+    <button type="button" className="room-computer-back" onClick={onBackToRoom}><RoomIcon name="left" /> Back to room</button>
     {!enlarged && webcam && <button
       type="button" className="room-webcam-hotspot"
       style={{ left: `${(webcam.rect.x + webcam.rect.width / 2) * 100}%`, top: `${(webcam.rect.y + webcam.rect.height / 2) * 100}%`, width: `${webcam.rect.width * 100}%`, height: `${webcam.rect.height * 100}%` }}
@@ -55,7 +56,7 @@ export default function ComputerScreen({ action, rect, webcam, onWebcam, title, 
         <h2 ref={headingRef} id="room-screen-title" tabIndex="-1">{title}</h2>
         <div className="room-screen-actions">
           <button type="button" aria-label={enlarged ? 'Fit to computer' : 'Enlarge page'} aria-pressed={enlarged} onClick={() => setEnlarged(!enlarged)}>
-            <span aria-hidden="true">{enlarged ? '↙' : '⤢'}</span><span>{enlarged ? 'Fit to screen' : 'Enlarge'}</span>
+            <RoomIcon name={enlarged ? 'collapse' : 'expand'} /><span>{enlarged ? 'Fit to screen' : 'Enlarge'}</span>
           </button>
           <button type="button" className="room-screen-close" aria-label="Close computer page" title="Close computer page" onClick={onClose}><span aria-hidden="true">×</span></button>
         </div>

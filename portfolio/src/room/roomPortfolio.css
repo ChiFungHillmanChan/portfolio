@@ -3,6 +3,8 @@
 .room-portfolio button, .room-portfolio a { -webkit-tap-highlight-color: transparent; }
 .room-portfolio button { font: inherit; cursor: pointer; }
 .room-portfolio a { color: inherit; text-underline-offset: 4px; }
+.room-icon { display: inline-block; width: 1em; height: 1em; flex-shrink: 0; vertical-align: -.125em; }
+.room-guide-choice strong > .room-icon { align-self: center; }
 .room-portfolio button:focus-visible, .room-portfolio a:focus-visible, .room-portfolio iframe:focus-visible { outline: 3px solid #367f96; outline-offset: 4px; }
 .room-portfolio button:disabled { cursor: wait; opacity: .7; }
 .room-background { min-height: 100svh; }

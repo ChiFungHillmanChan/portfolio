@@ -1,5 +1,8 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Seo from '../components/Seo';
+import RoomIcon from './RoomIcon';
+import roomAssetRevision from './roomAssetRevision.json';
 import RoomPreview from './RoomPreview';
 import ComputerScreen from './ComputerScreen';
 import RoomDialog, { IsolatedGame } from './RoomDialog';
@@ -10,7 +13,7 @@ import './roomPortfolio.css';
 
 const TITLES = { experience: 'Experience', projects: 'Projects', contact: 'Let’s talk', door: 'Working from home', guide: 'Make yourself at home' };
 
-export default function RoomPortfolio() {
+export default function RoomPortfolio({ active = true }) {
   const portfolioRef = useRef(null);
   const frame = useRef(null);
   const readyWindow = useRef(null);
@@ -27,7 +30,7 @@ export default function RoomPortfolio() {
   const screenRect = screenRects[panel]?.rect;
   const webcam = screenRects[panel]?.webcam;
   const contentActive = Boolean(panel && (!computerPage || screenRect));
-  current.current = { entered, panel, contentActive };
+  current.current = { entered, panel, contentActive, active };
 
   const command = useCallback((type, action) => sendRoomCommand(frame.current?.contentWindow, type, action), []);
 
@@ -40,7 +43,7 @@ export default function RoomPortfolio() {
         ready = true;
         readyWindow.current = frame.current.contentWindow;
         setLoading({ state: 'ready', stage: 'The room is ready. Come on in.', progress: null });
-        command(current.current.entered && !current.current.contentActive && !document.hidden ? 'resume' : 'pause');
+        command(current.current.active && current.current.entered && !current.current.contentActive && !document.hidden ? 'resume' : 'pause');
       } else if (data.type === 'progress' && !ready) {
         setLoading({ state: 'loading', stage: data.stage || 'Preparing the room…', progress: data.progress ?? null });
       } else if (data.type === 'error') {
@@ -48,9 +51,9 @@ export default function RoomPortfolio() {
         readyWindow.current = null;
         setLoading({ state: 'error', stage: data.stage || 'The 3D room could not open on this device.', progress: null });
         setEntered(false);
-      } else if (data.type === 'screen' && ready && current.current.entered) {
+      } else if (data.type === 'screen' && ready && current.current.active && current.current.entered) {
         setScreenRects((rects) => ({ ...rects, [data.action]: { rect: data.rect, webcam: data.webcam } }));
-      } else if (data.type === 'action' && ready && current.current.entered && !current.current.panel && !['sound', 'watch'].includes(data.action)) {
+      } else if (data.type === 'action' && ready && current.current.active && current.current.entered && !current.current.panel && !['sound', 'watch'].includes(data.action)) {
         returnFocus.current = frame.current;
         setPlaying(null);
         setPanel(data.action);
@@ -58,17 +61,25 @@ export default function RoomPortfolio() {
     };
     window.addEventListener('message', receive);
     const timeout = window.setTimeout(() => {
-      if (!ready) setLoading({ state: 'error', stage: 'The room is taking longer than expected. Retry, or explore the portfolio while it loads.', progress: null });
+      if (active && !ready) setLoading({ state: 'error', stage: 'The room is taking longer than expected. Retry, or explore the portfolio while it loads.', progress: null });
     }, 60000);
     return () => { window.removeEventListener('message', receive); window.clearTimeout(timeout); };
-  }, [attempt, command]);
+  }, [attempt, command, active]);
 
   useEffect(() => {
-    const update = () => command(document.hidden || !entered || contentActive ? 'pause' : 'resume');
+    const update = () => command(!active || document.hidden || !entered || contentActive ? 'pause' : 'resume');
     update();
     document.addEventListener('visibilitychange', update);
     return () => document.removeEventListener('visibilitychange', update);
-  }, [entered, contentActive, command]);
+  }, [active, entered, contentActive, command]);
+
+  useEffect(() => {
+    if (active) return;
+    if (current.current.panel) command('restore');
+    setPlaying(null);
+    setPanel(null);
+    setScreenRects({});
+  }, [active, command]);
 
   useEffect(() => {
     // A game replacing a computer page mounts a new native dialog. Give the
@@ -120,18 +131,18 @@ export default function RoomPortfolio() {
   const play = (action) => { if (ROOM_GAMES[action]?.src) { setPanel(action); setPlaying(action); } };
   const ready = loading.state === 'ready';
 
-  return <div ref={portfolioRef} className={`room-portfolio${entered ? ' room-entered' : ''}`}>
-    <Seo />
+  return <div ref={portfolioRef} hidden={!active} inert={!active ? '' : undefined} className={`room-portfolio${entered ? ' room-entered' : ''}`}>
+    {active && <Seo />}
     <div className="room-background" inert={contentActive ? '' : undefined}>
-      <iframe key={attempt} ref={frame} className="room-scene-frame" title="Explore Hillman’s interactive room" src={`/room-viewer/index.html?embedded=1&attempt=${attempt}`} aria-hidden={!entered || contentActive} tabIndex={entered && !contentActive ? 0 : -1} onError={() => setLoading({ state: 'error', stage: 'The room could not be downloaded. Check your connection and retry.', progress: null })} />
-      {entered && !panel && <a className="room-portfolio-exit" href="/"><span aria-hidden="true">← </span>Back to portfolio</a>}
+      <iframe key={attempt} ref={frame} className="room-scene-frame" title="Explore Hillman’s interactive room" src={`/room-viewer/v${roomAssetRevision.version}/index.html?embedded=1&attempt=${attempt}`} aria-hidden={!active || !entered || contentActive} tabIndex={active && entered && !contentActive ? 0 : -1} onError={() => setLoading({ state: 'error', stage: 'The room could not be downloaded. Check your connection and retry.', progress: null })} />
+      {entered && !panel && <Link className="room-portfolio-exit" to="/"><RoomIcon name="left" /> Back to portfolio</Link>}
       {!entered ? <main className="room-welcome">
-        <header className="room-welcome-header"><a className="room-wordmark" href="/">Hillman Chan<span>Software engineer</span></a><a href="/" className="room-standard-link">Standard portfolio <span aria-hidden="true">↗</span></a></header>
+        <header className="room-welcome-header"><Link className="room-wordmark" to="/">Hillman Chan<span>Software engineer</span></Link><Link to="/" className="room-standard-link">Standard portfolio <RoomIcon /></Link></header>
         <div className="room-welcome-layout">
           <section className="room-welcome-copy"><h1>Welcome to<br /> my house</h1><p className="room-welcome-intro">A little room for the things I build,<br className="room-desktop-break" /> the work I do, and a bit of play.</p>
             <div className="room-loading" aria-live="polite"><span className={`room-status-dot ${ready ? 'ready' : loading.state}`} aria-hidden="true" /><p>{loading.stage}</p></div>
             {loading.progress !== null && !ready && <div className="room-download"><progress max="1" value={loading.progress} aria-label={loading.stage} /><span>{Math.round(loading.progress * 100)}% of this stage</span></div>}
-            <div className="room-welcome-actions">{loading.state === 'error' ? <button className="room-button" onClick={retry}>Retry room</button> : <button className="room-button" disabled={!ready} onClick={enter}>{ready ? 'Enter my room' : 'Getting the room ready…'}<span aria-hidden="true">↗</span></button>}<button className="room-text-button" onClick={() => openPanel('projects')}>View projects</button></div>
+            <div className="room-welcome-actions">{loading.state === 'error' ? <button className="room-button" onClick={retry}>Retry room</button> : <button className="room-button" disabled={!ready} onClick={enter}>{ready ? 'Enter my room' : 'Getting the room ready…'}<RoomIcon /></button>}<button className="room-text-button" onClick={() => openPanel('projects')}>View projects</button></div>
             <p className="room-welcome-note">No need to wait to look around my work.</p>
           </section>
           <figure className="room-preview-wrap"><RoomPreview /><figcaption>Make yourself at home.</figcaption></figure>
@@ -139,11 +150,11 @@ export default function RoomPortfolio() {
         <footer className="room-welcome-footer"><span>Built with curiosity. Best explored at your own pace.</span><nav aria-label="Portfolio"><button onClick={() => openPanel('experience')}>Experience</button><button onClick={() => openPanel('contact')}>Contact</button></nav></footer>
       </main> : null}
     </div>
-    {computerPage && screenRect && <ComputerScreen key={panel} action={panel} rect={screenRect} webcam={webcam} onWebcam={() => command('webcam')} title={TITLES[panel]} onClose={closePanel} onBackToRoom={backToRoom} returnFocus={returnFocus.current}>
+    {active && computerPage && screenRect && <ComputerScreen key={panel} action={panel} rect={screenRect} webcam={webcam} onWebcam={() => command('webcam')} title={TITLES[panel]} onClose={closePanel} onBackToRoom={backToRoom} returnFocus={returnFocus.current}>
       {panel === 'experience' ? <ExperienceContent /> : <ProjectContent onPlay={play} />}
     </ComputerScreen>}
-    {computerPage && !screenRect && <p className="room-screen-instructions" role="status">Preparing the computer screen…</p>}
-    {panel && !computerPage && <RoomDialog variant={panel === 'door' ? 'door' : undefined} title={TITLES[panel] || ROOM_GAMES[panel]?.title} onClose={closePanel} game={Boolean(game)} returnFocus={returnFocus.current}>
+    {active && computerPage && !screenRect && <p className="room-screen-instructions" role="status">Preparing the computer screen…</p>}
+    {active && panel && !computerPage && <RoomDialog variant={panel === 'door' ? 'door' : undefined} title={TITLES[panel] || ROOM_GAMES[panel]?.title} onClose={closePanel} game={Boolean(game)} returnFocus={returnFocus.current}>
       {game ? <IsolatedGame game={game} onClose={closePanel} /> : panel === 'experience' ? <ExperienceContent /> : panel === 'projects' ? <ProjectContent onPlay={play} /> : panel === 'contact' ? <ContactContent /> : panel === 'guide' ? <RoomGuideContent onExplore={exploreFromGuide} /> : panel === 'door' ? <div className="room-content room-door-content"><p className="room-door-quote">“You’re working from home. You cannot get out!!! Go back to work.”</p><button className="room-button" onClick={backToWork}>Fine, back to work</button><button className="room-text-button" onClick={closePanel}>I’ll stay here a little longer</button></div> : <GameIntroduction key={panel} action={panel} onPlay={play} />}
     </RoomDialog>}
   </div>;

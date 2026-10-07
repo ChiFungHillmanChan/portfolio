@@ -1,0 +1,132 @@
+{
+  "baseURL": "http://127.0.0.1:4176",
+  "verifiedAt": "2026-10-07T22:44:32.241Z",
+  "conditions": "Headless Chrome; desktop and iPhone-sized touch emulation; YouTube response stubbed, actual playback not tested",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "initialHomepage": {
+        "roomIframes": 0,
+        "roomRequests": 0,
+        "glbRequests": 0
+      },
+      "welcomeIcons": {
+        "svgCount": 2,
+        "noArrowGlyphs": true
+      },
+      "viewerIcons": {
+        "svgCount": 1,
+        "noArrowGlyphs": true
+      },
+      "pausedHomepage": {
+        "framesBefore": 55,
+        "framesAfter": 55,
+        "hidden": true,
+        "inputPaused": true
+      },
+      "sameDocumentNavigation": {
+        "sameElement": true,
+        "sameWindow": true,
+        "statePreserved": true,
+        "skippedWelcome": true,
+        "historyBackForward": true,
+        "glbRequests": 1
+      },
+      "music": {
+        "clickToLoad": true,
+        "removedWhileHidden": true,
+        "noAutomaticResume": true,
+        "playerResponseStubbed": true
+      },
+      "computerIcons": {
+        "svgCount": 23,
+        "noArrowGlyphs": true
+      },
+      "fullDocumentDeparture": {
+        "pageHides": [
+          {
+            "persisted": true,
+            "iframeConnected": false
+          }
+        ],
+        "restoredFromBfcache": true,
+        "oldIframeRemoved": true,
+        "freshLoadingRequired": true,
+        "newFrame": true,
+        "drawerReset": true,
+        "glbRequests": 2
+      },
+      "newContext": {
+        "roomIframes": 0,
+        "roomRequests": 0
+      }
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "initialHomepage": {
+        "roomIframes": 0,
+        "roomRequests": 0,
+        "glbRequests": 0
+      },
+      "welcomeIcons": {
+        "svgCount": 2,
+        "noArrowGlyphs": true
+      },
+      "viewerIcons": {
+        "svgCount": 1,
+        "noArrowGlyphs": true
+      },
+      "pausedHomepage": {
+        "framesBefore": 53,
+        "framesAfter": 53,
+        "hidden": true,
+        "inputPaused": true
+      },
+      "sameDocumentNavigation": {
+        "sameElement": true,
+        "sameWindow": true,
+        "statePreserved": true,
+        "skippedWelcome": true,
+        "historyBackForward": true,
+        "glbRequests": 1
+      },
+      "music": {
+        "clickToLoad": true,
+        "removedWhileHidden": true,
+        "noAutomaticResume": true,
+        "playerResponseStubbed": true
+      },
+      "computerIcons": {
+        "svgCount": 23,
+        "noArrowGlyphs": true
+      },
+      "fullDocumentDeparture": {
+        "pageHides": [
+          {
+            "persisted": true,
+            "iframeConnected": false
+          }
+        ],
+        "restoredFromBfcache": true,
+        "oldIframeRemoved": true,
+        "freshLoadingRequired": true,
+        "newFrame": true,
+        "drawerReset": true,
+        "glbRequests": 2
+      },
+      "newContext": {
+        "roomIframes": 0,
+        "roomRequests": 0
+      }
+    }
+  ],
+  "errors": [],
+  "browserVersion": "155.0.8059.39",
+  "passed": true
+}

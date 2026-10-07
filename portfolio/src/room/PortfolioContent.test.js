@@ -1,10 +1,11 @@
 import React from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { RoomGuideContent } from './PortfolioContent';
 
 test('room guide opens each physical computer through its explicit action and keeps the About route', () => {
   const explore = jest.fn();
-  render(<RoomGuideContent onExplore={explore} />);
+  render(<MemoryRouter><RoomGuideContent onExplore={explore} /></MemoryRouter>);
   fireEvent.click(screen.getByRole('button', { name: 'Explore Experience on the MacBook' }));
   fireEvent.click(screen.getByRole('button', { name: 'Explore Projects on the Dell monitor' }));
   expect(explore.mock.calls).toEqual([['experience'], ['projects']]);

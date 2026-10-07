@@ -12,7 +12,7 @@
 <body>
   <main id="viewer" aria-label="Hillman’s interactive room">
     <canvas id="scene" tabindex="0" aria-label="Hillman’s room. Drag to orbit. Click an object to move closer. Escape returns to the room."></canvas>
-    <button id="back-to-room" class="back-to-room" hidden>← Back to room</button>
+    <button id="back-to-room" class="back-to-room" hidden><svg class="room-icon" viewBox="0 0 24 24" width="1em" height="1em" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19 12H5m6-6-6 6 6 6"/></svg> Back to room</button>
     <button id="actions-button" class="keyboard-explorer" aria-haspopup="dialog">Explore objects with the keyboard</button>
     <section id="loading" class="loading" role="status" aria-live="polite"><span class="loader"></span><h1>Opening your room</h1><p id="loading-detail">Loading the room…</p></section>
     <section id="error" class="error-panel" role="alert" hidden><h2>The room couldn’t open</h2><p id="error-detail"></p><button id="retry-button">Try again</button><a href="/portfolio" target="_parent">Standard portfolio</a></section>

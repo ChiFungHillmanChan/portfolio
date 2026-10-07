@@ -313,3 +313,33 @@ test.each([
   const source = {};
   expect(readRoomMessage({ source, origin: 'https://example.com', data }, source, 'https://example.com')).toBeNull();
 });
+
+
+test('inactive retained room pauses, ignores actions and resumes without recreating its iframe', () => {
+  const { iframe, enter, message, rerender } = setup();
+  enter();
+  iframe.contentWindow.postMessage.mockClear();
+  rerender(<MemoryRouter initialEntries={['/room']}><RoomPortfolio active={false} /></MemoryRouter>);
+  expect(document.querySelector('.room-portfolio')).toHaveAttribute('hidden');
+  expect(iframe.contentWindow.postMessage).toHaveBeenCalledWith(expect.objectContaining({ command: 'pause' }), window.location.origin);
+  message({ type: 'action', action: 'guide' });
+  expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  rerender(<MemoryRouter initialEntries={['/room']}><RoomPortfolio active /></MemoryRouter>);
+  expect(screen.getByTitle('Explore Hillman’s interactive room')).toBe(iframe);
+  expect(screen.queryByRole('heading', { name: /Welcome to my house/ })).not.toBeInTheDocument();
+  expect(iframe.contentWindow.postMessage).toHaveBeenCalledWith(expect.objectContaining({ command: 'resume' }), window.location.origin);
+});
+
+test('parking an unfinished room does not turn its paused preparation into a timeout', () => {
+  jest.useFakeTimers();
+  const { message, rerender } = setup();
+  message({ type: 'progress', stage: 'Preparing textures' });
+  rerender(<MemoryRouter initialEntries={['/room']}><RoomPortfolio active={false} /></MemoryRouter>);
+  act(() => jest.advanceTimersByTime(120000));
+  rerender(<MemoryRouter initialEntries={['/room']}><RoomPortfolio active /></MemoryRouter>);
+  expect(screen.queryByRole('button', { name: 'Retry room' })).not.toBeInTheDocument();
+  expect(screen.getByText('Preparing textures')).toBeInTheDocument();
+  message({ type: 'ready' });
+  expect(screen.getByRole('button', { name: /Enter my room/ })).toBeEnabled();
+  jest.useRealTimers();
+});
