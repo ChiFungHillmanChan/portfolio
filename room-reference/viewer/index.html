@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#252726">
+  <title>Hillman Chan · Interactive room</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./style.css">
+  <script type="importmap">{"imports":{"three":"./vendor/build/three.module.js","three/addons/":"./vendor/examples/jsm/"}}</script>
+</head>
+<body>
+  <main id="viewer" aria-label="Hillman’s interactive room">
+    <canvas id="scene" tabindex="0" aria-label="Hillman’s room. Drag to orbit. Click an object to move closer. Escape returns to the room."></canvas>
+    <button id="back-to-room" class="back-to-room" hidden>← Back to room</button>
+    <button id="actions-button" class="keyboard-explorer" aria-haspopup="dialog">Explore objects with the keyboard</button>
+    <section id="loading" class="loading" role="status" aria-live="polite"><span class="loader"></span><h1>Opening your room</h1><p id="loading-detail">Loading the room…</p></section>
+    <section id="error" class="error-panel" role="alert" hidden><h2>The room couldn’t open</h2><p id="error-detail"></p><button id="retry-button">Try again</button><a href="/portfolio" target="_parent">Standard portfolio</a></section>
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+  </main>
+  <dialog id="actions-dialog" aria-labelledby="actions-title">
+    <button id="actions-close" class="close-button" aria-label="Close object explorer">×</button>
+    <h2 id="actions-title">Explore the room</h2>
+    <p>Choose an object to move closer and interact. Open storage to discover its hidden games.</p>
+    <div id="action-list" class="action-list"></div>
+  </dialog>
+  <script type="module" src="./app.js"></script>
+  <script>if(location.protocol==='file:'){document.getElementById('loading').hidden=true;document.getElementById('error').hidden=false;document.getElementById('error-detail').textContent='Open “Open Room Viewer.command” to start the local room server.'}</script>
+</body>
+</html>

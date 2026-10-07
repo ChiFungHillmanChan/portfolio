@@ -11,6 +11,14 @@ const PAGE_METADATA = {
     title: 'Hillman Chan | Junior Software Engineer',
     description: HOME_DESCRIPTION,
   },
+  '/room': {
+    title: 'Welcome to my house | Hillman Chan',
+    description: 'Explore Hillman Chan’s interactive room, software engineering experience, projects, and games. A readable standard portfolio is also available.',
+  },
+  '/portfolio': {
+    title: 'Portfolio | Hillman Chan',
+    description: HOME_DESCRIPTION,
+  },
   '/about': {
     title: 'About | Hillman Chan',
     description: 'Learn about Hillman Chan, a junior software engineer with industry and client experience in AI and full-stack development.',

@@ -1,6 +1,7 @@
 /* Portfolio shell service worker — keeps the SPA shell (and therefore the
    game-subdomain entry pages) loadable offline. Game folders under /games/
    run their own service workers; this one never touches their requests.
+   The standalone /room-viewer/ iframe also bypasses this shell worker.
    Install fetches PRECACHE[0], caches it, then parses its hashed
    /static/ href|src references and precaches those too — the first visit's
    HTML was already fetched by the page before the SW activated, so those
@@ -19,7 +20,7 @@
    authenticated, per-user JSON of the notebook API, which must never sit in a
    shared cache. IndexedDB is that data's cache. Nothing else cross-origin is
    touched. */
-const CACHE = "portfolio-shell-v2";
+const CACHE = "portfolio-shell-v3";
 const PRECACHE = [
   "/index.html"
 ];
@@ -78,6 +79,9 @@ self.addEventListener('fetch', (event) => {
   }
   if (url.origin !== self.location.origin) return;
   if (url.pathname.startsWith('/games/')) return;
+  // This is a separate document, not the React /room route. Caching its HTML
+  // as /index.html would replace the portfolio's offline shell with the viewer.
+  if (url.pathname === '/room-viewer' || url.pathname.startsWith('/room-viewer/')) return;
 
   if (req.mode === 'navigate') {
     event.respondWith(

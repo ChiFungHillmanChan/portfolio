@@ -1,0 +1,305 @@
+{
+  "baseURL": "http://127.0.0.1:4176",
+  "time": "2026-10-07T22:16:20.488Z",
+  "conditions": "Headless local Chrome; phone/tablet sizes are emulated",
+  "viewports": [
+    {
+      "name": "desktop",
+      "width": 1440,
+      "height": 900,
+      "touch": false,
+      "navigation": {
+        "standardHome": "/",
+        "room": "/room",
+        "heroEntry": true,
+        "enteredExit": true,
+        "navigationReentry": true
+      },
+      "computers": [
+        {
+          "action": "projects",
+          "box": {
+            "x": 203.9375,
+            "y": 190,
+            "width": 1032.09375,
+            "height": 683
+          },
+          "scrollable": true
+        },
+        {
+          "action": "experience",
+          "box": {
+            "x": 238.25,
+            "y": 74,
+            "width": 963.46875,
+            "height": 702
+          },
+          "scrollable": true
+        }
+      ],
+      "projectCards": {
+        "count": 21,
+        "columns": 3,
+        "aligned": true
+      },
+      "drawerDiscoveries": [
+        {
+          "id": "drawer-rubiks",
+          "title": "Rubik’s Cube Practice",
+          "point": {
+            "x": 701.2239481314482,
+            "y": 487.53765541258883
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "drawer-connect4",
+          "title": "Connect 4",
+          "point": {
+            "x": 701.223948131448,
+            "y": 487.537655412589
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "drawer-siuheibou",
+          "title": "小氣簿 Siu Hei Bou",
+          "point": {
+            "x": 701.2239481314482,
+            "y": 487.53765541258883
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "drawer-dasiuyan",
+          "title": "打小人 Da Siu Yan",
+          "point": {
+            "x": 701.2239481314482,
+            "y": 487.53765541258923
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "cards",
+          "title": "Card Drawer",
+          "point": {
+            "x": 701.223948131448,
+            "y": 487.53765541258883
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        }
+      ],
+      "guide": {
+        "closeRestoresCamera": true,
+        "computerCallbacks": [
+          "experience",
+          "projects"
+        ]
+      }
+    },
+    {
+      "name": "small-phone",
+      "width": 320,
+      "height": 740,
+      "touch": true,
+      "navigation": {
+        "standardHome": "/",
+        "room": "/room",
+        "heroEntry": true,
+        "enteredExit": true,
+        "navigationReentry": true
+      },
+      "computers": [
+        {
+          "action": "projects",
+          "box": {
+            "x": 16,
+            "y": 264.21875,
+            "width": 288,
+            "height": 190.578125
+          },
+          "scrollable": true
+        },
+        {
+          "action": "experience",
+          "box": {
+            "x": 16,
+            "y": 253.53125,
+            "width": 288,
+            "height": 209.828125
+          },
+          "scrollable": true
+        }
+      ],
+      "projectCards": {
+        "count": 21,
+        "columns": 1,
+        "aligned": true
+      },
+      "guide": {
+        "closeRestoresCamera": true,
+        "computerCallbacks": [
+          "experience",
+          "projects"
+        ]
+      }
+    },
+    {
+      "name": "phone",
+      "width": 390,
+      "height": 844,
+      "touch": true,
+      "navigation": {
+        "standardHome": "/",
+        "room": "/room",
+        "heroEntry": true,
+        "enteredExit": true,
+        "navigationReentry": true
+      },
+      "computers": [
+        {
+          "action": "projects",
+          "box": {
+            "x": 19.5,
+            "y": 293.078125,
+            "width": 351,
+            "height": 232.265625
+          },
+          "scrollable": true
+        },
+        {
+          "action": "experience",
+          "box": {
+            "x": 19.5,
+            "y": 280.0625,
+            "width": 351,
+            "height": 255.734375
+          },
+          "scrollable": true
+        }
+      ],
+      "projectCards": {
+        "count": 21,
+        "columns": 1,
+        "aligned": true
+      },
+      "drawerDiscoveries": [
+        {
+          "id": "drawer-rubiks",
+          "title": "Rubik’s Cube Practice",
+          "point": {
+            "x": 182.59353151631058,
+            "y": 446.8033900890475
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "drawer-connect4",
+          "title": "Connect 4",
+          "point": {
+            "x": 182.59353152896048,
+            "y": 446.8033900637574
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "drawer-siuheibou",
+          "title": "小氣簿 Siu Hei Bou",
+          "point": {
+            "x": 182.59353138348663,
+            "y": 446.80339035459286
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "drawer-dasiuyan",
+          "title": "打小人 Da Siu Yan",
+          "point": {
+            "x": 182.59353139613654,
+            "y": 446.8033903293034
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        },
+        {
+          "id": "cards",
+          "title": "Card Drawer",
+          "point": {
+            "x": 182.59353140878622,
+            "y": 446.80339030401313
+          },
+          "physicalClick": true,
+          "hiddenAfterClose": true
+        }
+      ],
+      "guide": {
+        "closeRestoresCamera": true,
+        "computerCallbacks": [
+          "experience",
+          "projects"
+        ]
+      }
+    },
+    {
+      "name": "tablet",
+      "width": 768,
+      "height": 1024,
+      "touch": true,
+      "navigation": {
+        "standardHome": "/",
+        "room": "/room",
+        "heroEntry": true,
+        "enteredExit": true,
+        "navigationReentry": true
+      },
+      "computers": [
+        {
+          "action": "projects",
+          "box": {
+            "x": 38.390625,
+            "y": 258.125,
+            "width": 691.1875,
+            "height": 457.390625
+          },
+          "scrollable": true
+        },
+        {
+          "action": "experience",
+          "box": {
+            "x": 38.390625,
+            "y": 232.484375,
+            "width": 691.1875,
+            "height": 503.609375
+          },
+          "scrollable": true
+        }
+      ],
+      "projectCards": {
+        "count": 21,
+        "columns": 2,
+        "aligned": true
+      },
+      "guide": {
+        "closeRestoresCamera": true,
+        "computerCallbacks": [
+          "experience",
+          "projects"
+        ]
+      }
+    }
+  ],
+  "errors": [],
+  "cvPrivacy": {
+    "status": 404,
+    "contentType": "text/html;charset=utf-8",
+    "pdfBytesExposed": false
+  }
+}

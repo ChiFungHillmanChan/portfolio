@@ -1,27 +1,28 @@
-import React, { useEffect } from 'react';
+import React, { Suspense, lazy, useEffect, useState } from 'react';
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom';
 import BugSpark from '@bugspark/widget';
-import AboutMe from './components/AboutMe';
-import Layout from './Layout';
-import MainContent from './MainContent';
-import Contact from './components/Contact';
-import ProjectDetail from './components/ProjectDetail';
-import Projects from './components/Projects';
-import MyOfferHub from './components/MyOffer/MyOfferHub';
-import BuyCoffeePage from './components/MyOffer/BuyCoffeePage';
-import CoachingPage from './components/MyOffer/CoachingPage';
-import ServicesPage from './components/MyOffer/ServicesPage';
-import ChatBotGame from './game/chatbot/ChatBotGame';
-import PromptHunterGame from './game/prompt-hunter/PromptHunterGame';
-import CardGame from './game/card-game/CardGame';
-import CasinoGame from './game/casino-game/CasinoGame';
-import SystemDesignGame from './game/system-design/SystemDesignGame';
-import Connect4Game from './game/connect4/Connect4Game';
-import MathMemoryGame from './game/math-memory/MathMemoryGame';
-import CardDrawerGame from './game/card-drawer/CardDrawerGame';
-import DaSiuYanGame from './game/da-siu-yan/DaSiuYanGame';
-import SiuHeiBouGame from './game/siu-hei-bou/SiuHeiBouGame';
-import RubiksCubePractice from './game/rubiks-cube-practice/RubiksCubePractice';
+import RoomPortfolio from './room/RoomPortfolio';
+const AboutMe = lazy(() => import('./components/AboutMe'));
+const Layout = lazy(() => import('./Layout'));
+const MainContent = lazy(() => import('./MainContent'));
+const Contact = lazy(() => import('./components/Contact'));
+const ProjectDetail = lazy(() => import('./components/ProjectDetail'));
+const Projects = lazy(() => import('./components/Projects'));
+const MyOfferHub = lazy(() => import('./components/MyOffer/MyOfferHub'));
+const BuyCoffeePage = lazy(() => import('./components/MyOffer/BuyCoffeePage'));
+const CoachingPage = lazy(() => import('./components/MyOffer/CoachingPage'));
+const ServicesPage = lazy(() => import('./components/MyOffer/ServicesPage'));
+const ChatBotGame = lazy(() => import('./game/chatbot/ChatBotGame'));
+const PromptHunterGame = lazy(() => import('./game/prompt-hunter/PromptHunterGame'));
+const CardGame = lazy(() => import('./game/card-game/CardGame'));
+const CasinoGame = lazy(() => import('./game/casino-game/CasinoGame'));
+const SystemDesignGame = lazy(() => import('./game/system-design/SystemDesignGame'));
+const Connect4Game = lazy(() => import('./game/connect4/Connect4Game'));
+const MathMemoryGame = lazy(() => import('./game/math-memory/MathMemoryGame'));
+const CardDrawerGame = lazy(() => import('./game/card-drawer/CardDrawerGame'));
+const DaSiuYanGame = lazy(() => import('./game/da-siu-yan/DaSiuYanGame'));
+const SiuHeiBouGame = lazy(() => import('./game/siu-hei-bou/SiuHeiBouGame'));
+const RubiksCubePractice = lazy(() => import('./game/rubiks-cube-practice/RubiksCubePractice'));
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
@@ -49,6 +50,10 @@ const getGameComponentFromHostname = () => {
   return GameComponent || null;
 };
 
+function RouteLoading() {
+  return <main style={{ padding: '3rem', fontFamily: 'system-ui' }}><p role="status">Opening page…</p><a href="/room">Back to room</a></main>;
+}
+
 function App() {
   useEffect(() => {
     if (process.env.REACT_APP_BUGSPARK_ENABLED === 'true' && process.env.NODE_ENV !== 'production') {
@@ -61,19 +66,23 @@ function App() {
 
   const SubdomainGame = getGameComponentFromHostname();
 
-  if (SubdomainGame) {
-    return <SubdomainGame />;
-  }
+  return <Suspense fallback={<RouteLoading />}>
+    {SubdomainGame ? <SubdomainGame /> : <PortfolioRouter />}
+  </Suspense>;
+}
 
-  const router = createBrowserRouter(
+function PortfolioRouter() {
+  const [router] = useState(() => createBrowserRouter(
     createRoutesFromElements(
       <>
+        <Route path="/room" element={<RoomPortfolio />} />
         {/* Standalone experience routes */}
         <Route path="/chat-box" element={<ChatBotGame />} />
         <Route path="/prompt-hunter" element={<PromptHunterGame />} />
         <Route path="/card-game" element={<CardGame />} />
         <Route path="/casino-game" element={<CasinoGame />} />
         <Route path="/system-design" element={<SystemDesignGame />} />
+        <Route path="/math-memory" element={<MathMemoryGame />} />
         <Route path="/connect4" element={<Connect4Game />} />
         <Route path="/card-drawer" element={<CardDrawerGame />} />
         <Route path="/da-siu-yan" element={<DaSiuYanGame />} />
@@ -82,7 +91,8 @@ function App() {
 
         {/* Your existing routes with Layout */}
         <Route element={<Layout />}>
-          <Route path="/" element={<MainContent />} /> 
+          <Route path="/" element={<MainContent />} />
+          <Route path="/portfolio" element={<MainContent />} />
           <Route path="/about" element={<AboutMe />} /> 
           <Route path="/contact" element={<Contact />} /> 
           <Route path="/projects" element={<Projects />} /> 
@@ -96,10 +106,10 @@ function App() {
         </Route>
       </>
     )
-  );
+  ));
 
   return (
-    <RouterProvider router={router} />
+    <Suspense fallback={<RouteLoading />}><RouterProvider router={router} /></Suspense>
   );
 }
 

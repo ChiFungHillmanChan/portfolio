@@ -1,0 +1,23 @@
+{
+  "baseURL": "http://127.0.0.1:4176",
+  "verifiedAt": "2026-10-07T22:18:53.525Z",
+  "reports": [
+    {
+      "name": "desktop",
+      "singleClickOpen": true,
+      "singleClickClose": true,
+      "twoVerticalSlidingLeaves": true,
+      "computerOverlay": true,
+      "idle": true
+    },
+    {
+      "name": "phone",
+      "singleClickOpen": true,
+      "singleClickClose": true,
+      "twoVerticalSlidingLeaves": true,
+      "computerOverlay": true,
+      "idle": true
+    }
+  ],
+  "errors": []
+}

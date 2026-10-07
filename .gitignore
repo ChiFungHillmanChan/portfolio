@@ -50,3 +50,10 @@ lambda/data/users.json
 
 # da-siu-yan yue-HK A/B experiment output (not shipped)
 scripts/da-siu-yan/compare/
+
+# Generated local room delivery assets (source lives in room-reference/viewer).
+portfolio/public/room-viewer/
+portfolio/public/ChiFungHillmanChan.pdf
+
+# Local browser verification artifacts.
+/output/

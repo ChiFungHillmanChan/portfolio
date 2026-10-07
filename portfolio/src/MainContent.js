@@ -78,9 +78,14 @@ const MainContent = () => {
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
                             I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background includes professional engineering roles, freelance software development, and building products as the CEO and Founder of JARVIS AI Limited.
                         </p>
-                        <Link to="/about" onClick={() => window.scrollTo(0, 0)} className="inline-block mt-4 font-medium text-gray-800 dark:text-gray-200 underline underline-offset-4 hover:text-blue-500">
-                            Explore my professional experience
-                        </Link>
+                        <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:justify-start">
+                            <Link to="/room" className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-gray-800 px-5 py-3 font-semibold text-white hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
+                                Enter my 3D room
+                            </Link>
+                            <Link to="/about" onClick={() => window.scrollTo(0, 0)} className="inline-block py-3 font-medium text-gray-800 dark:text-gray-200 underline underline-offset-4 hover:text-blue-500">
+                                Explore my professional experience
+                            </Link>
+                        </div>
                     </motion.div>
                 </div>
             </section>

@@ -17,6 +17,8 @@ test('includes canonical page and available project URLs, omitting unavailable p
 
   assert.deepEqual(urls, [
     'https://hillmanchan.com/',
+    'https://hillmanchan.com/room',
+    'https://hillmanchan.com/portfolio',
     'https://hillmanchan.com/about',
     'https://hillmanchan.com/projects',
     'https://hillmanchan.com/contact',

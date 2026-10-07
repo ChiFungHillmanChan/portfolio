@@ -4,6 +4,8 @@ import { pathToFileURL } from 'node:url';
 const SITE_ORIGIN = 'https://hillmanchan.com';
 const STATIC_PATHS = [
   '/',
+  '/room',
+  '/portfolio',
   '/about',
   '/projects',
   '/contact',

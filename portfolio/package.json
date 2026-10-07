@@ -25,7 +25,7 @@
     "start": "react-scripts start",
     "dev": "npm run start",
     "test": "react-scripts test",
-    "prebuild": "node ../scripts/prepare-gym.mjs && node ../scripts/generate-portfolio-sitemap.mjs",
+    "prebuild": "node ../scripts/prepare-room.mjs && node ../scripts/prepare-gym.mjs && node ../scripts/generate-portfolio-sitemap.mjs",
     "build": "react-scripts build",
     "//": "=== Set these env vars once per shell or in your CI ===",
     "//1": "export S3_BUCKET=<the EXACT bucket your CloudFront origin uses>",
@@ -46,7 +46,8 @@
     "invalidate": "aws cloudfront create-invalidation --distribution-id $CF_DIST --paths \"/*\"",
     "deploy": "rm -rf build && npm run build && npm run upload:root:other && npm run upload:static:css && npm run upload:static:js && npm run upload:static:media && npm run upload:index && npm run upload:sw && npm run upload:sw:root && npm run mime:webmanifest && npm run invalidate",
     "check": "aws s3 ls s3://$S3_BUCKET/",
-    "check-s3": "aws s3 ls s3://$S3_BUCKET/ --recursive --human-readable"
+    "check-s3": "aws s3 ls s3://$S3_BUCKET/ --recursive --human-readable",
+    "prestart": "node ../scripts/prepare-room.mjs"
   },
   "eslintConfig": {
     "extends": [

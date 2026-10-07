@@ -63,12 +63,26 @@ jobs:
           fi
           
           # Upload game HTML files with short cache so updates appear without invalidation
-          aws s3 sync portfolio/build/games/ s3://$S3_BUCKET/games/ --delete --cache-control "public,max-age=60" --metadata-directive REPLACE
+          # Some games publish their generated assets independently. Preserve them.
+          aws s3 sync portfolio/build/games/ s3://$S3_BUCKET/games/ --cache-control "public,max-age=60" --metadata-directive REPLACE
           
           # Upload everything else (assets, etc) except static, games, and index
-          aws s3 sync portfolio/build/ s3://$S3_BUCKET/ --delete --exclude "static/*" --exclude "index.html" --exclude "games/*"
+          aws s3 sync portfolio/build/ s3://$S3_BUCKET/ --exclude "static/*" --exclude "index.html" --exclude "games/*" --exclude "room-viewer/*" --exclude "sw.js" --cache-control "public,max-age=60"
+
+          # Native ES modules must have a JavaScript MIME type, including .mjs.
+          # Room URLs are stable, so revalidate their contents and invalidate below.
+          aws s3 sync portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --exclude "*.js" --exclude "*.mjs" --exclude "*.glb" --cache-control "no-cache, must-revalidate"
+          aws s3 cp portfolio/build/room-viewer/ s3://$S3_BUCKET/room-viewer/ --recursive --exclude "*" --include "*.js" --include "*.mjs" --content-type "application/javascript" --cache-control "no-cache, must-revalidate"
+          aws s3 cp portfolio/build/room-viewer/room.glb s3://$S3_BUCKET/room-viewer/room.glb --content-type "model/gltf-binary" --cache-control "no-cache, must-revalidate"
+
+          aws s3 cp portfolio/build/sw.js s3://$S3_BUCKET/sw.js --content-type "application/javascript" --cache-control "no-cache, no-store, must-revalidate"
           
           # Upload index.html with no-cache to ensure updates are seen immediately
           aws s3 cp portfolio/build/index.html s3://$S3_BUCKET/index.html --content-type "text/html" --cache-control "no-cache, no-store, must-revalidate" --metadata-directive REPLACE
 
+      - name: Refresh CloudFront
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation --distribution-id E2SYHEFLV89R32 --paths "/*" --query 'Invalidation.Id' --output text)
+          aws cloudfront wait invalidation-completed --distribution-id E2SYHEFLV89R32 --id "$INVALIDATION_ID"
 

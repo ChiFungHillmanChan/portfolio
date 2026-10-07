@@ -71,6 +71,11 @@ const Layout = () => {
                         {/* Desktop Menu */}
                         <ul className="hidden md:flex items-center space-x-6">
                             <li>
+                                <Link to="/room" className="hover:text-blue-500 transition-colors duration-300">
+                                    3D room
+                                </Link>
+                            </li>
+                            <li>
                                 <Link 
                                     to="/about"
                                     className={`hover:text-blue-500 transition-colors duration-300 ${isActiveLink('/about')}`}
@@ -161,6 +166,11 @@ const Layout = () => {
                                 >
                                     <div className="flex flex-col h-full pt-20 px-4">
                                         <ul className="space-y-4">
+                                            <li>
+                                                <Link to="/room" className="block py-2 hover:text-blue-500 transition-colors duration-300" onClick={() => setIsMenuOpen(false)}>
+                                                    3D room
+                                                </Link>
+                                            </li>
                                             <li>
                                                 <Link 
                                                     to="/about"
