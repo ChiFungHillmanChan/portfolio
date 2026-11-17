@@ -100,7 +100,8 @@ test('keeps the room alive, pauses content interaction, and restores on Escape',
   expect(within(dialog).queryByRole('link', { name: /CV/i })).not.toBeInTheDocument();
   expect(within(dialog).getByRole('heading', { name: 'CEO and Founder' })).toBeInTheDocument();
   expect(within(dialog).getByText(/funding of up to HK\$100,000/)).toBeInTheDocument();
-  expect(within(dialog).getByText(/additional US\$25,000 in cloud credits/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/submitted the second \(Gold\) milestone/)).toBeInTheDocument();
+  expect(within(dialog).getByText(/combined value of over HK\$500,000/)).toBeInTheDocument();
   expect(iframe.contentWindow.postMessage).toHaveBeenCalledWith(expect.objectContaining({ command: 'pause' }), window.location.origin);
   fireEvent.keyDown(dialog, { key: 'Escape' });
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

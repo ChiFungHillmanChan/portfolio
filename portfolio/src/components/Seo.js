@@ -4,11 +4,11 @@ import projectData from '../projectData.json';
 
 const SITE_URL = 'https://hillmanchan.com';
 const DEFAULT_IMAGE = `${SITE_URL}/port_logo.png`;
-const HOME_DESCRIPTION = 'Hillman Chan is a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients.';
+const HOME_DESCRIPTION = 'Hillman Chan is a software engineer specialising in AI and full-stack development, with 5+ client projects delivered worth over HK$500,000 in total.';
 
 const PAGE_METADATA = {
   '/': {
-    title: 'Hillman Chan | Junior Software Engineer',
+    title: 'Hillman Chan | Software Engineer',
     description: HOME_DESCRIPTION,
   },
   '/room': {
@@ -21,7 +21,7 @@ const PAGE_METADATA = {
   },
   '/about': {
     title: 'About | Hillman Chan',
-    description: 'Learn about Hillman Chan, a junior software engineer with industry and client experience in AI and full-stack development.',
+    description: 'Learn about Hillman Chan, a software engineer in AI and full-stack development who has delivered 5+ client projects and leads JARVIS AI Limited.',
   },
   '/projects': {
     title: 'Projects | Hillman Chan',

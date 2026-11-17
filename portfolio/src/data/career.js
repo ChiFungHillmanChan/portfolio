@@ -16,10 +16,12 @@ export const experience = [
       start_date: "January 2026",
       end_date: "Present",
       description: [
-        "Selected for the AWS Startup Launcher × HKSTP Co-Ideation Programme (Cohort AWS26-04) after a panel interview with AWS Startup Programs and the Hong Kong Science and Technology Park.",
-        "Received conditional approval from HKSTP for the 1-year Ideation pre-incubation programme (programme start: June 2026), validating JARVIS AI's product direction and market fit, with funding of up to HK$100,000.",
-        "Admitted to AWS Activate to access an additional US$25,000 in cloud credits, technical mentorship, and go-to-market support for the JARVIS AI platform.",
-        "Leading product, engineering, and business development end-to-end — from defining the problem and shipping the first release at jarvis-automation.com to navigating government innovation programmes."
+        "Building JARVIS, a native macOS AI assistant (Tauri v2, Rust and React) that brings email, calendar, notes, GitHub and system actions into one workspace, with regular public releases at jarvis-automation.com.",
+        "Selected for the AWS Startup Launcher × HKSTP Co-Ideation Programme (Cohort AWS26-04) after a panel interview, and conditionally approved for HKSTP's one-year Ideation pre-incubation programme (June 2026 – May 2027), with milestone funding of up to HK$100,000 and eligibility for AWS Activate credits.",
+        "June 2026: passed the first (Silver) milestone and received the first grant.",
+        "September 2026: incorporated JARVIS AI Limited in Hong Kong.",
+        "October 2026: submitted the second (Gold) milestone with market validation, including 4 signed letters of intent and 7 pilot seats across 3 companies. It is now under review.",
+        "Next: admission to the HKSTP Incubation Programme (the Platinum milestone) before May 2027."
       ],
       skills: ["Entrepreneurship", "AI Product", "Startup Strategy", "AWS", "Go-to-Market"]
     },
@@ -36,6 +38,22 @@ export const experience = [
         "Streamlined internal workflows by building automation scripts for project scaffolding, AI usage tracking, and reusable development templates across the engineering team."
       ],
       skills: ["AI Engineering", "LLM", "Full-Stack Development", "Platform Architecture", "Workflow Automation"]
+    },
+    {
+      title: "Freelance Software Engineer",
+      company: "Client Projects",
+      location: "Hong Kong / United Kingdom (Remote)",
+      start_date: "October 2025",
+      end_date: "Present",
+      description: [
+        "Delivered 5+ client projects with a combined value of over HK$500,000. I owned each one end to end: scoping, written agreements, architecture, build, launch, documentation and support.",
+        "Built a multi-tenant treasury and FX platform for money service operators, covering deposits, withdrawals, FX deals, KYC checks and double-entry accounting. It replaced spreadsheet workflows, kept each company's data strictly separate and calculated balances in one place.",
+        "Built and launched a bilingual booking and operations system for a UK hair salon. Card deposits cut no-shows, two-way calendar sync with third-party booking platforms prevents double bookings, and staff scheduling, timesheets and payroll run from one admin panel.",
+        "Delivering a consumer mobile web app (PWA) for a Hong Kong company in milestone stages, each one specified, tested and accepted before the next one starts.",
+        "Built e-commerce stores for a trading-card retailer and a baby-product brand, with Stripe and PayPal checkout, order emails and admin tools for stock and orders.",
+        "Ran pre-launch security and production-readiness reviews on payment and multi-company systems. They found critical issues, such as a way to skip payment and access to other companies' data, and I wrote prioritised fix plans for them."
+      ],
+      skills: ["Client Delivery", "Fintech", "Payments", "Next.js", "Django", "Security Review"]
     },
     {
       title: "Programming Tutor",

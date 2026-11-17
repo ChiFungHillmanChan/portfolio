@@ -289,7 +289,7 @@ const Layout = () => {
                             <div className="text-center md:text-left">
                                 <h4 className="text-xl font-bold mb-4">About Me</h4>
                                 <p className="text-gray-300">
-                                Junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients.
+                                Software engineer specialising in AI and full-stack development, with 5+ client projects delivered worth over HK$500,000.
                                 </p>
                             </div>
                             <div className="text-center md:text-left">

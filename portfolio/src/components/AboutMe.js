@@ -67,7 +67,7 @@ const AboutMe = () => {
           About Hillman Chan
         </motion.h1>
         <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed max-w-3xl">
-          I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background spans professional engineering teams, freelance software development, and building JARVIS AI.
+          I'm a software engineer specialising in AI and full-stack development. I've delivered 5+ client projects with a combined value of over HK$500,000, owning each one end to end: scoping, written agreements, architecture, build, launch and support. Alongside client work, I'm an AI Software Engineer at Evoke AI Lab and the CEO and Founder of JARVIS AI Limited.
         </p>
         <p className="mt-4 text-base text-gray-600 dark:text-gray-400 leading-relaxed max-w-3xl">
           Alongside software engineering, my experience in tutoring and customer-facing work has strengthened how I communicate and collaborate with people from different backgrounds.
