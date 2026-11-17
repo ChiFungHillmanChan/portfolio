@@ -25,7 +25,7 @@ export function RoomGuideContent({ onExplore }) {
 
 export function ExperienceContent() {
   return <div className="room-content">
-    <p className="room-intro">I’m Hillman, a software engineer specialising in AI and full-stack development. I build software with engineering teams, work with clients, and lead JARVIS AI.</p>
+    <p className="room-intro">I’m Hillman, a software engineer specialising in AI and full-stack development. I’ve delivered 5+ client projects worth over HK$500,000 in total, work as an AI Software Engineer at Evoke AI Lab, and lead JARVIS AI Limited.</p>
     <h3>Where I’ve been</h3>
     <ol className="room-timeline">{experience.map((role) => <li key={role.company}>
       <p className="room-meta">{role.start_date} – {role.end_date}</p>

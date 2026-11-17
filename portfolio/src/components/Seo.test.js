@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useNavigate } from 'react-router-dom';
+import { readFileSync } from 'fs';
+import path from 'path';
 import Seo from './Seo';
 
 function Navigate() {
@@ -19,8 +21,9 @@ const meta = (selector) => document.head.querySelector(selector)?.getAttribute('
 test('updates portfolio route metadata and canonical URL without query parameters', async () => {
   render(<MemoryRouter initialEntries={['/']}><Seo /><Navigate /></MemoryRouter>);
 
-  expect(document.title).toBe('Hillman Chan | Junior Software Engineer');
-  expect(meta('meta[name="description"]')).toContain('working with clients');
+  expect(document.title).toBe('Hillman Chan | Software Engineer');
+  expect(meta('meta[name="description"]')).toContain('5+ client projects');
+  expect(meta('meta[name="description"]')).toContain('HK$500,000');
   expect(document.head.querySelector('link[rel="canonical"]')).toHaveAttribute('href', 'https://hillmanchan.com/');
   expect(meta('meta[property="og:url"]')).toBe('https://hillmanchan.com/');
   expect(meta('meta[name="twitter:card"]')).toBe('summary');
@@ -52,7 +55,7 @@ test('restores prior head metadata when the portfolio layout unmounts', () => {
   document.head.appendChild(existingDescription);
 
   const { unmount } = render(<MemoryRouter><Seo /></MemoryRouter>);
-  expect(existingDescription.content).toContain('junior software engineer');
+  expect(existingDescription.content).toContain('software engineer specialising in AI');
   unmount();
 
   expect(document.title).toBe(previousTitle);
@@ -66,4 +69,12 @@ test('keeps the coming-soon placeholder out of search results', () => {
   render(<MemoryRouter initialEntries={['/project/12']}><Seo /></MemoryRouter>);
 
   expect(meta('meta[name="robots"]')).toBe('noindex');
+});
+
+test('static first-paint metadata matches the current headline', () => {
+  const html = readFileSync(path.join(__dirname, '../../public/index.html'), 'utf8');
+
+  expect(html).not.toMatch(/junior/i);
+  expect(html).toContain('<title>Hillman Chan | Software Engineer</title>');
+  expect(html).toContain('HK$500,000');
 });

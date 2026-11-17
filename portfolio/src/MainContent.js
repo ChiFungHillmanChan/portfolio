@@ -57,7 +57,7 @@ const MainContent = () => {
                         <div className="w-48 h-48 md:w-64 md:h-64 rounded-full overflow-hidden border-4 border-black-500 shadow-lg">
                             <img
                                 src={profilePic}
-                                alt="Hillman Chan, junior software engineer"
+                                alt="Hillman Chan, software engineer"
                                 className="w-full h-full object-cover"
                             />
                         </div>
@@ -70,13 +70,13 @@ const MainContent = () => {
                         className="w-full md:w-2/3 text-center md:text-left"
                     >
                         <h1 className="text-3xl md:text-4xl font-bold mb-4 md:mb-6 dark:text-white">
-                            Hillman Chan — Junior Software Engineer
+                            Hillman Chan — Software Engineer
                         </h1>
                         <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-4 md:mb-6">
                             AI & Full-Stack Development
                         </p>
                         <p className="text-base md:text-lg text-gray-700 dark:text-gray-400 leading-relaxed">
-                            I'm a junior software engineer specialising in AI and full-stack development, with hands-on industry experience developing software and working with clients. My background includes professional engineering roles, freelance software development, and building products as the CEO and Founder of JARVIS AI Limited.
+                            I'm a software engineer specialising in AI and full-stack development. I've delivered 5+ client projects with a combined value of over HK$500,000, including fintech platforms, booking systems, e-commerce stores and mobile apps. I also work as an AI Software Engineer at Evoke AI Lab and lead JARVIS AI Limited as CEO and Founder.
                         </p>
                         <div className="mt-6 flex flex-wrap items-center justify-center gap-4 md:justify-start">
                             <Link to="/room" className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-gray-800 px-5 py-3 font-semibold text-white hover:bg-gray-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-blue-500 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-white">
