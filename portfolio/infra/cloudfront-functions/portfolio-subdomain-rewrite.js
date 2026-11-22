@@ -5,6 +5,7 @@
 //   1. Subdomain canonicalisation — e.g.
 //      observation-report-demo.hillmanchan.com / →
 //        /games/observation-report/index.html
+//      interview-prep.hillmanchan.com/<path> → /games/interview-prep/<path>
 //   2. /p/{id} share-viewer routing on casino-game.hillmanchan.com → rewrite
 //      to the static share viewer with the share ID as a query param. This
 //      lets the share dialog hand out the clean URL casino-game.hillmanchan.com/p/{id}
@@ -32,6 +33,17 @@ function handler(event) {
     if (uri === '/' || uri === '/index.html') {
       request.uri = '/games/observation-report/index.html';
     }
+  }
+
+  // interview-prep.hillmanchan.com is a self-contained static site (cheatsheet
+  // + manifest + service worker + icons) living under /games/interview-prep/.
+  // Map every path on that host into the folder so /sw.js and /manifest are
+  // served from the subdomain root (the worker's scope is then the whole host).
+  if (host === 'interview-prep.hillmanchan.com') {
+    if (uri.indexOf('/games/interview-prep/') !== 0) {
+      request.uri = '/games/interview-prep' + (uri === '/' ? '/index.html' : uri);
+    }
+    return request;
   }
 
   // ── 2. /p/{id} share-viewer routing ─────────────────────────────────────
