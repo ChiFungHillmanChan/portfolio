@@ -8,7 +8,7 @@ The canonical source for that function lives in this folder. CloudFront has no n
 
 | File | Purpose |
 |---|---|
-| `portfolio-subdomain-rewrite.js` | URL rewriting on viewer-request. Handles legacy subdomain canonicalisation + `/p/{id}` share-viewer routing. |
+| `portfolio-subdomain-rewrite.js` | URL rewriting on viewer-request. Handles legacy subdomain canonicalisation, `interview-prep.hillmanchan.com/*` → `/games/interview-prep/*`, and `/p/{id}` share-viewer routing. |
 
 ## Deploy a change
 
