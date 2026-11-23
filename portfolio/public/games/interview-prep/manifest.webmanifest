@@ -1,8 +1,8 @@
 {
-  "name": "面試速查手冊",
-  "short_name": "面試速查",
-  "description": "廣東話 Python coding interview 速查手冊",
-  "lang": "zh-HK",
+  "name": "Interview Cheatsheet",
+  "short_name": "Cheatsheet",
+  "description": "Python coding interview cheatsheet: patterns, algorithms, system design, behavioral (English / 中文)",
+  "lang": "en",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
