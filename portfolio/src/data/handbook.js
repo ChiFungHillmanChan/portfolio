@@ -27,7 +27,7 @@ const handbook = {
       "pages": 58,
       "released": true,
       "file": "AI_Engineer_Handbook_01_Software.pdf",
-      "bytes": 3791078,
+      "bytes": 3791536,
       "en": {
         "title": "Software Fundamentals",
         "intro": "The foundation of all AI engineering. However capable an LLM becomes, the end product still has to be software that is stable, maintainable and deployable. This Part is the \"engineer\" half of \"AI engineer\". If you have never written a program, read 1.5 and 1.6 first, then come back to 1.1.",
@@ -41,7 +41,7 @@ const handbook = {
         ],
         "pages": 67,
         "file": "AI_Engineer_Handbook_01_Software_EN.pdf",
-        "bytes": 1254229
+        "bytes": 1256085
       }
     },
     {
@@ -64,7 +64,7 @@ const handbook = {
       "pages": 85,
       "released": true,
       "file": "AI_Engineer_Handbook_02_LLM_RAG.pdf",
-      "bytes": 5006956,
+      "bytes": 5002977,
       "en": {
         "title": "LLMs & RAG",
         "intro": "This Part covers the core skills of an AI engineer: how an LLM works, how to use it well, and how to connect it to outside knowledge (RAG). In most companies, the first AI project to reach production is a RAG system.",
@@ -83,13 +83,13 @@ const handbook = {
         ],
         "pages": 103,
         "file": "AI_Engineer_Handbook_02_LLM_RAG_EN.pdf",
-        "bytes": 1710328
+        "bytes": 1710649
       }
     },
     {
       "number": 3,
       "title": "Agents & Orchestration",
-      "intro": "從「回答問題」走向「執行任務」。Agent 可以調用工具、讀寫系統、按情況決定下一步。這部分是現時 AI engineering 最熱門、亦最容易失控的領域。",
+      "intro": "從「回答問題」走向「執行任務」。Agent 可以呼叫工具、讀寫系統、按情況決定下一步。這部分是現時 AI engineering 最熱門、亦最容易失控的領域。",
       "topics": [
         "Function Calling and Tool Use",
         "Structured Outputs and Validation",
@@ -97,7 +97,7 @@ const handbook = {
         "Agent Fundamentals",
         "Agentic Design Patterns",
         "Orchestration with LangGraph",
-        "Multi Agent Intro",
+        "Multi-agent Basics",
         "Multi-agent Systems",
         "Agent Memory and State",
         "Agentic RAG",
@@ -107,7 +107,7 @@ const handbook = {
       "pages": 84,
       "released": true,
       "file": "AI_Engineer_Handbook_03_Agents.pdf",
-      "bytes": 5009892,
+      "bytes": 5003424,
       "en": {
         "title": "Agents & Orchestration",
         "intro": "From answering questions to carrying out tasks. An agent can call tools, read and write to systems, and decide its next step based on what it finds. This Part covers the most popular area of AI engineering today, and the one most likely to get out of control.",
@@ -118,16 +118,16 @@ const handbook = {
           "Agent Fundamentals",
           "Agentic Design Patterns",
           "Orchestration with LangGraph",
-          "Multi Agent Intro",
+          "Multi-agent Basics",
           "Multi-agent Systems",
           "Agent Memory and State",
           "Agentic RAG",
           "Model Context Protocol (MCP)",
           "Coding Agents and Computer Use"
         ],
-        "pages": 104,
+        "pages": 105,
         "file": "AI_Engineer_Handbook_03_Agents_EN.pdf",
-        "bytes": 1589019
+        "bytes": 1589053
       }
     },
     {
@@ -136,7 +136,7 @@ const handbook = {
       "intro": "將 AI 系統部署到 production、保持穩定運作，並以數據證明它確實表現良好。這部分是區分「完成 demo」與「做出 product」的關鍵，亦是最多 AI engineer 的弱項。",
       "topics": [
         "LLMOps Fundamentals",
-        "Serving Open Source Models",
+        "Serving Open-source Models",
         "Deploying LLM Applications",
         "Observability and Monitoring",
         "CI/CD for LLM Applications",
@@ -154,7 +154,7 @@ const handbook = {
         "intro": "Deploying AI systems to production, keeping them running reliably, and proving with data that they actually perform well. This Part is what separates \"finished a demo\" from \"built a product\", and it is the weakest area for most AI engineers.",
         "topics": [
           "LLMOps Fundamentals",
-          "Serving Open Source Models",
+          "Serving Open-source Models",
           "Deploying LLM Applications",
           "Observability and Monitoring",
           "CI/CD for LLM Applications",
@@ -233,7 +233,7 @@ const handbook = {
     {
       "number": 7,
       "title": "Build Projects",
-      "intro": "這六個步驟是將學到的知識轉化成一個可以寫入履歷、真正有說服力的項目。招聘方重視的不是你學過多少 topic，而是你是否解決過真實問題、是否作過有深度的技術決定、是否有數據證明成效。",
+      "intro": "這六個步驟是將學到的知識轉化成一個可以寫入履歷、真正有說服力的項目。招聘方重視的不是你學過多少 topic，而是你是否解決過真實問題、是否作出過有深度的技術決定、是否有數據證明成效。",
       "topics": [
         "Target",
         "Market Research",
@@ -247,7 +247,7 @@ const handbook = {
       "released": false,
       "en": {
         "title": "Build Projects",
-        "intro": "These six steps turn what you have learned into a project you can put on your CV and that carries real weight. Recruiters care less about how many topics you have studied than about whether you have solved a real problem, made technical decisions with some depth to them, and have data to show the results.",
+        "intro": "These six steps turn what you have learnt into a project you can put on your CV and that carries real weight. Recruiters care less about how many topics you have studied than about whether you have solved a real problem, made technical decisions with some depth to them, and have data to show the results.",
         "topics": [
           "Target",
           "Market Research",
@@ -267,7 +267,7 @@ const handbook = {
       "topics": [
         "Guide to Answering Technical Questions",
         "Preparing for System Design Interviews",
-        "AI Augmented Interviews",
+        "AI-augmented Interviews",
         "Whiteboarding Interviews",
         "Practice Interviews",
         "System Design 示範一：企業內部文件問答（RAG）",
@@ -282,7 +282,7 @@ const handbook = {
         "topics": [
           "Guide to Answering Technical Questions",
           "Preparing for System Design Interviews",
-          "AI Augmented Interviews",
+          "AI-augmented Interviews",
           "Whiteboarding Interviews",
           "Practice Interviews",
           "System Design Example 1: Internal Document Q&A (RAG)",
@@ -334,7 +334,7 @@ const handbook = {
       "released": false,
       "en": {
         "title": "Appendix: Glossary, Cheat Sheets and Study Plan",
-        "intro": "This volume is the book's toolbox: a glossary that keeps terms consistent, cheat sheets that condense the key points of each Part, a twelve-week plan that sets the order of study, and finally a list of official sources with the date the book was last checked.",
+        "intro": "This Part is the book's toolbox: a glossary that keeps terms consistent, cheat sheets that condense the key points of each Part, a twelve-week plan that sets the order of study, and finally a list of official sources with the date the book was last checked.",
         "topics": [
           "Glossary",
           "Cheat Sheets by Part",
