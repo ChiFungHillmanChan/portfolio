@@ -6,26 +6,28 @@ const handbook = {
   "basePath": "/downloads/ai-engineer-handbook/",
   "stats": {
     "parts": 10,
-    "topics": 72,
-    "pages": 291,
-    "diagrams": 113,
-    "questions": 127
+    "topics": 80,
+    "pages": 585,
+    "diagrams": 129,
+    "questions": 151
   },
   "parts": [
     {
       "number": 1,
       "title": "Software Fundamentals",
-      "intro": "所有 AI engineering 的基礎。無論 LLM 能力多強，最終仍須寫成一個穩定、可以 maintain、可以 deploy 的 software。這部分是「AI engineer」中「engineer」的那一半。",
+      "intro": "所有 AI engineering 的基礎。無論 LLM 能力多強，最終仍須寫成一個穩定、可以 maintain、可以 deploy 的 software。這部分是「AI engineer」中「engineer」的那一半。從未寫過程式的讀者，建議先讀 1.5 和 1.6，再返回 1.1。",
       "topics": [
         "Python for AI",
         "Data Structures & Algorithms",
         "Software System Design",
-        "Git"
+        "Git",
+        "Python 基礎速覽",
+        "Web API 基礎：HTTP、JSON 與 FastAPI"
       ],
-      "pages": 17,
+      "pages": 58,
       "released": true,
       "file": "AI_Engineer_Handbook_01_Software.pdf",
-      "bytes": 2135160
+      "bytes": 3759418
     },
     {
       "number": 2,
@@ -40,12 +42,14 @@ const handbook = {
         "Basic Retrieval Augmented Generation (RAG)",
         "Document Processing and Chunking",
         "Advanced Retrieval",
-        "中文與廣東話的檢索處理"
+        "中文與廣東話的檢索處理",
+        "Multimodal：圖像、文件與語音",
+        "Reasoning Models 與 Context Engineering"
       ],
-      "pages": 37,
+      "pages": 85,
       "released": true,
       "file": "AI_Engineer_Handbook_02_LLM_RAG.pdf",
-      "bytes": 3383307
+      "bytes": 4966081
     },
     {
       "number": 3,
@@ -62,12 +66,13 @@ const handbook = {
         "Multi-agent Systems",
         "Agent Memory and State",
         "Agentic RAG",
-        "Model Context Protocol (MCP)"
+        "Model Context Protocol (MCP)",
+        "Coding Agents 與 Computer Use"
       ],
-      "pages": 48,
+      "pages": 84,
       "released": true,
       "file": "AI_Engineer_Handbook_03_Agents.pdf",
-      "bytes": 3650417
+      "bytes": 4989286
     },
     {
       "number": 4,
@@ -86,7 +91,7 @@ const handbook = {
         "Benchmarking Models",
         "完整示範：為 RAG 系統建立一套 Eval"
       ],
-      "pages": 48,
+      "pages": 81,
       "released": false
     },
     {
@@ -100,7 +105,7 @@ const handbook = {
         "Guardrails",
         "AI Governance and Frameworks"
       ],
-      "pages": 24,
+      "pages": 41,
       "released": false
     },
     {
@@ -114,9 +119,12 @@ const handbook = {
         "Experiment Tracking with MLflow",
         "Data Versioning with DVC",
         "Deployment and CI/CD",
-        "Monitoring ML in Production"
+        "Monitoring ML in Production",
+        "Neural Networks 與 Deep Learning 基礎",
+        "PyTorch 基礎：Tensor、Autograd 與 Training Loop",
+        "Fine-tuning 與 LoRA"
       ],
-      "pages": 26,
+      "pages": 81,
       "released": false
     },
     {
@@ -132,7 +140,7 @@ const handbook = {
         "Launch & Signal",
         "實例：作者的公開項目與本書主題"
       ],
-      "pages": 25,
+      "pages": 43,
       "released": false
     },
     {
@@ -149,13 +157,13 @@ const handbook = {
         "System Design 示範二：客戶服務 Agent",
         "System Design 示範三：大量文件資料抽取 Pipeline"
       ],
-      "pages": 33,
+      "pages": 53,
       "released": false
     },
     {
       "number": 9,
       "title": "Project Ideas",
-      "intro": "將整本手冊的 62 個主題付諸實踐。這部分包括一個總覽和五個項目：一個大型 capstone 項目覆蓋大部分主題，另外四個項目各自深入一個範疇，補足 capstone 未能涵蓋的部分。完成全部五個項目，便覆蓋整份 roadmap。",
+      "intro": "將整本手冊的 70 個主題付諸實踐。這部分包括一個總覽和五個項目：一個大型 capstone 項目覆蓋大部分主題，另外四個項目各自深入一個範疇，補足 capstone 未能涵蓋的部分。完成全部五個項目，連同當中標明的加分挑戰和進階練習，便覆蓋整份 roadmap。",
       "topics": [
         "總覽：如何選擇項目和安排次序",
         "RegPilot：港英雙語金融監管合規助手（Capstone）",
@@ -164,7 +172,7 @@ const handbook = {
         "CantoBench：廣東話 LLM benchmark 和 serving 實驗室",
         "MockLoop：AI 模擬面試官"
       ],
-      "pages": 27,
+      "pages": 43,
       "released": false
     },
     {
@@ -177,7 +185,7 @@ const handbook = {
         "十二週學習計劃",
         "官方資料與最後核對日期"
       ],
-      "pages": 19,
+      "pages": 29,
       "released": false
     }
   ]
