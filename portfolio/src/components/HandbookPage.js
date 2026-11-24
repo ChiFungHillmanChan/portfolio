@@ -6,7 +6,6 @@ import {
   hasSupported, markSupported, readLanguage, rememberLanguage, rememberPendingDownload, takePendingDownload,
 } from '../handbookSupport';
 
-const megabytes = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 const partNumber = (part) => String(part.number).padStart(2, '0');
 const partRange = (parts) => (parts.length === 0
   ? ''
@@ -119,7 +118,7 @@ const DownloadDialog = ({ part, language, href, tiers, custom, currencySymbol, o
         Download Part {partNumber(part)}
       </h2>
       <p className="text-gray-600 dark:text-gray-300 mb-4">
-        {part.title} · {languageName(language)} · {part.pages} pages · {megabytes(part.bytes)}
+        {part.title} · {languageName(language)} · {part.pages} pages
       </p>
       <p className="text-sm text-gray-700 dark:text-gray-200 mb-4">
         Thank you so much for your interest! This handbook is free, and supporting it is
@@ -349,7 +348,7 @@ const HandbookPage = () => {
                       {part.title}
                     </h3>
                     <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
-                      {part.topics.length} topics · {part.pages} pages{part.released && ` · ${megabytes(part.bytes)}`}
+                      {part.topics.length} topics · {part.pages} pages
                     </p>
                   </div>
                   {!part.released && (

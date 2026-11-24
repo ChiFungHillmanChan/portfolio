@@ -451,6 +451,19 @@ describe('PDF language', () => {
   });
 });
 
+describe('file sizes', () => {
+  test('the page shows topics and pages for every part, and never a file size', async () => {
+    renderAt();
+    for (const part of handbook.parts) {
+      expect(partCard(part)).toHaveTextContent(`${part.topics.length} topics · ${part.pages} pages`);
+    }
+    expect(document.body).not.toHaveTextContent(/\d MB/);
+    const dialog = await openDialog(released[0]);
+    expect(dialog).toHaveTextContent(`${released[0].pages} pages`);
+    expect(dialog).not.toHaveTextContent(/MB/);
+  });
+});
+
 function markSupportedForTest() {
   window.localStorage.setItem(`handbook-supported:${SLUG}`, '1');
 }
