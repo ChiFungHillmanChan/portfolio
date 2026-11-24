@@ -26,16 +26,46 @@ const inLanguage = (part, language) => (language === 'en' && part.en
   ? { ...part, ...part.en, released: part.released }
   : part);
 
-const TopicList = ({ topics, muted, lang }) => (
+// Each topic with the page it starts on in this part's own PDF (not the full book, whose page
+// numbers differ). For a released part the topic opens the PDF at that page in a new tab.
+const TopicList = ({ topics, pages = [], href, muted, lang }) => (
   <ul className={`grid md:grid-cols-2 gap-x-6 gap-y-1 text-sm ${muted ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
-    {topics.map((topic, index) => (
-      <li key={topic} className="flex gap-2">
-        <span className="font-mono text-xs leading-5 text-gray-400">{index + 1}</span>
-        <span lang={lang}>{topic}</span>
-      </li>
-    ))}
+    {topics.map((topic, index) => {
+      const page = pages[index];
+      const pageLabel = page ? <span className="shrink-0 font-mono text-xs leading-5 text-gray-400">p.{page}</span> : null;
+      return (
+        <li key={topic} className="flex gap-2">
+          <span className="font-mono text-xs leading-5 text-gray-400">{index + 1}</span>
+          {href && page ? (
+            <a
+              href={`${href}#page=${page}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex flex-1 min-w-0 justify-between gap-2 hover:underline underline-offset-2"
+              aria-label={`${topic}, page ${page}, opens the PDF`}
+            >
+              <span lang={lang}>{topic}</span>
+              {pageLabel}
+            </a>
+          ) : (
+            <span className="flex flex-1 min-w-0 justify-between gap-2">
+              <span lang={lang}>{topic}</span>
+              {pageLabel}
+            </span>
+          )}
+        </li>
+      );
+    })}
   </ul>
 );
+
+// Lets the payment say which handbook, part and language it came from (Stripe keeps it on the
+// checkout session as client_reference_id; letters, digits, - and _ only).
+const withReference = (url, reference) => {
+  const link = new URL(url);
+  link.searchParams.set('client_reference_id', reference);
+  return link.toString();
+};
 
 const primaryAction = 'block w-full rounded-lg px-6 py-3 text-center font-semibold text-white bg-gray-800 hover:bg-gray-900 dark:text-gray-900 dark:bg-white dark:hover:bg-gray-200 transition-colors';
 const quietAction = 'mt-3 block w-full text-center text-sm text-gray-600 dark:text-gray-300 hover:underline';
@@ -92,7 +122,7 @@ const disabledAction = 'block w-full rounded-lg px-6 py-3 text-center font-semib
 
 // The pop-up shown before a download. The reader picks an amount first, and zero is one of
 // the amounts, so the download is never gated: zero gives the same file without paying.
-const DownloadDialog = ({ part, language, href, tiers, custom, currencySymbol, onPay, onClose }) => {
+const DownloadDialog = ({ part, language, href, reference, tiers, custom, currencySymbol, onPay, onClose }) => {
   const [choice, setChoice] = useState(null);
   const checkout = 'You will go to Stripe’s secure checkout, so your card details never reach this site. Your download starts as soon as you come back.';
   const options = [
@@ -151,7 +181,7 @@ const DownloadDialog = ({ part, language, href, tiers, custom, currencySymbol, o
         <a href={href} download onClick={onClose} className={primaryAction}>Download</a>
       )}
       {chosen && chosen.url && (
-        <a href={chosen.url} rel="noreferrer" onClick={onPay} className={primaryAction}>Support and download</a>
+        <a href={withReference(chosen.url, reference)} rel="noreferrer" onClick={onPay} className={primaryAction}>Support and download</a>
       )}
       <button type="button" onClick={onClose} className={quietAction}>
         Cancel
@@ -228,7 +258,8 @@ const HandbookPage = () => {
     handledReturn.current = true;
     markSupported(slug);
     const number = takePendingDownload(slug);
-    const found = releasedParts(handbook.book).find((entry) => entry.number === number);
+    const found = [handbook.book.intro, ...releasedParts(handbook.book)]
+      .find((entry) => entry && entry.number === number);
     const part = found ? inLanguage(found, language) : null;
     setThanks({ part });
     if (part) startDownload(`${handbook.book.basePath}${part.file}`);
@@ -250,6 +281,8 @@ const HandbookPage = () => {
   const offersSupport = tiers.length > 0 || custom !== null;
   const fileUrl = (part) => `${book.basePath}${part.file}`;
   const released = releasedParts(book);
+  // The intro booklet (cover, preface, how to use) is listed first as Part 00.
+  const listed = book.intro ? [book.intro, ...book.parts] : book.parts;
   const upcoming = book.parts.filter((part) => !part.released);
   const checkedDate = new Date(`${book.checked}T00:00:00Z`)
     .toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
@@ -296,14 +329,14 @@ const HandbookPage = () => {
         ))}
       </dl>
       <p className="hidden md:block text-center text-gray-600 dark:text-gray-300 mb-10">
-        {availability} Each part is a separate PDF booklet.
+        {availability} Each part is a separate PDF booklet, and topic page numbers refer to that booklet.
       </p>
 
       <section aria-labelledby="handbook-contents" className="mb-8 md:mb-10">
         <h2 id="handbook-contents" className="text-xl md:text-2xl font-semibold mb-1 md:mb-2 dark:text-white">Contents</h2>
         <p className="text-sm md:text-base text-gray-600 dark:text-gray-300 mb-3 md:mb-4">
           <span className="md:hidden">{availability} </span>
-          <span className="hidden md:inline">Every part and the topics it covers. </span>
+          <span className="hidden md:inline">Every part and the topics it covers. Select a topic to open its PDF at that page. </span>
           {supported
             ? 'Thank you for supporting this handbook. Downloads start straight away.'
             : 'Downloads are free, and a contribution is optional and one-off.'}
@@ -331,7 +364,7 @@ const HandbookPage = () => {
           </div>
         )}
         <ol className="space-y-3 md:space-y-4">
-          {book.parts.map((source) => {
+          {listed.map((source) => {
             const part = inLanguage(source, language);
             const open = expanded.has(part.number);
             const detailsId = `part-${part.number}-details`;
@@ -348,7 +381,7 @@ const HandbookPage = () => {
                       {part.title}
                     </h3>
                     <p className="text-xs md:text-sm text-gray-600 dark:text-gray-300">
-                      {part.topics.length} topics · {part.pages} pages
+                      {part.topics.length} {part.number === 0 ? 'sections' : 'topics'} · {part.pages} pages
                     </p>
                   </div>
                   {!part.released && (
@@ -376,13 +409,19 @@ const HandbookPage = () => {
                   aria-controls={detailsId}
                   className="md:hidden mt-2 text-sm text-gray-600 dark:text-gray-300 underline underline-offset-2"
                 >
-                  {open ? 'Hide topics' : `What is inside (${part.topics.length} topics)`}
+                  {open ? 'Hide topics' : `What is inside (${part.topics.length} ${part.number === 0 ? 'sections' : 'topics'})`}
                 </button>
                 <div id={detailsId} className={`${open ? 'block' : 'hidden'} md:block mt-3`}>
                   <p lang={language === 'en' && part.en ? 'en' : lang} className={`text-sm mb-3 ${part.released ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
                     {part.intro}
                   </p>
-                  <TopicList topics={part.topics} muted={!part.released} lang={language === 'en' && source.en ? 'en' : lang} />
+                  <TopicList
+                    topics={part.topics}
+                    pages={part.topicPages}
+                    href={part.released ? fileUrl(part) : undefined}
+                    muted={!part.released}
+                    lang={language === 'en' && source.en ? 'en' : lang}
+                  />
                 </div>
               </li>
             );
@@ -418,6 +457,7 @@ const HandbookPage = () => {
           part={inLanguage(downloading, language)}
           language={language === 'en' && downloading.en ? 'en' : 'zh-HK'}
           href={fileUrl(inLanguage(downloading, language))}
+          reference={`${slug}__p${partNumber(downloading)}__${language === 'en' && downloading.en ? 'en' : 'zh'}`}
           tiers={tiers}
           custom={custom}
           currencySymbol={currencySymbol}

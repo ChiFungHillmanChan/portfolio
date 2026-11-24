@@ -12,6 +12,10 @@ const SLUG = 'ai-engineer';
 const PENDING_KEY = 'handbook-pending-download';
 const RELEASED = [1, 2, 3];
 const released = handbook.parts.filter((part) => part.released);
+// Every file a reader can download straight away: the intro booklet (Part 00) and the released parts.
+const downloadable = [handbook.intro, ...released];
+const english = (part) => ({ ...part, ...part.en });
+const chooseEnglish = () => userEvent.click(screen.getByRole('radio', { name: 'English' }));
 const upcoming = handbook.parts.filter((part) => !part.released);
 const hrefOf = (part) => `${handbook.basePath}${part.file}`;
 const pdfLinks = () => [...document.querySelectorAll('a[href$=".pdf"]')];
@@ -225,7 +229,9 @@ describe('handbook page', () => {
       expect(within(dialog).getAllByRole('radio').filter((option) => option.getAttribute('aria-checked') === 'true'))
         .toHaveLength(1);
       const pay = within(dialog).getByRole('link', { name: 'Support and download' });
-      expect(pay).toHaveAttribute('href', url);
+      const checkout = new URL(pay.getAttribute('href'));
+      expect(`${checkout.origin}${checkout.pathname}`).toBe(url);
+      expect(checkout.searchParams.get('client_reference_id')).toBe(`${SLUG}__p0${number}__zh`);
       expect(pay).not.toHaveAttribute('target');
       expect(pay).not.toHaveAttribute('download');
       expect(pdfLinks()).toHaveLength(0);
@@ -287,7 +293,7 @@ describe('handbook page', () => {
     renderAt();
 
     // With nothing to offer there is no pop-up: each released part is a plain download link.
-    expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map(hrefOf));
+    expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(downloadable.map(hrefOf));
     pdfLinks().forEach((link) => expect(link).toHaveAttribute('download'));
     expect(screen.getByRole('link', { name: 'Buy me a coffee' })).toHaveAttribute('href', supportLinks.buyMeACoffee);
     expect(fireEvent.click(pdfLinks()[0])).toBe(true);
@@ -351,7 +357,7 @@ describe('handbook page', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Close' }));
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(hasSupported(SLUG)).toBe(true);
-      expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map(hrefOf));
+      expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(downloadable.map(hrefOf));
       pdfLinks().forEach((link) => expect(link).toHaveAttribute('download'));
       expect(screen.queryByRole('button', { name: /^Download Part/ })).not.toBeInTheDocument();
       expect(screen.getByText(/Thank you for supporting this handbook\. Downloads start straight away\./)).toBeInTheDocument();
@@ -364,7 +370,7 @@ describe('handbook page', () => {
 
       renderAt();
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-      expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map(hrefOf));
+      expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(downloadable.map(hrefOf));
       expect(autoDownloads).toEqual([]);
     });
 
@@ -380,8 +386,6 @@ describe('handbook page', () => {
 });
 
 describe('PDF language', () => {
-  const english = (part) => ({ ...part, ...part.en });
-  const chooseEnglish = () => userEvent.click(screen.getByRole('radio', { name: 'English' }));
 
   test('every part has an English edition with the same number of topics, and released parts have an English file', () => {
     for (const part of handbook.parts) {
@@ -447,7 +451,7 @@ describe('PDF language', () => {
     renderAt();
     await chooseEnglish();
 
-    expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map((part) => hrefOf(english(part))));
+    expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(downloadable.map((part) => hrefOf(english(part))));
   });
 });
 
@@ -467,3 +471,78 @@ describe('file sizes', () => {
 function markSupportedForTest() {
   window.localStorage.setItem(`handbook-supported:${SLUG}`, '1');
 }
+
+describe('intro booklet', () => {
+  test('Part 00 is listed first, in both languages, with its sections and pages', async () => {
+    renderAt();
+    const cards = [...document.querySelectorAll('[data-part]')];
+    expect(cards[0]).toBe(partCard(handbook.intro));
+    expect(cards[0]).toHaveTextContent(`00${handbook.intro.title}`);
+    expect(cards[0]).toHaveTextContent(`${handbook.intro.topics.length} sections · ${handbook.intro.pages} pages`);
+    handbook.intro.topics.forEach((section) => expect(cards[0]).toHaveTextContent(section));
+
+    await chooseEnglish();
+    handbook.intro.en.topics.forEach((section) => expect(partCard(handbook.intro)).toHaveTextContent(section));
+  });
+
+  test('Part 00 downloads through the same pop-up, in the chosen language', async () => {
+    renderAt();
+    let dialog = await openDialog(handbook.intro);
+    expect(dialog).toHaveTextContent('Download Part 00');
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'HK$0' }));
+    expect(within(dialog).getByRole('link', { name: 'Download' })).toHaveAttribute('href', hrefOf(handbook.intro));
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
+
+    await chooseEnglish();
+    dialog = await openDialog(handbook.intro);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'HK$0' }));
+    expect(within(dialog).getByRole('link', { name: 'Download' })).toHaveAttribute('href', hrefOf(handbook.intro.en));
+  });
+
+  test('coming back from checkout after choosing Part 00 downloads the intro', () => {
+    rememberPendingDownload(SLUG, 0);
+    renderAt('/handbook/ai-engineer?thanks=1');
+    expect(autoDownloads).toEqual([{ href: hrefOf(handbook.intro), download: true }]);
+  });
+});
+
+describe('topic pages', () => {
+  const topicLinks = (part) => [...partCard(part).querySelectorAll('a[href*="#page="]')];
+
+  test('every topic shows the page it starts on, counted in its own booklet', () => {
+    for (const part of [handbook.intro, ...handbook.parts]) {
+      expect(part.topicPages).toHaveLength(part.topics.length);
+      expect(part.en.topicPages).toHaveLength(part.en.topics.length);
+      [[part.topicPages, part.pages], [part.en.topicPages, part.en.pages]].forEach(([pages, total]) => {
+        expect([...pages].sort((a, b) => a - b)).toEqual(pages);
+        expect(pages[0]).toBeGreaterThan(1);
+        expect(pages[pages.length - 1]).toBeLessThanOrEqual(total);
+      });
+    }
+  });
+
+  test('a released topic opens its PDF at that page in a new tab; an unreleased one is not a link', () => {
+    renderAt();
+    for (const part of [handbook.intro, ...released]) {
+      const links = topicLinks(part);
+      expect(links.map((link) => link.getAttribute('href')))
+        .toEqual(part.topicPages.map((page) => `${hrefOf(part)}#page=${page}`));
+      links.forEach((link, index) => {
+        expect(link).toHaveAttribute('target', '_blank');
+        expect(link).toHaveTextContent(`p.${part.topicPages[index]}`);
+      });
+    }
+    for (const part of upcoming) {
+      expect(topicLinks(part)).toHaveLength(0);
+      expect(partCard(part)).toHaveTextContent(`p.${part.topicPages[0]}`);
+    }
+  });
+
+  test('in English the links go to the English booklet and its own page numbers', async () => {
+    renderAt();
+    await chooseEnglish();
+    const part = released[0];
+    expect(topicLinks(part).map((link) => link.getAttribute('href')))
+      .toEqual(part.en.topicPages.map((page) => `${hrefOf(part.en)}#page=${page}`));
+  });
+});
