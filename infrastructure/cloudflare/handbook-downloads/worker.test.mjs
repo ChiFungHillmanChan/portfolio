@@ -10,14 +10,13 @@ const ctx = () => {
 };
 const limiter = (allow) => ({ calls: [], async limit({ key }) { this.calls.push(key); return { success: allow(key, this.calls.length) }; } });
 
-// A tiny stand-in for D1 that records statements and answers batch() with canned rows.
-const fakeDb = (rows = []) => ({
+// A tiny stand-in for D1 that records the statements it runs.
+const fakeDb = () => ({
   runs: [],
   prepare(sql) {
     const db = this;
     return { sql, bind(...args) { return { sql, args, run: async () => { db.runs.push({ sql, args }); return {}; } }; } };
   },
-  async batch(statements) { this.batched = statements; return statements.map((_, i) => ({ results: rows[i] || [] })); },
 });
 
 test('parses handbook PDF paths and ignores everything else', () => {
@@ -90,22 +89,9 @@ test('other paths pass straight through', async (t) => {
   assert.equal(origin.mock.callCount(), 1);
 });
 
-test('stats need the admin token and are never cached', async () => {
-  const env = { DB: fakeDb([[{ handbook: 'ai-engineer', part: 1, lang: 'zh', downloads: 3, people: 2 }]]), ADMIN_TOKEN: 'secret-token', ADMIN_LIMIT: limiter(() => true) };
-  const url = 'https://hillmanchan.com/api/handbook/stats';
-  assert.equal((await worker.fetch(new Request(url), env, ctx())).status, 401);
-  assert.equal((await worker.fetch(new Request(url, { headers: { authorization: 'Bearer wrong' } }), env, ctx())).status, 401);
-  const ok = await worker.fetch(new Request(url, { headers: { authorization: 'Bearer secret-token' } }), env, ctx());
-  assert.equal(ok.status, 200);
-  assert.equal(ok.headers.get('cache-control'), 'no-store');
-  const body = await ok.json();
-  assert.equal(body.parts[0].downloads, 3);
-  assert.equal(env.DB.batched.length, 6);
-});
-
-test('stats are refused without any configured token', async () => {
-  const response = await worker.fetch(new Request('https://hillmanchan.com/api/handbook/stats', { headers: { authorization: 'Bearer ' } }), { DB: fakeDb() }, ctx());
-  assert.equal(response.status, 401);
+test('there is no stats endpoint: other handbook API paths are 404', async () => {
+  const response = await worker.fetch(new Request('https://hillmanchan.com/api/handbook/stats'), {}, ctx());
+  assert.equal(response.status, 404);
 });
 
 const sign = (body, secret, t) => `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${body}`).digest('hex')}`;

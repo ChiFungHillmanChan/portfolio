@@ -3,12 +3,11 @@
  *
  * - /downloads/<folder>/*.pdf: rate limited per visitor, then served from the Cloudflare cache
  *   (origin: CloudFront -> S3). Each successful download is recorded in D1.
- * - /api/handbook/stats: download and payment counts for the admin page (needs ADMIN_TOKEN).
  * - /api/handbook/stripe-webhook: Stripe checkout.session.completed events for the handbook's
  *   support links, recorded in D1.
  *
- * Bindings (wrangler.jsonc): DB (D1), DOWNLOAD_LIMIT, REQUEST_LIMIT, ADMIN_LIMIT (rate limiting).
- * Secrets: ADMIN_TOKEN, IP_SALT, STRIPE_WEBHOOK_SECRET.
+ * Bindings (wrangler.jsonc): DB (D1), DOWNLOAD_LIMIT, REQUEST_LIMIT (rate limiting).
+ * Secrets: IP_SALT, STRIPE_WEBHOOK_SECRET. There is no read API: query D1 with wrangler (see README).
  */
 
 // Download folder -> the handbook's slug on the site (/handbook/<slug>).
@@ -97,50 +96,6 @@ async function download(request, env, ctx, item, now) {
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });
 }
 
-async function stats(request, env, now) {
-  const ip = request.headers.get('cf-connecting-ip') || 'unknown';
-  if (!(await allowed(env.ADMIN_LIMIT, ip))) return json({ error: 'Too many requests' }, 429);
-  const token = (request.headers.get('authorization') || '').replace(/^Bearer\s+/i, '');
-  if (!(await sameSecret(token, env.ADMIN_TOKEN))) return json({ error: 'Unauthorised' }, 401);
-
-  const day = (offset) => new Date(now - offset * 86400000).toISOString().slice(0, 10);
-  const [parts, totals, daily, payments, paymentTotals, recent] = await env.DB.batch([
-    env.DB.prepare(
-      `SELECT handbook, part, lang, COUNT(*) AS downloads, COUNT(DISTINCT visitor) AS people,
-              SUM(day >= ?1) AS last7, SUM(day >= ?2) AS last30
-       FROM downloads GROUP BY handbook, part, lang ORDER BY handbook, part, lang`,
-    ).bind(day(6), day(29)),
-    env.DB.prepare(
-      `SELECT handbook, COUNT(*) AS downloads, COUNT(DISTINCT visitor) AS people,
-              MIN(day) AS since FROM downloads GROUP BY handbook`,
-    ),
-    env.DB.prepare(
-      `SELECT day, COUNT(*) AS downloads, COUNT(DISTINCT visitor) AS people
-       FROM downloads WHERE day >= ?1 GROUP BY day ORDER BY day`,
-    ).bind(day(29)),
-    env.DB.prepare(
-      `SELECT handbook, part, lang, currency, COUNT(*) AS payments, SUM(amount) AS amount
-       FROM payments GROUP BY handbook, part, lang, currency ORDER BY handbook, part, lang`,
-    ),
-    env.DB.prepare(
-      `SELECT handbook, currency, COUNT(*) AS payments, SUM(amount) AS amount
-       FROM payments GROUP BY handbook, currency`,
-    ),
-    env.DB.prepare(
-      `SELECT at, handbook, part, lang, amount, currency FROM payments ORDER BY at DESC LIMIT 20`,
-    ),
-  ]);
-  return json({
-    generatedAt: new Date(now).toISOString(),
-    totals: totals.results,
-    parts: parts.results,
-    daily: daily.results,
-    payments: payments.results,
-    paymentTotals: paymentTotals.results,
-    recentPayments: recent.results,
-  });
-}
-
 // Stripe signs each event: header "t=<unix>,v1=<hex HMAC-SHA256 of `${t}.${body}`>".
 export async function verifyStripe(body, header, secret, now) {
   if (!header || !secret) return false;
@@ -199,7 +154,6 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
     const now = Date.now();
-    if (url.pathname === '/api/handbook/stats' && request.method === 'GET') return stats(request, env, now);
     if (url.pathname === '/api/handbook/stripe-webhook' && request.method === 'POST') return stripeWebhook(request, env, now);
     if (url.pathname.startsWith('/api/handbook/')) return json({ error: 'Not found' }, 404);
     const item = parseDownload(url.pathname);
