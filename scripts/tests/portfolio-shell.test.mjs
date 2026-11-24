@@ -6,6 +6,9 @@ import vm from 'node:vm';
 const origin = 'https://portfolio.example';
 const workerSource = await readFile(new URL('../../portfolio/public/sw.js', import.meta.url), 'utf8');
 const shell = '<main>Standard portfolio</main>';
+const presentScript = '/static/js/main.53b11898.js';
+const missingScript = '/static/js/2.0472380b.chunk.js';
+const scriptBody = 'console.log("page script")';
 
 function workerHarness() {
   const listeners = {};
@@ -48,8 +51,10 @@ function workerHarness() {
     async fetch(request) {
       fetches += 1;
       if (offline) throw new Error('Offline');
-      const body = new URL(urlOf(request)).pathname.startsWith('/room-viewer')
-        ? '<canvas>Standalone room viewer</canvas>' : shell;
+      const { pathname } = new URL(urlOf(request));
+      if (pathname === presentScript) return new Response(scriptBody, { headers: { 'Content-Type': 'application/javascript' } });
+      // Like the real host, a file that does not exist is answered with the HTML shell and status 200.
+      const body = pathname.startsWith('/room-viewer') ? '<canvas>Standalone room viewer</canvas>' : shell;
       return new Response(body, { headers: { 'Content-Type': 'text/html' } });
     }
   });
@@ -67,6 +72,11 @@ function workerHarness() {
       });
       await Promise.all(pending);
       return response && await response;
+    },
+    asset(pathname) {
+      return this.dispatch('fetch', {
+        request: { url: new URL(pathname, origin).href, method: 'GET', mode: 'no-cors', headers: new Headers() }
+      });
     },
     navigate(pathname) {
       return this.dispatch('fetch', {
@@ -114,4 +124,35 @@ test('activation replaces a contaminated v2 shell cache and preserves game cache
   assert.equal(worker.buckets.has('connect4-v1'), true);
   worker.setOffline();
   assert.equal(await (await worker.navigate('/')).text(), shell);
+});
+
+test('a hashed script is cached after its first load', async () => {
+  const worker = workerHarness();
+  await worker.dispatch('install');
+  assert.equal(await (await worker.asset(presentScript)).text(), scriptBody);
+  await new Promise(resolve => setTimeout(resolve));
+  worker.setOffline();
+  assert.equal(await (await worker.asset(presentScript)).text(), scriptBody);
+});
+
+test('the HTML shell answered for a missing script is never cached under the script name', async () => {
+  const worker = workerHarness();
+  await worker.dispatch('install');
+  const first = await worker.asset(missingScript);
+  assert.match(first.headers.get('content-type'), /text\/html/, 'the page still receives what the host answered');
+  await new Promise(resolve => setTimeout(resolve));
+  assert.equal(await worker.caches.match(missingScript), undefined, 'cache-first would serve this HTML as the script forever');
+  const fetches = worker.fetches;
+  await worker.asset(missingScript);
+  assert.equal(worker.fetches, fetches + 1, 'the next request must go back to the network');
+});
+
+test('activation retires a v3 shell cache that may hold HTML under a script name', async () => {
+  const worker = workerHarness();
+  const oldShell = await worker.caches.open('portfolio-shell-v3');
+  await oldShell.put(missingScript, new Response(shell, { headers: { 'Content-Type': 'text/html' } }));
+  await worker.dispatch('install');
+  await worker.dispatch('activate');
+  assert.equal(worker.buckets.has('portfolio-shell-v3'), false);
+  assert.equal(await worker.caches.match(missingScript), undefined);
 });

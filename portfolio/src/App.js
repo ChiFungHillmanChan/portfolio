@@ -1,28 +1,29 @@
-import React, { Suspense, lazy, useEffect, useState } from 'react';
+import React, { Suspense, useEffect, useState } from 'react';
 import { Route, createBrowserRouter, createRoutesFromElements, RouterProvider } from 'react-router-dom';
 import BugSpark from '@bugspark/widget';
 import RoomSession from './room/RoomSession';
-const AboutMe = lazy(() => import('./components/AboutMe'));
-const Layout = lazy(() => import('./Layout'));
-const MainContent = lazy(() => import('./MainContent'));
-const Contact = lazy(() => import('./components/Contact'));
-const ProjectDetail = lazy(() => import('./components/ProjectDetail'));
-const Projects = lazy(() => import('./components/Projects'));
-const MyOfferHub = lazy(() => import('./components/MyOffer/MyOfferHub'));
-const BuyCoffeePage = lazy(() => import('./components/MyOffer/BuyCoffeePage'));
-const CoachingPage = lazy(() => import('./components/MyOffer/CoachingPage'));
-const ServicesPage = lazy(() => import('./components/MyOffer/ServicesPage'));
-const ChatBotGame = lazy(() => import('./game/chatbot/ChatBotGame'));
-const PromptHunterGame = lazy(() => import('./game/prompt-hunter/PromptHunterGame'));
-const CardGame = lazy(() => import('./game/card-game/CardGame'));
-const CasinoGame = lazy(() => import('./game/casino-game/CasinoGame'));
-const SystemDesignGame = lazy(() => import('./game/system-design/SystemDesignGame'));
-const Connect4Game = lazy(() => import('./game/connect4/Connect4Game'));
-const MathMemoryGame = lazy(() => import('./game/math-memory/MathMemoryGame'));
-const CardDrawerGame = lazy(() => import('./game/card-drawer/CardDrawerGame'));
-const DaSiuYanGame = lazy(() => import('./game/da-siu-yan/DaSiuYanGame'));
-const SiuHeiBouGame = lazy(() => import('./game/siu-hei-bou/SiuHeiBouGame'));
-const RubiksCubePractice = lazy(() => import('./game/rubiks-cube-practice/RubiksCubePractice'));
+import lazyWithReload from './lazyWithReload';
+const AboutMe = lazyWithReload(() => import('./components/AboutMe'));
+const Layout = lazyWithReload(() => import('./Layout'));
+const MainContent = lazyWithReload(() => import('./MainContent'));
+const Contact = lazyWithReload(() => import('./components/Contact'));
+const ProjectDetail = lazyWithReload(() => import('./components/ProjectDetail'));
+const Projects = lazyWithReload(() => import('./components/Projects'));
+const MyOfferHub = lazyWithReload(() => import('./components/MyOffer/MyOfferHub'));
+const BuyCoffeePage = lazyWithReload(() => import('./components/MyOffer/BuyCoffeePage'));
+const CoachingPage = lazyWithReload(() => import('./components/MyOffer/CoachingPage'));
+const ServicesPage = lazyWithReload(() => import('./components/MyOffer/ServicesPage'));
+const ChatBotGame = lazyWithReload(() => import('./game/chatbot/ChatBotGame'));
+const PromptHunterGame = lazyWithReload(() => import('./game/prompt-hunter/PromptHunterGame'));
+const CardGame = lazyWithReload(() => import('./game/card-game/CardGame'));
+const CasinoGame = lazyWithReload(() => import('./game/casino-game/CasinoGame'));
+const SystemDesignGame = lazyWithReload(() => import('./game/system-design/SystemDesignGame'));
+const Connect4Game = lazyWithReload(() => import('./game/connect4/Connect4Game'));
+const MathMemoryGame = lazyWithReload(() => import('./game/math-memory/MathMemoryGame'));
+const CardDrawerGame = lazyWithReload(() => import('./game/card-drawer/CardDrawerGame'));
+const DaSiuYanGame = lazyWithReload(() => import('./game/da-siu-yan/DaSiuYanGame'));
+const SiuHeiBouGame = lazyWithReload(() => import('./game/siu-hei-bou/SiuHeiBouGame'));
+const RubiksCubePractice = lazyWithReload(() => import('./game/rubiks-cube-practice/RubiksCubePractice'));
 
 const GAME_SUBDOMAIN_COMPONENTS = {
   'prompt-hunter': PromptHunterGame,
@@ -54,6 +55,20 @@ function RouteLoading() {
   return <main style={{ padding: '3rem', fontFamily: 'system-ui' }}><p role="status">Opening page…</p><a href="/room">Back to room</a></main>;
 }
 
+// Shown only when a page still cannot load after the automatic reload in lazyWithReload.
+function RouteError() {
+  return (
+    <main style={{ padding: '3rem', fontFamily: 'system-ui' }}>
+      <h1 style={{ fontSize: '1.5rem', fontWeight: 600 }}>This page did not load</h1>
+      <p role="alert" style={{ margin: '1rem 0' }}>The site may have just been updated, or the connection dropped.</p>
+      <button type="button" onClick={() => window.location.reload()} style={{ textDecoration: 'underline', marginRight: '1.5rem' }}>
+        Reload the page
+      </button>
+      <a href="/room">Back to room</a>
+    </main>
+  );
+}
+
 function App() {
   useEffect(() => {
     if (process.env.REACT_APP_BUGSPARK_ENABLED === 'true' && process.env.NODE_ENV !== 'production') {
@@ -74,7 +89,7 @@ function App() {
 function PortfolioRouter() {
   const [router] = useState(() => createBrowserRouter(
     createRoutesFromElements(
-      <Route element={<RoomSession />}>
+      <Route element={<RoomSession />} errorElement={<RouteError />}>
         <Route path="/room" element={null} />
         {/* Standalone experience routes */}
         <Route path="/chat-box" element={<ChatBotGame />} />

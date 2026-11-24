@@ -20,7 +20,7 @@
    authenticated, per-user JSON of the notebook API, which must never sit in a
    shared cache. IndexedDB is that data's cache. Nothing else cross-origin is
    touched. */
-const CACHE = "portfolio-shell-v3";
+const CACHE = "portfolio-shell-v4";
 const PRECACHE = [
   "/index.html"
 ];
@@ -101,7 +101,10 @@ self.addEventListener('fetch', (event) => {
       caches.match(req).then((hit) => {
         if (hit) return hit;
         return fetch(req).then((resp) => {
-          if (resp.status === 200) {
+          // The host answers a missing file with the HTML shell and status 200. Storing that
+          // under a script or stylesheet name would serve it cache-first forever, so the page
+          // could never load that file again. Only a non-HTML success is stored.
+          if (resp.status === 200 && !(resp.headers.get('content-type') || '').includes('text/html')) {
             const copy = resp.clone();
             caches.open(CACHE).then((cache) => cache.put(req, copy));
           }
