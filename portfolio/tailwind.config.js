@@ -11,6 +11,11 @@ module.exports = {
     '!./src/**/node_modules/**',
   ],
   darkMode: 'class',
+  // Hover styles apply only where a pointer can hover. On a phone a tapped link otherwise
+  // keeps its hover colour, which looks like a second highlighted page in the menu.
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
   theme: {
     extend: {
       margin:{

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, useState } from 'react';
 import { FaGithub, FaInstagram, FaLinkedin, FaLightbulb, FaMoon, FaBars, FaTimes } from 'react-icons/fa';
 import socialLinks from './data/socialLinks';
 import { Link, useLocation, Outlet } from 'react-router-dom';
@@ -295,8 +295,13 @@ const Layout = () => {
                 </header>
 
                 {/* Main Content */}
+                {/* The next page loads here, inside the layout. Without this boundary the whole
+                    screen is swapped for the app-level loading message: the page flashes white
+                    and the phone menu is frozen half-closed, still showing the previous page. */}
                 <main className="container mx-auto py-8">
-                    <Outlet />
+                    <Suspense fallback={<p role="status" className="min-h-[60vh] px-4 py-16 text-center text-gray-600 dark:text-gray-300">Opening page…</p>}>
+                        <Outlet />
+                    </Suspense>
                 </main>
 
                 {/* Footer - Made it responsive */}
