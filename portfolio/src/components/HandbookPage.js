@@ -2,7 +2,9 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
 import handbooks, { releasedParts } from '../data/handbooks';
 import supportLinks, { isStripeCheckoutUrl } from '../data/supportLinks';
-import { hasSupported, markSupported, rememberPendingDownload, takePendingDownload } from '../handbookSupport';
+import {
+  hasSupported, markSupported, readLanguage, rememberLanguage, rememberPendingDownload, takePendingDownload,
+} from '../handbookSupport';
 
 const megabytes = (bytes) => `${(bytes / 1e6).toFixed(1)} MB`;
 const partNumber = (part) => String(part.number).padStart(2, '0');
@@ -12,12 +14,25 @@ const partRange = (parts) => (parts.length === 0
     ? `Part ${partNumber(parts[0])}`
     : `Parts ${partNumber(parts[0])}–${partNumber(parts[parts.length - 1])}`);
 
-const TopicList = ({ topics, muted }) => (
+// The two languages a part can be downloaded in. The page text stays English either way;
+// the choice changes the part titles, intros, topic lists and the PDF that downloads.
+const LANGUAGES = [
+  { code: 'zh-HK', label: '繁體中文', name: 'Traditional Chinese' },
+  { code: 'en', label: 'English', name: 'English' },
+];
+const languageName = (code) => LANGUAGES.find((entry) => entry.code === code).name;
+
+// A part as shown in the chosen language. Parts without an English edition stay as they are.
+const inLanguage = (part, language) => (language === 'en' && part.en
+  ? { ...part, ...part.en, released: part.released }
+  : part);
+
+const TopicList = ({ topics, muted, lang }) => (
   <ul className={`grid md:grid-cols-2 gap-x-6 gap-y-1 text-sm ${muted ? 'text-gray-500 dark:text-gray-400' : 'text-gray-700 dark:text-gray-200'}`}>
     {topics.map((topic, index) => (
       <li key={topic} className="flex gap-2">
         <span className="font-mono text-xs leading-5 text-gray-400">{index + 1}</span>
-        <span lang="zh-HK">{topic}</span>
+        <span lang={lang}>{topic}</span>
       </li>
     ))}
   </ul>
@@ -78,7 +93,7 @@ const disabledAction = 'block w-full rounded-lg px-6 py-3 text-center font-semib
 
 // The pop-up shown before a download. The reader picks an amount first, and zero is one of
 // the amounts, so the download is never gated: zero gives the same file without paying.
-const DownloadDialog = ({ part, href, tiers, custom, currencySymbol, onPay, onClose }) => {
+const DownloadDialog = ({ part, language, href, tiers, custom, currencySymbol, onPay, onClose }) => {
   const [choice, setChoice] = useState(null);
   const checkout = 'You will go to Stripe’s secure checkout, so your card details never reach this site. Your download starts as soon as you come back.';
   const options = [
@@ -104,7 +119,7 @@ const DownloadDialog = ({ part, href, tiers, custom, currencySymbol, onPay, onCl
         Download Part {partNumber(part)}
       </h2>
       <p className="text-gray-600 dark:text-gray-300 mb-4">
-        {part.title} · {part.pages} pages · {megabytes(part.bytes)}
+        {part.title} · {languageName(language)} · {part.pages} pages · {megabytes(part.bytes)}
       </p>
       <p className="text-sm text-gray-700 dark:text-gray-200 mb-4">
         Thank you so much for your interest! This handbook is free, and supporting it is
@@ -196,6 +211,12 @@ const HandbookPage = () => {
     return next;
   });
   const handbook = handbooks.find((entry) => entry.slug === slug);
+  const hasEnglish = Boolean(handbook && handbook.book.parts.some((part) => part.en));
+  const [language, setLanguage] = useState(() => (hasEnglish && readLanguage(slug) === 'en' ? 'en' : 'zh-HK'));
+  const chooseLanguage = (code) => {
+    setLanguage(code);
+    rememberLanguage(slug, code);
+  };
   // Stripe sends a supporter back here with ?thanks=1 once the payment has gone through.
   const returned = new URLSearchParams(search).get('thanks') === '1';
 
@@ -208,12 +229,13 @@ const HandbookPage = () => {
     handledReturn.current = true;
     markSupported(slug);
     const number = takePendingDownload(slug);
-    const part = releasedParts(handbook.book).find((entry) => entry.number === number) || null;
+    const found = releasedParts(handbook.book).find((entry) => entry.number === number);
+    const part = found ? inLanguage(found, language) : null;
     setThanks({ part });
     if (part) startDownload(`${handbook.book.basePath}${part.file}`);
     // Drop ?thanks=1 so a reload or a shared link does not thank or download again.
     navigate(pathname, { replace: true });
-  }, [returned, handbook, slug, pathname, navigate]);
+  }, [returned, handbook, slug, pathname, navigate, language]);
 
   if (!handbook) return <Navigate to="/handbook" replace />;
 
@@ -287,8 +309,31 @@ const HandbookPage = () => {
             ? 'Thank you for supporting this handbook. Downloads start straight away.'
             : 'Downloads are free, and a contribution is optional and one-off.'}
         </p>
+        {hasEnglish && (
+          <div className="flex flex-wrap items-center gap-2 md:gap-3 mb-4">
+            <span id="pdf-language-label" className="text-sm text-gray-600 dark:text-gray-300">PDF language</span>
+            <div role="radiogroup" aria-labelledby="pdf-language-label" className="inline-flex rounded-lg border border-gray-300 dark:border-gray-500 overflow-hidden">
+              {LANGUAGES.map((entry) => (
+                <button
+                  key={entry.code}
+                  type="button"
+                  role="radio"
+                  lang={entry.code}
+                  aria-checked={language === entry.code}
+                  onClick={() => chooseLanguage(entry.code)}
+                  className={`px-3 md:px-4 py-1.5 text-sm font-semibold transition-colors ${language === entry.code
+                    ? 'bg-gray-800 text-white dark:bg-white dark:text-gray-900'
+                    : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+                >
+                  {entry.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         <ol className="space-y-3 md:space-y-4">
-          {book.parts.map((part) => {
+          {book.parts.map((source) => {
+            const part = inLanguage(source, language);
             const open = expanded.has(part.number);
             const detailsId = `part-${part.number}-details`;
             return (
@@ -313,7 +358,7 @@ const HandbookPage = () => {
                     </span>
                   )}
                   {part.released && offersSupport && !supported && (
-                    <button type="button" onClick={() => setDownloading(part)} className={downloadClass} aria-label={`Download Part ${partNumber(part)}: ${part.title}`}>
+                    <button type="button" onClick={() => setDownloading(source)} className={downloadClass} aria-label={`Download Part ${partNumber(part)}: ${part.title}`}>
                       Download PDF
                     </button>
                   )}
@@ -335,10 +380,10 @@ const HandbookPage = () => {
                   {open ? 'Hide topics' : `What is inside (${part.topics.length} topics)`}
                 </button>
                 <div id={detailsId} className={`${open ? 'block' : 'hidden'} md:block mt-3`}>
-                  <p lang={lang} className={`text-sm mb-3 ${part.released ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                  <p lang={language === 'en' && part.en ? 'en' : lang} className={`text-sm mb-3 ${part.released ? 'text-gray-700 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>
                     {part.intro}
                   </p>
-                  <TopicList topics={part.topics} muted={!part.released} />
+                  <TopicList topics={part.topics} muted={!part.released} lang={language === 'en' && source.en ? 'en' : lang} />
                 </div>
               </li>
             );
@@ -371,8 +416,9 @@ const HandbookPage = () => {
 
       {downloading && (
         <DownloadDialog
-          part={downloading}
-          href={fileUrl(downloading)}
+          part={inLanguage(downloading, language)}
+          language={language === 'en' && downloading.en ? 'en' : 'zh-HK'}
+          href={fileUrl(inLanguage(downloading, language))}
           tiers={tiers}
           custom={custom}
           currencySymbol={currencySymbol}
