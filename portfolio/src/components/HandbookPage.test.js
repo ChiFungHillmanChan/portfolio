@@ -51,6 +51,7 @@ describe('handbook catalogue', () => {
     expect(links[0]).toHaveAttribute('href', '/handbook/ai-engineer');
     expect(links[0]).toHaveTextContent('AI 軟件工程師完整學習手冊');
     expect(links[0]).toHaveTextContent('3 of 10 parts available now');
+    expect(links[0]).toHaveTextContent('目標：成為 Software Engineer 或 AI Engineer 之路');
     expect(pdfLinks()).toHaveLength(0);
   });
 
@@ -92,6 +93,38 @@ describe('handbook page', () => {
     });
   });
 
+  test('shows the 目標 of the handbook', () => {
+    renderAt();
+    const { goal } = configuredHandbooks[0];
+
+    expect(screen.getByRole('banner')).toHaveTextContent(`目標：${goal.lead}`);
+    expect(screen.getAllByText(goal.text).length).toBeGreaterThan(0);
+  });
+
+  test('each part shows what it is for', () => {
+    renderAt();
+
+    handbook.parts.forEach((part) => {
+      expect(part.intro.length).toBeGreaterThan(20);
+      expect(within(partCard(part)).getByText(part.intro)).toBeInTheDocument();
+    });
+  });
+
+  test('on a phone a part opens and closes its topics', async () => {
+    renderAt();
+    const card = within(partCard(released[1]));
+    const toggle = card.getByRole('button', { name: /^What is inside \(9 topics\)$/ });
+    const details = document.getElementById(toggle.getAttribute('aria-controls'));
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'false');
+    expect(details).toHaveClass('hidden', 'md:block');
+    await userEvent.click(toggle);
+    expect(card.getByRole('button', { name: 'Hide topics' })).toHaveAttribute('aria-expanded', 'true');
+    expect(details).not.toHaveClass('hidden');
+    await userEvent.click(card.getByRole('button', { name: 'Hide topics' }));
+    expect(details).toHaveClass('hidden');
+  });
+
   test('released parts can be downloaded and the rest say coming soon', () => {
     renderAt();
 
@@ -101,10 +134,10 @@ describe('handbook page', () => {
     });
     upcoming.forEach((part) => {
       expect(within(partCard(part)).getByText('Coming soon')).toBeInTheDocument();
-      expect(within(partCard(part)).queryByRole('button')).not.toBeInTheDocument();
+      expect(within(partCard(part)).queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
       expect(within(partCard(part)).queryByRole('link')).not.toBeInTheDocument();
     });
-    expect(screen.getByText(/Parts 01–03 are available now, and Parts 04–10 are coming soon/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Parts 01–03 are available now, and Parts 04–10 are coming soon/).length).toBeGreaterThan(0);
   });
 
   test('there is no full-book download and no file link before the pop-up opens', () => {

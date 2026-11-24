@@ -12,6 +12,12 @@ const handbooks = [
     summary:
       'The road to software engineer and AI engineer, from software fundamentals to interviewing. '
       + 'Written in Traditional Chinese, with technical terms kept in English.',
+    // 目標: the cover line and the preface sentence of the handbook, quoted as written.
+    goal: {
+      label: '目標',
+      lead: '成為 Software Engineer 或 AI Engineer 之路',
+      text: '這本手冊整理了我認為在 AI 時代成為工程師需要掌握的知識：由 software 基本功、LLM 和 RAG、agent 與 orchestration，到 production 運作、評估、安全、ML 基礎、實作項目和面試。',
+    },
     book: aiEngineer,
   },
 ];
