@@ -71,48 +71,80 @@ const Modal = ({ titleId, onClose, children }) => {
   );
 };
 
-// The pop-up shown before a download: an optional one-off contribution, or straight to the file.
-// The download is never gated: "Just Download" gives the same file without paying.
-const DownloadDialog = ({ part, href, tiers, currencySymbol, onPay, onClose }) => (
-  <Modal titleId="download-dialog-title" onClose={onClose}>
-    <h2 id="download-dialog-title" className="text-xl font-semibold mb-1 dark:text-white">
-      Download Part {partNumber(part)}
-    </h2>
-    <p className="text-gray-600 dark:text-gray-300 mb-4">
-      {part.title} · {part.pages} pages · {megabytes(part.bytes)}
-    </p>
-    <p className="text-sm text-gray-600 dark:text-gray-300 mb-4">
-      This part is free. If it helps you, you can add an optional one-off contribution.
-      There is no subscription and no account, and you get the same file either way.
-    </p>
+const optionClass = (selected) => `rounded-lg border px-3 py-3 text-center font-semibold transition-colors ${selected
+  ? 'border-gray-800 bg-gray-800 text-white dark:border-white dark:bg-white dark:text-gray-900'
+  : 'border-gray-300 dark:border-gray-500 text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700'}`;
+const disabledAction = 'block w-full rounded-lg px-6 py-3 text-center font-semibold cursor-not-allowed bg-gray-200 text-gray-500 dark:bg-gray-700 dark:text-gray-400';
 
-    <div className="grid grid-cols-3 gap-3 mb-3" role="group" aria-label="Optional contribution">
-      {tiers.map((tier) => (
-        <a
-          key={tier.amount}
-          href={tier.url}
-          rel="noreferrer"
-          onClick={onPay}
-          aria-label={`Support with ${currencySymbol}${tier.amount}, then download`}
-          className="rounded-lg border border-gray-300 dark:border-gray-500 px-3 py-3 text-center font-semibold text-gray-800 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-        >
-          {currencySymbol}{tier.amount}
-        </a>
-      ))}
-    </div>
-    <p className="text-xs text-gray-500 dark:text-gray-400 mb-6">
-      Choosing an amount takes you to Stripe’s secure checkout, so your card details never reach
-      this site. Your download starts as soon as you come back.
-    </p>
+// The pop-up shown before a download. The reader picks an amount first, and zero is one of
+// the amounts, so the download is never gated: zero gives the same file without paying.
+const DownloadDialog = ({ part, href, tiers, custom, currencySymbol, onPay, onClose }) => {
+  const [choice, setChoice] = useState(null);
+  const checkout = 'You will go to Stripe’s secure checkout, so your card details never reach this site. Your download starts as soon as you come back.';
+  const options = [
+    { key: 'free', label: `${currencySymbol}0`, hint: 'No payment. Your download starts straight away.' },
+    ...tiers.map((tier) => ({
+      key: `tier-${tier.amount}`,
+      label: `${currencySymbol}${tier.amount}`,
+      url: tier.url,
+      hint: checkout,
+    })),
+    ...(custom ? [{
+      key: 'custom',
+      label: 'Customise',
+      url: custom.url,
+      hint: `You set your own amount on Stripe’s secure checkout page: change the quantity, where each unit is ${currencySymbol}1 (from ${currencySymbol}${custom.minimum}). Your download starts as soon as you come back.`,
+    }] : []),
+  ];
+  const chosen = options.find((option) => option.key === choice);
 
-    <a href={href} download onClick={onClose} className={primaryAction}>
-      Just Download
-    </a>
-    <button type="button" onClick={onClose} className={quietAction}>
-      Cancel
-    </button>
-  </Modal>
-);
+  return (
+    <Modal titleId="download-dialog-title" onClose={onClose}>
+      <h2 id="download-dialog-title" className="text-xl font-semibold mb-1 dark:text-white">
+        Download Part {partNumber(part)}
+      </h2>
+      <p className="text-gray-600 dark:text-gray-300 mb-4">
+        {part.title} · {part.pages} pages · {megabytes(part.bytes)}
+      </p>
+      <p className="text-sm text-gray-700 dark:text-gray-200 mb-4">
+        Thank you so much for your interest! This handbook is free, and supporting it is
+        completely optional. If you do choose to support it, thank you: I will keep doing my best
+        to improve it and help you learn more.
+      </p>
+
+      <div className="grid grid-cols-2 gap-3 mb-3" role="radiogroup" aria-label="Optional support">
+        {options.map((option) => (
+          <button
+            key={option.key}
+            type="button"
+            role="radio"
+            aria-checked={choice === option.key}
+            onClick={() => setChoice(option.key)}
+            className={optionClass(choice === option.key)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+      <p aria-live="polite" className="text-xs text-gray-500 dark:text-gray-400 mb-6">
+        {chosen ? chosen.hint : `Choose an amount to download. ${currencySymbol}0 is perfectly fine.`}
+      </p>
+
+      {!chosen && (
+        <button type="button" disabled className={disabledAction}>Download</button>
+      )}
+      {chosen && !chosen.url && (
+        <a href={href} download onClick={onClose} className={primaryAction}>Download</a>
+      )}
+      {chosen && chosen.url && (
+        <a href={chosen.url} rel="noreferrer" onClick={onPay} className={primaryAction}>Support and download</a>
+      )}
+      <button type="button" onClick={onClose} className={quietAction}>
+        Cancel
+      </button>
+    </Modal>
+  );
+};
 
 // Shown on the way back from checkout. The part chosen before paying is already downloading.
 const ThanksDialog = ({ part, href, onClose }) => (
@@ -121,7 +153,8 @@ const ThanksDialog = ({ part, href, onClose }) => (
       Thank you for your support
     </h2>
     <p className="text-gray-600 dark:text-gray-300 mb-4">
-      Your contribution helps keep this handbook free for everyone.
+      Thank you so much. It means a lot, and I will keep doing my best to improve this handbook
+      and help you learn more.
     </p>
     {part ? (
       <>
@@ -189,6 +222,11 @@ const HandbookPage = () => {
   const { currencySymbol } = supportLinks;
   // A tier that does not point at Stripe's hosted checkout is never offered.
   const tiers = supportLinks.handbookTiers.filter((option) => isStripeCheckoutUrl(option.url));
+  const custom = supportLinks.handbookCustom && isStripeCheckoutUrl(supportLinks.handbookCustom.url)
+    ? supportLinks.handbookCustom
+    : null;
+  // With no way to pay there is nothing to ask, so the pop-up is skipped.
+  const offersSupport = tiers.length > 0 || custom !== null;
   const fileUrl = (part) => `${book.basePath}${part.file}`;
   const released = releasedParts(book);
   const upcoming = book.parts.filter((part) => !part.released);
@@ -274,12 +312,12 @@ const HandbookPage = () => {
                       Coming soon
                     </span>
                   )}
-                  {part.released && tiers.length > 0 && !supported && (
+                  {part.released && offersSupport && !supported && (
                     <button type="button" onClick={() => setDownloading(part)} className={downloadClass} aria-label={`Download Part ${partNumber(part)}: ${part.title}`}>
                       Download PDF
                     </button>
                   )}
-                  {part.released && (tiers.length === 0 || supported) && (
+                  {part.released && (!offersSupport || supported) && (
                     <a href={fileUrl(part)} download className={downloadClass} aria-label={`Download Part ${partNumber(part)}: ${part.title}`}>
                       Download PDF
                     </a>
@@ -306,7 +344,7 @@ const HandbookPage = () => {
             );
           })}
         </ol>
-        {tiers.length === 0 && (
+        {!offersSupport && (
           <p className="mt-4 text-sm text-gray-600 dark:text-gray-300">
             Want to say thanks?{' '}
             <a href={supportLinks.buyMeACoffee} target="_blank" rel="noopener noreferrer" className="text-gray-700 dark:text-gray-200 underline">
@@ -336,6 +374,7 @@ const HandbookPage = () => {
           part={downloading}
           href={fileUrl(downloading)}
           tiers={tiers}
+          custom={custom}
           currencySymbol={currencySymbol}
           onPay={() => rememberPendingDownload(slug, downloading.number)}
           onClose={closeDialog}
