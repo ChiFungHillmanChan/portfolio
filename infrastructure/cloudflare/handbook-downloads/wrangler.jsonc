@@ -1,0 +1,30 @@
+{
+  "name": "hillmanchan-handbook-downloads",
+  "main": "worker.mjs",
+  "account_id": "7d2747f6cc21c13e70c7650314efbccc",
+  "compatibility_date": "2026-11-01",
+  "workers_dev": false,
+  "preview_urls": false,
+  // Only the handbook PDFs and the handbook API go through this Worker; the rest of the site does not.
+  "routes": [
+    { "pattern": "hillmanchan.com/downloads/ai-engineer-handbook/*", "zone_name": "hillmanchan.com" },
+    { "pattern": "hillmanchan.com/api/handbook/*", "zone_name": "hillmanchan.com" }
+  ],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "hillmanchan-handbook", "database_id": "9a013270-9b44-4c01-a282-ea1246631a59" }
+  ],
+  // Per visitor (IP address), counted at each Cloudflare location.
+  "ratelimits": [
+    // Whole-file downloads: 10 a minute is far more than a reader needs (there are 8 files).
+    { "name": "DOWNLOAD_LIMIT", "namespace_id": "4101", "simple": { "limit": 10, "period": 60 } },
+    // Every PDF request, including the byte ranges a browser's PDF viewer asks for.
+    { "name": "REQUEST_LIMIT", "namespace_id": "4102", "simple": { "limit": 120, "period": 60 } },
+    // The admin stats endpoint, to slow down token guessing.
+    { "name": "ADMIN_LIMIT", "namespace_id": "4103", "simple": { "limit": 10, "period": 60 } }
+  ],
+  "vars": {
+    // Stripe Payment Links that belong to the handbook (support tiers, including retired ones).
+    "HANDBOOK_PAYMENT_LINKS": "plink_1UfLjP9Pqr2DwjwZZaa1FMu0,plink_1UfJXt9Pqr2DwjwZIVsMEzCi,plink_1UfJXr9Pqr2DwjwZSJtqRRpp,plink_1UfJXp9Pqr2DwjwZujSnPiJm,plink_1UfJGL9Pqr2DwjwZslkvhAV3,plink_1UfJGJ9Pqr2DwjwZYVxBgbrl,plink_1UfJGI9Pqr2DwjwZyYxC8vjI"
+  },
+  "observability": { "enabled": true }
+}

@@ -11,6 +11,44 @@ const handbook = {
     "diagrams": 129,
     "questions": 151
   },
+  "intro": {
+    "title": "Preface & How to Use",
+    "topics": [
+      "序",
+      "關於作者",
+      "如何使用這本手冊",
+      "分冊目錄"
+    ],
+    "topicPages": [
+      2,
+      3,
+      4,
+      6
+    ],
+    "pages": 7,
+    "number": 0,
+    "released": true,
+    "file": "AI_Engineer_Handbook_00_Intro.pdf",
+    "intro": "封面、序、關於作者、如何使用這本手冊，以及全部分冊和主題的目錄。建議先讀這本，再開始 Part 01。",
+    "en": {
+      "title": "Preface & How to Use",
+      "topics": [
+        "Preface",
+        "About the Author",
+        "How to Use This Handbook",
+        "The Booklets"
+      ],
+      "topicPages": [
+        2,
+        3,
+        4,
+        6
+      ],
+      "pages": 7,
+      "file": "AI_Engineer_Handbook_00_Intro_EN.pdf",
+      "intro": "The cover, the preface, about the author, how to use the handbook, and the contents of every booklet. Read this first, then start with Part 01."
+    }
+  },
   "parts": [
     {
       "number": 1,
@@ -23,6 +61,14 @@ const handbook = {
         "Git",
         "Python 基礎速覽",
         "Web API 基礎：HTTP、JSON 與 FastAPI"
+      ],
+      "topicPages": [
+        4,
+        12,
+        19,
+        27,
+        34,
+        48
       ],
       "pages": 58,
       "released": true,
@@ -40,6 +86,14 @@ const handbook = {
           "Web API Basics: HTTP, JSON and FastAPI"
         ],
         "pages": 67,
+        "topicPages": [
+          4,
+          14,
+          23,
+          32,
+          40,
+          55
+        ],
         "file": "AI_Engineer_Handbook_01_Software_EN.pdf",
         "bytes": 1256085
       }
@@ -60,6 +114,19 @@ const handbook = {
         "中文與廣東話的檢索處理",
         "Multimodal：圖像、文件與語音",
         "Reasoning Models 與 Context Engineering"
+      ],
+      "topicPages": [
+        4,
+        11,
+        18,
+        26,
+        31,
+        38,
+        45,
+        53,
+        59,
+        66,
+        76
       ],
       "pages": 85,
       "released": true,
@@ -82,6 +149,19 @@ const handbook = {
           "Reasoning Models and Context Engineering"
         ],
         "pages": 103,
+        "topicPages": [
+          4,
+          13,
+          21,
+          30,
+          37,
+          45,
+          53,
+          61,
+          68,
+          78,
+          91
+        ],
         "file": "AI_Engineer_Handbook_02_LLM_RAG_EN.pdf",
         "bytes": 1710649
       }
@@ -103,6 +183,20 @@ const handbook = {
         "Agentic RAG",
         "Model Context Protocol (MCP)",
         "Coding Agents 與 Computer Use"
+      ],
+      "topicPages": [
+        4,
+        10,
+        17,
+        23,
+        29,
+        37,
+        43,
+        49,
+        56,
+        62,
+        68,
+        75
       ],
       "pages": 84,
       "released": true,
@@ -126,6 +220,20 @@ const handbook = {
           "Coding Agents and Computer Use"
         ],
         "pages": 105,
+        "topicPages": [
+          4,
+          11,
+          20,
+          28,
+          37,
+          45,
+          53,
+          60,
+          68,
+          77,
+          84,
+          93
+        ],
         "file": "AI_Engineer_Handbook_03_Agents_EN.pdf",
         "bytes": 1589053
       }
@@ -147,6 +255,19 @@ const handbook = {
         "Benchmarking Models",
         "完整示範：為 RAG 系統建立一套 Eval"
       ],
+      "topicPages": [
+        4,
+        10,
+        17,
+        25,
+        31,
+        37,
+        43,
+        50,
+        58,
+        65,
+        71
+      ],
       "pages": 81,
       "released": false,
       "en": {
@@ -165,7 +286,20 @@ const handbook = {
           "Benchmarking Models",
           "Worked Example: Building an Eval Suite for a RAG System"
         ],
-        "pages": 97
+        "pages": 97,
+        "topicPages": [
+          4,
+          11,
+          19,
+          28,
+          36,
+          43,
+          51,
+          60,
+          69,
+          78,
+          85
+        ]
       }
     },
     {
@@ -179,6 +313,13 @@ const handbook = {
         "Guardrails",
         "AI Governance and Frameworks"
       ],
+      "topicPages": [
+        4,
+        10,
+        18,
+        26,
+        34
+      ],
       "pages": 41,
       "released": false,
       "en": {
@@ -191,7 +332,14 @@ const handbook = {
           "Guardrails",
           "AI Governance and Frameworks"
         ],
-        "pages": 49
+        "pages": 49,
+        "topicPages": [
+          4,
+          12,
+          21,
+          30,
+          40
+        ]
       }
     },
     {
@@ -210,6 +358,18 @@ const handbook = {
         "PyTorch 基礎：Tensor、Autograd 與 Training Loop",
         "Fine-tuning 與 LoRA"
       ],
+      "topicPages": [
+        4,
+        12,
+        19,
+        25,
+        31,
+        37,
+        43,
+        50,
+        59,
+        69
+      ],
       "pages": 81,
       "released": false,
       "en": {
@@ -227,7 +387,19 @@ const handbook = {
           "PyTorch Basics: Tensors, Autograd and the Training Loop",
           "Fine-tuning and LoRA"
         ],
-        "pages": 98
+        "pages": 98,
+        "topicPages": [
+          4,
+          13,
+          22,
+          31,
+          38,
+          45,
+          52,
+          60,
+          71,
+          83
+        ]
       }
     },
     {
@@ -243,6 +415,15 @@ const handbook = {
         "Launch & Signal",
         "實例：我的公開項目與本書主題"
       ],
+      "topicPages": [
+        4,
+        11,
+        16,
+        21,
+        28,
+        33,
+        39
+      ],
       "pages": 43,
       "released": false,
       "en": {
@@ -257,7 +438,16 @@ const handbook = {
           "Launch & Signal",
           "Case Study: My Public Projects and the Topics in This Book"
         ],
-        "pages": 52
+        "pages": 52,
+        "topicPages": [
+          4,
+          12,
+          19,
+          26,
+          34,
+          40,
+          47
+        ]
       }
     },
     {
@@ -274,6 +464,16 @@ const handbook = {
         "System Design 示範二：客戶服務 Agent",
         "System Design 示範三：大量文件資料抽取 Pipeline"
       ],
+      "topicPages": [
+        4,
+        9,
+        16,
+        22,
+        28,
+        33,
+        40,
+        46
+      ],
       "pages": 53,
       "released": false,
       "en": {
@@ -289,7 +489,17 @@ const handbook = {
           "System Design Example 2: Customer Service Agent",
           "System Design Example 3: High-Volume Document Extraction Pipeline"
         ],
-        "pages": 68
+        "pages": 68,
+        "topicPages": [
+          4,
+          12,
+          20,
+          29,
+          37,
+          43,
+          52,
+          60
+        ]
       }
     },
     {
@@ -304,6 +514,14 @@ const handbook = {
         "CantoBench：廣東話 LLM benchmark 和 serving 實驗室",
         "MockLoop：AI 模擬面試官"
       ],
+      "topicPages": [
+        4,
+        9,
+        17,
+        24,
+        31,
+        38
+      ],
       "pages": 43,
       "released": false,
       "en": {
@@ -317,7 +535,15 @@ const handbook = {
           "CantoBench: A Cantonese LLM Benchmark and Serving Lab",
           "MockLoop: An AI Mock Interviewer"
         ],
-        "pages": 52
+        "pages": 52,
+        "topicPages": [
+          4,
+          10,
+          20,
+          30,
+          38,
+          46
+        ]
       }
     },
     {
@@ -330,6 +556,12 @@ const handbook = {
         "十二週學習計劃",
         "官方資料與最後核對日期"
       ],
+      "topicPages": [
+        4,
+        19,
+        24,
+        26
+      ],
       "pages": 29,
       "released": false,
       "en": {
@@ -341,7 +573,13 @@ const handbook = {
           "Twelve-Week Study Plan",
           "Official Sources and Last Checked Date"
         ],
-        "pages": 35
+        "pages": 35,
+        "topicPages": [
+          4,
+          23,
+          29,
+          32
+        ]
       }
     }
   ]
