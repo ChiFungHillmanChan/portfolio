@@ -15,6 +15,7 @@ const handbook = {
     {
       "number": 1,
       "title": "Software Fundamentals",
+      "intro": "所有 AI engineering 的基礎。無論 LLM 能力多強，最終仍須寫成一個穩定、可以 maintain、可以 deploy 的 software。這部分是「AI engineer」中「engineer」的那一半。",
       "topics": [
         "Python for AI",
         "Data Structures & Algorithms",
@@ -29,6 +30,7 @@ const handbook = {
     {
       "number": 2,
       "title": "LLMs & RAG",
+      "intro": "這部分是 AI engineer 最核心的技術：理解 LLM 如何運作、如何有效地使用它，以及如何將外部知識接入（RAG）。大部分企業 AI 項目，第一個落地的就是 RAG。",
       "topics": [
         "LLM Fundamentals",
         "Prompt Engineering for Devs",
@@ -48,6 +50,7 @@ const handbook = {
     {
       "number": 3,
       "title": "Agents & Orchestration",
+      "intro": "從「回答問題」走向「執行任務」。Agent 可以調用工具、讀寫系統、按情況決定下一步。這部分是現時 AI engineering 最熱門、亦最容易失控的領域。",
       "topics": [
         "Function Calling and Tool Use",
         "Structured Outputs and Validation",
@@ -69,6 +72,7 @@ const handbook = {
     {
       "number": 4,
       "title": "Ops & Evaluation",
+      "intro": "將 AI 系統部署到 production、保持穩定運作，並以數據證明它確實表現良好。這部分是區分「完成 demo」與「做出 product」的關鍵，亦是最多 AI engineer 的弱項。",
       "topics": [
         "LLMOps Fundamentals",
         "Serving Open Source Models",
@@ -88,6 +92,7 @@ const handbook = {
     {
       "number": 5,
       "title": "Safety & Ethics",
+      "intro": "AI 系統會影響真實的人，亦會帶來新類型的安全漏洞。這部分包括負責任 AI 的原則、數據倫理、LLM 安全、guardrails 和法規。在金融、醫療、法律、政府等受監管行業，這些知識是入場券。",
       "topics": [
         "Responsible AI Practices",
         "Data Ethics and Bias",
@@ -101,6 +106,7 @@ const handbook = {
     {
       "number": 6,
       "title": "ML Fundamentals",
+      "intro": "傳統 machine learning 的基礎知識和 MLOps 工具。AI engineer 不一定要訓練模型，但理解 ML 的基本概念（評估指標、overfitting、數據質素）會令你在設計和評估 LLM 系統時判斷更準確，而且不少實際問題以傳統 ML 解決，成本更低、速度更快。",
       "topics": [
         "ML Fundamentals and Metrics",
         "scikit-learn: Pipelines and Model Training",
@@ -116,6 +122,7 @@ const handbook = {
     {
       "number": 7,
       "title": "Build Projects",
+      "intro": "這六個步驟是將學到的知識轉化成一個可以寫入履歷、真正有說服力的項目。招聘方重視的不是你學過多少 topic，而是你是否解決過真實問題、是否作過有深度的技術決定、是否有數據證明成效。",
       "topics": [
         "Target",
         "Market Research",
@@ -131,6 +138,7 @@ const handbook = {
     {
       "number": 8,
       "title": "Interviewing",
+      "intro": "這是最後一關。AI engineer 面試通常包括 coding、system design、AI 專門知識、項目深入討論和 behavioural 等部分。這部分介紹每一種面試的應對方法。",
       "topics": [
         "Guide to Answering Technical Questions",
         "Preparing for System Design Interviews",
@@ -147,6 +155,7 @@ const handbook = {
     {
       "number": 9,
       "title": "Project Ideas",
+      "intro": "將整本手冊的 62 個主題付諸實踐。這部分包括一個總覽和五個項目：一個大型 capstone 項目覆蓋大部分主題，另外四個項目各自深入一個範疇，補足 capstone 未能涵蓋的部分。完成全部五個項目，便覆蓋整份 roadmap。",
       "topics": [
         "總覽：如何選擇項目和安排次序",
         "RegPilot：港英雙語金融監管合規助手（Capstone）",
@@ -161,6 +170,7 @@ const handbook = {
     {
       "number": 10,
       "title": "Appendix: glossary, cheat sheets and a 12-week plan",
+      "intro": "這一冊是全書的工具箱：以詞彙表統一術語，以速查表濃縮每個 Part 的重點，以十二週計劃安排學習次序，最後列出官方資料和本書的最後核對日期。",
       "topics": [
         "詞彙表",
         "各 Part 速查表",
