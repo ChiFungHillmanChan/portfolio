@@ -1,12 +1,15 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import HandbookIndexPage from './HandbookIndexPage';
 import HandbookPage from './HandbookPage';
 import handbook from '../data/handbook';
 import handbooks from '../data/handbooks';
 import supportLinks, { isStripeCheckoutUrl } from '../data/supportLinks';
+import { hasSupported, rememberPendingDownload } from '../handbookSupport';
 
+const SLUG = 'ai-engineer';
+const PENDING_KEY = 'handbook-pending-download';
 const RELEASED = [1, 2, 3];
 const released = handbook.parts.filter((part) => part.released);
 const upcoming = handbook.parts.filter((part) => !part.released);
@@ -18,6 +21,11 @@ const openDialog = async (part) => {
   return screen.getByRole('dialog');
 };
 
+const Address = () => {
+  const { pathname, search } = useLocation();
+  return <output data-testid="address">{pathname}{search}</output>;
+};
+
 const renderAt = (entry = '/handbook/ai-engineer') =>
   render(
     <MemoryRouter initialEntries={[entry]}>
@@ -25,19 +33,29 @@ const renderAt = (entry = '/handbook/ai-engineer') =>
         <Route path="/handbook" element={<HandbookIndexPage />} />
         <Route path="/handbook/:slug" element={<HandbookPage />} />
       </Routes>
+      <Address />
     </MemoryRouter>,
   );
 
 const configuredTiers = supportLinks.handbookTiers;
 const configuredHandbooks = [...handbooks];
 let openSpy;
+let autoDownloads;
+let autoDownloadSpy;
 beforeEach(() => {
+  window.localStorage.clear();
   openSpy = jest.spyOn(window, 'open').mockImplementation(() => null);
+  // A download the page starts by itself calls click() on a link it made; a person's click does not.
+  autoDownloads = [];
+  autoDownloadSpy = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function recordClick() {
+    autoDownloads.push({ href: this.getAttribute('href'), download: this.hasAttribute('download') });
+  });
 });
 afterEach(() => {
   supportLinks.handbookTiers = configuredTiers;
   handbooks.splice(0, handbooks.length, ...configuredHandbooks);
   openSpy.mockRestore();
+  autoDownloadSpy.mockRestore();
 });
 
 describe('handbook catalogue', () => {
@@ -163,21 +181,24 @@ describe('handbook page', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  test.each(RELEASED)('Part %i: each amount opens its Stripe link and still downloads that part', async (number) => {
+  test.each(RELEASED)('Part %i: each amount goes to its Stripe checkout and remembers that part', async (number) => {
     renderAt();
     const part = handbook.parts.find((entry) => entry.number === number);
+    const dialog = await openDialog(part);
 
     for (const tier of configuredTiers) {
-      const dialog = await openDialog(part);
-      const pay = within(dialog).getByRole('link', { name: `Support with HK$${tier.amount} and download` });
-      expect(pay).toHaveAttribute('href', hrefOf(part));
-      expect(pay).toHaveAttribute('download');
+      const pay = within(dialog).getByRole('link', { name: `Support with HK$${tier.amount}, then download` });
+      expect(pay).toHaveAttribute('href', tier.url);
+      expect(pay).not.toHaveAttribute('target');
+      expect(pay).not.toHaveAttribute('download');
 
+      window.localStorage.clear();
       expect(fireEvent.click(pay)).toBe(true);
-      expect(openSpy).toHaveBeenLastCalledWith(tier.url, '_blank', 'noopener,noreferrer');
-      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(JSON.parse(window.localStorage.getItem(PENDING_KEY))).toMatchObject({ slug: SLUG, number });
     }
-    expect(openSpy).toHaveBeenCalledTimes(configuredTiers.length);
+    expect(openSpy).not.toHaveBeenCalled();
+    expect(autoDownloads).toEqual([]);
+    expect(hasSupported(SLUG)).toBe(false);
   });
 
   test('the pop-up closes with Cancel or Escape without downloading or paying', async () => {
@@ -217,9 +238,86 @@ describe('handbook page', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  test('shows a thank-you message after returning from payment', () => {
-    renderAt('/handbook/ai-engineer?thanks=1');
+  describe('coming back from checkout', () => {
+    const thanksDialog = () => screen.getByRole('dialog', { name: 'Thank you for your support' });
 
-    expect(screen.getByRole('status')).toHaveTextContent('Thank you for supporting the handbook');
+    test.each(RELEASED)('thanks the supporter and downloads Part %i, the part chosen before paying', (number) => {
+      const part = handbook.parts.find((entry) => entry.number === number);
+      rememberPendingDownload(SLUG, number);
+      renderAt('/handbook/ai-engineer?thanks=1');
+
+      expect(thanksDialog()).toHaveTextContent(`Part 0${number} · ${part.title} is downloading now`);
+      expect(autoDownloads).toEqual([{ href: hrefOf(part), download: true }]);
+      const again = within(thanksDialog()).getByRole('link', { name: `Download Part 0${number}` });
+      expect(again).toHaveAttribute('href', hrefOf(part));
+      expect(again).toHaveAttribute('download');
+    });
+
+    test('the address is cleaned and the chosen part forgotten, so a reload does not download again', () => {
+      rememberPendingDownload(SLUG, 2);
+      const first = renderAt('/handbook/ai-engineer?thanks=1');
+
+      expect(screen.getByTestId('address').textContent).toBe('/handbook/ai-engineer');
+      expect(window.localStorage.getItem(PENDING_KEY)).toBeNull();
+      first.unmount();
+
+      renderAt('/handbook/ai-engineer?thanks=1');
+      expect(thanksDialog()).toBeInTheDocument();
+      expect(autoDownloads).toHaveLength(1);
+    });
+
+    test('with no part chosen it still says thank you and points at the parts', () => {
+      renderAt('/handbook/ai-engineer?thanks=1');
+
+      expect(thanksDialog()).toHaveTextContent('Every released part is ready to download on this page');
+      expect(within(thanksDialog()).queryByRole('link')).not.toBeInTheDocument();
+      expect(autoDownloads).toEqual([]);
+    });
+
+    test.each([
+      ['a part that is not released', () => rememberPendingDownload(SLUG, upcoming[0].number)],
+      ['a choice made for another handbook', () => rememberPendingDownload('another', 1)],
+      ['a choice made long ago', () => rememberPendingDownload(SLUG, 1, Date.now() - 7 * 60 * 60 * 1000)],
+      ['a damaged record', () => window.localStorage.setItem(PENDING_KEY, '{not json')],
+      ['a record with a made-up part', () => window.localStorage.setItem(PENDING_KEY, JSON.stringify({ slug: SLUG, number: '../x', at: Date.now() }))],
+    ])('never downloads for %s', (_, arrange) => {
+      arrange();
+      renderAt('/handbook/ai-engineer?thanks=1');
+
+      expect(thanksDialog()).toBeInTheDocument();
+      expect(autoDownloads).toEqual([]);
+    });
+
+    test('after the thank-you closes, every released part downloads straight away with no pop-up', async () => {
+      rememberPendingDownload(SLUG, 1);
+      renderAt('/handbook/ai-engineer?thanks=1');
+
+      await userEvent.click(screen.getByRole('button', { name: 'Close' }));
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(hasSupported(SLUG)).toBe(true);
+      expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map(hrefOf));
+      pdfLinks().forEach((link) => expect(link).toHaveAttribute('download'));
+      expect(screen.queryByRole('button', { name: /^Download Part/ })).not.toBeInTheDocument();
+      expect(screen.getByText(/Thank you for supporting this handbook\. Downloads start straight away\./)).toBeInTheDocument();
+    });
+
+    test('a supporter who comes back later still downloads straight away, and nothing starts by itself', () => {
+      rememberPendingDownload(SLUG, 1);
+      renderAt('/handbook/ai-engineer?thanks=1').unmount();
+      autoDownloads.length = 0;
+
+      renderAt();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+      expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map(hrefOf));
+      expect(autoDownloads).toEqual([]);
+    });
+
+    test('someone who has not supported still gets the pop-up, with the free download in it', async () => {
+      renderAt();
+
+      expect(pdfLinks()).toHaveLength(0);
+      const dialog = await openDialog(released[0]);
+      expect(within(dialog).getByRole('link', { name: 'Just Download' })).toHaveAttribute('href', hrefOf(released[0]));
+    });
   });
 });
