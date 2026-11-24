@@ -22,6 +22,8 @@ test('includes canonical page and available project URLs, omitting unavailable p
     'https://hillmanchan.com/about',
     'https://hillmanchan.com/projects',
     'https://hillmanchan.com/contact',
+    'https://hillmanchan.com/handbook',
+    'https://hillmanchan.com/handbook/ai-engineer',
     'https://hillmanchan.com/my-offer/services',
     'https://hillmanchan.com/my-offer/coaching',
     'https://hillmanchan.com/my-offer/coffee',

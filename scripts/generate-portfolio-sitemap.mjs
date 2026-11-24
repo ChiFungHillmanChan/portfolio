@@ -9,6 +9,8 @@ const STATIC_PATHS = [
   '/about',
   '/projects',
   '/contact',
+  '/handbook',
+  '/handbook/ai-engineer',
   '/my-offer/services',
   '/my-offer/coaching',
   '/my-offer/coffee',
