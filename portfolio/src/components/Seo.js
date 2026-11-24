@@ -27,6 +27,14 @@ const PAGE_METADATA = {
     title: 'Projects | Hillman Chan',
     description: 'Explore software engineering projects by Hillman Chan across AI, full-stack applications, websites, and games.',
   },
+  '/handbook': {
+    title: 'Handbooks | Hillman Chan',
+    description: 'Study guides by Hillman Chan, as PDF booklets you can download one part at a time, starting with the free AI 軟件工程師完整學習手冊.',
+  },
+  '/handbook/ai-engineer': {
+    title: 'AI Engineer Handbook (free PDF) | Hillman Chan',
+    description: 'The AI 軟件工程師完整學習手冊, a free Traditional Chinese handbook on software fundamentals, LLMs, RAG and agents, with more parts coming. Download it part by part.',
+  },
   '/contact': {
     title: 'Contact | Hillman Chan',
     description: 'Contact Hillman Chan about software engineering opportunities, projects, and collaboration.',

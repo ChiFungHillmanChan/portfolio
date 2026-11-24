@@ -92,6 +92,14 @@ const Layout = () => {
                                 </Link>
                             </li>
                             <li>
+                                <Link 
+                                    to="/handbook"
+                                    className={`hover:text-blue-500 transition-colors duration-300 ${location.pathname.startsWith('/handbook') ? 'text-blue-500' : ''}`}
+                                >
+                                    Handbook
+                                </Link>
+                            </li>
+                            <li>
                                 <a 
                                     href="https://buymeacoffee.com/hillmanchan709"
                                     target="_blank"
@@ -187,6 +195,15 @@ const Layout = () => {
                                                     onClick={() => setIsMenuOpen(false)}
                                                 >
                                                     projects
+                                                </Link>
+                                            </li>
+                                            <li>
+                                                <Link 
+                                                    to="/handbook"
+                                                    className={`block py-2 hover:text-blue-500 transition-colors duration-300 ${location.pathname.startsWith('/handbook') ? 'text-blue-500' : ''}`}
+                                                    onClick={() => setIsMenuOpen(false)}
+                                                >
+                                                    Handbook
                                                 </Link>
                                             </li>
                                             <li>
@@ -303,6 +320,11 @@ const Layout = () => {
                                     <li>
                                         <Link to="/projects" className="hover:text-blue-400 transition-colors">
                                             Projects
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/handbook" className="hover:text-blue-400 transition-colors">
+                                            Handbook
                                         </Link>
                                     </li>
                                     <li>
