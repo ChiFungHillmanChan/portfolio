@@ -27,7 +27,7 @@ const handbook = {
       "pages": 58,
       "released": true,
       "file": "AI_Engineer_Handbook_01_Software.pdf",
-      "bytes": 3759418
+      "bytes": 3791078
     },
     {
       "number": 2,
@@ -49,7 +49,7 @@ const handbook = {
       "pages": 85,
       "released": true,
       "file": "AI_Engineer_Handbook_02_LLM_RAG.pdf",
-      "bytes": 4966081
+      "bytes": 5006956
     },
     {
       "number": 3,
@@ -72,7 +72,7 @@ const handbook = {
       "pages": 84,
       "released": true,
       "file": "AI_Engineer_Handbook_03_Agents.pdf",
-      "bytes": 4989286
+      "bytes": 5009892
     },
     {
       "number": 4,
@@ -138,7 +138,7 @@ const handbook = {
         "AI System Architecture",
         "Team & Build",
         "Launch & Signal",
-        "實例：作者的公開項目與本書主題"
+        "實例：我的公開項目與本書主題"
       ],
       "pages": 43,
       "released": false
