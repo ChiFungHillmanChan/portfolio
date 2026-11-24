@@ -11,7 +11,6 @@ const ProjectDetail = lazyWithReload(() => import('./components/ProjectDetail'))
 const Projects = lazyWithReload(() => import('./components/Projects'));
 const HandbookIndexPage = lazyWithReload(() => import('./components/HandbookIndexPage'));
 const HandbookPage = lazyWithReload(() => import('./components/HandbookPage'));
-const HandbookAdminPage = lazyWithReload(() => import('./components/HandbookAdminPage'));
 const MyOfferHub = lazyWithReload(() => import('./components/MyOffer/MyOfferHub'));
 const BuyCoffeePage = lazyWithReload(() => import('./components/MyOffer/BuyCoffeePage'));
 const CoachingPage = lazyWithReload(() => import('./components/MyOffer/CoachingPage'));
@@ -116,7 +115,6 @@ function PortfolioRouter() {
           <Route path="/projects" element={<Projects />} /> 
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/handbook" element={<HandbookIndexPage />} />
-          <Route path="/handbook/admin" element={<HandbookAdminPage />} />
           <Route path="/handbook/:slug" element={<HandbookPage />} />
           
           {/* My Offer Routes */}

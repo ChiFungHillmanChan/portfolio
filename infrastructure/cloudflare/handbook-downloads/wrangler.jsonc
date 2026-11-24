@@ -18,9 +18,7 @@
     // Whole-file downloads: 10 a minute is far more than a reader needs (there are 8 files).
     { "name": "DOWNLOAD_LIMIT", "namespace_id": "4101", "simple": { "limit": 10, "period": 60 } },
     // Every PDF request, including the byte ranges a browser's PDF viewer asks for.
-    { "name": "REQUEST_LIMIT", "namespace_id": "4102", "simple": { "limit": 120, "period": 60 } },
-    // The admin stats endpoint, to slow down token guessing.
-    { "name": "ADMIN_LIMIT", "namespace_id": "4103", "simple": { "limit": 10, "period": 60 } }
+    { "name": "REQUEST_LIMIT", "namespace_id": "4102", "simple": { "limit": 120, "period": 60 } }
   ],
   "vars": {
     // Stripe Payment Links that belong to the handbook (support tiers, including retired ones).
