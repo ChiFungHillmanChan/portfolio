@@ -38,6 +38,7 @@ const renderAt = (entry = '/handbook/ai-engineer') =>
   );
 
 const configuredTiers = supportLinks.handbookTiers;
+const configuredCustom = supportLinks.handbookCustom;
 const configuredHandbooks = [...handbooks];
 let openSpy;
 let autoDownloads;
@@ -53,6 +54,7 @@ beforeEach(() => {
 });
 afterEach(() => {
   supportLinks.handbookTiers = configuredTiers;
+  supportLinks.handbookCustom = configuredCustom;
   handbooks.splice(0, handbooks.length, ...configuredHandbooks);
   openSpy.mockRestore();
   autoDownloadSpy.mockRestore();
@@ -165,32 +167,68 @@ describe('handbook page', () => {
     expect(screen.queryByText(/full book/i)).not.toBeInTheDocument();
   });
 
-  test.each(RELEASED)('Part %i: the pop-up offers a free download that does not open Stripe', async (number) => {
+  test('the pop-up thanks the reader, says support is optional, and offers HK$0, HK$10, HK$20 and Customise', async () => {
+    renderAt();
+    const dialog = await openDialog(released[0]);
+
+    expect(dialog).toHaveTextContent('Thank you so much for your interest!');
+    expect(dialog).toHaveTextContent('completely optional');
+    expect(dialog).toHaveTextContent('I will keep doing my best to improve it and help you learn more');
+    expect(within(dialog).getAllByRole('radio').map((option) => option.textContent))
+      .toEqual(['HK$0', 'HK$10', 'HK$20', 'Customise']);
+    within(dialog).getAllByRole('radio').forEach((option) => expect(option).toHaveAttribute('aria-checked', 'false'));
+    expect(dialog).not.toHaveTextContent('HK$50');
+    expect(dialog).not.toHaveTextContent('Just Download');
+  });
+
+  test('Download is disabled, and there is no file link, until an amount is chosen', async () => {
+    renderAt();
+    const dialog = await openDialog(released[0]);
+
+    expect(within(dialog).getByRole('button', { name: 'Download' })).toBeDisabled();
+    expect(within(dialog).queryByRole('link')).not.toBeInTheDocument();
+    expect(pdfLinks()).toHaveLength(0);
+    expect(dialog).toHaveTextContent('Choose an amount to download. HK$0 is perfectly fine.');
+  });
+
+  test.each(RELEASED)('Part %i: choosing HK$0 downloads the file without going to Stripe', async (number) => {
     renderAt();
     const part = handbook.parts.find((entry) => entry.number === number);
     const dialog = await openDialog(part);
 
     expect(dialog).toHaveTextContent(`Download Part 0${number}`);
-    expect(dialog).toHaveTextContent('optional one-off contribution');
-    const free = within(dialog).getByRole('link', { name: 'Just Download' });
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'HK$0' }));
+    expect(within(dialog).getByRole('radio', { name: 'HK$0' })).toHaveAttribute('aria-checked', 'true');
+    expect(dialog).toHaveTextContent('No payment. Your download starts straight away.');
+    const free = within(dialog).getByRole('link', { name: 'Download' });
     expect(free).toHaveAttribute('href', hrefOf(part));
     expect(free).toHaveAttribute('download');
 
     expect(fireEvent.click(free)).toBe(true);
     expect(openSpy).not.toHaveBeenCalled();
+    expect(window.localStorage.getItem(PENDING_KEY)).toBeNull();
+    expect(hasSupported(SLUG)).toBe(false);
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  test.each(RELEASED)('Part %i: each amount goes to its Stripe checkout and remembers that part', async (number) => {
+  test.each(RELEASED)('Part %i: each paid amount goes to its Stripe checkout and remembers that part', async (number) => {
     renderAt();
     const part = handbook.parts.find((entry) => entry.number === number);
     const dialog = await openDialog(part);
+    const paid = [
+      ...configuredTiers.map((tier) => [`HK$${tier.amount}`, tier.url]),
+      ['Customise', configuredCustom.url],
+    ];
 
-    for (const tier of configuredTiers) {
-      const pay = within(dialog).getByRole('link', { name: `Support with HK$${tier.amount}, then download` });
-      expect(pay).toHaveAttribute('href', tier.url);
+    for (const [label, url] of paid) {
+      await userEvent.click(within(dialog).getByRole('radio', { name: label }));
+      expect(within(dialog).getAllByRole('radio').filter((option) => option.getAttribute('aria-checked') === 'true'))
+        .toHaveLength(1);
+      const pay = within(dialog).getByRole('link', { name: 'Support and download' });
+      expect(pay).toHaveAttribute('href', url);
       expect(pay).not.toHaveAttribute('target');
       expect(pay).not.toHaveAttribute('download');
+      expect(pdfLinks()).toHaveLength(0);
 
       window.localStorage.clear();
       expect(fireEvent.click(pay)).toBe(true);
@@ -199,6 +237,14 @@ describe('handbook page', () => {
     expect(openSpy).not.toHaveBeenCalled();
     expect(autoDownloads).toEqual([]);
     expect(hasSupported(SLUG)).toBe(false);
+  });
+
+  test('Customise explains that the amount is set on Stripe, from the smallest amount it accepts', async () => {
+    renderAt();
+    const dialog = await openDialog(released[0]);
+
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'Customise' }));
+    expect(dialog).toHaveTextContent(`each unit is HK$1 (from HK$${configuredCustom.minimum})`);
   });
 
   test('the pop-up closes with Cancel or Escape without downloading or paying', async () => {
@@ -214,12 +260,21 @@ describe('handbook page', () => {
     expect(openSpy).not.toHaveBeenCalled();
   });
 
-  test('every configured tier is a distinct Stripe checkout link', () => {
-    const urls = configuredTiers.map((tier) => tier.url);
+  test('every configured amount, and Customise, is a distinct Stripe checkout link', () => {
+    const urls = [...configuredTiers.map((tier) => tier.url), configuredCustom.url];
 
-    expect(configuredTiers.map((tier) => tier.amount)).toEqual([10, 20, 50]);
+    expect(configuredTiers.map((tier) => tier.amount)).toEqual([10, 20]);
+    expect(configuredCustom.minimum).toBe(5);
     expect(new Set(urls).size).toBe(urls.length);
     urls.forEach((url) => expect(isStripeCheckoutUrl(url)).toBe(true));
+  });
+
+  test('a Customise link that does not point at Stripe checkout is left out', async () => {
+    supportLinks.handbookCustom = { url: 'https://buy.stripe.com.example.net/abc', minimum: 5 };
+    renderAt();
+    const dialog = await openDialog(released[0]);
+
+    expect(within(dialog).getAllByRole('radio').map((option) => option.textContent)).toEqual(['HK$0', 'HK$10', 'HK$20']);
   });
 
   test('a tier that does not point at Stripe checkout is never offered', () => {
@@ -228,6 +283,7 @@ describe('handbook page', () => {
       { amount: 20, url: 'http://buy.stripe.com/abc' },
       { amount: 50, url: 'not a url' },
     ];
+    supportLinks.handbookCustom = { url: 'javascript:alert(1)', minimum: 5 };
     renderAt();
 
     // With nothing to offer there is no pop-up: each released part is a plain download link.
@@ -317,7 +373,8 @@ describe('handbook page', () => {
 
       expect(pdfLinks()).toHaveLength(0);
       const dialog = await openDialog(released[0]);
-      expect(within(dialog).getByRole('link', { name: 'Just Download' })).toHaveAttribute('href', hrefOf(released[0]));
+      await userEvent.click(within(dialog).getByRole('radio', { name: 'HK$0' }));
+      expect(within(dialog).getByRole('link', { name: 'Download' })).toHaveAttribute('href', hrefOf(released[0]));
     });
   });
 });
