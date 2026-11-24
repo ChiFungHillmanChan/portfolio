@@ -54,3 +54,15 @@ export function markSupported(slug) {
 export function hasSupported(slug) {
   return read(`${SUPPORTED}:${slug}`) === '1';
 }
+
+// The PDF language the reader picked last ('zh-HK' or 'en'). Kept so that the file chosen
+// before checkout is the one delivered on the way back.
+const LANGUAGE = 'handbook-language';
+
+export function rememberLanguage(slug, language) {
+  write(`${LANGUAGE}:${slug}`, language);
+}
+
+export function readLanguage(slug) {
+  return read(`${LANGUAGE}:${slug}`);
+}

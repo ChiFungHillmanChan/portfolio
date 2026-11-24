@@ -133,7 +133,7 @@ describe('handbook page', () => {
   test('on a phone a part opens and closes its topics', async () => {
     renderAt();
     const card = within(partCard(released[1]));
-    const toggle = card.getByRole('button', { name: /^What is inside \(9 topics\)$/ });
+    const toggle = card.getByRole('button', { name: `What is inside (${released[1].topics.length} topics)` });
     const details = document.getElementById(toggle.getAttribute('aria-controls'));
 
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
@@ -378,3 +378,79 @@ describe('handbook page', () => {
     });
   });
 });
+
+describe('PDF language', () => {
+  const english = (part) => ({ ...part, ...part.en });
+  const chooseEnglish = () => userEvent.click(screen.getByRole('radio', { name: 'English' }));
+
+  test('every part has an English edition with the same number of topics, and released parts have an English file', () => {
+    for (const part of handbook.parts) {
+      expect(part.en.topics).toHaveLength(part.topics.length);
+      if (part.released) {
+        expect(part.en.file).toMatch(/_EN\.pdf$/);
+        expect(part.en.file).not.toBe(part.file);
+      } else {
+        expect(part.en.file).toBeUndefined();
+      }
+    }
+  });
+
+  test('Traditional Chinese is chosen by default and the Chinese file downloads', async () => {
+    renderAt();
+
+    expect(screen.getByRole('radio', { name: '繁體中文' })).toHaveAttribute('aria-checked', 'true');
+    const dialog = await openDialog(released[0]);
+    expect(dialog).toHaveTextContent('Traditional Chinese');
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'HK$0' }));
+    expect(within(dialog).getByRole('link', { name: 'Download' })).toHaveAttribute('href', hrefOf(released[0]));
+  });
+
+  test('choosing English shows the English topics, including for parts still to come', async () => {
+    renderAt();
+    await chooseEnglish();
+
+    expect(screen.getByRole('radio', { name: 'English' })).toHaveAttribute('aria-checked', 'true');
+    for (const part of handbook.parts) {
+      const card = partCard(part);
+      expect(card).toHaveTextContent(part.en.title);
+      for (const topic of part.en.topics) expect(card).toHaveTextContent(topic);
+    }
+  });
+
+  test.each(RELEASED)('Part %i: with English chosen, HK$0 downloads the English file', async (number) => {
+    renderAt();
+    await chooseEnglish();
+    const part = handbook.parts.find((entry) => entry.number === number);
+    const dialog = await openDialog(part);
+
+    expect(dialog).toHaveTextContent(`${part.en.title} · English · ${part.en.pages} pages`);
+    await userEvent.click(within(dialog).getByRole('radio', { name: 'HK$0' }));
+    expect(within(dialog).getByRole('link', { name: 'Download' })).toHaveAttribute('href', hrefOf(english(part)));
+  });
+
+  test('the choice is remembered, so the English file is the one delivered after checkout', async () => {
+    const first = renderAt();
+    await chooseEnglish();
+    first.unmount();
+
+    const part = released[1];
+    rememberPendingDownload(SLUG, part.number);
+    renderAt('/handbook/ai-engineer?thanks=1');
+
+    expect(autoDownloads).toEqual([{ href: hrefOf(english(part)), download: true }]);
+    expect(screen.getByRole('dialog', { name: 'Thank you for your support' }))
+      .toHaveTextContent(`Part 0${part.number} · ${part.en.title} is downloading now`);
+  });
+
+  test('a supporter downloads the English files straight away', async () => {
+    markSupportedForTest();
+    renderAt();
+    await chooseEnglish();
+
+    expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(released.map((part) => hrefOf(english(part))));
+  });
+});
+
+function markSupportedForTest() {
+  window.localStorage.setItem(`handbook-supported:${SLUG}`, '1');
+}

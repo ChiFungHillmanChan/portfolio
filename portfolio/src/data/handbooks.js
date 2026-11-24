@@ -11,7 +11,8 @@ const handbooks = [
     lang: 'zh-HK',
     summary:
       'The road to software engineer and AI engineer, from software fundamentals to interviewing. '
-      + 'Written in Traditional Chinese, with technical terms kept in English.',
+      + 'Written in Traditional Chinese, with technical terms kept in English. '
+      + 'Every part is also available as an English edition: choose the PDF language before you download.',
     // 目標: the cover line and the preface sentence of the handbook, quoted as written.
     goal: {
       label: '目標',

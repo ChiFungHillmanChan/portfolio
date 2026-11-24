@@ -27,7 +27,22 @@ const handbook = {
       "pages": 58,
       "released": true,
       "file": "AI_Engineer_Handbook_01_Software.pdf",
-      "bytes": 3791078
+      "bytes": 3791078,
+      "en": {
+        "title": "Software Fundamentals",
+        "intro": "The foundation of all AI engineering. However capable an LLM becomes, the end product still has to be software that is stable, maintainable and deployable. This Part is the \"engineer\" half of \"AI engineer\". If you have never written a program, read 1.5 and 1.6 first, then come back to 1.1.",
+        "topics": [
+          "Python for AI",
+          "Data Structures & Algorithms",
+          "Software System Design",
+          "Git",
+          "Python Basics: A Quick Tour",
+          "Web API Basics: HTTP, JSON and FastAPI"
+        ],
+        "pages": 67,
+        "file": "AI_Engineer_Handbook_01_Software_EN.pdf",
+        "bytes": 1254229
+      }
     },
     {
       "number": 2,
@@ -49,7 +64,27 @@ const handbook = {
       "pages": 85,
       "released": true,
       "file": "AI_Engineer_Handbook_02_LLM_RAG.pdf",
-      "bytes": 5006956
+      "bytes": 5006956,
+      "en": {
+        "title": "LLMs & RAG",
+        "intro": "This Part covers the core skills of an AI engineer: how an LLM works, how to use it well, and how to connect it to outside knowledge (RAG). In most companies, the first AI project to reach production is a RAG system.",
+        "topics": [
+          "LLM Fundamentals",
+          "Prompt Engineering for Devs",
+          "Working with LLM APIs",
+          "Embeddings and Semantic Search",
+          "Vector Databases",
+          "Basic Retrieval Augmented Generation (RAG)",
+          "Document Processing and Chunking",
+          "Advanced Retrieval",
+          "Retrieval for Chinese and Cantonese",
+          "Multimodal: Images, Documents and Speech",
+          "Reasoning Models and Context Engineering"
+        ],
+        "pages": 103,
+        "file": "AI_Engineer_Handbook_02_LLM_RAG_EN.pdf",
+        "bytes": 1710328
+      }
     },
     {
       "number": 3,
@@ -72,7 +107,28 @@ const handbook = {
       "pages": 84,
       "released": true,
       "file": "AI_Engineer_Handbook_03_Agents.pdf",
-      "bytes": 5009892
+      "bytes": 5009892,
+      "en": {
+        "title": "Agents & Orchestration",
+        "intro": "From answering questions to carrying out tasks. An agent can call tools, read and write to systems, and decide its next step based on what it finds. This Part covers the most popular area of AI engineering today, and the one most likely to get out of control.",
+        "topics": [
+          "Function Calling and Tool Use",
+          "Structured Outputs and Validation",
+          "LLM Applications with Frameworks",
+          "Agent Fundamentals",
+          "Agentic Design Patterns",
+          "Orchestration with LangGraph",
+          "Multi Agent Intro",
+          "Multi-agent Systems",
+          "Agent Memory and State",
+          "Agentic RAG",
+          "Model Context Protocol (MCP)",
+          "Coding Agents and Computer Use"
+        ],
+        "pages": 104,
+        "file": "AI_Engineer_Handbook_03_Agents_EN.pdf",
+        "bytes": 1589019
+      }
     },
     {
       "number": 4,
@@ -92,7 +148,25 @@ const handbook = {
         "完整示範：為 RAG 系統建立一套 Eval"
       ],
       "pages": 81,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "Ops & Evaluation",
+        "intro": "Deploying AI systems to production, keeping them running reliably, and proving with data that they actually perform well. This Part is what separates \"finished a demo\" from \"built a product\", and it is the weakest area for most AI engineers.",
+        "topics": [
+          "LLMOps Fundamentals",
+          "Serving Open Source Models",
+          "Deploying LLM Applications",
+          "Observability and Monitoring",
+          "CI/CD for LLM Applications",
+          "Evaluation Fundamentals",
+          "LLM-as-a-Judge",
+          "RAG Evaluation",
+          "Evaluating AI Agents",
+          "Benchmarking Models",
+          "Worked Example: Building an Eval Suite for a RAG System"
+        ],
+        "pages": 97
+      }
     },
     {
       "number": 5,
@@ -106,7 +180,19 @@ const handbook = {
         "AI Governance and Frameworks"
       ],
       "pages": 41,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "Safety & Ethics",
+        "intro": "AI systems affect real people and bring new kinds of security vulnerability. This Part covers the principles of responsible AI, data ethics, LLM security, guardrails and regulation. In regulated industries such as finance, healthcare, law and government, this knowledge is the price of entry.",
+        "topics": [
+          "Responsible AI Practices",
+          "Data Ethics and Bias",
+          "LLM Security and Risk",
+          "Guardrails",
+          "AI Governance and Frameworks"
+        ],
+        "pages": 49
+      }
     },
     {
       "number": 6,
@@ -125,7 +211,24 @@ const handbook = {
         "Fine-tuning 與 LoRA"
       ],
       "pages": 81,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "ML Fundamentals",
+        "intro": "The foundations of traditional machine learning and the MLOps tools around it. An AI engineer does not always need to train models, but understanding the basic ideas of ML (evaluation metrics, overfitting, data quality) makes your judgement sharper when you design and evaluate LLM systems, and many real problems are solved with traditional ML at lower cost and higher speed.",
+        "topics": [
+          "ML Fundamentals and Metrics",
+          "scikit-learn: Pipelines and Model Training",
+          "Data Engineering and Quality",
+          "Experiment Tracking with MLflow",
+          "Data Versioning with DVC",
+          "Deployment and CI/CD",
+          "Monitoring ML in Production",
+          "Neural Networks and Deep Learning Basics",
+          "PyTorch Basics: Tensors, Autograd and the Training Loop",
+          "Fine-tuning and LoRA"
+        ],
+        "pages": 98
+      }
     },
     {
       "number": 7,
@@ -141,7 +244,21 @@ const handbook = {
         "實例：我的公開項目與本書主題"
       ],
       "pages": 43,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "Build Projects",
+        "intro": "These six steps turn what you have learned into a project you can put on your CV and that carries real weight. Recruiters care less about how many topics you have studied than about whether you have solved a real problem, made technical decisions with some depth to them, and have data to show the results.",
+        "topics": [
+          "Target",
+          "Market Research",
+          "Problem Selection & Expert Depth",
+          "AI System Architecture",
+          "Team & Build",
+          "Launch & Signal",
+          "Case Study: My Public Projects and the Topics in This Book"
+        ],
+        "pages": 52
+      }
     },
     {
       "number": 8,
@@ -158,7 +275,22 @@ const handbook = {
         "System Design 示範三：大量文件資料抽取 Pipeline"
       ],
       "pages": 53,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "Interviewing",
+        "intro": "This is the last hurdle. AI engineer interviews usually include coding, system design, AI-specific knowledge, a deep discussion of your projects, and a behavioural round. This Part covers how to approach each type of interview.",
+        "topics": [
+          "Guide to Answering Technical Questions",
+          "Preparing for System Design Interviews",
+          "AI Augmented Interviews",
+          "Whiteboarding Interviews",
+          "Practice Interviews",
+          "System Design Example 1: Internal Document Q&A (RAG)",
+          "System Design Example 2: Customer Service Agent",
+          "System Design Example 3: High-Volume Document Extraction Pipeline"
+        ],
+        "pages": 68
+      }
     },
     {
       "number": 9,
@@ -173,7 +305,20 @@ const handbook = {
         "MockLoop：AI 模擬面試官"
       ],
       "pages": 43,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "Project Ideas",
+        "intro": "This Part puts the handbook's 70 topics into practice. It contains an overview and five projects: one large capstone that covers most of the topics, and four projects that each go deep into one area and fill in what the capstone does not cover. Completing all five projects, together with the stretch goals and advanced exercises marked in them, covers the whole roadmap.",
+        "topics": [
+          "Overview: Choosing Projects and Planning the Order",
+          "RegPilot: A Bilingual UK and Hong Kong Financial Compliance Assistant (Capstone)",
+          "ReceiptLens: A Receipt and Invoice Processing Pipeline",
+          "PR Guardian: An MCP-Driven Code Review Agent",
+          "CantoBench: A Cantonese LLM Benchmark and Serving Lab",
+          "MockLoop: An AI Mock Interviewer"
+        ],
+        "pages": 52
+      }
     },
     {
       "number": 10,
@@ -186,7 +331,18 @@ const handbook = {
         "官方資料與最後核對日期"
       ],
       "pages": 29,
-      "released": false
+      "released": false,
+      "en": {
+        "title": "Appendix: Glossary, Cheat Sheets and Study Plan",
+        "intro": "This volume is the book's toolbox: a glossary that keeps terms consistent, cheat sheets that condense the key points of each Part, a twelve-week plan that sets the order of study, and finally a list of official sources with the date the book was last checked.",
+        "topics": [
+          "Glossary",
+          "Cheat Sheets by Part",
+          "Twelve-Week Study Plan",
+          "Official Sources and Last Checked Date"
+        ],
+        "pages": 35
+      }
     }
   ]
 };
