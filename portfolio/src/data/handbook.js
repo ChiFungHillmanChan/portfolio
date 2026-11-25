@@ -29,7 +29,7 @@ const handbook = {
     "number": 0,
     "released": true,
     "file": "AI_Engineer_Handbook_00_Intro.pdf",
-    "version": "c0dc545952",
+    "version": "8ba74f6de0",
     "intro": "封面、序、關於作者、如何使用這本手冊，以及全部分冊和主題的目錄。建議先讀這本，再開始 Part 01。",
     "en": {
       "title": "Preface & How to Use",
@@ -47,7 +47,7 @@ const handbook = {
       ],
       "pages": 7,
       "file": "AI_Engineer_Handbook_00_Intro_EN.pdf",
-      "version": "622b18bd07",
+      "version": "2528fe51f8",
       "intro": "The cover, the preface, about the author, how to use the handbook, and the contents of every booklet. Read this first, then start with Part 01."
     }
   },
@@ -75,8 +75,8 @@ const handbook = {
       "pages": 58,
       "released": true,
       "file": "AI_Engineer_Handbook_01_Software.pdf",
-      "version": "3b93aab26c",
-      "bytes": 3823260,
+      "version": "da867367fd",
+      "bytes": 3826200,
       "en": {
         "title": "Software Fundamentals",
         "intro": "The foundation of all AI engineering. However capable an LLM becomes, the end product still has to be software that is stable, maintainable and deployable. This Part is the \"engineer\" half of \"AI engineer\". If you have never written a program, read 1.5 and 1.6 first, then come back to 1.1.",
@@ -98,8 +98,8 @@ const handbook = {
           55
         ],
         "file": "AI_Engineer_Handbook_01_Software_EN.pdf",
-        "version": "2460805778",
-        "bytes": 1264650
+        "version": "807d0503af",
+        "bytes": 1269452
       }
     },
     {
@@ -135,8 +135,8 @@ const handbook = {
       "pages": 85,
       "released": true,
       "file": "AI_Engineer_Handbook_02_LLM_RAG.pdf",
-      "version": "7678f309f4",
-      "bytes": 5047719,
+      "version": "4913093bb3",
+      "bytes": 5052621,
       "en": {
         "title": "LLMs & RAG",
         "intro": "This Part covers the core skills of an AI engineer: how an LLM works, how to use it well, and how to connect it to outside knowledge (RAG). In most companies, the first AI project to reach production is a RAG system.",
@@ -168,8 +168,8 @@ const handbook = {
           91
         ],
         "file": "AI_Engineer_Handbook_02_LLM_RAG_EN.pdf",
-        "version": "eeb9e54749",
-        "bytes": 1723345
+        "version": "c15081f88a",
+        "bytes": 1730299
       }
     },
     {
@@ -207,8 +207,8 @@ const handbook = {
       "pages": 84,
       "released": true,
       "file": "AI_Engineer_Handbook_03_Agents.pdf",
-      "version": "3c694ada9a",
-      "bytes": 5047870,
+      "version": "7fd170162b",
+      "bytes": 5052297,
       "en": {
         "title": "Agents & Orchestration",
         "intro": "From answering questions to carrying out tasks. An agent can call tools, read and write to systems, and decide its next step based on what it finds. This Part covers the most popular area of AI engineering today, and the one most likely to get out of control.",
@@ -242,8 +242,8 @@ const handbook = {
           93
         ],
         "file": "AI_Engineer_Handbook_03_Agents_EN.pdf",
-        "version": "f04d694150",
-        "bytes": 1601131
+        "version": "347b52930c",
+        "bytes": 1608526
       }
     },
     {
