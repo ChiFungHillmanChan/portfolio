@@ -73,7 +73,7 @@ const handbook = {
       "pages": 58,
       "released": true,
       "file": "AI_Engineer_Handbook_01_Software.pdf",
-      "bytes": 3791536,
+      "bytes": 3823260,
       "en": {
         "title": "Software Fundamentals",
         "intro": "The foundation of all AI engineering. However capable an LLM becomes, the end product still has to be software that is stable, maintainable and deployable. This Part is the \"engineer\" half of \"AI engineer\". If you have never written a program, read 1.5 and 1.6 first, then come back to 1.1.",
@@ -95,7 +95,7 @@ const handbook = {
           55
         ],
         "file": "AI_Engineer_Handbook_01_Software_EN.pdf",
-        "bytes": 1256085
+        "bytes": 1264650
       }
     },
     {
@@ -131,7 +131,7 @@ const handbook = {
       "pages": 85,
       "released": true,
       "file": "AI_Engineer_Handbook_02_LLM_RAG.pdf",
-      "bytes": 5002977,
+      "bytes": 5047719,
       "en": {
         "title": "LLMs & RAG",
         "intro": "This Part covers the core skills of an AI engineer: how an LLM works, how to use it well, and how to connect it to outside knowledge (RAG). In most companies, the first AI project to reach production is a RAG system.",
@@ -163,7 +163,7 @@ const handbook = {
           91
         ],
         "file": "AI_Engineer_Handbook_02_LLM_RAG_EN.pdf",
-        "bytes": 1710649
+        "bytes": 1723345
       }
     },
     {
@@ -201,7 +201,7 @@ const handbook = {
       "pages": 84,
       "released": true,
       "file": "AI_Engineer_Handbook_03_Agents.pdf",
-      "bytes": 5003424,
+      "bytes": 5047870,
       "en": {
         "title": "Agents & Orchestration",
         "intro": "From answering questions to carrying out tasks. An agent can call tools, read and write to systems, and decide its next step based on what it finds. This Part covers the most popular area of AI engineering today, and the one most likely to get out of control.",
@@ -235,7 +235,7 @@ const handbook = {
           93
         ],
         "file": "AI_Engineer_Handbook_03_Agents_EN.pdf",
-        "bytes": 1589053
+        "bytes": 1601131
       }
     },
     {
