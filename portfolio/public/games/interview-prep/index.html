@@ -87,7 +87,7 @@ kbd{font-family:var(--mono);font-size:.8em;border:1px solid var(--line);border-b
 .timer-chip.late{background:var(--bad);border-color:var(--bad);color:#fff;animation:pulse 1s infinite alternate}
 @keyframes pulse{to{opacity:.65}}
 .spacer{flex:1}
-.view{padding:26px 28px 80px;max-width:1080px}
+.view{padding:26px 28px 80px;max-width:1080px;margin-inline:auto}
 
 /* headings & cards */
 .crumb{font-size:12.5px;color:var(--ink3);margin-bottom:6px}
@@ -307,6 +307,8 @@ table.all td.t{color:var(--ink3);font-size:12.5px}
   .pnav{display:flex}
   .fab-top{display:grid;place-items:center;position:fixed;right:14px;bottom:calc(var(--tabh) + 14px + env(safe-area-inset-bottom));z-index:57;width:42px;height:42px;border-radius:50%;border:1px solid var(--line);background:var(--panel);color:var(--ink2);box-shadow:0 2px 10px #0002;opacity:0;pointer-events:none;transition:opacity .2s}
   .fab-top.on{opacity:1;pointer-events:auto}
+  /* while a step visualizer is open it would cover the ends of its code lines */
+  body:has(.tpl .vizbox:not([hidden])>.viz, .pb:not([hidden]) .vizbox>.viz) .fab-top{display:none}
   .timer-chip{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--tabh) + 14px + env(safe-area-inset-bottom));z-index:57;box-shadow:0 2px 12px #0003;padding:8px 16px;font-size:15px}
 }
 @media (max-width:380px){
@@ -319,11 +321,11 @@ table.all td.t{color:var(--ink3);font-size:12.5px}
   .card,.prob{break-inside:avoid;box-shadow:none}
 }
 /* ---- step visualizer (src/viz/viz.css, inlined by build.py; theme tokens only) ----
-   Layout (Task 12b): a header (runs / operation, controls, caption) that sticks under the shell's top bar; under it
-   the code, always shown in full (it never scrolls: long lines wrap with a hanging indent), and the picture, which
-   sticks under the header on a desktop. player.js sets --viz-cw (the code column, G.codeWidth), --viz-top (the
-   shell's top bar), --viz-barh (this header) and --viz-hide (on a phone, the header rows above its compact bar,
-   which scroll away under the top bar; 0 on a desktop), and .viz-stick when the header sticks. */
+   Layout (Task 12b, polish): a header (runs / operation, controls, caption) that sticks under the shell's top bar;
+   under it the code, always shown in full (it never scrolls: long lines wrap with a hanging indent), and the
+   picture, which sticks under the header on a desktop. player.js sets --viz-cw (the code column, G.codeWidth),
+   --viz-top (the shell's top bar) and --viz-barh (this header), .viz-stick when the header sticks, and on a
+   desktop .viz-wide with an inline width and margin-left when the player grows past its box (G.playerWidth). */
 .vizbox{margin-top:10px}
 .tpl>.tbtn[data-act="viz"]{margin-top:8px}
 .viz{--viz-ptop:var(--viz-top,0px);border:1px solid var(--line);border-radius:12px;background:var(--panel);overflow:hidden;overflow:clip;font-size:13.5px;line-height:1.5}
@@ -340,7 +342,9 @@ table.all td.t{color:var(--ink3);font-size:12.5px}
 
 /* the sticky header */
 .viz-bar{background:var(--panel);border-bottom:1px solid var(--line)}
-.viz-stick>.viz-bar{position:sticky;top:calc(var(--viz-top,0px) - var(--viz-hide,0px));z-index:4;box-shadow:0 8px 14px -12px rgba(0,0,0,.35)}
+.viz-stick>.viz-bar{position:sticky;top:var(--viz-top,0px);z-index:4;box-shadow:0 8px 14px -12px rgba(0,0,0,.35)}
+/* the ⋯ button, its panel and the progress line belong to the phone's bar */
+.viz-btn.viz-moreb,.viz-panel,.viz-prog{display:none}
 
 /* header: runs and operations */
 .viz-head{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line)}
@@ -395,6 +399,8 @@ table.all td.t{color:var(--ink3);font-size:12.5px}
 /* scrollbar-gutter: a classic (space-taking) scrollbar appearing on a tall picture would not change the width the
    chains wrapped to */
 .viz-pic{min-width:0;padding:12px 14px;align-self:start;position:sticky;top:var(--viz-ptop);max-height:calc(100vh - var(--viz-ptop));overflow:auto;overscroll-behavior:contain;scrollbar-gutter:stable}
+/* the pane's content: its own formatting context, so a child's margin counts in its height (B2 measures it) */
+.viz-in{display:flow-root}
 .viz-res{margin:0 0 12px;padding:8px 12px;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:9px;background:var(--panel2);overflow-wrap:anywhere}
 .viz-res code,.viz-pic code{white-space:pre-wrap;overflow-wrap:anywhere}
 .viz-nothing{margin:4px 0;color:var(--ink3);font-size:13px;font-style:italic}
@@ -403,14 +409,20 @@ table.all td.t{color:var(--ink3);font-size:12.5px}
 .viz-out{margin:4px 0 0;font:12.5px/1.5 var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:7px;padding:6px 10px;white-space:pre-wrap;overflow-wrap:anywhere}
 .viz-trunc{margin:0 0 6px;color:var(--warn)}
 
-/* wide windows: an open player grows past the 1080px reading column into the empty main area (up to 1600px),
-   from the column's left edge, as a raised panel. .main is a size container, so 100cqw is its width; the extra
-   is exactly the empty room right of the column, so the page never scrolls sideways. Only when that room is at
-   least 160px, so it never pokes a few px out of a card. */
-@media (min-width:901px){.main{container-type:inline-size}}
-@container (min-width:1240px){
-  .vizbox>.viz{width:min(1600px,calc(100% + 100cqw - 1080px));position:relative;z-index:1;border-color:color-mix(in srgb,var(--ink3) 45%,var(--line));box-shadow:0 1px 3px rgba(40,30,10,.10),0 16px 40px -12px rgba(40,30,10,.30)}
-}
+/* wide windows: an open player grows past its box, as wide as its content needs, symmetrically about the centred
+   reading column (player.js sets its width and a negative margin-left: G.playerWidth keeps it 24px inside the
+   main area, so the page never scrolls sideways), as a raised panel over the cards around it */
+.vizbox>.viz.viz-wide{position:relative;z-index:1;max-width:none;border-color:color-mix(in srgb,var(--ink3) 45%,var(--line));box-shadow:0 1px 3px rgba(40,30,10,.10),0 16px 40px -12px rgba(40,30,10,.30)}
+/* the measuring copy of the picture pane (player.js measPane): laid out off screen with the pane's classes, never
+   seen; fixed, so it adds nothing to the page's scroll size. .viz-nat: its natural width (a desktop's width pass). */
+.viz-meas{position:fixed;left:-40000px;top:0;visibility:hidden;pointer-events:none;contain:layout style}
+.viz-meas>.viz-pic{position:static;max-height:none;height:auto}
+/* the small viewport's height (100svh: toolbars shown), so a phone's picture cap does not follow them */
+.viz-vh{position:fixed;left:-40000px;top:0;width:1px;height:100vh;height:100svh;visibility:hidden;pointer-events:none}
+.viz-meas>.viz-pic.viz-nat{width:max-content!important}
+/* in that pass a row that can wrap (the call stack, scalar chips, a set, a graph's legend) counts at most 560px, so
+   only rigid pictures (chains, trees, graphs, grids, arrays, maps, objects) make a player wider */
+.viz-meas>.viz-pic.viz-nat :is(.viz-stack,.viz-chips,.viz-k-set,.viz-legend){max-width:560px}
 
 /* call stack */
 .viz-stack{display:flex;flex-wrap:wrap;align-items:center;gap:5px;margin:0 0 12px}
@@ -545,49 +557,79 @@ button.viz-fr:hover{border-color:var(--accent)}
 @keyframes viz-flash{from{background-color:var(--accent-soft)}}
 @media (prefers-reduced-motion:reduce){.viz :not(tr).hl-changed,.viz tr.hl-changed>td{animation:none;background-color:var(--accent-soft)}}
 
-/* phone / narrow: a compact header, then the picture, then the whole code, wrapped. Every control is at least 44px
-   tall. The header is a 4-column grid whose control wrappers are display:contents, so the buttons are its own
-   items: the run <select> and the operation row; [first | scrubber | last | speed]; [prev | play | next | 4 / 15];
-   the caption, on one line. F1: only the last two rows (the compact bar, at most 112px, player.js) stay in view:
-   the whole header sticks with its top pulled up by --viz-hide, so the rows above slide under the shell's top bar.
-   .view must not be a scroll container then (its overflow-x:hidden would make it one). */
+/* phone / narrow (polish A): one bar sticks whole under the shell's top bar (at most 84px with its panel closed):
+   row 1 is prev | play (the free width) | next | the step count (as wide as its longest value, so nothing shifts)
+   | ⋯; the ⋯ panel (player.js moves the run select, the operation row, first / scrubber / last and speed into it)
+   opens under it; then the caption, on one line, and a 3px progress line over the bar's bottom edge. Every
+   control is at least 44px. Then the picture (one fixed height per run: its tallest step, up to a cap that leaves
+   room for the first code lines; taller scrolls inside it: B2), then the whole code, wrapped. Nothing in the player is a scroll anchor there. .view must not be a scroll container (its
+   overflow-x:hidden would make it one, and the bar would not stick). */
 @media (max-width:900px){
-  .viz{min-width:0;max-width:100%}
+  /* B1: the page never scrolls by itself. Scroll anchoring would: it may pick a node in the picture (even one
+     peeking out under the sticky bar) and hold it in place when the picture's content shifts inside its fixed
+     height (the result box comes and goes) or that height changes with the run */
+  .viz{min-width:0;max-width:100%;overflow-anchor:none}
   @supports (overflow:clip){.view:has(.viz-stick){overflow-x:clip}}
-  .viz-head{padding:8px 10px;gap:8px}
-  .viz-head[data-runs="1"]:not(.viz-hasops){display:none}
-  .viz-runs{display:none}
-  .viz-runsel{display:flex;align-items:center;gap:10px;flex:1 1 100%;min-width:0}
+  .viz-bar{position:relative}
+  .viz-head{display:none}
+  .viz-ctl{flex-wrap:nowrap;gap:6px;padding:4px 10px}
+  .viz-tp{flex:1 1 auto;min-width:0;gap:6px}
+  .viz-sc{display:contents}
+  .viz-btn{min-width:44px;min-height:44px;height:44px;flex:none}
+  .viz-btn.viz-play{flex:1 1 auto;min-width:0;padding:0 8px}
+  .viz-play>span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .viz-stepn{flex:none;font:13px var(--mono);font-variant-numeric:tabular-nums;color:var(--ink2);text-align:right}
+  .viz-spl,.viz-stepl,.viz-runsel .viz-lbl,.viz-stack>.viz-lbl{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+  .viz-steps{display:inline-block}
+  .viz-btn.viz-moreb{display:inline-flex}
+  .viz-moreb[aria-expanded="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent)}
+  .viz-panel{display:flex;flex-direction:column;gap:8px;padding:8px 10px;border-top:1px solid var(--line);background:var(--panel2)}
+  .viz-runsel{display:flex;align-items:center;min-width:0}
   .viz-runsel select{flex:1 1 auto;min-width:0;min-height:44px;font:15px var(--mono);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:0 10px;text-overflow:ellipsis}
-  .viz-ops{flex:1 1 100%;gap:8px}
-  .viz-opmid{flex:1 1 auto;justify-content:center;text-align:center}
-  .viz-bar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px auto;column-gap:8px;padding:0 10px}
-  .viz-ctl,.viz-tp,.viz-sc{display:contents}
-  .viz-head{grid-area:1/1/2/-1;margin:0 -10px}
-  .viz-btn{min-width:44px;min-height:44px;height:44px}
-  .viz-tp>[data-v="first"]{grid-area:2/1}
-  .viz-scrub{grid-area:2/2;width:100%;min-width:0;height:44px}
-  .viz-tp>[data-v="last"]{grid-area:2/3}
-  .viz-speed{grid-area:2/4;min-height:44px}
-  .viz-tp>[data-v="prev"]{grid-area:3/1}
-  .viz-btn.viz-play{grid-area:3/2;min-width:0}
-  .viz-tp>[data-v="next"]{grid-area:3/3}
-  .viz-stepn{grid-area:3/4;justify-self:center;align-self:center;font-size:14px}
-  .viz-tp>[data-v="first"],.viz-tp>[data-v="last"],.viz-scrub,.viz-speed{margin:8px 0 0}
-  .viz-tp>[data-v="prev"],.viz-tp>[data-v="next"],.viz-play,.viz-stepn{margin:8px 0}
-  .viz-spl,.viz-stepl{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
-  .viz-steps{display:inline}
+  /* the operation row is one 44px line whatever the operation: the label shrinks to an ellipsis, so the bar (and
+     everything under it) never changes height between operations */
+  .viz-ops{gap:8px;flex-wrap:nowrap;height:44px}
+  .viz-opmid{flex:1 1 auto;flex-wrap:nowrap;justify-content:center;text-align:center;min-width:0;overflow:hidden}
+  .viz-opn,.viz-opok{flex:none}
+  .viz-opl{flex:0 1 auto;min-width:0}
+  .viz-nav{display:flex;align-items:center;gap:8px;min-width:0}
+  .viz-scrub{flex:1 1 auto;width:auto;min-width:0;height:44px;margin:0}
+  .viz-speed{flex:none;min-height:44px}
   .viz-speed select{min-height:44px;font-size:16px;padding:0 8px}
-  .viz-cap{grid-area:4/1/5/-1;margin:0 -10px;padding:6px 12px;min-height:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+  .viz-cap{padding:5px 12px;font-size:13px;line-height:18px;min-height:29px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;overflow-wrap:normal}
+  .viz-prog{display:block;position:absolute;left:0;right:0;bottom:-1px;height:3px;pointer-events:none}
+  .viz-prog>i{display:block;height:100%;background:var(--accent);transform-origin:0 50%;transform:scaleX(var(--viz-p,0));transition:transform .15s ease-out}
   .viz-main{grid-template-columns:minmax(0,1fr)}
   .viz-main>.viz-pic,.viz-main>.viz-code{grid-area:auto}
-  .viz-pic{position:static;max-height:none;overflow-x:auto;overflow-y:hidden;scrollbar-gutter:auto;padding:12px 10px}
+  /* B2: the picture pane's height is fixed per run (player.js); a taller picture scrolls inside it, never moved by
+     a step (no scroll anchoring). At its end a swipe goes on to the page (normal scroll chaining). A soft fade
+     marks more above (viz-ft) or below (viz-fb): a mask, so it catches no taps */
+  .viz-pic{position:static;max-height:none;overflow:auto;overscroll-behavior:auto;overflow-anchor:none;scrollbar-gutter:auto;padding:12px 10px}
+  .viz-pic.viz-ft{--viz-ft:30px}
+  .viz-pic.viz-fb{--viz-fb:30px}
+  .viz-pic.viz-ft,.viz-pic.viz-fb{-webkit-mask-image:linear-gradient(#0003,#000 var(--viz-ft,0px),#000 calc(100% - var(--viz-fb,0px)),#0003);mask-image:linear-gradient(#0003,#000 var(--viz-ft,0px),#000 calc(100% - var(--viz-fb,0px)),#0003)}
   .viz-code{font-size:12.5px;border-top:1px solid var(--line)}
-  button.viz-fr{min-height:44px;display:inline-flex;align-items:center;padding:0 12px}
-  .viz-frame{padding:10px 8px 0}
+  /* the strip with the top frame alone has nothing to open: the picture starts with the frame's items */
+  .viz-stack.viz-one{display:none}
+  /* D: the call stack is context, the picture is the point: one line of compact chips (32px with a 6px gap: WCAG
+     2.5.8) that scrolls sideways without a scrollbar, scrolled to its end (the top frame) on every step by
+     player.js. An opened lower frame is drawn under the strip, full width; its chip and its box are both dashed */
+  .viz-stack{flex-wrap:nowrap;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:none;padding:3px 2px;margin:-3px -2px 9px}
+  .viz-stack::-webkit-scrollbar{display:none}
+  .viz-seg{flex:none;max-width:100%;gap:6px}
+  /* a chip never wraps; one wider than the strip (a long call) ends in an ellipsis, so the top one always fits */
+  .viz-fr{display:inline-block;height:32px;line-height:30px;padding:0 10px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+  .viz-stack>.viz-fr{flex:none}
+  .viz-seg>.viz-fr{flex:0 1 auto;min-width:0}
+  .viz-fr.viz-on{border-style:dashed}
+  .viz-frames{display:flex;flex-direction:column;gap:8px;margin:0 0 12px}
+  .viz-frames>.viz-frame{margin:0;padding:10px 8px 0}
   .viz-msg .tbtn{min-height:44px}
   button[data-act="viz"],button[data-reveal="viz"]{min-height:44px}
 }
+@media (max-width:900px) and (prefers-reduced-motion:reduce){.viz-prog>i{transition:none}}
+/* print: the page's own width, whatever a desktop player's width pass set inline (C2) */
+@media print{.vizbox>.viz.viz-wide{width:auto!important;margin-left:0!important}}
 
 </style>
 </head>
@@ -26526,9 +26568,20 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     /* L3: the code column's width in a player whose inner width is W, for code whose longest line (+ gutter and
        padding) is nat px: its natural width, at most 58% of W; when that leaves the picture under 340px the code
        shrinks (wrapping) to keep it there, but never below 50%. */
+    const fin = (x, d) => (Number.isFinite(x) ? x : d); // a finite number, else the default
     function codeWidth(W, nat) {
       if (!(W > 0)) return 0;
       return Math.max(0, Math.min(nat, Math.floor(Math.min(0.58 * W, Math.max(0.5 * W, W - 340)))));
+    }
+    /* C2: the width a desktop player's content asks for: its code's natural width (nat) beside its widest
+       picture's (pic), plus its own chrome; raised to the smallest width at which codeWidth gives the code all of
+       nat (it keeps 42% and 340px for the picture), so the code never wraps for want of a few px.
+       codeWidth grows with the width, so the first width that passes is the smallest. */
+    function desiredWidth(nat, pic, chrome) {
+      [nat, pic, chrome] = [nat, pic, chrome].map(x => fin(x, 0)); // an unknown part counts as nothing
+      let inner = Math.max(nat + pic, Math.floor(nat / 0.58) - 2, Math.min(2 * nat, nat + 340) - 2);
+      for (let k = 0; k < 64 && codeWidth(inner, nat) < nat; k++) inner++; // a few px at most (rounding)
+      return inner + chrome;
     }
     // L2: a wrapped code line continues at its own indent + 2ch (a tab advances to the next multiple of 4)
     function hang(text) {
@@ -26583,23 +26636,63 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
       const lo = Math.min(from, to) - 2, hi = Math.max(from, to) + 2;
       return y >= lo && y <= hi && Math.abs(to - y) <= Math.abs(to - last) + 2;
     }
-    /* F1: on a phone the header's lower part (prev / play / next, the step counter, then the caption) sticks under
-       the shell's top bar; the rows above it (the run picker, the scrubber row) scroll away under that bar. From the
-       header's viewport top, the bottom of its scrubber row and the header's bottom: hide (how far the sticky top is
-       pulled up), h (the height that stays in view) and stick (only when h is at most `max`). */
+    /* On a phone the whole bar (transport row, the ⋯ panel, the caption) sticks under the shell's top bar when,
+       with the panel closed, it is at most `max` px tall: barH is its height now, panelH the open panel's part of
+       it (0 when closed), so opening the panel never unsticks the bar it was opened in. h: the closed height. */
     const STICK_PHONE = 112;
-    function phoneStick(barTop, splitAt, barBottom, max = STICK_PHONE) {
-      const hide = Math.round(splitAt - barTop), h = Math.round(barBottom - splitAt);
-      return { hide, h, stick: h <= max };
+    function phoneStick(barH, panelH = 0, max = STICK_PHONE) {
+      const h = Math.round(barH - panelH);
+      return { h, stick: h <= max };
     }
-    /* F1: on a phone a step may scroll the page down (dy > 0) only so far that the picture's top stays at or below
-       the sticky bar's bottom (barBottom, where it sits once stuck): the picture stays in view, and the caption names
-       the line that could not be shown. Scrolling up never hides it. Once the user has scrolled the picture's top up
-       under the bar (by more than 2px of rounding: they are reading the code), the line is followed freely, also when
-       the picture later grows back down past the bar. */
-    function phoneFollow(dy, pic, barBottom) {
-      if (!(dy > 0) || pic.top < barBottom - 2) return dy;
-      return Math.min(dy, Math.max(0, pic.top - barBottom));
+    /* B2': a phone's picture pane is at most `share` of the height left between the shell's top bar, this bar
+       (panel closed) and the tab bar, so the first code lines show under it; never under `min`. */
+    const CAP_MIN = 200;
+    function phoneCap({ vh, top = 0, bar = 0, tab = 0, min = CAP_MIN, share = 0.5 }) {
+      if (![vh, top, bar, tab, share].every(Number.isFinite)) return min; // unknown: the floor
+      return Math.max(min, Math.round(share * (vh - top - bar - tab)));
+    }
+    // the pane's fixed height: its run's tallest picture (rounded up) up to the cap; taller scrolls inside itself
+    function paneH(runMax, cap) {
+      cap = fin(cap, CAP_MIN);
+      if (!Number.isFinite(runMax)) return { H: cap, scroll: true }; // unknown: the cap, scrolling if need be
+      const h = Math.max(0, Math.ceil(runMax - 0.01));
+      return { H: Math.min(h, cap), scroll: h > cap };
+    }
+    // fades on a scrolling pane: below while the picture goes on under its bottom edge (contentBottom and viewH
+    // from the pane's top), above while it is scrolled down
+    function paneFade({ scrollTop, viewH, contentBottom }) {
+      return { top: scrollTop > 0.5, bottom: contentBottom > viewH + 0.5 };
+    }
+    /* A desktop player's width W: what its content needs (desired: the code's and the widest picture's natural
+       widths plus its own chrome), never narrower than its box (the .vizbox in the reading column), at most `room`:
+       the box plus twice the smaller of its free sides inside .main (so it can stay centred), less a gutter on each
+       side, and at most `max`. shift: how far it moves left of the box to be centred on it. The extra is a whole
+       even number of px (rounded up, never below what it asked for, unless that is past the room), so both edges
+       sit on whole pixels. All of it comes from the box and .main, never from the player's own width, so its
+       resize observer cannot feed back into it. */
+    function playerWidth({ desired, box, left, right, max = 1600, gutter = 24 }) {
+      if (!Number.isFinite(box)) return { W: 0, shift: 0, room: 0 }; // no box: nothing to widen
+      desired = fin(desired, box); left = fin(left, 0); right = fin(right, 0); // unknown: the box
+      max = fin(max, 1600); gutter = fin(gutter, 24);
+      const room = Math.max(box, Math.min(max, box + 2 * Math.max(0, Math.min(left, right) - gutter)));
+      const shift = Math.max(0, Math.min(Math.floor((room - box) / 2), Math.ceil((desired - box) / 2)));
+      return { W: box + 2 * shift, shift, room };
+    }
+    // the steps a measuring pass looks at first: every step of a run of up to k, else the first, the last and
+    // evenly spaced ones between them (k in all)
+    function samples(n, k) {
+      n = Math.max(0, Math.floor(fin(n, 0)));
+      k = Math.max(0, Math.floor(fin(k, 0)));
+      if (n <= k) return [...Array(n).keys()];
+      if (k < 2) return k ? [0] : [];
+      return [...Array(k).keys()].map(j => Math.round(j * (n - 1) / (k - 1)));
+    }
+    // the exact pass measures the step shown first and goes on forward (where the user and play go), then wraps;
+    // done[i] is set for each step measured. -1 when all are.
+    function nextTodo(done, from) {
+      const n = done.length, a = from >= 0 && from < n ? from : 0;
+      for (let k = 0; k < n; k++) { const i = (a + k) % n; if (!done[i]) return i; }
+      return -1;
     }
     // F6: the live regions (caption, step counter) speak while paused; play stays quiet (no announcement per tick)
     const live = playing => (playing ? 'off' : 'polite');
@@ -26633,7 +26726,7 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
       if (i === top) return 'top';
       return f.merged ? 'label' : 'button';
     }
-    return { FIT_MAX, codeWidth, hang, dropIndent, follow, USER_QUIET, shouldFollow, scrollKey, catchUp, ownScroll, STICK_PHONE, phoneStick, phoneFollow, live, lineMarks, runTabs, tabMove, frameChip, textW, isDirected, directedOf, stadium, arrow, nodeText, lookupIn, namesIn, chain, tree, graph, graphKey, graphLayouts, legend, frameIds };
+    return { FIT_MAX, codeWidth, desiredWidth, hang, dropIndent, follow, USER_QUIET, shouldFollow, scrollKey, catchUp, ownScroll, STICK_PHONE, phoneStick, CAP_MIN, phoneCap, paneH, paneFade, playerWidth, samples, nextTodo, live, lineMarks, runTabs, tabMove, frameChip, textW, isDirected, directedOf, stadium, arrow, nodeText, lookupIn, namesIn, chain, tree, graph, graphKey, graphLayouts, legend, frameIds };
   })();
   const TICKS = [0.5, 1, 2, 4];
   let O = null;                    // init options
@@ -26660,6 +26753,7 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     last: '<path d="M18 5v14"/><path d="M6 5.5 15 12l-9 6.5z"/>',
     prevop: '<path d="m11 6-6 6 6 6M19 6l-6 6 6 6"/>',
     nextop: '<path d="m5 6 6 6-6 6M13 6l6 6-6 6"/>',
+    more: '<circle cx="5" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.7" fill="currentColor" stroke="none"/><circle cx="19" cy="12" r="1.7" fill="currentColor" stroke="none"/>',
   };
   const icon = n => `<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[n]}</svg>`;
   const mark = ok => (ok === true ? O.I('check', 'g-check') : ok === false ? O.I('x', 'g-x') : '');
@@ -26889,12 +26983,13 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
 
   // The call-stack strip: one chip per frame (its summary), outermost first; the top one is highlighted and its items
   // are the picture below. A lower frame's chip is a button: pressed, that frame's items open in place, right after
-  // its chip (view only). `fids` are the frames' stable ids (G.frameIds), which key the opened set.
+  // its chip (view only). On a phone (ctx.phone) the strip is one line that scrolls sideways, so an opened frame is
+  // drawn under it instead, full width. `fids` are the frames' stable ids (G.frameIds), which key the opened set.
   function picture(sc, st, expanded, fids, ctx) {
     const Lx = L(), fr = sc.frames, top = fr.length - 1;
     let h = '';
     if (fr.length > 1 || (fr.length && fr[0].fn !== '<module>')) {
-      let strip = '', open = false;
+      let strip = '', open = false, under = '';
       fr.forEach((f, i) => {
         const sep = i && !open;
         open = false;
@@ -26905,9 +27000,14 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
         if (kind === 'label') { strip += seg(`<span class="viz-fr viz-glob">${esc(f.summary)}</span>`); return; } // F5: nothing to open
         const k = fids[i], on = expanded.has(k);
         strip += seg(`<button type="button" class="viz-fr${on ? ' viz-on' : ''}" data-v="frame" data-i="${i}" data-k="${esc(k)}" aria-expanded="${on}">${esc(f.summary)}</button>`);
-        if (on) { strip += `<div class="viz-frame">${items(f.items, { ...ctx, maxW: ctx.maxW - 22 }) || '<span class="viz-emptyv">—</span>'}</div>`; open = true; }
+        if (!on) return;
+        const box = `<div class="viz-frame">${items(f.items, { ...ctx, maxW: ctx.maxW - 22 }) || '<span class="viz-emptyv">—</span>'}</div>`;
+        if (ctx.phone) under += box;
+        else { strip += box; open = true; }
       });
-      h += `<div class="viz-stack"><span class="viz-lbl">${esc(Lx.vizStack)}</span>${strip}</div>`;
+      // one chip (the top frame alone: nothing to open) is .viz-one, which a phone does not show
+      h += `<div class="viz-stack${fr.length === 1 ? ' viz-one' : ''}"><span class="viz-lbl">${esc(Lx.vizStack)}</span>${strip}</div>`;
+      if (under) h += `<div class="viz-frames">${under}</div>`;
     }
     const drawn = fr.length ? fr[top].items : [], exc = st.ev === 'exception' && st.exc;
     h += items(drawn, ctx);
@@ -26963,20 +27063,29 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
   }
 
   // ---------- one player ----------
-  /* Layout (Task 12b). A header (run tabs or, on a phone, a run <select>; the operation row; the controls; the
-     caption) sticks under the shell's top bar while the player is on screen. Under it: the code, always shown in
-     full (never scrolls: long lines wrap with a hanging indent, L1-L2), and the picture, which sticks under the
-     header on a desktop and may scroll inside itself (L5). The code column takes its natural width up to 58% of the
-     player (G.codeWidth, L3); the picture gets the rest. On a phone: header, picture, then the code (L6); there
-     only the header's compact bar (prev / play / next, the step count, the one-line caption; at most 112px) sticks,
-     the rows above it scrolling away under the top bar (F1, G.phoneStick). A step taken inside the player scrolls
-     the page by the least amount that keeps the current line visible (L7); on a phone never so far that the
-     picture's top goes under the compact bar, unless the user scrolled it there to read the code (G.phoneFollow).
-     The picture comes before the code in the DOM, so the browser's scroll anchoring holds the picture, not a code
-     line, when the picture changes height. */
+  /* Layout (Task 12b, polish). A header (run tabs; the operation row; the controls; the caption) sticks under the
+     shell's top bar while the player is on screen. Under it: the code, always shown in full (never scrolls: long
+     lines wrap with a hanging indent, L1-L2), and the picture, which sticks under the header on a desktop and may
+     scroll inside itself (L5). The code column takes its natural width up to 58% of the player (G.codeWidth, L3);
+     the picture gets the rest. On a desktop the player is centred on the reading column and as wide as its code and
+     widest picture need, up to the room the main area has (G.playerWidth). A step taken inside the player scrolls
+     the page by the least amount that keeps the current line visible (L7).
+     On a phone: header, picture, then the code (L6). The header is one bar that sticks whole: prev / play / next,
+     the step count and a ⋯ button whose panel holds the rest (run select, operation row, first / scrubber / last,
+     speed), a progress line, and the one-line caption. The page never scrolls by itself there, and the picture
+     pane has one fixed height per run (fitRun): its tallest step, up to a cap that leaves room for the first code
+     lines (a taller run scrolls inside the pane), so nothing under it moves while stepping or playing.
+     The picture comes before the code in the DOM, so on a desktop the browser's scroll anchoring holds the picture,
+     not a code line, if the picture changes height; on a phone nothing in the player is a scroll anchor (B1). */
   const PHONE = '(max-width:900px)';
   const STICK_DESK = 0.45;        // a desktop header sticks only when it takes under this share of the window (a
-                                  // phone's compact bar: only when at most G.STICK_PHONE = 112px tall, F1)
+                                  // phone's bar: only when at most G.STICK_PHONE = 112px tall with its panel closed)
+  const FIT_FIRST = 60;           // B2: steps measured first for a phone's picture height (evenly spaced)
+  const FIT_SYNC = 120;           // B2: ms that measuring may take (it stops sooner at the cap)
+  const WIDE_SAMPLES = 42, WIDE_CHAIN = 900; // C2: steps per run measured for a desktop player's width, and the
+                                  // width a chain wraps to there
+  const CHROME = 2;               // C2: the player's own width around its code and picture (its border)
+  const NONE = new Set();         // no opened frames (a measured step)
   const matches = q => !!(typeof window !== 'undefined' && window.matchMedia && window.matchMedia(q).matches);
   const topBar = () => document.querySelector('.main>.top') || document.querySelector('.top');
 
@@ -26984,15 +27093,16 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
      last dispose removes them). It records when the user last scrolled the page (a wheel, a touch drag, a scroll
      key, or a page scroll this code did not cause, such as a scrollbar drag), and whether a follow scroll of ours
      is still running; G.shouldFollow decides from both. When a page scroll lands, a playing player checks its line
-     once more (G.catchUp). It also re-runs every player's layout when the window's height changes (the desktop
-     stick decision depends on it). Not the user's: a page scroll along our running smooth scroll (G.ownScroll), or
-     the one that lands exactly where our instant (reduced-motion) scroll was going. Anything else counts as the
+     once more (G.catchUp). It also re-runs every player's layout when the window's size changes (the desktop
+     stick decision depends on its height, a desktop player's width on the main area's). Not the user's: a page
+     scroll along our running smooth scroll (G.ownScroll), or the one that lands exactly where our instant
+     (reduced-motion) scroll was going. Anything else counts as the
      user's; at worst that pauses following for USER_QUIET ms, never the reverse. */
   const FLIGHT_MAX = 1000;
   const now = () => (typeof performance !== 'undefined' && performance.now ? performance.now() : Date.now());
   // players: {layout, landed}; path: the running smooth follow scroll {from, to}; expect: where our instant scroll
   // goes; last: the page's scrollY at the last scroll event
-  const page = { userAt: -Infinity, inFlight: false, flight: 0, vh: 0, players: new Set(), on: false, path: null, expect: null, last: 0 };
+  const page = { userAt: -Infinity, inFlight: false, flight: 0, vh: 0, vw: 0, players: new Set(), on: false, path: null, expect: null, last: 0 };
   // the user scrolls: remember when, and if our smooth scroll is still running, stop it where the page is (Chrome
   // would otherwise carry it on to its target under the user's own scroll)
   function pageUser() {
@@ -27021,7 +27131,7 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     clearTimeout(page.flight);
     for (const w of page.players) w.landed();
   }
-  function pageResized() { const vh = window.innerHeight; if (vh === page.vh) return; page.vh = vh; for (const w of page.players) w.layout(); }
+  function pageResized() { const vh = window.innerHeight, vw = window.innerWidth; if (vh === page.vh && vw === page.vw) return; page.vh = vh; page.vw = vw; for (const w of page.players) w.layout(); }
   const PAGE_EVENTS = [['wheel', pageUser, 1], ['touchmove', pageUser, 1], ['keydown', pageKey, 1], ['scroll', pageScrolled, 0], ['scrollend', pageLanded, 0], ['resize', pageResized, 1]];
   const target = w => (w ? window : document); // scroll / scrollend of the page fire at the document (they do not bubble from elements)
   function watchPage(w) {
@@ -27029,6 +27139,7 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     if (page.on) return;
     page.on = true;
     page.vh = window.innerHeight;
+    page.vw = window.innerWidth;
     for (const [ev, f, win] of PAGE_EVENTS) target(win).addEventListener(ev, f, { passive: true });
   }
   function unwatchPage(w) {
@@ -27065,8 +27176,10 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     const uid = 'viz-step-' + (++uidN);
     const btn = (v, ic, label, cls = '') => `<button type="button" class="viz-btn${cls}" data-v="${v}" title="${esc(label)}" aria-label="${esc(label)}">${icon(ic)}</button>`;
     const runLabel = (r, i) => r.label || String(i + 1);
+    // the ⋯ button, its panel and the progress line are drawn on a phone only (viz.css)
     box.innerHTML = `<div class="viz" tabindex="0" role="group" aria-label="${esc(Lx.bViz)}">
       <div class="viz-sizer" aria-hidden="true"></div>
+      <i class="viz-vh" aria-hidden="true"></i>
       <div class="viz-bar">
         <div class="viz-head"${many ? '' : ' hidden'} data-runs="${runs.length}">
           <div class="viz-runs">${G.runTabs(runs.map(runLabel), 0, uid, Lx.vizRun, esc)}</div>
@@ -27080,11 +27193,14 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
             <span class="viz-stepn" id="${uid}" aria-live="polite"><span class="viz-stepl"></span><span class="viz-steps" aria-hidden="true"></span></span>
             <label class="viz-speed"><span class="viz-spl">${esc(Lx.vizSpeed)}</span><select>${TICKS.map(x => `<option value="${x}">${x}×</option>`).join('')}</select></label>
           </div>
+          <button type="button" class="viz-btn viz-moreb" data-v="more" aria-expanded="false" aria-controls="${uid}-more" title="${esc(Lx.vizMoreCtl)}" aria-label="${esc(Lx.vizMoreCtl)}">${icon('more')}</button>
         </div>
+        <div class="viz-panel" id="${uid}-more" role="group" aria-label="${esc(Lx.vizMoreCtl)}" hidden><div class="viz-nav"></div></div>
         <div class="viz-cap" aria-live="polite"></div>
+        <div class="viz-prog" aria-hidden="true"><i></i></div>
       </div>
       <div class="viz-main">
-        <div class="viz-pic"><div class="viz-res" hidden></div><div class="viz-scene"></div></div>
+        <div class="viz-pic"><div class="viz-in"><div class="viz-res" hidden></div><div class="viz-scene"></div></div></div>
         <div class="viz-code">${lines.map((l, i) => `<div class="viz-ln" style="--hang:${G.hang(text[i] || '')}ch"><span class="viz-no">${i + 1}</span><span class="viz-tx">${l || ' '}</span></div>`).join('')}</div>
       </div>
     </div>`;
@@ -27093,12 +27209,197 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     const el = { sizer: $('.viz-sizer'), bar: $('.viz-bar'), head: $('.viz-head'), tabs: [...root.querySelectorAll('.viz-run')], rsel: $('.viz-runsel select'),
       ops: $('.viz-ops'), play: $('.viz-play'), scrub: $('.viz-scrub'), opn: $('.viz-opn'), opl: $('.viz-opl'), opok: $('.viz-opok'), stepn: $('.viz-stepn'),
       stepl: $('.viz-stepl'), steps: $('.viz-steps'), speed: $('.viz-speed select'), code: $('.viz-code'), lines: [...root.querySelectorAll('.viz-ln')],
-      pic: $('.viz-pic'), scene: $('.viz-scene'), cap: $('.viz-cap'), res: $('.viz-res'),
-      // F1: on a phone, the scrubber row (first, scrubber, last, speed): the header sticks from its bottom down
-      navRow: ['[data-v="first"]', '.viz-scrub', '[data-v="last"]', '.viz-speed'].map($) };
-    // stickH: the height of the part of the header that sticks (the whole header on a desktop; F1 on a phone);
-    // tbH: the shell's top bar height the sticky top is measured from (--viz-top)
-    let marked = [], shown = '', pos = '', picW = -1, nat = 0, natPhone = null, follow = '', ro = null, disposed = false, stickH = 0, tbH = 0;
+      pic: $('.viz-pic'), in: $('.viz-in'), scene: $('.viz-scene'), cap: $('.viz-cap'), res: $('.viz-res'), vh: $('.viz-vh'),
+      tp: $('.viz-tp'), sc: $('.viz-sc'), first: $('[data-v="first"]'), last: $('[data-v="last"]'),
+      more: $('.viz-moreb'), panel: $('.viz-panel'), nav: $('.viz-nav'), prog: $('.viz-prog') };
+    let marked = [], shown = '', pos = '', picW = -1, nat = 0, natPhone = null, follow = '', ro = null, disposed = false;
+    let more = false;   // the phone's ⋯ panel is open (kept across renders; a remount starts closed)
+    let isPhone = matches(PHONE); // the phone layout (render and layout keep it current; paint draws for it)
+    let placed = null;  // where the panel's controls are: true in the panel (phone), false in the header
+    // a control that just lost focus to nothing: a breakpoint flip can hide it (the phone panel's CSS) before
+    // place() runs, so place() gives focus back to it
+    let lost = null, lostAt = 0;
+    let picNat = -1;    // C2: the widest picture's natural width (all runs), measured once
+    let meas = null;    // the off-screen measuring copy of the picture pane
+    const timing = { wide: 0, sample: 0, left: 0 };
+
+    /* A2: on a phone the controls behind ⋯ live in its panel, in this order: the run select, the operation row,
+       then first / scrubber / last and speed on one row. On a desktop they go back to their places in the header.
+       Moved, not copied, so their listeners and values go with them. */
+    function place(phone) {
+      if (placed === phone) return;
+      placed = phone;
+      const a = document.activeElement;
+      const had = root.contains(a) ? a : (!a || a === document.body) && lost && now() - lostAt < 1000 ? lost : null;
+      const runsel = el.rsel ? el.rsel.closest('.viz-runsel') : null, spd = el.speed.closest('.viz-speed');
+      if (phone) {
+        if (runsel) el.panel.insertBefore(runsel, el.nav);
+        el.panel.insertBefore(el.ops, el.nav);
+        el.nav.append(el.first, el.scrub, el.last, spd);
+      } else {
+        if (runsel) el.head.append(runsel);
+        el.head.append(el.ops);
+        el.tp.prepend(el.first);
+        el.tp.append(el.last);
+        el.sc.prepend(el.scrub);
+        el.sc.append(spd);
+      }
+      // a moved control loses focus: it gets it back (the ⋯ button does, if the control went into the closed panel)
+      if (had && had.isConnected && document.activeElement !== had) (el.panel.hidden && el.panel.contains(had) ? el.more : had).focus({ preventScroll: true });
+    }
+    // A2: opening or closing the panel never scrolls the page. Scroll anchoring would (it holds a code line in
+    // place when the bar above it grows), so it is off for that one change; a move that happens anyway is undone.
+    function steady(fn) {
+      const de = document.documentElement, y = window.scrollY, was = de.style.overflowAnchor;
+      de.style.overflowAnchor = 'none';
+      try { fn(); void de.offsetHeight; } finally { de.style.overflowAnchor = was; }
+      if (Math.abs(window.scrollY - y) >= 0.5) { page.expect = y; page.last = window.scrollY; window.scrollTo({ top: y, behavior: 'instant' }); }
+    }
+    function setMore(open) {
+      if (open === more) return;
+      more = open;
+      // focus inside the panel would be lost with it: it goes back to the ⋯ button
+      if (!open && el.panel.contains(document.activeElement)) el.more.focus({ preventScroll: true });
+      steady(() => { el.panel.hidden = !open; el.more.setAttribute('aria-expanded', String(open)); });
+    }
+
+    // a run's graph layouts (R8a), built from every step on its first graph (once per run, at most ~15 ms)
+    function graphsFor(run) {
+      let gl = graphsOf.get(run);
+      if (!gl) {
+        const items = [], states = run.states;
+        states.forEach((s, k) => { for (const f of C.scene(k ? states[k - 1] : null, s, hints, text[s.ln - 1] || '').frames) for (const x of f.items) if (x.kind === 'graph') items.push(x); });
+        graphsOf.set(run, (gl = G.graphLayouts(items)));
+      }
+      return gl;
+    }
+    const fidsOf = run => { let f = frameIdsOf.get(run); if (!f) frameIdsOf.set(run, (f = G.frameIds(run.states))); return f; };
+    /* Step i of run r drawn into a pane {scene, res?}: the player's own, or the measuring copy. The call-stack
+       strip and the items, and on the run's last step the result (when the pane has a result box). look: a node
+       drawn in another item (join tags); present: the names this step binds (graph legend); maxW: the width a
+       chain wraps to (I1); open: the opened lower frames. */
+    function paint(pane, r, i, maxW, open) {
+      const run = runs[r], states = run.states, cur = states[i], prev = i ? states[i - 1] : null;
+      const sc = C.scene(prev, cur, hints, text[cur.ln - 1] || '');
+      const all = sc.frames.flatMap(f => f.items);
+      const ctx = { heap: cur.heap || {}, nodes: [], hints, look: G.lookupIn(all), present: G.namesIn(sc.frames), graphs: null, maxW, phone: isPhone };
+      if (all.some(x => x.kind === 'graph')) ctx.graphs = graphsFor(run); // a graph keeps its node positions for the whole run
+      pane.scene.innerHTML = picture(sc, cur, open, fidsOf(run)[i] || [], ctx);
+      for (const ph of pane.scene.querySelectorAll('[data-viz-node]')) ph.replaceWith(ctx.nodes[+ph.dataset.vizNode]);
+      if (!pane.res) return;
+      const res = i === states.length - 1 ? result(run) : '';
+      pane.res.innerHTML = res;
+      pane.res.hidden = !res;
+    }
+    // the measuring copy of the picture pane: inside the player (its CSS applies), off screen, never seen or focused
+    function measPane() {
+      if (!meas) {
+        meas = document.createElement('div');
+        meas.className = 'viz-meas';
+        meas.setAttribute('aria-hidden', 'true');
+        meas.inert = true;
+        meas.innerHTML = '<div class="viz-pic"><div class="viz-in"><div class="viz-res" hidden></div><div class="viz-scene"></div></div></div>';
+        root.appendChild(meas);
+      }
+      const pic = meas.firstElementChild, inner = pic.firstElementChild;
+      return { pic, in: inner, res: inner.firstElementChild, scene: inner.lastElementChild };
+    }
+
+    /* C2: the widest picture of every run at its natural width (max-content; a chain wraps at WIDE_CHAIN px), from
+       sampled steps (the first, the last and 40 between, per run). Measured once, so the player's width never
+       changes with the run shown. The result box is text that wraps, so it does not count. */
+    function widest() {
+      const t0 = now(), m = measPane();
+      m.pic.classList.add('viz-nat');
+      let w = 0;
+      runs.forEach((run, r) => { for (const i of G.samples(run.states.length, WIDE_SAMPLES)) { paint({ scene: m.scene }, r, i, WIDE_CHAIN, NONE); w = Math.max(w, m.pic.getBoundingClientRect().width); } });
+      m.pic.classList.remove('viz-nat');
+      m.scene.innerHTML = '';
+      timing.wide = now() - t0;
+      return Math.ceil(w);
+    }
+    // C2: a desktop player's width and its shift left, so it is centred on its column (G.playerWidth); none on a phone
+    function widen(phone) {
+      let wide = false, W = 0, shift = 0;
+      if (!phone) {
+        const b = box.getBoundingClientRect(), m = (box.closest('.main') || document.documentElement).getBoundingClientRect();
+        if (picNat < 0) picNat = widest();
+        ({ W, shift } = G.playerWidth({ desired: G.desiredWidth(nat, picNat, CHROME), box: b.width, left: b.left - m.left, right: m.right - b.right }));
+        wide = W > b.width + 0.5;
+      }
+      root.classList.toggle('viz-wide', wide);
+      root.style.width = wide ? W + 'px' : '';
+      root.style.marginLeft = wide ? -shift + 'px' : '';
+    }
+
+    /* B2: on a phone the picture pane has one fixed height per run, width and cap: H = G.paneH(fit.h, cap), where
+       fit.h is the run's tallest picture, measured in the measuring copy at the pane's real width (the last step
+       with its result), and the cap leaves room under it for the first code lines (G.phoneCap). A taller run
+       scrolls inside the pane, and so does an opened lower frame: neither changes H, which is set here only (a new
+       run, width or cap, or a remount). The pane's content keeps the tallest height seen (.viz-in's min-height,
+       fit.ext), so its scroll position is never clamped while stepping. Measured at once: FIT_FIRST evenly spaced
+       steps, then the rest from the step shown, until one reaches the cap or FIT_SYNC ms have gone (a step not
+       reached, if taller, scrolls like an opened frame). */
+    const fit = { key: '', h: 0, H: 0, ext: 0, run: -1, maxW: 0, done: null };
+    let capH = 0;     // the cap at this window size (layout)
+    let picRun = -1;  // the run the pane shows: a new one scrolls it back to the top
+    function fitStop() {
+      Object.assign(fit, { key: '', h: 0, H: 0, ext: 0 });
+      el.pic.style.height = '';
+      el.in.style.minHeight = '';
+      el.pic.classList.remove('viz-ft', 'viz-fb');
+    }
+    // the content's height only grows: a shorter step keeps the scroll range, so the scroll position stays
+    function fitExt(v) { v = Math.ceil(v - 0.01); if (v > fit.ext) { fit.ext = v; el.in.style.minHeight = v + 'px'; } }
+    function fitStep(m, i) {
+      paint(m, fit.run, i, fit.maxW, NONE);
+      fit.done[i] = 1;
+      return m.pic.getBoundingClientRect().height;
+    }
+    function capNow(barH) {
+      const tb = topBar(), tab = document.getElementById('tabbar');
+      const vh = el.vh.getBoundingClientRect().height || window.innerHeight; // 100svh: not the toolbar's coming and going
+      return G.phoneCap({ vh, top: tb ? tb.getBoundingClientRect().height : 0, bar: barH, tab: tab ? tab.getBoundingClientRect().height : 0 });
+    }
+    function fitRun() {
+      if (!capH) capH = capNow(el.bar.getBoundingClientRect().height - (more ? el.panel.getBoundingClientRect().height : 0));
+      const w = el.pic.getBoundingClientRect().width, key = ctl.run + ':' + w + ':' + capH;
+      if (key === fit.key) return;
+      fit.key = '';
+      if (!(w > 0)) return; // not shown: measured once it is (the observer redraws it)
+      const t0 = now(), n = runs[ctl.run].states.length, m = measPane();
+      // the old styles stay until the new ones are set, so the pane's scroll position is not clamped meanwhile.
+      // A chain wraps to the picture's width now (not the last drawing's: a turn of the phone measures from layout)
+      Object.assign(fit, { key, run: ctl.run, maxW: el.scene.clientWidth, done: new Uint8Array(n) });
+      m.pic.style.width = w + 'px';
+      let h = 0, i;
+      for (const k of G.samples(n, FIT_FIRST)) { h = Math.max(h, fitStep(m, k)); if (h >= capH) break; }
+      while (h < capH && now() - t0 < FIT_SYNC && (i = G.nextTodo(fit.done, ctl.step)) >= 0) h = Math.max(h, fitStep(m, i));
+      const pad = m.pic.getBoundingClientRect().height - m.in.getBoundingClientRect().height;
+      fit.h = Math.ceil(h - 0.01);
+      fit.ext = -1;
+      fitExt(fit.h - pad);
+      fit.H = G.paneH(fit.h, capH).H;
+      el.pic.style.height = fit.H + 'px';
+      m.scene.innerHTML = '';
+      m.res.innerHTML = '';
+      timing.sample = now() - t0;
+      timing.left = n - fit.done.reduce((a, b) => a + b, 0);
+    }
+    // after drawing: the content's height (without opened frames, which only scroll), then the fades
+    function fitShown() {
+      if (!fit.key) return;
+      if (!expanded.size) fitExt(el.in.getBoundingClientRect().height);
+      fades();
+    }
+    // the fades of a pane whose picture goes on above or below it (G.paneFade)
+    function fades() {
+      if (!fit.key) return;
+      const p = el.pic.getBoundingClientRect(), s = el.scene.getBoundingClientRect();
+      const f = G.paneFade({ scrollTop: el.pic.scrollTop, viewH: p.height, contentBottom: s.bottom - p.top });
+      el.pic.classList.toggle('viz-ft', f.top);
+      el.pic.classList.toggle('viz-fb', f.bottom);
+    }
 
     function render() {
       const Lx = L(), run = runs[ctl.run], states = run.states, n = states.length, i = ctl.step;
@@ -27126,11 +27427,11 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
       el.cap.setAttribute('aria-live', G.live(ctl.playing));
       el.stepl.textContent = Lx.vizStep(i + 1, n);
       el.steps.textContent = Lx.vizStepN(i + 1, n); // the phone's short "4 / 15" (screen readers hear the full one)
+      el.steps.style.minWidth = [...Lx.vizStepN(n, n)].length + 'ch'; // as wide as its longest value: the row never shifts
+      el.prog.style.setProperty('--viz-p', String(n > 1 ? i / (n - 1) : 1));
       el.speed.value = String(ctl.speed);
       // an opened frame closes for good once it has left the stack (its id never comes back)
-      let fids = frameIdsOf.get(run);
-      if (!fids) frameIdsOf.set(run, (fids = G.frameIds(states)));
-      const ids = fids[i] || [];
+      const ids = fidsOf(run)[i] || [];
       for (const k of [...expanded]) if (!ids.includes(k)) expanded.delete(k);
       // the rest depends only on the run, the step and the opened frames (play / pause / speed redraw nothing,
       // so a changed cell does not flash again)
@@ -27153,89 +27454,81 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
         marked.push(e);
       }
 
-      const lineText = text[cur.ln - 1] || '';
-      const sc = C.scene(prev, cur, hints, lineText);
-      const all = sc.frames.flatMap(f => f.items);
-      // look: a node drawn in another item (join tags); present: the names this step binds (graph legend);
-      // maxW: the picture's width, which a chain wraps to (I1)
-      picW = el.scene.clientWidth;
-      const ctx = { heap: cur.heap || {}, nodes: [], hints, look: G.lookupIn(all), present: G.namesIn(sc.frames), graphs: null, maxW: picW };
-      if (all.some(x => x.kind === 'graph')) { // a graph keeps its node positions for the whole run (once per run, at most ~15 ms)
-        let gl = graphsOf.get(run);
-        if (!gl) {
-          const items = [];
-          states.forEach((s, k) => { for (const f of C.scene(k ? states[k - 1] : null, s, hints, text[s.ln - 1] || '').frames) for (const x of f.items) if (x.kind === 'graph') items.push(x); });
-          graphsOf.set(run, (gl = G.graphLayouts(items)));
-        }
-        ctx.graphs = gl;
+      picW = el.scene.clientWidth; // the picture's width, which a chain wraps to (I1)
+      const phone = (isPhone = matches(PHONE));
+      if (phone) {
+        fitRun(); // B2: this run's pane height at this width (measured in the copy, so before drawing)
+        if (ctl.run !== picRun) el.pic.scrollTop = 0; // a new run starts at the top of its picture
       }
+      picRun = ctl.run;
       const had = el.scene.contains(document.activeElement) ? document.activeElement : null;
-      el.scene.innerHTML = picture(sc, cur, expanded, ids, ctx);
-      for (const ph of el.scene.querySelectorAll('[data-viz-node]')) ph.replaceWith(ctx.nodes[+ph.dataset.vizNode]);
+      const was = phone && el.scene.querySelector('.viz-stack'), left = was ? was.scrollLeft : 0;
+      paint({ scene: el.scene, res: el.res }, ctl.run, i, picW, expanded);
+      // D: a phone's one-line stack strip shows its end (the top frame) on every step; a frame opened or closed on
+      // the same step keeps the strip where the user scrolled it to find that chip. The strip only, never the page.
+      const strip = phone && el.scene.querySelector('.viz-stack');
+      if (strip) strip.scrollLeft = moved ? strip.scrollWidth : left;
       if (had) {
         const same = had.dataset && had.dataset.v ? el.scene.querySelector(`[data-v="${had.dataset.v}"][data-i="${had.dataset.i}"]`) : null;
         (same || root).focus({ preventScroll: true });
       }
       // R7a: name the line that produced this step's changes (the highlight still shows the line about to run)
-      let lines = capLines.get(run);
-      if (!lines) capLines.set(run, (lines = C.captionLines(states)));
-      const capLn = lines[i];
+      let capl = capLines.get(run);
+      if (!capl) capLines.set(run, (capl = C.captionLines(states)));
+      const capLn = capl[i];
       el.cap.innerHTML = C.caption(prev, cur, Lx, text[capLn - 1] || '', capLn); // already HTML-escaped
-      // the last step's result, at the top of the picture column
-      const res = i === n - 1 ? result(run) : '';
-      el.res.innerHTML = res;
-      el.res.hidden = !res;
+      if (phone) fitShown();
       if (follow && moved && line) keepLine(line, follow === 'tick');
     }
 
     // L7: scroll the page by the least amount that shows the current line, inside the area left by the shell's top
-    // bar, this header (when it sticks) and the phone's tab bar; never when the player is off screen, and on a play
-    // tick not when the user just scrolled or a follow scroll is still running (G.shouldFollow).
-    // F1, on a phone: the sticky part is the compact bar, whose bottom (once stuck) is the top bar's height plus its
-    // own, and the scroll stops where the picture's top meets it (G.phoneFollow), unless the user scrolled the
-    // picture up under it to read the code.
+    // bar and this header (when it sticks); never when the player is off screen, and on a play tick not when the
+    // user just scrolled or a follow scroll is still running (G.shouldFollow).
+    // B1: never on a phone: the page stays where the user put it and only the highlight moves (the caption names
+    // the line).
     function keepLine(line, playing) {
+      if (matches(PHONE)) return;
       if (!G.shouldFollow({ playing, sinceUserScroll: now() - page.userAt, inFlight: page.inFlight })) return;
       const vh = window.innerHeight || document.documentElement.clientHeight;
-      const tb = topBar(), tabs = document.querySelector('.tabbar');
-      const tbBottom = tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0, phone = matches(PHONE);
-      let top = tbBottom, bottom = vh;
-      if (tabs && getComputedStyle(tabs).display !== 'none') bottom = Math.min(bottom, tabs.getBoundingClientRect().top);
+      const tb = topBar();
+      let top = tb ? Math.max(0, tb.getBoundingClientRect().bottom) : 0;
+      const bottom = vh;
       const r = root.getBoundingClientRect();
       if (r.bottom <= top || r.top >= bottom) return;
-      if (root.classList.contains('viz-stick')) top = Math.max(top, phone ? tbH + stickH : el.bar.getBoundingClientRect().bottom);
+      if (root.classList.contains('viz-stick')) top = Math.max(top, el.bar.getBoundingClientRect().bottom);
       const lr = line.getBoundingClientRect();
-      let dy = G.follow({ top: lr.top, bottom: lr.bottom }, { top, bottom }, 8);
-      if (phone) { const pr = el.pic.getBoundingClientRect(); dy = G.phoneFollow(dy, { top: pr.top, bottom: pr.bottom }, top); }
+      const dy = G.follow({ top: lr.top, bottom: lr.bottom }, { top, bottom }, 8);
       if (Math.abs(dy) >= 1) pageScrollBy(dy);
     }
 
-    /* Sizes that depend on the page: the code column's width (L3, from the code's natural width, measured again
-       when the phone breakpoint flips, since the code's font size changes there), the shell's top bar and this
-       header's height (sticky offsets), and whether the header sticks. Run at mount, whenever the player's width or
-       the header's height changes, and when the window's height changes (watchPage). A width change redraws the
-       picture, since a chain wraps to its room. */
+    /* Sizes that depend on the page: where the panel's controls live (A2), the desktop player's width (C2), the
+       code column's width (L3, from the code's natural width, measured again when the phone breakpoint flips, since
+       the code's font size changes there), the shell's top bar and this header's height (sticky offsets), and
+       whether the header sticks. Run at mount, whenever the player's, its box's or the main area's size or the
+       header's height changes, and when the window's size changes (watchPage). A width change redraws the picture,
+       since a chain wraps to its room (on a phone that measures its picture's height again, as a new cap does). */
     function layout() {
       if (!root.isConnected) return;
-      const W = el.sizer.getBoundingClientRect().width;
-      if (!(W > 0)) return; // not shown yet (a collapsed card): the observer runs this again when it is
-      const phone = matches(PHONE);
+      const phone = (isPhone = matches(PHONE));
+      place(phone);
+      if (!(box.getBoundingClientRect().width > 0)) return; // not shown yet (a collapsed card): the observer runs this again when it is
       if (!nat || phone !== natPhone) { natPhone = phone; el.code.style.width = 'max-content'; nat = Math.ceil(el.code.getBoundingClientRect().width); el.code.style.width = ''; }
+      widen(phone);
+      const W = el.sizer.getBoundingClientRect().width;
       root.style.setProperty('--viz-cw', G.codeWidth(Math.floor(W), nat) + 'px');
       const tb = topBar();
-      tbH = tb ? Math.ceil(tb.getBoundingClientRect().height) : 0;
-      root.style.setProperty('--viz-top', tbH + 'px');
-      const br = el.bar.getBoundingClientRect(), barH = Math.ceil(br.height);
-      root.style.setProperty('--viz-barh', barH + 'px');
-      if (phone) { // F1: only the transport row and the caption stick; the rows above them slide under the top bar
-        const split = Math.max(br.top, ...el.navRow.filter(Boolean).map(e => e.getBoundingClientRect().bottom));
-        const s = G.phoneStick(br.top, split, br.bottom);
-        root.style.setProperty('--viz-hide', s.hide + 'px');
-        stickH = br.height - s.hide; // stuck, the bar's bottom is exactly tbH + stickH (its CSS top is tbH - hide)
-        root.classList.toggle('viz-stick', s.stick);
+      root.style.setProperty('--viz-top', (tb ? Math.ceil(tb.getBoundingClientRect().height) : 0) + 'px');
+      const barH = el.bar.getBoundingClientRect().height;
+      root.style.setProperty('--viz-barh', Math.ceil(barH) + 'px');
+      if (phone) {
+        const panelH = more ? el.panel.getBoundingClientRect().height : 0;
+        root.classList.toggle('viz-stick', G.phoneStick(barH, panelH).stick);
+        // B2: the pane's cap, from the bar with its panel closed (opening it changes nothing); a new cap (a resize
+        // or a turn of the phone) measures the run again
+        const c = capNow(barH - panelH);
+        if (c !== capH) { capH = c; if (fit.key) { fitRun(); fades(); } }
       } else {
-        root.style.setProperty('--viz-hide', '0px');
-        stickH = barH;
+        if (fit.key) fitStop(); // the reserve is a phone's
         root.classList.toggle('viz-stick', barH <= (window.innerHeight || 800) * STICK_DESK);
       }
       if (picW >= 0 && Math.abs(el.scene.clientWidth - picW) > 1) { shown = ''; render(); }
@@ -27247,13 +27540,16 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
     const tick = fn => () => { if (hidden()) ctl.pause(); else act(fn, 'tick'); }; // R7d: no invisible playback
     const ctl = C.createController({ key, runs, setTimer: (fn, ms) => setTimeout(tick(fn), ms), clearTimer: h => clearTimeout(h), onRender: render });
     ctl.setSpeed(speed);
-    layout();  // the columns first, so the first picture wraps to its real width
+    layout();  // the columns and the width first, so the first picture wraps to its real width
     render();
     layout();  // then the header's height, now that it has its caption
     if (typeof ResizeObserver !== 'undefined') { // the sizer is 0px tall: it only changes with the player's width
       ro = new ResizeObserver(() => layout());
       ro.observe(el.sizer);
       ro.observe(el.bar);
+      ro.observe(box); // a desktop player's width comes from its box and the main area, never from itself
+      const main = box.closest('.main');
+      if (main) ro.observe(main);
     }
     const watcher = { layout, landed: () => { const line = marked.find(m => m.classList.contains('viz-cur')); if (G.catchUp({ playing: ctl.playing, line })) keepLine(line, true); } };
     watchPage(watcher);
@@ -27273,14 +27569,19 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
           case 'prevop': ctl.prevOp(); break;
           case 'nextop': ctl.nextOp(); break;
           case 'frame': { const id = b.dataset.k; if (expanded.has(id)) expanded.delete(id); else expanded.add(id); render(); break; }
+          case 'more': setMore(!more); break;
           default:
         }
       });
     });
     if (el.rsel) el.rsel.addEventListener('change', () => { const k = +el.rsel.value; if (k !== ctl.run) act(() => { expanded.clear(); ctl.setRun(k); }); });
     el.scrub.addEventListener('input', () => act(() => ctl.go(+el.scrub.value)));
+    el.pic.addEventListener('scroll', fades, { passive: true }); // B2: the user scrolls the phone's picture pane
+    root.addEventListener('focusout', e => { if (!e.relatedTarget) { lost = e.target; lostAt = now(); } });
+    root.addEventListener('focusin', () => { lost = null; });
     el.speed.addEventListener('change', () => { speed = Number(el.speed.value); ctl.setSpeed(speed); });
     root.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && more) { e.preventDefault(); setMore(false); return; } // A2: also from the scrubber or a select
       if (e.altKey || e.ctrlKey || e.metaKey || e.target.matches('input, select, textarea')) return;
       if (e.target.matches('.viz-run')) { // F6: on a run tab, the arrow keys (and Home / End) move between the tabs
         const k = G.tabMove(e.key, ctl.run, el.tabs.length);
@@ -27305,7 +27606,21 @@ if (typeof module !== 'undefined') module.exports = VIZCORE; else window.VIZCORE
       e.preventDefault();
     });
     const dispose = () => { if (disposed) return; disposed = true; if (ro) ro.disconnect(); ro = null; unwatchPage(watcher); };
-    return { box, ctl, dispose };
+    /* for the browser checks: the measured sizes and how long measuring took (ms); exact() times a full measuring
+       pass over the run shown, at once (it does not change the pane's height) */
+    const probe = {
+      info: () => ({ fitH: fit.h, H: fit.H, cap: capH, ext: fit.ext, fitKey: fit.key, nat, picNat, more, placed, ...timing }),
+      exact() {
+        const m = measPane(), w = el.pic.getBoundingClientRect().width, r = ctl.run, n = runs[r].states.length, t0 = now();
+        m.pic.style.width = w + 'px';
+        let h = 0;
+        const hs = [];
+        const mw = el.scene.clientWidth;
+        for (let i = 0; i < n; i++) { paint(m, r, i, mw, NONE); hs.push(m.pic.getBoundingClientRect().height); h = Math.max(h, hs[i]); }
+        return { ms: now() - t0, n, h: Math.ceil(h - 0.01), hs };
+      },
+    };
+    return { box, ctl, dispose, probe };
   }
 
   // ---------- mounting and loading ----------
@@ -27515,7 +27830,7 @@ const STR = {
     vizPushFront: (n, v) => `${n}: ${v} added at the front`, vizPushBack: (n, v) => `${n}: ${v} added at the back`,
     vizReturned: 'Returned', vizExpected: 'Expected', vizPrinted: 'Printed', vizValue: 'Value',
     vizTruncated: n => `Stopped after ${n} steps. The real run continues the same way.`, vizFinal: 'Final result',
-    vizOp: (i, n) => `Operation ${i} / ${n}`, vizPrevOp: 'Previous operation', vizNextOp: 'Next operation', vizStack: 'Call stack',
+    vizOp: (i, n) => `Operation ${i} / ${n}`, vizPrevOp: 'Previous operation', vizNextOp: 'Next operation', vizStack: 'Call stack', vizMoreCtl: 'More controls',
     vizLoading: 'Loading…', vizLoadFail: 'Could not load the visualization.', vizRetry: 'Retry', vizFront: 'front', vizBack: 'back',
     vizPath: 'on the call stack', vizNothing: 'Nothing to draw yet',
   },
@@ -27566,7 +27881,7 @@ const STR = {
     vizPushFront: (n, v) => `${n}：前面加咗 ${v}`, vizPushBack: (n, v) => `${n}：後面加咗 ${v}`,
     vizReturned: '回傳', vizExpected: '預期', vizPrinted: '輸出', vizValue: '值',
     vizTruncated: n => `行咗 ${n} 步就停，之後都係咁行落去。`, vizFinal: '最後結果',
-    vizOp: (i, n) => `第 ${i} / ${n} 個操作`, vizPrevOp: '上一個操作', vizNextOp: '下一個操作', vizStack: 'Call stack',
+    vizOp: (i, n) => `第 ${i} / ${n} 個操作`, vizPrevOp: '上一個操作', vizNextOp: '下一個操作', vizStack: 'Call stack', vizMoreCtl: '更多控制',
     vizLoading: '載入緊…', vizLoadFail: '載入唔到。', vizRetry: '再試', vizFront: '頭', vizBack: '尾',
     vizPath: '仲喺 call stack 入面', vizNothing: '暫時未有嘢畫',
   },
