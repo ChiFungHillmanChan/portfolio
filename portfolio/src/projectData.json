@@ -61,6 +61,27 @@
         ]
     },
     {
+        "id": 24,
+        "title": "Interview Cheatsheet — Step-by-Step Code Visualizer",
+        "shortDescription": "An offline coding-interview cheatsheet with 406 problems across 45 topics. Each one reveals hint, approach and answer one step at a time, and a built-in visualizer replays every solution line by line.",
+        "fullDescription": "Interview Cheatsheet is a single-page study site for coding interviews in Python, built for practising without AI. It covers 406 problems across 45 topics: the core patterns (two pointers, sliding window, trees, graphs, dynamic programming and more), classic algorithms, object-oriented design, system design and behavioural questions, plus a 13-day study plan and a pattern-recognition map. Practice mode hides each problem's hint, approach and code until you reveal them one step at a time, and the site tracks progress, a redo queue, notes, a frequency-weighted random drill with a timer, and a 45-minute mock interview. Its step-by-step visualizer replays real runs of every solution: at build time each solution's code is executed under a Python tracer and every line is recorded, 543 problems and templates in 1,236 runs, then drawn as arrays with pointers, linked lists, trees, graphs, heaps, union-find forests and the call stack, with a caption explaining what each line did. Every solution is also compiled and tested on every build. It is one framework-free HTML file that works offline as an installable PWA, on phone and desktop, in English with a Cantonese (中文) toggle.",
+        "image": "interview_cheatsheet.jpg",
+        "url": "https://interview-prep.hillmanchan.com",
+        "category": "website",
+        "sourceCode": "no-source-code",
+        "demoUrl": "https://interview-prep.hillmanchan.com",
+        "liveDemo": "interview_cheatsheet_demo.mp4",
+        "technologies": [
+            "JavaScript",
+            "HTML",
+            "CSS",
+            "Python",
+            "PWA",
+            "Data Visualization",
+            "i18n"
+        ]
+    },
+    {
         "id": 16,
         "title": "Cosy Loops — Handmade Crochet E-Commerce",
         "shortDescription": "A multilingual e-commerce storefront for a UK-based handmade crochet brand — plushies, charms, keyrings, home décor, and bags, with cart, newsletter, and Etsy/Instagram integration.",
