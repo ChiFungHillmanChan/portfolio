@@ -17,8 +17,9 @@ const downloadable = [handbook.intro, ...released];
 const english = (part) => ({ ...part, ...part.en });
 const chooseEnglish = () => userEvent.click(screen.getByRole('radio', { name: 'English' }));
 const upcoming = handbook.parts.filter((part) => !part.released);
-const hrefOf = (part) => `${handbook.basePath}${part.file}`;
-const pdfLinks = () => [...document.querySelectorAll('a[href$=".pdf"]')];
+const hrefOf = (part) => `${handbook.basePath}${part.file}?v=${part.version}`;
+// The download links: topic links point into the same PDFs but end in #page=<n>.
+const pdfLinks = () => [...document.querySelectorAll('a[href*=".pdf"]:not([href*="#page="])')];
 const partCard = (part) => document.querySelector(`[data-part="${part.number}"]`);
 const openDialog = async (part) => {
   await userEvent.click(within(partCard(part)).getByRole('button', { name: /^Download Part/ }));
@@ -53,7 +54,7 @@ beforeEach(() => {
   // A download the page starts by itself calls click() on a link it made; a person's click does not.
   autoDownloads = [];
   autoDownloadSpy = jest.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function recordClick() {
-    autoDownloads.push({ href: this.getAttribute('href'), download: this.hasAttribute('download') });
+    autoDownloads.push({ href: this.getAttribute('href'), download: this.getAttribute('download') });
   });
 });
 afterEach(() => {
@@ -97,6 +98,13 @@ describe('handbook catalogue', () => {
 });
 
 describe('handbook page', () => {
+  test('every downloadable file carries its own version, so an updated PDF gets a new address', () => {
+    const files = downloadable.flatMap((part) => [part, part.en]);
+    files.forEach((file) => expect(file.version).toMatch(/^[0-9a-f]{10}$/));
+    expect(new Set(files.map((file) => file.version)).size).toBe(files.length);
+    upcoming.forEach((part) => expect(part).not.toHaveProperty('version'));
+  });
+
   test('only Parts 01 to 03 are released, and unreleased parts carry no file', () => {
     expect(released.map((part) => part.number)).toEqual(RELEASED);
     released.forEach((part) => expect(part.file).toMatch(/\.pdf$/));
@@ -206,7 +214,7 @@ describe('handbook page', () => {
     expect(dialog).toHaveTextContent('No payment. Your download starts straight away.');
     const free = within(dialog).getByRole('link', { name: 'Download' });
     expect(free).toHaveAttribute('href', hrefOf(part));
-    expect(free).toHaveAttribute('download');
+    expect(free).toHaveAttribute('download', part.file);
 
     expect(fireEvent.click(free)).toBe(true);
     expect(openSpy).not.toHaveBeenCalled();
@@ -294,7 +302,7 @@ describe('handbook page', () => {
 
     // With nothing to offer there is no pop-up: each released part is a plain download link.
     expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(downloadable.map(hrefOf));
-    pdfLinks().forEach((link) => expect(link).toHaveAttribute('download'));
+    pdfLinks().forEach((link, index) => expect(link).toHaveAttribute('download', downloadable[index].file));
     expect(screen.getByRole('link', { name: 'Buy me a coffee' })).toHaveAttribute('href', supportLinks.buyMeACoffee);
     expect(fireEvent.click(pdfLinks()[0])).toBe(true);
     expect(openSpy).not.toHaveBeenCalled();
@@ -309,10 +317,10 @@ describe('handbook page', () => {
       renderAt('/handbook/ai-engineer?thanks=1');
 
       expect(thanksDialog()).toHaveTextContent(`Part 0${number} · ${part.title} is downloading now`);
-      expect(autoDownloads).toEqual([{ href: hrefOf(part), download: true }]);
+      expect(autoDownloads).toEqual([{ href: hrefOf(part), download: part.file }]);
       const again = within(thanksDialog()).getByRole('link', { name: `Download Part 0${number}` });
       expect(again).toHaveAttribute('href', hrefOf(part));
-      expect(again).toHaveAttribute('download');
+      expect(again).toHaveAttribute('download', part.file);
     });
 
     test('the address is cleaned and the chosen part forgotten, so a reload does not download again', () => {
@@ -358,7 +366,7 @@ describe('handbook page', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
       expect(hasSupported(SLUG)).toBe(true);
       expect(pdfLinks().map((link) => link.getAttribute('href'))).toEqual(downloadable.map(hrefOf));
-      pdfLinks().forEach((link) => expect(link).toHaveAttribute('download'));
+      pdfLinks().forEach((link, index) => expect(link).toHaveAttribute('download', downloadable[index].file));
       expect(screen.queryByRole('button', { name: /^Download Part/ })).not.toBeInTheDocument();
       expect(screen.getByText(/Thank you for supporting this handbook\. Downloads start straight away\./)).toBeInTheDocument();
     });
@@ -441,7 +449,7 @@ describe('PDF language', () => {
     rememberPendingDownload(SLUG, part.number);
     renderAt('/handbook/ai-engineer?thanks=1');
 
-    expect(autoDownloads).toEqual([{ href: hrefOf(english(part)), download: true }]);
+    expect(autoDownloads).toEqual([{ href: hrefOf(english(part)), download: english(part).file }]);
     expect(screen.getByRole('dialog', { name: 'Thank you for your support' }))
       .toHaveTextContent(`Part 0${part.number} · ${part.en.title} is downloading now`);
   });
@@ -502,7 +510,7 @@ describe('intro booklet', () => {
   test('coming back from checkout after choosing Part 00 downloads the intro', () => {
     rememberPendingDownload(SLUG, 0);
     renderAt('/handbook/ai-engineer?thanks=1');
-    expect(autoDownloads).toEqual([{ href: hrefOf(handbook.intro), download: true }]);
+    expect(autoDownloads).toEqual([{ href: hrefOf(handbook.intro), download: handbook.intro.file }]);
   });
 });
 
