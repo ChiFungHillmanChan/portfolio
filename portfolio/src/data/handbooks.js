@@ -30,4 +30,8 @@ export const ACCESS_SECTIONS = [
 
 export const releasedParts = (book) => book.parts.filter((part) => part.released);
 
+// The address of a part's PDF. `version` is a hash of the file, written by export_site.py, so the
+// address changes whenever the PDF does: no browser or cache can hand out an older copy after an update.
+export const pdfUrl = (book, part) => `${book.basePath}${part.file}${part.version ? `?v=${part.version}` : ''}`;
+
 export default handbooks;

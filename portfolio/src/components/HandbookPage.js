@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate, useParams } from 'react-router-dom';
-import handbooks, { releasedParts } from '../data/handbooks';
+import handbooks, { pdfUrl, releasedParts } from '../data/handbooks';
 import supportLinks, { isStripeCheckoutUrl } from '../data/supportLinks';
 import {
   hasSupported, markSupported, readLanguage, rememberLanguage, rememberPendingDownload, takePendingDownload,
@@ -71,10 +71,11 @@ const primaryAction = 'block w-full rounded-lg px-6 py-3 text-center font-semibo
 const quietAction = 'mt-3 block w-full text-center text-sm text-gray-600 dark:text-gray-300 hover:underline';
 
 // Starts a download without a click, used on the way back from checkout.
-const startDownload = (href) => {
+// The file is saved under its plain name; the ?v= part of the address is never in the file name.
+const startDownload = (href, name) => {
   const link = document.createElement('a');
   link.href = href;
-  link.download = '';
+  link.download = name;
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -178,7 +179,7 @@ const DownloadDialog = ({ part, language, href, reference, tiers, custom, curren
         <button type="button" disabled className={disabledAction}>Download</button>
       )}
       {chosen && !chosen.url && (
-        <a href={href} download onClick={onClose} className={primaryAction}>Download</a>
+        <a href={href} download={part.file} onClick={onClose} className={primaryAction}>Download</a>
       )}
       {chosen && chosen.url && (
         <a href={withReference(chosen.url, reference)} rel="noreferrer" onClick={onPay} className={primaryAction}>Support and download</a>
@@ -205,7 +206,7 @@ const ThanksDialog = ({ part, href, onClose }) => (
         <p className="text-gray-800 dark:text-gray-100 mb-4">
           Part {partNumber(part)} · {part.title} is downloading now.
         </p>
-        <a href={href} download className={primaryAction}>
+        <a href={href} download={part.file} className={primaryAction}>
           Download Part {partNumber(part)}
         </a>
         <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -262,7 +263,7 @@ const HandbookPage = () => {
       .find((entry) => entry && entry.number === number);
     const part = found ? inLanguage(found, language) : null;
     setThanks({ part });
-    if (part) startDownload(`${handbook.book.basePath}${part.file}`);
+    if (part) startDownload(pdfUrl(handbook.book, part), part.file);
     // Drop ?thanks=1 so a reload or a shared link does not thank or download again.
     navigate(pathname, { replace: true });
   }, [returned, handbook, slug, pathname, navigate, language]);
@@ -279,7 +280,7 @@ const HandbookPage = () => {
     : null;
   // With no way to pay there is nothing to ask, so the pop-up is skipped.
   const offersSupport = tiers.length > 0 || custom !== null;
-  const fileUrl = (part) => `${book.basePath}${part.file}`;
+  const fileUrl = (part) => pdfUrl(book, part);
   const released = releasedParts(book);
   // The intro booklet (cover, preface, how to use) is listed first as Part 00.
   const listed = book.intro ? [book.intro, ...book.parts] : book.parts;
@@ -395,7 +396,7 @@ const HandbookPage = () => {
                     </button>
                   )}
                   {part.released && (!offersSupport || supported) && (
-                    <a href={fileUrl(part)} download className={downloadClass} aria-label={`Download Part ${partNumber(part)}: ${part.title}`}>
+                    <a href={fileUrl(part)} download={part.file} className={downloadClass} aria-label={`Download Part ${partNumber(part)}: ${part.title}`}>
                       Download PDF
                     </a>
                   )}
