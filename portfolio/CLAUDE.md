@@ -12,6 +12,15 @@ portfolio/
 └── build/games/casino-game/            # Alternative build
 ```
 
+## Hosting
+
+`hillmanchan.com` is S3 + CloudFront, deployed by `.github/workflows/deploy.yml` on every push to `main`.
+It is **not** on Vercel. A Vercel project (team `hillman-chans-projects`) is still connected to this repo.
+Its builds failed on every commit from 2026-10-07, and its deployments sat behind Vercel login, so nobody
+could see them. `portfolio/vercel.json` sets `git.deploymentEnabled: false` (2026-11-26), so it no longer
+deploys and no longer posts a red check. Do not switch it back on; remove the project in that Vercel
+account instead.
+
 ## Contact & Social Links — single source of truth
 
 **Every profile URL and the contact email live in `portfolio/src/data/socialLinks.js`. Nothing else.**
