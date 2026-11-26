@@ -277,7 +277,10 @@ const handbook = {
         71
       ],
       "pages": 81,
-      "released": false,
+      "released": true,
+      "file": "AI_Engineer_Handbook_04_Ops_Eval.pdf",
+      "version": "4c7880d372",
+      "bytes": 4731100,
       "en": {
         "title": "Ops & Evaluation",
         "intro": "Deploying AI systems to production, keeping them running reliably, and proving with data that they actually perform well. This Part is what separates \"finished a demo\" from \"built a product\", and it is the weakest area for most AI engineers.",
@@ -307,7 +310,10 @@ const handbook = {
           69,
           78,
           85
-        ]
+        ],
+        "file": "AI_Engineer_Handbook_04_Ops_Eval_EN.pdf",
+        "version": "abde668977",
+        "bytes": 1513821
       }
     },
     {
@@ -329,7 +335,10 @@ const handbook = {
         34
       ],
       "pages": 41,
-      "released": false,
+      "released": true,
+      "file": "AI_Engineer_Handbook_05_Safety.pdf",
+      "version": "7ed1d6331e",
+      "bytes": 3683076,
       "en": {
         "title": "Safety & Ethics",
         "intro": "AI systems affect real people and bring new kinds of security vulnerability. This Part covers the principles of responsible AI, data ethics, LLM security, guardrails and regulation. In regulated industries such as finance, healthcare, law and government, this knowledge is the price of entry.",
@@ -347,7 +356,10 @@ const handbook = {
           21,
           30,
           40
-        ]
+        ],
+        "file": "AI_Engineer_Handbook_05_Safety_EN.pdf",
+        "version": "55c39f517b",
+        "bytes": 872145
       }
     },
     {
