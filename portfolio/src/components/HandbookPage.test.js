@@ -10,7 +10,7 @@ import { hasSupported, rememberPendingDownload } from '../handbookSupport';
 
 const SLUG = 'ai-engineer';
 const PENDING_KEY = 'handbook-pending-download';
-const RELEASED = [1, 2, 3];
+const RELEASED = [1, 2, 3, 4, 5];
 const released = handbook.parts.filter((part) => part.released);
 // Every file a reader can download straight away: the intro booklet (Part 00) and the released parts.
 const downloadable = [handbook.intro, ...released];
@@ -75,7 +75,7 @@ describe('handbook catalogue', () => {
     expect(links).toHaveLength(1);
     expect(links[0]).toHaveAttribute('href', '/handbook/ai-engineer');
     expect(links[0]).toHaveTextContent('AI 軟件工程師完整學習手冊');
-    expect(links[0]).toHaveTextContent('3 of 10 parts available now');
+    expect(links[0]).toHaveTextContent('5 of 10 parts available now');
     expect(links[0]).toHaveTextContent('目標：成為 Software Engineer 或 AI Engineer 之路');
     expect(pdfLinks()).toHaveLength(0);
   });
@@ -105,7 +105,7 @@ describe('handbook page', () => {
     upcoming.forEach((part) => expect(part).not.toHaveProperty('version'));
   });
 
-  test('only Parts 01 to 03 are released, and unreleased parts carry no file', () => {
+  test('only Parts 01 to 05 are released, and unreleased parts carry no file', () => {
     expect(released.map((part) => part.number)).toEqual(RELEASED);
     released.forEach((part) => expect(part.file).toMatch(/\.pdf$/));
     upcoming.forEach((part) => {
@@ -169,7 +169,7 @@ describe('handbook page', () => {
       expect(within(partCard(part)).queryByRole('button', { name: /download/i })).not.toBeInTheDocument();
       expect(within(partCard(part)).queryByRole('link')).not.toBeInTheDocument();
     });
-    expect(screen.getAllByText(/Parts 01–03 are available now, and Parts 04–10 are coming soon/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Parts 01–05 are available now, and Parts 06–10 are coming soon/).length).toBeGreaterThan(0);
   });
 
   test('there is no full-book download and no file link before the pop-up opens', () => {

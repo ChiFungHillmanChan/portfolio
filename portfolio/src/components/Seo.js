@@ -33,7 +33,7 @@ const PAGE_METADATA = {
   },
   '/handbook/ai-engineer': {
     title: 'AI Engineer Handbook (free PDF) | Hillman Chan',
-    description: 'The AI 軟件工程師完整學習手冊, a free Traditional Chinese handbook on software fundamentals, LLMs, RAG and agents, with more parts coming. Download it part by part.',
+    description: 'The AI 軟件工程師完整學習手冊, a free Traditional Chinese handbook on software fundamentals, LLMs, RAG, agents, AI ops and evaluation, and safety, with more parts coming. Download it part by part.',
   },
   '/contact': {
     title: 'Contact | Hillman Chan',
